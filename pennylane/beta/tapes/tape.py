@@ -25,7 +25,8 @@ from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
 
 from .circuit_graph import NewCircuitGraph
-
+from itertools import product
+from copy import deepcopy
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -39,6 +40,153 @@ STATE_PREP_OPS = (
     qml.ThermalState,
     qml.GaussianState,
 )
+
+
+def _paths_through_batch_tape(batch_tape, path={}):
+    """ Generator that adds all paths through a batch tape to an existing path.
+        Paths are represented by dictionaries of the form
+
+        .. code-block::
+
+            {batch1.name (str): element (int),  batch2.name (str): element (int), ...},
+
+        where ``element`` is an integer in ``range(batch.n_batches)`` and serves as an index to the objects in the
+        tape queue.
+
+    **Example:**
+
+    .. code-block:: python
+
+        with BatchTape(name="b1") as b1:
+            qml.RX(0.2, wires='a')
+            qml.RX(0.5, wires='a')
+
+        for p in _paths_through_batch_tape(b1):
+            print(p)
+            # {"b1": 0}
+            # {"b1": 1}
+
+    Batch Tapes could be nested structures of other batch tapes or normal quantum tapes
+
+    .. code-block:: python
+
+        with BatchTape(name="b1") as b1:
+            qml.RX(0.2, wires='a')
+            qml.RX(0.5, wires='a')
+
+        for p in _paths_through_batch_tape(b1):
+            print(p)
+            # {"b1": 0}
+            # {"b1": 1}
+
+    Arg:
+        batch_tape (BatchTape): the batch tape to consider
+        path (dict): a path that this function adds to
+    """
+    counter = 0
+    add_batch = True
+
+    if batch_tape.name in path:
+        # we use the information from the
+        # batch already in the path
+        add_batch = False
+
+    for obj_ in batch_tape.iterator():
+
+        new_path = deepcopy(path)
+
+        if add_batch:
+            new_path.update({batch_tape.name: counter})
+
+        counter += 1
+
+        if isinstance(obj_, BatchTape):
+            yield from _paths_through_batch_tape(obj_, path=new_path)
+
+        else:
+            if isinstance(obj_, QuantumTape):
+                yield from _paths_through_quantum_tape(obj_, path=new_path)
+
+            else:
+                # is an operation
+                yield new_path
+
+
+def _paths_through_quantum_tape(q_tape, path={}):
+    new_paths = []
+    for obj in q_tape.iterator():
+
+        # todo: is there a way to not collect the items from the generator here,
+        # to save memory?
+
+        if isinstance(obj, BatchTape):
+            new_paths.append(list(_paths_through_batch_tape(obj, path=path)))
+
+        else:
+            if isinstance(obj, QuantumTape):
+                new_paths.append(list(_paths_through_quantum_tape(obj, path=path)))
+
+    # todo: support same batch names to continue a batch
+    # For this we need to avoid that the tensor product produces the same paths
+    kron_dicts = product(*new_paths)
+
+    for path in kron_dicts:
+        new_path = {}
+        for d in path:
+            new_path.update(d)
+        yield new_path
+
+
+def _paths_through_tape(tape):
+    """Returns a generator that yields all paths through the batches of this tape.
+
+    Args:
+        tape (QuantumTape):
+
+    """
+
+    if type(tape) == BatchTape:
+        yield from _paths_through_batch_tape(tape)
+
+    # need to be more general here to catch classes inheriting
+    if type(tape) == QuantumTape:
+        yield from _paths_through_quantum_tape(tape)
+
+
+def _separate_batches(tape):
+    """Returns a generator that yields all paths through the batches of this tape.
+
+    Args:
+        tape (QuantumTape):
+
+    """
+
+    paths = _paths_through_tape(tape)
+
+    for path in paths:
+
+        new_tape = tape.__class__()
+
+        for obj in tape.iterator():
+
+            if isinstance(obj, BatchTape):
+
+                # select the object from the batch determined by the path
+                select = path[obj.name]
+                batch = list(obj.iterator())  # todo: rather yield "select" times and grab the last
+                batched_obj = batch[select]
+
+                with new_tape:
+                    batched_obj
+
+            # recursion
+
+            else:
+                # else just append the object, interpreting it as serial
+                with new_tape:
+                    obj
+
+        yield new_tape
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -130,74 +278,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._measurements += expanded_tape._measurements
 
     return new_tape
-
-
-def separate_tape(tape):
-    """Separate a tape into several tapes, each using an alternative pathway through the batched sections.
-
-    This creates a list of tapes, each sharing all objects except from the ones recorded with ``BatchTape``.
-
-    Args:
-        tape (QuantumTape): tape to unfold
-
-    **Example:**
-
-    Calling ``separate_tape`` will return a list of tapes that only differ in the items queued with ``BatchTape``:
-
-    .. code-block:: python
-
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
-
-            with BatchTape() as tape_b1:
-                qml.RY(0.2, wires='a')
-                qml.RX(0.2, wires='a')
-
-            qml.CNOT(wires=[0, 'a'])
-
-            with BatchTape() as tape_b1:
-                qml.RZ(0.1, wires=0)
-                qml.RZ(0.2, wires=0)
-
-            probs(wires=0), probs(wires='a')
-
-    The nested structure contains both ``BatchTape`` objects:
-
-    >>> tape.operations
-    [BasisState(array([1, 1]), wires=[0, 'a']),
-     <QuantumTape: wires=[0], params=3>,
-     CNOT(wires=[0, 'a']),
-     <BatchTape: wires=[0], params=1>]
-
-    Calling ``separate_tape`` will return a list of tapes that only differ in the items queued with ``BatchTape``:
-
-    >>> tapes = separate_tape(tape)
-    >>> tapes[0].operations
-     [PauliX(wires=[0]),
-     PauliX(wires=['a']),
-     <QuantumTape: wires=[0], params=3>,
-     RY(0.2, wires=['a'])
-     CNOT(wires=[0, 'a']),
-     RZ(0.1, wires=[0])]
-
-    >>> tapes[1].operations
-     [PauliX(wires=[0]),
-     PauliX(wires=['a']),
-     <QuantumTape: wires=[0], params=3>,
-     RX(0.2, wires=['a'])
-     CNOT(wires=[0, 'a']),
-     RZ(0.2, wires=[0])]
-
-    """
-
-    separated_tapes = []
-    for element in tape:
-        if isinstance(element, BatchTape):
-            separate_tape(element)
-        else:
-            separated_tapes.append(element)
-
-    return separated_tapes
 
 
 class QuantumTape(AnnotatedQueue):
@@ -494,57 +574,19 @@ class QuantumTape(AnnotatedQueue):
         new_tape._update()
         return new_tape
 
-    def separate(self, depth=1, stop_at=None):
-        """Expand all operations in the processed queue to a specific depth.
+    def separate_batches(self):
+        """Create a generator that yields all quantum tapes constructed from
+        separating the batched elements.
 
-        Args:
-            depth (int): the depth the tape should be expanded
-            stop_at (Callable): A function which accepts a queue object,
-                and returns ``True`` if this object should *not* be expanded.
-                If not provided, all objects that support expansion will be expanded.
-            expand_measurements (bool): If ``True``, measurements will be expanded
-                to basis rotations and computational basis measurements.
+        #Todo: give options for what has to be separated.
+        # An elegant solution would be to give an iterator of a tape (measurement iterator, pre-iterator...)
 
-        **Example**
+        **Example:**
 
-        Consider the following nested tape:
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
-
-                with QuantumTape() as tape2:
-                    qml.Rot(0.543, 0.1, 0.4, wires=0)
-
-                qml.CNOT(wires=[0, 'a'])
-                qml.RY(0.2, wires='a')
-                probs(wires=0), probs(wires='a')
-
-        The nested structure is preserved:
-
-        >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']),
-         <QuantumTape: wires=[0], params=3>,
-         CNOT(wires=[0, 'a']),
-         RY(0.2, wires=['a'])]
-
-        Calling ``.expand`` will return a tape with all nested tapes
-        expanded, resulting in a single tape of quantum operations:
-
-        >>> new_tape = tape.expand()
-        >>> new_tape.operations
-        [PauliX(wires=[0]),
-         PauliX(wires=['a']),
-         Rot(0.543, 0.1, 0.4, wires=[0]),
-         CNOT(wires=[0, 'a']),
-         RY(0.2, wires=['a'])]
         """
-        new_tape = separate_tape(
-            self, depth=depth, stop_at=stop_at
-        )
-        new_tape._update()
-        return new_tape
+
+        return _separate_batches(self)
 
     def inv(self):
         """Inverts the processed operations.
@@ -963,7 +1005,7 @@ class QuantumTape(AnnotatedQueue):
         """Execute the tape on a quantum device.
 
         Args:
-            device (~.Device): a PennyLane device
+            device (.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameters are used (via :meth:`~.get_parameters`).
@@ -1069,13 +1111,13 @@ class QuantumTape(AnnotatedQueue):
         * ``None``: the parameter does not support differentiation.
 
         * ``"0"``: the variational circuit output does not depend on this
-            parameter (the partial derivative is zero).
+          parameter (the partial derivative is zero).
 
         * ``"F"``: the parameter has a non-zero derivative that should be computed
-            using finite-differences.
+          using finite-differences.
 
         * ``"A"``: the parameter has a non-zero derivative that should be computed
-            using an analytic method.
+          using an analytic method.
 
         .. note::
 
@@ -1169,14 +1211,12 @@ class QuantumTape(AnnotatedQueue):
 
         numeric_params = {idx for idx, g in allowed_param_methods.items() if g == "F"}
 
-        if method == "analytic":
-            # If explicitly using analytic mode, ensure that all parameters
-            # support analytic differentiation.
-
-            if numeric_params:
-                raise ValueError(
-                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
-                )
+        # If explicitly using analytic mode, ensure that all parameters
+        # support analytic differentiation.
+        if method == "analytic" and numeric_params:
+            raise ValueError(
+                f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
+            )
 
         return tuple(allowed_param_methods.values())
 
@@ -1199,6 +1239,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
+
         """
         if params is None:
             params = np.array(self.get_parameters())
@@ -1219,6 +1260,7 @@ class QuantumTape(AnnotatedQueue):
                 y0 = np.asarray(self.execute_device(params, device))
 
             y = np.array(self.execute_device(params + shift, device))
+
             return (y - y0) / h
 
         if order == 2:
@@ -1441,6 +1483,11 @@ class QuantumTape(AnnotatedQueue):
 
         return jac
 
+    def iterator(self):
+        queue = self.operations + self.observables
+        for o in queue:
+            yield o
+
 
 class BatchTape(QuantumTape):
     """A quantum tape recorder whose queue records elements which are interpreted as alternatives to each other.
@@ -1506,5 +1553,3 @@ class BatchTape(QuantumTape):
 
     def analytic_pd(self, idx, device, params=None, **options):
         raise NotImplementedError
-
-
