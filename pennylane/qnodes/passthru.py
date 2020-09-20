@@ -148,4 +148,3 @@ class PassthruQNode(BaseQNode):
                 raise QuantumFunctionError(
                     "The operations {} cannot affect the circuit output.".format(invisible)
                 )
-

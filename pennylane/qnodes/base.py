@@ -888,4 +888,3 @@ class BaseQNode(qml.QueuingContext):
         else:
             ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
-
