@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Addition of two `Wires` objects is now supported and will return 
+* Summation of two `Wires` objects is now supported and will return 
   a `Wires` object containing the set of all wires defined by the 
   terms in the summation.
   [(#812)](https://github.com/PennyLaneAI/pennylane/pull/812)
