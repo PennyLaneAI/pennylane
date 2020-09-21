@@ -461,6 +461,21 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
+    def test_CY_decomposition(self, tol):
+        """Tests that the decomposition of the CY gate is correct"""
+        op = qml.CY(wires=[0, 1])
+        res = op.decomposition(op.wires)
+
+        mats = []
+        for i in reversed(res):
+            if len(i.wires) == 1:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 

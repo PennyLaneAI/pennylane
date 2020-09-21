@@ -26,6 +26,7 @@ to verify and test quantum gradient computations.
     default_qubit_tf
     default_qubit_autograd
     default_gaussian
+    default_mixed
     tf_ops
     autograd_ops
     tests
@@ -35,3 +36,4 @@ to verify and test quantum gradient computations.
 # not PennyLane core dependencies
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
+from .default_mixed import DefaultMixed
