@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, qnode
+from pennylane.beta.tapes import QuantumTape, QNode, qnode, QubitParamShiftTape
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -86,7 +86,6 @@ class TestValidation:
         assert method == "backprop"
         assert interface == None
 
-    @pytest.mark.xfail(reason="The qubit parameter-shift rule is not yet implemented!")
     def test_parameter_shift_method_qubit_device(self):
         """Test that the get_parameter_shift_method method correctly and
         returns the correct tape for qubit devices."""
@@ -94,18 +93,6 @@ class TestValidation:
         tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
         assert tape_class is QubitParamShiftTape
         assert method == "analytic"
-        assert interface == "autograd"
-
-    def test_parameter_shift_method_qubit_warning(self):
-        """Qubit devices are not yet supported; test that attempting to use
-        the parameter-shift rule raises a warning and returns the finite difference method"""
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.warns(UserWarning, match="Qubit parameter-shift rule not yet implemented"):
-            tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
-
-        assert tape_class is QuantumTape
-        assert method == "numeric"
         assert interface == "autograd"
 
     def test_parameter_shift_method_cv_warning(self):

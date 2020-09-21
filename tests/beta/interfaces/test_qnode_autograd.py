@@ -220,7 +220,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="finite-diff")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)

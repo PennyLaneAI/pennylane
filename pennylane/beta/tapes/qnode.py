@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -299,13 +299,7 @@ class QNode:
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            # return QubitParamShiftTape, interface, "analytic"
-            warnings.warn(
-                "Qubit parameter-shift rule not yet implemented! Falling back "
-                "to finite-differences."
-            )
-
-            return QuantumTape, interface, "numeric"
+            return QubitParamShiftTape, interface, "analytic"
 
         if model == "cv":
             # return CVParamShiftTape, interface, "analytic"
