@@ -314,7 +314,7 @@ class QubitDevice(Device):
         return np.random.choice(basis_states, self.shots, p=state_probability)
 
     @staticmethod
-    def states_to_binary(samples, num_wires, dtype=None):
+    def states_to_binary(samples, num_wires, dtype=np.int64):
         """Convert basis states from base 10 to binary representation.
 
         This is an auxiliary method to the generate_samples method.
