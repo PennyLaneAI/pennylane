@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Summation of two `Wires` objects is now supported and will return 
+  a `Wires` object containing the set of all wires defined by the 
+  terms in the summation.
+  [(#812)](https://github.com/PennyLaneAI/pennylane/pull/812)
+
 * Quantum noisy channels: quantum channels provide a general
   formalism for discussing state evolution, including the evolution
   of pure states into mixed states due to noise and decoherence. It
