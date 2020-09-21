@@ -18,6 +18,7 @@ It implements the necessary :class:`~pennylane.Device` methods as well as some b
 qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
+
 import functools
 from string import ascii_letters as ABC
 
@@ -51,8 +52,8 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
-    #     "BasisState",
-    #     "QubitStateVector",
+        #     "BasisState",
+        #     "QubitStateVector",
         "QubitUnitary",
         "DiagonalQubitUnitary",
         "PauliX",
@@ -129,6 +130,8 @@ class DefaultMixed(QubitDevice):
         rho = self._reshape(self._state, (2 ** self.num_wires, 2 ** self.num_wires))
         # probs are diagonal elements
         probs = self.marginal_prob(self._diag(rho), wires)
+
+        # take the abs so that probabilities are not shown as complex numbers
         return self._abs(probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
