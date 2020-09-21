@@ -740,10 +740,6 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             GeneratorObject: generator that returns all possible tapes constructed
                by unraveling the batch structure of this tape
-
-        **Example**
-
-
         """
         # Todo: give options for what has to be separated.
         # An elegant solution would be to pass the iterator
