@@ -116,6 +116,7 @@ class AutogradInterface(AnnotatedQueue):
                 for idx, p in enumerate(self._all_parameter_values)
                 if idx in self.trainable_params
             ]
+
         return autograd.builtins.list(params)
 
     @autograd.extend.primitive
