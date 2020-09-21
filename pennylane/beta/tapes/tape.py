@@ -44,44 +44,77 @@ STATE_PREP_OPS = (
 
 def _paths_through_batch_tape(batch_tape, path={}):
     """ Generator that adds all paths through a batch tape to an existing path.
+
         Paths are represented by dictionaries of the form
 
-        .. code-block::
+        ..code-block:: python
 
             {batch1.name (str): element (int),  batch2.name (str): element (int), ...},
 
-        where ``element`` is an integer in ``range(batch.n_batches)`` and serves as an index to the objects in the
-        tape queue.
-
-    **Example:**
-
-    .. code-block:: python
-
-        with BatchTape(name="b1") as b1:
-            qml.RX(0.2, wires='a')
-            qml.RX(0.5, wires='a')
-
-        for p in _paths_through_batch_tape(b1):
-            print(p)
-            # {"b1": 0}
-            # {"b1": 1}
-
-    Batch Tapes could be nested structures of other batch tapes or normal quantum tapes
-
-    .. code-block:: python
-
-        with BatchTape(name="b1") as b1:
-            qml.RX(0.2, wires='a')
-            qml.RX(0.5, wires='a')
-
-        for p in _paths_through_batch_tape(b1):
-            print(p)
-            # {"b1": 0}
-            # {"b1": 1}
+        where ``element`` is an index in ``range(batch.n_batches)`` defining which object in the
+        tape queue is considered by this path.
 
     Arg:
         batch_tape (BatchTape): the batch tape to consider
-        path (dict): a path that this function adds to
+        path (dict): a path through previous batches that this function may extend
+
+    **Example**
+
+    .. code-block:: python
+
+        with BatchTape(name="b3") as b3:
+            qml.RX(0.2, wires='a')
+            qml.RX(0.5, wires='a')
+
+        for p in _paths_through_batch_tape(b3, path={"b1":2, "b2":0}):
+            print(p)
+            # {"b1":2, "b2":0, "b3": 0}
+            # {"b1":2, "b2":0, "b3": 1}
+
+    Batch tapes can be nested structures of other batch tapes. The recursion takes care of
+    the nesting.
+
+    .. code-block:: python
+
+        with BatchTape(name="b3") as b3:
+            qml.RX(0.2, wires='a')
+
+            with BatchTape(name="b4"):
+                qml.RY(0.5, wires='a')
+                qml.RZ(0.5, wires='a')
+
+        for p in _paths_through_batch_tape(b3, path={"b1":2, "b2":0}):
+            print(p)
+            # {"b1":2, "b2":0, "b3": 0}
+            # {"b1":2, "b2":0, "b3": 1, "b4": 0}
+            # {"b1":2, "b2":0, "b3": 1, "b4": 1}
+
+    Batch tapes can also nest quantum tapes (which in turn can consist of batch tapes).
+
+    .. code-block:: python
+
+        with BatchTape(name="b3") as b3:
+            qml.RX(0.2, wires='a')
+
+            with QuantumTape(name="q4"):
+
+                with BatchTape(name="b5"):
+                    qml.RY(0.5, wires='a')
+                    qml.RZ(0.5, wires='a')
+
+                with BatchTape(name="b6"):
+                    qml.Hadamard(wires='a')
+                    qml.Hadamard(wires='b')
+
+        for p in _paths_through_batch_tape(b3, path={"b1":2, "b2":0}):
+            print(p)
+            # {"b1":2, "b2":0, "b3": 0}
+            # {"b1":2, "b2":0, "b3": 1, "b5": 0, "b6":0}
+            # {"b1":2, "b2":0, "b3": 1, "b5": 0, "b6":1}
+            # {"b1":2, "b2":0, "b3": 1, "b5": 1, "b6":0}
+            # {"b1":2, "b2":0, "b3": 1, "b5": 1, "b6":1}
+
+
     """
     counter = 0
     add_batch = True
@@ -105,88 +138,214 @@ def _paths_through_batch_tape(batch_tape, path={}):
 
         else:
             if isinstance(obj_, QuantumTape):
-                yield from _paths_through_quantum_tape(obj_, path=new_path)
+                yield from _paths_through_tape(obj_, path=new_path)
 
             else:
                 # is an operation
                 yield new_path
 
 
-def _paths_through_quantum_tape(q_tape, path={}):
-    new_paths = []
-    for obj in q_tape.iterator():
+def _paths_through_tape(tape, path={}):
+    """
+    Generator that adds all possible paths through batches in
+    a tape to an existing path.
 
-        # todo: is there a way to not collect the items from the generator here,
-        # to save memory?
+    Paths are represented by dictionaries of the form
 
-        if isinstance(obj, BatchTape):
-            new_paths.append(list(_paths_through_batch_tape(obj, path=path)))
+    .. code-block::
 
-        else:
-            if isinstance(obj, QuantumTape):
-                new_paths.append(list(_paths_through_quantum_tape(obj, path=path)))
+        {batch1.name (str): element (int),  batch2.name (str): element (int), ...},
 
-    # todo: support same batch names to continue a batch
-    # For this we need to avoid that the tensor product produces the same paths
-    kron_dicts = product(*new_paths)
+    where ``element`` is an index in ``range(batch.n_batches)`` defining which object
+    in a batch queue is considered by this path.
 
-    for path in kron_dicts:
-        new_path = {}
-        for d in path:
-            new_path.update(d)
-        yield new_path
+    Arg:
+        tape (QuantumTape): tape that may have a batched structure
+        path (dict): a path through previous batches that this function may extend
 
+    **Example**
 
-def _paths_through_tape(tape):
-    """Returns a generator that yields all paths through the batches of this tape.
+    If the quantum tape does not contain batch tapes at any nesting level, the
+    path will be returned unmodified.
 
-    Args:
-        tape (QuantumTape):
+    .. code-block:: python
+
+        with QuantumTape(name="q3") as q3:
+            qml.RX(0.2, wires='a')
+            qml.RX(0.5, wires='a')
+
+        for p in _paths_through_quantum_tape(q3, path={"b1":2, "b2":0}):
+            print(p)
+            # {"b1":2, "b2":0}
+            # {"b1":2, "b2":0}
+
+    If the recursion encounters batch tapes, their paths will be combined using a
+    tensor product and added to the original path.
+
+    .. code-block:: python
+
+        with QuantumTape(name="q3") as q3:
+            qml.RX(0.2, wires='a')
+
+            with BatchTape(name="b4"):
+                qml.RX(0.2, wires='a')
+                qml.RX(0.5, wires='a')
+
+            with BatchTape(name="b5"):
+                qml.RX(0.2, wires='a')
+                qml.RX(0.2, wires='b')
+
+        for p in _paths_through_quantum_tape(q3, path={"b1":2, "b2":0}):
+            print(p)
+            # {"b1":2, "b2":0, "b4":0, "b5":0}
+            # {"b1":2, "b2":0, "b4":0, "b5":1}
+            # {"b1":2, "b2":0, "b4":1, "b5":0}
+            # {"b1":2, "b2":0, "b4":1, "b5":1}
 
     """
-
+    # If the tape is itself a batch tape, call batch method
     if type(tape) == BatchTape:
-        yield from _paths_through_batch_tape(tape)
+        yield from _paths_through_batch_tape(tape, path=path)
 
-    # need to be more general here to catch classes inheriting
-    if type(tape) == QuantumTape:
-        yield from _paths_through_quantum_tape(tape)
-
-
-def _separate_batches(tape):
-    """Returns a generator that yields all paths through the batches of this tape.
-
-    Args:
-        tape (QuantumTape):
-
-    """
-
-    paths = _paths_through_tape(tape)
-
-    for path in paths:
-
-        new_tape = tape.__class__()
-
+    else:
+        new_paths = []
         for obj in tape.iterator():
 
-            if isinstance(obj, BatchTape):
+            # todo: do not collect the items from the generator here to save memory
+            if isinstance(obj, QuantumTape):
+                new_paths.append(list(_paths_through_tape(obj, path=path)))
 
-                # select the object from the batch determined by the path
-                select = path[obj.name]
-                batch = list(obj.iterator())  # todo: rather yield "select" times and grab the last
-                batched_obj = batch[select]
+        # todo: avoid duplicates from batches with the same name
+        kron_dicts = product(*new_paths)
 
-                with new_tape:
-                    batched_obj
+        for extension in kron_dicts:
+            new_path = deepcopy(path)
+            for batch in extension:
+                new_path.update(batch)
+            yield new_path
 
-            # recursion
 
-            else:
-                # else just append the object, interpreting it as serial
-                with new_tape:
-                    obj
+def _unbatch_path(tape, path, new_tape=None):
+    """Create a new quantum tape that uses batched objects defined in path.
 
-        yield new_tape
+    Args:
+        tape (QuantumTape): tape to unbatch
+        path (dict): dictionary representing a path by defining batch
+            names (keys) and the objects selected (values)
+        new_tape (QuantumTape): unbatched tape, empty tape at first call
+
+    Returns:
+        QuantumTape: new tape recorded by following path in tape
+
+    **Example**
+
+    ..code-block:: python
+
+        with QuantumTape(name="q1") as q1:
+            qml.RX(0.2, wires='a')
+
+            with QuantumTape(name="q2"):
+                with BatchTape(name="b3"):
+                    qml.RY(0.5, wires='b')
+                    qml.RY(0.5, wires='c')
+
+                with BatchTape(name="b4"):
+                    qml.RZ(0.1, wires='d')
+                    qml.RZ(0.1, wires='e')
+
+        path = {"b3": 0, "b4": 1}
+        new_tape = _unbatch_path(q1, path)
+        print(new_tape.operations)
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['b']), RZ(0.1, wires=['e'])]
+    """
+
+    if new_tape is None:
+        # todo: could add path info to tape
+        new_tape = tape.__class__(name=tape.name)
+
+    for obj in tape.iterator():
+
+        if isinstance(obj, BatchTape):
+
+            if obj.name in path:
+
+                # replace the batch tape with the one of the
+                # objects it queues as alternatives. The selection
+                # is defined by the path.
+                idx = path[obj.name]
+                # todo: faster if we iterate "select" times and grab the last
+                batch = list(obj.iterator())
+                obj = batch[idx]
+
+        # if the object is at this stage still a quantum tape,
+        # go through it recursively adding to the new tape
+        # todo: fix case where batch is not found in path
+        if isinstance(obj, QuantumTape):
+
+            new_tape = _unbatch_path(obj, path, new_tape)
+
+        else:
+            # queue the object in the new tape
+            with new_tape:
+                # todo: update when more elegant API for queueing available
+                if isinstance(obj, qml.beta.queuing.MeasurementProcess):
+                    obj.obs.queue()
+                obj.queue()
+
+    return new_tape
+
+
+def _unbatch(tape):
+    """
+    Returns a generator that yields tapes constructed from combining the
+    alternative queues represented by ``BatchTape`` objects in this tape.
+
+    Args:
+        tape (QuantumTape): tape to "unbatch"
+
+    Returns:
+        QuantumTape: quantum tapes whose queue is one possible realisation
+            of the operations recorded as batches
+
+    **Examples**
+
+    ..code-block:: python
+
+        with QuantumTape(name="q1") as q1:
+            qml.RX(0.2, wires='a')
+
+            with BatchTape(name="b3"):
+                qml.RY(0.5, wires='b')
+                qml.RY(0.5, wires='c')
+
+            with BatchTape(name="measure"):
+                qml.beta.queuing.expval(qml.PauliZ(wires='a'))
+                qml.beta.queuing.expval(qml.PauliZ(wires='b'))
+
+        for t in _unbatch(q1):
+            print(t.operations)
+            print(t.measurements)
+            
+            # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
+            # [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f42cd8a9748>]
+
+            # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
+            # [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f427d506c18>]
+
+            # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
+            # [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f42cd8a9748>]
+
+            # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
+            # [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f427d506c18>]
+
+    """
+
+    for path in _paths_through_tape(tape):
+
+        # note: here (or during generation) we could manipulate the path at will,
+        # for example to remove a batch name so that it will not be unpacked
+        unbatched_tape = _unbatch_path(tape, path)
+        yield unbatched_tape
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -574,19 +733,23 @@ class QuantumTape(AnnotatedQueue):
         new_tape._update()
         return new_tape
 
-    def separate_batches(self):
+    def unbatch(self):
         """Create a generator that yields all quantum tapes constructed from
         separating the batched elements.
 
-        #Todo: give options for what has to be separated.
-        # An elegant solution would be to give an iterator of a tape (measurement iterator, pre-iterator...)
+        Returns:
+            GeneratorObject: generator that returns all possible tapes constructed
+               by unraveling the batch structure of this tape
 
-        **Example:**
+        **Example**
 
 
         """
+        # Todo: give options for what has to be separated.
+        # An elegant solution would be to pass the iterator
+        # used in the called methods (i.e., measurement only, operations only...)
 
-        return _separate_batches(self)
+        return _unbatch(self)
 
     def inv(self):
         """Inverts the processed operations.
@@ -1490,7 +1653,8 @@ class QuantumTape(AnnotatedQueue):
         return jac
 
     def iterator(self):
-        queue = self.operations + self.observables
+        """Hack to make iterating over the full queue easier."""
+        queue = self.operations + self.measurements
         for o in queue:
             yield o
 

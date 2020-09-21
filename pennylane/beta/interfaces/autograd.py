@@ -70,11 +70,7 @@ class AutogradInterface(AnnotatedQueue):
     [0.03991951]
     >>> jac_fn = qml.jacobian(cost_fn)
     >>> jac_fn(x, y, z, device=dev)
-<<<<<<< HEAD
-    [[ 0.39828408 -0.00045133]]
-=======
     [[ 0.39828408, -0.00045133]]
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
     """
 
     # pylint: disable=attribute-defined-outside-init
@@ -85,8 +81,6 @@ class AutogradInterface(AnnotatedQueue):
         return "autograd"
 
     def _update_trainable_params(self):
-<<<<<<< HEAD
-=======
         """Set the trainable parameters.
 
         Unlike in :class:`~.QuantumTape`, we also set the private attribute
@@ -96,7 +90,6 @@ class AutogradInterface(AnnotatedQueue):
         private attribute there. This allows the :meth:`~.get_parameters` method to avoid performing
         a redundant parameter extraction.
         """
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
         params = []
 
         for p_idx in self._par_info:
@@ -111,15 +104,6 @@ class AutogradInterface(AnnotatedQueue):
                 trainable_params.add(idx)
 
         self.trainable_params = trainable_params
-<<<<<<< HEAD
-        return params
-
-    def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
-        params = self._update_trainable_params()
-
-        if trainable_only:
-            params = [p for idx, p in enumerate(params) if idx in self.trainable_params]
-=======
         self._all_parameter_values = params
 
     def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
@@ -131,8 +115,6 @@ class AutogradInterface(AnnotatedQueue):
                 for idx, p in enumerate(self._all_parameter_values)
                 if idx in self.trainable_params
             ]
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
-
         return autograd.builtins.list(params)
 
     @autograd.extend.primitive
@@ -144,27 +126,16 @@ class AutogradInterface(AnnotatedQueue):
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
-<<<<<<< HEAD
-        return res
-=======
         requires_grad = False
 
         if self.trainable_params:
             requires_grad = True
 
         return np.array(res, requires_grad=requires_grad)
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
 
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
         """Returns the vector-Jacobian product operator for the quantum tape.
-<<<<<<< HEAD
-
-        Takes the same arguments as :meth:`~.execute`, plus `ans`.
-
-        Returns:
-            function[array[float], array[float]]: vector-Jacobian product operator
-=======
         The returned function takes the arguments as :meth:`~.execute`.
 
         Args:
@@ -177,7 +148,6 @@ class AutogradInterface(AnnotatedQueue):
         Returns:
             function: this function accepts the backpropagation
             gradient output vector, and computes the vector-Jacobian product
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
         """
 
         def gradient_product(g):
