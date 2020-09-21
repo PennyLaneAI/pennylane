@@ -100,7 +100,7 @@ class QNode:
 
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. Caching does not take place by default. In caching mode, the quantum circuit
-            being executed must have a constant structure and only its parameters can varied.
+            being executed must have a constant structure and only its parameters can be varied.
 
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
@@ -563,7 +563,7 @@ def qnode(device, interface="autograd", diff_method="best", caching=None, **diff
 
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. Caching does not take place by default. In caching mode, the quantum circuit
-            being executed must have a constant structure and only its parameters can varied.
+            being executed must have a constant structure and only its parameters can be varied.
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
