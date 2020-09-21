@@ -33,7 +33,14 @@ ABC_ARRAY = np.array(list(ABC))
 class ReversibleTape(QuantumTape):
     r"""Quantum tape for computing gradients via reversible analytic differentiation.
 
-    .. note:: Currently, only qubit variational circuits and simulator devices are supported.
+    .. note::
+
+        The reversible analytic differentation method has the following restrictions:
+
+        * As it requires knowledge of the statevector, only statevector simulator devices can be used.
+
+        * Differentiation is only supported for the parametrized quantum operations
+          :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`, and :class:`~.Rot`.
 
     This class extends the :class:`~.jacobian` method of the quantum tape to support analytic
     gradients of qubit operations using reversible analytic differentiation. This gradient method
@@ -123,6 +130,8 @@ class ReversibleTape(QuantumTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
+        # The reversible tape only support differentiating
+        # expectation values of observables for now.
         for m in self.measurements:
             if (
                 m.return_type is qml.operation.Variance
@@ -132,12 +141,17 @@ class ReversibleTape(QuantumTape):
                     f"{m.return_type} is not supported with the reversible gradient method"
                 )
 
-        # CRX, CRY, CRZ ops have a non-unitary matrix as generator.
-        # PauliRot, MultiRZ, U2, and U3 do not have generators specified.
+        # The reversible tape only supports the RX, RY, RZ, and Rot operations for now:
+        #
+        # * CRX, CRY, CRZ ops have a non-unitary matrix as generator.
+        #
+        # * PauliRot, MultiRZ, U2, and U3 do not have generators specified.
+        #
         # TODO: the controlled rotations can be supported by multiplying ``state``
         # directly by these generators within this function
         # (or by allowing non-unitary matrix multiplies in the simulator backends)
-        if op.name in ["PhaseShift", "CRX", "CRY", "CRZ", "PauliRot", "MultiRZ", "U2", "U3"]:
+
+        if op.name not in ["RX", "RY", "RZ", "Rot"]:
             raise ValueError(
                 "The {} gate is not currently supported with the "
                 "reversible gradient method.".format(op.name)
