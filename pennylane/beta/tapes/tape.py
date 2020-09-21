@@ -20,7 +20,6 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import ObservableReturnTypes
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
