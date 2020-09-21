@@ -1404,7 +1404,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1416,7 +1416,7 @@ class QuantumTape(AnnotatedQueue):
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            measurement statistics
 
         """
         if params is None:
@@ -1437,7 +1437,7 @@ class QuantumTape(AnnotatedQueue):
             if y0 is None:
                 y0 = np.asarray(self.execute_device(params, device))
 
-            y = np.array(self.execute_device(params + shift, device))
+            y = np.asarray(self.execute_device(params + shift, device))
 
             return (y - y0) / h
 
@@ -1451,10 +1451,10 @@ class QuantumTape(AnnotatedQueue):
 
     def device_pd(self, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter by querying the provided device.
+        all trainable tape parameters by querying the provided device.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1482,7 +1482,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1529,7 +1529,7 @@ class QuantumTape(AnnotatedQueue):
             devices.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1616,7 +1616,7 @@ class QuantumTape(AnnotatedQueue):
         allowed_param_methods = self._grad_method_validation(method)
 
         if not params.size or all(g == "0" for g in allowed_param_methods):
-            # Either all parameters had grad method 0, or there are no trainable
+            # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
 
@@ -1630,7 +1630,7 @@ class QuantumTape(AnnotatedQueue):
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = None
-        p_ind = list(np.ndindex(*params.shape))
+        p_ind = range(len(params))
 
         # loop through each parameter and compute the gradient
         for idx, (l, param_method) in enumerate(zip(p_ind, allowed_param_methods)):
