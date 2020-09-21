@@ -109,18 +109,18 @@ class Wires(Sequence):
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
 
-         **Example:**
-
-        >>> wires1 =  Wires([4, 0, 1])
-        >>> wires2 = Wires([1, 2])
-        >>> wires1 + wires2
-        Wires([4, 0, 1, 2])
-
         Args:
             other (Iterable[Number,str], Number, Wires): object to add from the right
 
         Returns:
             Wires: all wires appearing in either object
+
+        **Example**
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([1, 2])
+        >>> wires1 + wires2
+        Wires([4, 0, 1, 2])
         """
         other = Wires(other)
         return Wires(Wires.all_wires([self, other]))
@@ -192,7 +192,13 @@ class Wires(Sequence):
         """
         Return the indices of the wires in this Wires object.
 
-        **Example:**
+        Args:
+            wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
+
+        Returns:
+            List: index list
+
+        **Example**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([1, 4])
@@ -200,12 +206,6 @@ class Wires(Sequence):
         [2, 0]
         >>> wires1.indices([1, 4])
         [2, 0]
-
-        Args:
-            wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
-
-        Returns:
-            List: index list
         """
         if not isinstance(wires, Iterable):
             return [self.index(wires)]
@@ -215,16 +215,15 @@ class Wires(Sequence):
     def map(self, wire_map):
         """Returns a new Wires object with different labels, using the rule defined in mapping.
 
-        **Example:**
+        Args:
+            wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
+                             new labels as their values
+        **Example**
 
         >>> wires = Wires(['a', 'b', 'c'])
         >>> wire_map = {'a': 4, 'b':2, 'c': 3}
         >>> wires.map(wire_map)
         <Wires = [4, 2, 3]>
-
-        Args:
-            wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
-                             new labels as their values
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
         wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
@@ -252,7 +251,14 @@ class Wires(Sequence):
         Returns a new Wires object which is a subset of this Wires object. The wires of the new
         object are the wires at positions specified by 'indices'. Also accepts a single index as input.
 
-        **Example:**
+        Args:
+            indices (List[int] or int): indices or index of the wires we want to select
+            periodic_boundary (bool): controls periodic boundary conditions in the indexing
+
+        Returns:
+            Wires: subset of wires
+
+        **Example**
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
@@ -264,18 +270,10 @@ class Wires(Sequence):
         so that  ``wires.subset(i) == wires.subset(i % n_wires)`` where ``n_wires`` is the number of wires of this
         object.
 
-        **Example:**
-
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([5, 1, 7], periodic_boundary=True)
         <Wires = [4, 0, 1]>
 
-        Args:
-            indices (List[int] or int): indices or index of the wires we want to select
-            periodic_boundary (bool): controls periodic boundary conditions in the indexing
-
-        Returns:
-            Wires: subset of wires
         """
 
         if isinstance(indices, int):
@@ -324,7 +322,13 @@ class Wires(Sequence):
 
         This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
-        **Example:**
+        Args:
+            list_of_wires (List[Wires]): list of Wires objects
+
+        Returns:
+            Wires: shared wires
+
+        **Example**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
@@ -333,12 +337,6 @@ class Wires(Sequence):
         <Wires = [4, 0]>
         >>> Wires.shared_wires([wires2, wires1, wires3])
         <Wires = [0, 4]>
-
-        Args:
-            list_of_wires (List[Wires]): list of Wires objects
-
-        Returns:
-            Wires: shared wires
         """
 
         for wires in list_of_wires:
@@ -362,15 +360,6 @@ class Wires(Sequence):
 
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
-        **Example:**
-
-        >>> wires1 = Wires([4, 0, 1])
-        >>> wires2 = Wires([3, 0, 4])
-        >>> wires3 = Wires([5, 3])
-        >>> list_of_wires = [wires1, wires2, wires3]
-        >>> Wires.all_wires(list_of_wires)
-        <Wires = [4, 0, 1, 3, 5]>
-
         Args:
             list_of_wires (List[Wires]): List of Wires objects
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
@@ -378,6 +367,15 @@ class Wires(Sequence):
 
         Returns:
             Wires: combined wires
+
+        **Example**
+
+        >>> wires1 = Wires([4, 0, 1])
+        >>> wires2 = Wires([3, 0, 4])
+        >>> wires3 = Wires([5, 3])
+        >>> list_of_wires = [wires1, wires2, wires3]
+        >>> Wires.all_wires(list_of_wires)
+        <Wires = [4, 0, 1, 3, 5]>
         """
 
         combined = []
@@ -401,19 +399,19 @@ class Wires(Sequence):
     def unique_wires(list_of_wires):
         """Return the wires that are unique to any Wire object in the list.
 
-        **Example:**
+        Args:
+            list_of_wires (List[Wires]): list of Wires objects
+
+        Returns:
+            Wires: unique wires
+
+        **Example**
 
         >>> wires1 = Wires([4, 0, 1])
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
         >>> Wires.unique_wires([wires1, wires2, wires3])
         <Wires = [4, 1, 2, 5]>
-
-        Args:
-            list_of_wires (List[Wires]): list of Wires objects
-
-        Returns:
-            Wires: unique wires
         """
 
         for wires in list_of_wires:
