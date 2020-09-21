@@ -17,3 +17,4 @@ validate, execute, and differentiate quantum circuits.
 """
 from .circuit_graph import NewCircuitGraph
 from .tape import QuantumTape, BatchTape, expand_tape
+from .qnode import QNode, qnode

@@ -34,12 +34,7 @@ class TestAutogradQuantumTape:
         assert isinstance(tape, AutogradInterface)
 
     def test_get_parameters(self):
-<<<<<<< HEAD
-        """Test that the get parameters function correctly sets and returns the
-=======
         """Test that the get_parameters function correctly sets and returns the
-
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
         trainable parameters"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -147,8 +142,6 @@ class TestAutogradQuantumTape:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
 
-<<<<<<< HEAD
-=======
     def test_reusing_quantum_tape(self, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = np.array(0.1, requires_grad=True)
@@ -187,7 +180,6 @@ class TestAutogradQuantumTape:
         ]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
@@ -226,8 +218,6 @@ class TestAutogradQuantumTape:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
-<<<<<<< HEAD
-=======
         res = qml.jacobian(cost)(a, b, device=dev)
         assert not res
 
@@ -239,7 +229,6 @@ class TestAutogradQuantumTape:
 
         assert not res
 
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
     def test_matrix_parameter(self, tol):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
@@ -320,13 +309,7 @@ class TestAutogradQuantumTape:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-<<<<<<< HEAD
-        with prob and expval outputs"""
-=======
         with prob outputs"""
-
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
-
         def cost(x, y, device):
             with AutogradInterface.apply(QuantumTape()) as tape:
                 qml.RX(x, wires=[0])
@@ -544,8 +527,6 @@ class TestAutogradPassthru:
         assert res.shape == (2,)
         spy.assert_not_called()
 
-<<<<<<< HEAD
-=======
         res = qml.jacobian(cost)(a, b, device=dev)
         assert not res
 
@@ -557,7 +538,6 @@ class TestAutogradPassthru:
 
         assert not res
 
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
     def test_matrix_parameter(self, mocker, tol):
         """Test jacobian computation when the tape includes a matrix parameter"""
         spy = mocker.spy(QuantumTape, "jacobian")
@@ -686,13 +666,6 @@ class TestAutogradPassthru:
         assert np.allclose(res, expected, atol=tol, rtol=0)
         spy.assert_not_called()
 
-<<<<<<< HEAD
-    @pytest.mark.xfail
-    def test_ragged_differentiation(self, mocker, tol):
-        """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
-        spy = mocker.spy(QuantumTape, "jacobian")
-=======
     def test_ragged_differentiation(self, mocker, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -708,7 +681,6 @@ class TestAutogradPassthru:
         # behaviour; once the tape has moved from the beta folder, we should implement
         # this change directly in the device.
         monkeypatch.setattr(dev, "_asarray", _asarray)
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
 
         def cost(x, y, device):
             with QuantumTape() as tape:
@@ -718,14 +690,8 @@ class TestAutogradPassthru:
                 expval(qml.PauliZ(0))
                 probs(wires=[1])
 
-<<<<<<< HEAD
-            return np.hstack(tape.execute(device))
-
-        dev = qml.device("default.qubit.autograd", wires=2)
-=======
             return tape.execute(device)
 
->>>>>>> 1b527eb6338b3d9ef2de35a89a87aa8907e64720
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
