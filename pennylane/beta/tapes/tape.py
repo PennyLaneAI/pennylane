@@ -15,11 +15,13 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
+from collections import OrderedDict
 import contextlib
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.utils import _hash_iterable
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
@@ -144,6 +146,11 @@ class QuantumTape(AnnotatedQueue):
 
         >>> from pennylane.beta.queuing import expval, var, sample, probs
 
+    Args:
+        name (str): a name given to the quantum tape
+        caching (int): number of device executions to store in a cache to speed up subsequent
+            executions. Caching does not take place by default.
+
     **Example**
 
     .. code-block:: python
@@ -215,7 +222,7 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, caching=None):
         super().__init__()
         self.name = name
 
@@ -246,6 +253,14 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
         self._stack = None
+
+        self._caching = caching or 0
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the input parameters to results of
+        executing the device."""
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -890,6 +905,60 @@ class QuantumTape(AnnotatedQueue):
 
         return self._execute(params, device=device)
 
+    def _get_all_parameters(self, params):
+        """Return all parameters by combining trainable parameters supplied by ``params`` with
+        existing non-trainable parameters.
+
+        The returned parameters are provided in order of appearance
+        on the tape.
+
+        Args:
+            params (list[Any]): The quantum tape operation parameters.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        Suppose only parameters 0 and 2 are trainable:
+
+        >>> tape.trainable_params = {0, 2}
+
+        We can access all parameters using:
+
+        >>> tape._get_all_parameters([0.1, 0.2])
+        [0.1, 0.543, 0.2]
+        """
+        num_all_parameters = len(self._par_info)  # including non-trainable parameters
+
+        if self.num_params == num_all_parameters:
+            return params
+        # Otherwise, we must combine the trainable parameters supplied by the params
+        # argument with the non-trainable parameters given by get_parameters()
+
+        saved_all_parameters = self.get_parameters(trainable_only=False)
+
+        all_parameters = []
+        position = 0
+        for i in range(num_all_parameters):
+            if i in self._trainable_params:
+                p = params[position]
+                position += 1
+            else:
+                p = saved_all_parameters[i]
+            all_parameters.append(p)
+
+        return all_parameters
+
     def execute_device(self, params, device):
         """Execute the tape on a quantum device.
 
@@ -904,6 +973,12 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        if self._caching:
+            all_parameters = self._get_all_parameters(params)
+            hashed_params = _hash_iterable(all_parameters)
+            if hashed_params in self._cache_execute:
+                return self._cache_execute[hashed_params]
+
         device.reset()
 
         # backup the current parameters
@@ -936,6 +1011,12 @@ class QuantumTape(AnnotatedQueue):
 
         # restore original parameters
         self.set_parameters(saved_parameters)
+
+        if self._caching and hashed_params not in self._cache_execute:
+            self._cache_execute[hashed_params] = res
+            if len(self._cache_execute) > self._caching:
+                self._cache_execute.popitem(last=False)
+
         return res
 
     # interfaces can optionally override the _execute method
@@ -1324,3 +1405,13 @@ class QuantumTape(AnnotatedQueue):
             jac[:, idx] = g.flatten()
 
         return jac
+
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching
+
+    @caching.setter
+    def caching(self, value):
+        self._caching = value
