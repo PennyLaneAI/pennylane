@@ -260,6 +260,7 @@ class DefaultMixed(QubitDevice):
         else:
             self._apply_channel(matrices, wires)
 
+    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
 
         rotations = rotations or []
