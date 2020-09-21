@@ -26,7 +26,7 @@ from pennylane.beta.queuing import mock_operations
 
 from .circuit_graph import NewCircuitGraph
 from itertools import product
-from copy import deepcopy
+from copy import copy
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -126,7 +126,7 @@ def _paths_through_batch_tape(batch_tape, path={}):
 
     for obj_ in batch_tape.iterator():
 
-        new_path = deepcopy(path)
+        new_path = copy(path)
 
         if add_batch:
             new_path.update({batch_tape.name: counter})
@@ -219,14 +219,14 @@ def _paths_through_tape(tape, path={}):
         kron_dicts = product(*new_paths)
 
         for extension in kron_dicts:
-            new_path = deepcopy(path)
+            new_path = copy(path)
             for batch in extension:
                 new_path.update(batch)
             yield new_path
 
 
 def _unbatch_path(tape, path, new_tape=None):
-    """Create a new quantum tape that uses batched objects defined in path.
+    """Record a new quantum tape that uses the batching alternatives defined in path.
 
     Args:
         tape (QuantumTape): tape to unbatch
