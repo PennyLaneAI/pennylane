@@ -27,6 +27,7 @@ from pennylane.beta.interfaces.tf import TFInterface
 class TestTFQuantumTape:
     """Test the TensorFlow interface applied to a tape"""
 
+
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
         with TFInterface.apply(QuantumTape()) as tape:
@@ -56,7 +57,8 @@ class TestTFQuantumTape:
         assert tape.dtype is tf.float32
 
     def test_get_parameters(self):
-        """Test that the get parameters function correctly sets and returns the
+        """Test that the get_parameters function correctly sets and returns the
+
         trainable parameters"""
         a = tf.Variable(0.1)
         b = tf.constant(0.2)
