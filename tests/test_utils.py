@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
+from pennylane.wires import Wires
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -825,3 +826,28 @@ class TestInv:
             ValueError, match="The given operation_list does not only contain Operations"
         ):
             pu.inv(arg)
+
+
+class TestHashIterable:
+    """Tests for the _hash_iterable function."""
+
+    iterables = [
+        [1, 1.4, -1],
+        [],
+        [1, np.ones((4, 4)), 19.67],
+        [1, np.ones((2, 4)), np.ones((2, 4)), 19.67],
+        [1, np.zeros((4, 4)), 19.67],
+    ]
+
+    @pytest.mark.parametrize("iterable", iterables)
+    def test_valid_hash(self, iterable):
+        """Test that a valid hash is generated and that it is the same when generated again"""
+        h = pu._hash_iterable(iterable)
+        h2 = pu._hash_iterable(iterable)
+        assert isinstance(h, int)
+        assert h == h2
+
+    @pytest.mark.parametrize("iterable1, iterable2", itertools.combinations(iterables, r=2))
+    def test_different(self, iterable1, iterable2):
+        """Test that a different hash is given for each test iterable"""
+        assert pu._hash_iterable(iterable1) != pu._hash_iterable(iterable2)
