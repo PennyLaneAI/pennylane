@@ -118,7 +118,7 @@ class QNode:
     >>> qnode = QNode(circuit, dev)
     """
 
-    # pylint:disable=too-many-instance-attributes
+    # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
         self, func, device, interface="autograd", diff_method="best", caching=None, **diff_options
@@ -153,14 +153,14 @@ class QNode:
                 "Caching mode activated. The quantum circuit being executed by the QNode must have "
                 "a fixed structure.",
             )
-            if self.diff_method is "backprop":
+            if self.diff_method == "backprop":
                 raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
             self._caching = caching
         else:
             self._caching = 0
 
         self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum 
+        """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum
         tape"""
 
     @staticmethod
