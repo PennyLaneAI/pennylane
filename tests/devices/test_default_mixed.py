@@ -405,4 +405,50 @@ class TestApplyOperation:
 
 
 class TestApply:
-    """Unit tests for the main method `apply()`"""
+    """Unit tests for the main method `apply()`. We check that lists of operations are applied
+    correctly, rather than single operations"""
+
+    def test_bell_state(self):
+        """Tests that we correctly prepare a Bell state by applying a Hadamard then a CNOT"""
+        dev = qml.device('default.mixed', wires=2)
+        ops = [Hadamard(0), CNOT(wires=[0, 1])]
+        dev.apply(ops)
+        bell = np.zeros((4, 4))
+        bell[0, 0] = bell[0, 3] = bell[3, 0] = bell[3, 3] = 1 / 2
+
+        assert np.allclose(bell, dev.state)
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_hadamard_state(self, nr_wires):
+        """Tests that applying Hadamard gates on all qubits produces an equal superposition over
+        all basis states"""
+        dev = qml.device('default.mixed', wires=nr_wires)
+        ops = [Hadamard(i) for i in range(nr_wires)]
+        dev.apply(ops)
+
+        assert np.allclose(dev.state, hadamard_state(nr_wires))
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_max_mixed_state(self, nr_wires):
+        """Tests that applying damping channel on all qubits to the state |11...1> produces a
+        maximally mixed state"""
+        dev = qml.device('default.mixed', wires=nr_wires)
+        flips = [PauliX(i) for i in range(nr_wires)]
+        damps = [AmplitudeDamping(0.5, wires=i) for i in range(nr_wires)]
+        ops = flips + damps
+        dev.apply(ops)
+
+        assert np.allclose(dev.state, max_mixed_state(nr_wires))
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_undo_rotations(self, nr_wires):
+        """Tests that rotations are correctly applied by adding their inverse as intial
+        operations"""
+        dev = qml.device('default.mixed', wires=nr_wires)
+        ops = [Hadamard(i) for i in range(nr_wires)]
+        rots = ops
+        dev.apply(ops, rots)
+        basis = np.reshape(basis_state(0, nr_wires), [2] * (2 * nr_wires))
+        # dev.state = pre-rotated state, dev._state = state after rotations
+        assert np.allclose(dev.state, hadamard_state(nr_wires))
+        assert np.allclose(dev._state, basis)
