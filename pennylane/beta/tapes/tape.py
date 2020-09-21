@@ -1417,7 +1417,6 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
-
         """
         if params is None:
             params = np.array(self.get_parameters())
@@ -1438,7 +1437,6 @@ class QuantumTape(AnnotatedQueue):
                 y0 = np.asarray(self.execute_device(params, device))
 
             y = np.asarray(self.execute_device(params + shift, device))
-
             return (y - y0) / h
 
         if order == 2:

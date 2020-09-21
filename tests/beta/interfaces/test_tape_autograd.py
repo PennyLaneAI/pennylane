@@ -310,6 +310,7 @@ class TestAutogradQuantumTape:
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+        
         def cost(x, y, device):
             with AutogradInterface.apply(QuantumTape()) as tape:
                 qml.RX(x, wires=[0])
