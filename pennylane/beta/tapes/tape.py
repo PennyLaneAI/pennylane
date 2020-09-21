@@ -325,7 +325,7 @@ def _unbatch(tape):
         for t in _unbatch(q1):
             print(t.operations)
             print(t.measurements)
-            
+
             # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
             # [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f42cd8a9748>]
 
