@@ -82,8 +82,6 @@ class TestCreateBasisState:
 class TestState:
     """Tests for the method `state()`, which retrieves the state of the system"""
 
-    # Note: These tests need to be extended once we can output non-basis states
-
     def test_shape(self, nr_wires):
         """Tests that the state has the correct shape"""
         dev = qml.device("default.mixed", wires=nr_wires)
@@ -118,7 +116,7 @@ class TestReset:
     """Unit tests for the method `reset()`"""
 
     def test_reset_basis(self, nr_wires):
-        dev = qml.device("default.mixed", wires=nr_wires)
+        dev = qml.device('default.mixed', wires=nr_wires)
         dev._state = dev._create_basis_state(1)
         dev.reset()
 
@@ -181,12 +179,14 @@ class TestAnalyticProb:
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = root_state(nr_wires)
         probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
+
         assert np.allclose(probs, dev.analytic_probability())
 
     def test_none_state(self, nr_wires):
         """Tests that return is `None` when the state is `None`"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = None
+
         assert dev.analytic_probability() == None
 
 
@@ -215,6 +215,7 @@ class TestKrausOps:
     def test_diagonal_kraus(self, ops):
         """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
         dev = qml.device("default.mixed", wires=2)
+
         assert np.allclose(dev._get_kraus(ops[0]), ops[1])
 
     p = 0.5
@@ -222,6 +223,7 @@ class TestKrausOps:
     K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
     K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
     K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
+
     channel_ops = [
         (
             qml.AmplitudeDamping(p, wires=0),
@@ -243,7 +245,7 @@ class TestApplyChannel:
 
     x_apply_channel_init = [
         [1, PauliX, basis_state(1, 1)],
-        [2, Hadamard, np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])],
+        [1, Hadamard, np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])],
         [2, CNOT, basis_state(0, 2)],
         [1, AmplitudeDamping(0.5, wires=0), basis_state(0, 1)],
         [
@@ -494,3 +496,4 @@ class TestApply:
         # dev.state = pre-rotated state, dev._state = state after rotations
         assert np.allclose(dev.state, hadamard_state(nr_wires))
         assert np.allclose(dev._state, basis)
+
