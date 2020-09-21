@@ -326,10 +326,6 @@ class QNode:
 
         self.qtape = self._tape()
 
-        # apply the interface (if any)
-        if self.interface is not None:
-            self.INTERFACE_MAP[self.interface](self)
-
         with self.qtape:
             measurement_processes = self.func(*args, **kwargs)
 
@@ -341,6 +337,13 @@ class QNode:
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
+
+        # apply the interface (if any)
+        if self.interface is not None:
+            if self.qtape._returns_state and self.interface in ["torch", "tf"]:
+                self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
+            else:
+                self.INTERFACE_MAP[self.interface](self)
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise QuantumFunctionError(
@@ -396,7 +399,7 @@ class QNode:
             self.dtype = dtype or self.dtype or TFInterface.dtype
 
             if self.qtape is not None:
-                TFInterface.apply(self.qtape, dtype=self.dtype)
+                TFInterface.apply(self.qtape, dtype=tf.as_dtype(self.dtype))
 
         except ImportError:
             raise QuantumFunctionError(
@@ -425,6 +428,18 @@ class QNode:
                 self.dtype = None
 
             self.dtype = dtype or self.dtype or TorchInterface.dtype
+
+            if self.dtype is np.complex128:
+                torch_version = list(map(int, torch.__version__.split(".")[:2]))
+                min_version_for_complex = torch_version[0] >= 1 and torch_version[1] >= 6
+
+                if min_version_for_complex:
+                    self.dtype = torch.complex128
+                else:
+                    raise QuantumFunctionError(
+                        "Version 1.6.0 or above of PyTorch must be installed"
+                        "for complex support, such as returning the state"
+                    )
 
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
