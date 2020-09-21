@@ -103,6 +103,7 @@ class DefaultQubit(QubitDevice):
         "SWAP",
         "CSWAP",
         "Toffoli",
+        "CY",
         "CZ",
         "PhaseShift",
         "RX",

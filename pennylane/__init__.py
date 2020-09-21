@@ -294,6 +294,9 @@ def jacobian(func, argnum=None):
             if getattr(arg, "requires_grad", True):
                 argnum.append(idx)
 
+        if not argnum:
+            return tuple()
+
         if len(argnum) == 1:
             return _jacobian(func, argnum[0])(*args, **kwargs)
 

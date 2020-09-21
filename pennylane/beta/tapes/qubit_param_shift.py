@@ -81,8 +81,8 @@ class QubitParamShiftTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
         """
-        op = self._par_info[idx[0]]["op"]
-        p_idx = self._par_info[idx[0]]["p_idx"]
+        op = self._par_info[idx]["op"]
+        p_idx = self._par_info[idx]["p_idx"]
 
         s = (
             np.pi / 2

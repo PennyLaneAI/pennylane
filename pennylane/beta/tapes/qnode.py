@@ -21,20 +21,16 @@ import warnings
 
 import numpy as np
 
-from pennylane import Device
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
+from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
 class QNode:
-    """Base class for quantum nodes in the hybrid computational graph.
+    """Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
@@ -55,7 +51,7 @@ class QNode:
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropogate
+            * ``interface='autograd'``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
@@ -72,7 +68,7 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNode
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use
@@ -82,7 +78,7 @@ class QNode:
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine-learning framework supported
-              by the device; a separate ``interface`` argument should not be passed.
+              by the device.
 
             * ``"reversible"``: Uses a reversible method for computing the gradient.
               This method is similar to ``"backprop"``, but trades off increased
@@ -93,18 +89,21 @@ class QNode:
               for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
-              Only allowed on devices that provide their own gradient rules.
+              Only allowed on devices that provide their own gradient computation.
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible, with finite-difference as a fallback.
+              rule for all supported quantum operation arguments, with finite-difference
+              as a fallback.
 
-            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+            * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
+              arguments.
+
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. Caching does not take place by default. In caching mode, the quantum circuit
             being executed must have a constant structure and only its parameters can varied.
 
     Keyword Args:
-        h=1e-7 (float): Step size for the finite difference method.
+        h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
 
@@ -113,8 +112,8 @@ class QNode:
     >>> from pennylane.beta.queuing import expval, var, sample, probs
     >>> from pennylane.beta.tapes import QNode
     >>> def circuit(x):
-    >>>     qml.RX(x, wires=0)
-    >>>     return expval(qml.PauliZ(0))
+    ...     qml.RX(x, wires=0)
+    ...     return expval(qml.PauliZ(0))
     >>> dev = qml.device("default.qubit", wires=1)
     >>> qnode = QNode(circuit, dev)
     """
@@ -138,9 +137,7 @@ class QNode:
         self.device = device
         self.qtape = None
 
-        self._tape, self.interface, self.diff_method = self._get_tape(
-            device, interface, diff_method
-        )
+        self._tape, self.interface, self.diff_method = self.get_tape(device, interface, diff_method)
         self.diff_options = diff_options or {}
         self.diff_options["method"] = self.diff_method
 
@@ -167,7 +164,7 @@ class QNode:
         tape"""
 
     @staticmethod
-    def _get_tape(device, interface, diff_method="best"):
+    def get_tape(device, interface, diff_method="best"):
         """Determine the best QuantumTape, differentiation method, and interface
         for a requested device, interface, and diff method.
 
@@ -181,11 +178,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
         """
 
         if diff_method == "best":
-            return QNode._get_best_method(device, interface)
+            return QNode.get_best_method(device, interface)
 
         if diff_method == "backprop":
             return QNode._validate_backprop_method(device, interface)
@@ -205,7 +202,7 @@ class QNode:
         )
 
     @staticmethod
-    def _get_best_method(device, interface):
+    def get_best_method(device, interface):
         """Returns the 'best' QuantumTape and differentiation method
         for a particular device and interface combination.
 
@@ -215,7 +212,6 @@ class QNode:
         * ``"backprop"``
         * ``"device"``
         * ``"parameter-shift"``
-        * ``"reversible"``
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
@@ -228,7 +224,7 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
         """
         try:
             return QNode._validate_backprop_method(device, interface)
@@ -253,11 +249,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: If the device does not support backpropagation, or the
-            interface provided is not compatible with the device.
+            QuantumFunctionError: if the device does not support backpropagation, or the
+            interface provided is not compatible with the device
         """
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
@@ -289,11 +285,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
             QuantumFunctionError: if the device does not provide a native method for computing
-            the Jacobian.
+            the Jacobian
         """
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
@@ -319,11 +315,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
             QuantumFunctionError: if the device model does not have a corresponding
-            parameter-shift rule.
+            parameter-shift rule
         """
         # determine if the device provides its own jacobian method
         model = device.capabilities().get("model", None)
@@ -332,6 +328,7 @@ class QNode:
             return QubitParamShiftTape, interface, "analytic"
 
         if model == "cv":
+            # return CVParamShiftTape, interface, "analytic"
             warnings.warn(
                 "CV parameter-shift rule not yet implemented! Falling back "
                 "to finite-differences."
@@ -340,13 +337,13 @@ class QNode:
             return QuantumTape, interface, "numeric"
 
         raise QuantumFunctionError(
-            f"Device {device.short_name} has model {model} "
+            f"Device {device.short_name} uses an unknown model ('{model}') "
             "that does not support the parameter-shift rule."
         )
 
     def construct(self, args, kwargs):
-        """Call the quantum function with a tape context,
-        ensuring the operations get queued."""
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+
         self.qtape = self._tape(caching=self._caching)
 
         # apply the interface (if any)
@@ -354,18 +351,18 @@ class QNode:
             self.INTERFACE_MAP[self.interface](self)
 
         with self.qtape:
-            measurements = self.func(*args, **kwargs)
+            measurement_processes = self.func(*args, **kwargs)
 
-        if not isinstance(measurements, Sequence):
-            measurements = (measurements,)
+        if not isinstance(measurement_processes, Sequence):
+            measurement_processes = (measurement_processes,)
 
-        if not all(isinstance(m, MeasurementProcess) for m in measurements):
+        if not all(isinstance(m, MeasurementProcess) for m in measurement_processes):
             raise QuantumFunctionError(
-                "A quantum function must return either a single measured observable "
-                "or a nonempty sequence of measured observables."
+                "A quantum function must return either a single measurement, "
+                "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurements, self.qtape.measurements)):
+        if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -375,9 +372,13 @@ class QNode:
 
         stop_at = self.device.operations
 
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+        # TODO: Uncomment the following block when support for the
+        # qubit parameter shift rule is implemented. This is a hotfix
+        # that allows controlled rotations to return the correct gradients.
+        #
+        # if isinstance(self.qtape, QubitParamShiftTape):
+        #     # controlled rotations aren't supported by the parameter-shift rule
+        #     stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
         # expand out the tape, if any operations are not supported on the device
         if not {op.name for op in self.qtape.operations}.issubset(stop_at):
@@ -486,8 +487,12 @@ class QNode:
 def qnode(device, interface="autograd", diff_method="best", caching=None, **diff_options):
     """Decorator for creating QNodes.
 
-    When applied to a quantum function, this decorator converts it into
-    a :class:`QNode` instance.
+    This decorator is used to indicate to PennyLane that the decorated function contains a
+    :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
+    compatible device.
+
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    the quantum circuit.
 
     .. note::
 
@@ -544,9 +549,12 @@ def qnode(device, interface="autograd", diff_method="best", caching=None, **diff
               Only allowed on devices that provide their own gradient rules.
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible, with finite-difference as a fallback.
+              rule for all supported quantum operation arguments, with finite-difference
+              as a fallback.
 
-            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.=
+            * ``"finite-diff"``: Uses numerical finite-differences for all quantum
+              operation arguments.
+
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. Caching does not take place by default. In caching mode, the quantum circuit
             being executed must have a constant structure and only its parameters can varied.
