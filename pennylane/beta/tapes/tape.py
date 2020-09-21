@@ -20,6 +20,7 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import ObservableReturnTypes
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
@@ -233,6 +234,9 @@ class QuantumTape(AnnotatedQueue):
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
+        self._returns_state = False
+        """bool: indicates whether the quantum tape returns a state"""
+
         self._trainable_params = set()
         self._graph = None
         self._output_dim = 0
@@ -331,6 +335,9 @@ class QuantumTape(AnnotatedQueue):
                 # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
+                elif obj.return_type is qml.operation.State:
+                    self._output_dim += 2 ** len(obj.wires)
+                    self._returns_state = True
                 else:
                     self._output_dim += 1
 
@@ -904,6 +911,9 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        if self._returns_state and not device.capabilities().get("returns_state"):
+            raise ValueError("The current device is not capable of returning the state")
+
         device.reset()
 
         # backup the current parameters
@@ -1292,6 +1302,11 @@ class QuantumTape(AnnotatedQueue):
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
+
+        if self._returns_state:
+            raise NotImplementedError(
+                "The jacobian method does not support circuits that return the state"
+            )
 
         jac = None
         p_ind = range(len(params))
