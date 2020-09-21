@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -160,6 +160,9 @@ class QNode:
 
         if diff_method == "backprop":
             return QNode._validate_backprop_method(device, interface)
+
+        if diff_method == "reversible":
+            return ReversibleTape, interface, "analytic"
 
         if diff_method == "device":
             return QNode._validate_device_method(device, interface)

@@ -17,7 +17,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.beta.interfaces.autograd import AutogradInterface
-from pennylane.beta.tapes import ReversibleTape
+from pennylane.beta.tapes import ReversibleTape, QNode
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -80,8 +80,6 @@ class TestExpectationJacobian:
     def test_gradients(self, op, obs, mocker, tol):
         """Tests that the gradients of circuits match between the
         finite difference and analytic methods."""
-        tol = 1e-2
-
         args = np.linspace(0.2, 0.5, op.num_params)
 
         with ReversibleTape() as tape:
@@ -561,3 +559,43 @@ class TestHelperFunctions:
         tape = ReversibleTape()
         res = tape._matrix_elem(vec1, obs, vec2, dev)
         assert res == expected
+
+
+class TestIntegration:
+    """Test integration of the ReversibleTape into the codebase"""
+
+    def test_qnode(self, mocker, tol):
+        """Test that specifying diff_method allows the reversible
+        method to be selected"""
+        args = np.array([0.54, 0.1, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.RX(0.543, wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.Rot(x, y, z, wires=0)
+
+            qml.Rot(1.3, -2.3, 0.5, wires=[0])
+            qml.RZ(-0.5, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+
+            return expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        qnode1 = QNode(circuit, dev, diff_method="reversible")
+        spy = mocker.spy(ReversibleTape, "analytic_pd")
+
+        grad_fn = qml.grad(qnode1)
+        grad_A = grad_fn(*args)
+
+        spy.assert_called()
+        assert isinstance(qnode1.qtape, ReversibleTape)
+
+        qnode2 = QNode(circuit, dev, diff_method="finite-diff")
+        grad_fn = qml.grad(qnode2)
+        grad_F = grad_fn(*args)
+
+        assert not isinstance(qnode2.qtape, ReversibleTape)
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
