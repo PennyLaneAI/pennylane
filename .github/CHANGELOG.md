@@ -14,7 +14,6 @@
   real hardware, and to test error-correction techniques. Moreover,
   differentiable quantum channels could be a unique feature for
   PennyLane not present in other libraries.
-  
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
