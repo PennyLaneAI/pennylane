@@ -1429,7 +1429,7 @@ class QuantumTape(AnnotatedQueue):
         order = options.get("order", 1)
         h = options.get("h", 1e-7)
 
-        shift = np.zeros_like(params)
+        shift = np.zeros_like(params, dtype=np.float64)
         shift[idx] = h
 
         if order == 1:
