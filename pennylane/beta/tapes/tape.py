@@ -1303,9 +1303,7 @@ class QuantumTape(AnnotatedQueue):
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
         if self._returns_state:
-            raise ValueError(
-                "The jacobian method does not support circuits that return the state"
-            )
+            raise ValueError("The jacobian method does not support circuits that return the state")
 
         jac = None
         p_ind = range(len(params))
