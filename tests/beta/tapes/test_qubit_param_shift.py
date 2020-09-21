@@ -177,6 +177,7 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
+
 class TestJacobianIntegration:
     """Tests for general Jacobian integration"""
 
