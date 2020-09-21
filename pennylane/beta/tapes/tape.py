@@ -134,6 +134,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
+# pylint: disable=too-many-public-methods
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
