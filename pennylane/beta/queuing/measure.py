@@ -20,7 +20,7 @@ and measurement samples using AnnotatedQueues.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -33,7 +33,7 @@ class MeasurementProcess:
 
     Args:
         return_type (.ObservableReturnTypes): The type of measurement process.
-            This includes ``Expectation``, ``Variance``, ``Sample``, or ``Probability``.
+            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -312,3 +312,46 @@ def probs(wires):
     """
     # pylint: disable=protected-access
     return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+
+
+def state(wires):
+    r"""Quantum state in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its state. The
+    ``wires`` argument must specify all wires used in the device, as shown in the example below.
+    This guarantees that the returned state is pure.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        from pennylane.beta.queuing import state
+        from pennylane.beta.tapes import qnode
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=1)
+            return state(wires=range(2))
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+    The returned array is in lexicographic order, so corresponds
+    to a :math:`1/\sqrt{2}` amplitude in both :math:`|00\rangle`
+    and :math:`|01\rangle`.
+
+    .. note::
+
+        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        classical backpropagation differentiation method (``diff_method="backprop"``) with a
+        compatible device.
+
+    Args:
+        wires (Sequence[int]): all the wires used in the device
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State, wires=qml.wires.Wires(wires))
