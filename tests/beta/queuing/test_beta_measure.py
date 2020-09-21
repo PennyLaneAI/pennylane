@@ -410,7 +410,7 @@ class TestState:
 
         d_func = qml.jacobian(func)
 
-        with pytest.raises(NotImplementedError, match="The jacobian method does not support"):
+        with pytest.raises(ValueError, match="The jacobian method does not support"):
             d_func(0.1)
 
     def test_no_state(self):
