@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
+from collections import OrderedDict
 from functools import lru_cache, update_wrapper
 import warnings
 
@@ -97,6 +98,10 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+        caching (int): number of device executions to store in a cache to speed up subsequent
+            executions. Caching does not take place by default. In caching mode, the quantum circuit
+            being executed must have a constant structure and only its parameters can varied.
+
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -115,7 +120,9 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes
 
-    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+    def __init__(
+        self, func, device, interface="autograd", diff_method="best", caching=None, **diff_options
+    ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise QuantumFunctionError(
@@ -136,6 +143,25 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = 2
+
+        self._caching = None
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        if caching is not None:
+            warnings.warn(
+                "Caching mode activated. The quantum circuit being executed by the QNode must have "
+                "a fixed structure.",
+            )
+            if self.diff_method is "backprop":
+                raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
+            self._caching = caching
+        else:
+            self._caching = 0
+
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum 
+        tape"""
 
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
@@ -324,7 +350,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self.qtape = self._tape()
+        self.qtape = self._tape(caching=self._caching)
 
         # apply the interface (if any)
         if self.interface is not None:
@@ -370,8 +396,16 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
+        if self._caching:
+            self.qtape._cache_execute = self._cache_execute
+
         # execute the tape
-        return self.qtape.execute(device=self.device)
+        res = self.qtape.execute(device=self.device)
+
+        if self._caching:
+            self._cache_execute = self.qtape._cache_execute
+
+        return res
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -443,10 +477,20 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching
+
+    @caching.setter
+    def caching(self, value):
+        self._caching = value
+
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, interface="autograd", diff_method="best", **diff_options):
+def qnode(device, interface="autograd", diff_method="best", caching=None, **diff_options):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
@@ -517,6 +561,10 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum
               operation arguments.
 
+        caching (int): number of device executions to store in a cache to speed up subsequent
+            executions. Caching does not take place by default. In caching mode, the quantum circuit
+            being executed must have a constant structure and only its parameters can varied.
+
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -536,7 +584,14 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
+        qn = QNode(
+            func,
+            device,
+            interface=interface,
+            diff_method=diff_method,
+            caching=caching,
+            **diff_options,
+        )
         return update_wrapper(qn, func)
 
     return qfunc_decorator
