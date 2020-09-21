@@ -329,8 +329,7 @@ class QubitDevice(Device):
         Returns:
             List[int]: basis states in binary representation
         """
-        wires_array = np.arange(num_wires) if dtype is None else np.arange(num_wires, dtype=dtype)
-        powers_of_two = 1 << wires_array
+        powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
 
