@@ -237,3 +237,76 @@ class TestQNodeCaching:
         res = qnode(args0, args1)
         res.backward()
         spy.assert_not_called()
+
+    def test_mutable_circuit(self, mocker):
+        """Test that caching is compatible with circuit mutability. Caching should take place if
+        the circuit and parameters are the same, and should not take place if the parameters are
+        the same but the circuit different."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qnode(dev, caching=10)
+        def qfunc(x, y, flag=1):
+            if flag == 1:
+                qml.RX(x, wires=0)
+                qml.RX(y, wires=1)
+            else:
+                qml.RX(x, wires=1)
+                qml.RX(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(wires=1))
+
+        spy = mocker.spy(DefaultQubit, "execute")
+        qfunc(0.1, 0.2)
+        qfunc(0.1, 0.2)
+        assert len(spy.call_args_list) == 1
+
+        qfunc(0.1, 0.2, flag=0)
+        assert len(spy.call_args_list) == 2
+
+    def test_classical_processing_in_circuit(self, mocker):
+        """Test if caching is compatible with QNodes that include classical processing"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qnode(dev, caching=10)
+        def qfunc(x, y):
+            qml.RX(x ** 2, wires=0)
+            qml.RX(x / y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(wires=1))
+
+        spy = mocker.spy(DefaultQubit, "execute")
+        qfunc(0.1, 0.2)
+        qfunc(0.1, 0.2)
+        assert len(spy.call_args_list) == 1
+
+        qfunc(0.1, 0.3)
+        assert len(spy.call_args_list) == 2
+
+    def test_grad_classical_processing_in_circuit(self, mocker):
+        """Test that caching is compatible with calculating the gradient in QNodes which contain
+        classical processing"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qnode(dev, caching=10)
+        def qfunc(x, y):
+            qml.RX(x ** 2, wires=0)
+            qml.RX(x / y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(wires=1))
+
+        d_qfunc = qml.grad(qfunc)
+
+        spy = mocker.spy(DefaultQubit, "execute")
+        g = d_qfunc(0.1, 0.2)
+        calls1 = len(spy.call_args_list)
+        d_qfunc(0.1, 0.2)
+        calls2 = len(spy.call_args_list)
+        assert calls1 == calls2
+
+        d_qfunc(0.1, 0.3)
+        calls3 = len(spy.call_args_list)
+        assert calls3 == 2 * calls1
+
+        assert g is not None
