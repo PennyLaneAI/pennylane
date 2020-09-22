@@ -225,7 +225,7 @@ def _paths_through_tape(tape, path={}):
             yield new_path
 
 
-def _unbatch_path(tape, path, new_tape=None):
+def _tape_from_path(tape, path, new_tape=None):
     """Record a new quantum tape that uses the batching alternatives defined in path.
 
     Args:
@@ -263,36 +263,30 @@ def _unbatch_path(tape, path, new_tape=None):
         # todo: could add path info to tape
         new_tape = tape.__class__(name=tape.name)
 
-    for obj in tape.iterator():
+    if isinstance(tape, BatchTape):
+        # select object in the batch according to path
+        idx = path[tape.name]
+        # todo: faster if we iterate "select" times and grab the last
+        batch = list(tape.iterator())
+        obj = batch[idx]
+        return _tape_from_path(obj, path, new_tape)
 
-        if isinstance(obj, BatchTape):
+    if not isinstance(tape, QuantumTape):
+        # tape is actually the object to queue
+        obj = tape
+        # queue the object in the new tape
+        with new_tape:
+            # todo: update when more elegant API for queueing available
+            if isinstance(obj, qml.beta.queuing.MeasurementProcess):
+                obj.obs.queue()
+            obj.queue()
+            return new_tape
 
-            if obj.name in path:
+    else:
+        # now tape is a QuantumTape, iterate through to queue its objects
+        for obj in tape.iterator():
+            return _tape_from_path(obj, path, new_tape)
 
-                # replace the batch tape with the one of the
-                # objects it queues as alternatives. The selection
-                # is defined by the path.
-                idx = path[obj.name]
-                # todo: faster if we iterate "select" times and grab the last
-                batch = list(obj.iterator())
-                obj = batch[idx]
-
-        # if the object is at this stage still a quantum tape,
-        # go through it recursively adding to the new tape
-        # todo: fix case where batch is not found in path
-        if isinstance(obj, QuantumTape):
-
-            new_tape = _unbatch_path(obj, path, new_tape)
-
-        else:
-            # queue the object in the new tape
-            with new_tape:
-                # todo: update when more elegant API for queueing available
-                if isinstance(obj, qml.beta.queuing.MeasurementProcess):
-                    obj.obs.queue()
-                obj.queue()
-
-    return new_tape
 
 
 def _unbatch(tape):
@@ -342,10 +336,11 @@ def _unbatch(tape):
 
     for path in _paths_through_tape(tape):
 
+        print(path)
+
         # note: here (or during generation) we could manipulate the path at will,
         # for example to remove a batch name so that it will not be unpacked
-        unbatched_tape = _unbatch_path(tape, path)
-        yield unbatched_tape
+        yield _tape_from_path(tape, path)
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
