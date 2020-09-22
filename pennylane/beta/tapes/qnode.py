@@ -20,7 +20,7 @@ import warnings
 
 import numpy as np
 
-from pennylane.beta._device import Device, QuantumFunctionError
+from pennylane._device import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from pennylane.beta.interfaces.autograd import AutogradInterface

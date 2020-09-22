@@ -25,7 +25,7 @@ from string import ascii_letters as ABC
 import numpy as np
 
 from pennylane.beta._qubit_device import QubitDevice
-from pennylane.beta._device import DeviceError
+from pennylane._device import DeviceError
 from pennylane import QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 
