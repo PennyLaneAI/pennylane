@@ -97,7 +97,7 @@ class TestReversibleTape:
     def test_controlled_rotation_gates_exception(self, op, name):
         """Tests that an exception is raised when a controlled
         rotation gate is used with the ReversibleTape."""
-        # remove this test when this support is added
+        # TODO: remove this test when this support is added
         dev = qml.device("default.qubit", wires=2)
 
         with ReversibleTape() as tape:
@@ -111,7 +111,7 @@ class TestReversibleTape:
     def test_var_exception(self):
         """Tests that an exception is raised when variance
         is used with the ReversibleTape."""
-        # remove this test when this support is added
+        # TODO: remove this test when this support is added
         dev = qml.device("default.qubit", wires=2)
 
         with ReversibleTape() as tape:
@@ -125,7 +125,7 @@ class TestReversibleTape:
     def test_probs_exception(self):
         """Tests that an exception is raised when probability
         is used with the ReversibleTape."""
-        # remove this test when this support is added
+        # TODO: remove this test when this support is added
         dev = qml.device("default.qubit", wires=2)
 
         with ReversibleTape() as tape:
@@ -139,7 +139,7 @@ class TestReversibleTape:
     def test_phaseshift_exception(self):
         """Tests that an exception is raised when a PhaseShift gate
         is used with the ReversibleTape."""
-        # remove this test when this support is added
+        # TODO: remove this test when this support is added
         dev = qml.device("default.qubit", wires=1)
 
         with ReversibleTape() as tape:
