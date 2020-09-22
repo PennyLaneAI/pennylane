@@ -116,7 +116,7 @@ class TestReset:
     """Unit tests for the method `reset()`"""
 
     def test_reset_basis(self, nr_wires):
-        dev = qml.device('default.mixed', wires=nr_wires)
+        dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = dev._create_basis_state(1)
         dev.reset()
 
@@ -496,4 +496,3 @@ class TestApply:
         # dev.state = pre-rotated state, dev._state = state after rotations
         assert np.allclose(dev.state, hadamard_state(nr_wires))
         assert np.allclose(dev._state, basis)
-
