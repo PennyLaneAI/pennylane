@@ -458,7 +458,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}].
 
     In the equation above the indices :math:`\alpha, \beta` run over the basis of spatial
-    orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Since the operator :math:`t`
+    orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Since the operator :math:`\hat{t}`
     acts only on the spatial coordinates, the spin quantum numbers are indicated explicitly
     with the up/down arrows. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
     particle creation and annihilation operators, respectively, and
@@ -494,7 +494,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     **Example**
 
-    >>> t_matrix_elements = np.array([[-4.72739313e+00, -1.05499666e-01, -1.66961416e-01,
+    >>> matrix_elements = np.array([[-4.72739313e+00, -1.05499666e-01, -1.66961416e-01,
     ...                                 6.18014041e-16,  2.86964662e-16, -3.46772026e-02],
     ...                               [-1.05499666e-01, -1.49264622e+00, 3.28928073e-02,
     ...                                -2.20398308e-16,  1.93277291e-16, 5.27078882e-02],
@@ -507,7 +507,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ...                               [-3.46772026e-02,  5.27078882e-02, -3.04455743e-02,
     ...                                -2.36158697e-16,  2.06665432e-16, -9.50966595e-01]]
 
-    >>> t_table, t_core = one_particle(t_matrix_elements, core=[0], active=[1, 2])
+    >>> table, t_core = one_particle(matrix_elements, core=[0], active=[1, 2])
     >>> print(t_table)
     [[ 0.          0.         -1.49264622]
      [ 1.          1.         -1.49264622]
