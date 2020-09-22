@@ -21,7 +21,6 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
-from pennylane.utils import _hash_iterable
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
@@ -262,8 +261,8 @@ class QuantumTape(AnnotatedQueue):
         executions. If set to zero, no caching occurs."""
 
         self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: Mapping from hashes of the input parameters to results of
-        executing the device."""
+        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the 
+        device."""
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -931,11 +930,10 @@ class QuantumTape(AnnotatedQueue):
         self.set_parameters(params)
 
         if self._caching:
-            all_parameters = self.get_parameters(trainable_only=False)
-            hashed_params = _hash_iterable(all_parameters)
-            if hashed_params in self._cache_execute:
+            circuit_hash = self.graph.hash
+            if circuit_hash in self._cache_execute:
                 self.set_parameters(saved_parameters)
-                return self._cache_execute[hashed_params]
+                return self._cache_execute[circuit_hash]
 
         if isinstance(device, qml.QubitDevice):
             res = device.execute(self)
@@ -962,8 +960,8 @@ class QuantumTape(AnnotatedQueue):
         # restore original parameters
         self.set_parameters(saved_parameters)
 
-        if self._caching and hashed_params not in self._cache_execute:
-            self._cache_execute[hashed_params] = res
+        if self._caching and circuit_hash not in self._cache_execute:
+            self._cache_execute[circuit_hash] = res
             if len(self._cache_execute) > self._caching:
                 self._cache_execute.popitem(last=False)
 

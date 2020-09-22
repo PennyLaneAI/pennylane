@@ -433,22 +433,3 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
 
     return expanded_tensor.reshape(2 ** M)
-
-
-def _hash_iterable(iterable):
-    """Returns a single hash of an input iterable.
-
-    The iterable must be flat and can contain only numbers and NumPy arrays.
-
-    Args:
-        iterable (Iterable): the iterable to generate a hash for
-
-    Returns:
-        int: the resulting hash
-    """
-    hashes = []
-    for obj in iterable:
-        to_hash = (obj.tobytes(), obj.shape) if isinstance(obj, np.ndarray) else obj
-        obj_hash = hash(to_hash)
-        hashes.append(obj_hash)
-    return hash(tuple(hashes))

@@ -21,7 +21,6 @@ from pennylane.beta.queuing import expval
 from pennylane.beta.tapes import QuantumTape, qnode
 from pennylane.devices import DefaultQubit
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
-from pennylane.utils import _hash_iterable
 
 
 def get_tape(caching):
@@ -94,26 +93,11 @@ class TestTapeCaching:
 
         result = tape.execute(device=dev)
         cache_execute = tape._cache_execute
-        params = tape.get_parameters()
-        hashed = _hash_iterable(params)
+        hashed = tape.graph.hash
 
         assert len(cache_execute) == 1
         assert hashed in cache_execute
         assert np.allclose(cache_execute[hashed], result)
-
-    def test_get_all_parameters(self, mocker):
-        """Test that input params are correctly passed to the hash function when only a
-        subset of params are trainable"""
-        dev = qml.device("default.qubit", wires=2)
-        tape = get_tape(10)
-
-        tape.trainable_params = {1}
-        spy = mocker.spy(pennylane.beta.tapes.tape, "_hash_iterable")
-        tape.execute(params=[-0.1], device=dev)
-        call = spy.call_args_list[0][0][0]
-        expected_call = [np.eye(2), -0.1, 0.2]
-        for arg, exp_arg in zip(call, expected_call):
-            assert np.allclose(arg, exp_arg)
 
     def test_fill_cache(self):
         """Test that the cache is added to until it reaches its maximum size (in this case 10),
