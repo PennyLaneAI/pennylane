@@ -134,7 +134,6 @@ class DefaultMixed(QubitDevice):
         # take the abs so that probabilities are not shown as complex numbers
         return self._abs(probs)
 
-
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
 
