@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 
 import pytest
 import pennylane as qml
-
+from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.ops import PauliZ, CZ, PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel
 from pennylane.devices.default_mixed import DefaultMixed
 from pennylane.wires import Wires
@@ -427,6 +427,118 @@ class TestApplyDiagonal:
         assert np.allclose(dev._state, target_state)
 
 
+class TestApplyBasisState:
+    """Unit tests for the method `_apply_basis_state"""
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_all_ones(self, nr_wires):
+        """Tests that the state |11...1> is applied correctly"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(nr_wires)
+        dev._apply_basis_state(state, wires=Wires(range(nr_wires)))
+        b_state = basis_state(2 ** nr_wires - 1, nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    fixed_states = [[3, np.array([0, 1, 1])], [5, np.array([1, 0, 1])], [6, np.array([1, 1, 0])]]
+
+    @pytest.mark.parametrize("state", fixed_states)
+    def test_fixed_states(self, state):
+        """Tests that different basis states are applied correctly"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dev._apply_basis_state(state[1], wires=Wires(range(nr_wires)))
+        b_state = basis_state(state[0], nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    wire_subset = [(6, [0, 1]), (5, [0, 2]), (3, [1, 2])]
+
+    @pytest.mark.parametrize("wires", wire_subset)
+    def test_subset_wires(self, wires):
+        """Tests that different basis states are applied correctly"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(2)
+        dev._apply_basis_state(state, wires=Wires(wires[1]))
+        b_state = basis_state(wires[0], nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    def test_wrong_dim(self):
+        """Checks that an error is raised if state has the wrong dimension"""
+        dev = qml.device("default.mixed", wires=3)
+        state = np.ones(2)
+        with pytest.raises(ValueError, match="BasisState parameter and wires"):
+            dev._apply_basis_state(state, wires=Wires(range(3)))
+
+    def test_not_01(self):
+        """Checks that an error is raised if state doesn't have entries in {0,1}"""
+        dev = qml.device("default.mixed", wires=2)
+        state = np.array([INV_SQRT2, INV_SQRT2])
+        with pytest.raises(ValueError, match="BasisState parameter must"):
+            dev._apply_basis_state(state, wires=Wires(range(2)))
+
+
+class TestApplyStateVector:
+    """Unit tests for the method `_apply_state_vector()`"""
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_equal(self, nr_wires):
+        """Checks that an equal superposition state is correctly applied"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        dev._apply_state_vector(state, Wires(range(nr_wires)))
+        eq_state = hadamard_state(nr_wires)
+        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_root(self, nr_wires):
+        """Checks that a root state is correctly applied"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dim = 2 ** nr_wires
+        state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
+        dev._apply_state_vector(state, Wires(range(nr_wires)))
+        r_state = root_state(nr_wires)
+        target_state = np.reshape(r_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    subset_wires = [(4, 0), (2, 1), (1, 2)]
+
+    @pytest.mark.parametrize("wires", subset_wires)
+    def test_subset_wires(self, wires):
+        """Tests that applying state |1> on each individual single wire prepares the correct basis
+        state"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.array([0, 1])
+        dev._apply_state_vector(state, Wires(wires[1]))
+        b_state = basis_state(wires[0], nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+    def test_wrong_dim(self):
+        """Checks that an error is raised if state has the wrong dimension"""
+        dev = qml.device("default.mixed", wires=3)
+        state = np.ones(7) / np.sqrt(7)
+        with pytest.raises(ValueError, match="State vector must be"):
+            dev._apply_state_vector(state, Wires(range(3)))
+
+    def test_not_normalized(self):
+        """Checks that an error is raised if state is not normalized"""
+        dev = qml.device("default.mixed", wires=3)
+        state = np.ones(8) / np.sqrt(7)
+        with pytest.raises(ValueError, match="Sum of amplitudes"):
+            dev._apply_state_vector(state, Wires(range(3)))
+
+
 class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`
     and `_apply_diagonal_unitary()`, we just check that the correct method is called"""
@@ -496,3 +608,36 @@ class TestApply:
         # dev.state = pre-rotated state, dev._state = state after rotations
         assert np.allclose(dev.state, hadamard_state(nr_wires))
         assert np.allclose(dev._state, basis)
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_basis_state(self, nr_wires):
+        """Tests that we correctly apply a `BasisState` operation for the |11...1> state"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(nr_wires)
+        dev.apply([BasisState(state, wires=range(nr_wires))])
+
+        assert np.allclose(dev.state, basis_state(2 ** nr_wires - 1, nr_wires))
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_state_vector(self, nr_wires):
+        """Tests that we correctly apply a `QubitStateVector` operation for the root state"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dim = 2 ** nr_wires
+        state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
+        dev.apply([QubitStateVector(state, wires=range(nr_wires))])
+
+        assert np.allclose(dev.state, root_state(nr_wires))
+
+    @pytest.mark.parametrize("op", [BasisState, QubitStateVector])
+    def test_raise_order_error(self, op):
+        """Tests that an error is raised if a state is prepared after an operation has been
+        applied"""
+        dev = qml.device("default.mixed", wires=1)
+        if op == BasisState:
+            state = np.array([0])
+        else:
+            state = np.array([1, 0])
+        ops = [PauliX(0), op(state, wires=0)]
+
+        with pytest.raises(DeviceError, match="Operation"):
+            dev.apply(ops)
