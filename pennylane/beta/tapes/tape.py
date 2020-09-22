@@ -233,8 +233,8 @@ class QuantumTape(AnnotatedQueue):
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
-        self._returns_state = False
-        """bool: indicates whether the quantum tape returns a state"""
+        self._state_measurement = None
+        """MeasurementProcess: keeps track of any measurement process returning the state"""
 
         self._trainable_params = set()
         self._graph = None
@@ -337,7 +337,7 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
                 elif obj.return_type is qml.operation.State:
-                    state_measurement = obj
+                    self._state_measurement = obj
                 else:
                     self._output_dim += 1
 
@@ -349,10 +349,6 @@ class QuantumTape(AnnotatedQueue):
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update()
-
-        if state_measurement is not None:
-            state_measurement._wires = self.wires
-            self._returns_state = True
 
     def _update_circuit_info(self):
         """Update circuit metadata"""
@@ -915,8 +911,10 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        if self._returns_state and not device.capabilities().get("returns_state"):
-            raise ValueError("The current device is not capable of returning the state")
+        if self._state_measurement:
+            if not device.capabilities().get("returns_state"):
+                raise ValueError("The current device is not capable of returning the state")
+            self._state_measurement._wires = device.wires
 
         device.reset()
 
@@ -1307,7 +1305,7 @@ class QuantumTape(AnnotatedQueue):
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
-        if self._returns_state:
+        if self._state_measurement:
             raise ValueError("The jacobian method does not support circuits that return the state")
 
         jac = None
