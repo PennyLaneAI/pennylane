@@ -27,7 +27,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane._device import Device, DeviceError
 from pennylane.wires import Wires
-from pennylane.beta.tapes.tape import BatchTape
+from pennylane.beta.tapes.tape import QuantumTape
 from pennylane.operation import Tensor, Operation
 
 
@@ -565,7 +565,7 @@ class QubitDevice(Device):
 
             operation_name = o.name
 
-            if isinstance(o, BatchTape):
+            if isinstance(o, QuantumTape):
                 self.check_validity(o.operations, o.observables)
 
             else:
@@ -589,46 +589,46 @@ class QubitDevice(Device):
 
         for o in observables:
 
-            if isinstance(o, BatchTape):
+            if isinstance(o, QuantumTape):
                 self.check_validity(o.operations, o.observables)
 
-                if isinstance(o, Tensor):
-                    # TODO: update when all capabilities keys changed to "supports_tensor_observables"
-                    supports_tensor = self.capabilities().get(
-                        "supports_tensor_observables", False
-                    ) or self.capabilities().get("tensor_observables", False)
-                    if not supports_tensor:
-                        raise DeviceError(
-                            "Tensor observables not supported on device {}".format(self.short_name)
-                        )
+            elif isinstance(o, Tensor):
+                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
+                supports_tensor = self.capabilities().get(
+                    "supports_tensor_observables", False
+                ) or self.capabilities().get("tensor_observables", False)
+                if not supports_tensor:
+                    raise DeviceError(
+                        "Tensor observables not supported on device {}".format(self.short_name)
+                    )
 
-                    for i in o.obs:
-                        if not self.supports_observable(i.name):
-                            raise DeviceError(
-                                "Observable {} not supported on device {}".format(
-                                    i.name, self.short_name
-                                )
-                            )
-                else:
-
-                    observable_name = o.name
-
-                    if issubclass(o.__class__, Operation) and o.inverse:
-                        # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                        supports_inv = self.capabilities().get(
-                            "supports_inverse_operations", False
-                        ) or self.capabilities().get("inverse_operations", False)
-                        if not supports_inv:
-                            raise DeviceError(
-                                "The inverse of gates are not supported on device {}".format(
-                                    self.short_name
-                                )
-                            )
-                        observable_name = o.base_name
-
-                    if not self.supports_observable(observable_name):
+                for i in o.obs:
+                    if not self.supports_observable(i.name):
                         raise DeviceError(
                             "Observable {} not supported on device {}".format(
-                                observable_name, self.short_name
+                                i.name, self.short_name
                             )
                         )
+            else:
+
+                observable_name = o.name
+
+                if issubclass(o.__class__, Operation) and o.inverse:
+                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                    supports_inv = self.capabilities().get(
+                        "supports_inverse_operations", False
+                    ) or self.capabilities().get("inverse_operations", False)
+                    if not supports_inv:
+                        raise DeviceError(
+                            "The inverse of gates are not supported on device {}".format(
+                                self.short_name
+                            )
+                        )
+                    observable_name = o.base_name
+
+                if not self.supports_observable(observable_name):
+                    raise DeviceError(
+                        "Observable {} not supported on device {}".format(
+                            observable_name, self.short_name
+                        )
+                    )

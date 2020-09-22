@@ -269,9 +269,14 @@ def _tape_from_path(tape, path, new_tape=None):
         # todo: faster if we iterate "select" times and grab the last
         batch = list(tape.iterator())
         obj = batch[idx]
-        return _tape_from_path(obj, path, new_tape)
+        # recursion in case the object contains more batches
+        new_tape = _tape_from_path(obj, path, new_tape)
 
-    if not isinstance(tape, QuantumTape):
+    elif isinstance(tape, QuantumTape):
+        # tape is a QuantumTape, iterate through to queue its objects
+        for obj in tape.iterator():
+            new_tape = _tape_from_path(obj, path, new_tape)
+    else:
         # tape is actually the object to queue
         obj = tape
         # queue the object in the new tape
@@ -280,13 +285,10 @@ def _tape_from_path(tape, path, new_tape=None):
             if isinstance(obj, qml.beta.queuing.MeasurementProcess):
                 obj.obs.queue()
             obj.queue()
-            return new_tape
 
-    else:
-        # now tape is a QuantumTape, iterate through to queue its objects
-        for obj in tape.iterator():
-            return _tape_from_path(obj, path, new_tape)
 
+
+    return new_tape
 
 
 def _unbatch(tape):
@@ -335,8 +337,6 @@ def _unbatch(tape):
     """
 
     for path in _paths_through_tape(tape):
-
-        print(path)
 
         # note: here (or during generation) we could manipulate the path at will,
         # for example to remove a batch name so that it will not be unpacked
