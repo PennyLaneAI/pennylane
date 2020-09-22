@@ -353,7 +353,6 @@ class QuantumTape(AnnotatedQueue):
         if state_measurement is not None:
             state_measurement._wires = self.wires
             self._returns_state = True
-            self._output_dim += 2 ** self.num_wires
 
     def _update_circuit_info(self):
         """Update circuit metadata"""

@@ -38,7 +38,7 @@ from pennylane.beta.queuing.measure import (
     MeasurementProcess
 )
 from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
-from pennylane.beta.queuing import state as qstate
+from pennylane.beta.queuing import state
 
 
 
@@ -268,11 +268,11 @@ class TestState:
 
         @qnode(dev)
         def func():
-            return qstate(range(wires))
+            return state()
 
-        state = func()
-        assert state.shape == (1, 2 ** wires)
-        assert state.dtype == np.complex128
+        qqqqq = func()
+        assert qqqqq.shape == (1, 2 ** wires)
+        assert qqqqq.dtype == np.complex128
 
     def test_return_type_is_state(self):
         """Test that the return type of the observable is State"""
@@ -282,7 +282,7 @@ class TestState:
         @qnode(dev)
         def func():
             qml.Hadamard(0)
-            return qstate([0])
+            return state()
 
         func()
         obs = func.qtape.observables
@@ -300,12 +300,12 @@ class TestState:
             qml.Hadamard(wires=0)
             for i in range(wires - 1):
                 qml.CNOT(wires=[i, i + 1])
-            return qstate(range(wires))
+            return state()
 
-        state = func()[0]
-        assert np.allclose(np.sum(np.abs(state) ** 2), 1)
-        assert np.allclose(state[0], 1 / np.sqrt(2))
-        assert np.allclose(state[-1], 1 / np.sqrt(2))
+        qqqqq = func()[0]
+        assert np.allclose(np.sum(np.abs(qqqqq) ** 2), 1)
+        assert np.allclose(qqqqq[0], 1 / np.sqrt(2))
+        assert np.allclose(qqqqq[-1], 1 / np.sqrt(2))
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_equal_to_dev_state(self, wires):
@@ -319,25 +319,10 @@ class TestState:
         @qnode(dev)
         def func():
             qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
-            return qstate(range(wires))
+            return state()
 
-        state = func()
-        assert np.allclose(state, dev.state)
-
-    def test_all_wires(self):
-        """Test that an error is raised if the state is requested on a subset of wires"""
-        wires = 4
-        dev = qml.device("default.qubit", wires=wires)
-
-        weights = qml.init.strong_ent_layers_uniform(3, wires)
-
-        @qnode(dev)
-        def func():
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
-            return qstate(range(wires - 1))
-
-        with pytest.raises(QuantumFunctionError, match="The state must be returned over all wires"):
-            func()
+        qqqqq = func()
+        assert np.allclose(qqqqq, dev.state)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_interface_tf(self, skip_if_no_tf_support):
@@ -350,15 +335,15 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qstate(range(4))
+            return state()
 
         state_expected = 0.25 * tf.ones(16)
-        state = func()
+        qqqqq = func()
 
-        assert isinstance(state, tf.Tensor)
-        assert state.dtype == tf.complex128
-        assert np.allclose(state_expected, state.numpy())
-        assert state.shape == (1, 16)
+        assert isinstance(qqqqq, tf.Tensor)
+        assert qqqqq.dtype == tf.complex128
+        assert np.allclose(state_expected, qqqqq.numpy())
+        assert qqqqq.shape == (1, 16)
 
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
@@ -370,15 +355,15 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qstate(range(4))
+            return state()
 
         state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
-        state = func()
+        qqqqq = func()
 
-        assert isinstance(state, torch.Tensor)
-        assert state.dtype == torch.complex128
-        assert torch.allclose(state_expected, state)
-        assert state.shape == (1, 16)
+        assert isinstance(qqqqq, torch.Tensor)
+        assert qqqqq.dtype == torch.complex128
+        assert torch.allclose(state_expected, qqqqq)
+        assert qqqqq.shape == (1, 16)
 
     @pytest.mark.usefixtures("skip_if_no_torch_support")
     def test_interface_torch_wrong_version(self, monkeypatch):
@@ -390,7 +375,7 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qstate(range(4))
+            return state()
 
         with monkeypatch.context() as m:
             m.setattr(torch, "__version__", "1.5.0")
@@ -406,7 +391,7 @@ class TestState:
         def func(x):
             for i in range(4):
                 qml.RX(x, wires=i)
-            return qstate(range(4))
+            return state()
 
         d_func = qml.jacobian(func)
 
@@ -420,7 +405,7 @@ class TestState:
 
         @qnode(dev)
         def func():
-            return qstate(range(1))
+            return state()
 
         with pytest.raises(ValueError, match="The current device is not capable"):
             func()
@@ -434,7 +419,7 @@ class TestState:
 
         @qnode(dev)
         def func():
-            return qstate(range(1))
+            return state()
 
         with monkeypatch.context() as m:
             m.setattr(DefaultGaussian, "capabilities", lambda *args, **kwargs: capabilities)
@@ -455,13 +440,13 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qstate(range(4))
+            return state()
 
-        state = func()
+        qqqqq = func()
         state_expected = 0.25 * np.ones(16)
 
-        assert np.allclose(state, state_expected)
-        assert np.allclose(state, dev.state)
+        assert np.allclose(qqqqq, state_expected)
+        assert np.allclose(qqqqq, dev.state)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
@@ -474,7 +459,7 @@ class TestState:
         @qnode(dev, interface="tf", diff_method="backprop")
         def func(x):
             qml.RY(x, wires=0)
-            return qstate(wires=[0])
+            return state()
 
         x = tf.Variable(0.1, dtype=tf.complex128)
 
@@ -494,7 +479,7 @@ class TestState:
         @qnode(dev, interface="autograd", diff_method="backprop")
         def func(x):
             qml.RY(x, wires=0)
-            return qstate(wires=[0])
+            return state()
 
         x = npa.array(0.1, requires_grad=True)
 

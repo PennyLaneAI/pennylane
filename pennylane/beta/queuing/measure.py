@@ -315,12 +315,12 @@ def probs(wires):
     return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
 
 
-def state(wires):
+def state():
     r"""Quantum state in the computational basis.
 
-    This function accepts no observables and instead instructs the QNode to return its state. The
-    ``wires`` argument must specify all wires used in the device, as shown in the example below.
-    This guarantees that the returned state is pure.
+    This function accepts no observables and instead instructs the QNode to return its state. A
+    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
+    describing all wires in the device.
 
     **Example:**
 
@@ -334,7 +334,7 @@ def state(wires):
         @qnode(dev)
         def circuit():
             qml.Hadamard(wires=1)
-            return state(wires=range(2))
+            return state()
 
     Executing this QNode:
 
