@@ -84,8 +84,8 @@ function. As these rules allow quantum gradients to be obtained from QNodes,
 hybrid computations may include QNodes as part of training deep learnings
 models.
 
-Users don't typically instantiate QNodes directly---instead, the :func:`~.qnode` decorator or
-:func:`~.QNode` constructor function automates the process of creating a QNode from a provided
+Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
+:func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
 quantum function and device. The constructor attempts to determine the ``"best"`` QNode
 subclass/differentiation method for the provided device and interface. For more fine-grained control,
 the differentiation method can be specified directly via the ``diff_method`` option.
@@ -156,7 +156,7 @@ which are evaluated by a ``QNode`` on a bound device. Users can define such quan
 functions by creating regular Python functions and instantiating ``Operator``
 instances in temporal order, one per line.
 
-The following is an example of this using the :func:`~.qnode` decorator and a
+The following is an example of this using the :func:`~pennylane.qnode` decorator and a
 valid pre-defined device (``dev``).
 
 .. code-block:: python

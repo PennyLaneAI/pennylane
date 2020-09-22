@@ -533,9 +533,15 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.QuantumTape.jacobian`,
-        and changes the default output size of methods :meth:`~.QuantumTape.jacobian` and
+        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.jacobian`,
+        and changes the default output size of methods :meth:`~.jacobian` and
         :meth:`~.get_parameters()`.
+
+        .. note::
+
+            Since the :meth:`~.jacobian` method is not called for devices that support
+            native backpropagation (such as ``default.qubit.tf`` and ``default.qubit.autograd``),
+            this property contains no relevant information when using backpropagation to compute gradients.
 
         **Example**
 
