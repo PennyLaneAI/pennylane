@@ -341,9 +341,8 @@ def state():
     >>> circuit()
     array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
 
-    The returned array is in lexicographic order, so corresponds
-    to a :math:`1/\sqrt{2}` amplitude in both :math:`|00\rangle`
-    and :math:`|01\rangle`.
+    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
+    in both :math:`|00\rangle` and :math:`|01\rangle`.
 
     .. note::
 
