@@ -19,7 +19,7 @@
       qml.CNOT(wires=[0, 1])
       qml.RY(y, wires=1)
       qml.CNOT(wires=[0, 2])
-      return state(range(3))
+      return state()
   ```
   
   Calling the QNode will return its state

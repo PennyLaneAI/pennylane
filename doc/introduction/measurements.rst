@@ -159,8 +159,8 @@ State
 
 Support for returning the quantum state of the QNode is also provided. Similar to the
 :func:`~.pennylane.probs` measurement function, **observables should not be input** into the
-:func:`~.state` function. Moreover, the state must be returned over **all** wires in the device
-so that it is pure. For example:
+:func:`~.state` function. Moreover, the returned state is pure and over all wires in the device,
+meaning that a ``wires`` argument should also not be passed to ``state()``. For example:
 
 .. code-block:: python3
 
@@ -174,7 +174,7 @@ so that it is pure. For example:
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
         qml.CNOT(wires=[0, 2])
-        return state(wires=range(3))
+        return state()
 
 Creating a QNode and evaluating it gives:
 

@@ -350,9 +350,6 @@ def state():
         Calculating the derivative of :func:`~.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
-
-    Args:
-        wires (Sequence[int]): all the wires used in the device
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)
