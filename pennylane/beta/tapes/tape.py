@@ -913,8 +913,9 @@ class QuantumTape(AnnotatedQueue):
             if not device.capabilities().get("returns_state"):
                 raise ValueError("The current device is not capable of returning the state")
             if len(self.measurements) > 1:
-                raise ValueError("The state cannot be returned in combination with other return "
-                                 "types")
+                raise ValueError(
+                    "The state cannot be returned in combination with other return " "types"
+                )
             self._state_measurement._wires = device.wires
 
         device.reset()
