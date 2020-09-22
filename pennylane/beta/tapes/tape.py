@@ -1162,6 +1162,21 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
+    @property
+    def is_batched(self):
+        """Checks if there are batch tapes in the tape.
+
+        Args:
+            tape (QuantumTape): tape to check
+
+        Returns:
+            bool
+        """
+        for obj in self.iterator():
+            if isinstance(obj, BatchTape):
+                return True
+        return False
+
     def copy(self):
         """Returns a shallow copy of the quantum tape."""
         tape = self.__class__()
@@ -1246,7 +1261,7 @@ class QuantumTape(AnnotatedQueue):
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
 
-        if isinstance(device, qml.QubitDevice):
+        if isinstance(device, qml.beta._qubit_device.QubitDevice):
             res = device.execute(self)
         else:
             res = device.execute(self.operations, self.observables, {})
