@@ -115,6 +115,8 @@ class AutogradInterface(AnnotatedQueue):
                 for idx, p in enumerate(self._all_parameter_values)
                 if idx in self.trainable_params
             ]
+        else:
+            params = self._all_parameter_values
 
         return autograd.builtins.list(params)
 
