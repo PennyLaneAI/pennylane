@@ -224,7 +224,7 @@ def maxcut(graph):
         graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
 
     Returns:
-        (.Hamiltonian, .Hamiltonian):
+        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
     **Example**
 
@@ -258,7 +258,7 @@ def max_independent_set(graph, constrained=True):
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
-        (.Hamiltonian, .Hamiltonian):
+        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
     .. UsageDetails::
 
@@ -278,7 +278,7 @@ def max_independent_set(graph, constrained=True):
         where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z
         operator applied to the :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.bit_flip_mixer` applied to :math:`G`.
+        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`G`.
 
         .. note::
 
@@ -289,13 +289,13 @@ def max_independent_set(graph, constrained=True):
 
         The MaxIndependentSet cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \frac{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
+        .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
                   \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.x_mixer` applied to all wires.
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         .. note::
 
@@ -328,7 +328,7 @@ def min_vertex_cover(graph, constrained=True):
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
-        (.Hamiltonian, .Hamiltonian):
+        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
     .. UsageDetails::
 
@@ -348,7 +348,7 @@ def min_vertex_cover(graph, constrained=True):
         where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z operator
         applied to the :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.bit_flip_mixer` applied to :math:`G`.
+        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`G`.
 
         .. note::
 
@@ -359,13 +359,13 @@ def min_vertex_cover(graph, constrained=True):
 
         The MinVertexCover cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \frac{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
+        .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
                   \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.x_mixer` applied to all wires.
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         .. note::
 
@@ -397,7 +397,7 @@ def maxclique(graph, constrained=True):
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
-        (.Hamiltonian, .Hamiltonian):
+        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
     .. UsageDetails::
 
@@ -418,7 +418,7 @@ def maxclique(graph, constrained=True):
         applied to the :math:`i`-th
         vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`
+        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`
         (the complement of the graph).
 
         .. note::
@@ -430,14 +430,14 @@ def maxclique(graph, constrained=True):
 
         The MaxClique cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \frac{(i, j) \in E(\bar{G})}
+        .. math:: H_C \ = \ \sum{(i, j) \in E(\bar{G})}
                   (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
         edges of the complement of :math:`G` and :math:`Z_i` is the Pauli-Z operator applied to the
         :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is `~qaoa.x_mixer` applied to all wires.
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         .. note::
 
