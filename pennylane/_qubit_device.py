@@ -270,15 +270,12 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
-                try:
-                    state = self.state
-                except AttributeError:
-                    state = None
+                state = getattr(self, "state", None)
 
                 if state is None:
                     raise AttributeError("The state is not available in the current device")
 
-                results.append(self.state)
+                results.append(state)
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
