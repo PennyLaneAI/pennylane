@@ -124,7 +124,9 @@ class QNode:
             )
 
         if not isinstance(device, Device):
-            raise qml.QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
+            raise qml.QuantumFunctionError(
+                "Invalid device. Device must be a valid PennyLane device."
+            )
 
         self.func = func
         self.device = device
