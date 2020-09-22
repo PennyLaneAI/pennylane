@@ -150,24 +150,19 @@ class TestTapeCaching:
         spy.assert_not_called()
 
 
-@pytest.mark.filterwarnings("ignore:Caching mode activated")
 class TestQNodeCaching:
     """Tests for caching when using the QNode"""
 
     def test_set_and_get(self):
         """Test that the caching attribute can be set and accessed"""
-        with pytest.warns(None) as warn:
-            qnode = get_qnode(caching=0)
-            assert qnode.caching == 0
+        qnode = get_qnode(caching=0)
+        assert qnode.caching == 0
 
-        assert len(warn) is 0  # assert that no warning took place
+        qnode = get_qnode(caching=10)
+        assert qnode.caching == 10
 
-        with pytest.warns(UserWarning, match="Caching mode activated."):
-            qnode = get_qnode(caching=10)
-            assert qnode.caching == 10
-
-            qnode.caching = 20
-            assert qnode.caching == 20
+        qnode.caching = 20
+        assert qnode.caching == 20
 
     def test_backprop_error(self):
         """Test if an error is raised when caching is used with the backprop diff_method"""

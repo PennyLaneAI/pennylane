@@ -101,8 +101,7 @@ class QNode:
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date. In caching mode, the quantum circuit
-            being executed must have a constant structure and only its parameters can be varied.
+            executions to keep the cache up to date.
 
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
@@ -150,13 +149,8 @@ class QNode:
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
-        if caching != 0:
-            warnings.warn(
-                "Caching mode activated. The quantum circuit being executed by the QNode must have "
-                "a fixed structure.",
-            )
-            if self.diff_method == "backprop":
-                raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
+        if caching != 0 and self.diff_method == "backprop":
+            raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
 
         self._cache_execute = OrderedDict()
         """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum
@@ -555,8 +549,7 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
         caching (int): number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date. In caching mode, the quantum circuit
-            being executed must have a constant structure and only its parameters can be varied.
+            executions to keep the cache up to date.
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
