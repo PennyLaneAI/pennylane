@@ -195,9 +195,11 @@ class QubitDevice(Device):
 
     def batch_execute(self, circuit, **kwargs):
         """Execute a circuit that contains batch tapes."""
-        res = [self.single_execute(circ, **kwargs) for circ in circuit.unbatch()]
 
-        # todo: annotate the returned object with a path?
+        if hasattr(self, "batch_apply"):
+            res = None  # Todo: determine how we can run the qubit device in batch
+        else:
+            res = [self.single_execute(circ, **kwargs) for circ in circuit.unbatch()]
 
         return np.array(res)
 
