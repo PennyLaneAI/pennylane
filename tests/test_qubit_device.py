@@ -25,6 +25,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.variable import Variable
 from pennylane.wires import Wires
+from pennylane.beta.queuing import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -330,20 +331,11 @@ class TestExtractStatistics:
     def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
-
-        class SomeObservable(qml.operation.Observable):
-            num_params = 0
-            num_wires = 1
-            par_domain = "F"
-            return_type = State
-
-        obs = SomeObservable(wires=0)
-
-        with monkeypatch.context() as m:
+        with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
             with pytest.raises(AttributeError, match="The state is not available in the current"):
-                dev.statistics([obs])
+                dev.statistics([state()])
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
