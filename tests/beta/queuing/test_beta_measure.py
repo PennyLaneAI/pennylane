@@ -270,9 +270,9 @@ class TestState:
         def func():
             return state()
 
-        qqqqq = func()
-        assert qqqqq.shape == (1, 2 ** wires)
-        assert qqqqq.dtype == np.complex128
+        state_ev = func()
+        assert state_ev.shape == (1, 2 ** wires)
+        assert state_ev.dtype == np.complex128
 
     def test_return_type_is_state(self):
         """Test that the return type of the observable is State"""
@@ -302,10 +302,10 @@ class TestState:
                 qml.CNOT(wires=[i, i + 1])
             return state()
 
-        qqqqq = func()[0]
-        assert np.allclose(np.sum(np.abs(qqqqq) ** 2), 1)
-        assert np.allclose(qqqqq[0], 1 / np.sqrt(2))
-        assert np.allclose(qqqqq[-1], 1 / np.sqrt(2))
+        state_ev = func()[0]
+        assert np.allclose(np.sum(np.abs(state_ev) ** 2), 1)
+        assert np.allclose(state_ev[0], 1 / np.sqrt(2))
+        assert np.allclose(state_ev[-1], 1 / np.sqrt(2))
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_equal_to_dev_state(self, wires):
@@ -321,8 +321,8 @@ class TestState:
             qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
             return state()
 
-        qqqqq = func()
-        assert np.allclose(qqqqq, dev.state)
+        state_ev = func()
+        assert np.allclose(state_ev, dev.state)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_interface_tf(self, skip_if_no_tf_support):
@@ -338,12 +338,12 @@ class TestState:
             return state()
 
         state_expected = 0.25 * tf.ones(16)
-        qqqqq = func()
+        state_ev = func()
 
-        assert isinstance(qqqqq, tf.Tensor)
-        assert qqqqq.dtype == tf.complex128
-        assert np.allclose(state_expected, qqqqq.numpy())
-        assert qqqqq.shape == (1, 16)
+        assert isinstance(state_ev, tf.Tensor)
+        assert state_ev.dtype == tf.complex128
+        assert np.allclose(state_expected, state_ev.numpy())
+        assert state_ev.shape == (1, 16)
 
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
@@ -358,12 +358,12 @@ class TestState:
             return state()
 
         state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
-        qqqqq = func()
+        state_ev = func()
 
-        assert isinstance(qqqqq, torch.Tensor)
-        assert qqqqq.dtype == torch.complex128
-        assert torch.allclose(state_expected, qqqqq)
-        assert qqqqq.shape == (1, 16)
+        assert isinstance(state_ev, torch.Tensor)
+        assert state_ev.dtype == torch.complex128
+        assert torch.allclose(state_expected, state_ev)
+        assert state_ev.shape == (1, 16)
 
     @pytest.mark.usefixtures("skip_if_no_torch_support")
     def test_interface_torch_wrong_version(self, monkeypatch):
@@ -442,11 +442,11 @@ class TestState:
                 qml.Hadamard(i)
             return state()
 
-        qqqqq = func()
+        state_ev = func()
         state_expected = 0.25 * np.ones(16)
 
-        assert np.allclose(qqqqq, state_expected)
-        assert np.allclose(qqqqq, dev.state)
+        assert np.allclose(state_ev, state_expected)
+        assert np.allclose(state_ev, dev.state)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
