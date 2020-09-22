@@ -105,10 +105,10 @@ In addition, the following *optional* sections may be included:
 Further reading
 ---------------
 
-* `Documenting Architecture Decisions blog post by Fabian Keller:
+* `Documenting Architecture Decisions blog post by Fabian Keller
   <https://www.fabian-keller.de/blog/documenting-architecture-decisions/>`__
 
 * `Joel Parker Henderson: Architecture Decision Record
-  <https://github.com/joelparkerhenderson/architecture_decision_record>`__.
+  <https://github.com/joelparkerhenderson/architecture_decision_record>`__
 
 * `ADR links and tooling <https://adr.github.io/>`__
