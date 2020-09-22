@@ -602,7 +602,7 @@ def qubit_circuit_with_state():
         qml.PauliX(5)
         qml.Toffoli(wires=[5, 1, 0])
 
-        return state(range(6))
+        return state()
 
     dev = qml.device("default.qubit", wires=6)
 
