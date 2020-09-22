@@ -43,7 +43,7 @@ STATE_PREP_OPS = (
 
 
 def _paths_through_batch_tape(batch_tape, path={}):
-    """ Generator that adds all paths through a batch tape to an existing path.
+    """Generator that adds all paths through a batch tape to an existing path.
 
         Paths are represented by dictionaries of the form
 
@@ -285,8 +285,6 @@ def _tape_from_path(tape, path, new_tape=None):
             if isinstance(obj, qml.beta.queuing.MeasurementProcess):
                 obj.obs.queue()
             obj.queue()
-
-
 
     return new_tape
 
@@ -1731,8 +1729,10 @@ class BatchTape(QuantumTape):
         super().__init__(name=name)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()} " \
-               f"batches={self.n_batches}, name={self.name}>"
+        return (
+            f"<{self.__class__.__name__}: wires={self.wires.tolist()} "
+            f"batches={self.n_batches}, name={self.name}>"
+        )
 
     @property
     def n_batches(self):

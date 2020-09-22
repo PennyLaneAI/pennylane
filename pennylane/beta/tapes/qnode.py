@@ -16,7 +16,6 @@ This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
-import warnings
 
 import numpy as np
 
@@ -125,7 +124,9 @@ class QNode:
             )
 
         if not isinstance(device, Device):
-            raise qml.QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
+            raise qml.QuantumFunctionError(
+                "Invalid device. Device must be a valid PennyLane device."
+            )
 
         self.func = func
         self.device = device
@@ -230,7 +231,7 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: if the device does not support backpropagation, or the
+            qml.QuantumFunctionError: if the device does not support backpropagation, or the
             interface provided is not compatible with the device
         """
         # determine if the device supports backpropagation
@@ -266,7 +267,7 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: if the device does not provide a native method for computing
+            qml.QuantumFunctionError: if the device does not provide a native method for computing
             the Jacobian
         """
         # determine if the device provides its own jacobian method
@@ -293,7 +294,7 @@ class QNode:
             .QuantumTape: the compatible QuantumTape
 
         Raises:
-            QuantumFunctionError: if the device model does not have a corresponding
+            qml.QuantumFunctionError: if the device model does not have a corresponding
             parameter-shift rule
         """
         # determine if the device provides its own jacobian method
@@ -368,7 +369,7 @@ class QNode:
                 output. If not provided, the default is ``tf.float64``.
 
         Raises:
-            QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+            qml.QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
@@ -399,7 +400,7 @@ class QNode:
                 output. If not provided, the default is ``torch.float64``.
 
         Raises:
-            QuantumFunctionError: if PyTorch >= 1.3 is not installed
+            qml.QuantumFunctionError: if PyTorch >= 1.3 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
