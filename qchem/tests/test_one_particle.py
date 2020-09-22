@@ -9,7 +9,7 @@ from openfermion.hamiltonians import MolecularData
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 
-t_table_1 = np.array(
+table_1 = np.array(
     [
         [0.0, 0.0, -32.70260436],
         [1.0, 1.0, -32.70260436],
@@ -56,7 +56,7 @@ t_table_1 = np.array(
     ]
 )
 
-t_table_2 = np.array(
+table_2 = np.array(
     [
         [0.0, 0.0, -7.4571701],
         [1.0, 1.0, -7.4571701],
@@ -65,7 +65,7 @@ t_table_2 = np.array(
     ]
 )
 
-t_table_3 = np.array(
+table_3 = np.array(
     [
         [0.0, 0.0, -7.4571701],
         [1.0, 1.0, -7.4571701],
@@ -76,7 +76,7 @@ t_table_3 = np.array(
     ]
 )
 
-t_table_4 = np.array(
+table_4 = np.array(
     [
         [0.0, 0.0, -32.70260436],
         [1.0, 1.0, -32.70260436],
@@ -119,38 +119,38 @@ t_table_4 = np.array(
 
 
 @pytest.mark.parametrize(
-    ("core", "active", "t_table_exp", "t_core_exp"),
+    ("core", "active", "table_exp", "t_core_exp"),
     [
-        (None, None, t_table_1, 0),
-        ([0, 1, 2, 3], [4, 5], t_table_2, -107.4470776470725),
-        ([0, 1, 2, 3], None, t_table_3, -107.4470776470725),
-        (None, [0, 1, 2, 3, 4, 5], t_table_4, 0),
+        (None, None, table_1, 0),
+        ([0, 1, 2, 3], [4, 5], table_2, -107.4470776470725),
+        ([0, 1, 2, 3], None, table_3, -107.4470776470725),
+        (None, [0, 1, 2, 3, 4, 5], table_4, 0),
     ],
 )
-def test_table_one_particle(core, active, t_table_exp, t_core_exp, tol):
+def test_table_one_particle(core, active, table_exp, t_core_exp, tol):
     r"""Test the table of one-particle matrix elements and the contribution of core orbitals
     as implemented in the `one_particle` function of the `obs` module"""
 
     hf_data = MolecularData(filename=os.path.join(ref_dir, "h2o_psi4"))
 
-    t_table, t_core = qchem.one_particle(hf_data.one_body_integrals, core=core, active=active)
+    table, t_core = qchem.one_particle(hf_data.one_body_integrals, core=core, active=active)
 
-    assert np.allclose(t_table, t_table_exp, **tol)
+    assert np.allclose(table, table_exp, **tol)
     assert np.allclose(t_core, t_core_exp, **tol)
 
 
-t_table_1D = np.array([1, 2, 3])
-t_table_2D = np.array([[1, 2, 3], [4, 5, 6]])
+table_1D = np.array([1, 2, 3])
+table_2D = np.array([[1, 2, 3], [4, 5, 6]])
 
 
 @pytest.mark.parametrize(
     ("t_me", "core", "active", "msg_match"),
     [
-        (t_table_1D, [0], None, "'t_matrix_elements' must be a 2D array"),
-        (t_table_2D, [-1, 0, 1, 2], None, "Indices of core orbitals must be between 0 and"),
-        (t_table_2D, [0, 1, 2, 3], None, "Indices of core orbitals must be between 0 and"),
-        (t_table_2D, None, [-1, 0], "Indices of active orbitals must be between 0 and"),
-        (t_table_2D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
+        (table_1D, [0], None, "'matrix_elements' must be a 2D array"),
+        (table_2D, [-1, 0, 1, 2], None, "Indices of core orbitals must be between 0 and"),
+        (table_2D, [0, 1, 2, 3], None, "Indices of core orbitals must be between 0 and"),
+        (table_2D, None, [-1, 0], "Indices of active orbitals must be between 0 and"),
+        (table_2D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
     ],
 )
 def test_exceptions_one_particle(t_me, core, active, msg_match):

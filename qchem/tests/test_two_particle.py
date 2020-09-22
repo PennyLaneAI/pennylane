@@ -125,7 +125,7 @@ table_3 = np.array(
 
 
 @pytest.mark.parametrize(
-    ("name", "core", "active", "v_table_exp", "v_core_exp"),
+    ("name", "core", "active", "table_exp", "v_core_exp"),
     [
         ("h2_pyscf", None, None, table_1, 0),
         ("h2_pyscf", [0], None, table_2, 1.3647790663040844),
@@ -134,15 +134,15 @@ table_3 = np.array(
         ("lih", [0], [1, 2], table_3, 3.3171333741748206),
     ],
 )
-def test_table_two_particle(name, core, active, v_table_exp, v_core_exp, tol):
+def test_table_two_particle(name, core, active, table_exp, v_core_exp, tol):
     r"""Test the table of two-particle matrix elements and the contribution of core orbitals
     as implemented in the `two_particle` function of the `obs` module"""
 
     hf_data = MolecularData(filename=os.path.join(ref_dir, name))
 
-    v_table, v_core = qchem.two_particle(hf_data.two_body_integrals, core=core, active=active)
+    table, v_core = qchem.two_particle(hf_data.two_body_integrals, core=core, active=active)
 
-    assert np.allclose(v_table, v_table_exp, **tol)
+    assert np.allclose(table, table_exp, **tol)
     assert np.allclose(v_core, v_core_exp, **tol)
 
 
@@ -153,7 +153,7 @@ v_me_4D = np.full((2, 2, 2, 2), 0.5)
 @pytest.mark.parametrize(
     ("v_me", "core", "active", "msg_match"),
     [
-        (v_me_1D, [0], None, "'v_matrix_elements' must be a 4D array"),
+        (v_me_1D, [0], None, "'matrix_elements' must be a 4D array"),
         (v_me_4D, [-1, 0, 1, 2], None, "Indices of core orbitals must be between 0 and"),
         (v_me_4D, [0, 1, 2, 3], None, "Indices of core orbitals must be between 0 and"),
         (v_me_4D, None, [-1, 0], "Indices of active orbitals must be between 0 and"),
