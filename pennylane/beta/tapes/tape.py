@@ -301,8 +301,6 @@ class QuantumTape(AnnotatedQueue):
         self._measurements = []
         self._output_dim = 0
 
-        state_measurement = None  # records TODO
-
         for obj, info in self._queue.items():
 
             if isinstance(obj, QuantumTape):
