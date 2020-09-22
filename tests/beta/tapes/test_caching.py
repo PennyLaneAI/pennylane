@@ -172,10 +172,13 @@ class TestQNodeCaching:
 
     def test_set_and_get(self):
         """Test that the caching attribute can be set and accessed"""
-        with pytest.warns(UserWarning, match="Caching mode activated."):
+        with pytest.warns(None) as warn:
             qnode = get_qnode(caching=0)
             assert qnode.caching == 0
 
+        assert len(warn) is 0  # assert that no warning took place
+
+        with pytest.warns(UserWarning, match="Caching mode activated."):
             qnode = get_qnode(caching=10)
             assert qnode.caching == 10
 
