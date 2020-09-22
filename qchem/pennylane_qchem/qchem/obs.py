@@ -458,9 +458,8 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}].
 
     In the equation above the indices :math:`\alpha, \beta` run over the basis of spatial
-    orbitals :math:`\vert \alpha \rangle` with associated wave function :math:`\phi_\alpha(r)`.
-    Since the operator :math:`\hat{t}` acts only on the spatial coordinates, the spin quantum
-    numbers are indicated explicitly with the up/down arrows.
+    orbitals :math:`\phi_\alpha(r)`. Since the operator :math:`\hat{t}` acts only on the
+    spatial coordinates, the spin quantum numbers are indicated explicitly with the up/down arrows.
     The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the particle creation
     and annihilation operators, respectively, and
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix elements of
@@ -607,11 +606,10 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \hat{c}_{\beta\downarrow}^\dagger \hat{c}_{\gamma\downarrow} \hat{c}_{\delta\downarrow}~].
 
     In the equation above the indices :math:`\alpha, \beta, \gamma, \delta` run over the basis
-    of spatial orbitals :math:`\vert \alpha \rangle` with associated wave function
-    :math:`\phi_\alpha(r)`. Since the operator :math:`v` acts only on the spatial coordinates
-    the spin quantum numbers are indicated explicitly with the up/down arrows. The operators
-    :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the particle creation and annihilation
-    operators, respectively, and
+    of spatial orbitals :math:`\phi_\alpha(r)`. Since the operator :math:`v` acts only on the
+    spatial coordinates the spin quantum numbers are indicated explicitly with the up/down arrows.
+    The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the particle creation and
+    annihilation operators, respectively, and
     :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle` denotes the
     matrix elements of the operator :math:`\hat{v}`
 
