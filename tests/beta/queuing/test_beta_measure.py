@@ -486,3 +486,19 @@ class TestState:
         grad = d_loss_fn(x)
         expected = np.array([-0.5 * np.sin(x/2), 0.5 * np.cos(x/2)])
         assert np.allclose(grad, expected)
+
+    def test_custom_wire_labels(self):
+        """Test if the state can still be accessed when custom wire labels are used"""
+        wires = ["a", -1, "b", 1000]
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=wires[0])
+            for i in range(3):
+                qml.CNOT(wires=[wires[i], wires[i + 1]])
+            return state()
+
+        state_ev = func()[0]
+        assert np.allclose(state_ev[0], 1 / np.sqrt(2))
+        assert np.allclose(state_ev[-1], 1 / np.sqrt(2))
