@@ -425,16 +425,7 @@ class QNode:
             self.dtype = dtype or self.dtype or TorchInterface.dtype
 
             if self.dtype is np.complex128:
-                torch_version = list(map(int, torch.__version__.split(".")[:2]))
-                min_version_for_complex = torch_version[0] >= 1 and torch_version[1] >= 6
-
-                if min_version_for_complex:
-                    self.dtype = torch.complex128
-                else:
-                    raise QuantumFunctionError(
-                        "Version 1.6.0 or above of PyTorch must be installed"
-                        "for complex support, such as returning the state"
-                    )
+                self.dtype = torch.complex128
 
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)

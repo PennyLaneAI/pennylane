@@ -20,7 +20,6 @@ import pennylane as qml
 from pennylane import QuantumFunctionError
 from pennylane.devices import DefaultGaussian
 
-
 # Beta imports
 from pennylane.beta.tapes import qnode
 from pennylane.beta.queuing import AnnotatedQueue
@@ -37,9 +36,7 @@ from pennylane.beta.queuing.measure import (
     Probability,
     MeasurementProcess
 )
-from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
 from pennylane.beta.queuing import state
-
 
 
 @pytest.fixture(autouse=True)
@@ -378,24 +375,6 @@ class TestState:
         assert state_ev.dtype == torch.complex128
         assert torch.allclose(state_expected, state_ev)
         assert state_ev.shape == (1, 16)
-
-    @pytest.mark.usefixtures("skip_if_no_torch_support")
-    def test_interface_torch_wrong_version(self, monkeypatch):
-        """Test if an error is raised when a version of torch before 1.6.0 is used"""
-        import torch
-        dev = qml.device("default.qubit", wires=4)
-
-        @qnode(dev, interface="torch")
-        def func():
-            for i in range(4):
-                qml.Hadamard(i)
-            return state()
-
-        with monkeypatch.context() as m:
-            m.setattr(torch, "__version__", "1.5.0")
-
-            with pytest.raises(QuantumFunctionErrorBeta, match="Version 1.6.0 or above of PyTorch"):
-                func()
 
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
