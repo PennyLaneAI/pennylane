@@ -223,7 +223,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
@@ -260,7 +261,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
