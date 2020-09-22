@@ -307,6 +307,20 @@ class TestState:
         assert np.allclose(state_ev[0], 1 / np.sqrt(2))
         assert np.allclose(state_ev[-1], 1 / np.sqrt(2))
 
+    def test_return_with_other_types(self):
+        """Test that an exception is raised when a state is returned along with another return
+        type"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            return state(), expval(qml.PauliZ(1))
+
+        with pytest.raises(ValueError, match="The state cannot be returned in combination"):
+            func()
+
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_equal_to_dev_state(self, wires):
         """Test that the returned state is equal to the one stored in dev.state for a template

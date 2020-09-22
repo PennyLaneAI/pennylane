@@ -914,6 +914,9 @@ class QuantumTape(AnnotatedQueue):
         if self._state_measurement:
             if not device.capabilities().get("returns_state"):
                 raise ValueError("The current device is not capable of returning the state")
+            if len(self.measurements) > 1:
+                raise ValueError("The state cannot be returned in combination with other return "
+                                 "types")
             self._state_measurement._wires = device.wires
 
         device.reset()
@@ -1274,6 +1277,9 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        if self._state_measurement:
+            raise ValueError("The jacobian method does not support circuits that return the state")
+
         method = options.get("method", "best")
 
         if method not in ("best", "numeric", "analytic", "device"):
@@ -1304,9 +1310,6 @@ class QuantumTape(AnnotatedQueue):
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
-
-        if self._state_measurement:
-            raise ValueError("The jacobian method does not support circuits that return the state")
 
         jac = None
         p_ind = range(len(params))
