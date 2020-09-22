@@ -17,6 +17,7 @@ PyTorch.
 """
 # pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
 import numpy as np
+import semantic_version
 import torch
 
 from pennylane.interfaces.torch import args_to_numpy
@@ -24,7 +25,7 @@ from pennylane.beta.queuing import AnnotatedQueue
 from pennylane.beta.tapes.qnode import QuantumFunctionError
 
 torch_version = list(map(int, torch.__version__.split(".")[:2]))
-COMPLEX_SUPPORT = torch_version[0] >= 1 and torch_version[1] >= 6
+COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
 
 
 class _TorchInterface(torch.autograd.Function):
