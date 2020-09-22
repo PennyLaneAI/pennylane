@@ -270,9 +270,6 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
-                if len(obs.wires) != self.num_wires:
-                    raise QuantumFunctionError("The state must be returned over all wires")
-
                 try:
                     state = self.state
                 except AttributeError:

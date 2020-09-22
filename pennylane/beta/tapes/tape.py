@@ -301,6 +301,8 @@ class QuantumTape(AnnotatedQueue):
         self._measurements = []
         self._output_dim = 0
 
+        state_measurement = None  # records TODO
+
         for obj, info in self._queue.items():
 
             if isinstance(obj, QuantumTape):
@@ -335,8 +337,7 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
                 elif obj.return_type is qml.operation.State:
-                    self._output_dim += 2 ** len(obj.wires)
-                    self._returns_state = True
+                    state_measurement = obj
                 else:
                     self._output_dim += 1
 
@@ -348,6 +349,11 @@ class QuantumTape(AnnotatedQueue):
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update()
+
+        if state_measurement is not None:
+            state_measurement._wires = self.wires
+            self._returns_state = True
+            self._output_dim += 2 ** self.num_wires
 
     def _update_circuit_info(self):
         """Update circuit metadata"""

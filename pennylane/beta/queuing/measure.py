@@ -20,6 +20,7 @@ and measurement samples using AnnotatedQueues.
 import numpy as np
 
 import pennylane as qml
+from pennylane.wires import Wires
 from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
 
@@ -49,7 +50,7 @@ class MeasurementProcess:
         self.return_type = return_type
         self.obs = obs
 
-        self._wires = None
+        self._wires = wires or Wires([])
         self._eigvals = None
 
         if eigvals is not None:
@@ -354,4 +355,4 @@ def state(wires):
         wires (Sequence[int]): all the wires used in the device
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State, wires=qml.wires.Wires(wires))
+    return MeasurementProcess(State)
