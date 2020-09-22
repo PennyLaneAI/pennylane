@@ -247,11 +247,11 @@ def maxcut(graph):
 
 
 def max_independent_set(graph, constrained=True):
-    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the MaxIndependentSet problem,
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Independent Set problem,
     for a given graph.
 
     Given some graph :math:`G`, an independent set is a set of vertices such that no two of the vertices in the set
-    share a common edge. The goal of MaxIndependentSet is to find the largest such set.
+    share a common edge. To solve the Maximum Independent Set problem, we attept to find the largest such set.
 
     Args:
         graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
@@ -271,7 +271,7 @@ def max_independent_set(graph, constrained=True):
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
             in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
 
-        The MaxIndependentSet cost Hamiltonian for constrained QAOA is defined as:
+        The Maximum Independent Set cost Hamiltonian for constrained QAOA is defined as:
 
         .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v}
 
@@ -287,7 +287,7 @@ def max_independent_set(graph, constrained=True):
 
         **Unconstrained**
 
-        The MaxIndependentSet cost Hamiltonian for unconstrained QAOA is defined as:
+        The Maximum Independent Set cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
                   \displaystyle\sum_{i \in V(G)} Z_i
@@ -319,7 +319,7 @@ def min_vertex_cover(graph, constrained=True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Minimum Vertex Cover problem,
     for a given graph.
 
-    The goal of the Minimum Vertex Cover problem is to find the smallest
+    To solve the Minimum Vertex Cover problem, we attempt to find the smallest
     `vertex cover <https://en.wikipedia.org/wiki/Vertex_cover>`__ of a graph --- a collection of vertices such that
     every edge in the graph has one of the vertices as an endpoint.
 
@@ -341,7 +341,7 @@ def min_vertex_cover(graph, constrained=True):
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
             in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
 
-        The MinVertexCover cost Hamiltonian for constrained QAOA is defined as:
+        The Minimum Vertex Cover cost Hamiltonian for constrained QAOA is defined as:
 
         .. math:: H_C \ = \ - \displaystyle\sum_{v \in V(G)} Z_{v}
 
@@ -357,7 +357,7 @@ def min_vertex_cover(graph, constrained=True):
 
         **Unconstrained**
 
-        The MinVertexCover cost Hamiltonian for unconstrained QAOA is defined as:
+        The Minimum Vertex Cover cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
                   \displaystyle\sum_{i \in V(G)} Z_i
