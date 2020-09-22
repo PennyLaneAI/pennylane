@@ -150,7 +150,9 @@ class QuantumTape(AnnotatedQueue):
     Args:
         name (str): a name given to the quantum tape
         caching (int): number of device executions to store in a cache to speed up subsequent
-            executions. Caching does not take place by default.
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
 
     **Example**
 
@@ -223,7 +225,7 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None, caching=None):
+    def __init__(self, name=None, caching=0):
         super().__init__()
         self.name = name
 
@@ -255,7 +257,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._caching = caching or 0
+        self._caching = caching
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 

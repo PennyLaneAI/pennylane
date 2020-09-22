@@ -99,7 +99,9 @@ class QNode:
               arguments.
 
         caching (int): number of device executions to store in a cache to speed up subsequent
-            executions. Caching does not take place by default. In caching mode, the quantum circuit
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date. In caching mode, the quantum circuit
             being executed must have a constant structure and only its parameters can be varied.
 
     Keyword Args:
@@ -554,7 +556,9 @@ def qnode(device, interface="autograd", diff_method="best", caching=None, **diff
               operation arguments.
 
         caching (int): number of device executions to store in a cache to speed up subsequent
-            executions. Caching does not take place by default. In caching mode, the quantum circuit
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date. In caching mode, the quantum circuit
             being executed must have a constant structure and only its parameters can be varied.
 
     Keyword Args:
