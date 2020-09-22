@@ -123,7 +123,7 @@ class QNode:
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
-        self, func, device, interface="autograd", diff_method="best", caching=None, **diff_options
+        self, func, device, interface="autograd", diff_method="best", caching=0, **diff_options
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
@@ -146,20 +146,17 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = 2
 
-        self._caching = None
+        self._caching = caching
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
-        if caching is not None:
+        if caching != 0:
             warnings.warn(
                 "Caching mode activated. The quantum circuit being executed by the QNode must have "
                 "a fixed structure.",
             )
             if self.diff_method == "backprop":
                 raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
-            self._caching = caching
-        else:
-            self._caching = 0
 
         self._cache_execute = OrderedDict()
         """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum
@@ -484,7 +481,7 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, interface="autograd", diff_method="best", caching=None, **diff_options):
+def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_options):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
