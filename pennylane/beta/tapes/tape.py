@@ -148,7 +148,7 @@ class QuantumTape(AnnotatedQueue):
 
     Args:
         name (str): a name given to the quantum tape
-        caching (int): number of device executions to store in a cache to speed up subsequent
+        caching (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
             executions to keep the cache up to date.
