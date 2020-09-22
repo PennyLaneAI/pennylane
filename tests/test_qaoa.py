@@ -334,35 +334,34 @@ MVC = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 '''GENERATES THE CASES TO TEST THE MAXCLIQUE PROBLEM'''
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.25, -0.75, -0.5, 0.25, -0.75]]
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.25, 0.75, 0.75, 1]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-    [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.PauliZ(2)]
+    [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)]
 ]
 
 COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
 
 MIXER_COEFFS = [
     [0.5, 0.5, 1.0, 0.5, 0.5],
-    [1.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
     [1, 1, 1]
 ]
 
 MIXER_TERMS = [
     [
         qml.PauliX(0),
-        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(2),
         qml.PauliX(1),
-        qml.PauliX(1) @ qml.PauliZ(2),
-        qml.PauliX(1) @ qml.PauliZ(0),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(0)
     ],
     [
         qml.PauliX(0),
-        qml.PauliX(0) @ qml.PauliZ(2),
-        qml.PauliX(0) @ qml.PauliZ(1),
-        qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliX(1),
+        qml.PauliX(2)
     ],
     [
         qml.PauliX(0),
