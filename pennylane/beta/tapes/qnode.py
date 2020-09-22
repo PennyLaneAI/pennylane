@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -299,13 +299,7 @@ class QNode:
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            # return QubitParamShiftTape, interface, "analytic"
-            warnings.warn(
-                "Qubit parameter-shift rule not yet implemented! Falling back "
-                "to finite-differences."
-            )
-
-            return QuantumTape, interface, "numeric"
+            return QubitParamShiftTape, interface, "analytic"
 
         if model == "cv":
             # return CVParamShiftTape, interface, "analytic"
@@ -352,13 +346,11 @@ class QNode:
 
         stop_at = self.device.operations
 
-        # TODO: Uncomment the following block when support for the
-        # qubit parameter shift rule is implemented. This is a hotfix
-        # that allows controlled rotations to return the correct gradients.
-        #
-        # if isinstance(self.qtape, QubitParamShiftTape):
-        #     # controlled rotations aren't supported by the parameter-shift rule
-        #     stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+        # Hotfix that allows controlled rotations to return the correct gradients
+        # when using the parameter shift rule.
+        if isinstance(self.qtape, QubitParamShiftTape):
+            # controlled rotations aren't supported by the parameter-shift rule
+            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
         # expand out the tape, if any operations are not supported on the device
         if not {op.name for op in self.qtape.operations}.issubset(stop_at):
