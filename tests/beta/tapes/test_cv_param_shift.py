@@ -29,7 +29,6 @@ class TestGradMethod:
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is
         correctly marked"""
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with CVParamShiftTape() as tape:
             qml.FockState(1, wires=0)

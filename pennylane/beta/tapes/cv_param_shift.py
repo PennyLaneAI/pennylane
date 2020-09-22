@@ -100,7 +100,7 @@ class CVParamShiftTape(QubitParamShiftTape):
     >>> tape.jacobian(dev, method="numeric")
     """
 
-    def _grad_method(self, idx, use_graph=True, default_method="F"):
+    def _grad_method(self, idx, use_graph=True, default_method="A"):
         op = self._par_info[idx]["op"]
 
         if op.grad_method in (None, "F"):
@@ -189,7 +189,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         Returns:
             .Observable: the transformed observable
         """
-        # Get the Heisenber representation of the observable
+        # Get the Heisenberg representation of the observable
         # in the position/momentum basis. The returned matrix/vector
         # will have been expanded to act on the entire device.
         if obs.ev_order > 2:
