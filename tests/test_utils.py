@@ -17,7 +17,6 @@ Unit tests for the :mod:`pennylane.utils` module.
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 import functools
 import itertools
-from unittest.mock import MagicMock
 import pytest
 
 import numpy as np
@@ -25,7 +24,6 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
-from pennylane.wires import Wires
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor

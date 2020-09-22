@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane
 from pennylane.beta.queuing import expval
 from pennylane.beta.tapes import QuantumTape, qnode
 from pennylane.devices import DefaultQubit
