@@ -315,7 +315,7 @@ class TestState:
             qml.Hadamard(wires=0)
             return state(), expval(qml.PauliZ(1))
 
-        with pytest.raises(ValueError, match="The state cannot be returned in combination"):
+        with pytest.raises(QuantumFunctionError, match="The state cannot be returned in combination"):
             func()
 
     @pytest.mark.parametrize("wires", range(2, 5))
@@ -404,7 +404,7 @@ class TestState:
 
         with monkeypatch.context() as m:
             m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(ValueError, match="The current device is not capable"):
+            with pytest.raises(QuantumFunctionError, match="The current device is not capable"):
                 func()
 
     def test_state_not_supported(self, monkeypatch):

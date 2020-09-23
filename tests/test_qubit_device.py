@@ -335,7 +335,7 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
-            with pytest.raises(AttributeError, match="The state is not available in the current"):
+            with pytest.raises(QuantumFunctionError, match="The state is not available in the current"):
                 dev.statistics([state()])
 
     @pytest.mark.parametrize("returntype", [None])

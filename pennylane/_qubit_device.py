@@ -271,10 +271,10 @@ class QubitDevice(Device):
 
             elif obs.return_type is State:
                 if len(observables) > 1:
-                    raise ValueError(
+                    raise QuantumFunctionError(
                         "The state cannot be returned in combination with other return types"
                     )
-                results.append(self._access_state())
+                results.append(self.access_state())
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -283,20 +283,22 @@ class QubitDevice(Device):
 
         return results
 
-    def _access_state(self):
-        """A helper function for accessing the state. Validation is carried out to check that the
-        state is available.
+    def access_state(self):
+        """Check that the device has access to an internal state and return it if available.
+
+        Raises:
+            QuantumFunctionError: if the device is not capable of returning the state
 
         Returns:
             array: the state of the device
         """
         if not self.capabilities().get("returns_state"):
-            raise ValueError("The current device is not capable of returning the state")
+            raise QuantumFunctionError("The current device is not capable of returning the state")
 
         state = getattr(self, "state", None)
 
         if state is None:
-            raise AttributeError("The state is not available in the current device")
+            raise QuantumFunctionError("The state is not available in the current device")
 
         return state
 
