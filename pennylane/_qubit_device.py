@@ -274,7 +274,7 @@ class QubitDevice(Device):
                     raise ValueError(
                         "The state cannot be returned in combination with other return types"
                     )
-                results.append(self._get_state())
+                results.append(self._validate_state())
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -283,7 +283,7 @@ class QubitDevice(Device):
 
         return results
 
-    def _get_state(self):
+    def _validate_state(self):
         """A helper function for accessing the state. Validation is carried out to check that the
         state is available.
 
