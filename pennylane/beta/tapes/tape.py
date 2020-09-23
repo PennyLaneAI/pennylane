@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
+from pennylane.operation import State
 
 from .circuit_graph import NewCircuitGraph
 
@@ -247,8 +248,6 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._returns_state = False
-
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
@@ -334,7 +333,7 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
                 elif obj.return_type is qml.operation.State:
-                    self._returns_state = True  # the output_dim is worked out automatically
+                    continue  # the output_dim is worked out automatically
                 else:
                     self._output_dim += 1
 
@@ -1267,7 +1266,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-        if self._returns_state:
+        if any([m.return_type is State for m in self.measurements]):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
         method = options.get("method", "best")

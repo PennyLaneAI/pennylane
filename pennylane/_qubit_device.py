@@ -270,19 +270,11 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
-                if not self.capabilities().get("returns_state"):
-                    raise ValueError("The current device is not capable of returning the state")
                 if len(observables) > 1:
                     raise ValueError(
                         "The state cannot be returned in combination with other return types"
                     )
-
-                state = getattr(self, "state", None)
-
-                if state is None:
-                    raise AttributeError("The state is not available in the current device")
-
-                results.append(state)
+                results.append(self._get_state())
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -290,6 +282,23 @@ class QubitDevice(Device):
                 )
 
         return results
+
+    def _get_state(self):
+        """A helper function for accessing the state. Validation is carried out to check that the
+        state is available.
+
+        Returns:
+            array: the state of the device
+        """
+        if not self.capabilities().get("returns_state"):
+            raise ValueError("The current device is not capable of returning the state")
+
+        state = getattr(self, "state", None)
+
+        if state is None:
+            raise AttributeError("The state is not available in the current device")
+
+        return state
 
     def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.

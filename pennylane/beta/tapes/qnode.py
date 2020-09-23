@@ -24,6 +24,7 @@ from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
+from pennylane.operation import State
 
 
 class QNode:
@@ -332,10 +333,12 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
+        state_returns = any([m.return_type is State for m in measurement_processes])
+
         # apply the interface (if any)
         if self.interface is not None:
             # pylint: disable=protected-access
-            if self.qtape._returns_state and self.interface in ["torch", "tf"]:
+            if state_returns and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
                 # functions
                 self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
