@@ -40,12 +40,30 @@ class TestGraphcolouringFunctions:
 
         return True
 
-    def test_graph_colouring(self):
-        """Verify that random unweighted, undirected graph's colour is a valid solution."""
+    adjacency_matrices = [
+        np.array([[0, 1], [1, 0]]),
+        np.array(
+            [[0, 1, 1, 1, 0], [0, 0, 0, 0, 1], [0, 0, 0, 1, 1], [1, 0, 0, 0, 1], [0, 0, 1, 1, 0]]
+        ),
+        np.array(
+            [
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 1, 1, 0, 1],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 1, 1],
+                [0, 0, 1, 1, 0, 1, 1, 0],
+                [0, 1, 0, 0, 1, 0, 1, 1],
+                [0, 1, 1, 0, 0, 0, 0, 1],
+                [1, 1, 1, 0, 0, 1, 1, 0],
+            ],
+        ),
+    ]
 
-        n_qubits = 8
-        adjacency_matrix = np.random.randint(2, size=(n_qubits, n_qubits))
-        np.fill_diagonal(adjacency_matrix, 0)
+    @pytest.mark.parametrize("adjacency_matrix", adjacency_matrices)
+    def test_graph_colouring(self, adjacency_matrix):
+        """Verify that random unweighted undirected graph's colour is a valid solution."""
+
+        n_qubits = np.shape(adjacency_matrix)[0]
 
         for i in range(n_qubits):
             for j in range(i + 1, n_qubits):
@@ -59,10 +77,12 @@ class TestGraphcolouringFunctions:
         assert self.verify_graph_colour_solution(adjacency_matrix, lf_colouring)
         assert self.verify_graph_colour_solution(adjacency_matrix, rlf_colouring)
 
-    def test_trivial_graph_colouring(self):
+    qubit_counts = list(range(10))
+
+    @pytest.mark.parametrize("n_qubits", qubit_counts)
+    def test_trivial_graph_colouring(self, n_qubits):
         """Tests validity of graph colouring solution for a graph with no edges."""
 
-        n_qubits = 8
         adjacency_matrix = np.zeros((n_qubits, n_qubits))
 
         lf_colouring = largest_first(np.asarray([list(range(n_qubits))]), adjacency_matrix)
