@@ -197,9 +197,6 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
             "Expected a Pauli word Observable instance, instead got {}.".format(pauli_word)
         )
 
-    if isinstance(pauli_word, Tensor):
-        pauli_word = pauli_word.prune()
-
     if wire_map is None:
         num_wires = len(pauli_word.wires)
         wire_map = {pauli_word.wires[i]: i for i in range(num_wires)}
@@ -464,10 +461,10 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
             " instead got n_qubits={}.".format(n_qubits_min, n_qubits)
         )
 
-    binary_mat = np.zeros((2 * n_qubits, m_cols))
+    binary_mat = np.zeros((m_cols, 2 * n_qubits))
 
     for i in range(m_cols):
-        binary_mat[:, i] = pauli_to_binary(observables[i], n_qubits=n_qubits, wire_map=wire_map)
+        binary_mat[i, :] = pauli_to_binary(observables[i], n_qubits=n_qubits, wire_map=wire_map)
 
     return binary_mat
 
@@ -495,7 +492,7 @@ def get_qwc_complement_adj_matrix(binary_observables):
            [1., 0., 0.]])
 
     Args:
-        binary_observables (array[array[bool]]): a matrix whose columns are the Pauli words in the
+        binary_observables (array[array[bool]]): a matrix whose rows are the Pauli words in the
             binary vector representation
 
     Returns:
@@ -509,20 +506,16 @@ def get_qwc_complement_adj_matrix(binary_observables):
     if not np.array_equal(binary_observables, binary_observables.astype(bool)):
         raise ValueError("Expected a binary array, instead got {}".format(binary_observables))
 
-    if len(np.shape(binary_observables)) == 1:
-        binary_observables = np.reshape(binary_observables, (np.shape(binary_observables), 1))
-
-    m_terms = np.shape(binary_observables)[1]
+    m_terms = np.shape(binary_observables)[0]
 
     if isinstance(binary_observables, (list, tuple)):
         binary_observables = np.asarray(binary_observables)
 
     adj = np.zeros((m_terms, m_terms))
-    pauli_vecs = binary_observables.T
 
     for i in range(m_terms):
         for j in range(i + 1, m_terms):
-            adj[i, j] = int(not is_qwc(pauli_vecs[i], pauli_vecs[j]))
+            adj[i, j] = int(not is_qwc(binary_observables[i], binary_observables[j]))
             adj[j, i] = adj[i, j]
 
     return adj

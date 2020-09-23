@@ -63,32 +63,30 @@ class TestGraphcolouringFunctions:
     def test_graph_colouring(self, adjacency_matrix):
         """Verify that random unweighted undirected graph's colour is a valid solution."""
 
-        n_qubits = np.shape(adjacency_matrix)[0]
+        n_terms = np.shape(adjacency_matrix)[0]
 
-        for i in range(n_qubits):
-            for j in range(i + 1, n_qubits):
+        for i in range(n_terms):
+            for j in range(i + 1, n_terms):
                 adjacency_matrix[j, i] = adjacency_matrix[i, j]
 
-        lf_colouring = largest_first(np.asarray([list(range(n_qubits))]), adjacency_matrix)
-        rlf_colouring = recursive_largest_first(
-            np.asarray([list(range(n_qubits))]), adjacency_matrix
-        )
+        dummy_terms = np.reshape(list(range(n_terms)), (n_terms, 1))
+        lf_colouring = largest_first(dummy_terms, adjacency_matrix)
+        rlf_colouring = recursive_largest_first(dummy_terms, adjacency_matrix)
 
         assert self.verify_graph_colour_solution(adjacency_matrix, lf_colouring)
         assert self.verify_graph_colour_solution(adjacency_matrix, rlf_colouring)
 
-    qubit_counts = list(range(10))
+    term_counts = list(range(10))
 
-    @pytest.mark.parametrize("n_qubits", qubit_counts)
-    def test_trivial_graph_colouring(self, n_qubits):
+    @pytest.mark.parametrize("n_terms", term_counts)
+    def test_trivial_graph_colouring(self, n_terms):
         """Tests validity of graph colouring solution for a graph with no edges."""
 
-        adjacency_matrix = np.zeros((n_qubits, n_qubits))
+        adjacency_matrix = np.zeros((n_terms, n_terms))
 
-        lf_colouring = largest_first(np.asarray([list(range(n_qubits))]), adjacency_matrix)
-        rlf_colouring = recursive_largest_first(
-            np.asarray([list(range(n_qubits))]), adjacency_matrix
-        )
+        dummy_terms = np.reshape(list(range(n_terms)), (n_terms, 1))
+        lf_colouring = largest_first(dummy_terms, adjacency_matrix)
+        rlf_colouring = recursive_largest_first(dummy_terms, adjacency_matrix)
 
         assert self.verify_graph_colour_solution(adjacency_matrix, lf_colouring)
         assert self.verify_graph_colour_solution(adjacency_matrix, rlf_colouring)

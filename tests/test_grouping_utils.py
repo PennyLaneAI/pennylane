@@ -146,7 +146,7 @@ class TestGroupingUtils:
 
         binary_observables = np.array(
             [[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
-        )
+        ).T
 
         assert (convert_observables_to_binary_matrix(observables) == binary_observables).all()
 

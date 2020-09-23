@@ -128,7 +128,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         if self.binary_observables is None:
             self.binary_observables = self.obtain_binary_repr()
 
-        n_qubits = int(np.shape(self.binary_observables)[0] / 2)
+        n_qubits = int(np.shape(self.binary_observables)[1] / 2)
 
         if self.grouping_type == "qwc":
             adj = get_qwc_complement_adj_matrix(self.binary_observables)
@@ -141,7 +141,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 ]
             )
             mat_prod = (
-                np.transpose(self.binary_observables) @ symplectic_form @ self.binary_observables
+                self.binary_observables @ symplectic_form @ np.transpose(self.binary_observables)
             )
 
             if self.grouping_type == "commuting":
