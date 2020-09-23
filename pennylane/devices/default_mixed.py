@@ -131,14 +131,14 @@ class DefaultMixed(QubitDevice):
         # probs are diagonal elements
         probs = self.marginal_prob(self._diag(rho), wires)
 
-        # take the abs so that probabilities are not shown as complex numbers
-        return self._abs(probs)
+        # take the real part so probabilities are not shown as complex numbers
+        return self._real(probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
 
         Args:
-            operation (~.Operation): a PennyLane operation
+            operation (.Operation): a PennyLane operation
 
         Returns:
             list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
@@ -163,17 +163,19 @@ class DefaultMixed(QubitDevice):
         """
 
         channel_wires = self.map_wires(wires)
+        rho_dim = 2 * self.num_wires
+        num_ch_wires = len(channel_wires)
 
         # Computes K^\dagger, needed for the transformation K \rho K^\dagger
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
         # Changes tensor shape
-        kraus_shape = [len(kraus)] + [2] * len(channel_wires) * 2
+        kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
         kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
         kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
-        state_indices = ABC[: 2 * self.num_wires]
+        state_indices = ABC[: rho_dim]
 
         # row indices of the quantum state affected by this operation
         row_wires_list = channel_wires.tolist()
@@ -184,14 +186,14 @@ class DefaultMixed(QubitDevice):
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
         # indices in einsum must be replaced with new ones
-        new_row_indices = ABC[2 * self.num_wires : 2 * self.num_wires + len(channel_wires)]
+        new_row_indices = ABC[rho_dim: rho_dim + num_ch_wires]
         new_col_indices = ABC[
-            2 * self.num_wires + len(channel_wires) : 2 * (self.num_wires + len(channel_wires))
+            rho_dim + num_ch_wires: rho_dim + 2 * num_ch_wires
         ]
 
         # index for summation over Kraus operators
         kraus_index = ABC[
-            2 * (self.num_wires + len(channel_wires)) : 2 * (self.num_wires + len(channel_wires))
+            rho_dim + 2 * num_ch_wires: rho_dim + 2 * num_ch_wires
             + 1
         ]
 
@@ -253,7 +255,7 @@ class DefaultMixed(QubitDevice):
         """Applies operations to the internal device state.
 
         Args:
-            operation (~.Operation): operation to apply on the device
+            operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
         matrices = self._get_kraus(operation)
