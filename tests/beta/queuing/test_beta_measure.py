@@ -466,7 +466,7 @@ class TestState:
     def test_gradient_with_passthru_autograd(self):
         """Test that the gradient of the state is accessible when using default.qubit.autograd
         with the backprop diff_method."""
-        from pennylane import numpy as npa
+        from pennylane import numpy as anp
         dev = qml.device("default.qubit.autograd", wires=1)
 
         @qnode(dev, interface="autograd", diff_method="backprop")
@@ -474,11 +474,11 @@ class TestState:
             qml.RY(x, wires=0)
             return state()
 
-        x = npa.array(0.1, requires_grad=True)
+        x = anp.array(0.1, requires_grad=True)
 
         def loss_fn(x):
             res = func(x)[0]
-            return npa.real(res)  # This errors without the real. Likely an issue with complex
+            return anp.real(res)  # This errors without the real. Likely an issue with complex
             # numbers in autograd
 
         d_loss_fn = qml.jacobian(loss_fn)
