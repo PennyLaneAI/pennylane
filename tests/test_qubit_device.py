@@ -98,6 +98,7 @@ def mock_qubit_device_with_original_statistics(monkeypatch):
 
 mock_qubit_device_capabilities = {
     "measurements": "everything",
+    "returns_state": True,
     "noise_models": ["depolarizing", "bitflip"],
 }
 
