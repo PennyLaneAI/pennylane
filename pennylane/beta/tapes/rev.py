@@ -44,10 +44,10 @@ class ReversibleTape(QuantumTape):
 
     This class extends the :class:`~.jacobian` method of the quantum tape to support analytic
     gradients of qubit operations using reversible analytic differentiation. This gradient method
-    returns *exact* gradients, however requires use of a statevector simulator. Simply pass
-    ``method=analytic`` when computing the Jacobian:
+    returns *exact* gradients, however requires use of a statevector simulator. Simply create
+    the tape, and then call the Jacobian method:
 
-    >>> tape.jacobian(dev, method="analytic")
+    >>> tape.jacobian(dev)
 
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
 
