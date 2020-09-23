@@ -628,16 +628,22 @@ class TestApply:
 
         assert np.allclose(dev.state, root_state(nr_wires))
 
-    @pytest.mark.parametrize("op", [BasisState, QubitStateVector])
-    def test_raise_order_error(self, op):
-        """Tests that an error is raised if a state is prepared after an operation has been
+    def test_raise_order_error_basis_state(self):
+        """Tests that an error is raised if a state is prepared after BasisState has been
         applied"""
         dev = qml.device("default.mixed", wires=1)
-        if op == BasisState:
-            state = np.array([0])
-        else:
-            state = np.array([1, 0])
-        ops = [PauliX(0), op(state, wires=0)]
+        state = np.array([0])
+        ops = [PauliX(0), BasisState(state, wires=0)]
+
+        with pytest.raises(DeviceError, match="Operation"):
+            dev.apply(ops)
+
+    def test_raise_order_error_qubit_state(self):
+        """Tests that an error is raised if a state is prepared after QubitStateVector has been
+        applied"""
+        dev = qml.device("default.mixed", wires=1)
+        state = np.array([1, 0])
+        ops = [PauliX(0), QubitStateVector(state, wires=0)]
 
         with pytest.raises(DeviceError, match="Operation"):
             dev.apply(ops)

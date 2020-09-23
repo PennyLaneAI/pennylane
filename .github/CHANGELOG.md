@@ -2,6 +2,35 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now supports a new device, `default.mixed`, designed for
+  simulating mixed-state quantum computations. This enables native
+  support for implementing noisy channels in a circuit, which generally
+  map pure states to mixed states. The device can be initialized as
+  ```python3
+  >>> dev = qml.device("default.mixed", wires=1)
+  >>> print(dev.state)
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+  ```
+  This allows the construction of QNodes that include non-unitary operations
+  such as noisy channels, as in this simple qubit rotation example
+  ```python3
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     AmplitudeDamping(0.5, wires=0)
+  ... return qml.expval(qml.PauliZ(0))
+  >>> print(dev.state)
+  [[5.00000000e-01+0.j 4.32978028e-17+0.j]
+   [4.32978028e-17+0.j 5.00000000e-01+0.j]]
+  >>> print(circuit([0, np.pi]))
+  0.0
+  ```
+  [(#819)](https://github.com/PennyLaneAI/pennylane/pull/819)
+  [(#807)](https://github.com/PennyLaneAI/pennylane/pull/807)
+  [(#794)](https://github.com/PennyLaneAI/pennylane/pull/794)
+
 * Summation of two `Wires` objects is now supported and will return 
   a `Wires` object containing the set of all wires defined by the 
   terms in the summation.
@@ -331,7 +360,7 @@ Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Anta
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arazzola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
+Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
 Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 # Release 0.10.0
