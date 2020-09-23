@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
-  [(#789)](https://github.com/XanaduAI/pennylane/pull/789)
+  [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
   
   Consider the following QNode:
   ```python
