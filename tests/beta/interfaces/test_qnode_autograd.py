@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode, QNode
+from pennylane.beta.tapes import QuantumTape, qnode, QNode, QubitParamShiftTape
 from pennylane.beta.queuing import expval, var, sample, probs
 
 
@@ -231,10 +231,7 @@ class TestQNode:
             return np.sum(circuit(a, b))
 
         grad_fn = qml.grad(loss)
-
-        # TODO: uncomment when the parameter-shift rule is implemented
-        # spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
 
         res = grad_fn(a, b)
 
@@ -592,7 +589,6 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
     # RX gate is is not transformed
     assert new_circuit.qtape.operations[1].name == op2.name
     assert new_circuit.qtape.operations[1].wires == op2.wires
-
 
     # check that the incident gate arguments of both QNode tapes are correct
     assert np.all(np.array(circuit.qtape.get_parameters()) == np.sin(weights))
