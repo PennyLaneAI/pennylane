@@ -276,7 +276,6 @@ class QNode:
         if not supports_reverse:
             raise ValueError(
                 f"The {device.short_name} device does not support reversible differentiation."
-
             )
 
         return ReversibleTape, interface, "analytic"
