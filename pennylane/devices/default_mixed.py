@@ -175,7 +175,7 @@ class DefaultMixed(QubitDevice):
         kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
-        state_indices = ABC[: rho_dim]
+        state_indices = ABC[:rho_dim]
 
         # row indices of the quantum state affected by this operation
         row_wires_list = channel_wires.tolist()
@@ -186,16 +186,11 @@ class DefaultMixed(QubitDevice):
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
         # indices in einsum must be replaced with new ones
-        new_row_indices = ABC[rho_dim: rho_dim + num_ch_wires]
-        new_col_indices = ABC[
-            rho_dim + num_ch_wires: rho_dim + 2 * num_ch_wires
-        ]
+        new_row_indices = ABC[rho_dim : rho_dim + num_ch_wires]
+        new_col_indices = ABC[rho_dim + num_ch_wires : rho_dim + 2 * num_ch_wires]
 
         # index for summation over Kraus operators
-        kraus_index = ABC[
-            rho_dim + 2 * num_ch_wires: rho_dim + 2 * num_ch_wires
-            + 1
-        ]
+        kraus_index = ABC[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(

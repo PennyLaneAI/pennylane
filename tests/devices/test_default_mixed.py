@@ -544,4 +544,3 @@ class TestApply:
         target_rho = np.outer(ket, np.conj(ket))
 
         assert np.allclose(dev.state, target_rho)
-
