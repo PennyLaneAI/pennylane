@@ -414,7 +414,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 
 def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
-    """Converts a list of Pauli words to the binary vector representation and yields a column matrix
+    """Converts a list of Pauli words to the binary vector representation and yields a row matrix
         of the binary vectors.
 
     The dimension of the binary vectors will be implied from the highest wire being acted on
@@ -422,14 +422,10 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
 
     **Usage example:**
 
-    >>> convert_observables_to_binary([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
+    >>> convert_observables_to_binary_matrix([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
+    array([[1., 1., 0., 0., 1., 0.],
+           [0., 0., 0., 1., 1., 1.]])
 
-    array([[1., 0.],
-           [1., 0.],
-           [0., 0.],
-           [0., 1.],
-           [1., 1.],
-           [0., 1.]])
 
     Args:
         observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor]]): the list of Pauli
@@ -442,7 +438,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
 
 
     Returns:
-        array[array[bool]]: a matrix whose columns are Pauli words in binary vector representation
+        array[array[bool]]: a matrix whose rows are Pauli words in binary vector representation
 
     """
 
@@ -480,12 +476,10 @@ def get_qwc_complement_adj_matrix(binary_observables):
     **Usage example:**
 
     >>> binary_observables
-    array([[1., 0., 0.],
-           [0., 1., 0.],
-           [1., 1., 0.],
-           [0., 1., 1.],
-           [0., 0., 0.],
-           [1., 1., 0.]])
+    array([[1., 0., 1., 0., 0., 1.],
+           [0., 1., 1., 1., 0., 1.],
+           [0., 0., 0., 1., 0., 0.]])
+
     >>> get_qwc_complement_adj_matrix(binary_observables)
     array([[0., 1., 1.],
            [1., 0., 0.],

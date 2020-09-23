@@ -39,7 +39,7 @@ class TestMeasurementTransformations:
             gate_2 (Union[RX, RY, RZ]): the second single-qubit rotation gate
 
         Keyword arguments:
-            param_tol (float): the relative tolerance for considering whether two gates parameter
+            param_tol (float): the absolute tolerance for considering whether two gates parameter
                 values are the same
 
         Returns:
@@ -49,7 +49,7 @@ class TestMeasurementTransformations:
 
         return (
             gate_1.wires == gate_2.wires
-            and np.isclose(gate_1.parameters, gate_2.parameters, param_tol).all()
+            and np.allclose(gate_1.parameters, gate_2.parameters, atol=param_tol, rtol=0)
             and gate_1.name == gate_2.name
         )
 

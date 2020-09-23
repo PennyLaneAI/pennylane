@@ -35,8 +35,8 @@ def qwc_rotation(pauli_operators):
 
     **Usage example:**
 
-    >>> pauli_operators = [qml.PauliX('a'), 2: qml.PauliY('b'), 3: qml.PauliZ('c')}
-    >>> qwc_rotation(pauli_dict)
+    >>> pauli_operators = [qml.PauliX('a'), qml.PauliY('b'), qml.PauliZ('c')]
+    >>> qwc_rotation(pauli_operators)
     [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
 
     Args:

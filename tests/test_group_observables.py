@@ -25,8 +25,8 @@ class TestPauliGroupingStrategy:
     """Tests for the PauliGroupingStrategy class"""
 
     def test_construct_qwc_complement_adj_matrix_for_operators(self):
-        """Constructing the complement graph adjacency matrix for a list of Pauli words and a
-        given symmetric binary relation."""
+        """Constructing the complement graph adjacency matrix for a list of Pauli words according
+        to qubit-wise commutativity."""
 
         observables = [PauliY(0), PauliZ(0) @ PauliZ(1), PauliY(0) @ PauliX(1)]
         qwc_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
@@ -38,8 +38,8 @@ class TestPauliGroupingStrategy:
         ).all()
 
     def test_construct_commuting_complement_adj_matrix_for_operators(self):
-        """Constructing the complement graph adjacency matrix for a list of Pauli words and a
-        given symmetric binary relation."""
+        """Constructing the complement graph adjacency matrix for a list of Pauli words according
+        to general commutativity."""
 
         observables = [PauliY(0), PauliZ(0) @ PauliZ(1), PauliY(0) @ PauliX(1)]
         commuting_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
@@ -51,8 +51,8 @@ class TestPauliGroupingStrategy:
         ).all()
 
     def test_construct_anticommuting_complement_adj_matrix_for_operators(self):
-        """Constructing the complement graph adjacency matrix for a list of Pauli words and a
-        given symmetric binary relation."""
+        """Constructing the complement graph adjacency matrix for a list of Pauli words according
+        to anticommutativity."""
 
         observables = [PauliY(0), PauliZ(0) @ PauliZ(1), PauliY(0) @ PauliX(1)]
         anticommuting_complement_adjacency_matrix = np.array([[0, 0, 1], [0, 0, 1], [1, 1, 0]])
