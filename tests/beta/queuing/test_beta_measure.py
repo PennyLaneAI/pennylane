@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QuantumFunctionError
-from pennylane.devices import DefaultGaussian
+from pennylane.devices import DefaultGaussian, DefaultQubit
 
 # Beta imports
 from pennylane.beta.tapes import qnode
@@ -391,33 +391,33 @@ class TestState:
         with pytest.raises(ValueError, match="The jacobian method does not support"):
             d_func(0.1)
 
-    def test_no_state(self):
-        """Test if an error is raised for devices that are not capable of returning the state,
-        such as default.gaussian"""
-        dev = qml.device("default.gaussian", wires=1)
-
-        @qnode(dev)
-        def func():
-            return state()
-
-        with pytest.raises(ValueError, match="The current device is not capable"):
-            func()
-
-    def test_no_state_but_capable(self, monkeypatch):
-        """Test if an error is raised for a device that incorrectly says it is capable of returning
-        the state. This is tested by changing the capability of default.gaussian."""
-        dev = qml.device("default.gaussian", wires=1)
+    def test_no_state_capability(self, monkeypatch):
+        """Test if an error is raised for devices that are not capable of returning the state.
+        This is tested by changing the capability of default.qubit"""
+        dev = qml.device("default.qubit", wires=1)
         capabilities = dev.capabilities().copy()
-        capabilities["returns_state"] = True
+        capabilities["returns_state"] = False
 
         @qnode(dev)
         def func():
             return state()
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultGaussian, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+            m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
+            with pytest.raises(ValueError, match="The current device is not capable"):
                 func()
+
+    def test_state_not_supported(self, monkeypatch):
+        """Test if an error is raised for devices inheriting from the base Device class,
+        which do not currently support returning the state"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qnode(dev)
+        def func():
+            return state()
+
+        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+            func()
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize(

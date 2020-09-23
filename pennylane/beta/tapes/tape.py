@@ -233,9 +233,6 @@ class QuantumTape(AnnotatedQueue):
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
-        self._state_measurement = None
-        """MeasurementProcess: keeps track of any measurement process returning the state"""
-
         self._trainable_params = set()
         self._graph = None
         self._output_dim = 0
@@ -249,6 +246,8 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
         self._stack = None
+
+        self._returns_state = False
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -335,7 +334,7 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
                 elif obj.return_type is qml.operation.State:
-                    self._state_measurement = obj
+                    self._returns_state = True  # the output_dim is worked out automatically
                 else:
                     self._output_dim += 1
 
@@ -909,14 +908,6 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        if self._state_measurement:
-            if not device.capabilities().get("returns_state"):
-                raise ValueError("The current device is not capable of returning the state")
-            if len(self.measurements) > 1:
-                raise ValueError(
-                    "The state cannot be returned in combination with other return types"
-                )
-            self._state_measurement._wires = device.wires
 
         device.reset()
 
@@ -1276,7 +1267,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-        if self._state_measurement:
+        if self._returns_state:
             raise ValueError("The jacobian method does not support circuits that return the state")
 
         method = options.get("method", "best")

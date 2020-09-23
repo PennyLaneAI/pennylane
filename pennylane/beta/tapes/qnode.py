@@ -335,7 +335,7 @@ class QNode:
         # apply the interface (if any)
         if self.interface is not None:
             # pylint: disable=protected-access
-            if self.qtape._state_measurement and self.interface in ["torch", "tf"]:
+            if self.qtape._returns_state and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
                 # functions
                 self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)

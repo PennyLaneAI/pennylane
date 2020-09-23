@@ -270,6 +270,13 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
+                if not self.capabilities().get("returns_state"):
+                    raise ValueError("The current device is not capable of returning the state")
+                if len(observables) > 1:
+                    raise ValueError(
+                        "The state cannot be returned in combination with other return types"
+                    )
+
                 state = getattr(self, "state", None)
 
                 if state is None:
