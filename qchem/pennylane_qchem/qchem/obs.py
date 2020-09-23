@@ -536,12 +536,12 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         if True in [i > orbitals - 1 or i < 0 for i in core]:
             raise ValueError(
                 "Indices of core orbitals must be between 0 and {}; got core = {}".format(
-                    orbitals, core
+                    orbitals - 1, core
                 )
             )
 
         # Compute contribution due to core orbitals
-        t_core = 2 * sum([matrix_elements[alpha, alpha] for alpha in core])
+        t_core = 2 * np.sum(matrix_elements[np.array(core), np.array(core)])
 
     if active is None:
         if core is None:
@@ -552,7 +552,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if True in [i > orbitals - 1 or i < 0 for i in active]:
         raise ValueError(
             "Indices of active orbitals must be between 0 and {}; got active = {}".format(
-                orbitals, active
+                orbitals - 1, active
             )
         )
 
@@ -675,7 +675,11 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         v_core = 0
     else:
         if True in [i > orbitals - 1 or i < 0 for i in core]:
-            raise ValueError("Indices of core orbitals must be between 0 and {}".format(orbitals))
+            raise ValueError(
+                "Indices of core orbitals must be between 0 and {}; got core = {}".format(
+                    orbitals - 1, core
+                )
+            )
 
         # Compute contribution due to core orbitals
         v_core = 2 * sum(
@@ -689,7 +693,11 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             active = [i for i in range(orbitals) if i not in core]
 
     if True in [i > orbitals - 1 or i < 0 for i in active]:
-        raise ValueError("Indices of active orbitals must be between 0 and {}".format(orbitals))
+        raise ValueError(
+            "Indices of active orbitals must be between 0 and {}; got active = {}".format(
+                orbitals - 1, active
+            )
+        )
 
     # Indices of the matrix elements with absolute values >= cutoff
     indices = np.nonzero(np.abs(matrix_elements) >= cutoff)
