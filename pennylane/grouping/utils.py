@@ -101,16 +101,13 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, paulis_with_identity):
         return (pauli_1.wires, pauli_1.name) == (pauli_2.wires, pauli_2.name)
 
-    if isinstance(pauli_1, Tensor) and isinstance(pauli_2, Tensor):
-        return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
-
     if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, Tensor):
         return {(pauli_1.wires, pauli_1.name)} == set(zip(pauli_2.wires, pauli_2.name))
 
     if isinstance(pauli_1, Tensor) and isinstance(pauli_2, paulis_with_identity):
         return set(zip(pauli_1.wires, pauli_1.name)) == {(pauli_2.wires, pauli_2.name)}
 
-    return False
+    return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
 
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):

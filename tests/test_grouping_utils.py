@@ -84,6 +84,15 @@ class TestGroupingUtils:
 
         assert pytest.raises(TypeError, pauli_to_binary, non_pauli_word)
 
+    def test_pauli_to_binary_incompatable_wire_map_n_qubits(self):
+        """Tests ValueError raise when n_qubits is not high enough to support the highest wire_map
+        value."""
+
+        pauli_word = PauliX("a") @ PauliY("b") @ PauliZ("c")
+        wire_map = {"a": 0, "b": 1, "c": 3}
+        n_qubits = 3
+        assert pytest.raises(ValueError, pauli_to_binary, pauli_word, n_qubits, wire_map)
+
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no
@@ -107,6 +116,20 @@ class TestGroupingUtils:
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
+    binary_vecs_with_invalid_wire_maps = [
+        ([1, 0], {"a": 1}),
+        ([1, 1, 1, 0], {"a": 0}),
+        ([1, 0, 1, 0, 1, 1], {"a": 0, "b": 2, "c": 3}),
+        ([1, 0, 1, 0], {"a": 0, "b": 2}),
+    ]
+
+    @pytest.mark.parametrize("binary_vec,wire_map", binary_vecs_with_invalid_wire_maps)
+    def test_binary_to_pauli_invalid_wire_map(self, binary_vec, wire_map):
+        """Tests ValueError raise when wire_map values are not integers 0 to N, for input 2N
+        dimensional binary vector."""
+
+        assert pytest.raises(ValueError, binary_to_pauli, binary_vec, wire_map)
+
     not_binary_symplectic_vecs = [[1, 0, 1, 1, 0], [1], [2, 0, 0, 1], [0.1, 4.3, 2.0, 1.3]]
 
     @pytest.mark.parametrize("not_binary_symplectic", not_binary_symplectic_vecs)
@@ -126,6 +149,17 @@ class TestGroupingUtils:
         )
 
         assert (convert_observables_to_binary_matrix(observables) == binary_observables).all()
+
+    def test_convert_observables_to_binary_matrix_n_qubits_arg(self):
+        """Tests if ValueError is raised when specified n_qubits is not large enough to support
+        the number of distinct wire labels in input observables."""
+
+        observables = [Identity(1) @ PauliZ("a"), PauliX(1), PauliZ(0) @ PauliZ(2)]
+        n_qubits_invalid = 3
+
+        assert pytest.raises(
+            ValueError, convert_observables_to_binary_matrix, observables, n_qubits_invalid
+        )
 
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
@@ -147,6 +181,31 @@ class TestGroupingUtils:
             == is_qwc(identity, identity)
             == True
         )
+
+    def test_is_qwc_not_equal_lengths(self):
+        """Tests ValueError is raised when input Pauli vectors are not of equal length."""
+
+        pauli_vec_1 = [0, 1, 0, 1]
+        pauli_vec_2 = [1, 1, 0, 1, 0, 1]
+
+        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
+
+    def test_is_qwc_not_even_lengths(self):
+        """Tests ValueError is raised when input Pauli vectors are not of even length."""
+
+        pauli_vec_1 = [1, 0, 1]
+        pauli_vec_2 = [1, 1, 1]
+
+        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
+
+    def test_is_qwc_not_binary_vectors(self):
+        """Tests ValueError is raised when input Pauli vectors do not have binary
+        components."""
+
+        pauli_vec_1 = [1, 3.2, 1, 1 + 2j]
+        pauli_vec_2 = [1, 0, 0, 0]
+
+        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
 
     def test_is_pauli_word(self):
         """Test for determining whether input `Observable` instance is a Pauli word."""
@@ -181,5 +240,8 @@ class TestGroupingUtils:
 
         assert pytest.raises(
             TypeError, are_identical_pauli_words, (non_pauli_word, PauliZ(0) @ PauliZ(1))
+        )
+        assert pytest.raises(
+            TypeError, are_identical_pauli_words, (PauliX("a") @ Identity("b"), non_pauli_word)
         )
         assert pytest.raises(TypeError, are_identical_pauli_words, (non_pauli_word, non_pauli_word))
