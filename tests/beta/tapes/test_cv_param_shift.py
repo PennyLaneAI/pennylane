@@ -166,6 +166,8 @@ class TestGradMethod:
 
         assert tape._grad_method(0) == "F"
         assert tape._grad_method(1) == "F"
+        assert tape._grad_method(2) == "F"
+        assert tape._grad_method(3) == "F"
 
     def test_second_order_expectation(self):
         """Test that the expectation of a second-order observable forces

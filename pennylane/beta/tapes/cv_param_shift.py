@@ -122,7 +122,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         for m in self.measurements:
 
-            if (m.return_type is qml.operation.Probability) or (m.obs.ev_order is None):
+            if (m.return_type is qml.operation.Probability) or (m.obs.ev_order not in (1, 2)):
                 # Higher-order observables (including probability) only support finite differences.
                 best.append("F")
                 continue
@@ -208,6 +208,9 @@ class CVParamShiftTape(QubitParamShiftTape):
         if A.ndim == 2:
             A = A + A.T
 
+        # TODO: if the A matrix corresponds to a known observable in PennyLane,
+        # for example qml.X, qml.P, qml.NumberOperator, we should return that
+        # instead. This will allow for greater device compatibility.
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
     def parameter_shift_first_order(
@@ -223,7 +226,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
@@ -260,7 +264,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
@@ -333,7 +338,11 @@ class CVParamShiftTape(QubitParamShiftTape):
             idx = self.observables.index(obs)
             transformed_obs_idx.append(idx)
 
-            # transform the observable
+            # Transform the observable.
+            # TODO: if the transformation produces only a constant term,
+            # `_transform_observable` has only a single non-zero element in the
+            # 0th position) then  there is no need to execute the device---the constant term
+            # represents the gradient.
             self._measurements[idx] = MeasurementProcess(
                 qml.operation.Expectation, self._transform_observable(obs, Z, device.wires)
             )
@@ -362,7 +371,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
@@ -394,7 +404,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
+            device (.Device): a PennyLane device
+
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
