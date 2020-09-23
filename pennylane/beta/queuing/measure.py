@@ -59,11 +59,8 @@ class MeasurementProcess:
 
             self._eigvals = np.array(eigvals)
 
-        if wires is not None:
-            if obs is not None:
-                raise ValueError("Cannot set the wires if an observable is provided.")
-
-            self._wires = wires
+        if wires is not None and obs is not None:
+            raise ValueError("Cannot set the wires if an observable is provided.")
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
