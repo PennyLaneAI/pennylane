@@ -430,7 +430,6 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
 
-
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
