@@ -245,7 +245,6 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-
 class TestJacobianIntegration:
     """Tests for general Jacobian integration"""
 

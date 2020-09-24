@@ -23,7 +23,7 @@ import itertools
 
 import numpy as np
 
-from pennylane.operation import Sample, Variance, Expectation, Probability
+from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.wires import Wires
@@ -242,7 +242,7 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples and probabilities.
+        This includes returning expectation values, variance, samples, probabilities and states.
 
         Args:
             observables (List[:class:`Observable`]): the observables to be measured
@@ -269,12 +269,44 @@ class QubitDevice(Device):
             elif obs.return_type is Probability:
                 results.append(self.probability(wires=obs.wires))
 
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise QuantumFunctionError(
+                        "The state cannot be returned in combination with other return types"
+                    )
+
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
+
+                results.append(self.access_state())
+
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
                     "Unsupported return type specified for observable {}".format(obs.name)
                 )
 
         return results
+
+    def access_state(self):
+        """Check that the device has access to an internal state and return it if available.
+
+        Raises:
+            QuantumFunctionError: if the device is not capable of returning the state
+
+        Returns:
+            array or tensor: the state of the device
+        """
+        if not self.capabilities().get("returns_state"):
+            raise QuantumFunctionError("The current device is not capable of returning the state")
+
+        state = getattr(self, "state", None)
+
+        if state is None:
+            raise QuantumFunctionError("The state is not available in the current device")
+
+        return state
 
     def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.

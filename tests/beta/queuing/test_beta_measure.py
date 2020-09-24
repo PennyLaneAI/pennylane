@@ -17,11 +17,12 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
-from pennylane.qnodes import QuantumFunctionError
-
+from pennylane import QuantumFunctionError
+from pennylane.devices import DefaultGaussian, DefaultQubit
 
 # Beta imports
-from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
+from pennylane.beta.tapes import qnode
+from pennylane.beta.queuing import AnnotatedQueue
 from pennylane.beta.queuing.operation import mock_operations
 from pennylane.beta.queuing.measure import (
     expval,
@@ -30,11 +31,12 @@ from pennylane.beta.queuing.measure import (
     probs,
     Expectation,
     Sample,
+    State,
     Variance,
     Probability,
     MeasurementProcess
 )
-
+from pennylane.beta.queuing import state
 
 
 @pytest.fixture(autouse=True)
@@ -125,7 +127,7 @@ class TestBetaStatisticsError:
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
             return stat_func(qml.CNOT(wires=[0, 1]))
@@ -250,3 +252,252 @@ class TestExpansion:
 
         with pytest.raises(NotImplementedError, match="Cannot expand"):
             m.expand()
+
+
+class TestState:
+    """Tests for the state function"""
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_shape_and_dtype(self, wires):
+        """Test that the state is of correct size and dtype for a trivial circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            return state()
+
+        state_val = func()
+        assert state_val.shape == (1, 2 ** wires)
+        assert state_val.dtype == np.complex128
+
+    def test_return_type_is_state(self):
+        """Test that the return type of the observable is State"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(0)
+            return state()
+
+        func()
+        obs = func.qtape.observables
+        assert len(obs) == 1
+        assert obs[0].return_type is State
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_correct_ghz(self, wires):
+        """Test that the correct state is returned when the circuit prepares a GHZ state"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            for i in range(wires - 1):
+                qml.CNOT(wires=[i, i + 1])
+            return state()
+
+        state_val = func()[0]
+        assert np.allclose(np.sum(np.abs(state_val) ** 2), 1)
+        assert np.allclose(state_val[0], 1 / np.sqrt(2))
+        assert np.allclose(state_val[-1], 1 / np.sqrt(2))
+
+    def test_return_with_other_types(self):
+        """Test that an exception is raised when a state is returned along with another return
+        type"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            return state(), expval(qml.PauliZ(1))
+
+        with pytest.raises(QuantumFunctionError, match="The state cannot be returned in combination"):
+            func()
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_equal_to_dev_state(self, wires):
+        """Test that the returned state is equal to the one stored in dev.state for a template
+        circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        weights = qml.init.strong_ent_layers_uniform(3, wires)
+
+        @qnode(dev)
+        def func():
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+            return state()
+
+        state_val = func()
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_interface_tf(self, skip_if_no_tf_support):
+        """Test that the state correctly outputs in the tensorflow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev, interface="tf")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_expected = 0.25 * tf.ones(16)
+        state_val = func()
+
+        assert isinstance(state_val, tf.Tensor)
+        assert state_val.dtype == tf.complex128
+        assert np.allclose(state_expected, state_val.numpy())
+        assert state_val.shape == (1, 16)
+
+    def test_interface_torch(self):
+        """Test that the state correctly outputs in the torch interface"""
+        torch = pytest.importorskip("torch", minversion="1.6")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev, interface="torch")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
+        state_val = func()
+
+        assert isinstance(state_val, torch.Tensor)
+        assert state_val.dtype == torch.complex128
+        assert torch.allclose(state_expected, state_val)
+        assert state_val.shape == (1, 16)
+
+    def test_jacobian_not_supported(self):
+        """Test if an error is raised if the jacobian method is called via qml.grad"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev)
+        def func(x):
+            for i in range(4):
+                qml.RX(x, wires=i)
+            return state()
+
+        d_func = qml.jacobian(func)
+
+        with pytest.raises(ValueError, match="The jacobian method does not support"):
+            d_func(0.1)
+
+    def test_no_state_capability(self, monkeypatch):
+        """Test if an error is raised for devices that are not capable of returning the state.
+        This is tested by changing the capability of default.qubit"""
+        dev = qml.device("default.qubit", wires=1)
+        capabilities = dev.capabilities().copy()
+        capabilities["returns_state"] = False
+
+        @qnode(dev)
+        def func():
+            return state()
+
+        with monkeypatch.context() as m:
+            m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
+            with pytest.raises(QuantumFunctionError, match="The current device is not capable"):
+                func()
+
+    def test_state_not_supported(self, monkeypatch):
+        """Test if an error is raised for devices inheriting from the base Device class,
+        which do not currently support returning the state"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qnode(dev)
+        def func():
+            return state()
+
+        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+            func()
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize(
+        "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
+    )
+    def test_devices(self, device, skip_if_no_tf_support):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device(device, wires=4)
+
+        @qnode(dev)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_val = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state_val, state_expected)
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
+        """Test that the gradient of the state is accessible when using default.qubit.tf with the
+        backprop diff_method."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qnode(dev, interface="tf", diff_method="backprop")
+        def func(x):
+            qml.RY(x, wires=0)
+            return state()
+
+        x = tf.Variable(0.1, dtype=tf.complex128)
+
+        with tf.GradientTape() as tape:
+            result = func(x)
+
+        grad = tape.jacobian(result, x)
+        expected = tf.stack([-0.5 * tf.sin(x/2), 0.5 * tf.cos(x/2)])
+        assert np.allclose(grad, expected)
+
+    def test_gradient_with_passthru_autograd(self):
+        """Test that the gradient of the state is accessible when using default.qubit.autograd
+        with the backprop diff_method."""
+        from pennylane import numpy as anp
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qnode(dev, interface="autograd", diff_method="backprop")
+        def func(x):
+            qml.RY(x, wires=0)
+            return state()
+
+        x = anp.array(0.1, requires_grad=True)
+
+        def loss_fn(x):
+            res = func(x)[0]
+            return anp.real(res)  # This errors without the real. Likely an issue with complex
+            # numbers in autograd
+
+        d_loss_fn = qml.jacobian(loss_fn)
+
+        grad = d_loss_fn(x)
+        expected = np.array([-0.5 * np.sin(x/2), 0.5 * np.cos(x/2)])
+        assert np.allclose(grad, expected)
+
+    @pytest.mark.parametrize("wires", [[0, 2, 3, 1], ["a", -1, "b", 1000]])
+    def test_custom_wire_labels(self, wires):
+        """Test if an error is raised when custom wire labels are used"""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=wires[0])
+            for i in range(3):
+                qml.CNOT(wires=[wires[i], wires[i + 1]])
+            return state()
+
+        with pytest.raises(QuantumFunctionError, match="custom wire labels"):
+            func()

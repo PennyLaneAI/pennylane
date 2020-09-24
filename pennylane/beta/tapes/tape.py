@@ -14,7 +14,7 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 import contextlib
 
 import numpy as np
@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
+from pennylane.operation import State
 
 from .circuit_graph import NewCircuitGraph
 
@@ -331,6 +332,8 @@ class QuantumTape(AnnotatedQueue):
                 # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
+                elif obj.return_type is qml.operation.State:
+                    continue  # the output_dim is worked out automatically
                 else:
                     self._output_dim += 1
 
@@ -841,6 +844,19 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
+    def copy(self):
+        """Returns a shallow copy of the quantum tape."""
+        tape = self.__class__()
+        tape._prep = self._prep.copy()
+        tape._ops = self._ops.copy()
+        tape._measurements = self._measurements.copy()
+
+        tape._update()
+
+        tape._par_info = self._par_info.copy()
+        tape.trainable_params = self.trainable_params.copy()
+        return tape
+
     # ========================================================
     # execution methods
     # ========================================================
@@ -904,6 +920,7 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+
         device.reset()
 
         # backup the current parameters
@@ -1090,7 +1107,7 @@ class QuantumTape(AnnotatedQueue):
         order = options.get("order", 1)
         h = options.get("h", 1e-7)
 
-        shift = np.zeros_like(params)
+        shift = np.zeros_like(params, dtype=np.float64)
         shift[idx] = h
 
         if order == 1:
@@ -1262,6 +1279,9 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        if any([m.return_type is State for m in self.measurements]):
+            raise ValueError("The jacobian method does not support circuits that return the state")
+
         method = options.get("method", "best")
 
         if method not in ("best", "numeric", "analytic", "device"):
@@ -1303,11 +1323,11 @@ class QuantumTape(AnnotatedQueue):
                 # Independent parameter. Skip, as this parameter has a gradient of 0.
                 continue
 
-            if (method == "best" and param_method == "F") or (method == "numeric"):
+            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # finite difference method
                 g = self.numeric_pd(l, device, params=params, **options)
 
-            elif (method == "best" and param_method == "A") or (method == "analytic"):
+            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
                 # analytic method
                 g = self.analytic_pd(l, device, params=params, **options)
 
