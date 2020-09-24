@@ -274,6 +274,11 @@ class QubitDevice(Device):
                     raise QuantumFunctionError(
                         "The state cannot be returned in combination with other return types"
                     )
+
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise QuantumFunctionError("Returning the state is not supported when using "
+                                               "custom wire labels")
+
                 results.append(self.access_state())
 
             elif obs.return_type is not None:
