@@ -77,11 +77,11 @@ A  quantum node or QNode (represented by a subclass of
 information processing on a quantum device.
 
 Apart from encapsulating quantum functions, QNodes also provide custom quantum
-differentiation rules. Examples include the :doc:`parameter-shift rules
-<glossary/parameter_shift>` parameter-shift rule, where the derivative of
-quantum functions can be expressed by a linear combination of the other quantum
-function. As these rules allow quantum gradients to be obtained from QNodes,
-hybrid computations may include QNodes as part of training deep learnings
+differentiation rules. Examples include the :doc:`parameter-shift rule
+<glossary/parameter_shift>`,  where the derivative of a
+quantum function can be expressed by a linear combination of other quantum
+functions. As these rules allow quantum gradients to be obtained from QNodes,
+hybrid computations may include QNodes as part of training deep learning
 models.
 
 Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
@@ -90,15 +90,14 @@ quantum function and device. The constructor attempts to determine the ``"best"`
 subclass/differentiation method for the provided device and interface. For more fine-grained control,
 the differentiation method can be specified directly via the ``diff_method`` option.
 
-A common representation of quantum circuits is by creating a `Directed
+A common representation of quantum circuits is a `Directed
 Acyclic Graph (DAG)
 <https://pennylane.ai/qml/glossary/hybrid_computation.html#directed-acyclic-graphs>`__
-and representing quantum operations within such a graph. Each ``QNode``
-represents the quantum circuit by building such a DAG by creating a
-:class:`~.CircuitGraph` instance.
+where quantum operations are nodes within the graph. Each ``QNode`` builds such 
+a DAG using a :class:`~.CircuitGraph` instance.
 
 For further details on QNodes, and a full list of QNodes with their custom
-differentiation rule, refer to the :doc:`/code/qml_qnodes` module.
+differentiation rules, refer to the :doc:`/code/qml_qnodes` module.
 
 Interfaces
 **********
@@ -140,7 +139,7 @@ number of wires it acts on, etc.) and further convenience methods (e.g.
 
 Two important subclasses of the ``Operator`` class are:
 
-* the :class:`~.Operation` class representing quantum gates and
+* the :class:`~.Operation` class representing quantum gates,
 * the :class:`~.Observable` representing quantum observables specified for
   measurement.
 

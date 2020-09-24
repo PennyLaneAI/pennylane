@@ -11,7 +11,7 @@ for test coverage and ``pytest-mock`` for mocking; these can be installed via ``
 
     pip install pytest pytest-cov pytest-mock
 
-To ensure that PennyLane is working correctly, the test suite can then be run by
+To ensure that PennyLane is working correctly, the test suite can be run by
 navigating to the source code folder and running
 
 .. code-block:: bash
