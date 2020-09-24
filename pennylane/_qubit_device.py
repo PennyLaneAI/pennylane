@@ -296,7 +296,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the device is not capable of returning the state
 
         Returns:
-            array: the state of the device
+            array or tensor: the state of the device
         """
         if not self.capabilities().get("returns_state"):
             raise QuantumFunctionError("The current device is not capable of returning the state")
