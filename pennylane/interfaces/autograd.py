@@ -16,6 +16,7 @@ Differentiable quantum nodes with Autograd interface.
 """
 import autograd.extend
 import autograd.builtins
+from autograd import numpy as np
 
 from pennylane.utils import unflatten
 
