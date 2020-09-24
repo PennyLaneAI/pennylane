@@ -22,7 +22,7 @@ import torch
 
 from pennylane.interfaces.torch import args_to_numpy
 from pennylane.beta.queuing import AnnotatedQueue
-from pennylane.beta.tapes.qnode import QuantumFunctionError
+from pennylane import QuantumFunctionError
 
 COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
 

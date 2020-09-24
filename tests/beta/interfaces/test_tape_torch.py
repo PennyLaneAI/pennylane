@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
-from pennylane.beta.tapes.qnode import QuantumFunctionError
 
 
 class TestTorchQuantumTape:
@@ -454,5 +453,5 @@ class TestTorchQuantumTape:
 
         with monkeypatch.context() as m:
             m.setattr(qml.beta.interfaces.torch, "COMPLEX_SUPPORT", False)
-            with pytest.raises(QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
+            with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
                 TorchInterface.apply(QuantumTape(), dtype=torch.complex128)
