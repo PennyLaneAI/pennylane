@@ -173,7 +173,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
     for i in init_state:
         check_type(
             i,
-            [int, np.int64],
+            [int, np.int64, np.ndarray],
             msg="Elements of 'init_state' must be integers; got {}".format(init_state),
         )
 

@@ -66,6 +66,7 @@ def to_autograd(qnode):
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate
             self.set_trainable(args)
+            # args = [p.item() if isinstance(p, np.ndarray) and p.shape == tuple() else p for p in args]
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
