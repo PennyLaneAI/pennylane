@@ -77,10 +77,10 @@ A  quantum node or QNode (represented by a subclass of
 information processing on a quantum device.
 
 Apart from encapsulating quantum functions, QNodes also provide custom quantum
-differentiation rules. Examples include the :doc:`parameter-shift rules
-<glossary/parameter_shift>` parameter-shift rule, where the derivative of
-quantum functions can be expressed by a linear combination of the other quantum
-function. As these rules allow quantum gradients to be obtained from QNodes,
+differentiation rules. Examples include the :doc:`parameter-shift rule
+<glossary/parameter_shift>`,  where the derivative of a
+quantum function can be expressed by a linear combination of other quantum
+functions. As these rules allow quantum gradients to be obtained from QNodes,
 hybrid computations may include QNodes as part of training deep learnings
 models.
 
