@@ -14,7 +14,7 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 import contextlib
 
 import numpy as np
@@ -841,6 +841,19 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
+    def copy(self):
+        """Returns a shallow copy of the quantum tape."""
+        tape = self.__class__()
+        tape._prep = self._prep.copy()
+        tape._ops = self._ops.copy()
+        tape._measurements = self._measurements.copy()
+
+        tape._update()
+
+        tape._par_info = self._par_info.copy()
+        tape.trainable_params = self.trainable_params.copy()
+        return tape
+
     # ========================================================
     # execution methods
     # ========================================================
@@ -1303,11 +1316,11 @@ class QuantumTape(AnnotatedQueue):
                 # Independent parameter. Skip, as this parameter has a gradient of 0.
                 continue
 
-            if (method == "best" and param_method == "F") or (method == "numeric"):
+            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # finite difference method
                 g = self.numeric_pd(l, device, params=params, **options)
 
-            elif (method == "best" and param_method == "A") or (method == "analytic"):
+            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
                 # analytic method
                 g = self.analytic_pd(l, device, params=params, **options)
 

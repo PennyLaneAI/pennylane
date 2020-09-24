@@ -16,13 +16,13 @@ This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
-import warnings
 
 import numpy as np
 
-from pennylane import Device, QuantumFunctionError
+import pennylane as qml
+from pennylane import Device
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -118,13 +118,15 @@ class QNode:
     def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
                 f"one of {self.INTERFACE_MAP.values()}."
             )
 
         if not isinstance(device, Device):
-            raise QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
+            raise qml.QuantumFunctionError(
+                "Invalid device. Device must be a valid PennyLane device."
+            )
 
         self.func = func
         self.device = device
@@ -165,12 +167,12 @@ class QNode:
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return QNode._get_parameter_shift_method(device, interface)
+            return QNode._get_parameter_shift_tape(device), interface, "analytic"
 
         if diff_method == "finite-diff":
             return QuantumTape, interface, "numeric"
 
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
             "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible')."
         )
@@ -202,13 +204,13 @@ class QNode:
         """
         try:
             return QNode._validate_backprop_method(device, interface)
-        except QuantumFunctionError:
+        except qml.QuantumFunctionError:
             try:
                 return QNode._validate_device_method(device, interface)
-            except QuantumFunctionError:
+            except qml.QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_method(device, interface)
-                except QuantumFunctionError:
+                    return QNode._get_parameter_shift_tape(device), interface, "best"
+                except qml.QuantumFunctionError:
                     return QuantumTape, interface, "numeric"
 
     @staticmethod
@@ -226,7 +228,7 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: if the device does not support backpropagation, or the
+            qml.QuantumFunctionError: if the device does not support backpropagation, or the
             interface provided is not compatible with the device
         """
         # determine if the device supports backpropagation
@@ -237,12 +239,12 @@ class QNode:
             if interface == backprop_interface:
                 return QuantumTape, None, "backprop"
 
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
                 f"{backprop_interface} interface."
             )
 
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"The {device.short_name} device does not support native computations with "
             "autodifferentiation frameworks."
         )
@@ -262,14 +264,14 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: if the device does not provide a native method for computing
+            qml.QuantumFunctionError: if the device does not provide a native method for computing
             the Jacobian
         """
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
         if not provides_jacobian:
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 f"The {device.short_name} device does not provide a native "
                 "method for computing the jacobian."
             )
@@ -277,40 +279,31 @@ class QNode:
         return QuantumTape, interface, "device"
 
     @staticmethod
-    def _get_parameter_shift_method(device, interface):
-        """Validates whether a particular device and QuantumTape interface
+    def _get_parameter_shift_tape(device):
+        """Validates whether a particular device
         supports the parameter-shift differentiation method, and returns
         the correct tape.
 
         Args:
             device (.Device): PennyLane device
-            interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            .QuantumTape: the compatible QuantumTape
 
         Raises:
-            QuantumFunctionError: if the device model does not have a corresponding
+            qml.QuantumFunctionError: if the device model does not have a corresponding
             parameter-shift rule
         """
         # determine if the device provides its own jacobian method
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            return QubitParamShiftTape, interface, "analytic"
+            return QubitParamShiftTape
 
         if model == "cv":
-            # return CVParamShiftTape, interface, "analytic"
-            warnings.warn(
-                "CV parameter-shift rule not yet implemented! Falling back "
-                "to finite-differences."
-            )
+            return CVParamShiftTape
 
-            return QuantumTape, interface, "numeric"
-
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"Device {device.short_name} uses an unknown model ('{model}') "
             "that does not support the parameter-shift rule."
         )
@@ -331,13 +324,13 @@ class QNode:
             measurement_processes = (measurement_processes,)
 
         if not all(isinstance(m, MeasurementProcess) for m in measurement_processes):
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
 
@@ -373,7 +366,7 @@ class QNode:
                 output. If not provided, the default is ``tf.float64``.
 
         Raises:
-            QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+            qml.QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
@@ -391,7 +384,7 @@ class QNode:
                 TFInterface.apply(self.qtape, dtype=self.dtype)
 
         except ImportError:
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "TensorFlow not found. Please install the latest "
                 "version of TensorFlow to enable the 'tf' interface."
             )
@@ -404,7 +397,7 @@ class QNode:
                 output. If not provided, the default is ``torch.float64``.
 
         Raises:
-            QuantumFunctionError: if PyTorch >= 1.3 is not installed
+            qml.QuantumFunctionError: if PyTorch >= 1.3 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
@@ -422,7 +415,7 @@ class QNode:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
 
         except ImportError:
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "PyTorch not found. Please install the latest "
                 "version of PyTorch to enable the 'torch' interface."
             )
