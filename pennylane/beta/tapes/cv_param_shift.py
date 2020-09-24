@@ -76,6 +76,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
               # differentiable Gaussian operations
               qml.Displacement(0.6, wires=0)
+              qml.Displacement(0.6, 0.5, wires=0)
               qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
               expval(qml.NumberOperator(0))
 
@@ -226,9 +227,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device
-
-                that can execute quantum operations and return measurement statistics
+            device (.Device): a PennyLane device that can execute quantum operations and return
+                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Returns:
@@ -264,9 +264,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device
-
-                that can execute quantum operations and return measurement statistics
+            device (.Device): a PennyLane device that can execute quantum operations and return
+                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Returns:
@@ -371,9 +370,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device
-
-                that can execute quantum operations and return measurement statistics
+            device (.Device): a PennyLane device that can execute quantum operations and return
+                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
@@ -404,9 +402,8 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device
-
-                that can execute quantum operations and return measurement statistics
+            device (.Device): a PennyLane device that can execute quantum operations and return
+                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
@@ -446,7 +443,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         for i in self.var_idx:
             # We need to calculate d<A^2>/dp; to do so, we replace the
-            # involutory observables A in the queue with A^2.
+            # observables A in the queue with A^2.
             obs = self._measurements[i].obs
 
             # CV first order observable

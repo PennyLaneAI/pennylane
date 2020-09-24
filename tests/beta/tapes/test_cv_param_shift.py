@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import CVParamShiftTape, qnode
-from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
+from pennylane.beta.tapes import CVParamShiftTape
+from pennylane.beta.queuing import expval, var, probs
 
 
 hbar = 2
@@ -162,7 +162,7 @@ class TestGradMethod:
             qml.Rotation(1.0, wires=[1])
             qml.Beamsplitter(0.5, 0.0, wires=[0, 1])
             var(qml.NumberOperator(0))  # second order
-            expval(qml.NumberOperator(0))
+            expval(qml.NumberOperator(1))
 
         assert tape._grad_method(0) == "F"
         assert tape._grad_method(1) == "F"

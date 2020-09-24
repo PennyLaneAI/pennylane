@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
