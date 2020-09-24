@@ -108,6 +108,7 @@ class AutogradInterface(AnnotatedQueue):
 
     def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
         self._update_trainable_params()
+        params = self._all_parameter_values
 
         if trainable_only:
             params = [

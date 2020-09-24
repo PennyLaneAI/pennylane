@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import Device
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -163,6 +163,9 @@ class QNode:
         if diff_method == "backprop":
             return QNode._validate_backprop_method(device, interface)
 
+        if diff_method == "reversible":
+            return QNode._validate_reversible_method(device, interface)
+
         if diff_method == "device":
             return QNode._validate_device_method(device, interface)
 
@@ -248,6 +251,34 @@ class QNode:
             f"The {device.short_name} device does not support native computations with "
             "autodifferentiation frameworks."
         )
+
+    @staticmethod
+    def _validate_reversible_method(device, interface):
+        """Validates whether a particular device and QuantumTape interface
+        supports the ``"reversible"`` differentiation method.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method
+
+        Raises:
+            qml.QuantumFunctionError: if the device does not support reversible backprop
+        """
+        # TODO: update when all capabilities keys changed to "supports_reversible_diff"
+        supports_reverse = device.capabilities().get("supports_reversible_diff", False)
+        supports_reverse = supports_reverse or device.capabilities().get("reversible_diff", False)
+
+        if not supports_reverse:
+            raise ValueError(
+                f"The {device.short_name} device does not support reversible differentiation."
+            )
+
+        return ReversibleTape, interface, "analytic"
 
     @staticmethod
     def _validate_device_method(device, interface):
