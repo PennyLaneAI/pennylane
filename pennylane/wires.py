@@ -43,8 +43,7 @@ def _process(wires):
         return tuple(w for wires_ in wires for w in wires_.tolist())
 
     elif isinstance(wires, Iterable) and all(
-        isinstance(w, str) or isinstance(w, Number) or (getattr(w, "shape", None) == tuple())
-        for w in wires
+        isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
     ):
         # if the elements are strings or numbers, turn iterable into tuple
         return tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])

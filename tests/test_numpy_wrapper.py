@@ -103,7 +103,7 @@ class TestTensor:
         assert isinstance(x[0, 0], np.tensor)
         assert x[0, 0].requires_grad is grad
         assert x[0, 0].shape == tuple()
-        assert np.asscalar(x[0, 0]) == 0
+        assert x[0, 0].item() == 0
 
 
 # The following NumPy functions all create
