@@ -18,4 +18,6 @@ validate, execute, and differentiate quantum circuits.
 from .circuit_graph import NewCircuitGraph
 from .tape import QuantumTape
 from .qubit_param_shift import QubitParamShiftTape
+from .cv_param_shift import CVParamShiftTape
+from .rev import ReversibleTape
 from .qnode import QNode, qnode
