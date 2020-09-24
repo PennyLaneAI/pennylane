@@ -24,6 +24,24 @@ from pennylane.grouping.group_observables import PauliGroupingStrategy, group_ob
 class TestPauliGroupingStrategy:
     """Tests for the PauliGroupingStrategy class"""
 
+    def test_initialize_with_invalid_grouping(self):
+        """Tests ValueError is raised if specified grouping_type is not recognized."""
+
+        observables = [PauliX(0) @ PauliY(2), PauliZ(2)]
+
+        assert pytest.raises(
+            ValueError, PauliGroupingStrategy, observables, grouping_type="invalid"
+        )
+
+    def test_initialize_with_invalid_colourer(self):
+        """Tests ValueError is raised if specified graph_colourer is not recognized."""
+
+        observables = [PauliX(0) @ PauliY(2), PauliZ(2)]
+
+        assert pytest.raises(
+            ValueError, PauliGroupingStrategy, observables, graph_colourer="invalid"
+        )
+
     def test_construct_qwc_complement_adj_matrix_for_operators(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to qubit-wise commutativity."""

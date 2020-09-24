@@ -104,3 +104,13 @@ class TestOptimizeMeasurements:
         assert all(
             grouped_coeffs[i] == grouped_coeffs_sol[i] for i in range(len(grouped_coeffs_sol))
         )
+
+    def test_optimize_measurements_not_implemented_catch(self):
+        """Tests that NotImplementedError is raised for methods other than 'qwc'."""
+
+        observables = [PauliY(0), PauliX(0) @ PauliX(1), PauliZ(1)]
+        grouping = "anticommuting"
+
+        assert pytest.raises(
+            NotImplementedError, optimize_measurements, observables, grouping=grouping
+        )
