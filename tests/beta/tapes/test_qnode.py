@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, qnode, QubitParamShiftTape
+from pennylane.beta.tapes import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -85,28 +85,21 @@ class TestValidation:
         assert method == "backprop"
         assert interface == None
 
-    def test_parameter_shift_method_qubit_device(self):
+    def test_parameter_shift_tape_qubit_device(self):
         """Test that the get_parameter_shift_method method correctly and
         returns the correct tape for qubit devices."""
         dev = qml.device("default.qubit", wires=1)
-        tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
+        tape_class = QNode._get_parameter_shift_tape(dev)
         assert tape_class is QubitParamShiftTape
-        assert method == "analytic"
-        assert interface == "autograd"
 
-    def test_parameter_shift_method_cv_warning(self):
-        """CV devices are not yet supported; test that attempting to use
-        the parameter-shift rule raises a warning and returns the finite difference method"""
+    def test_parameter_shift_tape_cv_device(self):
+        """Test that the get_parameter_shift_method method correctly and
+        returns the correct tape for qubit devices."""
         dev = qml.device("default.gaussian", wires=1)
+        tape_class = QNode._get_parameter_shift_tape(dev)
+        assert tape_class is CVParamShiftTape
 
-        with pytest.warns(UserWarning, match="CV parameter-shift rule not yet implemented"):
-            tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
-
-        assert tape_class is QuantumTape
-        assert method == "numeric"
-        assert interface == "autograd"
-
-    def test_parameter_shift_method_unknown_model(self, monkeypatch):
+    def test_parameter_shift_tape_unknown_model(self, monkeypatch):
         """test that an unknown model raises an exception"""
 
         def capabilities(cls):
@@ -120,7 +113,7 @@ class TestValidation:
         with pytest.raises(
             qml.QuantumFunctionError, match="does not support the parameter-shift rule"
         ):
-            QNode._get_parameter_shift_method(dev, None)
+            QNode._get_parameter_shift_tape(dev)
 
     def test_best_method(self, monkeypatch):
         """Test that the method for determining the best diff method
@@ -139,16 +132,8 @@ class TestValidation:
 
         # The next fallback is parameter-shift.
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-
-        # TODO: remove this monkeypatching once the parameter shift tape is implemented
-        with monkeypatch.context() as m:
-            m.setattr(
-                QNode,
-                "_get_parameter_shift_method",
-                lambda d, i: ("QubitParamShiftTape", i, "analytic"),
-            )
-            res = QNode.get_best_method(dev, "another_interface")
-            assert res == ("QubitParamShiftTape", "another_interface", "analytic")
+        res = QNode.get_best_method(dev, "another_interface")
+        assert res == (QubitParamShiftTape, "another_interface", "best")
 
         # finally, if both fail, finite differences is the fallback
         def capabilities(cls):
