@@ -14,7 +14,7 @@
 """
 Quantum tape that implements reversible backpropagation.
 """
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init,protected-access
 from copy import copy
 from functools import reduce
 from string import ascii_letters as ABC
@@ -22,7 +22,6 @@ from string import ascii_letters as ABC
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.queuing import MeasurementProcess
 
 from .tape import QuantumTape
 
@@ -80,7 +79,8 @@ class ReversibleTape(QuantumTape):
     def _grad_method(self, idx, use_graph=True, default_method="A"):
         return super()._grad_method(idx, use_graph=use_graph, default_method=default_method)
 
-    def _matrix_elem(self, vec1, obs, vec2, device):
+    @staticmethod
+    def _matrix_elem(vec1, obs, vec2, device):
         r"""Computes the matrix element of an observable.
 
         That is, given two basis states :math:`\mathbf{i}`, :math:`\mathbf{j}`,
@@ -125,7 +125,7 @@ class ReversibleTape(QuantumTape):
         self._state = None
         return super().jacobian(device, params, **options)
 
-    def analytic_pd(self, idx, device, params, **options):
+    def analytic_pd(self, idx, device, params=None, **options):
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
