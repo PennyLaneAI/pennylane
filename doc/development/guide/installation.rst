@@ -32,8 +32,8 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow and PyTorch interfaces, additional
-requirements are required.
+For development of the TensorFlow and PyTorch interfaces, there are additional
+requirements:
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 
