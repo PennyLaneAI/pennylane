@@ -23,24 +23,32 @@ from pennylane.wires import Wires
 
 def x_mixer(wires):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
+
     This Hamiltonian is defined as:
+
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
+
     where :math:`i` ranges over all wires, and :math:`X_i`
     denotes the Pauli-X operator on the :math:`i`-th wire.
+
     This is mixer is used in *A Quantum Approximate Optimization Algorithm*
     by Edward Farhi, Jeffrey Goldstone, Sam Gutmann [`arXiv:1411.4028 <https://arxiv.org/abs/1411.4028>`__].
+
     Args:
         wires (Iterable or Wires): The wires on which the Hamiltonian is applied
+
     Returns:
         Hamiltonian: Mixer Hamiltonian
-    .. UsageDetails::
-        The mixer Hamiltonian can be called as follows:
-        .. code-block:: python
-            from pennylane import qaoa
-            wires = range(3)
-            mixer_h = qaoa.x_mixer(wires)
-        >>> print(mixer_h)
-        (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+
+    **Example**
+
+    The mixer Hamiltonian can be called as follows:
+
+    >>> from pennylane import qaoa
+    >>> wires = range(3)
+    >>> mixer_h = qaoa.x_mixer(wires)
+    >>> print(mixer_h)
+    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
     """
 
     wires = Wires(wires)
@@ -53,27 +61,34 @@ def x_mixer(wires):
 
 def xy_mixer(graph):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
+
     This mixer Hamiltonian is defined as:
+
     .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
+
     for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
     wire respectively.
+
     This mixer was introduced in *From the Quantum Approximate Optimization Algorithm
     to a Quantum Alternating Operator Ansatz* by Stuart Hadfield, Zhihui Wang, Bryan O'Gorman,
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
+
     Args:
         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
-         Hamiltonian: Mixer Hamiltonian
-    .. UsageDetails::
-        The mixer Hamiltonian can be called as follows:
-        .. code-block:: python
-            from pennylane import qaoa
-            from networkx import Graph
-            graph = Graph([(0, 1), (1, 2)])
-            mixer_h = qaoa.xy_mixer(graph)
-        >>> print(mixer_h)
-        (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
+        Hamiltonian: Mixer Hamiltonian
+
+    **Example**
+
+    The mixer Hamiltonian can be called as follows:
+
+    >>> from pennylane import qaoa
+    >>> from networkx import Graph
+    >>> graph = Graph([(0, 1), (1, 2)])
+    >>> mixer_h = qaoa.xy_mixer(graph)
+    >>> print(mixer_h)
+    (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
     """
 
     if not isinstance(graph, nx.Graph):
@@ -119,27 +134,23 @@ def bit_flip_mixer(graph, b):
     Returns:
         Hamiltonian: Mixer Hamiltonian
 
-    .. UsageDetails::
+    **Example**
 
-        The mixer Hamiltonian can be called as follows:
+    The mixer Hamiltonian can be called as follows:
 
-        .. code-block:: python3
-
-            from pennylane import qaoa
-            from networkx import Graph
-
-            graph = Graph([(0, 1), (1, 2)])
-            mixer_h = qaoa.bit_flip_mixer(graph, 0)
-
-        >>> print(mixer_h)
-        (0.5) [X0]
-        + (0.5) [X0 Z1]
-        + (0.25) [X1]
-        + (0.25) [X1 Z2]
-        + (0.25) [X1 Z0]
-        + (0.25) [X1 Z0 Z2]
-        + (0.5) [X2]
-        + (0.5) [X2 Z1]
+    >>> from pennylane import qaoa
+    >>> from networkx import Graph
+    >>> graph = Graph([(0, 1), (1, 2)])
+    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
+    >>> print(mixer_h)
+    (0.5) [X0]
+    + (0.5) [X0 Z1]
+    + (0.25) [X1]
+    + (0.25) [X1 Z2]
+    + (0.25) [X1 Z0]
+    + (0.25) [X1 Z0 Z2]
+    + (0.5) [X2]
+    + (0.5) [X2 Z1]
     """
 
     if not isinstance(graph, nx.Graph):
