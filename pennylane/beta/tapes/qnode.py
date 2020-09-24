@@ -24,6 +24,7 @@ from pennylane import Device
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
+from pennylane.operation import State
 
 
 class QNode:
@@ -344,10 +345,6 @@ class QNode:
 
         self.qtape = self._tape()
 
-        # apply the interface (if any)
-        if self.interface is not None:
-            self.INTERFACE_MAP[self.interface](self)
-
         with self.qtape:
             measurement_processes = self.func(*args, **kwargs)
 
@@ -359,6 +356,18 @@ class QNode:
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
+
+        state_returns = any([m.return_type is State for m in measurement_processes])
+
+        # apply the interface (if any)
+        if self.interface is not None:
+            # pylint: disable=protected-access
+            if state_returns and self.interface in ["torch", "tf"]:
+                # The state is complex and we need to indicate this in the to_torch or to_tf
+                # functions
+                self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
+            else:
+                self.INTERFACE_MAP[self.interface](self)
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise qml.QuantumFunctionError(
@@ -412,7 +421,7 @@ class QNode:
             self.dtype = dtype or self.dtype or TFInterface.dtype
 
             if self.qtape is not None:
-                TFInterface.apply(self.qtape, dtype=self.dtype)
+                TFInterface.apply(self.qtape, dtype=tf.as_dtype(self.dtype))
 
         except ImportError:
             raise qml.QuantumFunctionError(
@@ -441,6 +450,9 @@ class QNode:
                 self.dtype = None
 
             self.dtype = dtype or self.dtype or TorchInterface.dtype
+
+            if self.dtype is np.complex128:
+                self.dtype = torch.complex128
 
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
