@@ -290,7 +290,7 @@ def max_independent_set(graph, constrained=True):
 
         The Maximum Independent Set cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
+        .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
                   \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
@@ -361,7 +361,7 @@ def min_vertex_cover(graph, constrained=True):
 
         The Minimum Vertex Cover cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \sum{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
+        .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
                   \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
@@ -433,7 +433,7 @@ def maxclique(graph, constrained=True):
 
         The MaxClique cost Hamiltonian for unconstrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \sum{(i, j) \in E(\bar{G})}
+        .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
                   (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
 
         where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
