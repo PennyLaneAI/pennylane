@@ -277,7 +277,7 @@ class QubitDevice(Device):
 
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise QuantumFunctionError(
-                        "Returning the state is not supported when using " "custom wire labels"
+                        "Returning the state is not supported when using custom wire labels"
                     )
 
                 results.append(self.access_state())
