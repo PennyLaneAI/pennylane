@@ -548,7 +548,7 @@ class CircuitGraph:
             operations[wire] = list(
                 filter(
                     lambda op: not (
-                        isinstance(op, qml.operation.Observable) and op.return_type is not None
+                        isinstance(op, (qml.operation.Observable, qml.tape.MeasurementProcess)) and op.return_type is not None
                     ),
                     operations[wire],
                 )
@@ -576,7 +576,7 @@ class CircuitGraph:
         for wire in sorted(self._grid):
             observables[wire] = list(
                 filter(
-                    lambda op: isinstance(op, qml.operation.Observable)
+                    lambda op: isinstance(op, (qml.operation.Observable, qml.tape.MeasurementProcess))
                     and op.return_type is not None,
                     self._grid[wire],
                 )
