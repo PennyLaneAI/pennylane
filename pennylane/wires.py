@@ -34,7 +34,7 @@ def _process(wires):
         # interpret as a single wire
         return (wires,)
 
-    elif getattr(wires, "shape", None) == tuple():
+    elif hasattr(wires, "shape") and wires.shape == tuple():
         # Scalar NumPy array
         return (wires.item(),)
 
