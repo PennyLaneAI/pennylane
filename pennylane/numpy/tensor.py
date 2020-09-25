@@ -109,6 +109,18 @@ class tensor(_np.ndarray):
         string = super().__repr__()
         return string[:-1] + ", requires_grad={})".format(self.requires_grad)
 
+    def __array_wrap__(self, obj):
+        out_arr = tensor(obj, requires_grad=self.requires_grad)
+        return super().__array_wrap__(out_arr)
+
+    def __getitem__(self, *args, **kwargs):
+        item = super().__getitem__(*args, **kwargs)
+
+        if not isinstance(item, tensor):
+            item = tensor(item, requires_grad=self.requires_grad)
+
+        return item
+
 
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable

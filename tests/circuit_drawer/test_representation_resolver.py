@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
 from pennylane.variable import Variable
 from pennylane.wires import Wires
+from pennylane.beta.queuing import state
 
 
 @pytest.fixture
@@ -541,6 +542,7 @@ class TestRepresentationResolver:
                 "Sample[H0 ⊗ H1]",
             ),
             (qml.probs([0]), 0, "Probs"),
+            (state(), 0, "State"),
         ],
     )
     def test_output_representation_unicode(
@@ -695,6 +697,7 @@ class TestRepresentationResolver:
                 "Sample[H0 @ H1]",
             ),
             (qml.probs([0]), 0, "Probs"),
+            (state(), 0, "State"),
         ],
     )
     def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):

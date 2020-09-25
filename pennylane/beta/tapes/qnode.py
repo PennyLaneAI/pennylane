@@ -23,7 +23,8 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
-from pennylane.beta.interfaces.autograd import AutogradInterface
+from pennylane.beta.interfaces.autograd import AutogradInterface, np as anp
+from pennylane.operation import State
 
 
 class QNode:
@@ -344,10 +345,6 @@ class QNode:
 
         self.qtape = self._tape()
 
-        # apply the interface (if any)
-        if self.interface is not None:
-            self.INTERFACE_MAP[self.interface](self)
-
         with self.qtape:
             measurement_processes = self.func(*args, **kwargs)
 
@@ -359,6 +356,18 @@ class QNode:
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
+
+        state_returns = any([m.return_type is State for m in measurement_processes])
+
+        # apply the interface (if any)
+        if self.interface is not None:
+            # pylint: disable=protected-access
+            if state_returns and self.interface in ["torch", "tf"]:
+                # The state is complex and we need to indicate this in the to_torch or to_tf
+                # functions
+                self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
+            else:
+                self.INTERFACE_MAP[self.interface](self)
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise qml.QuantumFunctionError(
@@ -383,11 +392,35 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+
+        if self.interface == "autograd":
+            # HOTFIX: to maintain compatibility with core, here we treat
+            # all inputs that do not explicitly specify `requires_grad=False`
+            # as trainable. This should be removed at some point, forcing users
+            # to specify `requires_grad=True` for trainable parameters.
+            args = [
+                anp.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
+                for a in args
+            ]
+
         # construct the tape
         self.construct(args, kwargs)
 
         # execute the tape
-        return self.qtape.execute(device=self.device)
+        res = self.qtape.execute(device=self.device)
+
+        # HOTFIX: to maintain compatibility with core, we squeeze
+        # all outputs.
+
+        # Get the namespace associated with the return type
+        res_type_namespace = res.__class__.__module__.split(".")[0]
+
+        if res_type_namespace in ("pennylane", "autograd"):
+            # For PennyLane and autograd we must branch, since
+            # 'squeeze' does not exist in the top-level of the namespace
+            return anp.squeeze(res)
+
+        return __import__(res_type_namespace).squeeze(res)
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -412,7 +445,7 @@ class QNode:
             self.dtype = dtype or self.dtype or TFInterface.dtype
 
             if self.qtape is not None:
-                TFInterface.apply(self.qtape, dtype=self.dtype)
+                TFInterface.apply(self.qtape, dtype=tf.as_dtype(self.dtype))
 
         except ImportError:
             raise qml.QuantumFunctionError(
@@ -441,6 +474,9 @@ class QNode:
                 self.dtype = None
 
             self.dtype = dtype or self.dtype or TorchInterface.dtype
+
+            if self.dtype is np.complex128:
+                self.dtype = torch.complex128
 
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
