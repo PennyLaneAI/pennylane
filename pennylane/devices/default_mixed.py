@@ -85,6 +85,10 @@ class DefaultMixed(QubitDevice):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
+        if wires > 23:
+            raise ValueError(
+                "This device does not currently support computations on more than" "23 wires"
+            )
         # call QubitDevice init
         super().__init__(wires, shots, analytic)
 

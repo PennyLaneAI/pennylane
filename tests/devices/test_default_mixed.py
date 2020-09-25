@@ -17,9 +17,8 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 
 import pytest
 import pennylane as qml
-
+from pennylane.devices import DefaultMixed
 from pennylane.ops import PauliZ, CZ, PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel
-from pennylane.devices.default_mixed import DefaultMixed
 from pennylane.wires import Wires
 
 import numpy as np
@@ -459,21 +458,27 @@ class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`
     and `_apply_diagonal_unitary()`, we just check that the correct method is called"""
 
-    def test_diag_apply_op(self):
+    def test_diag_apply_op(self, mocker):
+        """Tests that when applying a diagonal gate, only `_apply_diagonal_unitary` is called,
+        exactly once"""
+        spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
-        dev._state = basis_state(0, 1)
-        target_state = basis_state(0, 1)
         dev._apply_operation(PauliZ(0))
 
-        assert np.allclose(dev._state, target_state)
+        spy_channel.assert_not_called()
+        spy_diag.assert_called_once()
 
-    def test_channel_apply_op(self):
+    def test_channel_apply_op(self, mocker):
+        """Tests that when applying a non-diagonal gate, only `_apply_channel` is called,
+        exactly once"""
+        spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
-        dev._state = basis_state(0, 1)
-        target_state = basis_state(1, 1)
         dev._apply_operation(PauliX(0))
 
-        assert np.allclose(dev._state, target_state)
+        spy_diag.assert_not_called()
+        spy_channel.assert_called_once()
 
 
 class TestApply:
@@ -514,7 +519,7 @@ class TestApply:
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_undo_rotations(self, nr_wires):
-        """Tests that rotations are correctly applied by adding their inverse as intial
+        """Tests that rotations are correctly applied by adding their inverse as initial
         operations"""
         dev = qml.device("default.mixed", wires=nr_wires)
         ops = [Hadamard(i) for i in range(nr_wires)]
