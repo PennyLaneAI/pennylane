@@ -515,8 +515,6 @@ class TestInverse:
         assert ops[2].inverse
 
         # check that parameter order has reversed
-        print(tape.get_parameters())
-        print([init_state, p[1], p[2], p[3], p[0]])
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
 
     def test_parameter_transforms(self):
@@ -1320,8 +1318,6 @@ class TestJacobian:
             qml.RZ(1, wires=[2])
             qml.CNOT(wires=[0, 1])
             expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2))
-            for k, v in tape._queue.items():
-                print(k, v)
 
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             tape.jacobian(dev, order=3)

@@ -503,12 +503,12 @@ class TestOptimizer:
             x_onestep = bunch.rotosolve_opt.step(f, x_start)
             x_onestep_target = self.rotosolve_step(f, x_start)
 
-            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+            assert np.allclose(x_onestep, x_onestep_target, atol=tol, rtol=0)
 
             x_twosteps = bunch.rotosolve_opt.step(f, x_onestep)
             x_twosteps_target = self.rotosolve_step(f, x_onestep_target)
 
-            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
+            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol, rtol=0)
 
     @pytest.mark.parametrize('x_start', [[1.2, 0.2],
                                          [-0.62, -2.1],

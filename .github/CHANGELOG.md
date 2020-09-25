@@ -60,6 +60,29 @@
 
 <h3>Improvements</h3>
 
+* QNode caching has been introduced, allowing the QNode to keep track of the results of previous
+  device executions and reuse those results in subsequent calls.
+  [(#817)](https://github.com/PennyLaneAI/pennylane/pull/817)
+
+  Caching is available by passing a ``caching`` argument to the QNode:
+  
+  ```python
+  from pennylane.beta.tapes import qnode
+  from pennylane.beta.queuing import expval
+    
+  dev = qml.device("default.qubit", wires=2)
+    
+  @qnode(dev, caching=10)  # cache up to 10 evaluations
+  def qfunc(x):
+      qml.RX(x, wires=0)
+      qml.RX(0.3, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return expval(qml.PauliZ(1))
+    
+  qfunc(0.1)  # first evaluation executes on the device
+  qfunc(0.1)  # second evaluation accesses the cached result
+  ```
+
 * Sped up the application of certain gates in `default.qubit` by using array/tensor
   manipulation tricks. The following gates are affected: `PauliX`, `PauliY`, `PauliZ`,
   `Hadamard`, `SWAP`, `S`, `T`, `CNOT`, `CZ`.

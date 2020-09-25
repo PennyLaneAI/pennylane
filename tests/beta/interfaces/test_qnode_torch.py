@@ -44,12 +44,11 @@ class TestQNode:
 
         # without the interface, the tape simply returns an array of results
         assert isinstance(res, np.ndarray)
-        assert res.shape == (1,)
-        assert isinstance(res[0], float)
+        assert res.shape == tuple()
 
         # without the interface, the tape is unable to deduce
         # trainable parameters
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == {0}
 
     def test_execution_with_interface(self):
         """Test execution works with the interface"""
@@ -69,7 +68,7 @@ class TestQNode:
         # with the interface, the tape returns torch tensors
 
         assert isinstance(res, torch.Tensor)
-        assert res.shape == (1,)
+        assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
         assert circuit.qtape.trainable_params == {0}
@@ -551,10 +550,10 @@ def test_transform(monkeypatch, tol):
     new_qnode = qtransform(circuit, a)
 
     # evaluate the transformed QNode
-    res = new_qnode(weights)[0]
+    res = new_qnode(weights)
 
     # evaluate the original QNode with pre-processed parameters
-    res2 = circuit(torch.sin(weights))[0]
+    res2 = circuit(torch.sin(weights))
 
     # the loss is the sum of the two QNode evaluations
     loss = res + res2
