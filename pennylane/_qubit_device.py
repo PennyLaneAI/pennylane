@@ -531,8 +531,8 @@ class QubitDevice(Device):
             # For smaller number of wires speed is comparable to the next
             # approach, hence we resort to that one for testing purposes
             dtype = np.int32
-            states_base_ten = np.arange(num_basis_states, dtype=dtype)
-            basis_states = self.states_to_binary(samples, num_wires, dtype=dtype)
+            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
+            basis_states = self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         else:
             # A slower, but less memory intensive method
