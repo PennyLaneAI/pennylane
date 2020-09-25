@@ -403,16 +403,7 @@ class QNode:
         if list(res.shape) == [1]:
             # HOTFIX: to maintain compatibility with core, we squeeze
             # any output that has shape (1,).
-
-            # Get the namespace associated with the return type
-            res_type_namespace = res.__class__.__module__.split(".")[0]
-
-            if res_type_namespace in ("pennylane", "autograd"):
-                # For PennyLane and autograd we must branch, since
-                # 'squeeze' does not exist in the top-level of the namespace
-                return anp.squeeze(res)
-
-            return __import__(res_type_namespace).squeeze(res)
+            return res[0]
 
         return res
 
