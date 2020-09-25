@@ -449,7 +449,10 @@ class RepresentationResolver:
             return ""
         if isinstance(element, str):
             return element
-        if isinstance(element, (qml.operation.Observable, qml.tape.MeasurementProcess)) and element.return_type is not None:
+        if (
+            isinstance(element, (qml.operation.Observable, qml.tape.MeasurementProcess))
+            and element.return_type is not None
+        ):
             return self.output_representation(element, wire)
 
         return self.operator_representation(element, wire)
