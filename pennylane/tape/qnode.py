@@ -21,10 +21,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
-from pennylane.beta.interfaces.autograd import AutogradInterface, np as anp
 from pennylane.operation import State
+
+from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
 
 
 class QNode:

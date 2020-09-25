@@ -20,9 +20,10 @@ import numpy as np
 import semantic_version
 import torch
 
-from pennylane.interfaces.torch import args_to_numpy
-from pennylane.beta.queuing import AnnotatedQueue
 from pennylane import QuantumFunctionError
+from pennylane.interfaces.torch import args_to_numpy
+
+from pennylane.tape.queuing import AnnotatedQueue
 
 COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
 

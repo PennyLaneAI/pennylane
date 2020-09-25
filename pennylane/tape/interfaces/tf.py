@@ -25,7 +25,7 @@ except ImportError:
     from tensorflow.python.eager.tape import should_record as should_record_backprop
 
 
-from pennylane.beta.queuing import AnnotatedQueue
+from pennylane.tape.queuing import AnnotatedQueue
 
 
 class TFInterface(AnnotatedQueue):

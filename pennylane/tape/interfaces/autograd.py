@@ -22,7 +22,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
 
-from pennylane.beta.queuing import AnnotatedQueue
+from pennylane.tape.queuing import AnnotatedQueue
 
 
 class AutogradInterface(AnnotatedQueue):
