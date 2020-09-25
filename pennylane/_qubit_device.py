@@ -391,7 +391,7 @@ class QubitDevice(Device):
         Args:
             samples (List[int]): samples of basis states in base 10 representation
             num_wires (int): the number of qubits
-            dtype (type): Type of the internal array to be used. Can be
+            dtype (type): Type of the internal integer array to be used. Can be
                 important to specify for large systems for memory allocation
                 purposes.
 
