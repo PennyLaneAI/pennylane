@@ -30,6 +30,7 @@ _mock_stack = []
 
 
 def enable_tape():
+    """Enable tape mode"""
     if _mock_stack:
         return
 
@@ -43,6 +44,7 @@ def enable_tape():
 
 
 def disable_tape():
+    """disable tape mode"""
     if not _mock_stack:
         raise ValueError("Tape mode is not currently enabled.")
 

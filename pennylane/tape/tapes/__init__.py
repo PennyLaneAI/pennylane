@@ -15,7 +15,7 @@
 This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
-from .cv_param_shift import CVParamShiftTape
-from .reversible import ReversibleTape
-from .qubit_param_shift import QubitParamShiftTape
 from .tape import QuantumTape
+from .cv_param_shift import CVParamShiftTape
+from .qubit_param_shift import QubitParamShiftTape
+from .reversible import ReversibleTape
