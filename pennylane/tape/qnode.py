@@ -40,11 +40,21 @@ class QNode:
 
     .. note::
 
-        As the quantum tape is a *beta* feature, the standard PennyLane
-        measurement functions cannot be used. You will need to instead
-        import modified measurement functions within the quantum tape:
+        The quantum tape is an *experimental* feature. QNodes that use the quantum
+        tape have access to advanced features, such as in-QNode classical processing,
+        but do not yet have feature parity with the standard PennyLane QNode.
 
-        >>> from pennylane.beta.queuing import expval, var, sample, probs
+        This quantum tape-comaptible QNode can either be created directly,
+
+        >>> import pennylane.tape
+        >>> qml.tape.QNode(qfunc, dev)
+
+        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
+
+        >>> import pennylane.tape
+        >>> qml.tape.enable_tape()
+
+        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -106,13 +116,13 @@ class QNode:
 
     **Example**
 
-    >>> from pennylane.beta.queuing import expval, var, sample, probs
-    >>> from pennylane.beta.tapes import QNode
+    >>> import pennylane.tape
+    >>> qml.tape.enable_tape()
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
     >>> dev = qml.device("default.qubit", wires=1)
-    >>> qnode = QNode(circuit, dev)
+    >>> qnode = qml.QNode(circuit, dev)
     """
 
     # pylint:disable=too-many-instance-attributes
@@ -505,11 +515,21 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     .. note::
 
-        As the quantum tape is a *beta* feature, the standard PennyLane
-        measurement functions cannot be used. You will need to instead
-        import modified measurement functions within the quantum tape:
+        The quantum tape is an *experimental* feature. QNodes that use the quantum
+        tape have access to advanced features, such as in-QNode classical processing,
+        but do not yet have feature parity with the standard PennyLane QNode.
 
-        >>> from pennylane.beta.queuing import expval, var, sample, probs
+        This quantum tape-comaptible QNode can either be created directly,
+
+        >>> import pennylane.tape
+        >>> @qml.tape.qnode(dev)
+
+        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
+
+        >>> import pennylane.tape
+        >>> qml.tape.enable_tape()
+
+        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -571,10 +591,10 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     **Example**
 
-    >>> from pennylane.beta.queuing import expval, var, sample, probs
-    >>> from pennylane.beta.tapes import qnode
+    >>> import pennylane.tape
+    >>> qml.tape.enable_tape()
     >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qnode(dev)
+    >>> @qml.qnode(dev)
     >>> def circuit(x):
     >>>     qml.RX(x, wires=0)
     >>>     return expval(qml.PauliZ(0))

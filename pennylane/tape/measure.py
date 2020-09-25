@@ -315,6 +315,15 @@ def probs(wires):
 def state():
     r"""Quantum state in the computational basis.
 
+    .. note::
+
+        The quantum state can only be returned in tape mode:
+
+        >>> import pennylane.tape
+        >>> qml.tape.enable_tape()
+
+        For more details on tape mode, see :mod:`pennylane.tape`.
+
     This function accepts no observables and instead instructs the QNode to return its state. A
     ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
     describing all wires in the device.
@@ -323,15 +332,15 @@ def state():
 
     .. code-block:: python3
 
-        from pennylane.beta.queuing import state
-        from pennylane.beta.tapes import qnode
+        import pennylane.tape
+        qml.tape.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=1)
-            return state()
+            return qml.state()
 
     Executing this QNode:
 

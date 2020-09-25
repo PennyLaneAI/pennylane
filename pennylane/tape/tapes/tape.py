@@ -138,20 +138,16 @@ class QuantumTape(AnnotatedQueue):
 
     .. note::
 
-        As the quantum tape is a *beta* feature, the standard PennyLane
-        measurement functions cannot be used. You will need to instead
-        import modified measurement functions within the quantum tape:
-
-        >>> from pennylane.beta.queuing import expval, var, sample, probs
+        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
+        for more details.
 
     **Example**
 
     .. code-block:: python
 
-        from pennylane.beta.tapes import QuantumTape
-        from pennylane.beta.queuing import expval, var, sample, probs
+        import pennylane.tape
 
-        with QuantumTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
@@ -171,10 +167,10 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The :class:`~.beta.tapes.TapeCircuitGraph` can also be accessed:
+    The :class:`~.TapeCircuitGraph` can also be accessed:
 
     >>> tape.graph
-    <pennylane.beta.tapes.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
+    <pennylane.tape.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
     device:
@@ -549,9 +545,6 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
@@ -597,9 +590,6 @@ class QuantumTape(AnnotatedQueue):
         **Example**
 
         .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
 
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
@@ -648,9 +638,6 @@ class QuantumTape(AnnotatedQueue):
         **Example**
 
         .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
 
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
@@ -710,9 +697,6 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
@@ -735,9 +719,6 @@ class QuantumTape(AnnotatedQueue):
         **Example**
 
         .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
 
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
@@ -774,9 +755,6 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
@@ -785,7 +763,7 @@ class QuantumTape(AnnotatedQueue):
                 expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
-        [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f10b2150c10>]
+        [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
         """
         return self._measurements
 
@@ -820,13 +798,13 @@ class QuantumTape(AnnotatedQueue):
         quantum circuit:
 
         >>> tape.graph
-        <pennylane.beta.tapes.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
+        <pennylane.tape.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
 
         Note that the circuit graph is only constructed once, on first call to this property,
         and cached for future use.
 
         Returns:
-            .beta.tapes.TapeCircuitGraph: the circuit graph object
+            .TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
             self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
@@ -872,9 +850,6 @@ class QuantumTape(AnnotatedQueue):
         **Example**
 
         .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
 
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
@@ -1227,9 +1202,6 @@ class QuantumTape(AnnotatedQueue):
         **Example**
 
         .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
 
             with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
