@@ -141,7 +141,7 @@ class AutogradInterface(AnnotatedQueue):
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
         """Returns the vector-Jacobian product operator for the quantum tape.
-        The returned function takes the arguments as :meth:`~.execute`.
+        The returned function takes the arguments as :meth:`~.QuantumTape.execute`.
 
         Args:
             ans (array): the result of the tape execution

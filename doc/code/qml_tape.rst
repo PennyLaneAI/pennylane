@@ -13,13 +13,18 @@ qml.tape
 
     >>> qml.enable_tape()
 
+    Once enabled, tape mode can be disabled via :func:`~.disable_tape`.
+
+
+Tape-mode QNodes
+----------------
 
 The PennyLane tape module provides a new QNode class, rewritten from the ground-up,
 that uses a :class:`~.QuantumTape` to represent the internal variational quantum circuit.
 Tape mode provides several advantanges over the standard PennyLane QNode.
 
-* In tape mode, QNode arguments no longer become :class:`~.Variable` objects within the
-  QNode; arguments can be easily inspected, printed, and manipulated.
+* **No more Variable wrapping**: In tape mode, QNode arguments no longer become :class:`~.Variable`
+  objects within the QNode; arguments can be easily inspected, printed, and manipulated.
 
   >>> dev = qml.device("default.qubit", wires=1)
   >>> @qml.qnode(dev)
@@ -31,7 +36,8 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   Parameter value: 0.5
   tensor(0.87758256, requires_grad=True)
 
-* Tape mode allows for differentiable classical processing within the QNode.
+* **Support for in-QNode classical processing**: Tape mode allows for differentiable classical
+  processing within the QNode.
 
   >>> dev = qml.device("default.qubit", wires=1)
   >>> @qml.qnode(dev, interface="tf")
@@ -50,7 +56,7 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   As a result, quantum decompositions that require classical processing
   are fully supported and end-to-end differentiable in tape mode.
 
-* There is no longer any restriction on the QNode signature; the QNode can be
+* **Less restrictive QNode signatures**: There is no longer any restriction on the QNode signature; the QNode can be
   defined and called following the same rules as standard Python functions.
 
   For example, the following QNode uses positional, named, and variable
@@ -77,12 +83,61 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   >>> print(x.grad, y.grad, z.grad)
   tensor(0.8396) tensor([0.0289, 0.0193]) tensor(0.8387)
 
-* Tape mode provides various optimizations, reducing pre- and post-processing overhead,
-  and reduces the number of quantum evaluations in certain cases.
+* **Unifying all QNodes**: The tape-mode QNode merges all QNodes (including the :class:`~.JacobianQNode`
+  and the :class:`~.PassthruQNode`) into a single unified QNode, with identicaly behaviour regardless
+  of the differentiation type.
+
+  In addition, it is now possible to inspect the internal variational quantum circuit structure
+  of QNodes when using classical backpropagation (which is not support in the standard
+  :class:`~.PassthruQNode`).
+
+* **Optimizations**: Tape mode provides various optimizations, reducing pre- and post-processing
+  overhead, and reduces the number of quantum evaluations in certain cases.
+
+.. warning::
+
+    In tape-mode, the QNode does not yet have feature-parity with the standard PennyLane
+    QNode. Features currently not available in tape mode include:
+
+    * Circuit drawing and visualization
+
+    * Metric tensor computation
+
+    * The ability to automatically extract the layer structure of variational circuits
 
 
+Quantum tapes
+-------------
+
+Under the hood, tape mode is able to provide these new features by significantly overhauling
+the internal structure of the QNode. When tape mode is enabled, the QNode is no longer
+responsible for recording quantum operations, executing devices, or computing gradients---these
+tasks have been delegated to an internal object that is created by the QNode, the **Quantum tape**.
+
+In addition to be created internally by QNodes in tape mode, quantum tapes can also be created,
+nested, expanded (via :meth:`~.tape.expand`), and executed manually. Tape subclasses also provide
+additional gradient methods:
+
+.. autosummary::
+
+    ~pennylane.tape.QuantumTape
+    ~pennylane.tape.QubitParamShiftTape
+    ~pennylane.tape.CVParamShiftTape
+    ~pennylane.tape.ReversibleTape
+
+Finally, quantum tapes are fully compatible with autodifferentiating via NumPy/Autograd,
+TensorFlow, and PyTorch:
+
+.. autosummary::
+    :toctree: api
+
+    ~pennylane.tape.interfaces.tf.TFInterface
+    ~pennylane.tape.interfaces.torch.TorchInterface
+    ~pennylane.tape.interfaces.autograd.AutogradInterface
+
+For more details and examples, please see the tape documentation.
 
 .. automodapi:: pennylane.tape
-    :no-heading:
+    :no-main-docstr:
     :include-all-objects:
     :skip: enable_tape, disable_tape

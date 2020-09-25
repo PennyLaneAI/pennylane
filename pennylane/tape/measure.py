@@ -319,8 +319,7 @@ def state():
 
         The quantum state can only be returned in tape mode:
 
-        >>> import pennylane.tape
-        >>> qml.tape.enable_tape()
+        >>> qml.enable_tape()
 
         For more details on tape mode, see :mod:`pennylane.tape`.
 
@@ -332,8 +331,7 @@ def state():
 
     .. code-block:: python3
 
-        import pennylane.tape
-        qml.tape.enable_tape()
+        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 

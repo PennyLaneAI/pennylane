@@ -240,6 +240,7 @@ class QuantumTape(AnnotatedQueue):
 
         self.hash = 0
         self.is_sampled = False
+        self.inverse = False
 
         self._stack = None
 

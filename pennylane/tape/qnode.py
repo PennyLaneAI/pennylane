@@ -51,8 +51,7 @@ class QNode:
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
 
-        >>> import pennylane.tape
-        >>> qml.tape.enable_tape()
+        >>> qml.enable_tape()
 
         For more details, see :mod:`pennylane.tape`.
 
@@ -116,8 +115,7 @@ class QNode:
 
     **Example**
 
-    >>> import pennylane.tape
-    >>> qml.tape.enable_tape()
+    >>> qml.enable_tape()
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
@@ -526,8 +524,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
 
-        >>> import pennylane.tape
-        >>> qml.tape.enable_tape()
+        >>> qml.enable_tape()
 
         For more details, see :mod:`pennylane.tape`.
 
@@ -591,8 +588,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     **Example**
 
-    >>> import pennylane.tape
-    >>> qml.tape.enable_tape()
+    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
     >>> def circuit(x):
