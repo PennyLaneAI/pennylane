@@ -364,7 +364,7 @@ class QubitDevice(Device):
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
+        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
 
     @property
     def circuit_hash(self):
@@ -536,13 +536,9 @@ class QubitDevice(Device):
             # Creating batches of basis states such that the array kept in
             # memory for states_to_binary is smaller
             states_store = []
-            num_batches = int(2 ** (num_wires/2))
-            batches = np.split(states_base_ten, num_batches)
-
-            for batch in batches:
-                states_store.append(self.states_to_binary(batch, num_wires))
-
-            basis_states = np.vstack(states_store)
+            dtype = np.int32
+            samples = np.arange(2 ** num_wires, dtype=dtype)
+            basis_states = self.states_to_binary(samples, num_wires, dtype=dtype)
 
         else:
             # A slower, but less memory intensive method
