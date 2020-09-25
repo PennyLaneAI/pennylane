@@ -1019,7 +1019,7 @@ class CRY(Operation):
     .. math::
 
         \begin{align}
-             CR_Y(\phi) &= I_{1}\otimes R_{y2}(\phi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes R_{y2}(-\phi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
+             CR_y(\phi) &= I_{1}\otimes R_{y2}(\phi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes R_{y2}(-\phi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
             &=
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
