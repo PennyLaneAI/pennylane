@@ -85,6 +85,6 @@ def disable_tape():
     For more details on tape mode, see :mod:`~.tape`.
     """
     if not _mock_stack:
-        raise ValueError("Tape mode is not currently enabled.")
+        raise RuntimeError("Tape mode is not currently enabled.")
 
     _mock_stack.pop().close()
