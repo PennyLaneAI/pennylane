@@ -491,7 +491,7 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.min_vertex_cover(graph)
         with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
-            qaoa.maxclique(graph)
+            qaoa.max_clique(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
@@ -521,10 +521,10 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE)
-    def test_maxclique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
-        """Tests that the output of the MaxClique method is correct"""
+    def test_max_clique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Maximum Clique method is correct"""
 
-        cost_h, mixer_h = qaoa.maxclique(graph, constrained=constrained)
+        cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
