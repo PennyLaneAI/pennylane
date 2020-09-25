@@ -66,11 +66,13 @@ def test_marginal_prob(init_state, tol):
     expected = np.einsum("ijkl->jl", expected).flatten()
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-def test_marginal_prob_more_wires(init_state, tol):
+def test_marginal_prob_more_wires(init_state, mocker, tol):
     """Test that the correct marginal probability is returned, when the
     states_to_binary method is used for probability computations."""
     dev = qml.device("default.qubit", wires=4)
     state = init_state(4)
+
+    spy = mocker.spy(dev, "states_to_binary")
 
     @qml.qnode(dev)
     def circuit():
@@ -82,6 +84,8 @@ def test_marginal_prob_more_wires(init_state, tol):
     expected = np.reshape(np.abs(state)**2, [2]*4)
     expected = np.einsum("ijkl->jil", expected).flatten()
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    spy.assert_called_once()
 
 def test_integration(tol):
     """Test the probability is correct for a known state preparation."""
