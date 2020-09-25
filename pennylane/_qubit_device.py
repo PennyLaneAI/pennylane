@@ -347,7 +347,7 @@ class QubitDevice(Device):
         return np.random.choice(basis_states, self.shots, p=state_probability)
 
     @staticmethod
-    def generate_basis_states(num_wires, dtype=np.int32):
+    def generate_basis_states(num_wires, dtype=np.uint32):
         """
         Generates basis states according to the number of wires specified.
 
@@ -367,7 +367,7 @@ class QubitDevice(Device):
 
         Args:
             num_wires (int): the number wires
-            dtype=np.int32 (type): the data type of the arrays to use
+            dtype=np.uint32 (type): the data type of the arrays to use
 
         Returns:
             np.ndarray: the sampled basis states
