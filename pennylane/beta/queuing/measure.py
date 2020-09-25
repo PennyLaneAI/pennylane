@@ -20,7 +20,8 @@ and measurement samples using AnnotatedQueues.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
+from pennylane.wires import Wires
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -33,7 +34,7 @@ class MeasurementProcess:
 
     Args:
         return_type (.ObservableReturnTypes): The type of measurement process.
-            This includes ``Expectation``, ``Variance``, ``Sample``, or ``Probability``.
+            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -49,7 +50,10 @@ class MeasurementProcess:
         self.return_type = return_type
         self.obs = obs
 
-        self._wires = None
+        if wires is not None and obs is not None:
+            raise ValueError("Cannot set the wires if an observable is provided.")
+
+        self._wires = wires or Wires([])
         self._eigvals = None
 
         if eigvals is not None:
@@ -57,12 +61,6 @@ class MeasurementProcess:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = np.array(eigvals)
-
-        if wires is not None:
-            if obs is not None:
-                raise ValueError("Cannot set the wires if an observable is provided.")
-
-            self._wires = wires
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
@@ -312,3 +310,42 @@ def probs(wires):
     """
     # pylint: disable=protected-access
     return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+
+
+def state():
+    r"""Quantum state in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its state. A
+    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
+    describing all wires in the device.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        from pennylane.beta.queuing import state
+        from pennylane.beta.tapes import qnode
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=1)
+            return state()
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
+    in both :math:`|00\rangle` and :math:`|01\rangle`.
+
+    .. note::
+
+        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        classical backpropagation differentiation method (``diff_method="backprop"``) with a
+        compatible device.
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State)
