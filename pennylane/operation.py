@@ -1412,7 +1412,8 @@ class CV:
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            wires (Wires): wires on the device that the observable gets applied to
+            wires (Wires): wires on the device the array ``U`` should be expanded
+                to apply to
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
