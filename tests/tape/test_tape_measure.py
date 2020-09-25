@@ -268,7 +268,7 @@ class TestState:
             return state()
 
         state_val = func()
-        assert state_val.shape == (1, 2 ** wires)
+        assert state_val.shape == (2 ** wires,)
         assert state_val.dtype == np.complex128
 
     def test_return_type_is_state(self):
@@ -299,7 +299,7 @@ class TestState:
                 qml.CNOT(wires=[i, i + 1])
             return state()
 
-        state_val = func()[0]
+        state_val = func()
         assert np.allclose(np.sum(np.abs(state_val) ** 2), 1)
         assert np.allclose(state_val[0], 1 / np.sqrt(2))
         assert np.allclose(state_val[-1], 1 / np.sqrt(2))
@@ -354,7 +354,7 @@ class TestState:
         assert isinstance(state_val, tf.Tensor)
         assert state_val.dtype == tf.complex128
         assert np.allclose(state_expected, state_val.numpy())
-        assert state_val.shape == (1, 16)
+        assert state_val.shape == (16,)
 
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
@@ -374,7 +374,7 @@ class TestState:
         assert isinstance(state_val, torch.Tensor)
         assert state_val.dtype == torch.complex128
         assert torch.allclose(state_expected, state_val)
-        assert state_val.shape == (1, 16)
+        assert state_val.shape == (16,)
 
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
@@ -477,7 +477,7 @@ class TestState:
         x = anp.array(0.1, requires_grad=True)
 
         def loss_fn(x):
-            res = func(x)[0]
+            res = func(x)
             return anp.real(res)  # This errors without the real. Likely an issue with complex
             # numbers in autograd
 
