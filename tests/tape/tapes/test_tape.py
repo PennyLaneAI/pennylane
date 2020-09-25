@@ -37,7 +37,7 @@ def TestOperationMonkeypatching():
     def func(x):
         global op
         op = qml.RX(x, wires=0)
-        return qml.qml.expval(qml.PauliX(wires="a"))
+        return qml.expval(qml.PauliX(wires="a"))
 
     # this should evaluate without error
     func(0.432)

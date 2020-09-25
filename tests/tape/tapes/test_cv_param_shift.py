@@ -617,7 +617,8 @@ class TestExpectationQuantumGradients:
             # def circuit(r, phi):
             #     qml.Displacement(r, phi, wires=0)
             #     qml.Interferometer(U, wires=[0, 1])
-            #     return qml.qml.expval(qml.X(0))
+            #     return qml.expval(qml.X(0))
+
             #
             # r = 0.543
             # phi = 0.
