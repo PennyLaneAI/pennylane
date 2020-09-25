@@ -114,8 +114,6 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
     In tape-mode, the QNode does not yet have feature-parity with the standard PennyLane
     QNode. Features currently not available in tape mode include:
 
-    * Circuit drawing and visualization
-
     * Metric tensor computation
 
     * The ability to automatically extract the layer structure of variational circuits

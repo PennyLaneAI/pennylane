@@ -431,6 +431,50 @@ class QNode:
 
         return __import__(res_type_namespace).squeeze(res)
 
+    def draw(self, charset="unicode"):
+        """Draw the quantum tape as a circuit diagram.
+
+        Consider the following circuit as an example:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def circuit(a, w):
+                qml.Hadamard(0)
+                qml.CRX(a, wires=[0, 1])
+                qml.Rot(*w, wires=[1])
+                qml.CRX(-a, wires=[0, 1])
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        We can draw the QNode after execution:
+
+        >>> result = circuit(2.3, [1.2, 3.2, 0.7])
+        >>> print(circuit.draw())
+        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(circuit.draw(charset="ascii"))
+        0: --H--+C----------------------------+C---------+| <Z @ Z>
+        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and
+                "ascii" are supported.
+
+        Raises:
+            ValueError: If the given charset is not supported
+            .QuantumFunctionError: Drawing is impossible because the underlying
+                quantum tape has not yet been constructed
+
+        Returns:
+            str: The circuit representation of the tape
+        """
+        if self.qtape is None:
+            raise qml.QuantumFunctionError(
+                "The QNode can only be drawn after its quantum tape has been constructed."
+            )
+
+        return self.qtape.draw(charset=charset)
+
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
 
@@ -439,7 +483,7 @@ class QNode:
                 output. If not provided, the default is ``tf.float64``.
 
         Raises:
-            qml.QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+            .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
@@ -470,7 +514,7 @@ class QNode:
                 output. If not provided, the default is ``torch.float64``.
 
         Raises:
-            qml.QuantumFunctionError: if PyTorch >= 1.3 is not installed
+            .QuantumFunctionError: if PyTorch >= 1.3 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
