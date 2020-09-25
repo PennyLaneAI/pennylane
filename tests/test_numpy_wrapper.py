@@ -92,6 +92,19 @@ class TestTensor:
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
 
+    @pytest.mark.parametrize("grad", [True, False])
+    def test_indexing(self, grad):
+        """Test that indexing into a tensor always returns a tensor"""
+        x = np.tensor([[0, 1, 2], [3, 4, 5]], requires_grad=grad)
+
+        assert isinstance(x[0], np.tensor)
+        assert x[0].requires_grad is grad
+
+        assert isinstance(x[0, 0], np.tensor)
+        assert x[0, 0].requires_grad is grad
+        assert x[0, 0].shape == tuple()
+        assert x[0, 0].item() == 0
+
 
 # The following NumPy functions all create
 # arrays based on list input. Additional keyword
