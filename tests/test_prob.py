@@ -72,7 +72,7 @@ def test_marginal_prob_more_wires(init_state, mocker, tol):
     dev = qml.device("default.qubit", wires=4)
     state = init_state(4)
 
-    spy = mocker.spy(dev, "states_to_binary")
+    spy = mocker.spy(qml.QubitDevice, "states_to_binary")
 
     @qml.qnode(dev)
     def circuit():
