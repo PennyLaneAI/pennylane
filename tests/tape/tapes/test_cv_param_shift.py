@@ -16,8 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import CVParamShiftTape
-from pennylane.beta.queuing import expval, var, probs
+from pennylane.tape import CVParamShiftTape, expval, var, probs
 
 
 hbar = 2

@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, NewCircuitGraph
-from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
+from pennylane.tape import QuantumTape, NewCircuitGraph
+from pennylane.tape.measure import expval, var, sample, probs, MeasurementProcess
 
 
 def TestOperationMonkeypatching():
@@ -1093,7 +1093,7 @@ class TestJacobian:
     def test_analytic_method(self, mocker):
         """Test that calling the Jacobian with method=analytic correctly
         calls the analytic_pd method"""
-        mock = mocker.patch("pennylane.beta.tapes.QuantumTape._grad_method")
+        mock = mocker.patch("pennylane.tape.QuantumTape._grad_method")
         mock.return_value = "A"
 
         with QuantumTape() as tape:

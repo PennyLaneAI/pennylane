@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
-from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
+from pennylane.tape import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
+from pennylane.tape.measure import expval, var, sample, probs, MeasurementProcess
 
 
 class TestValidation:
@@ -150,13 +150,13 @@ class TestValidation:
         quantum tape, interface, and diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.beta.tapes.QNode.get_best_method")
+        mock_best = mocker.patch("pennylane.tape.QNode.get_best_method")
         mock_best.return_value = 1, 2, 3
 
-        mock_backprop = mocker.patch("pennylane.beta.tapes.QNode._validate_backprop_method")
+        mock_backprop = mocker.patch("pennylane.tape.QNode._validate_backprop_method")
         mock_backprop.return_value = 4, 5, 6
 
-        mock_device = mocker.patch("pennylane.beta.tapes.QNode._validate_device_method")
+        mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9
 
         qn = QNode(None, dev, diff_method="best")
@@ -331,7 +331,7 @@ class TestTFInterface:
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
-        mock = mocker.patch("pennylane.beta.interfaces.tf.TFInterface.apply")
+        mock = mocker.patch("pennylane.tape.interfaces.tf.TFInterface.apply")
         mock.side_effect = ImportError()
 
         def func(x, y):
@@ -357,7 +357,7 @@ class TestTorchInterface:
 
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
-        mock = mocker.patch("pennylane.beta.interfaces.torch.TorchInterface.apply")
+        mock = mocker.patch("pennylane.tape.interfaces.torch.TorchInterface.apply")
         mock.side_effect = ImportError()
 
         def func(x, y):

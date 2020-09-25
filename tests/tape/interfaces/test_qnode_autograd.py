@@ -16,8 +16,8 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode, QNode, QubitParamShiftTape
-from pennylane.beta.queuing import expval, var, sample, probs
+from pennylane.tape import QuantumTape, qnode, QNode, QubitParamShiftTape
+from pennylane.tape.measure import expval, var, sample, probs
 
 
 @pytest.mark.parametrize(

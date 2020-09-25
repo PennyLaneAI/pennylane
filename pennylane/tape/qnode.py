@@ -430,7 +430,7 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         try:
             import tensorflow as tf
-            from pennylane.beta.interfaces.tf import TFInterface
+            from pennylane.tape.interfaces.tf import TFInterface
 
             self.interface = "tf"
 
@@ -461,7 +461,7 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         try:
             import torch
-            from pennylane.beta.interfaces.torch import TorchInterface
+            from pennylane.tape.interfaces.torch import TorchInterface
 
             self.interface = "torch"
 

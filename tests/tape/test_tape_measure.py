@@ -21,14 +21,13 @@ from pennylane import QuantumFunctionError
 from pennylane.devices import DefaultGaussian, DefaultQubit
 
 # Beta imports
-from pennylane.beta.tapes import qnode
-from pennylane.beta.queuing import AnnotatedQueue
-from pennylane.beta.queuing.operation import mock_operations
-from pennylane.beta.queuing.measure import (
+from pennylane.tape import qnode, AnnotatedQueue, mock_operations
+from pennylane.tape.measure import (
     expval,
     var,
     sample,
     probs,
+    state,
     Expectation,
     Sample,
     State,
@@ -36,7 +35,6 @@ from pennylane.beta.queuing.measure import (
     Probability,
     MeasurementProcess
 )
-from pennylane.beta.queuing import state
 
 
 @pytest.fixture(autouse=True)

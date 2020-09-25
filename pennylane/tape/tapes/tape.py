@@ -21,11 +21,10 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
-from pennylane.beta.queuing import mock_operations
+from pennylane.tape import AnnotatedQueue, QueuingContext, mock_operations
 from pennylane.operation import State
 
-from .circuit_graph import NewCircuitGraph
+from pennylane.tape import NewCircuitGraph
 
 
 STATE_PREP_OPS = (
@@ -105,7 +104,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, qml.beta.queuing.MeasurementProcess)
+                stop = stop or isinstance(obj, qml.tape.measure.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -113,7 +112,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.beta.queuing.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.tape.measure.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -325,7 +324,7 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, qml.beta.queuing.MeasurementProcess):
+            elif isinstance(obj, qml.tape.measure.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
 

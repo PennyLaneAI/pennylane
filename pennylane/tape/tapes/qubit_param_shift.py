@@ -22,7 +22,7 @@ and any gate with an involutory generator.
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.queuing import MeasurementProcess
+from pennylane.tape.measure import MeasurementProcess
 
 from .tape import QuantumTape
 

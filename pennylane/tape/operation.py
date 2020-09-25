@@ -63,7 +63,7 @@ def operation_expand(self):
         operations decomposition, or if not implemented, simply
         the operation itself.
     """
-    tape = qml.beta.tapes.QuantumTape()
+    tape = qml.tape.QuantumTape()
 
     with tape:
         self.decomposition(*self.data, wires=self.wires)

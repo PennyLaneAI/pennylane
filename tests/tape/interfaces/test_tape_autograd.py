@@ -16,9 +16,9 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape
-from pennylane.beta.queuing import expval, var, sample, probs
-from pennylane.beta.interfaces.autograd import AutogradInterface
+from pennylane.tape import QuantumTape
+from pennylane.tape.measure import expval, var, sample, probs
+from pennylane.tape.interfaces.autograd import AutogradInterface
 
 
 class TestAutogradQuantumTape:

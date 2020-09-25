@@ -19,8 +19,8 @@ torch = pytest.importorskip("torch", minversion="1.3")
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode, QNode
-from pennylane.beta.queuing import expval, var, sample, probs
+from pennylane.tape import QuantumTape, qnode, QNode
+from pennylane.tape.measure import expval, var, sample, probs
 
 
 class TestQNode:

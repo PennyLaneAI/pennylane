@@ -20,8 +20,7 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
-from pennylane.beta.queuing.operation import mock_operations
+from pennylane.tape import Queue, AnnotatedQueue, QueuingContext, mock_operations
 
 
 @pytest.fixture(autouse=True)
@@ -129,7 +128,7 @@ class TestQueue:
         """Tests that arbitrary objects can be appended to and removed from the queue."""
 
         objs = [5, "hi", 1.2, np.einsum, lambda x: x + 1]
-        with qml.beta.queuing.Queue() as q:
+        with Queue() as q:
             for obj in objs:
                 q.append(obj)
         assert q.queue == objs
@@ -143,13 +142,13 @@ class TestQueue:
     def test_remove_not_in_queue(self):
         """Test that remove fails when the object to be removed is not in the queue."""
 
-        with qml.beta.queuing.Queue() as q1:
+        with Queue() as q1:
             op1 = qml.PauliZ(0)
             op2 = qml.PauliZ(1)
             q1.append(op1)
             q1.append(op2)
 
-        with qml.beta.queuing.Queue() as q2:
+        with Queue() as q2:
             q2.append(op1)
 
             with pytest.raises(ValueError, match="not in list"):
@@ -157,7 +156,7 @@ class TestQueue:
 
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""
-        with qml.beta.queuing.Queue() as q:
+        with Queue() as q:
             ops = [
                 qml.RX(0.5, wires=0),
                 qml.RY(-10.1, wires=1),
@@ -170,7 +169,7 @@ class TestQueue:
     def test_append_qubit_observables(self):
         """Test that ops that are also observables are successfully
         appended to the queue."""
-        with qml.beta.queuing.Queue() as q:
+        with Queue() as q:
             # wire repetition is deliberate, Queue contains no checks/logic
             # for circuits
             ops = [
@@ -185,7 +184,7 @@ class TestQueue:
         """Test that ops which are used as inputs to `Tensor`
         are successfully added to the queue, as well as the `Tensor` object."""
 
-        with qml.beta.queuing.Queue() as q:
+        with Queue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
@@ -196,7 +195,7 @@ class TestQueue:
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""
 
-        with qml.beta.queuing.Queue() as q:
+        with Queue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = A @ B
@@ -210,20 +209,20 @@ class TestAnnotatedQueue:
     def test_remove_not_in_queue(self):
         """Test that remove fails when the object to be removed is not in the queue."""
 
-        with qml.beta.queuing.AnnotatedQueue() as q1:
+        with AnnotatedQueue() as q1:
             op1 = qml.PauliZ(0)
             op2 = qml.PauliZ(1)
             q1.append(op1)
             q1.append(op2)
 
-        with qml.beta.queuing.AnnotatedQueue() as q2:
+        with AnnotatedQueue() as q2:
             q2.append(op1)
             with pytest.raises(KeyError):
                 q2.remove(op2)
 
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             ops = [
                 qml.RX(0.5, wires=0),
                 qml.RY(-10.1, wires=1),
@@ -236,7 +235,7 @@ class TestAnnotatedQueue:
     def test_append_qubit_observables(self):
         """Test that ops that are also observables are successfully
         appended to the queue."""
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             # wire repetition is deliberate, Queue contains no checks/logic
             # for circuits
             ops = [
@@ -251,7 +250,7 @@ class TestAnnotatedQueue:
         """Test that ops which are used as inputs to `Tensor`
         are successfully added to the queue, as well as the `Tensor` object."""
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
@@ -262,7 +261,7 @@ class TestAnnotatedQueue:
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = A @ B
@@ -273,7 +272,7 @@ class TestAnnotatedQueue:
         """Test that get_info correctly returns an annotation"""
         A = qml.RZ(0.5, wires=1)
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
         assert q._get_info(A) == {"inv": True}
@@ -282,7 +281,7 @@ class TestAnnotatedQueue:
         """Test that an exception is raised if get_info is called
         for a non-existent object"""
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
 
         B = qml.PauliY(1)
@@ -294,7 +293,7 @@ class TestAnnotatedQueue:
         """Test that get_info returns None if there is no active queuing context"""
         A = qml.RZ(0.5, wires=1)
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
         assert QueuingContext.get_info(A) is None
@@ -303,7 +302,7 @@ class TestAnnotatedQueue:
         """Test that update_info correctly updates an annotation"""
         A = qml.RZ(0.5, wires=1)
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             q.append(A, inv=True)
             assert QueuingContext.get_info(A) == {"inv": True}
 
@@ -316,7 +315,7 @@ class TestAnnotatedQueue:
         """Test that an exception is raised if get_info is called
         for a non-existent object"""
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
 
         B = qml.PauliY(1)
@@ -346,7 +345,7 @@ class TestAnnotatedQueue:
 
                 return self
 
-        with qml.beta.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = AnnotatingTensor(A, B)

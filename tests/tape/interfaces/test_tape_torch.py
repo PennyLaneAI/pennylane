@@ -19,9 +19,9 @@ torch = pytest.importorskip("torch", minversion="1.3")
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape
-from pennylane.beta.queuing import expval, sample, probs
-from pennylane.beta.interfaces.torch import TorchInterface
+from pennylane.tape import QuantumTape
+from pennylane.tape.measure import expval, sample, probs
+from pennylane.tape.interfaces.torch import TorchInterface
 
 
 class TestTorchQuantumTape:
@@ -452,6 +452,6 @@ class TestTorchQuantumTape:
         in the apply() method"""
 
         with monkeypatch.context() as m:
-            m.setattr(qml.beta.interfaces.torch, "COMPLEX_SUPPORT", False)
+            m.setattr(qml.tape.interfaces.torch, "COMPLEX_SUPPORT", False)
             with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
                 TorchInterface.apply(QuantumTape(), dtype=torch.complex128)
