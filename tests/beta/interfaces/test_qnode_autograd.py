@@ -46,10 +46,9 @@ class TestQNode:
 
         assert circuit.qtape.interface == None
 
-        # without the interface, the tape simply returns an array of results
+        # without the interface, the QNode simply returns a scalar array
         assert isinstance(res, np.ndarray)
-        assert res.shape == (1,)
-        assert isinstance(res[0], float)
+        assert res.shape == tuple()
 
         # without the interface, the tape is unable to deduce
         # trainable parameters
@@ -69,7 +68,7 @@ class TestQNode:
         @qnode(dev, interface="autograd")
         def circuit(a):
             qml.RY(a, wires=0)
-            qml.RX(np.array(0.2, requires_grad=False), wires=0)
+            qml.RX(0.2, wires=0)
             return expval(qml.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
@@ -99,7 +98,7 @@ class TestQNode:
         @qnode(dev, interface="tf")
         def circuit(a):
             qml.RY(a, wires=0)
-            qml.RX(np.array(0.2, requires_grad=False), wires=0)
+            qml.RX(0.2, wires=0)
             return expval(qml.PauliZ(0))
 
         a = tf.Variable(0.1, dtype=tf.float64)
@@ -245,7 +244,7 @@ class TestQNode:
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant
-        a = np.array(0.54, requires_grad=True)
+        a = 0.54 # the QNode will treat a scalar as differentiable
         b = np.array(0.8, requires_grad=False)
 
         spy.call_args_list = []
@@ -288,7 +287,7 @@ class TestQNode:
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
-        assert res.shape == (1, 2)
+        assert res.shape == (2,)
 
     def test_no_trainable_parameters(self, dev_name, diff_method, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -572,10 +571,10 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
         new_circuit = qtransform(circuit, a)
 
         # evaluate the transformed QNode
-        res = new_circuit(weights)[0]
+        res = new_circuit(weights)
 
         # evaluate the original QNode with pre-processed parameters
-        res2 = circuit(np.sin(weights))[0]
+        res2 = circuit(np.sin(weights))
 
         # return the sum of the two QNode evaluations
         return res + res2

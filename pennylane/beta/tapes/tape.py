@@ -15,6 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import OrderedDict
 import contextlib
 
 import numpy as np
@@ -23,6 +24,7 @@ import pennylane as qml
 
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
+from pennylane.operation import State
 
 from .circuit_graph import NewCircuitGraph
 
@@ -132,6 +134,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
+# pylint: disable=too-many-public-methods
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
@@ -143,6 +146,13 @@ class QuantumTape(AnnotatedQueue):
         import modified measurement functions within the quantum tape:
 
         >>> from pennylane.beta.queuing import expval, var, sample, probs
+
+    Args:
+        name (str): a name given to the quantum tape
+        caching (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
 
     **Example**
 
@@ -215,7 +225,7 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, caching=0):
         super().__init__()
         self.name = name
 
@@ -246,6 +256,14 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
         self._stack = None
+
+        self._caching = caching
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the 
+        device."""
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -331,6 +349,8 @@ class QuantumTape(AnnotatedQueue):
                 # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
                     self._output_dim += 2 ** len(obj.wires)
+                elif obj.return_type is qml.operation.State:
+                    continue  # the output_dim is worked out automatically
                 else:
                     self._output_dim += 1
 
@@ -917,6 +937,7 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+
         device.reset()
 
         # backup the current parameters
@@ -924,6 +945,12 @@ class QuantumTape(AnnotatedQueue):
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
+
+        if self._caching:
+            circuit_hash = self.graph.hash
+            if circuit_hash in self._cache_execute:
+                self.set_parameters(saved_parameters)
+                return self._cache_execute[circuit_hash]
 
         if isinstance(device, qml.QubitDevice):
             res = device.execute(self)
@@ -949,6 +976,12 @@ class QuantumTape(AnnotatedQueue):
 
         # restore original parameters
         self.set_parameters(saved_parameters)
+
+        if self._caching and circuit_hash not in self._cache_execute:
+            self._cache_execute[circuit_hash] = res
+            if len(self._cache_execute) > self._caching:
+                self._cache_execute.popitem(last=False)
+
         return res
 
     # interfaces can optionally override the _execute method
@@ -1275,6 +1308,9 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        if any([m.return_type is State for m in self.measurements]):
+            raise ValueError("The jacobian method does not support circuits that return the state")
+
         method = options.get("method", "best")
 
         if method not in ("best", "numeric", "analytic", "device"):
@@ -1337,3 +1373,9 @@ class QuantumTape(AnnotatedQueue):
             jac[:, idx] = g.flatten()
 
         return jac
+
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching

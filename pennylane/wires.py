@@ -34,15 +34,19 @@ def _process(wires):
         # interpret as a single wire
         return (wires,)
 
+    elif hasattr(wires, "shape") and wires.shape == tuple():
+        # Scalar NumPy array
+        return (wires.item(),)
+
     elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
         # if the elements are themselves Wires objects, merge them to a new one
         return tuple(w for wires_ in wires for w in wires_.tolist())
 
     elif isinstance(wires, Iterable) and all(
-        isinstance(w, str) or isinstance(w, Number) for w in wires
+        isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
     ):
         # if the elements are strings or numbers, turn iterable into tuple
-        return tuple(wires)
+        return tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
 
     else:
         raise WireError(

@@ -1597,7 +1597,7 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
-        assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
+        assert set(np.round(s1, 8).tolist()).issubset(set(np.round(eigvals, 8).tolist()))
 
         mean = s1 @ p
         expected = 0.5 * (

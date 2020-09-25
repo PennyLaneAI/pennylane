@@ -31,6 +31,7 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
+
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
@@ -87,10 +88,10 @@ class DefaultMixed(QubitDevice):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        # if wires > 23:
-        #     raise ValueError(
-        #         "This device does not currently support computations on more than" "23 wires"
-        #     )
+        if wires > 23:
+            raise ValueError(
+                "This device does not currently support computations on more than" "23 wires"
+            )
         # call QubitDevice init
         super().__init__(wires, shots, analytic)
 
@@ -340,6 +341,7 @@ class DefaultMixed(QubitDevice):
             return
 
         matrices = self._get_kraus(operation)
+
         if isinstance(operation, DiagonalOperation):
             self._apply_diagonal_unitary(matrices, wires)
         else:
