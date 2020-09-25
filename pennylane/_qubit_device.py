@@ -349,7 +349,8 @@ class QubitDevice(Device):
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
         """
-        Generates basis states according to the number of wires specified.
+        Generates basis states in binary representation according to the number
+        of wires specified.
 
         The states_to_binary method creates basis states faster (for larger
         systems at times over x25 times faster) than the approach using
@@ -357,9 +358,9 @@ class QubitDevice(Device):
 
         Due to the large size of the integer arrays for more than 32 bits,
         memory allocation errors may arise in the states_to_binary method.
-        Hence we constraint the dtype of the array to 32 bits. Due to this
-        constraint, an overflow occurs for 31 or more wires, therefore this
-        approach is used only for fewer wires.
+        Hence we constraint the dtype of the array to represent unsigned
+        integers on 32 bits. Due to this constraint, an overflow occurs for 32
+        or more wires, therefore this approach is used only for fewer wires.
 
         For smaller number of wires speed is comparable to the next approach
         (using ``itertools.product``), hence we resort to that one for testing
