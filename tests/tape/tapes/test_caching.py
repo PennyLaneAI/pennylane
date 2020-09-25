@@ -16,8 +16,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.beta.queuing import expval
-from pennylane.beta.tapes import QuantumTape, qnode
+from pennylane.tape.measure import expval
+from pennylane.tape.tapes import QuantumTape
+from pennylane.tape import qnode
 from pennylane.devices import DefaultQubit
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 
