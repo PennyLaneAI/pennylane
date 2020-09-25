@@ -486,7 +486,7 @@ class TestApplyBasisState:
 
     @pytest.mark.parametrize("wires", wire_subset)
     def test_subset_wires(self, wires):
-        """Tests that different basis states are applied correctly"""
+        """Tests that different basis states are applied correctly when applied to a subset of wires"""
         nr_wires = 3
         dev = qml.device("default.mixed", wires=nr_wires)
         state = np.ones(2)
@@ -714,4 +714,3 @@ class TestApply:
         target_rho = np.outer(ket, np.conj(ket))
 
         assert np.allclose(dev.state, target_rho)
-
