@@ -128,10 +128,10 @@ table_3 = np.array(
     ("name", "core", "active", "table_exp", "v_core_exp"),
     [
         ("h2_pyscf", None, None, table_1, 0),
-        ("h2_pyscf", [0], None, table_2, 1.3647790663040844),
+        ("h2_pyscf", [0], None, table_2, 0.6823895331520422),
         ("h2_pyscf", None, [0, 1], table_1, 0),
-        ("h2_pyscf", [0], [1], table_2, 1.3647790663040844),
-        ("lih", [0], [1, 2], table_3, 3.3171333741748206),
+        ("h2_pyscf", [0], [1], table_2, 0.6823895331520422),
+        ("lih", [0], [1, 2], table_3, 1.6585666870874103),
     ],
 )
 def test_table_two_particle(name, core, active, table_exp, v_core_exp, tol):
