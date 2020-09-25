@@ -46,8 +46,9 @@ class TestQNode:
 
         assert circuit.qtape.interface == None
 
-        # without the interface, the QNode simply returns a float
-        assert isinstance(res, float)
+        # without the interface, the QNode simply returns a scalar array
+        assert isinstance(res, np.ndarray)
+        assert res.shape == tuple()
 
         # without the interface, the tape is unable to deduce
         # trainable parameters

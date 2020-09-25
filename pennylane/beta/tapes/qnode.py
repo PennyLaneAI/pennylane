@@ -409,12 +409,18 @@ class QNode:
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
-        if list(res.shape) == [1]:
-            # HOTFIX: to maintain compatibility with core, we squeeze
-            # any output that has shape (1,).
-            return res[0]
+        # HOTFIX: to maintain compatibility with core, we squeeze
+        # all outputs.
 
-        return res
+        # Get the namespace associated with the return type
+        res_type_namespace = res.__class__.__module__.split(".")[0]
+
+        if res_type_namespace in ("pennylane", "autograd"):
+            # For PennyLane and autograd we must branch, since
+            # 'squeeze' does not exist in the top-level of the namespace
+            return anp.squeeze(res)
+
+        return __import__(res_type_namespace).squeeze(res)
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
