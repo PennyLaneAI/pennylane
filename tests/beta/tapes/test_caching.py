@@ -168,13 +168,13 @@ class TestQNodeCaching:
         qnode = get_qnode(caching=10)
         args = np.arange(10)
 
-        for arg in args[:10]:
+        for arg in args:
             qnode(arg, 0.2)
 
         assert qnode.qtape.caching == 10
 
         spy = mocker.spy(DefaultQubitAutograd, "execute")
-        for arg in args[:10]:
+        for arg in args:
             qnode(arg, 0.2)
 
         spy.assert_not_called()
