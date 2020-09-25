@@ -1379,7 +1379,3 @@ class QuantumTape(AnnotatedQueue):
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
         return self._caching
-
-    @caching.setter
-    def caching(self, value):
-        self._caching = value

@@ -58,9 +58,6 @@ class TestTapeCaching:
         tape = QuantumTape(caching=10)
         assert tape.caching == 10
 
-        tape.caching = 20
-        assert tape.caching == 20
-
     def test_no_caching(self, mocker):
         """Test that no caching occurs when the caching attribute is equal to zero"""
         dev = qml.device("default.qubit", wires=2)
@@ -159,9 +156,6 @@ class TestQNodeCaching:
 
         qnode = get_qnode(caching=10)
         assert qnode.caching == 10
-
-        qnode.caching = 20
-        assert qnode.caching == 20
 
     def test_backprop_error(self):
         """Test if an error is raised when caching is used with the backprop diff_method"""

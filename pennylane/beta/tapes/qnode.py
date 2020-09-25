@@ -529,10 +529,6 @@ class QNode:
         executions. If set to zero, no caching occurs."""
         return self._caching
 
-    @caching.setter
-    def caching(self, value):
-        self._caching = value
-
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
