@@ -34,8 +34,8 @@ class TestAutogradQuantumTape:
         assert isinstance(tape, AutogradInterface)
 
     def test_get_parameters(self):
-        """Test that the get_parameters function correctly sets and returns the
-        trainable parameters"""
+        """Test that the get_parameters function correctly gets the trainable parameters and all
+        parameters, depending on the trainable_only argument"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
         c = np.array(0.3, requires_grad=True)
@@ -48,7 +48,8 @@ class TestAutogradQuantumTape:
             expval(qml.PauliX(0))
 
         assert tape.trainable_params == {0, 2}
-        assert np.all(tape.get_parameters() == [a, c])
+        assert np.all(tape.get_parameters(trainable_only=True) == [a, c])
+        assert np.all(tape.get_parameters(trainable_only=False) == [a, b, c, d])
 
     def test_execution(self):
         """Test execution"""
