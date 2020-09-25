@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.tape import AnnotatedQueue, QueuingContext, mock_operations
 from pennylane.operation import State
 
-from pennylane.tape import NewCircuitGraph
+from pennylane.tape import TapeCircuitGraph
 
 
 STATE_PREP_OPS = (
@@ -171,10 +171,10 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The :class:`~.beta.tapes.NewCircuitGraph` can also be accessed:
+    The :class:`~.beta.tapes.TapeCircuitGraph` can also be accessed:
 
     >>> tape.graph
-    <pennylane.beta.tapes.circuit_graph.NewCircuitGraph object at 0x7fcc0433a690>
+    <pennylane.beta.tapes.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
     device:
@@ -820,16 +820,16 @@ class QuantumTape(AnnotatedQueue):
         quantum circuit:
 
         >>> tape.graph
-        <pennylane.beta.tapes.circuit_graph.NewCircuitGraph object at 0x7fcc0433a690>
+        <pennylane.beta.tapes.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
 
         Note that the circuit graph is only constructed once, on first call to this property,
         and cached for future use.
 
         Returns:
-            .beta.tapes.NewCircuitGraph: the circuit graph object
+            .beta.tapes.TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = NewCircuitGraph(self.operations, self.observables, self.wires)
+            self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
 
         return self._graph
 

@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
-from pennylane.tape.measure import expval, var, sample, probs, MeasurementProcess
+from pennylane.tape.measure import MeasurementProcess
 
 
 class TestValidation:
@@ -208,7 +208,7 @@ class TestTapeConstruction:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         qn = QNode(func, dev)
 
@@ -240,7 +240,7 @@ class TestTapeConstruction:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return probs(wires=0), probs(wires=1)
+            return qml.probs(wires=0), qml.probs(wires=1)
 
         qn = QNode(func, dev, h=1e-8, order=2)
         assert qn.diff_options["h"] == 1e-8
@@ -276,7 +276,7 @@ class TestTapeConstruction:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0)), 5
+            return qml.expval(qml.PauliZ(0)), 5
 
         qn = QNode(func, dev)
 
@@ -294,8 +294,8 @@ class TestTapeConstruction:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            m = expval(qml.PauliZ(0))
-            return expval(qml.PauliX(1)), m
+            m = qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliX(1)), m
 
         qn = QNode(func, dev)
 
@@ -315,8 +315,8 @@ class TestTapeConstruction:
             op1 = qml.RX(x, wires=0)
             op2 = qml.RY(y, wires=1)
             op3 = qml.CNOT(wires=[0, 1])
-            m1 = expval(qml.PauliZ(0))
-            m2 = expval(qml.PauliX(1))
+            m1 = qml.expval(qml.PauliZ(0))
+            m2 = qml.expval(qml.PauliX(1))
             return [m1, m2]
 
         qn = QNode(func, dev)
@@ -338,7 +338,7 @@ class TestTFInterface:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         qn = QNode(func, dev, interface="tf")
@@ -364,7 +364,7 @@ class TestTorchInterface:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         qn = QNode(func, dev, interface="torch")
@@ -389,7 +389,7 @@ class TestDecorator:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         assert isinstance(func, QNode)
         assert func.__doc__ == "My function docstring"

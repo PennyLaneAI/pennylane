@@ -20,7 +20,7 @@ import networkx as nx
 from pennylane import CircuitGraph
 
 
-class NewCircuitGraph(CircuitGraph):
+class TapeCircuitGraph(CircuitGraph):
     """New circuit graph object. This will eventually grow to replace
     the existing CircuitGraph; for now, we simply inherit from the
     current CircuitGraph, and modify the instantiation so that it

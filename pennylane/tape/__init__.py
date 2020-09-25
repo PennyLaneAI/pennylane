@@ -15,9 +15,40 @@
 This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
+import contextlib
+from unittest import mock
+
 from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import expval, var, sample, state, probs, MeasurementProcess
 from .operation import mock_operations
-from .circuit_graph import NewCircuitGraph
+from .circuit_graph import TapeCircuitGraph
 from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from .qnode import QNode, qnode
+
+
+_mock_stack = None
+
+
+def enable_tape():
+    global _mock_stack
+
+    if _mock_stack is not None:
+        return
+
+    mocks = [
+        mock.patch("pennylane.qnode", qnode),
+        mock.patch("pennylane.QNode", QNode)
+    ]
+
+    with contextlib.ExitStack() as stack:
+        for m in mocks:
+            stack.enter_context(m)
+
+        _mock_stack = stack.pop_all()
+
+
+def disable_tape():
+    if _mock_stack is None:
+        raise ValueError("Tape mode is not currently enabled.")
+
+    _mock_stack.close()

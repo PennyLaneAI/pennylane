@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, NewCircuitGraph
-from pennylane.tape.measure import expval, var, sample, probs, MeasurementProcess
+from pennylane.tape import QuantumTape, TapeCircuitGraph
+from pennylane.tape.measure import MeasurementProcess
 
 
 def TestOperationMonkeypatching():
@@ -25,7 +25,7 @@ def TestOperationMonkeypatching():
     with QuantumTape() as tape:
         op = qml.RX(0.432, wires=0)
         obs = qml.PauliX(wires="a")
-        measure = expval(qml.PauliX(wires="a"))
+        measure = qml.expval(qml.PauliX(wires="a"))
 
     assert tape.operations == [op]
     assert tape.observables == [obs]
@@ -37,7 +37,7 @@ def TestOperationMonkeypatching():
     def func(x):
         global op
         op = qml.RX(x, wires=0)
-        return qml.expval(qml.PauliX(wires="a"))
+        return qml.qml.expval(qml.PauliX(wires="a"))
 
     # this should evaluate without error
     func(0.432)
@@ -59,8 +59,8 @@ class TestConstruction:
             ops += [qml.CNOT(wires=[0, "a"])]
             ops += [qml.RX(0.133, wires=4)]
             obs += [qml.PauliX(wires="a")]
-            expval(obs[0])
-            obs += [probs(wires=[0, "a"])]
+            qml.expval(obs[0])
+            obs += [qml.probs(wires=[0, "a"])]
 
         return tape, ops, obs
 
@@ -108,7 +108,7 @@ class TestConstruction:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
             t_obs2 = t_obs1 @ qml.PauliZ(3)
-            m = expval(t_obs2)
+            m = qml.expval(t_obs2)
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
@@ -124,7 +124,7 @@ class TestConstruction:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
             t_obs2 = qml.Hadamard(2) @ t_obs1
-            m = expval(t_obs2)
+            m = qml.expval(t_obs2)
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
@@ -140,7 +140,7 @@ class TestConstruction:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
             t_obs2 = qml.operation.Tensor(t_obs1, qml.Hadamard(2))
-            m = expval(t_obs2)
+            m = qml.expval(t_obs2)
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
@@ -157,7 +157,7 @@ class TestConstruction:
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
             t_obs2 = qml.PauliY(2) @ qml.PauliZ(3)
             t_obs = t_obs1 @ t_obs2
-            m = var(t_obs)
+            m = qml.var(t_obs)
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs]
@@ -194,7 +194,7 @@ class TestConstruction:
             A = qml.PauliX(wires=0)
             B = qml.PauliZ(wires=1)
             C = A @ B
-            D = expval(C)
+            D = qml.expval(C)
 
         assert len(tape.queue) == 4
         assert not tape.operations
@@ -216,8 +216,8 @@ class TestConstruction:
         with tape:
             ops += [qml.RX(0.133, wires=0)]
             obs += [qml.PauliX(wires="a")]
-            expval(obs[0])
-            obs += [probs(wires=[0, "a"])]
+            qml.expval(obs[0])
+            obs += [qml.probs(wires=[0, "a"])]
 
         assert len(tape.queue) == 5
         assert tape.operations == ops
@@ -236,7 +236,7 @@ class TestConstruction:
         with QuantumTape() as tape:
             A = qml.QubitStateVector(params[0], wires=[0, 1])
             B = qml.RX(params[1], wires=0)
-            expval(qml.PauliZ(wires=1))
+            qml.expval(qml.PauliZ(wires=1))
 
         assert tape.operations == [A, B]
         assert tape._prep == [A]
@@ -255,9 +255,9 @@ class TestConstruction:
 
         with pytest.raises(ValueError, match="must occur prior to any measurements"):
             with QuantumTape() as tape:
-                expval(qml.PauliZ(wires=1))
+                qml.expval(qml.PauliZ(wires=1))
                 qml.RX(0.5, wires=0)
-                expval(qml.PauliZ(wires=1))
+                qml.expval(qml.PauliZ(wires=1))
 
     def test_observable_with_no_measurement(self):
         """Test that an exception is raised if an observable is used without a measurement"""
@@ -266,23 +266,23 @@ class TestConstruction:
             with QuantumTape() as tape:
                 qml.RX(0.5, wires=0)
                 qml.Hermitian(np.array([[0, 1], [1, 0]]), wires=1)
-                expval(qml.PauliZ(wires=1))
+                qml.expval(qml.PauliZ(wires=1))
 
         with pytest.raises(ValueError, match="does not have a measurement type specified"):
             with QuantumTape() as tape:
                 qml.RX(0.5, wires=0)
                 qml.PauliX(wires=0) @ qml.PauliY(wires=1)
-                expval(qml.PauliZ(wires=1))
+                qml.expval(qml.PauliZ(wires=1))
 
     def test_sampling(self):
-        """Test that the tape correctly marks itself as returning samples"""
+        """Test that the tape correctly marks itself as returning qml.samples"""
         with QuantumTape() as tape:
-            expval(qml.PauliZ(wires=1))
+            qml.expval(qml.PauliZ(wires=1))
 
         assert not tape.is_sampled
 
         with QuantumTape() as tape:
-            sample(qml.PauliZ(wires=0))
+            qml.sample(qml.PauliZ(wires=0))
 
         assert tape.is_sampled
 
@@ -292,12 +292,12 @@ class TestGraph:
 
     def test_graph_creation(self, mocker):
         """Test that the circuit graph is correctly created"""
-        spy = mocker.spy(NewCircuitGraph, "__init__")
+        spy = mocker.spy(TapeCircuitGraph, "__init__")
 
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             obs = qml.PauliZ(1)
-            expval(obs)
+            qml.expval(obs)
 
         # graph has not yet been created
         assert tape._graph is None
@@ -329,8 +329,8 @@ class TestParameters:
             qml.Rot(*params[1:4], wires=0)
             qml.CNOT(wires=[0, "a"])
             qml.RX(params[4], wires=4)
-            expval(qml.PauliX(wires="a"))
-            probs(wires=[0, "a"])
+            qml.expval(qml.PauliX(wires="a"))
+            qml.probs(wires=[0, "a"])
 
         return tape, params
 
@@ -477,7 +477,7 @@ class TestParameters:
         with QuantumTape() as tape:
             qml.Rot(params[0], params[1], params[2], wires=0)
             obs = qml.Hermitian(params[3], wires=0)
-            expval(obs)
+            qml.expval(obs)
 
         assert tape.num_params == len(params)
         assert tape.get_parameters() == params
@@ -501,8 +501,8 @@ class TestInverse:
         with QuantumTape() as tape:
             prep = qml.BasisState(init_state, wires=[0, "a"])
             ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
-            m1 = probs(wires=0)
-            m2 = probs(wires="a")
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
 
         tape.inv()
 
@@ -527,8 +527,8 @@ class TestInverse:
         with QuantumTape() as tape:
             prep = qml.BasisState(init_state, wires=[0, "a"])
             ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
-            m1 = probs(wires=0)
-            m2 = probs(wires="a")
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
 
         tape.trainable_params = {1, 2}
         tape.inv()
@@ -630,7 +630,7 @@ class TestExpand:
 
             qml.CNOT(wires=[0, "a"])
             qml.RY(0.2, wires="a")
-            probs(wires=0), probs(wires="a")
+            qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand()
         assert len(new_tape.operations) == 5
@@ -641,7 +641,7 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.U3(0, 1, 2, wires=0)
             qml.Rot(3, 4, 5, wires=0)
-            probs(wires=0), probs(wires="a")
+            qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
         assert len(new_tape.operations) == 4
@@ -661,7 +661,7 @@ class TestExpand:
 
             qml.CNOT(wires=[0, "a"])
             qml.RY(0.2, wires="a")
-            probs(wires=0), probs(wires="a")
+            qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
@@ -679,7 +679,7 @@ class TestExpand:
 
             qml.CNOT(wires=[0, "a"])
             qml.RY(0.2, wires="a")
-            probs(wires=0), probs(wires="a")
+            qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
         assert len(new_tape.operations) == 7
@@ -691,11 +691,11 @@ class TestExpand:
             qml.BasisState(np.array([1, 1]), wires=[0, "a"])
             qml.CNOT(wires=[0, "a"])
             qml.RY(0.2, wires="a")
-            probs(wires=0)
+            qml.probs(wires=0)
             # expands into RY on wire b
-            expval(qml.PauliZ("a") @ qml.Hadamard("b"))
+            qml.expval(qml.PauliZ("a") @ qml.Hadamard("b"))
             # expands into QubitUnitary on wire 0
-            var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
+            qml.var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
 
         new_tape = tape.expand(expand_measurements=True)
 
@@ -723,7 +723,7 @@ class TestExecution:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         assert tape.output_dim == 1
 
@@ -767,8 +767,8 @@ class TestExecution:
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
             qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1])
+            qml.probs(wires=0)
+            qml.probs(wires=[1])
 
         # estimate output dim should be correct
         assert tape.output_dim == sum([2, 2])
@@ -790,8 +790,8 @@ class TestExecution:
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
             qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1, 2])
+            qml.probs(wires=0)
+            qml.probs(wires=[1, 2])
 
         # estimate output dim should be correct
         assert tape.output_dim == sum([2, 4])
@@ -804,7 +804,7 @@ class TestExecution:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single expval output"""
+        with a single qml.expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -813,7 +813,7 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         assert tape.output_dim == 1
 
@@ -825,7 +825,7 @@ class TestExecution:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple expval outputs"""
+        with multiple qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -834,8 +834,8 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
 
         assert tape.output_dim == 2
 
@@ -847,7 +847,7 @@ class TestExecution:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        with qml.expval and qml.var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -856,8 +856,8 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            var(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliX(1))
 
         assert tape.output_dim == 2
 
@@ -869,7 +869,7 @@ class TestExecution:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and var outputs"""
+        with prob and qml.var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -878,8 +878,8 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
 
         assert tape.output_dim == 5
 
@@ -893,7 +893,7 @@ class TestExecution:
 
     def test_single_mode_sample(self):
         """Test that there is only one array of values returned
-        for a single wire sample"""
+        for a single wire qml.sample"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -902,14 +902,14 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            sample(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
 
         res = tape.execute(dev)
         assert res.shape == (1, 10)
 
     def test_multiple_samples(self):
         """Test that there is only one array of values returned
-        for multiple samples"""
+        for multiple qml.samples"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -918,15 +918,15 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            sample(qml.PauliZ(0))
-            sample(qml.PauliZ(1))
+            qml.sample(qml.PauliZ(0))
+            qml.sample(qml.PauliZ(1))
 
         res = tape.execute(dev)
         assert res.shape == (2, 10)
 
     def test_samples_expval(self):
         """Test that multiple arrays of values are returned
-        for combinations of samples and statistics"""
+        for combinations of qml.samples and statistics"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -935,8 +935,8 @@ class TestExecution:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            sample(qml.PauliZ(0))
-            expval(qml.PauliZ(1))
+            qml.sample(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
 
         res = tape.execute(dev)
         assert res[0].shape == (10,)
@@ -948,7 +948,7 @@ class TestExecution:
 
         with QuantumTape() as tape:
             qml.U3(0.1, 0.2, 0.3, wires=[0])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
         res = tape.execute(dev)
@@ -960,7 +960,7 @@ class TestCVExecution:
 
     def test_single_output_value(self, tol):
         """Tests correct execution and output shape for a CV tape
-        with a single expval output"""
+        with a single qml.expval output"""
         dev = qml.device("default.gaussian", wires=2)
         x = 0.543
         y = -0.654
@@ -969,7 +969,7 @@ class TestCVExecution:
             qml.Displacement(x, 0, wires=[0])
             qml.Squeezing(y, 0, wires=[1])
             qml.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
-            expval(qml.NumberOperator(0))
+            qml.expval(qml.NumberOperator(0))
 
         assert tape.output_dim == 1
 
@@ -987,8 +987,8 @@ class TestCVExecution:
             qml.Displacement(x, 0, wires=[0])
             qml.Squeezing(y, 0, wires=[1])
             qml.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
-            expval(qml.PolyXP(np.diag([0, 1, 0]), wires=0))  # X^2
-            var(qml.P(1))
+            qml.expval(qml.PolyXP(np.diag([0, 1, 0]), wires=0))  # X^2
+            qml.var(qml.P(1))
 
         assert tape.output_dim == 2
 
@@ -1009,7 +1009,7 @@ class TestGradMethod:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            probs(wires=[0, 1])
+            qml.probs(wires=[0, 1])
 
         assert tape._grad_method(0) is None
         assert tape._grad_method(1) == "F"
@@ -1022,13 +1022,13 @@ class TestGradMethod:
         assert tape._par_info[2]["grad_method"] == "F"
 
     def test_independent(self):
-        """Test that an independent variable is properly marked
+        """Test that an independent qml.variable is properly marked
         as having a zero gradient"""
 
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
-            expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(0))
 
         assert tape._grad_method(0) == "F"
         assert tape._grad_method(1) == "0"
@@ -1063,7 +1063,7 @@ class TestJacobian:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            probs(wires=[0, 1])
+            qml.probs(wires=[0, 1])
 
         # by default all parameters are assumed to be trainable
         with pytest.raises(
@@ -1083,7 +1083,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
-            expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(0))
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -1099,7 +1099,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
-            expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(0))
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
@@ -1114,7 +1114,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
-            expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(0))
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -1150,8 +1150,8 @@ class TestJacobian:
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
             qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1])
+            qml.probs(wires=0)
+            qml.probs(wires=[1])
 
         # inferred output dim should be correct
         assert tape.output_dim == sum([2, 2])
@@ -1176,8 +1176,8 @@ class TestJacobian:
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
             qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1, 2])
+            qml.probs(wires=0)
+            qml.probs(wires=[1, 2])
 
         # inferred output dim should be correct
         assert tape.output_dim == sum([2, 4])
@@ -1200,7 +1200,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         res = tape.jacobian(dev)
@@ -1224,7 +1224,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         tape.trainable_params = {}
@@ -1246,7 +1246,7 @@ class TestJacobian:
         with QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         res = tape.jacobian(dev, order=1)
@@ -1266,7 +1266,7 @@ class TestJacobian:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # test Jacobian with no parameters
         res1 = tape.jacobian(dev)
@@ -1295,7 +1295,7 @@ class TestJacobian:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # compute numeric gradient of parameter 0, without passing y0
         res1 = tape.numeric_pd(0, dev)
@@ -1319,7 +1319,7 @@ class TestJacobian:
             qml.RY(1, wires=[1])
             qml.RZ(1, wires=[2])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2))
             for k, v in tape._queue.items():
                 print(k, v)
 
@@ -1341,15 +1341,15 @@ class TestJacobianIntegration:
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
             qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1, 2])
+            qml.probs(wires=0)
+            qml.probs(wires=[1, 2])
 
         res = tape.jacobian(dev)
         assert res.shape == (6, 3)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single expval output"""
+        with a single qml.expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1358,7 +1358,7 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         res = tape.jacobian(dev)
         assert res.shape == (1, 2)
@@ -1368,7 +1368,7 @@ class TestJacobianIntegration:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple expval outputs"""
+        with multiple qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1377,8 +1377,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
 
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
@@ -1388,7 +1388,7 @@ class TestJacobianIntegration:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        with qml.expval and qml.var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1397,8 +1397,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            var(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliX(1))
 
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
@@ -1408,7 +1408,7 @@ class TestJacobianIntegration:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1417,8 +1417,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
 
         res = tape.jacobian(dev)
         assert res.shape == (5, 2)
@@ -1464,7 +1464,7 @@ class TestJacobianCVIntegration:
         with QuantumTape() as tape:
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
-            var(qml.NumberOperator(0))
+            qml.var(qml.NumberOperator(0))
 
         tape.trainable_params = {0, 1}
         res = tape.jacobian(dev)
@@ -1483,8 +1483,8 @@ class TestJacobianCVIntegration:
         with QuantumTape() as tape:
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
-            expval(qml.NumberOperator(0))
-            var(qml.NumberOperator(0))
+            qml.expval(qml.NumberOperator(0))
+            qml.var(qml.NumberOperator(0))
 
         tape.trainable_params = {0, 1}
         res = tape.jacobian(dev)
@@ -1501,7 +1501,7 @@ class TestJacobianCVIntegration:
 
         with QuantumTape() as tape:
             qml.Displacement(a, 0, wires=0)
-            expval(qml.QuadOperator(phi, wires=0))
+            qml.expval(qml.QuadOperator(phi, wires=0))
 
         tape.trainable_params = {2}
         res = tape.jacobian(dev)

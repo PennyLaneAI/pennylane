@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.tape.measure import expval, sample, probs
 from pennylane.tape.interfaces.torch import TorchInterface
 
 
@@ -31,7 +30,7 @@ class TestTorchQuantumTape:
         """Test that the interface is correctly applied"""
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.RX(0.5, wires=0)
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
@@ -41,7 +40,7 @@ class TestTorchQuantumTape:
         """Test that the interface is correctly applied multiple times"""
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.RX(0.5, wires=0)
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
@@ -65,7 +64,7 @@ class TestTorchQuantumTape:
             qml.Rot(a, b, c, wires=0)
             qml.RX(d, wires=1)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         assert tape.trainable_params == {0, 2}
         assert np.all(tape.get_parameters() == [a, c])
@@ -78,7 +77,7 @@ class TestTorchQuantumTape:
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.RY(a, wires=0)
             qml.RX(torch.tensor(0.2), wires=0)
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         assert tape.trainable_params == {0}
         res = tape.execute(dev)
@@ -103,8 +102,8 @@ class TestTorchQuantumTape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliY(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliY(1))
 
         assert tape.trainable_params == {1, 2}
         res = tape.execute(dev)
@@ -135,7 +134,7 @@ class TestTorchQuantumTape:
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         tape.jacobian_options = {"h": 1e-8, "order": 2}
         res = tape.execute(dev)
@@ -159,8 +158,8 @@ class TestTorchQuantumTape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliY(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliY(1))
 
         assert tape.trainable_params == {0, 1}
         res = tape.execute(dev)
@@ -185,8 +184,8 @@ class TestTorchQuantumTape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliY(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliY(1))
 
         assert tape.trainable_params == {0, 1}
 
@@ -224,7 +223,7 @@ class TestTorchQuantumTape:
             qml.RY(params[0] * params[1], wires=0)
             qml.RZ(0.2, wires=0)
             qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         assert tape.trainable_params == {0, 2}
 
@@ -250,8 +249,8 @@ class TestTorchQuantumTape:
             qml.RY(0.2, wires=0)
             qml.RX(torch.tensor(0.1), wires=0)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliZ(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
 
         assert tape.trainable_params == set()
 
@@ -278,7 +277,7 @@ class TestTorchQuantumTape:
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         assert tape.trainable_params == {1}
         res = tape.execute(dev)
@@ -314,7 +313,7 @@ class TestTorchQuantumTape:
         with tape:
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         tape = TorchInterface.apply(tape.expand())
 
@@ -365,8 +364,8 @@ class TestTorchQuantumTape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            probs(wires=[0])
-            probs(wires=[1])
+            qml.probs(wires=[0])
+            qml.probs(wires=[1])
 
         res = tape.execute(dev)
 
@@ -394,7 +393,7 @@ class TestTorchQuantumTape:
 
     def test_ragged_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
         y_val = -0.654
@@ -405,8 +404,8 @@ class TestTorchQuantumTape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            probs(wires=[1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[1])
 
         res = tape.execute(dev)
 
@@ -439,8 +438,8 @@ class TestTorchQuantumTape:
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            sample(qml.PauliZ(0))
-            sample(qml.PauliX(1))
+            qml.sample(qml.PauliZ(0))
+            qml.sample(qml.PauliX(1))
 
         res = tape.execute(dev)
 

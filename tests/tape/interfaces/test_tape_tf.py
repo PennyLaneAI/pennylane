@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.tape.measure import expval, var, sample, probs
 from pennylane.tape.interfaces.tf import TFInterface
 
 
@@ -31,7 +30,7 @@ class TestTFQuantumTape:
         """Test that the interface is correctly applied"""
         with TFInterface.apply(QuantumTape()) as tape:
             qml.RX(0.5, wires=0)
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
@@ -42,7 +41,7 @@ class TestTFQuantumTape:
         """Test that the interface is correctly applied multiple times"""
         with TFInterface.apply(QuantumTape()) as tape:
             qml.RX(0.5, wires=0)
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
@@ -68,7 +67,7 @@ class TestTFQuantumTape:
                 qml.Rot(a, b, c, wires=0)
                 qml.RX(d, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliX(0))
+                qml.expval(qml.PauliX(0))
 
         assert qtape.trainable_params == {0, 2}
         assert np.all(qtape.get_parameters() == [a, c])
@@ -82,7 +81,7 @@ class TestTFQuantumTape:
             with TFInterface.apply(QuantumTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             assert qtape.trainable_params == {0}
             res = qtape.execute(dev)
@@ -103,8 +102,8 @@ class TestTFQuantumTape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliY(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(1))
 
             assert qtape.trainable_params == {0, 1}
             res = qtape.execute(dev)
@@ -134,8 +133,8 @@ class TestTFQuantumTape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliY(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(1))
 
             assert qtape.trainable_params == {0, 1}
             res = qtape.execute(dev)
@@ -159,7 +158,7 @@ class TestTFQuantumTape:
             with TFInterface.apply(QuantumTape()) as qtape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             res = qtape.execute(dev)
 
@@ -183,8 +182,8 @@ class TestTFQuantumTape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliY(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(1))
 
             assert qtape.trainable_params == {0, 1}
 
@@ -220,8 +219,8 @@ class TestTFQuantumTape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliY(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliY(1))
 
         with tf.GradientTape() as tape:
             qtape.set_parameters([a, b], trainable_only=False)
@@ -260,7 +259,7 @@ class TestTFQuantumTape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + tf.sin(a), wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             assert qtape.trainable_params == {0, 2}
             assert qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
@@ -281,8 +280,8 @@ class TestTFQuantumTape:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliZ(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
 
             assert qtape.trainable_params == set()
 
@@ -304,7 +303,7 @@ class TestTFQuantumTape:
             with TFInterface.apply(QuantumTape()) as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             assert qtape.trainable_params == {1}
             res = qtape.execute(dev)
@@ -341,7 +340,7 @@ class TestTFQuantumTape:
             with qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)
-                expval(qml.PauliX(0))
+                qml.expval(qml.PauliX(0))
 
             qtape = TFInterface.apply(qtape.expand())
 
@@ -382,8 +381,8 @@ class TestTFQuantumTape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
-                probs(wires=[0])
-                probs(wires=[1])
+                qml.probs(wires=[0])
+                qml.probs(wires=[1])
 
             res = qtape.execute(dev)
 
@@ -412,7 +411,7 @@ class TestTFQuantumTape:
 
     def test_ragged_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -422,8 +421,8 @@ class TestTFQuantumTape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                probs(wires=[1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[1])
 
             res = qtape.execute(dev)
 
@@ -449,8 +448,8 @@ class TestTFQuantumTape:
             with TFInterface.apply(QuantumTape()) as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
-                sample(qml.PauliZ(0))
-                sample(qml.PauliX(1))
+                qml.sample(qml.PauliZ(0))
+                qml.sample(qml.PauliX(1))
 
             res = qtape.execute(dev)
 
@@ -483,7 +482,7 @@ class TestTFPassthru:
             with QuantumTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             res = qtape.execute(dev)
 
@@ -503,8 +502,8 @@ class TestTFPassthru:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliY(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(1))
 
             res = qtape.execute(dev)
 
@@ -535,8 +534,8 @@ class TestTFPassthru:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliY(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(1))
 
             res = qtape.execute(dev)
 
@@ -575,7 +574,7 @@ class TestTFPassthru:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + tf.sin(a), wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
 
             assert qtape.get_parameters() == [a * c, b, c + c ** 2 + tf.sin(a)]
             res = qtape.execute(dev)
@@ -597,8 +596,8 @@ class TestTFPassthru:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                expval(qml.PauliZ(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
 
             res = qtape.execute(dev)
 
@@ -619,7 +618,7 @@ class TestTFPassthru:
             with QuantumTape() as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
-                expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(0))
             res = qtape.execute(dev)
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
@@ -656,7 +655,7 @@ class TestTFPassthru:
             with qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)
-                expval(qml.PauliX(0))
+                qml.expval(qml.PauliX(0))
 
             qtape = qtape.expand()
 
@@ -697,8 +696,8 @@ class TestTFPassthru:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
-                probs(wires=[0])
-                probs(wires=[1])
+                qml.probs(wires=[0])
+                qml.probs(wires=[1])
 
             res = qtape.execute(dev)
 
@@ -727,7 +726,7 @@ class TestTFPassthru:
 
     def test_ragged_differentiation(self, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device("default.qubit.tf", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -749,8 +748,8 @@ class TestTFPassthru:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
-                expval(qml.PauliZ(0))
-                probs(wires=[1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[1])
 
             res = qtape.execute(dev)
 
@@ -776,8 +775,8 @@ class TestTFPassthru:
             with QuantumTape() as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
-                sample(qml.PauliZ(0))
-                sample(qml.PauliX(1))
+                qml.sample(qml.PauliZ(0))
+                qml.sample(qml.PauliX(1))
 
             res = qtape.execute(dev)
 

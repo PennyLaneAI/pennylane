@@ -17,7 +17,6 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, qnode, QNode, QubitParamShiftTape
-from pennylane.tape.measure import expval, var, sample, probs
 
 
 @pytest.mark.parametrize(
@@ -38,7 +37,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
 
@@ -68,7 +67,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
         circuit(a)
@@ -98,7 +97,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         a = tf.Variable(0.1, dtype=tf.float64)
 
@@ -132,7 +131,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), expval(qml.PauliY(1))]
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
         res = circuit(a, b)
 
@@ -164,7 +163,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), expval(qml.PauliY(1))]
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
         jac_fn = qml.jacobian(circuit)
         res = jac_fn(a, b)
@@ -199,7 +198,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         qml.jacobian(circuit)(a)
 
@@ -223,7 +222,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0)), expval(qml.PauliY(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         def loss(a, b):
             return np.sum(circuit(a, b))
@@ -277,7 +276,7 @@ class TestQNode:
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
             qml.RX(c + c ** 2 + np.sin(a), wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         res = qml.jacobian(circuit)(a, b, c)
 
@@ -297,7 +296,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0)), expval(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
@@ -332,7 +331,7 @@ class TestQNode:
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         res = circuit(U, a)
 
@@ -366,7 +365,7 @@ class TestQNode:
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
-            return expval(qml.PauliX(0))
+            return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
 
@@ -406,7 +405,7 @@ class TestQNode:
 
     def test_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
 
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -417,7 +416,7 @@ class TestQNode:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return probs(wires=[0]), probs(wires=[1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -444,7 +443,7 @@ class TestQNode:
 
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -467,7 +466,7 @@ class TestQNode:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), probs(wires=[1])]
+            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
         res = circuit(x, y)
 
@@ -494,7 +493,7 @@ class TestQNode:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return [sample(qml.PauliZ(0)), sample(qml.PauliX(1))]
+            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
 
         res = circuit()
 
@@ -509,7 +508,7 @@ def qtransform(qnode, a, framework=np):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
 
-        # the following global variable is defined simply for testing
+        # the following global qml.variable is defined simply for testing
         # purposes, so that we can easily extract the transformed operations
         # for verification.
         global t_op
@@ -550,18 +549,18 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="autograd", diff_method=diff_method)
     def circuit(weights):
-        # the following global variables are defined simply for testing
+        # the following global qml.variables are defined simply for testing
         # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
-        return expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.PauliZ(wires=0))
 
     weights = np.array([0.32, 0.543], requires_grad=True)
     a = np.array(0.5, requires_grad=True)
 
     def loss(weights, a):
-        # the following global variable is defined simply for testing
+        # the following global qml.variable is defined simply for testing
         # purposes, so that we can easily extract the transformed QNode
         # for verification.
         global new_circuit

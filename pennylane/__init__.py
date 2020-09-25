@@ -48,6 +48,8 @@ from .utils import inv
 from ._version import __version__
 from .io import *
 
+import pennylane.tape
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 

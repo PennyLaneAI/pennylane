@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QubitParamShiftTape, qnode
-from pennylane.tape.measure import expval, var, sample, probs, MeasurementProcess
+from pennylane.tape.measure import MeasurementProcess
 
 
 class TestGradMethod:
@@ -33,7 +33,7 @@ class TestGradMethod:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            probs(wires=[0, 1])
+            qml.probs(wires=[0, 1])
 
         assert tape._grad_method(0) is None
         assert tape._grad_method(1) == "A"
@@ -46,13 +46,13 @@ class TestGradMethod:
         assert tape._par_info[2]["grad_method"] == "A"
 
     def test_independent(self):
-        """Test that an independent variable is properly marked
+        """Test that an independent qml.variable is properly marked
         as having a zero gradient"""
 
         with QubitParamShiftTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
-            expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(0))
 
         assert tape._grad_method(0) == "A"
         assert tape._grad_method(1) == "0"
@@ -79,7 +79,7 @@ class TestGradMethod:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            probs(wires=[0, 1])
+            qml.probs(wires=[0, 1])
 
         assert tape._grad_method(0) is None
         assert tape._grad_method(1) == "F"
@@ -100,7 +100,7 @@ class TestParameterShiftRule:
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {1}
 
@@ -128,7 +128,7 @@ class TestParameterShiftRule:
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {1, 2, 3}
 
@@ -162,7 +162,7 @@ class TestParameterShiftRule:
             qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             qml.Hadamard(wires=0)
             G(b, wires=[0, 1])
-            expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0))
 
         tape.trainable_params = {2}
 
@@ -190,7 +190,7 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[1, 0])
             qml.RX(params[2], wires=[0])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
@@ -212,7 +212,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, mocker, tol):
-        """Tests that the variance parameter-shift rule agrees with the first and second
+        """Tests that the qml.variance parameter-shift rule agrees with the first and second
         order finite differences"""
         params = np.array([0.1, -1.6, np.pi / 5])
 
@@ -224,7 +224,7 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[1, 0])
             qml.RX(params[2], wires=[0])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0)), var(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
@@ -250,7 +250,7 @@ class TestJacobianIntegration:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single expval output"""
+        with a single qml.expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -259,7 +259,7 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         res = tape.jacobian(dev, method="analytic")
         assert res.shape == (1, 2)
@@ -269,7 +269,7 @@ class TestJacobianIntegration:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple expval outputs"""
+        with multiple qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -278,8 +278,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            expval(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
 
         res = tape.jacobian(dev, method="analytic")
         assert res.shape == (2, 2)
@@ -289,7 +289,7 @@ class TestJacobianIntegration:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        with qml.expval and qml.var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -298,8 +298,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            var(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliX(1))
 
         res = tape.jacobian(dev, method="analytic")
         assert res.shape == (2, 2)
@@ -309,7 +309,7 @@ class TestJacobianIntegration:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -318,8 +318,8 @@ class TestJacobianIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            expval(qml.PauliZ(0))
-            probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
 
         res = tape.jacobian(dev, method="analytic")
         assert res.shape == (5, 2)
@@ -362,7 +362,7 @@ class TestJacobianIntegration:
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
-            var(qml.PauliZ(0))
+            qml.var(qml.PauliZ(0))
 
         res = tape.execute(dev)
         expected = 1 - np.cos(a) ** 2
@@ -399,7 +399,7 @@ class TestJacobianIntegration:
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
-            var(qml.Hermitian(A, 0))
+            qml.var(qml.Hermitian(A, 0))
 
         tape.trainable_params = {0}
 
@@ -439,8 +439,8 @@ class TestJacobianIntegration:
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
-            var(qml.PauliZ(0))
-            var(qml.Hermitian(A, 1))
+            qml.var(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
 
         tape.trainable_params = {0, 1}
 
@@ -468,7 +468,7 @@ class TestJacobianIntegration:
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
-        values and variances"""
+        values and qml.variances"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54
@@ -481,9 +481,9 @@ class TestJacobianIntegration:
             qml.CNOT(wires=[1, 2])
             qml.RX(c, wires=2)
             qml.CNOT(wires=[0, 1])
-            var(qml.PauliZ(0))
-            expval(qml.PauliZ(1))
-            var(qml.PauliZ(2))
+            qml.var(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+            qml.var(qml.PauliZ(2))
 
         res = tape.execute(dev)
         expected = np.array(

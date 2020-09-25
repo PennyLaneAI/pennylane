@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, qnode, QNode
-from pennylane.tape.measure import expval, var, sample, probs
 
 
 @pytest.mark.parametrize(
@@ -41,7 +40,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         a = tf.Variable(0.1)
 
@@ -73,7 +72,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         a = tf.Variable(0.1)
         circuit(a)
@@ -111,7 +110,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         from pennylane import numpy as anp
 
@@ -146,7 +145,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), expval(qml.PauliY(1))]
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
@@ -183,7 +182,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), expval(qml.PauliY(1))]
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
         circuit.to_tf(dtype=tf.float32)
         assert circuit.dtype is tf.float32
@@ -216,7 +215,7 @@ class TestQNode:
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -243,7 +242,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0)), expval(qml.PauliY(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
@@ -300,7 +299,7 @@ class TestQNode:
             qml.RY(x * z, wires=0)
             qml.RZ(y, wires=0)
             qml.RX(z + z ** 2 + tf.sin(a), wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
             res = circuit(a, b, c)
@@ -324,7 +323,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(0)), expval(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         a = 0.1
         b = tf.constant(0.2, dtype=tf.float64)
@@ -350,7 +349,7 @@ class TestQNode:
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
-            return expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
             res = circuit(U, a)
@@ -387,7 +386,7 @@ class TestQNode:
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
-            return expval(qml.PauliX(0))
+            return qml.expval(qml.PauliX(0))
 
         with tf.GradientTape() as tape:
             res = circuit(a, p)
@@ -427,7 +426,7 @@ class TestQNode:
 
     def test_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple probs outputs"""
+        with multiple qml.probs outputs"""
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -438,7 +437,7 @@ class TestQNode:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return probs(wires=[0]), probs(wires=[1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
@@ -468,7 +467,7 @@ class TestQNode:
 
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with prob and qml.expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -492,7 +491,7 @@ class TestQNode:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [expval(qml.PauliZ(0)), probs(wires=[1])]
+            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
@@ -519,7 +518,7 @@ class TestQNode:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return [sample(qml.PauliZ(0)), sample(qml.PauliX(1))]
+            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
 
         with tf.GradientTape() as tape:
             res = circuit()
@@ -535,7 +534,7 @@ def qtransform(qnode, a, framework=tf):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
 
-        # the following global variable is defined simply for testing
+        # the following global qml.variable is defined simply for testing
         # purposes, so that we can easily extract the transformed operations
         # for verification.
         global t_op
@@ -575,12 +574,12 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="tf", diff_method=diff_method)
     def circuit(weights):
-        # the following global variables are defined simply for testing
+        # the following global qml.variables are defined simply for testing
         # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
-        return expval(qml.PauliZ(wires=0))
+        return qml.expval(qml.PauliZ(wires=0))
 
     weights = tf.Variable([0.32, 0.543], dtype=tf.float64)
     a = tf.Variable(0.5, dtype=tf.float64)
