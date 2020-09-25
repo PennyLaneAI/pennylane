@@ -520,7 +520,6 @@ class QubitDevice(Device):
 
         if 2 < num_wires < 31:
 
-            num_basis_states = 2 ** num_wires
             # The states_to_binary method creates basis states faster (for
             # larger systems at times over x25 times faster) than the approach
             # using itertools, at the expense of using more memory.
@@ -531,13 +530,8 @@ class QubitDevice(Device):
             # therefore this approach is used only for fewer wires.
             # For smaller number of wires speed is comparable to the next
             # approach, hence we resort to that one for testing purposes
-            states_base_ten = np.arange(num_basis_states, dtype=np.int64)
-
-            # Creating batches of basis states such that the array kept in
-            # memory for states_to_binary is smaller
-            states_store = []
             dtype = np.int32
-            samples = np.arange(2 ** num_wires, dtype=dtype)
+            states_base_ten = np.arange(num_basis_states, dtype=dtype)
             basis_states = self.states_to_binary(samples, num_wires, dtype=dtype)
 
         else:
