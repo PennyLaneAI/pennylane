@@ -68,14 +68,14 @@ class TestCreateBasisState:
         assert [2] * (2 * nr_wires) == list(np.shape(dev._create_basis_state(0)))
 
     @pytest.mark.parametrize("index", [0, 1])
-    def test_expected_state(self, nr_wires, index):
+    def test_expected_state(self, nr_wires, index, tol):
         """Tests output basis state against the expected one"""
         rho = np.zeros((2 ** nr_wires, 2 ** nr_wires))
         rho[index, index] = 1
         rho = np.reshape(rho, [2] * (2 * nr_wires))
         dev = qml.device("default.mixed", wires=nr_wires)
 
-        assert np.allclose(rho, dev._create_basis_state(index))
+        assert np.allclose(rho, dev._create_basis_state(index), atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("nr_wires", [2, 3])
@@ -88,134 +88,134 @@ class TestState:
 
         assert (2 ** nr_wires, 2 ** nr_wires) == np.shape(dev.state)
 
-    def test_init_state(self, nr_wires):
+    def test_init_state(self, nr_wires, tol):
         """Tests that the state is |0...0><0...0| after initialization of the device"""
         rho = np.zeros((2 ** nr_wires, 2 ** nr_wires))
         rho[0, 0] = 1
         dev = qml.device("default.mixed", wires=nr_wires)
 
-        assert np.allclose(rho, dev.state)
+        assert np.allclose(rho, dev.state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", [CNOT, CZ])
-    def test_state_after_twoqubit(self, nr_wires, op):
+    def test_state_after_twoqubit(self, nr_wires, op, tol):
         """Tests that state is correctly retrieved after applying two-qubit operations on the
         first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=[0, 1])])
         current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
 
-        assert np.allclose(dev.state, current_state)
+        assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", channels)
-    def test_state_after_channel(self, nr_wires, op):
+    def test_state_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly retrieved after applying a channel on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(0.5, wires=0)])
         current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
 
-        assert np.allclose(dev.state, current_state)
+        assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", [PauliX, PauliZ, Hadamard])
-    def test_state_after_gate(self, nr_wires, op):
+    def test_state_after_gate(self, nr_wires, op, tol):
         """Tests that state is correctly retrieved after applying operations on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=0)])
         current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
 
-        assert np.allclose(dev.state, current_state)
+        assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("nr_wires", [2, 3])
 class TestReset:
     """Unit tests for the method `reset()`"""
 
-    def test_reset_basis(self, nr_wires):
+    def test_reset_basis(self, nr_wires, tol):
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = dev._create_basis_state(1)
         dev.reset()
 
-        assert np.allclose(dev._state, dev._create_basis_state(0))
+        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", [CNOT, CZ])
-    def test_reset_after_twoqubit(self, nr_wires, op):
+    def test_reset_after_twoqubit(self, nr_wires, op, tol):
         """Tests that state is correctly reset after applying two-qubit operations on the first
         wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=[0, 1])])
         dev.reset()
 
-        assert np.allclose(dev._state, dev._create_basis_state(0))
+        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", channels)
-    def test_reset_after_channel(self, nr_wires, op):
+    def test_reset_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly reset after applying a channel on the first
         wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(0.5, wires=[0])])
         dev.reset()
 
-        assert np.allclose(dev._state, dev._create_basis_state(0))
+        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", [PauliX, PauliZ, Hadamard])
-    def test_reset_after_channel(self, nr_wires, op):
+    def test_reset_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly reset after applying gates on the first
         wire"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=0)])
         dev.reset()
 
-        assert np.allclose(dev._state, dev._create_basis_state(0))
+        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestAnalyticProb:
     """Unit tests for the method `analytic_probability()` """
 
-    def test_prob_init_state(self, nr_wires):
+    def test_prob_init_state(self, nr_wires, tol):
         """Tests that we obtain the correct probabilities for the state |0...0><0...0|"""
         dev = qml.device("default.mixed", wires=nr_wires)
         probs = np.zeros(2 ** nr_wires)
         probs[0] = 1
 
-        assert np.allclose(probs, dev.analytic_probability())
+        assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
-    def test_prob_basis_state(self, nr_wires):
+    def test_prob_basis_state(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the basis state |1...1><1...1|"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = dev._create_basis_state(2 ** nr_wires - 1)
         probs = np.zeros(2 ** nr_wires)
         probs[-1] = 1
 
-        assert np.allclose(probs, dev.analytic_probability())
+        assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
-    def test_prob_hadamard(self, nr_wires):
+    def test_prob_hadamard(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the equal superposition state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = hadamard_state(nr_wires)
         probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
-        assert np.allclose(probs, dev.analytic_probability())
+        assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
-    def test_prob_mixed(self, nr_wires):
+    def test_prob_mixed(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the maximally mixed state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = max_mixed_state(nr_wires)
         probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
-        assert np.allclose(probs, dev.analytic_probability())
+        assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
-    def test_prob_root(self, nr_wires):
+    def test_prob_root(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = root_state(nr_wires)
         probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
 
-        assert np.allclose(probs, dev.analytic_probability())
+        assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
     def test_none_state(self, nr_wires):
         """Tests that return is `None` when the state is `None`"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = None
 
-        assert dev.analytic_probability() == None
+        assert dev.analytic_probability() is None
 
 
 class TestKrausOps:
@@ -228,11 +228,11 @@ class TestKrausOps:
     ]
 
     @pytest.mark.parametrize("ops", unitary_ops)
-    def test_unitary_kraus(self, ops):
+    def test_unitary_kraus(self, ops, tol):
         """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
         dev = qml.device("default.mixed", wires=2)
 
-        assert np.allclose(dev._get_kraus(ops[0]), [ops[1]])
+        assert np.allclose(dev._get_kraus(ops[0]), [ops[1]], atol=tol, rtol=0)
 
     diagonal_ops = [
         (PauliZ(wires=0), np.array([1, -1])),
@@ -240,11 +240,11 @@ class TestKrausOps:
     ]
 
     @pytest.mark.parametrize("ops", diagonal_ops)
-    def test_diagonal_kraus(self, ops):
+    def test_diagonal_kraus(self, ops, tol):
         """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
         dev = qml.device("default.mixed", wires=2)
 
-        assert np.allclose(dev._get_kraus(ops[0]), ops[1])
+        assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
 
     p = 0.5
     K0 = np.sqrt(1 - p) * np.eye(2)
@@ -261,11 +261,11 @@ class TestKrausOps:
     ]
 
     @pytest.mark.parametrize("ops", channel_ops)
-    def test_channel_kraus(self, ops):
+    def test_channel_kraus(self, ops, tol):
         """Tests that kraus matrices of non-unitary channels are retrieved correctly"""
         dev = qml.device("default.mixed", wires=1)
 
-        assert np.allclose(dev._get_kraus(ops[0]), ops[1])
+        assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
 
 
 class TestApplyChannel:
@@ -284,7 +284,7 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_init)
-    def test_channel_init(self, x):
+    def test_channel_init(self, x, tol):
         """Tests that channels are correctly applied to the default initial state"""
         nr_wires = x[0]
         op = x[1]
@@ -297,7 +297,7 @@ class TestApplyChannel:
             kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
-        assert np.allclose(dev._state, target_state)
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     x_apply_channel_mixed = [
         [1, PauliX, max_mixed_state(1)],
