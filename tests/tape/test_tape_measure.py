@@ -21,7 +21,9 @@ from pennylane import QuantumFunctionError
 from pennylane.devices import DefaultGaussian, DefaultQubit
 
 # Beta imports
-from pennylane.tape import qnode, AnnotatedQueue, mock_operations
+from pennylane.tape import qnode
+from pennylane.tape.queuing import AnnotatedQueue
+from pennylane.tape.operation import mock_operations
 from pennylane.tape.measure import (
     expval,
     var,

@@ -22,7 +22,9 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import State
-from pennylane.tape import AnnotatedQueue, QueuingContext, mock_operations, TapeCircuitGraph
+from pennylane.tape import TapeCircuitGraph
+from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.tape.operation import mock_operations
 
 
 STATE_PREP_OPS = (

@@ -20,7 +20,8 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.tape import Queue, AnnotatedQueue, QueuingContext, mock_operations
+from pennylane.tape.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext
+from pennylane.tape.operation import mock_operations
 
 
 @pytest.fixture(autouse=True)
