@@ -255,7 +255,7 @@ def max_independent_set(graph, constrained=True):
     share a common edge. To solve the Maximum Independent Set problem, we attept to find the largest such set.
 
     Args:
-        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -326,7 +326,7 @@ def min_vertex_cover(graph, constrained=True):
     every edge in the graph has one of the vertices as an endpoint.
 
     Args:
-        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -388,15 +388,15 @@ def min_vertex_cover(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def maxclique(graph, constrained=True):
-    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the MaxClique problem,
+def max_clique(graph, constrained=True):
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Clique problem,
     for a given graph.
 
-    The goal of MaxClique is to find the largest `clique <https://en.wikipedia.org/wiki/Clique_(graph_theory)>`__ of a
+    The goal of Maximum Clique is to find the largest `clique <https://en.wikipedia.org/wiki/Clique_(graph_theory)>`__ of a
     graph --- the largest subgraph such that all vertices are connected by an edge.
 
     Args:
-        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -413,7 +413,7 @@ def maxclique(graph, constrained=True):
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
             in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
 
-        The MaxClique cost Hamiltonian for constrained QAOA is defined as:
+        The Maximum Clique cost Hamiltonian for constrained QAOA is defined as:
 
         .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v}
 
@@ -431,7 +431,7 @@ def maxclique(graph, constrained=True):
 
         **Unconstrained**
 
-        The MaxClique cost Hamiltonian for unconstrained QAOA is defined as:
+        The Maximum Clique cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
                   (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
