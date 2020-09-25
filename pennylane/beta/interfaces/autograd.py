@@ -18,6 +18,7 @@ Autograd.
 # pylint: disable=protected-access
 import autograd.extend
 import autograd.builtins
+from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
 
@@ -100,7 +101,7 @@ class AutogradInterface(AnnotatedQueue):
         trainable_params = set()
 
         for idx, p in enumerate(params):
-            if getattr(p, "requires_grad", True):
+            if getattr(p, "requires_grad", False) or isinstance(p, ArrayBox):
                 trainable_params.add(idx)
 
         self.trainable_params = trainable_params
@@ -121,6 +122,8 @@ class AutogradInterface(AnnotatedQueue):
 
     @autograd.extend.primitive
     def _execute(self, params, device):
+        # unwrap all NumPy scalar arrays to Python literals
+        params = [p.item() if p.shape == tuple() else p for p in params]
         params = autograd.builtins.tuple(params)
 
         res = self.execute_device(params, device=device)
