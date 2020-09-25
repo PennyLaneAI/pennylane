@@ -26,13 +26,6 @@ import numpy as np
 
 INV_SQRT2 = 1 / np.sqrt(2)
 
-# Operations used for testing
-diags = [PauliZ, CZ]
-channels = [AmplitudeDamping, DepolarizingChannel]
-gates = [PauliX, Hadamard, CNOT]
-non_diags = [PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel]
-all_ops = [PauliZ, CZ, PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel]
-
 
 # functions for creating different states used in testing
 def basis_state(index, nr_wires):
@@ -106,7 +99,7 @@ class TestState:
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op", channels)
+    @pytest.mark.parametrize("op", [AmplitudeDamping, DepolarizingChannel])
     def test_state_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly retrieved after applying a channel on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
@@ -146,7 +139,7 @@ class TestReset:
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op", channels)
+    @pytest.mark.parametrize("op", [AmplitudeDamping, DepolarizingChannel])
     def test_reset_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly reset after applying a channel on the first
         wires"""
@@ -613,7 +606,7 @@ class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied
     correctly, rather than single operations"""
 
-    def test_bell_state(self):
+    def test_bell_state(self, tol):
         """Tests that we correctly prepare a Bell state by applying a Hadamard then a CNOT"""
         dev = qml.device("default.mixed", wires=2)
         ops = [Hadamard(0), CNOT(wires=[0, 1])]
@@ -621,20 +614,20 @@ class TestApply:
         bell = np.zeros((4, 4))
         bell[0, 0] = bell[0, 3] = bell[3, 0] = bell[3, 3] = 1 / 2
 
-        assert np.allclose(bell, dev.state)
+        assert np.allclose(bell, dev.state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_hadamard_state(self, nr_wires):
+    def test_hadamard_state(self, nr_wires, tol):
         """Tests that applying Hadamard gates on all qubits produces an equal superposition over
         all basis states"""
         dev = qml.device("default.mixed", wires=nr_wires)
         ops = [Hadamard(i) for i in range(nr_wires)]
         dev.apply(ops)
 
-        assert np.allclose(dev.state, hadamard_state(nr_wires))
+        assert np.allclose(dev.state, hadamard_state(nr_wires), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_max_mixed_state(self, nr_wires):
+    def test_max_mixed_state(self, nr_wires, tol):
         """Tests that applying damping channel on all qubits to the state |11...1> produces a
         maximally mixed state"""
         dev = qml.device("default.mixed", wires=nr_wires)
@@ -643,10 +636,10 @@ class TestApply:
         ops = flips + damps
         dev.apply(ops)
 
-        assert np.allclose(dev.state, max_mixed_state(nr_wires))
+        assert np.allclose(dev.state, max_mixed_state(nr_wires), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_undo_rotations(self, nr_wires):
+    def test_undo_rotations(self, nr_wires, tol):
         """Tests that rotations are correctly applied by adding their inverse as initial
         operations"""
         dev = qml.device("default.mixed", wires=nr_wires)
@@ -655,27 +648,27 @@ class TestApply:
         dev.apply(ops, rots)
         basis = np.reshape(basis_state(0, nr_wires), [2] * (2 * nr_wires))
         # dev.state = pre-rotated state, dev._state = state after rotations
-        assert np.allclose(dev.state, hadamard_state(nr_wires))
-        assert np.allclose(dev._state, basis)
+        assert np.allclose(dev.state, hadamard_state(nr_wires), atol=tol, rtol=0)
+        assert np.allclose(dev._state, basis, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_apply_basis_state(self, nr_wires):
+    def test_apply_basis_state(self, nr_wires, tol):
         """Tests that we correctly apply a `BasisState` operation for the |11...1> state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         state = np.ones(nr_wires)
         dev.apply([BasisState(state, wires=range(nr_wires))])
 
-        assert np.allclose(dev.state, basis_state(2 ** nr_wires - 1, nr_wires))
+        assert np.allclose(dev.state, basis_state(2 ** nr_wires - 1, nr_wires), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_apply_state_vector(self, nr_wires):
+    def test_apply_state_vector(self, nr_wires, tol):
         """Tests that we correctly apply a `QubitStateVector` operation for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dim = 2 ** nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         dev.apply([QubitStateVector(state, wires=range(nr_wires))])
 
-        assert np.allclose(dev.state, root_state(nr_wires))
+        assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 
     def test_raise_order_error_basis_state(self):
         """Tests that an error is raised if a state is prepared after BasisState has been
@@ -697,15 +690,15 @@ class TestApply:
         with pytest.raises(DeviceError, match="Operation"):
             dev.apply(ops)
 
-    def test_apply_toffoli(self):
+    def test_apply_toffoli(self, tol):
         """Tests that Toffoli gate is correctly applied on state |111> to give state |110>"""
         nr_wires = 3
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([PauliX(0), PauliX(1), PauliX(2), qml.Toffoli(wires=[0, 1, 2])])
 
-        assert np.allclose(dev.state, basis_state(6, 3))
+        assert np.allclose(dev.state, basis_state(6, 3), atol=tol, rtol=0)
 
-    def test_apply_qubitunitary(self):
+    def test_apply_qubitunitary(self, tol):
         """Tests that custom qubit unitary is correctly applied"""
         nr_wires = 1
         theta = 0.42
@@ -715,7 +708,8 @@ class TestApply:
         ket = np.array([np.cos(theta) + 0j, np.sin(theta) + 0j])
         target_rho = np.outer(ket, np.conj(ket))
 
-        assert np.allclose(dev.state, target_rho)
+        assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
+
 
 class TestInit:
     """Tests related to device initializtion"""
