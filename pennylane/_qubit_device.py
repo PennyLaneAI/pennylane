@@ -373,7 +373,7 @@ class QubitDevice(Device):
         Returns:
             np.ndarray: the sampled basis states
         """
-        if 2 < num_wires < 31:
+        if 2 < num_wires < 32:
             states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
             return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
