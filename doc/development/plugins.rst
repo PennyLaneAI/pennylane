@@ -76,7 +76,7 @@ Defining all these attributes is mandatory.
 Device capabilities
 -------------------
 
-You must further tell PennyLane about the operations that your device supports
+You must further tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
 * :attr:`.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
@@ -183,7 +183,7 @@ Device execution
 ----------------
 
 Once all the class attributes are defined, it is necessary to define some required class
-methods, to allow PennyLane to apply operations and measure observables on your device.
+methods to allow PennyLane to apply operations and measure observables on your device.
 
 To execute operations on the device, the following methods **must** be defined:
 
@@ -231,7 +231,7 @@ Additional flexibility is sometimes required for interfacing with more
 complicated frameworks.
 
 When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.QubitDevice.execute` method of
-your plugin, which, by default performs the following process:
+your plugin which, by default, performs the following process:
 
 .. code-block:: python
 

@@ -150,6 +150,7 @@ class ObservableReturnTypes(Enum):
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
+    State = "state"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -171,6 +172,8 @@ Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
+State = ObservableReturnTypes.State
+"""Enum: An enumeration which represents returning the state in the computational basis."""
 
 # =============================================================================
 # Class property
@@ -1412,7 +1415,8 @@ class CV:
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            wires (Wires): wires on the device that the observable gets applied to
+            wires (Wires): wires on the device the array ``U`` should be expanded
+                to apply to
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect

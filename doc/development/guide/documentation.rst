@@ -3,7 +3,7 @@ Documentation
 
 Good documentation is just as important, if not more important, than the code itself.
 **No matter how good the code is**, without decent documentation, users are deterred from
-using the library, and developers less likely to contribute.
+using the library, and developers are less likely to contribute.
 
 This document describes the requirements, recommendations, and guides for writing documentation
 for PennyLane, as well as details for contributing to and building the PennyLane documentation.
@@ -231,7 +231,7 @@ Some notes on the above structure:
 
 * **Example:** To provide a minimal working example showing basic usage of the function. The example
   should be *minimal* (reduce line counts where possible), but complete; a reader should be able to
-  copy and paste the example and get the same output. See :ref:`code_examples` for guidelines writing
+  copy and paste the example and get the same output. See :ref:`code_examples` for guidelines on writing
   useful code examples in docstrings.
 
 * **Usage details:** To provide a more complicated usage details showing different edge cases and
@@ -458,7 +458,7 @@ Adding a new module to the docs
 
 There are several steps to adding a new module to the documentation:
 
-1. Make sure your module has a one-to-two line module docstring, that summarizes
+1. Make sure your module has a one- to two-line module docstring, that summarizes
    what the module purpose is, and what it contains.
 
 2. Add a file ``doc/code/qml_module_name.rst``, that contains the following:
@@ -475,7 +475,7 @@ Adding a new package to the docs
 Adding a new subpackage to the documentation requires a slightly different process than
 a module:
 
-1. Make sure your package ``__init__.py`` file has a one-to-two line module docstring,
+1. Make sure your package ``__init__.py`` file has a one- to two-line module docstring,
    that summarizes what the package purpose is, and what it contains.
 
 2. At the bottom of the ``__init__.py`` docstring, add an autosummary table that contains
