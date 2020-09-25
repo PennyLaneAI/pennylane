@@ -352,7 +352,8 @@ class TestParameterShiftLogic:
 
 
 class TestExpectationQuantumGradients:
-    """Tests for the quantum gradients of qml.various gates
+    """Tests for the quantum gradients of various gates
+
     with expectation value output"""
 
     def test_rotation_gradient(self, mocker, tol):
@@ -616,7 +617,8 @@ class TestExpectationQuantumGradients:
             # def circuit(r, phi):
             #     qml.Displacement(r, phi, wires=0)
             #     qml.Interferometer(U, wires=[0, 1])
-            #     return qml.qml.expval(qml.X(0))
+            #     return qml.expval(qml.X(0))
+
             #
             # r = 0.543
             # phi = 0.
