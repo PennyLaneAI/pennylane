@@ -426,6 +426,9 @@ class QNode:
         self.construct(args, kwargs)
 
         if self._caching:
+            # Every time the QNode is called, it creates a new tape. We want the tape cache to
+            # persist over multiple tapes, so hence keep track of it as a QNode attribute and
+            # load it into the new tape
             self.qtape._cache_execute = self._cache_execute
 
         # execute the tape
