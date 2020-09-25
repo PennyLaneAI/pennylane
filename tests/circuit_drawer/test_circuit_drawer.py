@@ -24,7 +24,7 @@ from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
 from pennylane.wires import Wires
 
-from pennylane.beta.queuing import state
+from pennylane.tape.measure import state
 
 
 class TestFunctions:

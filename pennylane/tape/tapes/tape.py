@@ -21,10 +21,8 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.tape import AnnotatedQueue, QueuingContext, mock_operations
 from pennylane.operation import State
-
-from pennylane.tape import TapeCircuitGraph
+from pennylane.tape import AnnotatedQueue, QueuingContext, mock_operations, TapeCircuitGraph
 
 
 STATE_PREP_OPS = (

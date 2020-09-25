@@ -20,8 +20,8 @@ from unittest import mock
 
 import pennylane as qml
 
-from .queuing import QueuingContext
 from .measure import expval, var, sample, probs, state
+from .queuing import QueuingContext
 
 
 def operation_queue(self):
@@ -163,6 +163,7 @@ def mock_operations():
     mocks += [mock.patch.object(qml, "var", var)]
     mocks += [mock.patch.object(qml, "sample", sample)]
     mocks += [mock.patch.object(qml, "probs", probs)]
+    mocks += [mock.patch.object(qml, "state", state, create=True)]
 
     # Mock the operations so that they no longer perform validation
     # on argument types and domain. This is required to avoid the operations

@@ -20,9 +20,9 @@ and measurement samples using AnnotatedQueues.
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
+from pennylane.wires import Wires
 
 
 from .queuing import QueuingContext

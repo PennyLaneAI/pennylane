@@ -18,12 +18,12 @@ validate, execute, and differentiate quantum circuits.
 import contextlib
 from unittest import mock
 
-from .queuing import AnnotatedQueue, Queue, QueuingContext
+from .circuit_graph import TapeCircuitGraph
 from .measure import expval, var, sample, state, probs, MeasurementProcess
 from .operation import mock_operations
-from .circuit_graph import TapeCircuitGraph
-from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .qnode import QNode, qnode
+from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 
 
 _mock_stack = None
@@ -35,10 +35,7 @@ def enable_tape():
     if _mock_stack is not None:
         return
 
-    mocks = [
-        mock.patch("pennylane.qnode", qnode),
-        mock.patch("pennylane.QNode", QNode)
-    ]
+    mocks = [mock.patch("pennylane.qnode", qnode), mock.patch("pennylane.QNode", QNode)]
 
     with contextlib.ExitStack() as stack:
         for m in mocks:
