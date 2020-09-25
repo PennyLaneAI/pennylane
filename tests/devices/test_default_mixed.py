@@ -549,3 +549,12 @@ class TestApply:
         target_rho = np.outer(ket, np.conj(ket))
 
         assert np.allclose(dev.state, target_rho)
+
+
+class TestInit:
+    """Tests related to device initializtion"""
+
+    def test_nr_wires(self):
+        """Tests that an error is raised if the device is initialized with more than 23 wires"""
+        with pytest.raises(ValueError, match="This device does not currently"):
+            qml.device("default.mixed", wires=24)
