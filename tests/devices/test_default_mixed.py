@@ -566,6 +566,19 @@ class TestApplyStateVector:
         with pytest.raises(ValueError, match="Sum of amplitudes"):
             dev._apply_state_vector(state, Wires(range(3)))
 
+    def test_wires_as_list(self):
+        """Checks that state is correctly prepared when device wires are given as a list,
+        not a number. This test helps with coverage"""
+        nr_wires = 2
+        dev = qml.device("default.mixed", wires=[0, 1])
+        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        dev._apply_state_vector(state, Wires(range(nr_wires)))
+        eq_state = hadamard_state(nr_wires)
+        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state)
+
+
 
 class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`

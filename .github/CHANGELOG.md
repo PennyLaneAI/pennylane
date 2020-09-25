@@ -8,9 +8,6 @@
   map pure states to mixed states. The device can be initialized as
   ```python3
   >>> dev = qml.device("default.mixed", wires=1)
-  >>> print(dev.state)
-  [[1.+0.j 0.+0.j]
-   [0.+0.j 0.+0.j]]
   ```
   This allows the construction of QNodes that include non-unitary operations
   such as noisy channels, as in this simple qubit rotation example
@@ -19,11 +16,11 @@
   ... def circuit(params):
   ...     qml.RX(params[0], wires=0)
   ...     qml.RY(params[1], wires=0)
-  ...     AmplitudeDamping(0.5, wires=0)
-  ... return qml.expval(qml.PauliZ(0))
-  >>> print(dev.state)
-  [[5.00000000e-01+0.j 4.32978028e-17+0.j]
-   [4.32978028e-17+0.j 5.00000000e-01+0.j]]
+  ...     qml.AmplitudeDamping(0.5, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+
+  >>> print(circuit([0.54, 0.12]))
+  0.9257702929524184
   >>> print(circuit([0, np.pi]))
   0.0
   ```
