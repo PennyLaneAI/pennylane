@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.beta.tapes import QuantumTape
-from pennylane.beta.queuing import expval, var, sample, probs
+from pennylane.beta.queuing import expval, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
 
 
@@ -446,3 +446,12 @@ class TestTorchQuantumTape:
 
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
+
+    def test_complex_min_version(self, monkeypatch):
+        """Test if an error is raised when a version of torch before 1.6.0 is used as the dtype
+        in the apply() method"""
+
+        with monkeypatch.context() as m:
+            m.setattr(qml.beta.interfaces.torch, "COMPLEX_SUPPORT", False)
+            with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
+                TorchInterface.apply(QuantumTape(), dtype=torch.complex128)

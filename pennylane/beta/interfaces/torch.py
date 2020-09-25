@@ -17,10 +17,14 @@ PyTorch.
 """
 # pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
 import numpy as np
+import semantic_version
 import torch
 
 from pennylane.interfaces.torch import args_to_numpy
 from pennylane.beta.queuing import AnnotatedQueue
+from pennylane import QuantumFunctionError
+
+COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
 
 
 class _TorchInterface(torch.autograd.Function):
@@ -182,6 +186,12 @@ class TorchInterface(AnnotatedQueue):
         >>> tape
         <TorchQuantumTape: wires=<Wires = [0]>, params=1>
         """
+        if (dtype is torch.complex64 or dtype is torch.complex128) and not COMPLEX_SUPPORT:
+            raise QuantumFunctionError(
+                "Version 1.6.0 or above of PyTorch must be installed for complex support, "
+                "which is required for quantum functions that return the state."
+            )
+
         tape_class = getattr(tape, "__bare__", tape.__class__)
         tape.__bare__ = tape_class
         tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})
