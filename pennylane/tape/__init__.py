@@ -19,20 +19,18 @@ import contextlib
 from unittest import mock
 
 from .circuit_graph import TapeCircuitGraph
-from .measure import expval, var, sample, state, probs, MeasurementProcess
 from .operation import mock_operations
+from .measure import expval, var, sample, state, probs, MeasurementProcess
 from .queuing import AnnotatedQueue, Queue, QueuingContext
-from .qnode import QNode, qnode
 from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from .qnode import QNode, qnode
 
 
-_mock_stack = None
+_mock_stack = []
 
 
 def enable_tape():
-    global _mock_stack
-
-    if _mock_stack is not None:
+    if _mock_stack:
         return
 
     mocks = [mock.patch("pennylane.qnode", qnode), mock.patch("pennylane.QNode", QNode)]
@@ -41,11 +39,11 @@ def enable_tape():
         for m in mocks:
             stack.enter_context(m)
 
-        _mock_stack = stack.pop_all()
+        _mock_stack.append(stack.pop_all())
 
 
 def disable_tape():
-    if _mock_stack is None:
+    if not _mock_stack:
         raise ValueError("Tape mode is not currently enabled.")
 
-    _mock_stack.close()
+    _mock_stack.pop().close()
