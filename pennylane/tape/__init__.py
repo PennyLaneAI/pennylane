@@ -19,6 +19,8 @@ import contextlib
 from unittest import mock
 
 from .circuit_graph import TapeCircuitGraph
+from .measure import MeasurementProcess, state
+from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from .qnode import QNode, qnode
 
