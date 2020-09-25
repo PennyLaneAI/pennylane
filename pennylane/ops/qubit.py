@@ -950,7 +950,7 @@ class CRX(Operation):
     .. math::
 
         \begin{align}
-            CRX(\phi) &= I_{1}\otimes R{z2}(\pi / 2) ~\cdot~ I_{1}\otimes R{y2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ R{y2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes R{z2}(-\pi / 2)\notag \\[10pt]
+            CR_x(\phi) &= I_{1}\otimes R{z2}(\pi / 2) ~\cdot~ I_{1}\otimes R{y2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ R{y2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes R{z2}(-\pi / 2)\notag \\[10pt]
             &=
             \begin{bmatrix}
             & 1 & 0 & 0 & 0 \\
