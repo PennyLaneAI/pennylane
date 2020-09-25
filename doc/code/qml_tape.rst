@@ -56,6 +56,21 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   As a result, quantum decompositions that require classical processing
   are fully supported and end-to-end differentiable in tape mode.
 
+* **Return the quantum state**: In tape mode, QNodes bound to statevector simulators
+  can return the quantum state using the :func:`~.state` function:
+
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.Hadamard(wires=1)
+  ...     return qml.state()
+  >>> circuit()
+  array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+  Calculating the derivative of :func:`~.state` is currently only supported when using the
+  classical backpropagation differentiation method (``diff_method="backprop"``) with a
+  compatible device.
+
 * **Less restrictive QNode signatures**: There is no longer any restriction on the QNode signature; the QNode can be
   defined and called following the same rules as standard Python functions.
 
