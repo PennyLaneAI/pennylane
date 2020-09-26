@@ -248,14 +248,13 @@ def maxcut(graph):
 
 
 def max_independent_set(graph, constrained=True):
-    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Independent Set problem,
-    for a given graph.
+    r"""For a given graph, returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Independent Set problem.
 
-    Given some graph :math:`G`, an independent set is a set of vertices such that no two of the vertices in the set
-    share a common edge. To solve the Maximum Independent Set problem, we attept to find the largest such set.
+    Given some graph :math:`G`, an independent set is a set of vertices such that no pair of vertices in the set
+    share a common edge. The Maximum Independent Set problem, is the problem of finding the largest such set.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph): input graph defining the Maximum Independent Set problem
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -274,7 +273,7 @@ def max_independent_set(graph, constrained=True):
 
         The Maximum Independent Set cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v}
+        .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v},
 
         where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z
         operator applied to the :math:`i`-th vertex.
@@ -284,14 +283,14 @@ def max_independent_set(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Each wire in the :math:`|0\rangle` state
+                Each wire in the :math:`|0\rangle` state.
 
         **Unconstrained**
 
         The Maximum Independent Set cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
-                  \displaystyle\sum_{i \in V(G)} Z_i
+                  \displaystyle\sum_{i \in V(G)} Z_i,
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
@@ -301,7 +300,7 @@ def max_independent_set(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Even superposition over all basis states
+                Even superposition over all basis states.
 
     """
 
@@ -326,7 +325,7 @@ def min_vertex_cover(graph, constrained=True):
     every edge in the graph has one of the vertices as an endpoint.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph): input graph defining the Minimum Vertex Cover problem
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -345,7 +344,7 @@ def min_vertex_cover(graph, constrained=True):
 
         The Minimum Vertex Cover cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = \ - \displaystyle\sum_{v \in V(G)} Z_{v}
+        .. math:: H_C \ = \ - \displaystyle\sum_{v \in V(G)} Z_{v},
 
         where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z operator
         applied to the :math:`i`-th vertex.
@@ -355,14 +354,14 @@ def min_vertex_cover(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Each wire in the :math:`|1\rangle` state
+                Each wire in the :math:`|1\rangle` state.
 
         **Unconstrained**
 
         The Minimum Vertex Cover cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
-                  \displaystyle\sum_{i \in V(G)} Z_i
+                  \displaystyle\sum_{i \in V(G)} Z_i,
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
@@ -372,7 +371,7 @@ def min_vertex_cover(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Even superposition over all basis states
+                Even superposition over all basis states.
 
     """
 
@@ -396,7 +395,7 @@ def max_clique(graph, constrained=True):
     graph --- the largest subgraph such that all vertices are connected by an edge.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph): input graph defining the Maximum Clique problem
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -415,29 +414,29 @@ def max_clique(graph, constrained=True):
 
         The Maximum Clique cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v}
+        .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v},
 
         where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z operator
         applied to the :math:`i`-th
         vertex.
 
-        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`
-        (the complement of the graph).
+        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`,
+        the complement of the graph.
 
         .. note::
 
             **Recommended initialization circuit:**
-                Each wire in the :math:`|0\rangle` state
+                Each wire in the :math:`|0\rangle` state.
 
         **Unconstrained**
 
         The Maximum Clique cost Hamiltonian for unconstrained QAOA is defined as:
 
         .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
-                  (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
+                  (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i,
 
         where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
-        edges of the complement of :math:`G` and :math:`Z_i` is the Pauli-Z operator applied to the
+        edges of the complement of :math:`G`, and :math:`Z_i` is the Pauli-Z operator applied to the
         :math:`i`-th vertex.
 
         The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
@@ -445,7 +444,7 @@ def max_clique(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Even superposition over all basis states
+                Even superposition over all basis states.
 
     """
 
