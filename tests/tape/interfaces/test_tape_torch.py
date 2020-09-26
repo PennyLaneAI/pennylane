@@ -393,7 +393,7 @@ class TestTorchQuantumTape:
 
     def test_ragged_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
         y_val = -0.654

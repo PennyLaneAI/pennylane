@@ -350,7 +350,7 @@ class TestAutogradQuantumTape:
 
     def test_ragged_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
 
         def cost(x, y, device):
             with AutogradInterface.apply(QuantumTape()) as tape:
@@ -624,7 +624,7 @@ class TestAutogradPassthru:
 
     def test_probability_differentiation(self, mocker, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         spy = mocker.spy(QuantumTape, "jacobian")
 
         def cost(x, y, device):
@@ -669,7 +669,7 @@ class TestAutogradPassthru:
 
     def test_ragged_differentiation(self, mocker, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         spy = mocker.spy(QuantumTape, "jacobian")
         dev = qml.device("default.qubit.autograd", wires=2)
 

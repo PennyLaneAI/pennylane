@@ -35,7 +35,7 @@ def enable_tape():
     in-QNode classical processing, differentiable quantum decompositions, returning the quantum
     state, less restrictive QNode signatures, and various other improvements.
 
-    For more details on tape mode, see :mod:`~.tape`.
+    For more details on tape mode, see :mod:`pennylane.tape`.
 
     **Example**
 

@@ -48,7 +48,7 @@ class QNode:
 
         This quantum tape-comaptible QNode can either be created directly,
 
-        >>> import pennylane.tape
+        >>> import pennylane as qml
         >>> qml.tape.QNode(qfunc, dev)
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
@@ -560,7 +560,7 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
 
         This quantum tape-comaptible QNode can either be created directly,
 
-        >>> import pennylane.tape
+        >>> import pennylane as qml
         >>> @qml.tape.qnode(dev)
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:

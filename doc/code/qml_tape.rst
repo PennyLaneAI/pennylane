@@ -106,7 +106,7 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   of QNodes when using classical backpropagation (which is not support in the standard
   :class:`~.PassthruQNode`).
 
-* **Optimizations**: Tape mode provides various optimizations, reducing pre- and post-processing
+* **Optimizations**: Tape mode provides various performance optimizations, reducing pre- and post-processing
   overhead, and reduces the number of quantum evaluations in certain cases.
 
 .. warning::

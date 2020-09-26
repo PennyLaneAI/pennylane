@@ -250,7 +250,7 @@ class TestJacobianIntegration:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single qml.expval output"""
+        with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -269,7 +269,7 @@ class TestJacobianIntegration:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple qml.expval outputs"""
+        with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -289,7 +289,7 @@ class TestJacobianIntegration:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with qml.expval and qml.var outputs"""
+        with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -309,7 +309,7 @@ class TestJacobianIntegration:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654

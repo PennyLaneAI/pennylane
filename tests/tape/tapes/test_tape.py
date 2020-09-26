@@ -275,7 +275,7 @@ class TestConstruction:
                 qml.expval(qml.PauliZ(wires=1))
 
     def test_sampling(self):
-        """Test that the tape correctly marks itself as returning qml.samples"""
+        """Test that the tape correctly marks itself as returning samples"""
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(wires=1))
 
@@ -802,7 +802,7 @@ class TestExecution:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single qml.expval output"""
+        with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -823,7 +823,7 @@ class TestExecution:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple qml.expval outputs"""
+        with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
