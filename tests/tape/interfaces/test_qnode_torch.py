@@ -396,7 +396,7 @@ class TestQNode:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
 
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
@@ -437,7 +437,7 @@ class TestQNode:
 
     def test_ragged_differentiation(self, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
         y_val = -0.654
@@ -498,7 +498,7 @@ def qtransform(qnode, a, framework=torch):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
 
-        # the following global qml.variable is defined simply for testing
+        # the following global variable is defined simply for testing
         # purposes, so that we can easily extract the transformed operations
         # for verification.
         global t_op
@@ -535,7 +535,7 @@ def test_transform(monkeypatch, tol):
 
     @qnode(dev, interface="torch")
     def circuit(weights):
-        # the following global qml.variables are defined simply for testing
+        # the following global variables are defined simply for testing
         # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)

@@ -46,7 +46,7 @@ class TestGradMethod:
         assert tape._par_info[2]["grad_method"] == "A"
 
     def test_independent(self):
-        """Test that an independent qml.variable is properly marked
+        """Test that an independent variable is properly marked
         as having a zero gradient"""
 
         with QubitParamShiftTape() as tape:
@@ -212,7 +212,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, mocker, tol):
-        """Tests that the qml.variance parameter-shift rule agrees with the first and second
+        """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
         params = np.array([0.1, -1.6, np.pi / 5])
 
@@ -250,7 +250,7 @@ class TestJacobianIntegration:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single qml.expval output"""
+        with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -269,7 +269,7 @@ class TestJacobianIntegration:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple qml.expval outputs"""
+        with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -289,7 +289,7 @@ class TestJacobianIntegration:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with qml.expval and qml.var outputs"""
+        with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -309,7 +309,7 @@ class TestJacobianIntegration:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -468,7 +468,7 @@ class TestJacobianIntegration:
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
-        values and qml.variances"""
+        values and variances"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54

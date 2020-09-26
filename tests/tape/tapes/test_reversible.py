@@ -109,7 +109,7 @@ class TestReversibleTape:
             tape.jacobian(dev)
 
     def test_var_exception(self):
-        """Tests that an exception is raised when qml.variance
+        """Tests that an exception is raised when variance
         is used with the ReversibleTape."""
         # TODO: remove this test when this support is added
         dev = qml.device("default.qubit", wires=2)

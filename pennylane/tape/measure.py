@@ -25,9 +25,6 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
 
 
-from .queuing import QueuingContext
-
-
 class MeasurementProcess:
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
@@ -162,10 +159,10 @@ class MeasurementProcess:
     def queue(self):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            QueuingContext.update_info(self.obs, owner=self)
-            QueuingContext.append(self, owns=self.obs)
+            qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            qml.tape.QueuingContext.append(self, owns=self.obs)
         else:
-            QueuingContext.append(self)
+            qml.tape.QueuingContext.append(self)
 
 
 def expval(op):

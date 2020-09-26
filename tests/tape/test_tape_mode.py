@@ -112,7 +112,7 @@ def test_disable_tape():
 
 
 def test_disable_tape_exception():
-    """Test that disabling tape mode raises an exception
+    """Test that disabling tape mode raises a warning
     if not currently in tape mode"""
-    with pytest.raises(RuntimeError, match="Tape mode is not currently enabled"):
+    with pytest.warns(UserWarning, match="Tape mode is not currently enabled"):
         qml.disable_tape()

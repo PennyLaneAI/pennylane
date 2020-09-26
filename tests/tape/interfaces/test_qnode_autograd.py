@@ -406,7 +406,7 @@ class TestQNode:
 
     def test_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
 
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -444,7 +444,7 @@ class TestQNode:
 
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -509,7 +509,7 @@ def qtransform(qnode, a, framework=np):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
 
-        # the following global qml.variable is defined simply for testing
+        # the following global variable is defined simply for testing
         # purposes, so that we can easily extract the transformed operations
         # for verification.
         global t_op
@@ -550,7 +550,7 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="autograd", diff_method=diff_method)
     def circuit(weights):
-        # the following global qml.variables are defined simply for testing
+        # the following global variables are defined simply for testing
         # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
@@ -561,7 +561,7 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
     a = np.array(0.5, requires_grad=True)
 
     def loss(weights, a):
-        # the following global qml.variable is defined simply for testing
+        # the following global variable is defined simply for testing
         # purposes, so that we can easily extract the transformed QNode
         # for verification.
         global new_circuit

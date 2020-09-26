@@ -26,7 +26,6 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape.measure import MeasurementProcess
 from pennylane.tape.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 
 
@@ -48,7 +47,7 @@ class QNode:
 
         This quantum tape-comaptible QNode can either be created directly,
 
-        >>> import pennylane.tape
+        >>> import pennylane as qml
         >>> qml.tape.QNode(qfunc, dev)
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
@@ -380,7 +379,7 @@ class QNode:
         if not isinstance(measurement_processes, Sequence):
             measurement_processes = (measurement_processes,)
 
-        if not all(isinstance(m, MeasurementProcess) for m in measurement_processes):
+        if not all(isinstance(m, qml.tape.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
@@ -604,7 +603,7 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
 
         This quantum tape-comaptible QNode can either be created directly,
 
-        >>> import pennylane.tape
+        >>> import pennylane as qml
         >>> @qml.tape.qnode(dev)
 
         or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:

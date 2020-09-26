@@ -60,7 +60,7 @@ class TestGradMethod:
             tape._grad_method(0, use_graph=False)
 
     def test_independent(self):
-        """Test that an independent qml.variable is properly marked
+        """Test that an independent variable is properly marked
         as having a zero gradient"""
 
         with CVParamShiftTape() as tape:
@@ -140,7 +140,7 @@ class TestGradMethod:
         assert tape._grad_method(2) == "F"
 
     def test_variance(self):
-        """If the qml.variance of the observable is first order, then
+        """If the variance of the observable is first order, then
         parameter-shift is supported. If the observable is second order,
         however, only finite-differences is supported."""
 
@@ -326,7 +326,7 @@ class TestParameterShiftLogic:
 
     def test_no_poly_xp_support_variance(self, mocker, monkeypatch, caplog):
         """Test that if a device does not support PolyXP
-        and the qml.variance parameter-shift rule is required,
+        and the variance parameter-shift rule is required,
         we fallback to finite differences."""
         dev = qml.device("default.gaussian", wires=1)
 
@@ -656,11 +656,11 @@ class TestExpectationQuantumGradients:
 
 
 class TestVarianceQuantumGradients:
-    """Tests for the quantum gradients of qml.various gates
-    with qml.variance measurements"""
+    """Tests for the quantum gradients of various gates
+    with variance measurements"""
 
     def test_first_order_observable(self, tol):
-        """Test qml.variance of a first order CV observable"""
+        """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
 
         r = 0.543
@@ -692,7 +692,7 @@ class TestVarianceQuantumGradients:
         assert np.allclose(grad_F, expected, atol=tol, rtol=0)
 
     def test_second_order_cv(self, tol):
-        """Test qml.variance of a second order CV expectation value"""
+        """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
 
         n = 0.12
@@ -716,7 +716,7 @@ class TestVarianceQuantumGradients:
 
     def test_expval_and_variance(self, tol):
         """Test that the gradient works for a combination of CV expectation
-        values and qml.variances"""
+        values and variances"""
         dev = qml.device("default.gaussian", wires=3)
 
         a, b = [0.54, -0.423]
@@ -741,7 +741,7 @@ class TestVarianceQuantumGradients:
 
     def test_error_analytic_second_order(self):
         """Test exception raised if attempting to use a second
-        order observable to compute the qml.variance derivative analytically"""
+        order observable to compute the variance derivative analytically"""
         dev = qml.device("default.gaussian", wires=1)
 
         with CVParamShiftTape() as tape:
@@ -793,7 +793,7 @@ class TestVarianceQuantumGradients:
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     def test_squeezed_mean_photon_variance(self, tol):
-        """Test gradient of the photon qml.variance of a displaced thermal state"""
+        """Test gradient of the photon variance of a displaced thermal state"""
         dev = qml.device("default.gaussian", wires=1)
 
         r = 0.12
@@ -815,7 +815,7 @@ class TestVarianceQuantumGradients:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_displaced_thermal_mean_photon_variance(self, tol):
-        """Test gradient of the photon qml.variance of a displaced thermal state"""
+        """Test gradient of the photon variance of a displaced thermal state"""
         dev = qml.device("default.gaussian", wires=1)
 
         n = 0.12

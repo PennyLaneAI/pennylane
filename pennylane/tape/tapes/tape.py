@@ -23,9 +23,9 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import State
-from pennylane.tape import TapeCircuitGraph
-from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
+from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
 
 
 STATE_PREP_OPS = (
@@ -258,7 +258,7 @@ class QuantumTape(AnnotatedQueue):
         executions. If set to zero, no caching occurs."""
 
         self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the 
+        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
         device."""
 
     def __repr__(self):
