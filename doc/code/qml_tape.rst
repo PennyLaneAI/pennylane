@@ -131,7 +131,7 @@ the internal structure of the QNode. When tape mode is enabled, the QNode is no 
 responsible for recording quantum operations, executing devices, or computing gradients---these
 tasks have been delegated to an internal object that is created by the QNode, the **Quantum tape**.
 
-In addition to be created internally by QNodes in tape mode, quantum tapes can also be created,
+In addition to being created internally by QNodes in tape mode, quantum tapes can also be created,
 nested, expanded (via :meth:`~.tape.expand`), and executed manually. Tape subclasses also provide
 additional gradient methods:
 
