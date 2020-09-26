@@ -26,6 +26,7 @@ from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
 from pennylane.wires import Wires, WireError
+from tests.test_device import mock_device_with_operations
 
 
 @pytest.fixture(scope="function")
@@ -382,7 +383,7 @@ class TestQNodeExceptions:
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
-            QuantumFunctionError, match="does not have the measurement type specified"
+                QuantumFunctionError, match="does not have the measurement type specified"
         ):
             node(0.5)
 
@@ -420,7 +421,7 @@ class TestQNodeExceptions:
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
-            QuantumFunctionError, match="Continuous and discrete operations are not allowed"
+                QuantumFunctionError, match="Continuous and discrete operations are not allowed"
         ):
             node(0.5)
 
@@ -433,7 +434,7 @@ class TestQNodeExceptions:
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
-            QuantumFunctionError, match="a qubit device; CV operations are not allowed"
+                QuantumFunctionError, match="a qubit device; CV operations are not allowed"
         ):
             node(0.5)
 
@@ -447,7 +448,7 @@ class TestQNodeExceptions:
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
-            QuantumFunctionError, match="a CV device; qubit operations are not allowed"
+                QuantumFunctionError, match="a CV device; qubit operations are not allowed"
         ):
             node(0.5)
 
@@ -583,7 +584,7 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="Unknown quantum function parameter 'foo'"):
             node(foo=1)
         with pytest.raises(
-            QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
+                QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
         ):
             node(args=1)
         with pytest.raises(QuantumFunctionError, match="positional parameter 'x' missing"):
@@ -624,7 +625,7 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="parameter 'x' given twice"):
             node(0.1, x=1.1)
         with pytest.raises(
-            QuantumFunctionError, match="'kwargs' cannot be given using the keyword syntax"
+                QuantumFunctionError, match="'kwargs' cannot be given using the keyword syntax"
         ):
             node(kwargs=1)
         with pytest.raises(QuantumFunctionError, match="takes 2 positional parameters, 3 given"):
@@ -661,13 +662,13 @@ class TestQNodeExceptions:
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=True)
 
         with pytest.raises(
-            QuantumFunctionError, match="'x' cannot be given using the keyword syntax"
+                QuantumFunctionError, match="'x' cannot be given using the keyword syntax"
         ):
             node(0.1, x=1.1)
         with pytest.raises(QuantumFunctionError, match="Unknown quantum function parameter 'foo'"):
             node(foo=1)
         with pytest.raises(
-            QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
+                QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
         ):
             node(args=1)
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'x'"):
@@ -847,7 +848,7 @@ class TestQNodeArgs:
             qml.QubitUnitary(matrix, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        matrix = np.array([[1, 0], [0, 0.70710678 + 0.70710678*1.j]])
+        matrix = np.array([[1, 0], [0, 0.70710678 + 0.70710678 * 1.j]])
         arg = 0
         res = circuit(arg, matrix)
         assert np.isclose(res, -1, atol=tol)
@@ -1103,7 +1104,6 @@ class TestDecomposition:
 
         res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
 
-
         assert len(res) == 9
 
         assert res[0].name == "RZ.inv"
@@ -1240,8 +1240,8 @@ class TestQNodeVariableMap:
 
         for expected_key in expected_kwarg_vars:
             for var, expected in zip(
-                qml.utils._flatten(kwarg_vars[expected_key]),
-                qml.utils._flatten(expected_kwarg_vars[expected_key]),
+                    qml.utils._flatten(kwarg_vars[expected_key]),
+                    qml.utils._flatten(expected_kwarg_vars[expected_key]),
             ):
                 assert var == expected
 
@@ -1281,8 +1281,8 @@ class TestQNodeVariableMap:
 
         for expected_key in expected_kwarg_vars:
             for var, expected in zip(
-                qml.utils._flatten(kwarg_vars[expected_key]),
-                qml.utils._flatten(expected_kwarg_vars[expected_key]),
+                    qml.utils._flatten(kwarg_vars[expected_key]),
+                    qml.utils._flatten(expected_kwarg_vars[expected_key]),
             ):
                 assert var == expected
 
@@ -1388,8 +1388,8 @@ class TestQNodeDraw:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            RuntimeError,
-            match="The QNode can only be drawn after its CircuitGraph has been constructed",
+                RuntimeError,
+                match="The QNode can only be drawn after its CircuitGraph has been constructed",
         ):
             circuit.draw()
 
@@ -1500,3 +1500,79 @@ class TestTrainableArgs:
         # the user will evaluate the QNode with.
         node.set_trainable_args({0, 1, 6})
         assert node.get_trainable_args() == {0, 1, 6}
+
+    def test_get_decomposed_and_extended_queue_invalid_input(self, mock_device):
+        """Test that an exception is raised if a an argument is not an observable or a sequence of observables"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        with pytest.raises(QuantumFunctionError, match=r"A quantum function must return either a single measured "
+                                                       r"observable or a nonempty sequence of measured observables."):
+            ops = node._get_decomposed_and_extended_queue(5)
+
+    def test_get_decomposed_and_extended_queue_no_decomposition(self, mock_device):
+
+        """Test that no operations in a queue are decomposed and a new operation is added to a queue when there are
+        no operations to be decomposed. """
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        node.queue = [qml.Rot(0, 1, 2, wires=0), qml.CNOT(wires=[0, 1]), qml.RX(6, wires=0)]
+
+        new_operation = qml.PauliX(wires=0)
+
+        expected_ops = node.queue + [new_operation]
+
+        ops = node._get_decomposed_and_extended_queue(new_operation)
+
+        assert ops == expected_ops
+
+    def test_get_decomposed_and_extended_queue_with_decomposition(self, operable_mock_device_2_wires):
+
+        """Test that operations in a queue are decomposed and a new operation is added to a queue."""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
+        node.queue = [qml.Rot(0, 1, 2, wires=0), qml.U3(3, 4, 5, wires=0), qml.RX(6, wires=0)]
+        new_operation = qml.PauliX(wires=0)
+        ops = node._get_decomposed_and_extended_queue(new_operation)
+
+        assert ops[0].name == "Rot"
+        assert ops[0].parameters == [0, 1, 2]
+
+        assert ops[1].name == "Rot"
+        assert ops[1].parameters == [5, 3, -5]
+
+        assert ops[2].name == "PhaseShift"
+        assert ops[2].parameters == [5]
+
+        assert ops[3].name == "PhaseShift"
+        assert ops[3].parameters == [4]
+
+        assert ops[4].name == "RX"
+        assert ops[4].parameters == [6]
+
+        assert ops[5].name == "PauliX"
+
