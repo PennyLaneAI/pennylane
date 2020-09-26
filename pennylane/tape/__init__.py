@@ -22,8 +22,8 @@ import warnings
 from .circuit_graph import TapeCircuitGraph
 from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import MeasurementProcess, state
-from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 from .qnode import QNode, qnode
+from .tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 
 
 _mock_stack = []
