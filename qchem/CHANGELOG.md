@@ -19,6 +19,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fix calculation of the contribution of core orbitals to two-particle operators in the
+  function two_particle.
+  [(#825)](https://github.com/PennyLaneAI/pennylane/pull/825)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
