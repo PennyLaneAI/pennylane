@@ -26,7 +26,6 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape.measure import MeasurementProcess
 from pennylane.tape.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 
 
@@ -380,7 +379,7 @@ class QNode:
         if not isinstance(measurement_processes, Sequence):
             measurement_processes = (measurement_processes,)
 
-        if not all(isinstance(m, MeasurementProcess) for m in measurement_processes):
+        if not all(isinstance(m, qml.tape.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."

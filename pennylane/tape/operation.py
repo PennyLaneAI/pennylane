@@ -21,7 +21,6 @@ from unittest import mock
 import pennylane as qml
 
 from .queuing import QueuingContext
-from .measure import expval, var, sample, probs, state
 
 
 def operation_queue(self):
@@ -159,11 +158,11 @@ def mock_operations():
     mocks += [mock.patch.object(qml.operation.Tensor, "__rmatmul__", tensor_rmatmul)]
 
     # create mock measurement functions
-    mocks += [mock.patch.object(qml, "expval", expval)]
-    mocks += [mock.patch.object(qml, "var", var)]
-    mocks += [mock.patch.object(qml, "sample", sample)]
-    mocks += [mock.patch.object(qml, "probs", probs)]
-    mocks += [mock.patch.object(qml, "state", state, create=True)]
+    mocks += [mock.patch.object(qml, "expval", qml.tape.measure.expval)]
+    mocks += [mock.patch.object(qml, "var", qml.tape.measure.var)]
+    mocks += [mock.patch.object(qml, "sample", qml.tape.measure.sample)]
+    mocks += [mock.patch.object(qml, "probs", qml.tape.measure.probs)]
+    mocks += [mock.patch.object(qml, "state", qml.tape.measure.state, create=True)]
 
     # Mock the operations so that they no longer perform validation
     # on argument types and domain. This is required to avoid the operations
