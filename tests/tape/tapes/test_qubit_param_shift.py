@@ -46,7 +46,7 @@ class TestGradMethod:
         assert tape._par_info[2]["grad_method"] == "A"
 
     def test_independent(self):
-        """Test that an independent qml.variable is properly marked
+        """Test that an independent variable is properly marked
         as having a zero gradient"""
 
         with QubitParamShiftTape() as tape:
