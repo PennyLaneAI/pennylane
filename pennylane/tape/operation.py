@@ -20,8 +20,8 @@ from unittest import mock
 
 import pennylane as qml
 
-from .measure import expval, var, sample, probs, state
 from .queuing import QueuingContext
+from .measure import expval, var, sample, probs, state
 
 
 def operation_queue(self):
