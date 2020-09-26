@@ -444,7 +444,7 @@ class TestQNode:
 
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)

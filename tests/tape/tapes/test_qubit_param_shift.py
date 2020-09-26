@@ -212,7 +212,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, mocker, tol):
-        """Tests that the qml.variance parameter-shift rule agrees with the first and second
+        """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
         params = np.array([0.1, -1.6, np.pi / 5])
 
@@ -468,7 +468,7 @@ class TestJacobianIntegration:
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
-        values and qml.variances"""
+        values and variances"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54

@@ -845,7 +845,7 @@ class TestExecution:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with qml.expval and qml.var outputs"""
+        with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -867,7 +867,7 @@ class TestExecution:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.var outputs"""
+        with prob and var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -907,7 +907,7 @@ class TestExecution:
 
     def test_multiple_samples(self):
         """Test that there is only one array of values returned
-        for multiple qml.samples"""
+        for multiple samples"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -924,7 +924,7 @@ class TestExecution:
 
     def test_samples_expval(self):
         """Test that multiple arrays of values are returned
-        for combinations of qml.samples and statistics"""
+        for combinations of samples and statistics"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -958,7 +958,7 @@ class TestCVExecution:
 
     def test_single_output_value(self, tol):
         """Tests correct execution and output shape for a CV tape
-        with a single qml.expval output"""
+        with a single expval output"""
         dev = qml.device("default.gaussian", wires=2)
         x = 0.543
         y = -0.654
@@ -1020,7 +1020,7 @@ class TestGradMethod:
         assert tape._par_info[2]["grad_method"] == "F"
 
     def test_independent(self):
-        """Test that an independent qml.variable is properly marked
+        """Test that an independent variable is properly marked
         as having a zero gradient"""
 
         with QuantumTape() as tape:
@@ -1346,7 +1346,7 @@ class TestJacobianIntegration:
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single qml.expval output"""
+        with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1365,7 +1365,7 @@ class TestJacobianIntegration:
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple qml.expval outputs"""
+        with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1385,7 +1385,7 @@ class TestJacobianIntegration:
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with qml.expval and qml.var outputs"""
+        with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -1405,7 +1405,7 @@ class TestJacobianIntegration:
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and qml.expval outputs"""
+        with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654

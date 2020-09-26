@@ -17,6 +17,7 @@ validate, execute, and differentiate quantum circuits.
 """
 import contextlib
 from unittest import mock
+import warnings
 
 from .circuit_graph import TapeCircuitGraph
 from .measure import MeasurementProcess, state
@@ -85,6 +86,6 @@ def disable_tape():
     For more details on tape mode, see :mod:`~.tape`.
     """
     if not _mock_stack:
-        raise RuntimeError("Tape mode is not currently enabled.")
-
-    _mock_stack.pop().close()
+        warnings.warn("Tape mode is not currently enabled.", UserWarning)
+    else:
+        _mock_stack.pop().close()
