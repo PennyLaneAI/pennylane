@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 
-from .tape import QuantumTape
+from .jacobian_tape import QuantumTape
 
 
 ABC_ARRAY = np.array(list(ABC))

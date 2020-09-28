@@ -23,7 +23,13 @@ from .circuit_graph import TapeCircuitGraph
 from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import MeasurementProcess, state
 from .qnode import QNode, qnode
-from .tapes import BaseQuantumTape, QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from .tapes import (
+    BaseQuantumTape,
+    QuantumTape,
+    QubitParamShiftTape,
+    CVParamShiftTape,
+    ReversibleTape,
+)
 
 
 _mock_stack = []

@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape.measure import MeasurementProcess
 
-from .tape import QuantumTape
+from .jacobian_tape import QuantumTape
 
 
 class QubitParamShiftTape(QuantumTape):

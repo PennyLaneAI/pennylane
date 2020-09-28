@@ -15,6 +15,7 @@
 This module contains the quantum tape, which adds differentiation methods
 to the ``BaseQuantumTape`` class.
 """
+# pylint: disable=too-many-branches
 
 import numpy as np
 
@@ -468,4 +469,3 @@ class QuantumTape(BaseQuantumTape):
             jac[:, idx] = g.flatten()
 
         return jac
-
