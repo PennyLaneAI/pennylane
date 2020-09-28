@@ -15,6 +15,7 @@
 This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
+from .base import BaseQuantumTape
 from .tape import QuantumTape
 from .cv_param_shift import CVParamShiftTape
 from .qubit_param_shift import QubitParamShiftTape
