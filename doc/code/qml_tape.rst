@@ -154,7 +154,7 @@ Quantum tapes
 Under the hood, tape mode is able to provide these new features by significantly overhauling
 the internal structure of the QNode. When tape mode is enabled, the QNode is no longer
 responsible for recording quantum operations, executing devices, or computing gradients---these
-tasks have been delegated to an internal object that is created by the QNode, the **Quantum tape**.
+tasks have been delegated to an internal object that is created by the QNode, the **quantum tape**.
 
 In addition to being created internally by QNodes in tape mode, quantum tapes can also be created,
 nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually. Tape subclasses also provide
