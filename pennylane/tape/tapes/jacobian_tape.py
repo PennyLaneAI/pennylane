@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the quantum tape, which adds differentiation methods
-to the ``BaseQuantumTape`` class.
+to the ``QuantumTape`` class.
 """
 # pylint: disable=too-many-branches
 
@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import State
-from pennylane.tape.tapes.base import BaseQuantumTape
+from pennylane.tape.tapes.tape import QuantumTape
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -39,7 +39,7 @@ STATE_PREP_OPS = (
 
 
 # pylint: disable=too-many-public-methods
-class QuantumTape(BaseQuantumTape):
+class JacobianTape(QuantumTape):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
 
@@ -57,15 +57,15 @@ class QuantumTape(BaseQuantumTape):
 
     **Example**
 
-    In addition to the functionality of the ``BaseQuantumTape`` class,
-    the ``QuantumTape`` has the ability to compute Jacobians of a quantum
+    In addition to the functionality of the ``QuantumTape`` class,
+    the ``JacobianTape`` has the ability to compute Jacobians of a quantum
     circuit. Consider the following
 
     .. code-block:: python
 
         import pennylane.tape
 
-        with qml.tape.BaseQuantumTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
@@ -110,7 +110,7 @@ class QuantumTape(BaseQuantumTape):
 
         .. note::
 
-            The base ``QuantumTape`` class only supports numerical differentiation, so
+            The base ``JacobianTape`` class only supports numerical differentiation, so
             this method will always return either ``"F"`` or ``None``. If an inheriting
             tape supports analytic differentiation for certain operations, make sure
             that this method is overwritten appropriately to return ``"A"`` where
@@ -357,7 +357,7 @@ class QuantumTape(BaseQuantumTape):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])

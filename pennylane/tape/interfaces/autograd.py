@@ -26,13 +26,13 @@ from pennylane.tape.queuing import AnnotatedQueue
 
 
 class AutogradInterface(AnnotatedQueue):
-    """Mixin class for applying an autograd interface to a :class:`~.QuantumTape`.
+    """Mixin class for applying an autograd interface to a :class:`~.JacobianTape`.
 
     Autograd-compatible quantum tape classes can be created via subclassing:
 
     .. code-block:: python
 
-        class MyAutogradQuantumTape(AutogradInterface, QuantumTape):
+        class MyAutogradQuantumTape(AutogradInterface, JacobianTape):
 
     Alternatively, the autograd interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
@@ -53,7 +53,7 @@ class AutogradInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        tape = AutogradInterface.apply(QuantumTape())
+        tape = AutogradInterface.apply(JacobianTape())
 
         with tape:
             qml.Rot(0, 0, 0, wires=0)
@@ -84,7 +84,7 @@ class AutogradInterface(AnnotatedQueue):
     def _update_trainable_params(self):
         """Set the trainable parameters.
 
-        Unlike in :class:`~.QuantumTape`, we also set the private attribute
+        Unlike in :class:`~.JacobianTape`, we also set the private attribute
         ``self._all_parameter_values``.
 
         Since :meth:`~.get_parameters` **always** calls ``_update_trainable_params``, we access this
@@ -141,7 +141,7 @@ class AutogradInterface(AnnotatedQueue):
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
         """Returns the vector-Jacobian product operator for the quantum tape.
-        The returned function takes the arguments as :meth:`~.QuantumTape.execute`.
+        The returned function takes the arguments as :meth:`~.JacobianTape.execute`.
 
         Args:
             ans (array): the result of the tape execution
@@ -167,11 +167,11 @@ class AutogradInterface(AnnotatedQueue):
         """Apply the autograd interface to an existing tape in-place.
 
         Args:
-            tape (.QuantumTape): a quantum tape to apply the Autograd interface to
+            tape (.JacobianTape): a quantum tape to apply the Autograd interface to
 
         **Example**
 
-        >>> with QuantumTape() as tape:
+        >>> with JacobianTape() as tape:
         ...     qml.RX(0.5, wires=0)
         ...     expval(qml.PauliZ(0))
         >>> AutogradInterface.apply(tape)

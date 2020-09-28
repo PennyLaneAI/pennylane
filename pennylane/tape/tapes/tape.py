@@ -58,10 +58,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     .. code-block:: python
 
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-            with QuantumTape() as tape2:
+            with JacobianTape() as tape2:
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
             qml.CNOT(wires=[0, 'a'])
@@ -72,7 +72,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     >>> tape.operations
     [BasisState(array([1, 1]), wires=[0, 'a']),
-     <QuantumTape: wires=[0], params=3>,
+     <JacobianTape: wires=[0], params=3>,
      CNOT(wires=[0, 'a']),
      RY(0.2, wires=['a'])]
 
@@ -133,7 +133,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
 
 # pylint: disable=too-many-public-methods
-class BaseQuantumTape(AnnotatedQueue):
+class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
     .. note::
@@ -154,7 +154,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         import pennylane.tape
 
-        with qml.tape.BaseQuantumTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
@@ -297,7 +297,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         for obj, info in self._queue.items():
 
-            if isinstance(obj, BaseQuantumTape):
+            if isinstance(obj, QuantumTape):
                 self._ops.append(obj)
 
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
@@ -390,10 +390,10 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-                with QuantumTape() as tape2:
+                with JacobianTape() as tape2:
                     qml.Rot(0.543, 0.1, 0.4, wires=0)
 
                 qml.CNOT(wires=[0, 'a'])
@@ -404,7 +404,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         >>> tape.operations
         [BasisState(array([1, 1]), wires=[0, 'a']),
-         <QuantumTape: wires=[0], params=3>,
+         <JacobianTape: wires=[0], params=3>,
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
@@ -439,7 +439,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
@@ -546,7 +546,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -592,7 +592,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -640,7 +640,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -698,7 +698,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -721,7 +721,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -756,7 +756,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -852,7 +852,7 @@ class BaseQuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])

@@ -24,8 +24,8 @@ from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import MeasurementProcess, state
 from .qnode import QNode, qnode
 from .tapes import (
-    BaseQuantumTape,
     QuantumTape,
+    JacobianTape,
     QubitParamShiftTape,
     CVParamShiftTape,
     ReversibleTape,

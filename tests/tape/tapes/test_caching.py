@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape.measure import expval
-from pennylane.tape.tapes import QuantumTape
+from pennylane.tape.tapes import JacobianTape
 from pennylane.tape import qnode
 from pennylane.devices import DefaultQubit
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
@@ -25,7 +25,7 @@ from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 
 def get_tape(caching):
     """Creates a simple quantum tape"""
-    with QuantumTape(caching=caching) as tape:
+    with JacobianTape(caching=caching) as tape:
         qml.QubitUnitary(np.eye(2), wires=0)
         qml.RX(0.1, wires=0)
         qml.RX(0.2, wires=1)
@@ -53,10 +53,10 @@ class TestTapeCaching:
 
     def test_set_and_get(self):
         """Test that the caching attribute can be set and accessed"""
-        tape = QuantumTape()
+        tape = JacobianTape()
         assert tape.caching == 0
 
-        tape = QuantumTape(caching=10)
+        tape = JacobianTape(caching=10)
         assert tape.caching == 10
 
     def test_no_caching(self, mocker):
