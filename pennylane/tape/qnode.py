@@ -452,12 +452,26 @@ class QNode:
         if res_type_namespace in ("pennylane", "autograd"):
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
-            return anp.squeeze(res)
+            return self.process(anp.squeeze(res))
 
         if self._caching:
             self._cache_execute = self.qtape._cache_execute
 
-        return __import__(res_type_namespace).squeeze(res)
+        return self.process(__import__(res_type_namespace).squeeze(res))
+
+    def process(self, output):
+        """Apply classical post-processing to the quantum output.
+
+        By default, this method simply returns the quantum output
+        un-modified. However this method may be overwritten to perform additional
+        classical post-processing, e.g., by a QNode transform.
+
+        .. note::
+
+            All classical processing performed here should be interface agnostic,
+            to support autodifferentiation.
+        """
+        return output
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
