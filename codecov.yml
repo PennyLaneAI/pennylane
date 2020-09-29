@@ -1,5 +1,6 @@
 fixes:
   - "pennylane_qchem/::qchem/pennylane_qchem/"
+  - "/home/runner/work/pennylane/pennylane/pennylane/::pennylane/"
 
 ignore:
   - "pennylane/devices/tests/*"
