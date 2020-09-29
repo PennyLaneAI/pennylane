@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the quantum tape, which adds differentiation methods
+This module contains the ``JacobianTape``, which adds differentiation methods
 to the ``QuantumTape`` class.
 """
 # pylint: disable=too-many-branches
