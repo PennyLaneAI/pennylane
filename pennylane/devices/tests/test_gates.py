@@ -385,6 +385,10 @@ class TestGatesQubit:
         """Test QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
+
+        if "QubitUnitary" not in dev.operations:
+            pytest.skip("Skipped because device does not support QubitUnitary.")
+
         skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
@@ -405,6 +409,7 @@ class TestGatesQubit:
         """Test three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
+
         skip_if(dev, {"returns_probs": False})
 
         rnd_state = init_state(n_wires)
