@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 
 from .jacobian_tape import JacobianTape
+from .tape import QuantumTape
 
 
 ABC_ARRAY = np.array(list(ABC))
@@ -181,7 +182,7 @@ class ReversibleTape(JacobianTape):
 
         generator = generator(wires)
 
-        diff_circuit = JacobianTape()
+        diff_circuit = QuantumTape()
         diff_circuit._ops = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
 
         # set the simulator state to be the pre-measurement state
