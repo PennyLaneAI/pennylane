@@ -130,7 +130,7 @@ class tensor(_np.ndarray):
 
         raise TypeError("unhashable type: 'numpy.tensor'")
 
-    def data(self):
+    def unwrap(self):
         """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
         the tensor is 0-dimensional.
 
@@ -149,21 +149,21 @@ class tensor(_np.ndarray):
         >>> x = np.array([1, 2], requires_grad=True)
         >>> x
         tensor([1, 2], requires_grad=True)
-        >>> x.data()
+        >>> x.unwrap()
         array([1, 2])
 
         Zero dimensional array are converted to Python scalars:
 
         >>> x = np.array(1.543, requires_grad=False)
-        >>> x.data()
+        >>> x.unwrap()
         1.543
-        >>> type(x.data())
+        >>> type(x.unwrap())
         float
 
         The underlying data is **not** copied:
 
         >>> x = np.array([1, 2], requires_grad=True)
-        >>> y = x.data()
+        >>> y = x.unwrap()
         >>> x[0] = 5
         >>> y
         array([5, 2])
@@ -175,7 +175,7 @@ class tensor(_np.ndarray):
         To create a copy, the ``copy()`` method can be used:
 
         >>> x = np.array([1, 2], requires_grad=True)
-        >>> y = x.data().copy()
+        >>> y = x.unwrap().copy()
         >>> x[0] = 5
         >>> y
         array([1, 2])
@@ -191,7 +191,7 @@ class tensor(_np.ndarray):
 
         This method is an alias for :meth:`~.data`. See :meth:`~.data` for more details.
         """
-        return self.data()
+        return self.unwrap()
 
 
 class NonDifferentiableError(Exception):

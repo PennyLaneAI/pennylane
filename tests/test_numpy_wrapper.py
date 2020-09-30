@@ -431,7 +431,7 @@ class TestNumpyConversion:
     def test_convert_scalar_array(self):
         """Test that a scalar array converts to a python literal"""
         data = np.array(1.543)
-        res = data.data()
+        res = data.unwrap()
         assert res == data.item()
         assert isinstance(res, float)
 
