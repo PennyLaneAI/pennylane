@@ -189,7 +189,7 @@ class tensor(_np.ndarray):
         """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
         the tensor is 0-dimensional.
 
-        This method is an alias for :meth:`~.data`. See :meth:`~.data` for more details.
+        This method is an alias for :meth:`~.unwrap`. See :meth:`~.unwrap` for more details.
         """
         return self.unwrap()
 
