@@ -121,6 +121,63 @@ class tensor(_np.ndarray):
 
         return item
 
+    def __hash__(self):
+        if self.ndim == 0:
+            return hash((self.item(), self.requires_grad))
+
+        raise TypeError("unhashable type: 'numpy.tensor'")
+
+    def numpy(self):
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        the tensor is 0-dimensional.
+
+        All information regarding differentiability of the tensor will be lost.
+
+        .. warning::
+
+            The returned array is a new view onto the **same data**. That is,
+            the tensor and the returned ``ndarray`` share the same underlying storage.
+            Changes to the tensor object will be reflected within the returned array,
+            and vice versa.
+
+        **Example**
+
+        >>> from pennylane import numpy as np
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> x
+        tensor([1, 2], requires_grad=True)
+        >>> x.numpy()
+        array([1, 2])
+
+        Zero dimensional array are converted to Python scalars:
+
+        >>> x = np.array(1.543, requires_grad=False)
+        >>> x.numpy()
+        1.543
+        >>> type(x.numpy())
+        float
+
+        The underlying data is **not** copied:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.numpy()
+        >>> x[0] = 5
+        >>> y
+        array([5, 2])
+
+        To create a copy, the ``copy()`` method can be used:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.numpy().copy()
+        >>> x[0] = 5
+        >>> y
+        array([1, 2])
+        """
+        if self.ndim == 0:
+            return self.view(onp.ndarray).item()
+
+        return self.view(onp.ndarray)
+
 
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
