@@ -150,13 +150,13 @@
   tensor(6, requires_grad=True)
   ```
 
-  This may require small updates to user code. A convenience method, `np.tensor.numpy()`,
+  This may require small updates to user code. A convenience method, `np.tensor.data()`,
   has been added to help ease the transition. This converts PennyLane NumPy tensors
   to standard NumPy arrays and Python scalars:
 
   ```pycon
   >>> x = np.array(1.543, requires_grad=False)
-  >>> x.numpy()
+  >>> x.data()
   1.543
   ```
 
