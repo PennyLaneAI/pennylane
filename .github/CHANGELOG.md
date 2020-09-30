@@ -150,13 +150,13 @@
   tensor(6, requires_grad=True)
   ```
 
-  This may require small updates to user code. A convenience method, `np.tensor.data()`,
+  This may require small updates to user code. A convenience method, `np.tensor.unwrap()`,
   has been added to help ease the transition. This converts PennyLane NumPy tensors
   to standard NumPy arrays and Python scalars:
 
   ```pycon
   >>> x = np.array(1.543, requires_grad=False)
-  >>> x.data()
+  >>> x.unwrap()
   1.543
   ```
 
