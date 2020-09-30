@@ -164,6 +164,10 @@ class tensor(_np.ndarray):
         >>> x[0] = 5
         >>> y
         array([5, 2])
+        >>> y[1] = 7
+        >>> x
+        tensor([5, 7], requires_grad=True)
+
 
         To create a copy, the ``copy()`` method can be used:
 
