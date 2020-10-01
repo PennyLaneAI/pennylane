@@ -265,6 +265,14 @@ class TestGroupingUtils:
 
         assert np.all(adj == expected)
 
+        binary_obs_list = list(binary_observables)
+        adj = get_qwc_complement_adj_matrix(binary_obs_list)
+        assert np.all(adj == expected)
+
+        binary_obs_tuple = tuple(binary_observables)
+        adj = get_qwc_complement_adj_matrix(binary_obs_tuple)
+        assert np.all(adj == expected)
+
     def test_get_qwc_complement_adj_matrix_exception(self):
         """Tests that the `get_qwc_complement_adj_matrix` function raises an exception if
         the matrix is not binary."""
