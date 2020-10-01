@@ -26,6 +26,7 @@ from pennylane.grouping.utils import (
     binary_to_pauli,
     is_qwc,
     convert_observables_to_binary_matrix,
+    get_qwc_complement_adj_matrix,
 )
 
 
@@ -249,3 +250,27 @@ class TestGroupingUtils:
 
         with pytest.raises(TypeError):
             are_identical_pauli_words(non_pauli_word, non_pauli_word)
+
+    def test_get_qwc_complement_adj_matrix(self):
+        """Tests that the `get_qwc_complement_adj_matrix` function returns the correct
+        adjacency matrix."""
+        binary_observables = np.array([[1., 0., 1., 0., 0., 1.],
+                                       [0., 1., 1., 1., 0., 1.],
+                                       [0., 0., 0., 1., 0., 0.]])
+        adj = get_qwc_complement_adj_matrix(binary_observables)
+
+        expected = np.array([[0., 1., 1.],
+                             [1., 0., 0.],
+                             [1., 0., 0.]])
+
+        assert np.all(adj == expected)
+
+    def test_get_qwc_complement_adj_matrix_exception(self):
+        """Tests that the `get_qwc_complement_adj_matrix` function raises an exception if
+        the matrix is not binary."""
+        not_binary_observables = np.array([[1.1, 0.5, 1., 0., 0., 1.],
+                                           [0., 1.3, 1., 1., 0., 1.],
+                                           [2.2, 0., 0., 1., 0., 0.]])
+
+        with pytest.raises(ValueError, match="Expected a binary array, instead got"):
+            get_qwc_complement_adj_matrix(not_binary_observables)
