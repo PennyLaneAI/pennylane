@@ -351,7 +351,8 @@ class DefaultTensor(Device):
 
         elif operation == "BasisState":
             n = len(par[0])
-            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+            elements = set(par[0].tolist())
+            if n == 0 or n > self.num_wires or not elements.issubset({0, 1}):
                 raise ValueError(
                     "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
                         self.num_wires

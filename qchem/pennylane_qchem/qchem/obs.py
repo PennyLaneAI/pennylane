@@ -622,8 +622,9 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
     run over the active orbitals and the contribution due to core orbitals, is computed as
-    :math:`V_\mathrm{core} = 2 \sum_{\alpha, \beta \in \mathrm{core}}
-    \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle`.
+    :math:`V_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
+    [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle
+    - \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle ]`.
 
     Args:
         matrix_elements (array[float]): 4D NumPy array with the matrix elements
@@ -659,7 +660,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
      [1.         0.         0.         1.         0.70510563]
      [1.         1.         1.         1.         0.70510563]]
     >>> print(v_core)
-    1.364779066
+    0.682389533
     """
 
     orbitals = matrix_elements.shape[0]
@@ -681,9 +682,14 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
                 )
             )
 
-        # Compute contribution due to core orbitals
-        v_core = 2 * sum(
-            [matrix_elements[alpha, beta, alpha, beta] for alpha in core for beta in core]
+        # Compute the contribution of core orbitals
+        v_core = sum(
+            [
+                2 * matrix_elements[alpha, beta, beta, alpha]
+                - matrix_elements[alpha, beta, alpha, beta]
+                for alpha in core
+                for beta in core
+            ]
         )
 
     if active is None:
