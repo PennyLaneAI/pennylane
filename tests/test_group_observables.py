@@ -281,6 +281,14 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, anticom_partitions_sol[i][j])
 
+    def test_group_observables_exception(self):
+        """Tests that the `group_observables` function raises an exception if
+        the lengths of coefficients and observables do not agree."""
+        observables = [Identity(0), PauliX(1)]
+        coefficients = [0.5]
+        with pytest.raises(IndexError, match="must be the same length"):
+            group_observables(observables, coefficients)
+
     def test_obtain_binary_repr_custom_wire_map(self):
         """Tests that the `obtain_binary_repr` method sets a custom
          wire map correctly."""
