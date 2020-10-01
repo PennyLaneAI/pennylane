@@ -426,7 +426,8 @@ class TestScalarHashing:
 
 
 class TestNumpyConversion:
-    """Tests for the tensor.numpy() method"""
+    """Tests for the tensor.unwrap() and tensor.numpy() methods"""
+
 
     def test_convert_scalar_array(self):
         """Test that a scalar array converts to a python literal"""
