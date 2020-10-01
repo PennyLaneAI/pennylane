@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* [Placeholder for measurement grouping features]
+
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
   
@@ -175,7 +177,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Antal Száva
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, 
+Nathan Killoran, Robert Lang, Antal Száva
 
 # Release 0.11.0 (current release)
 
