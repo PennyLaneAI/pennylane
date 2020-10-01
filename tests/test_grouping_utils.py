@@ -238,10 +238,14 @@ class TestGroupingUtils:
         """Tests TypeError raise for when non-Pauli word Pennylane operators/operations are given
         as input to are_identical_pauli_words."""
 
-        assert pytest.raises(
-            TypeError, are_identical_pauli_words, (non_pauli_word, PauliZ(0) @ PauliZ(1))
-        )
-        assert pytest.raises(
-            TypeError, are_identical_pauli_words, (PauliX("a") @ Identity("b"), non_pauli_word)
-        )
-        assert pytest.raises(TypeError, are_identical_pauli_words, (non_pauli_word, non_pauli_word))
+        with pytest.raises(TypeError):
+            are_identical_pauli_words(non_pauli_word, PauliZ(0) @ PauliZ(1))
+
+        with pytest.raises(TypeError):
+            are_identical_pauli_words(non_pauli_word, PauliZ(0) @ PauliZ(1))
+
+        with pytest.raises(TypeError):
+            are_identical_pauli_words(PauliX("a") @ Identity("b"), non_pauli_word)
+
+        with pytest.raises(TypeError):
+            are_identical_pauli_words(non_pauli_word, non_pauli_word)
