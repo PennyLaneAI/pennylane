@@ -280,3 +280,16 @@ class TestGroupObservables:
         for i, partition in enumerate(anticom_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, anticom_partitions_sol[i][j])
+
+    def test_obtain_binary_repr_custom_wire_map(self):
+        """Tests that the `obtain_binary_repr` method sets a custom
+         wire map correctly."""
+
+        observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
+        grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
+
+        n_qubits = 3
+        wire_map = {"alice": 1, "bob": 0, "charlie": 2}
+        _ = grouping_instance.obtain_binary_repr(n_qubits, wire_map)
+
+        assert grouping_instance._wire_map == wire_map
