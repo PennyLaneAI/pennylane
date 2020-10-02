@@ -119,6 +119,6 @@ class TestOptimizeMeasurements:
 
         with pytest.raises(
             NotImplementedError,
-            match="Measurement reduction by anticommuting grouping not implemented",
+            match="Measurement reduction by 'anticommuting' grouping not implemented",
         ):
             optimize_measurements(observables, grouping=grouping)
