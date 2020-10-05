@@ -121,6 +121,78 @@ class tensor(_np.ndarray):
 
         return item
 
+    def __hash__(self):
+        if self.ndim == 0:
+            # Allowing hashing if the tensor is a scalar.
+            # We hash both the scalar value *and* the differentiability information,
+            # to match the behaviour of PyTorch.
+            return hash((self.item(), self.requires_grad))
+
+        raise TypeError("unhashable type: 'numpy.tensor'")
+
+    def unwrap(self):
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        the tensor is 0-dimensional.
+
+        All information regarding differentiability of the tensor will be lost.
+
+        .. warning::
+
+            The returned array is a new view onto the **same data**. That is,
+            the tensor and the returned ``ndarray`` share the same underlying storage.
+            Changes to the tensor object will be reflected within the returned array,
+            and vice versa.
+
+        **Example**
+
+        >>> from pennylane import numpy as np
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> x
+        tensor([1, 2], requires_grad=True)
+        >>> x.unwrap()
+        array([1, 2])
+
+        Zero dimensional array are converted to Python scalars:
+
+        >>> x = np.array(1.543, requires_grad=False)
+        >>> x.unwrap()
+        1.543
+        >>> type(x.unwrap())
+        float
+
+        The underlying data is **not** copied:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.unwrap()
+        >>> x[0] = 5
+        >>> y
+        array([5, 2])
+        >>> y[1] = 7
+        >>> x
+        tensor([5, 7], requires_grad=True)
+
+
+        To create a copy, the ``copy()`` method can be used:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.unwrap().copy()
+        >>> x[0] = 5
+        >>> y
+        array([1, 2])
+        """
+        if self.ndim == 0:
+            return self.view(onp.ndarray).item()
+
+        return self.view(onp.ndarray)
+
+    def numpy(self):
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        the tensor is 0-dimensional.
+
+        This method is an alias for :meth:`~.unwrap`. See :meth:`~.unwrap` for more details.
+        """
+        return self.unwrap()
+
 
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable

@@ -374,7 +374,7 @@ class TestTapeConstruction:
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
-
+            
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
