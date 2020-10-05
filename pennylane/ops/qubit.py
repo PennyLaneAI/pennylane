@@ -19,7 +19,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import math
 import cmath
 import functools
-import numpy as np
+from pennylane import numpy as np
 
 from pennylane.templates import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
