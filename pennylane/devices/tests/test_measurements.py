@@ -184,6 +184,9 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         theta = 0.432
         phi = 0.123
 
@@ -209,6 +212,9 @@ class TestExpval:
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
+
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.432
         phi = 0.123
@@ -299,6 +305,10 @@ class TestTensorExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -361,6 +371,9 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         A_ = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
 
@@ -390,6 +403,9 @@ class TestSample:
         """
         n_wires = 2
         dev = device(n_wires)
+
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.543
         A_ = np.array(
@@ -514,6 +530,10 @@ class TestTensorSample:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -629,6 +649,9 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
 
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         phi = 0.543
         theta = 0.6543
         # test correct variance for <H> of a rotated state
@@ -724,6 +747,10 @@ class TestTensorVar:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if "Hermitian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432

@@ -135,6 +135,34 @@
 
 <h3>Breaking changes</h3>
 
+* The PennyLane NumPy module now returns scalar (zero-dimensional) arrays where
+  Python scalars were previously returned.
+  [(#820)](https://github.com/PennyLaneAI/pennylane/pull/820)
+  [(#833)](https://github.com/PennyLaneAI/pennylane/pull/833)
+
+  For example, this affects array element indexing, and summation:
+
+  ```pycon
+  >>> x = np.array([1, 2, 3], requires_grad=False)
+  >>> x[0]
+  tensor(1, requires_grad=False)
+  >>> np.sum(x)
+  tensor(6, requires_grad=True)
+  ```
+
+  This may require small updates to user code. A convenience method, `np.tensor.unwrap()`,
+  has been added to help ease the transition. This converts PennyLane NumPy tensors
+  to standard NumPy arrays and Python scalars:
+
+  ```pycon
+  >>> x = np.array(1.543, requires_grad=False)
+  >>> x.unwrap()
+  1.543
+  ```
+
+  Note, however, that information regarding array differentiability will be
+  lost.
+
 <h3>Bug fixes</h3>
 
 * Changed to use lists for storing variable values inside `BaseQNode`
