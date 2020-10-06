@@ -157,6 +157,7 @@ def CRot(a, b, c):
     """
     return np.diag(CRZ(c)) @ (CRY(b) @ np.diag(CRZ(a)))
 
+
 def MultiRZ(theta, n):
     r"""Arbitrary multi Z rotation.
 
