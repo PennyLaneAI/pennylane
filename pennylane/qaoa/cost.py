@@ -311,7 +311,7 @@ def max_independent_set(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(graph, 0))
 
-    cost_h = edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
+    cost_h = 3*edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
@@ -382,7 +382,7 @@ def min_vertex_cover(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 0), qaoa.bit_flip_mixer(graph, 1))
 
-    cost_h = edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
+    cost_h = 3*edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
@@ -455,7 +455,7 @@ def max_clique(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(nx.complement(graph), 0))
 
-    cost_h = edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
+    cost_h = 3*edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
