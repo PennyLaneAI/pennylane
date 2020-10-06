@@ -378,7 +378,7 @@ class TestOps:
         wires = 4
         dev = qml.device('default.qubit.autograd', wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.MultiRZ(param, wires=[0,1])
             return qml.probs(wires = list(range(wires)))
