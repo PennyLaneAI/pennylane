@@ -368,3 +368,21 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(cost)(weights)[0]
         assert grad.shape == weights.shape
+
+class TestOps:
+    """Unit tests for operations supported by the default.qubit.autograd device"""
+
+    def test_multirz_jacobian(self):
+        """Test that the patched numpy functions are used for the MultiRZ
+        operation and the jacobian can be computed."""
+        wires = 4
+        dev = qml.device('default.qubit.autograd', wires=wires)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0,1])
+            return qml.probs(wires = list(range(wires)))
+
+        param = 0.3
+        res = qml.jacobian(circuit)(param)
+        assert np.allclose(res, np.zeros(wires **2))
