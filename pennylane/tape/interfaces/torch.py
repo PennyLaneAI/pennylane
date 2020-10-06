@@ -91,13 +91,13 @@ class _TorchInterface(torch.autograd.Function):
 
 
 class TorchInterface(AnnotatedQueue):
-    """Mixin class for applying an Torch interface to a :class:`~.QuantumTape`.
+    """Mixin class for applying an Torch interface to a :class:`~.JacobianTape`.
 
     Torch-compatible quantum tape classes can be created via subclassing:
 
     .. code-block:: python
 
-        class MyTorchQuantumTape(TorchInterface, QuantumTape):
+        class MyTorchQuantumTape(TorchInterface, JacobianTape):
 
     Alternatively, the Torch interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
@@ -115,7 +115,7 @@ class TorchInterface(AnnotatedQueue):
         dev = qml.device("default.qubit", wires=1)
         p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
 
-        with TorchInterface.apply(QuantumTape()) as qtape:
+        with TorchInterface.apply(JacobianTape()) as qtape:
             qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
             expval(qml.PauliX(0))
 
@@ -131,7 +131,7 @@ class TorchInterface(AnnotatedQueue):
     providing the ``dtype`` argument when applying the interface:
 
     >>> p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-    >>> with TorchInterface.apply(QuantumTape()) as qtape:
+    >>> with TorchInterface.apply(JacobianTape()) as qtape:
     ...     qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
     ...     expval(qml.PauliX(0))
     >>> result = qtape.execute(dev)
@@ -174,13 +174,13 @@ class TorchInterface(AnnotatedQueue):
         """Apply the Torch interface to an existing tape in-place.
 
         Args:
-            tape (.QuantumTape): a quantum tape to apply the Torch interface to
+            tape (.JacobianTape): a quantum tape to apply the Torch interface to
             dtype (torch.dtype): the dtype that the returned quantum tape should
                 output
 
         **Example**
 
-        >>> with QuantumTape() as tape:
+        >>> with JacobianTape() as tape:
         ...     qml.RX(0.5, wires=0)
         ...     expval(qml.PauliZ(0))
         >>> TorchInterface.apply(tape)

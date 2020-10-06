@@ -23,13 +23,14 @@ import numpy as np
 
 import pennylane as qml
 
+from .jacobian_tape import JacobianTape
 from .tape import QuantumTape
 
 
 ABC_ARRAY = np.array(list(ABC))
 
 
-class ReversibleTape(QuantumTape):
+class ReversibleTape(JacobianTape):
     r"""Quantum tape for computing gradients via reversible analytic differentiation.
 
     .. note::
@@ -48,7 +49,7 @@ class ReversibleTape(QuantumTape):
 
     >>> tape.jacobian(dev)
 
-    For more details on the quantum tape, please see :class:`~.QuantumTape`.
+    For more details on the quantum tape, please see :class:`~.JacobianTape`.
 
     **Reversible analytic differentiation**
 

@@ -26,7 +26,7 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.tape.tapes import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
 
 
 class QNode:
@@ -36,7 +36,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
     the quantum circuit.
 
     .. note::
@@ -170,7 +170,7 @@ class QNode:
 
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
-        """Determine the best QuantumTape, differentiation method, and interface
+        """Determine the best JacobianTape, differentiation method, and interface
         for a requested device, interface, and diff method.
 
         Args:
@@ -181,9 +181,9 @@ class QNode:
                 ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            tuple[.JacobianTape, str, str]: tuple containing the compatible
+            JacobianTape, the interface to apply, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method
         """
 
         if diff_method == "best":
@@ -202,7 +202,7 @@ class QNode:
             return QNode._get_parameter_shift_tape(device), interface, "analytic"
 
         if diff_method == "finite-diff":
-            return QuantumTape, interface, "numeric"
+            return JacobianTape, interface, "numeric"
 
         raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
@@ -211,7 +211,7 @@ class QNode:
 
     @staticmethod
     def get_best_method(device, interface):
-        """Returns the 'best' QuantumTape and differentiation method
+        """Returns the 'best' JacobianTape and differentiation method
         for a particular device and interface combination.
 
         This method attempts to determine support for differentiation
@@ -230,9 +230,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            tuple[.JacobianTape, str, str]: tuple containing the compatible
+            JacobianTape, the interface to apply, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method
         """
         try:
             return QNode._validate_backprop_method(device, interface)
@@ -243,11 +243,11 @@ class QNode:
                 try:
                     return QNode._get_parameter_shift_tape(device), interface, "best"
                 except qml.QuantumFunctionError:
-                    return QuantumTape, interface, "numeric"
+                    return JacobianTape, interface, "numeric"
 
     @staticmethod
     def _validate_backprop_method(device, interface):
-        """Validates whether a particular device and QuantumTape interface
+        """Validates whether a particular device and JacobianTape interface
         supports the ``"backprop"`` differentiation method.
 
         Args:
@@ -255,9 +255,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            tuple[.JacobianTape, str, str]: tuple containing the compatible
+            JacobianTape, the interface to apply, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method
 
         Raises:
             qml.QuantumFunctionError: if the device does not support backpropagation, or the
@@ -269,7 +269,7 @@ class QNode:
         if backprop_interface is not None:
 
             if interface == backprop_interface:
-                return QuantumTape, None, "backprop"
+                return JacobianTape, None, "backprop"
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
@@ -283,7 +283,7 @@ class QNode:
 
     @staticmethod
     def _validate_reversible_method(device, interface):
-        """Validates whether a particular device and QuantumTape interface
+        """Validates whether a particular device and JacobianTape interface
         supports the ``"reversible"`` differentiation method.
 
         Args:
@@ -291,9 +291,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            tuple[.JacobianTape, str, str]: tuple containing the compatible
+            JacobianTape, the interface to apply, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method
 
         Raises:
             qml.QuantumFunctionError: if the device does not support reversible backprop
@@ -311,7 +311,7 @@ class QNode:
 
     @staticmethod
     def _validate_device_method(device, interface):
-        """Validates whether a particular device and QuantumTape interface
+        """Validates whether a particular device and JacobianTape interface
         supports the ``"device"`` differentiation method.
 
         Args:
@@ -319,9 +319,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            tuple[.JacobianTape, str, str]: tuple containing the compatible
+            JacobianTape, the interface to apply, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method
 
         Raises:
             qml.QuantumFunctionError: if the device does not provide a native method for computing
@@ -336,7 +336,7 @@ class QNode:
                 "method for computing the jacobian."
             )
 
-        return QuantumTape, interface, "device"
+        return JacobianTape, interface, "device"
 
     @staticmethod
     def _get_parameter_shift_tape(device):
@@ -348,7 +348,7 @@ class QNode:
             device (.Device): PennyLane device
 
         Returns:
-            .QuantumTape: the compatible QuantumTape
+            .JacobianTape: the compatible JacobianTape
 
         Raises:
             qml.QuantumFunctionError: if the device model does not have a corresponding
@@ -548,7 +548,7 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
     :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
     compatible device.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
     the quantum circuit.
 
     .. note::
