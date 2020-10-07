@@ -147,17 +147,17 @@ class QubitParamShiftTape(JacobianTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        shifted_forward = self.copy(deep=True)
-        shifted_forward.set_parameters(params + shift)
+        shift_forward = self.copy(deep=True)
+        shift_forward.set_parameters(params + shift)
 
-        shifted_backward = self.copy(deep=True)
-        shifted_forward.set_parameters(params - shift)
+        shift_backward = self.copy(deep=True)
+        shift_forward.set_parameters(params - shift)
 
-        tapes = [shifted_forward, shifted_backward]
+        tapes = [shift_forward, shift_backward]
 
         def processing_fn(results):
             """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
-            return (results[0] - results[1]) / 2
+            return (results[0] - results[1]) / (2 * np.sin(s))
 
         return tapes, processing_fn
 
