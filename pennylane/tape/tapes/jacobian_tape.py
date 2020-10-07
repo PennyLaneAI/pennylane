@@ -272,13 +272,13 @@ class JacobianTape(QuantumTape):
 
             tapes = [shifted_forward, shifted_backward]
 
-            def processing_fn(results):
+            def second_order_processing_fn(results):
                 """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
                 res0 = np.array(results[0])
                 res1 = np.array(results[1])
                 return (res0 - res1) / h
 
-            return tapes, processing_fn
+            return tapes, second_order_processing_fn
 
         raise ValueError("Order must be 1 or 2.")
 

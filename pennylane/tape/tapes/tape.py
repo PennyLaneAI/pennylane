@@ -858,8 +858,8 @@ class QuantumTape(AnnotatedQueue):
         tape.trainable_params = self.trainable_params.copy()
 
         tape._caching = self._caching
-        tape.get_cache = self.get_cache  # pylint: disable=method-hidden
-        tape.set_cache = self.set_cache  # pylint: disable=method-hidden
+        tape.get_cache = self.get_cache
+        tape.set_cache = self.set_cache
 
         return tape
 
@@ -980,10 +980,10 @@ class QuantumTape(AnnotatedQueue):
         executions. If set to zero, no caching occurs."""
         return self._caching
 
-    def get_cache(self):
+    def get_cache(self):  # pylint: disable=method-hidden
         """Return the caching dictionary"""
         return self._cache_execute
 
-    def set_cache(self, circuit_hash, value):
+    def set_cache(self, circuit_hash, value):  # pylint: disable=method-hidden
         """Set a value in the caching dictionary"""
         self._cache_execute[circuit_hash] = value
