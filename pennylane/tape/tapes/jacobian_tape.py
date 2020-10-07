@@ -239,13 +239,24 @@ class JacobianTape(QuantumTape):
         if order == 1:
             # forward finite-difference.
 
-            original = self.copy(deep=True, tape_cls=QuantumTape)
-            original.set_parameters(params)
+            # get the stored result of the original circuit
+            y0 = options.get("y0", None)
+            if y0 is None:
+                # at this stage the stored result should always be set
+                raise ValueError("Something went wrong, the original circuit has not been executed yet "
+                                 "to store result.")
 
             shifted = self.copy(deep=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
-            tapes = [shifted, original]
+            tapes = [shifted]
+
+            def processing_fn(results):
+                """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+                shifted = np.array(results[0])
+                return (shifted - y0) / h
+
+            return tapes, processing_fn
 
         elif order == 2:
             # central finite difference
@@ -258,16 +269,16 @@ class JacobianTape(QuantumTape):
 
             tapes = [shifted_forward, shifted_backward]
 
+            def processing_fn(results):
+                """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+                res0 = np.array(results[0])
+                res1 = np.array(results[1])
+                return (res0 - res1) / h
+
+            return tapes, processing_fn
+
         else:
             raise ValueError("Order must be 1 or 2.")
-
-        def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
-            res0 = np.array(results[0])
-            res1 = np.array(results[1])
-            return (res0 - res1) / h
-
-        return tapes, processing_fn
 
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
@@ -290,10 +301,16 @@ class JacobianTape(QuantumTape):
             measurement statistics
         """
 
+        if options.get("order", 1) == 1:
+            # Compute the value of the tape at the current parameters. This ensures
+            # this computation is only performed once, for all parameters.
+            y0 = options.get("y0", None)
+            if y0 is None:
+                options["y0"] = np.asarray(self.execute_device(params, device))
+
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
 
         # execute tapes
-        # Todo: if tape is the original tape, take stored y0 result
         results = [tape.execute(device) for tape in tapes]
         self._output_dim = tapes[0]._output_dim
 
@@ -469,15 +486,6 @@ class JacobianTape(QuantumTape):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
-
-        if method == "numeric" or "F" in allowed_param_methods:
-            # there exist parameters that will be differentiated numerically
-
-            if options.get("order", 1) == 1:
-                # First order (forward) finite-difference will be performed.
-                # Compute the value of the tape at the current parameters here. This ensures
-                # this computation is only performed once, for all parameters.
-                options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = None
         p_ind = range(len(params))
