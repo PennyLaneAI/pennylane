@@ -835,7 +835,9 @@ class QuantumTape(AnnotatedQueue):
         """
         if deep:
             tape = copy.deepcopy(self)
-            tape.__class__ = tape_cls
+
+            if tape_cls is not None:
+                tape.__class__ = tape_cls
             return tape
 
         if tape_cls is None:
@@ -847,7 +849,7 @@ class QuantumTape(AnnotatedQueue):
         tape._ops = self._ops.copy()
         tape._measurements = self._measurements.copy()
 
-
+        tape._update()
         tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
         return tape

@@ -283,11 +283,8 @@ class JacobianTape(QuantumTape):
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
 
-        for t in tapes:
-            print(t.operations)
-            print(t.operations[0].data[0])
-
         results = [tape.execute(device) for tape in tapes]
+        self._output_dim = tapes[0]._output_dim
 
         return processing_fn(results)
 
