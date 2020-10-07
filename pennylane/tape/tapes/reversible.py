@@ -126,7 +126,19 @@ class ReversibleTape(JacobianTape):
         self._state = None
         return super().jacobian(device, params, **options)
 
-    def analytic_pd(self, idx, device, params=None, **options):
+    def analytic_diff(self, idx, params=None, **options):
+        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
+        position 'idx' using numeric differentiation.
+
+        Args:
+          idx (int): trainable parameter index to differentiate with respect to
+          params (list[Any]): The quantum tape operation parameters. If not provided,
+             the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Returns:
+          list[QuantumTape], function
+        """
+
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
@@ -135,8 +147,8 @@ class ReversibleTape(JacobianTape):
         # expectation values of observables for now.
         for m in self.measurements:
             if (
-                m.return_type is qml.operation.Variance
-                or m.return_type is qml.operation.Probability
+                    m.return_type is qml.operation.Variance
+                    or m.return_type is qml.operation.Probability
             ):
                 raise ValueError(
                     f"{m.return_type} is not supported with the reversible gradient method"
@@ -171,12 +183,12 @@ class ReversibleTape(JacobianTape):
         op_idx = self.operations.index(op)
 
         # TODO: likely better to use circuitgraph to determine minimally necessary ops
-        between_ops = self.operations[op_idx + 1 :]
+        between_ops = self.operations[op_idx + 1:]
 
         if op.name == "Rot":
             decomp = op.decomposition(*op.parameters, wires=wires)
             generator, multiplier = decomp[p_idx].generator
-            between_ops = decomp[p_idx + 1 :] + between_ops
+            between_ops = decomp[p_idx + 1:] + between_ops
         else:
             generator, multiplier = op.generator
 
@@ -203,3 +215,13 @@ class ReversibleTape(JacobianTape):
         device._pre_rotated_state = self._state
 
         return 2 * multiplier * device._imag(matrix_elems)
+
+    def analytic_pd(self, idx, device, params=None, **options):
+
+        tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
+
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
+        self._output_dim = tapes[0]._output_dim
+
+        return processing_fn(results)
