@@ -194,7 +194,6 @@ class QubitParamShiftTape(JacobianTape):
 
         # execute tapes
         results = [tape.execute(device) for tape in tapes]
-        self._output_dim = tapes[0]._output_dim
 
         return processing_fn(results)
 
