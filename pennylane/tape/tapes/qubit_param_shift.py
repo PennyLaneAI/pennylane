@@ -118,6 +118,49 @@ class QubitParamShiftTape(JacobianTape):
         self._evA = None
         return super().jacobian(device, params, **options)
 
+    def param_shift_diff(self, idx, params=None, **options):
+        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
+        position 'idx' using the parameter shift differentiation.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            shift (float): the parameter shift value
+
+        Returns:
+            list[QuantumTape], function
+        """
+
+        t_idx = list(self.trainable_params)[idx]
+        op = self._par_info[t_idx]["op"]
+        p_idx = self._par_info[t_idx]["p_idx"]
+
+        s = (
+            np.pi / 2
+            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
+            else op.grad_recipe[p_idx]
+        )
+        s = options.get("shift", s)
+
+        shift = np.zeros_like(params)
+        shift[idx] = s
+
+        shifted_forward = self.copy(deep=True)
+        shifted_forward.set_parameters(params + shift)
+
+        shifted_backward = self.copy(deep=True)
+        shifted_forward.set_parameters(params - shift)
+
+        tapes = [shifted_forward, shifted_backward]
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            return (results[0] - results[1]) / 2
+
+        return tapes, processing_fn
+
     def parameter_shift(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of measurement
         statistics that can be represented as expectation values of observables.
@@ -144,24 +187,12 @@ class QubitParamShiftTape(JacobianTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-        t_idx = list(self.trainable_params)[idx]
-        op = self._par_info[t_idx]["op"]
-        p_idx = self._par_info[t_idx]["p_idx"]
+        tapes, processing_fn = self.param_shift_diff(idx, params=params, **options)
 
-        s = (
-            np.pi / 2
-            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
-            else op.grad_recipe[p_idx]
-        )
-        s = options.get("shift", s)
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
 
-        shift = np.zeros_like(params)
-        shift[idx] = s
-
-        shift_forward = np.array(self.execute_device(params + shift, device))
-        shift_backward = np.array(self.execute_device(params - shift, device))
-
-        return (shift_forward - shift_backward) / (2 * np.sin(s))
+        return processing_fn(results)
 
     def parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture

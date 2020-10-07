@@ -210,8 +210,18 @@ class JacobianTape(QuantumTape):
         return tuple(allowed_param_methods.values())
 
     def numeric_diff(self, idx, params=None, **options):
-        """Function to generate the tapes and postprocessing methods required to compute the gradient
-        of the parameter at idx.
+        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
+        position 'idx' using numeric differentiation.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+               the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Keyword Args:
+            h=1e-7 (float): finite difference method step size
+            order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+                to forward finite differences, ``2`` to centered finite differences.
 
         Returns:
             list[QuantumTape], function
@@ -277,8 +287,6 @@ class JacobianTape(QuantumTape):
         """
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
-        print(tapes[0].operations[0].data)
-        print(tapes[1].operations[0].data)
 
         # execute tapes
         # Todo: if tape is the original tape, take stored y0 result
