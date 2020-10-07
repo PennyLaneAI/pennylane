@@ -838,6 +838,10 @@ class QuantumTape(AnnotatedQueue):
 
             if tape_cls is not None:
                 tape.__class__ = tape_cls
+
+            tape._caching = self._caching
+            tape.get_cache = self.get_cache
+            tape.set_cache = self.set_cache
             return tape
 
         if tape_cls is None:
@@ -852,6 +856,11 @@ class QuantumTape(AnnotatedQueue):
         tape._update()
         tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
+
+        tape._caching = self._caching
+        tape.get_cache = self.get_cache
+        tape.set_cache = self.set_cache
+
         return tape
 
     # ========================================================
@@ -924,9 +933,9 @@ class QuantumTape(AnnotatedQueue):
 
         if self._caching:
             circuit_hash = self.graph.hash
-            if circuit_hash in self._cache_execute:
+            if circuit_hash in self.get_cache():
                 self.set_parameters(saved_parameters)
-                return self._cache_execute[circuit_hash]
+                return self.get_cache()[circuit_hash]
 
         if isinstance(device, qml.QubitDevice):
             res = device.execute(self)
@@ -953,10 +962,10 @@ class QuantumTape(AnnotatedQueue):
         # restore original parameters
         self.set_parameters(saved_parameters)
 
-        if self._caching and circuit_hash not in self._cache_execute:
-            self._cache_execute[circuit_hash] = res
-            if len(self._cache_execute) > self._caching:
-                self._cache_execute.popitem(last=False)
+        if self._caching and circuit_hash not in self.get_cache():
+            self.set_cache(circuit_hash, res)
+            if len(self.get_cache()) > self._caching:
+                self.get_cache().popitem(last=False)
 
         return res
 
@@ -970,3 +979,9 @@ class QuantumTape(AnnotatedQueue):
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
         return self._caching
+
+    def get_cache(self):
+        return self._cache_execute
+
+    def set_cache(self, circuit_hash, value):
+        self._cache_execute[circuit_hash] = value
