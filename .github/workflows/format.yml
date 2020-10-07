@@ -20,5 +20,7 @@ jobs:
       - name: Install dependencies
         run: pip install black
 
+      - uses: actions/checkout@v2
+
       - name: Run Black
         run: black -l 100 pennylane/ --check
