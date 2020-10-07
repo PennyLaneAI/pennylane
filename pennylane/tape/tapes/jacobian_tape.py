@@ -276,7 +276,7 @@ class JacobianTape(QuantumTape):
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics.
+            measurement statistics
         """
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
