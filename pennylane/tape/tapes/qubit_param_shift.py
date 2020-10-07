@@ -18,7 +18,7 @@ Provides analytic differentiation for all one-parameter gates where the generato
 only has two unique eigenvalues; this includes one-parameter single-qubit gates,
 and any gate with an involutory generator.
 """
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init,protected-access
 import numpy as np
 
 import pennylane as qml

@@ -261,7 +261,7 @@ class JacobianTape(QuantumTape):
 
             return tapes, processing_fn
 
-        elif order == 2:
+        if order == 2:
             # central finite difference
 
             shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
@@ -280,8 +280,7 @@ class JacobianTape(QuantumTape):
 
             return tapes, processing_fn
 
-        else:
-            raise ValueError("Order must be 1 or 2.")
+        raise ValueError("Order must be 1 or 2.")
 
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
@@ -311,7 +310,7 @@ class JacobianTape(QuantumTape):
 
         # execute tapes
         results = [tape.execute(device) for tape in tapes]
-        self._output_dim = tapes[0]._output_dim
+        self._output_dim = tapes[0]._output_dim  # pylint: disable=protected-access
 
         return processing_fn(results)
 
