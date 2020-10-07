@@ -227,7 +227,7 @@ class JacobianTape(QuantumTape):
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
+            measurement statistics.
         """
         if params is None:
             params = np.array(self.get_parameters())
