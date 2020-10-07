@@ -244,8 +244,10 @@ class JacobianTape(QuantumTape):
 
             if y0 is None:
                 # at this stage the stored result should always be set
-                raise ValueError("Something went wrong, the original circuit has not been executed yet "
-                                 "to store result.")
+                raise ValueError(
+                    "Something went wrong, the original circuit has not been executed yet "
+                    "to store result."
+                )
 
             shifted = self.copy(deep=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)

@@ -270,7 +270,7 @@ class QubitParamShiftTape(JacobianTape):
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
             # d<A>/dp for plain expectations
-            return  np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+            return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
 
         return tapes, processing_fn
 
