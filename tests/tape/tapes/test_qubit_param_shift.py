@@ -355,7 +355,7 @@ class TestJacobianIntegration:
         """Tests qubit observable that are involutory"""
         spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
+        spy_execute = mocker.spy(QuantumTape, "execute_device")
 
         dev = qml.device("default.qubit", wires=1)
         a = 0.54

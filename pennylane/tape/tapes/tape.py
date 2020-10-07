@@ -914,7 +914,6 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-
         device.reset()
 
         # backup the current parameters

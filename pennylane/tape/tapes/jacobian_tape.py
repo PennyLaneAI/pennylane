@@ -241,6 +241,7 @@ class JacobianTape(QuantumTape):
 
             # get the stored result of the original circuit
             y0 = options.get("y0", None)
+
             if y0 is None:
                 # at this stage the stored result should always be set
                 raise ValueError("Something went wrong, the original circuit has not been executed yet "
@@ -300,13 +301,9 @@ class JacobianTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-
-        if options.get("order", 1) == 1:
-            # Compute the value of the tape at the current parameters. This ensures
-            # this computation is only performed once, for all parameters.
-            y0 = options.get("y0", None)
-            if y0 is None:
-                options["y0"] = np.asarray(self.execute_device(params, device))
+        if options.get("order", 1) == 1 and options.get("y0", None) is None:
+            params = params or self.get_parameters()
+            options["y0"] = np.asarray(self.execute_device(params, device))
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
 
@@ -486,6 +483,11 @@ class JacobianTape(QuantumTape):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
+
+        if options.get("order", 1) == 1:
+            # Compute the value of the tape at the current parameters. This ensures
+            # this computation is only performed once, for all parameters.
+            options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = None
         p_ind = range(len(params))

@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import JacobianTape
+from pennylane.tape import JacobianTape, QuantumTape
 
 
 class TestConstruction:
@@ -296,7 +296,7 @@ class TestJacobian:
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
         values."""
-        execute_spy = mocker.spy(JacobianTape, "execute_device")
+        execute_spy = mocker.spy(QuantumTape, "execute_device")
         numeric_spy = mocker.spy(JacobianTape, "numeric_pd")
 
         with JacobianTape() as tape:
@@ -342,7 +342,7 @@ class TestJacobian:
     def test_numeric_pd_no_y0(self, mocker, tol):
         """Test that, if y0 is not passed when calling the numeric_pd method,
         y0 is calculated."""
-        execute_spy = mocker.spy(JacobianTape, "execute_device")
+        execute_spy = mocker.spy(QuantumTape, "execute_device")
 
         dev = qml.device("default.qubit", wires=2)
         params = [0.1, 0.2]
