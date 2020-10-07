@@ -15,7 +15,7 @@
 Quantum tape that implements reversible backpropagation.
 """
 # pylint: disable=attribute-defined-outside-init,protected-access
-from copy import copy
+import copy
 from functools import reduce
 from string import ascii_letters as ABC
 
@@ -105,7 +105,7 @@ class ReversibleTape(JacobianTape):
         # compute the indices of the observable's wires on the device
         wire_indices = dev_wires.indices(obs.wires)
         obs_in_indices = "".join(ABC_ARRAY[wire_indices].tolist())
-        obs_out_indices = ABC[len(dev_wires): len(dev_wires) + len(obs.wires)]
+        obs_out_indices = ABC[len(dev_wires) : len(dev_wires) + len(obs.wires)]
         obs_indices = "".join([obs_in_indices, obs_out_indices])
 
         vec2_indices = reduce(
@@ -139,8 +139,8 @@ class ReversibleTape(JacobianTape):
         # expectation values of observables for now.
         for m in self.measurements:
             if (
-                    m.return_type is qml.operation.Variance
-                    or m.return_type is qml.operation.Probability
+                m.return_type is qml.operation.Variance
+                or m.return_type is qml.operation.Probability
             ):
                 raise ValueError(
                     f"{m.return_type} is not supported with the reversible gradient method"
@@ -178,35 +178,34 @@ class ReversibleTape(JacobianTape):
         # pre-measurement step
         wires = op.wires
         op_idx = self.operations.index(op)
-        between_ops = self.operations[op_idx + 1:]
+        between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
             decomp = op.decomposition(*op.parameters, wires=wires)
             generator, multiplier = decomp[p_idx].generator
-            between_ops = decomp[p_idx + 1:] + between_ops
+            between_ops = decomp[p_idx + 1 :] + between_ops
         else:
             generator, multiplier = op.generator
 
         # construct circuit to compute differentiated state
-        new_circuit = QuantumTape()
-        new_circuit._prep = [qml.QubitStateVector(final_state, wires=dev_wires)]
-        new_circuit._ops = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
-        new_circuit._obs = [qml.tape.measure.state()]
+        between_ops_inverse = [copy.deepcopy(op) for op in between_ops[::-1]]
 
-        # between_ops_inverse = [copy(op) for op in between_ops[::-1]]
-        #
-        # with QuantumTape() as new_circuit:
-        #     # start with final state of original circuit
-        #     qml.QubitStateVector(final_state, wires=dev_wires)
-        #     # evolve circuit backwards until gate we want to differentiate
-        #     for op in between_ops_inverse:
-        #         op.inv().queue()
-        #     # apply generator needed for differentiation
-        #     generator(wires)
-        #     # evolve forwards again
-        #     for op in between_ops:
-        #         op.queue()
-        #     qml.tape.measure.state()
+        with QuantumTape() as new_circuit:
+            # start with final state of original circuit
+            qml.QubitStateVector(final_state, wires=dev_wires)
+
+            # evolve circuit backwards until gate we want to differentiate
+            for op in between_ops_inverse:
+                op.queue().inv()
+
+            # apply generator needed for differentiation
+            generator(wires)
+
+            # evolve forwards again
+            for op in between_ops:
+                op.queue()
+
+            qml.tape.measure.state()
 
         tapes = [new_circuit]
 
@@ -216,7 +215,9 @@ class ReversibleTape(JacobianTape):
 
             # compute matrix element <d(state)|O|state> for each observable O
             # TODO: if all observables act on same number of wires, could do all at once with einsum
-            matrix_elems = [self._matrix_elem(dstate, ob, final_state, dev_wires) for ob in self.observables]
+            matrix_elems = [
+                self._matrix_elem(dstate, ob, final_state, dev_wires) for ob in self.observables
+            ]
             matrix_elems = np.array(matrix_elems)
             return 2 * multiplier * np.imag(matrix_elems)
 
