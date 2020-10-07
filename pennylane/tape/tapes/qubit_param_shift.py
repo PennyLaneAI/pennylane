@@ -197,6 +197,83 @@ class QubitParamShiftTape(JacobianTape):
 
         return processing_fn(results)
 
+    def param_shift_var_diff(self, idx, params, **options):
+        r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
+        of expectation values and variances of observables.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            device (.Device, .QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): the quantum tape operation parameters
+
+        Returns:
+            array[float]: 1-dimensional array of length determined by the tape output
+            measurement statistics
+        """
+        tapes = []
+
+        # Get <A>, the expectation value of the tape with unshifted parameters. This is only
+        # calculated once, if `self._evA` is not None.
+        evA_tape = self.copy()
+
+        # Convert all variance measurements on the tape into expectation values
+        for i in self.var_idx:
+            obs = evA_tape._measurements[i].obs
+            evA_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+
+        # evaluate the analytic derivative of <A>
+        pdA_tapes, pdA_fn = evA_tape.param_shift_diff(idx, params, **options)
+        tapes.extend(pdA_tapes)
+
+        # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
+        # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
+        involutory = [i for i in self.var_idx if self.observables[i].name != "Hermitian"]
+
+        # If there are non-involutory observables A present, we must compute d<A^2>/dp.
+        non_involutory = set(self.var_idx) - set(involutory)
+
+        if non_involutory:
+            pdA2_tape = self.copy()
+
+            for i in non_involutory:
+                # We need to calculate d<A^2>/dp; to do so, we replace the
+                # involutory observables A in the queue with A^2.
+                obs = pdA2_tape._measurements[i].obs
+                A = obs.matrix
+
+                obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
+                pdA2_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+
+            # Non-involutory observables are present; the partial derivative of <A^2>
+            # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
+            # observables.
+            pdA2_tapes, pdA2_fn = pdA2_tape.param_shift_diff(idx, params, **options)
+            tapes.extend(pdA2_tapes)
+
+        if self._evA is None:
+            tapes.append(evA_tape)
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            pdA = pdA_fn(results[0:2])
+            pdA2 = 0
+
+            if non_involutory:
+                pdA2 = pdA2_fn(results[2:4])
+
+                if involutory:
+                    pdA2[np.array(involutory)] = 0
+
+            if self._evA is None:
+                self._evA = np.array(results[-1])
+
+            # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
+            # d<A>/dp for plain expectations
+            return  np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+
+        return tapes, processing_fn
+
     def parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
         of expectation values and variances of observables.
@@ -211,52 +288,9 @@ class QubitParamShiftTape(JacobianTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-        # Temporarily convert all variance measurements on the tape into expectation values
-        for i in self.var_idx:
-            obs = self._measurements[i].obs
-            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+        tapes, processing_fn = self.param_shift_var_diff(idx, params=params, **options)
 
-        # Get <A>, the expectation value of the tape with unshifted parameters. This is only
-        # calculated once, if `self._evA` is not None.
-        if self._evA is None:
-            self._evA = np.asarray(self.execute_device(params, device))
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
 
-        # evaluate the analytic derivative of <A>
-        pdA = self.parameter_shift(idx, device, params, **options)
-
-        # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
-        # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
-        involutory = [i for i in self.var_idx if self.observables[i].name != "Hermitian"]
-
-        # If there are non-involutory observables A present, we must compute d<A^2>/dp.
-        non_involutory = set(self.var_idx) - set(involutory)
-
-        for i in non_involutory:
-            # We need to calculate d<A^2>/dp; to do so, we replace the
-            # involutory observables A in the queue with A^2.
-            obs = self._measurements[i].obs
-            A = obs.matrix
-
-            obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
-            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
-
-        pdA2 = 0
-
-        if non_involutory:
-            # Non-involutory observables are present; the partial derivative of <A^2>
-            # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
-            # observables.
-            pdA2 = self.parameter_shift(idx, device, params, **options)
-
-            if involutory:
-                # We need to explicitly specify that the gradient of
-                # the involutory observables is 0, since we saved on processing
-                # by not replacing these observables with their square.
-                pdA2[np.array(involutory)] = 0
-
-        # restore the original observables
-        self._measurements = self._original_measurements.copy()
-
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
-        # d<A>/dp for plain expectations
-        return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+        return processing_fn(results)
