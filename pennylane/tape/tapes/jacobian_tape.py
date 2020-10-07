@@ -277,6 +277,8 @@ class JacobianTape(QuantumTape):
         """
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
+        print(tapes[0].operations[0].data)
+        print(tapes[1].operations[0].data)
 
         # execute tapes
         # Todo: if tape is the original tape, take stored y0 result
