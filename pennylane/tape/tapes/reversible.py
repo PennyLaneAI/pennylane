@@ -187,6 +187,7 @@ class ReversibleTape(JacobianTape):
         else:
             generator, multiplier = op.generator
 
+        # construct circuit to compute differentiated state
         new_circuit = QuantumTape()
         new_circuit._prep = [qml.QubitStateVector(final_state, wires=dev_wires)]
         new_circuit._ops = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
