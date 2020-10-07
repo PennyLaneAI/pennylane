@@ -286,8 +286,8 @@ class TestParameterShiftLogic:
 
         tape.trainable_params = {0, 1, 2}
 
-        spy1 = mocker.spy(tape, "parameter_shift_first_order")
-        spy2 = mocker.spy(tape, "parameter_shift_second_order")
+        spy1 = mocker.spy(tape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(tape, "param_shift_second_order_diff")
 
         tape.jacobian(dev, method="analytic", force_order2=False)
         spy1.assert_called()
@@ -311,8 +311,8 @@ class TestParameterShiftLogic:
         tape.trainable_params = {0}
         assert tape.analytic_pd == tape.parameter_shift
 
-        spy1 = mocker.spy(tape, "parameter_shift_first_order")
-        spy2 = mocker.spy(tape, "parameter_shift_second_order")
+        spy1 = mocker.spy(tape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(tape, "param_shift_second_order_diff")
         spy_transform = mocker.spy(qml.operation.CVOperation, "heisenberg_tr")
         spy_numeric = mocker.spy(tape, "numeric_pd")
 
@@ -339,8 +339,8 @@ class TestParameterShiftLogic:
         tape.trainable_params = {0}
         assert tape.analytic_pd == tape.parameter_shift_var
 
-        spy1 = mocker.spy(tape, "parameter_shift_first_order")
-        spy2 = mocker.spy(tape, "parameter_shift_second_order")
+        spy1 = mocker.spy(tape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(tape, "param_shift_second_order_diff")
         spy_numeric = mocker.spy(tape, "numeric_pd")
 
         with pytest.warns(UserWarning, match="does not support the PolyXP observable"):
@@ -371,8 +371,8 @@ class TestExpectationQuantumGradients:
         tape._update_gradient_info()
         tape.trainable_params = {2}
 
-        spy1 = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
-        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        spy1 = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(CVParamShiftTape, "param_shift_second_order_diff")
 
         grad_A = tape.jacobian(dev, method="analytic")
         spy1.assert_called()
@@ -400,8 +400,8 @@ class TestExpectationQuantumGradients:
         tape._update_gradient_info()
         tape.trainable_params = {2}
 
-        spy1 = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
-        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        spy1 = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(CVParamShiftTape, "param_shift_second_order_diff")
 
         grad_A = tape.jacobian(dev, method="analytic")
         spy1.assert_called()
@@ -428,8 +428,8 @@ class TestExpectationQuantumGradients:
         tape._update_gradient_info()
         tape.trainable_params = {0, 1}
 
-        spy1 = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
-        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        spy1 = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(CVParamShiftTape, "param_shift_second_order_diff")
 
         grad_A = tape.jacobian(dev, method="analytic")
         spy1.assert_called()
@@ -474,8 +474,8 @@ class TestExpectationQuantumGradients:
         tape._update_gradient_info()
         tape.trainable_params = {2}
 
-        spy1 = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
-        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        spy1 = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
+        spy2 = mocker.spy(CVParamShiftTape, "param_shift_second_order_diff")
 
         grad_A = tape.jacobian(dev, method="analytic")
         spy1.assert_called()
@@ -526,7 +526,7 @@ class TestExpectationQuantumGradients:
 
         tape._update_gradient_info()
 
-        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        spy2 = mocker.spy(CVParamShiftTape, "param_shift_second_order_diff")
         grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)
         spy2.assert_called()
 
@@ -574,7 +574,7 @@ class TestExpectationQuantumGradients:
         for i in range(op.num_params):
             assert tape._par_info[2 + i]["grad_method"][0] == "A"
 
-        spy = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
+        spy = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
         grad_F = tape.jacobian(dev, method="numeric")
         grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)
 
@@ -784,7 +784,7 @@ class TestVarianceQuantumGradients:
         for i in range(op.num_params):
             assert tape._par_info[2 + i]["grad_method"][0] == "A"
 
-        spy = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
+        spy = mocker.spy(CVParamShiftTape, "param_shift_first_order_diff")
         grad_F = tape.jacobian(dev, method="numeric")
         grad_A = tape.jacobian(dev, method="analytic")
         grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)

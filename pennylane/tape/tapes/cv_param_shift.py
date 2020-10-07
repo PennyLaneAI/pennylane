@@ -253,34 +253,6 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift_first_order(
-        self, idx, device, params, **options
-    ):  # pylint: disable=unused-argument
-        r"""Partial derivative using the first-order CV parameter-shift rule of a
-        tape consisting of *only* expectation values of observables.
-
-        .. warning::
-
-            This method only supports the gradient of expectation values of
-            first-order observables.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device that can execute quantum operations and return
-                measurement statistics
-            params (list[Any]): the quantum tape operation parameters
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
-        """
-        tapes, processing_fn = self.param_shift_first_order_diff(idx, params=params)
-
-        # execute tapes
-        results = [tape.execute(device) for tape in tapes]
-
-        return processing_fn(results)
-
     def param_shift_second_order_diff(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
         position 'idx' using second order cv parameter-shift based differentiation.
@@ -367,39 +339,6 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift_second_order(self, idx, device, params, **options):
-        r"""Partial derivative using the second-order CV parameter-shift rule of a
-        tape consisting of *only* expectation values of observables.
-
-        This method supports the gradient of expectation values of first-
-        and second-order observables.
-
-        .. warning::
-
-            This method can only be executed on devices that support the
-            :class:`~.PolyXP` observable.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device that can execute quantum operations and return
-                measurement statistics
-            params (list[Any]): the quantum tape operation parameters
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
-        """
-        # we are tinckering with matrix representations of observables, so we need to know
-        # how wires are ordered on the device
-        options["dev_wires"] = device.wires
-
-        tapes, processing_fn = self.param_shift_second_order_diff(idx, params=params, **options)
-
-        # execute tapes
-        results = [tape.execute(device) for tape in tapes]
-
-        return processing_fn(results)
-
     def parameter_shift(self, idx, device, params, **options):
         r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
@@ -409,6 +348,11 @@ class CVParamShiftTape(QubitParamShiftTape):
             The 2nd order method can handle also first order observables, but
             1st order method may be more efficient unless it's really easy to
             experimentally measure arbitrary 2nd order observables.
+
+        .. warning::
+
+            The 2nd order method can only be executed on devices that support the
+            :class:`~.PolyXP` observable.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -438,9 +382,19 @@ class CVParamShiftTape(QubitParamShiftTape):
                 )
                 return self.numeric_pd(idx, device, params, **options)
 
-            return self.parameter_shift_second_order(idx, device, params, **options)
+            # we are tinkering with matrix representations of observables, so we need to know
+            # how wires are ordered on the device
+            options["dev_wires"] = device.wires
 
-        return self.parameter_shift_first_order(idx, device, params, **options)
+            tapes, processing_fn = self.param_shift_second_order_diff(idx, params=params, **options)
+
+        else:
+            tapes, processing_fn = self.param_shift_first_order_diff(idx, params=params)
+
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
+
+        return processing_fn(results)
 
     def parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
