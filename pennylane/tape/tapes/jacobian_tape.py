@@ -252,8 +252,8 @@ class JacobianTape(QuantumTape):
             shifted_forward.set_parameters(params + shift / 2)
 
             shifted_backward = copy.deepcopy(self)
-            shifted_forward.__class__ = QuantumTape
-            shifted_forward.set_parameters(params - shift / 2)
+            shifted_backward.__class__ = QuantumTape
+            shifted_backward.set_parameters(params - shift / 2)
 
             tapes = [shifted_forward, shifted_backward]
 
