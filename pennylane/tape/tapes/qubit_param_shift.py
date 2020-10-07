@@ -23,6 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape.tapes import QuantumTape
 
 from .jacobian_tape import JacobianTape
 
@@ -147,15 +148,11 @@ class QubitParamShiftTape(JacobianTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        import copy
+        shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_forward.set_parameters(params + shift / 2)
 
-        shifted_forward = copy.deepcopy(self)
-        shifted_forward.__class__ = qml.tape.QuantumTape
-        shifted_forward.set_parameters(params + shift)
-
-        shifted_backward = copy.deepcopy(self)
-        shifted_backward.__class__ = qml.tape.QuantumTape
-        shifted_backward.set_parameters(params - shift)
+        shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_backward.set_parameters(params - shift / 2)
 
         tapes = [shifted_forward, shifted_backward]
 

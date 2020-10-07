@@ -15,6 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+import copy
 from collections import OrderedDict
 import contextlib
 
@@ -822,14 +823,30 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self):
-        """Returns a shallow copy of the quantum tape."""
-        tape = self.__class__()
+    def copy(self, deep=False, tape_cls=None):
+        """Returns a copy of the quantum tape.
+
+        Args:
+            deep (bool): If True, a deep copy of the quantum tape is returned.
+                If not, a shallow copy is returned; both the copied tape and the
+                original tape will share the same operation instances.
+            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
+                If not provided, the same subclass is used as the original tape.
+        """
+        if deep:
+            tape = copy.deepcopy(self)
+            tape.__class__ = tape_cls
+            return tape
+
+        if tape_cls is None:
+            tape = self.__class__()
+        else:
+            tape = tape_cls()
+
         tape._prep = self._prep.copy()
         tape._ops = self._ops.copy()
         tape._measurements = self._measurements.copy()
 
-        tape._update()
 
         tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
