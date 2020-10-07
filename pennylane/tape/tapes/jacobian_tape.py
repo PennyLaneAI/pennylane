@@ -209,6 +209,55 @@ class JacobianTape(QuantumTape):
 
         return tuple(allowed_param_methods.values())
 
+    def numeric_diff(self, idx, params=None, **options):
+        """Function to generate the tapes and postprocessing methods required to compute the gradient
+        of the parameter at idx.
+
+        Returns:
+            list[QuantumTape], function
+        """
+
+        if params is None:
+            params = np.array(self.get_parameters())
+
+        order = options.get("order", 1)
+        h = options.get("h", 1e-7)
+
+        shift = np.zeros_like(params, dtype=np.float64)
+        shift[idx] = h
+
+        if order == 1:
+            # forward finite-difference.
+
+            # Todo: check that a tape is the original tape for which a result is already
+            # stored has to be done in the execution
+
+            original = self.copy()
+            shifted = self.copy()
+            shifted.set_parameters(params + shift)
+
+            tapes = [shifted, original]
+
+        elif order == 2:
+            # central finite difference
+
+            shifted_forward = self.copy()
+            shifted_forward.set_parameters(params + shift / 2)
+
+            shifted_backward = self.copy()
+            shifted_forward.set_parameters(params - shift / 2)
+
+            tapes = [shifted_forward, shifted_backward]
+
+        else:
+            raise ValueError("Order must be 1 or 2.")
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            return (results[0] - results[1]) / h
+
+        return tapes, processing_fn
+
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
         a single trainable tape parameter using numerical finite-differences.
@@ -229,34 +278,13 @@ class JacobianTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics.
         """
-        if params is None:
-            params = np.array(self.get_parameters())
 
-        order = options.get("order", 1)
-        h = options.get("h", 1e-7)
+        tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
 
-        shift = np.zeros_like(params, dtype=np.float64)
-        shift[idx] = h
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
 
-        if order == 1:
-            # Forward finite-difference.
-            # Check if the device has already be pre-computed with
-            # unshifted parameter values, to avoid redundant evaluations.
-            y0 = options.get("y0", None)
-
-            if y0 is None:
-                y0 = np.asarray(self.execute_device(params, device))
-
-            y = np.asarray(self.execute_device(params + shift, device))
-            return (y - y0) / h
-
-        if order == 2:
-            # central finite difference
-            shift_forward = np.array(self.execute_device(params + shift / 2, device))
-            shift_backward = np.array(self.execute_device(params - shift / 2, device))
-            return (shift_forward - shift_backward) / h
-
-        raise ValueError("Order must be 1 or 2.")
+        return processing_fn(results)
 
     def device_pd(self, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
