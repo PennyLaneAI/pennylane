@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape.tapes.tape import QuantumTape
 
 from .qubit_param_shift import QubitParamShiftTape
 
@@ -214,6 +215,44 @@ class CVParamShiftTape(QubitParamShiftTape):
         # instead. This will allow for greater device compatibility.
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
+    def param_shift_first_order_diff(self, idx, params=None):
+        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
+        position 'idx' using first order cv parameter-shift based differentiation.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+
+        Returns:
+            list[QuantumTape], function
+        """
+
+        t_idx = list(self.trainable_params)[idx]
+        op = self._par_info[t_idx]["op"]
+        p_idx = self._par_info[t_idx]["p_idx"]
+
+        recipe = op.grad_recipe[p_idx]
+        c, s = (0.5, np.pi / 2) if recipe is None else recipe
+
+        shift = np.zeros_like(params)
+        shift[idx] = s
+
+        shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_forward.set_parameters(params + shift)
+
+        shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_backward.set_parameters(params - shift)
+
+        tapes = [shifted_forward, shifted_backward]
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            shifted_forward = np.array(results[0])
+            shifted_backward = np.array(results[1])
+
+            return c * (shifted_forward - shifted_backward)
+
+        return tapes, processing_fn
+
     def parameter_shift_first_order(
         self, idx, device, params, **options
     ):  # pylint: disable=unused-argument
@@ -235,9 +274,29 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
+        tapes, processing_fn = self.param_shift_first_order_diff(idx, params=params)
+
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
+
+        return processing_fn(results)
+
+    def param_shift_second_order_diff(self, idx, params=None, **options):
+        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
+        position 'idx' using second order cv parameter-shift based differentiation.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+
+        Returns:
+            list[QuantumTape], function
+        """
+
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
+
+        dev_wires = options["dev_wires"]
 
         recipe = op.grad_recipe[p_idx]
         c, s = (0.5, np.pi / 2) if recipe is None else recipe
@@ -245,10 +304,68 @@ class CVParamShiftTape(QubitParamShiftTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        shift_forward = np.array(self.execute_device(params + shift, device))
-        shift_backward = np.array(self.execute_device(params - shift, device))
+        # evaluate transformed observables at the original parameter point
+        # first build the Heisenberg picture transformation matrix Z
+        self.set_parameters(params + shift)
+        Z2 = op.heisenberg_tr(dev_wires)
 
-        return c * (shift_forward - shift_backward)
+        self.set_parameters(params - shift)
+        Z1 = op.heisenberg_tr(dev_wires)
+
+        # derivative of the operation
+        Z = (Z2 - Z1) * c
+
+        self.set_parameters(params)
+        Z0 = op.heisenberg_tr(dev_wires, inverse=True)
+        Z = Z @ Z0
+
+        # conjugate Z with all the descendant operations
+        B = np.eye(1 + 2 * len(dev_wires))
+        B_inv = B.copy()
+
+        succ = self.graph.descendants_in_order((op,))
+        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
+        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
+
+        for BB in operation_descendents:
+            if not BB.supports_heisenberg:
+                # if the descendant gate is non-Gaussian in parameter-shift differentiation
+                # mode, then there must be no observable following it.
+                continue
+
+            B = BB.heisenberg_tr(dev_wires) @ B
+            B_inv = B_inv @ BB.heisenberg_tr(dev_wires, inverse=True)
+
+        Z = B @ Z @ B_inv  # conjugation
+
+        tape = self.copy(deep=True, tape_cls=QuantumTape)
+
+        # change the observable
+        # TODO: if the transformation produces only a constant term,
+        # `_transform_observable` has only a single non-zero element in the
+        # 0th position) then  there is no need to execute the device---the constant term
+        # represents the gradient.
+
+        # transform the descendant observables into their derivatives using Z
+        transformed_obs_idx = []
+        for obs in observable_descendents:
+            # get the index of the descendent observable
+            idx = self.observables.index(obs)
+            transformed_obs_idx.append(idx)
+            tape._measurements[idx] = MeasurementProcess(
+                    qml.operation.Expectation, self._transform_observable(obs, Z, dev_wires)
+                )
+
+        tapes = [tape]
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            res = results[0]
+            grad = np.zeros_like(res)
+            grad[transformed_obs_idx] = res
+            return grad
+
+        return tapes, processing_fn
 
     def parameter_shift_second_order(self, idx, device, params, **options):
         r"""Partial derivative using the second-order CV parameter-shift rule of a
@@ -272,91 +389,16 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-        # pylint: disable=protected-access
+        # we are tinckering with matrix representations of observables, so we need to know
+        # how wires are ordered on the device
+        options["dev_wires"] = device.wires
 
-        if "PolyXP" not in device.observables:
-            # If the device does not support PolyXP, must fallback
-            # to numeric differentiation.
-            warnings.warn(
-                f"The device {device.short_name} does not support "
-                "the PolyXP observable. The analytic parameter-shift cannot be used for "
-                "second-order observables; falling back to finite-differences.",
-                UserWarning,
-            )
-            return self.numeric_pd(idx, device, params, **options)
+        tapes, processing_fn = self.param_shift_second_order_diff(idx, params=params, **options)
 
-        t_idx = list(self.trainable_params)[idx]
-        op = self._par_info[t_idx]["op"]
-        p_idx = self._par_info[t_idx]["p_idx"]
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
 
-        recipe = op.grad_recipe[p_idx]
-        c, s = (0.5, np.pi / 2) if recipe is None else recipe
-
-        shift = np.zeros_like(params)
-        shift[idx] = s
-
-        # evaluate transformed observables at the original parameter point
-        # first build the Heisenberg picture transformation matrix Z
-        self.set_parameters(params + shift)
-        Z2 = op.heisenberg_tr(device.wires)
-
-        self.set_parameters(params - shift)
-        Z1 = op.heisenberg_tr(device.wires)
-
-        # derivative of the operation
-        Z = (Z2 - Z1) * c
-
-        self.set_parameters(params)
-        Z0 = op.heisenberg_tr(device.wires, inverse=True)
-        Z = Z @ Z0
-
-        # conjugate Z with all the descendant operations
-        B = np.eye(1 + 2 * device.num_wires)
-        B_inv = B.copy()
-
-        succ = self.graph.descendants_in_order((op,))
-        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
-        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
-
-        for BB in operation_descendents:
-            if not BB.supports_heisenberg:
-                # if the descendant gate is non-Gaussian in parameter-shift differentiation
-                # mode, then there must be no observable following it.
-                continue
-
-            B = BB.heisenberg_tr(device.wires) @ B
-            B_inv = B_inv @ BB.heisenberg_tr(device.wires, inverse=True)
-
-        Z = B @ Z @ B_inv  # conjugation
-
-        # transform the descendant observables into their derivatives using Z
-        transformed_obs_idx = []
-
-        for obs in observable_descendents:
-            # get the index of the descendent observable
-            idx = self.observables.index(obs)
-            transformed_obs_idx.append(idx)
-
-            # Transform the observable.
-            # TODO: if the transformation produces only a constant term,
-            # `_transform_observable` has only a single non-zero element in the
-            # 0th position) then  there is no need to execute the device---the constant term
-            # represents the gradient.
-            self._measurements[idx] = MeasurementProcess(
-                qml.operation.Expectation, self._transform_observable(obs, Z, device.wires)
-            )
-
-        # Measure the transformed observables.
-        # The other observables are not descendents of this operation,
-        # hence their partial derivatives are zero.
-        res = np.array(self.execute_device(params, device))
-        grad = np.zeros_like(res)
-        grad[transformed_obs_idx] = res
-
-        # restore the original measurements
-        self._measurements = self._original_measurements.copy()
-
-        return grad
+        return processing_fn(results)
 
     def parameter_shift(self, idx, device, params, **options):
         r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
@@ -384,6 +426,18 @@ class CVParamShiftTape(QubitParamShiftTape):
         grad_method = self._par_info[idx]["grad_method"]
 
         if options.get("force_order2", False) or grad_method == "A2":
+
+            if "PolyXP" not in device.observables:
+                # If the device does not support PolyXP, must fallback
+                # to numeric differentiation.
+                warnings.warn(
+                    f"The device {device.short_name} does not support "
+                    "the PolyXP observable. The analytic parameter-shift cannot be used for "
+                    "second-order observables; falling back to finite-differences.",
+                    UserWarning,
+                )
+                return self.numeric_pd(idx, device, params, **options)
+
             return self.parameter_shift_second_order(idx, device, params, **options)
 
         return self.parameter_shift_first_order(idx, device, params, **options)

@@ -320,7 +320,7 @@ class TestParameterShiftLogic:
             tape.jacobian(dev, method="analytic")
 
         spy1.assert_not_called()
-        spy2.assert_called()
+        spy2.assert_not_called()
         spy_transform.assert_not_called()
         spy_numeric.assert_called()
 
