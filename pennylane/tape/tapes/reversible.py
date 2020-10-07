@@ -187,20 +187,25 @@ class ReversibleTape(JacobianTape):
         else:
             generator, multiplier = op.generator
 
-        between_ops_inverse = [copy(op) for op in between_ops[::-1]]
+        new_circuit = QuantumTape()
+        new_circuit._prep = [qml.QubitStateVector(final_state, wires=dev_wires)]
+        new_circuit._ops = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
+        new_circuit._obs = [qml.tape.measure.state()]
 
-        with QuantumTape() as new_circuit:
-            # start with final state of original circuit
-            qml.QubitStateVector(final_state, wires=dev_wires)
-            # evolve circuit backwards until gate we want to differentiate
-            for op in between_ops_inverse:
-                op.inv().queue()
-            # apply generator needed for differentiation
-            generator(wires)
-            # evolve forwards again
-            for op in between_ops:
-                op.queue()
-            qml.tape.measure.state()
+        # between_ops_inverse = [copy(op) for op in between_ops[::-1]]
+        #
+        # with QuantumTape() as new_circuit:
+        #     # start with final state of original circuit
+        #     qml.QubitStateVector(final_state, wires=dev_wires)
+        #     # evolve circuit backwards until gate we want to differentiate
+        #     for op in between_ops_inverse:
+        #         op.inv().queue()
+        #     # apply generator needed for differentiation
+        #     generator(wires)
+        #     # evolve forwards again
+        #     for op in between_ops:
+        #         op.queue()
+        #     qml.tape.measure.state()
 
         tapes = [new_circuit]
 
