@@ -161,7 +161,9 @@ class QubitParamShiftTape(JacobianTape):
 
         def processing_fn(results):
             """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
-            return (results[0] - results[1]) / (2 * np.sin(s))
+            res_forward = np.array(results[0])
+            res_backward = np.array(results[1])
+            return (res_forward - res_backward) / (2 * np.sin(s))
 
         return tapes, processing_fn
 

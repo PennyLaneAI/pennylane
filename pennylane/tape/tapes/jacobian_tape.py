@@ -269,7 +269,9 @@ class JacobianTape(QuantumTape):
 
         def processing_fn(results):
             """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
-            return (results[0] - results[1]) / h
+            res0 = np.array(results[0])
+            res1 = np.array(results[1])
+            return (res0 - res1) / h
 
         return tapes, processing_fn
 
