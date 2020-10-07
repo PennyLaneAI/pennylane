@@ -100,6 +100,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     the finite-difference method of gradient computation.
 """
 import abc
+import copy
 import itertools
 import functools
 import numbers
@@ -239,6 +240,20 @@ class Operator(abc.ABC):
             immediately pushed into the Operator queue.
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        for k, v in self.__dict__.items():
+            if k == "data":
+                # shallow copy the list of parameters
+                result.data = v.copy()
+            else:
+                # deep copy every thing else
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     @classmethod
     def _matrix(cls, *params):
