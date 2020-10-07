@@ -484,10 +484,14 @@ class JacobianTape(QuantumTape):
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
 
-        if options.get("order", 1) == 1:
-            # Compute the value of the tape at the current parameters. This ensures
-            # this computation is only performed once, for all parameters.
-            options["y0"] = np.asarray(self.execute_device(params, device))
+        if method == "numeric" or "F" in allowed_param_methods:
+            # there exist parameters that will be differentiated numerically
+
+            if options.get("order", 1) == 1:
+                # First order (forward) finite-difference will be performed.
+                # Compute the value of the tape at the current parameters here. This ensures
+                # this computation is only performed once, for all parameters.
+                options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = None
         p_ind = range(len(params))
