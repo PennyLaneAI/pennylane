@@ -265,8 +265,7 @@ class QubitParamShiftTape(JacobianTape):
                 if involutory:
                     pdA2[np.array(involutory)] = 0
 
-            if self._evA is None:
-                self._evA = np.array(results[-1])
+            if self._evA is None: self._evA = np.array(results[-1])
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
             # d<A>/dp for plain expectations
