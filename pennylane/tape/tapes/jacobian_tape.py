@@ -232,8 +232,8 @@ class JacobianTape(QuantumTape):
             # Todo: check that a tape is the original tape for which a result is already
             # stored has to be done in the execution
 
-            original = self.copy()
-            shifted = self.copy()
+            original = self.copy(deep=True)
+            shifted = self.copy(deep=True)
             shifted.set_parameters(params + shift)
 
             tapes = [shifted, original]
@@ -280,6 +280,8 @@ class JacobianTape(QuantumTape):
         """
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
+        print(tapes[0].operations[0].data)
+        print(tapes[1].operations[0].data)
 
         # execute tapes
         results = [tape.execute(device) for tape in tapes]
