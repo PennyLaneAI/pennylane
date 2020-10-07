@@ -226,20 +226,16 @@ class JacobianTape(QuantumTape):
         shift = np.zeros_like(params, dtype=np.float64)
         shift[idx] = h
 
-        import copy
-
         if order == 1:
             # forward finite-difference.
 
             # Todo: check that a tape is the original tape for which a result is already
             # stored has to be done in the execution
 
-            original = copy.deepcopy(self)
-            original.__class__ = QuantumTape
+            original = self.copy(deep=True, tape_cls=QuantumTape)
             original.set_parameters(params)
 
-            shifted = copy.deepcopy(self)
-            shifted.__class__ = QuantumTape
+            shifted = self.copy(deep=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
             tapes = [shifted, original]
@@ -247,12 +243,10 @@ class JacobianTape(QuantumTape):
         elif order == 2:
             # central finite difference
 
-            shifted_forward = copy.deepcopy(self)
-            shifted_forward.__class__ = QuantumTape
+            shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
             shifted_forward.set_parameters(params + shift / 2)
 
-            shifted_backward = copy.deepcopy(self)
-            shifted_backward.__class__ = QuantumTape
+            shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
             shifted_backward.set_parameters(params - shift / 2)
 
             tapes = [shifted_forward, shifted_backward]
@@ -288,6 +282,10 @@ class JacobianTape(QuantumTape):
         """
 
         tapes, processing_fn = self.numeric_diff(idx, params=params, **options)
+
+        for t in tapes:
+            print(t.operations)
+            print(t.operations[0].data[0])
 
         results = [tape.execute(device) for tape in tapes]
 
