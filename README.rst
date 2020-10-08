@@ -7,7 +7,7 @@
     :alt: GitHub Workflow Status (branch)
     :target: https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests
 
-.. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?logo=codecov&style=flat-square
+.. |COV| image:: https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square
     :alt: Codecov coverage
     :target: https://codecov.io/gh/PennyLaneAI/pennylane
 

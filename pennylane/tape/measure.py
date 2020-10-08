@@ -117,7 +117,7 @@ class MeasurementProcess:
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumTape: a quantum tape containing the operations
+            .JacobianTape: a quantum tape containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -148,9 +148,9 @@ class MeasurementProcess:
         if self.obs is None:
             raise NotImplementedError("Cannot expand a measurement process with no observable.")
 
-        from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel
+        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
             MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
 

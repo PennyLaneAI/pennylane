@@ -19,7 +19,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import JacobianTape
 from pennylane.tape.interfaces.torch import TorchInterface
 
 
@@ -28,28 +28,28 @@ class TestTorchQuantumTape:
 
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RX(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
 
     def test_repeated_interface_construction(self):
         """Test that the interface is correctly applied multiple times"""
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RX(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
 
         TorchInterface.apply(tape, dtype=torch.float32)
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
         assert tape.dtype is torch.float32
 
     def test_get_parameters(self):
@@ -60,7 +60,7 @@ class TestTorchQuantumTape:
         c = torch.tensor(0.3, requires_grad=True)
         d = 0.4
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.Rot(a, b, c, wires=0)
             qml.RX(d, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -74,7 +74,7 @@ class TestTorchQuantumTape:
         a = torch.tensor(0.1, requires_grad=True)
         dev = qml.device("default.qubit", wires=1)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RY(a, wires=0)
             qml.RX(torch.tensor(0.2), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -87,7 +87,7 @@ class TestTorchQuantumTape:
 
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
 
         a_val = 0.1
         b_val = 0.2
@@ -97,7 +97,7 @@ class TestTorchQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RZ(torch.tensor(0.543), wires=0)
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -125,13 +125,13 @@ class TestTorchQuantumTape:
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=1)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -154,7 +154,7 @@ class TestTorchQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with TorchInterface.apply(QuantumTape(), dtype=torch.float32) as tape:
+        with TorchInterface.apply(JacobianTape(), dtype=torch.float32) as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -180,7 +180,7 @@ class TestTorchQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -219,7 +219,7 @@ class TestTorchQuantumTape:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RY(params[0] * params[1], wires=0)
             qml.RZ(0.2, wires=0)
             qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
@@ -245,7 +245,7 @@ class TestTorchQuantumTape:
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RY(0.2, wires=0)
             qml.RX(torch.tensor(0.1), wires=0)
             qml.CNOT(wires=[0, 1])
@@ -274,7 +274,7 @@ class TestTorchQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
@@ -294,7 +294,7 @@ class TestTorchQuantumTape:
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
+                tape = JacobianTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -303,7 +303,7 @@ class TestTorchQuantumTape:
                 ]
                 return tape
 
-        tape = QuantumTape()
+        tape = JacobianTape()
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
@@ -360,7 +360,7 @@ class TestTorchQuantumTape:
         x = torch.tensor(x_val, requires_grad=True)
         y = torch.tensor(y_val, requires_grad=True)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -400,7 +400,7 @@ class TestTorchQuantumTape:
         x = torch.tensor(x_val, requires_grad=True)
         y = torch.tensor(y_val, requires_grad=True)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -435,7 +435,7 @@ class TestTorchQuantumTape:
         """Test sampling works as expected"""
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with TorchInterface.apply(QuantumTape()) as tape:
+        with TorchInterface.apply(JacobianTape()) as tape:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
@@ -453,4 +453,4 @@ class TestTorchQuantumTape:
         with monkeypatch.context() as m:
             m.setattr(qml.tape.interfaces.torch, "COMPLEX_SUPPORT", False)
             with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
-                TorchInterface.apply(QuantumTape(), dtype=torch.complex128)
+                TorchInterface.apply(JacobianTape(), dtype=torch.complex128)

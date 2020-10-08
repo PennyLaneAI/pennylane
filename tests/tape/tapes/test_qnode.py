@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
+from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
 from pennylane.tape.measure import MeasurementProcess
 
 
@@ -49,7 +49,7 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
         tape_class, interface, method = QNode._validate_device_method(dev, "interface")
 
-        assert tape_class is QuantumTape
+        assert tape_class is JacobianTape
         assert method == "device"
         assert interface == "interface"
 
@@ -81,7 +81,7 @@ class TestValidation:
 
         tape_class, interface, method = QNode._validate_backprop_method(dev, test_interface)
 
-        assert tape_class is QuantumTape
+        assert tape_class is JacobianTape
         assert method == "backprop"
         assert interface == None
 
@@ -124,11 +124,11 @@ class TestValidation:
 
         # backprop is given priority
         res = QNode.get_best_method(dev, "some_interface")
-        assert res == (QuantumTape, None, "backprop")
+        assert res == (JacobianTape, None, "backprop")
 
         # device is the next priority
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QuantumTape, "another_interface", "device")
+        assert res == (JacobianTape, "another_interface", "device")
 
         # The next fallback is parameter-shift.
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
@@ -143,7 +143,7 @@ class TestValidation:
 
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QuantumTape, "another_interface", "numeric")
+        assert res == (JacobianTape, "another_interface", "numeric")
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff-method correctly returns the right
@@ -177,7 +177,7 @@ class TestValidation:
         mock_device.assert_called_once()
 
         qn = QNode(None, dev, diff_method="finite-diff")
-        assert qn._tape == QuantumTape
+        assert qn._tape == JacobianTape
         assert qn.diff_options["method"] == "numeric"
 
         qn = QNode(None, dev, diff_method="parameter-shift")
@@ -217,7 +217,7 @@ class TestTapeConstruction:
 
         res = qn(x, y)
 
-        assert isinstance(qn.qtape, QuantumTape)
+        assert isinstance(qn.qtape, JacobianTape)
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
@@ -399,7 +399,7 @@ class TestDecorator:
 
         res = func(x, y)
 
-        assert isinstance(func.qtape, QuantumTape)
+        assert isinstance(func.qtape, JacobianTape)
         assert len(func.qtape.operations) == 3
         assert len(func.qtape.observables) == 1
         assert func.qtape.num_params == 2

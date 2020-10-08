@@ -17,7 +17,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.tape.interfaces.autograd import AutogradInterface
-from pennylane.tape import QuantumTape, ReversibleTape, QNode, qnode
+from pennylane.tape import JacobianTape, ReversibleTape, QNode, qnode
 from pennylane.tape.measure import MeasurementProcess
 
 
@@ -449,7 +449,7 @@ class TestQNodeIntegration:
             qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
             return qml.expval(qml.PauliX(0))
 
-        spy_numeric = mocker.spy(QuantumTape, "numeric_pd")
+        spy_numeric = mocker.spy(JacobianTape, "numeric_pd")
         spy_analytic = mocker.spy(ReversibleTape, "analytic_pd")
 
         cost = QNode(circuit, dev, diff_method="finite-diff")
