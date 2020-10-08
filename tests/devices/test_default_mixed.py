@@ -718,4 +718,3 @@ class TestInit:
         """Tests that an error is raised if the device is initialized with more than 23 wires"""
         with pytest.raises(ValueError, match="This device does not currently"):
             qml.device("default.mixed", wires=24)
-

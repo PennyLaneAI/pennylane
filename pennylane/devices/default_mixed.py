@@ -31,7 +31,6 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
-
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
