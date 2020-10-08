@@ -16,6 +16,7 @@ Utility functions and numerical implementations of quantum operations for Autogr
 """
 from autograd import numpy as np
 from numpy import kron
+from pennylane.utils import pauli_eigs
 
 C_DTYPE = np.complex128
 R_DTYPE = np.float64
@@ -155,3 +156,15 @@ def CRot(a, b, c):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return np.diag(CRZ(c)) @ (CRY(b) @ np.diag(CRZ(a)))
+
+
+def MultiRZ(theta, n):
+    r"""Arbitrary multi Z rotation.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+    Returns:
+        array[complex]: diagonal part of the multi-qubit rotation matrix
+    """
+    return np.exp(-1j * theta / 2 * pauli_eigs(n))

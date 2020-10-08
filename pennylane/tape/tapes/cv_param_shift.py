@@ -39,7 +39,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
     >>> tape.jacobian(dev, method="analytic")
 
-    For more details on the quantum tape, please see :class:`~.QuantumTape`.
+    For more details on the quantum tape, please see :class:`~.JacobianTape`.
 
     This tape supports analytic gradients of photonic circuits that satisfy
     the following constraints with regards to measurements:

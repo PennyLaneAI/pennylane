@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, qnode, QNode
+from pennylane.tape import JacobianTape, qnode, QNode
 
 
 @pytest.mark.parametrize(
@@ -134,7 +134,7 @@ class TestQNode:
 
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
@@ -205,7 +205,7 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         a = tf.Variable([0.1, 0.2])
 
@@ -253,7 +253,7 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         jac = tape.jacobian(res, [a, b])
         expected = [
@@ -262,7 +262,7 @@ class TestQNode:
         ]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-        # QuantumTape.numeric_pd has been called for each argument
+        # JacobianTape.numeric_pd has been called for each argument
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant
@@ -283,7 +283,7 @@ class TestQNode:
         expected = [-tf.sin(a), tf.sin(a) * tf.sin(b)]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-        # QuantumTape.numeric_pd has been called only once
+        # JacobianTape.numeric_pd has been called only once
         assert len(spy.call_args_list) == 1
 
     def test_classical_processing(self, dev_name, diff_method, tol):
@@ -372,7 +372,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with QuantumTape() as tape:
+                with JacobianTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
@@ -394,8 +394,8 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == {1, 2, 3, 4}
         elif diff_method == "backprop":
-            # For a backprop device, no interface wrapping is performed, and QuantumTape.jacobian()
-            # is never called. As a result, QuantumTape.trainable_params is never set --- the ML
+            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
+            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
             # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
             assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
 

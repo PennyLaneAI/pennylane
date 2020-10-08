@@ -19,7 +19,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, qnode, QNode
+from pennylane.tape import JacobianTape, qnode, QNode
 
 
 class TestQNode:
@@ -110,7 +110,7 @@ class TestQNode:
 
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
 
         a_val = 0.1
         b_val = 0.2
@@ -179,7 +179,7 @@ class TestQNode:
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -224,7 +224,7 @@ class TestQNode:
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         loss = torch.sum(res)
         loss.backward()
@@ -232,7 +232,7 @@ class TestQNode:
         expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
         assert np.allclose([a.grad, b.grad], expected, atol=tol, rtol=0)
 
-        # QuantumTape.numeric_pd has been called for each argument
+        # JacobianTape.numeric_pd has been called for each argument
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant
@@ -256,7 +256,7 @@ class TestQNode:
         expected = -np.sin(a_val) + np.sin(a_val) * np.sin(b_val)
         assert np.allclose(a.grad, expected, atol=tol, rtol=0)
 
-        # QuantumTape.numeric_pd has been called only once
+        # JacobianTape.numeric_pd has been called only once
         assert len(spy.call_args_list) == 1
 
     def test_classical_processing(self, tol):
@@ -347,7 +347,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with QuantumTape() as tape:
+                with JacobianTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 

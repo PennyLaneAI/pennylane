@@ -24,10 +24,10 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape.measure import MeasurementProcess
 
-from .tape import QuantumTape
+from .jacobian_tape import JacobianTape
 
 
-class QubitParamShiftTape(QuantumTape):
+class QubitParamShiftTape(JacobianTape):
     r"""Quantum tape for qubit parameter-shift analytic differentiation method.
 
     This class extends the :class:`~.jacobian` method of the quantum tape
@@ -37,7 +37,7 @@ class QubitParamShiftTape(QuantumTape):
 
     >>> tape.jacobian(dev, method="analytic")
 
-    For more details on the quantum tape, please see :class:`~.QuantumTape`.
+    For more details on the quantum tape, please see :class:`~.JacobianTape`.
 
     **Gradients of expectation values**
 

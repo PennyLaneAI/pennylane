@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import JacobianTape
 from pennylane.tape.interfaces.tf import TFInterface
 
 
@@ -28,30 +28,30 @@ class TestTFQuantumTape:
 
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
-        with TFInterface.apply(QuantumTape()) as tape:
+        with TFInterface.apply(JacobianTape()) as tape:
             qml.RX(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
         assert tape.dtype is tf.float64
 
     def test_repeated_interface_construction(self):
         """Test that the interface is correctly applied multiple times"""
-        with TFInterface.apply(QuantumTape()) as tape:
+        with TFInterface.apply(JacobianTape()) as tape:
             qml.RX(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
         assert tape.dtype is tf.float64
 
         TFInterface.apply(tape, dtype=tf.float32)
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
-        assert tape.__bare__ == QuantumTape
+        assert tape.__bare__ == JacobianTape
         assert tape.dtype is tf.float32
 
     def test_get_parameters(self):
@@ -63,7 +63,7 @@ class TestTFQuantumTape:
         d = 0.4
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.Rot(a, b, c, wires=0)
                 qml.RX(d, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -78,7 +78,7 @@ class TestTFQuantumTape:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -91,14 +91,14 @@ class TestTFQuantumTape:
 
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -129,7 +129,7 @@ class TestTFQuantumTape:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape(), dtype=tf.float32) as qtape:
+            with TFInterface.apply(JacobianTape(), dtype=tf.float32) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -148,14 +148,14 @@ class TestTFQuantumTape:
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         a = tf.Variable([0.1, 0.2])
 
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -178,7 +178,7 @@ class TestTFQuantumTape:
 
         with tf.GradientTape() as tape:
 
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -215,7 +215,7 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with TFInterface.apply(QuantumTape()) as qtape:
+        with TFInterface.apply(JacobianTape()) as qtape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -255,7 +255,7 @@ class TestTFQuantumTape:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + tf.sin(a), wires=0)
@@ -276,7 +276,7 @@ class TestTFQuantumTape:
 
         with tf.GradientTape() as tape:
 
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -300,7 +300,7 @@ class TestTFQuantumTape:
 
         with tf.GradientTape() as tape:
 
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -320,7 +320,7 @@ class TestTFQuantumTape:
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
+                tape = JacobianTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -329,7 +329,7 @@ class TestTFQuantumTape:
                 ]
                 return tape
 
-        qtape = QuantumTape()
+        qtape = JacobianTape()
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
@@ -377,7 +377,7 @@ class TestTFQuantumTape:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -417,7 +417,7 @@ class TestTFQuantumTape:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -445,7 +445,7 @@ class TestTFQuantumTape:
         dev = qml.device("default.qubit", wires=2, shots=10)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
@@ -479,7 +479,7 @@ class TestTFPassthru:
         dev = qml.device("default.qubit.tf", wires=1)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -491,14 +491,14 @@ class TestTFPassthru:
 
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
         dev = qml.device("default.qubit.tf", wires=2)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -521,7 +521,7 @@ class TestTFPassthru:
 
     def test_reusing_quantum_tape(self, mocker, tol):
         """Test re-using a quantum tape by passing new parameters"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
 
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
@@ -530,7 +530,7 @@ class TestTFPassthru:
 
         with tf.GradientTape() as tape:
 
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -561,7 +561,7 @@ class TestTFPassthru:
 
     def test_classical_processing(self, mocker, tol):
         """Test classical processing within the quantum tape"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
 
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.constant(0.2, dtype=tf.float64)
@@ -570,7 +570,7 @@ class TestTFPassthru:
         dev = qml.device("default.qubit.tf", wires=1)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + tf.sin(a), wires=0)
@@ -588,11 +588,11 @@ class TestTFPassthru:
 
     def test_no_trainable_parameters(self, mocker, tol):
         """Test evaluation if there are no trainable parameters"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         dev = qml.device("default.qubit.tf", wires=2)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -609,13 +609,13 @@ class TestTFPassthru:
     def test_matrix_parameter(self, U, mocker, tol):
         """Test that the TF interface works correctly
         with a matrix parameter"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = tf.Variable(0.1, dtype=tf.float64)
 
         dev = qml.device("default.qubit.tf", wires=2)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -630,12 +630,12 @@ class TestTFPassthru:
     def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
+                tape = JacobianTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -644,7 +644,7 @@ class TestTFPassthru:
                 ]
                 return tape
 
-        qtape = QuantumTape()
+        qtape = JacobianTape()
 
         dev = qml.device("default.qubit.tf", wires=1)
         a = np.array(0.1)
@@ -692,7 +692,7 @@ class TestTFPassthru:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -744,7 +744,7 @@ class TestTFPassthru:
         monkeypatch.setattr(dev, "_asarray", _asarray)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -772,7 +772,7 @@ class TestTFPassthru:
         dev = qml.device("default.qubit.tf", wires=2, shots=10)
 
         with tf.GradientTape() as tape:
-            with QuantumTape() as qtape:
+            with JacobianTape() as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
