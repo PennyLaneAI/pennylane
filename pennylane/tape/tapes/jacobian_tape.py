@@ -466,8 +466,9 @@ class JacobianTape(QuantumTape):
         options["device"] = device
 
         # collect all circuits (tapes) and postprocessing functions required
-        # compute the jacobian
+        # to compute the jacobian
         all_tapes = []
+        reshape_info = []
         processing_fns = []
         for trainable_idx, param_method in enumerate(diff_methods):
 
@@ -482,14 +483,17 @@ class JacobianTape(QuantumTape):
                 # analytic method
                 tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
 
-            all_tapes.append(tapes)
+            # we create a flat list here to feed at once to the device
+            all_tapes.extend(tapes)
+            # to extract the correct result for this parameter later, remember the number of tapes
+            reshape_info.append(len(tapes))
             processing_fns.append(processing_fn)
 
         # execute all tapes
-        results = [[tape.execute(device) for tape in tapes] for tapes in all_tapes]
+        results = [tape.execute(device) for tape in all_tapes]  # soon to be: device.batch_execute(all_tapes)
 
         if method == "numeric":
-            output_dim = all_tapes[0][0]._output_dim
+            output_dim = all_tapes[0]._output_dim
 
             if self.output_dim != output_dim:
                 self._output_dim = output_dim
@@ -497,7 +501,14 @@ class JacobianTape(QuantumTape):
         # post-process the results with the appropriate function to fill jacobian columns with gradients
         jac = np.zeros((self.output_dim, len(params)), dtype=float)
 
-        for i, (processing_fn, res) in enumerate(zip(processing_fns, results)):
+        start = 0
+        for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
+
+            # extract the correct results from the flat list
+            res = results[start: start + res_len]
+            start += res_len
+
+            # postprocess results to compute the gradient
             g = processing_fn(res)
 
             if g.dtype is np.dtype("object"):
