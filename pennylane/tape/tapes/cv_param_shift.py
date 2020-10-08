@@ -215,7 +215,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         # instead. This will allow for greater device compatibility.
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
-    def param_shift_first_order_diff(self, idx, params=None):
+    def param_shift_first_order_diff(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
         position 'idx' using first order cv parameter-shift based differentiation.
 
@@ -325,8 +325,8 @@ class CVParamShiftTape(QubitParamShiftTape):
             idx = self.observables.index(obs)
             transformed_obs_idx.append(idx)
             tape._measurements[idx] = MeasurementProcess(
-                    qml.operation.Expectation, self._transform_observable(obs, Z, dev_wires)
-                )
+                qml.operation.Expectation, self._transform_observable(obs, Z, dev_wires)
+            )
 
         tapes = [tape]
 
@@ -396,7 +396,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return processing_fn(results)
 
-    def parameter_shift_var(self, idx, device, params, **options):
+    def param_shift_var_diff(self, idx, params, **options):
         r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
         consisting of a mixture of expectation values and variances of observables.
 
@@ -422,6 +422,84 @@ class CVParamShiftTape(QubitParamShiftTape):
             measurement statistics
         """
         # pylint: disable=protected-access
+        tapes = []
+        evA_tape = self.copy()
+
+        # Temporarily convert all variance measurements on the tape into expectation values
+        for i in self.var_idx:
+            obs = evA_tape._measurements[i].obs
+            evA_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+
+        # evaluate the analytic derivative of <A>
+        pdA_tapes, pdA_fn = evA_tape.param_shift_first_order_diff(idx, params, **options)
+        tapes.extend(pdA_tapes)
+
+        pdA2_tape = self.copy()
+
+        for i in self.var_idx:
+            # We need to calculate d<A^2>/dp; to do so, we replace the
+            # observables A in the queue with A^2.
+            obs = pdA2_tape._measurements[i].obs
+
+            # CV first order observable
+            # get the heisenberg representation
+            # This will be a real 1D vector representing the
+            # first order observable in the basis [I, x, p]
+            A = obs._heisenberg_rep(obs.parameters)  # pylint: disable=protected-access
+
+            # take the outer product of the heisenberg representation
+            # with itself, to get a square symmetric matrix representing
+            # the square of the observable
+            obs = qml.PolyXP(np.outer(A, A), wires=obs.wires, do_queue=False)
+            pdA2_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+
+        # Here, we calculate the analytic derivatives of the <A^2> observables.
+        pdA2_tapes, pdA2_fn = pdA2_tape.param_shift_second_order_diff(idx, params, **options)
+        tapes.extend(pdA2_tapes)
+
+        if self._evA is None:
+            tapes.append(evA_tape)
+
+        def processing_fn(results):
+            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            pdA = pdA_fn(results[0:2])
+            pdA2 = pdA2_fn(results[2:4])
+
+            if self._evA is None:
+                self._evA = np.array(results[-1])
+
+            # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
+            # d<A>/dp for plain expectations
+            return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+
+        return tapes, processing_fn
+
+    def parameter_shift_var(self, idx, device, params, **options):
+        r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
+        consisting of a mixture of expectation values and variances of observables.
+
+        Expectation values may be of first- or second-order observables,
+        but variances can only be taken of first-order variables.
+
+        .. warning::
+
+            This method can only be executed on devices that support the
+            :class:`~.PolyXP` observable.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            device (.Device): a PennyLane device that can execute quantum operations and return
+                measurement statistics
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            force_order2 (bool): iff True, use the order-2 method even if not necessary
+
+        Returns:
+            array[float]: 1-dimensional array of length determined by the tape output
+            measurement statistics
+        """
+        options["dev_wires"] = device.wires
 
         if "PolyXP" not in device.observables:
             # If the device does not support PolyXP, must fallback
@@ -434,41 +512,9 @@ class CVParamShiftTape(QubitParamShiftTape):
             )
             return self.numeric_pd(idx, device, params, **options)
 
-        temp_tape = self.copy()
+        tapes, processing_fn = self.param_shift_var_diff(idx, params=params, **options)
 
-        # Temporarily convert all variance measurements on the tape into expectation values
-        for i in self.var_idx:
-            obs = self._measurements[i].obs
-            temp_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+        # execute tapes
+        results = [tape.execute(device) for tape in tapes]
 
-        # Get <A>, the expectation value of the tape with unshifted parameters. This is only
-        # calculated once, if `self._evA` is not None.
-        if self._evA is None:
-            self._evA = np.asarray(temp_tape.execute_device(params, device))
-
-        # evaluate the analytic derivative of <A>
-        pdA = temp_tape.parameter_shift_first_order(idx, device, params, **options)
-
-        for i in self.var_idx:
-            # We need to calculate d<A^2>/dp; to do so, we replace the
-            # observables A in the queue with A^2.
-            obs = self._measurements[i].obs
-
-            # CV first order observable
-            # get the heisenberg representation
-            # This will be a real 1D vector representing the
-            # first order observable in the basis [I, x, p]
-            A = obs._heisenberg_rep(obs.parameters)  # pylint: disable=protected-access
-
-            # take the outer product of the heisenberg representation
-            # with itself, to get a square symmetric matrix representing
-            # the square of the observable
-            obs = qml.PolyXP(np.outer(A, A), wires=obs.wires, do_queue=False)
-            temp_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
-
-        # Here, we calculate the analytic derivatives of the <A^2> observables.
-        pdA2 = temp_tape.parameter_shift_second_order(idx, device, params, **options)
-
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
-        # d<A>/dp for plain expectations
-        return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+        return processing_fn(results)
