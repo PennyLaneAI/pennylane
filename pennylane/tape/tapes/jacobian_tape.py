@@ -487,13 +487,15 @@ class JacobianTape(QuantumTape):
 
         # execute all tapes
         results = [[tape.execute(device) for tape in tapes] for tapes in all_tapes]
-        output_dim = all_tapes[0][0]._output_dim
 
-        if self.output_dim != output_dim:
-            self._output_dim = output_dim
+        if method == "numeric":
+            output_dim = all_tapes[0][0]._output_dim
+
+            if self.output_dim != output_dim:
+                self._output_dim = output_dim
 
         # post-process the results with the appropriate function to fill jacobian columns with gradients
-        jac = np.zeros((output_dim, len(params)), dtype=float)
+        jac = np.zeros((self.output_dim, len(params)), dtype=float)
 
         for i, (processing_fn, res) in enumerate(zip(processing_fns, results)):
             g = processing_fn(res)

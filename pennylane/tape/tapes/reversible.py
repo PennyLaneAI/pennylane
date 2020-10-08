@@ -231,7 +231,8 @@ class ReversibleTape(JacobianTape):
         self._final_state = None
         return super().jacobian(device, params, **options)
 
-    def analytic_pd(self, idx, device, params=None, **options):
+    def analytic_pd(self, idx, params=None, **options):
+        device = options["device"]
 
         # circuits constructed in reversible differentiation always start
         # with the final state of the original circuit, which we store here
@@ -244,9 +245,4 @@ class ReversibleTape(JacobianTape):
         # be able to compute an expecation value by hand
         options["dev_wires"] = device.wires
 
-        tapes, processing_fn = self.reversible_diff(idx, params=params, **options)
-
-        # execute tapes
-        results = [tape.execute(device) for tape in tapes]
-
-        return processing_fn(results)
+        return self.reversible_diff(idx, params=params, **options)
