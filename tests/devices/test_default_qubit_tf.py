@@ -320,6 +320,24 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_apply_ops_dict_above_8_wires(self):
+        """Test that the apply_ops dictionary is empty when more than 8 wires are used"""
+        dev = DefaultQubitTF(wires=9)
+        assert dev._apply_ops == {}
+
+    @pytest.mark.xfail(
+        raises=tf.errors.UnimplementedError,
+        reason="Slicing is not supported for " "more than 8 wires",
+    )
+    def test_apply_ops_above_8_wires(self):
+        """Test that special apply methods that involve slicing function correctly when using 9
+        wires"""
+        dev = DefaultQubitTF(wires=9)
+        dev._apply_ops = {"CNOT": dev._apply_cnot}
+
+        queue = [qml.CNOT(wires=[1, 2])]
+        dev.apply(queue)
+
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
