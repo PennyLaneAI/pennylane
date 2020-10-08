@@ -85,7 +85,7 @@ class QubitParamShiftTape(JacobianTape):
         super()._update_circuit_info()
 
         # set parameter_shift as the analytic_pd method
-        self.analytic_pd = self.param_shift_pd
+        self.analytic_pd = self.parameter_shift
 
         # check if the quantum tape contains any variance measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
@@ -97,7 +97,7 @@ class QubitParamShiftTape(JacobianTape):
         if any(self.var_mask):
             # The tape contains variances.
             # Set parameter_shift_var as the analytic_pd method
-            self.analytic_pd = self.param_shift_var_pd
+            self.analytic_pd = self.parameter_shift_var
 
             # Finally, store the locations of any variance measurements in the
             # measurement queue.
@@ -117,9 +117,10 @@ class QubitParamShiftTape(JacobianTape):
         # self._evA attribute. Here, we set the value of the attribute to None
         # before each Jacobian call, so that the expectation value is calculated only once.
         self._evA = None
+        self._evA_result = None
         return super().jacobian(device, params, **options)
 
-    def param_shift_pd(self, idx, params=None, **options):
+    def parameter_shift(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
         position 'idx' using the parameter shift differentiation.
 
@@ -164,40 +165,7 @@ class QubitParamShiftTape(JacobianTape):
 
         return tapes, processing_fn
 
-    def parameter_shift(self, idx, device, params, **options):
-        r"""Partial derivative using the parameter-shift rule of a tape consisting of measurement
-        statistics that can be represented as expectation values of observables.
-
-        This includes tapes that output probabilities, since the probability of measuring a
-        basis state :math:`|i\rangle` can be written in the form of an expectation value:
-
-        .. math::
-
-            \mathbb{P}_{|i\rangle} = |\langle i | U(\mathbf(p)) | 0 \rangle|^2
-                = \langle 0 | U(\mathbf(p))^\dagger | i \rangle\langle i | U(\mathbf(p)) | 0 \rangle
-                = \mathbb{E}\left( | i \rangle\langle i | \right)
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): the quantum tape operation parameters
-
-        Keyword Args:
-            shift (float): the parameter shift value
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
-        """
-        tapes, processing_fn = self.param_shift_pd(idx, params=params, **options)
-
-        # execute tapes
-        results = [tape.execute(device) for tape in tapes]
-
-        return processing_fn(results)
-
-    def param_shift_var_pd(self, idx, params, **options):
+    def parameter_shift_var(self, idx, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
         of expectation values and variances of observables.
 
@@ -223,7 +191,7 @@ class QubitParamShiftTape(JacobianTape):
             evA_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         # evaluate the analytic derivative of <A>
-        pdA_tapes, pdA_fn = evA_tape.param_shift_pd(idx, params, **options)
+        pdA_tapes, pdA_fn = evA_tape.parameter_shift(idx, params, **options)
         tapes.extend(pdA_tapes)
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
@@ -248,11 +216,12 @@ class QubitParamShiftTape(JacobianTape):
             # Non-involutory observables are present; the partial derivative of <A^2>
             # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
             # observables.
-            pdA2_tapes, pdA2_fn = pdA2_tape.param_shift_pd(idx, params, **options)
+            pdA2_tapes, pdA2_fn = pdA2_tape.parameter_shift(idx, params, **options)
             tapes.extend(pdA2_tapes)
 
         if self._evA is None:
             tapes.append(evA_tape)
+            self._evA = 1
 
         def processing_fn(results):
             """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
@@ -265,32 +234,11 @@ class QubitParamShiftTape(JacobianTape):
                 if involutory:
                     pdA2[np.array(involutory)] = 0
 
-            if self._evA is None:
-                self._evA = np.array(results[-1])
+            if self._evA_result is None:
+                self._evA_result = np.array(results[-1])
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
             # d<A>/dp for plain expectations
-            return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
+            return np.where(self.var_mask, pdA2 - 2 * self._evA_result * pdA, pdA)
 
         return tapes, processing_fn
-
-    def parameter_shift_var(self, idx, device, params, **options):
-        r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
-        of expectation values and variances of observables.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): the quantum tape operation parameters
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
-        """
-        tapes, processing_fn = self.param_shift_var_pd(idx, params=params, **options)
-
-        # execute tapes
-        results = [tape.execute(device) for tape in tapes]
-
-        return processing_fn(results)
