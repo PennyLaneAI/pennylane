@@ -463,6 +463,8 @@ class JacobianTape(QuantumTape):
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
+        options["device"] = device
+
         # collect all circuits (tapes) and postprocessing functions required
         # compute the jacobian
         all_tapes = []
