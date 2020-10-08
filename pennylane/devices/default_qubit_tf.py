@@ -25,7 +25,7 @@ try:
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
 except ImportError as e:
-    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
+    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
 # With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
