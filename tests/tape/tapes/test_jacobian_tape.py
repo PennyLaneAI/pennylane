@@ -215,7 +215,7 @@ class TestJacobian:
         # modify the output dim
         tape._output_dim = 2
 
-        res = tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2, method="numeric")
 
         # output dim should be correct
         assert tape.output_dim == sum([2, 2])
@@ -241,7 +241,7 @@ class TestJacobian:
         # modify the output dim
         tape._output_dim = 2
 
-        res = tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2, method="numeric")
 
         # output dim should be correct
         assert tape.output_dim == sum([2, 4])
