@@ -320,6 +320,21 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_apply_ops_not_supported(self, mocker, monkeypatch):
+        """Test that when a version of TensorFlow before 2.3.0 is used, the _apply_ops dictionary is
+        empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
+        with monkeypatch.context() as m:
+            m.setattr("pennylane.devices.default_qubit_tf.SUPPORTS_APPLY_OPS", False)
+            dev = DefaultQubitTF(wires=3)
+            assert dev._apply_ops == {}
+
+            spy = mocker.spy(DefaultQubitTF, "_apply_unitary_einsum")
+
+            queue = [qml.CNOT(wires=[1, 2])]
+            dev.apply(queue)
+
+            spy.assert_called_once()
+
     def test_apply_ops_above_8_wires(self, mocker):
         """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
         CNOT gate is performed using _apply_unitary_einsum"""
