@@ -5,8 +5,8 @@ ignore:
   - "pennylane/devices/tests/*"
 
 codecov:
-    notify:
-        after_n_builds: 6
+  notify:
+    after_n_builds: 6
 
 comment:
-    after_n_builds: 6
+  after_n_builds: 6
