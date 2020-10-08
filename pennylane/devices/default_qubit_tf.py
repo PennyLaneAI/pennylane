@@ -159,6 +159,11 @@ class DefaultQubitTF(DefaultQubit):
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
 
+        # prevent using special apply methods when using more than 8 wires due to limitations
+        # with TF slicing
+        if wires > 8:
+            self._apply_ops = {}
+
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
