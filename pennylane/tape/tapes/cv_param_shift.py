@@ -341,7 +341,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift(self, idx, params, **options):
+    def parameter_shift(self, idx, params=None, **options):
         r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
 
