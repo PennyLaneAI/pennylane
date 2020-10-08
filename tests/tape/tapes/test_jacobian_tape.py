@@ -159,7 +159,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
-        tape.analytic_pd.return_value = np.array([1.0])
+        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.])]
 
         tape.jacobian(dev, method="analytic")
         assert len(tape.analytic_pd.call_args_list) == 2
@@ -269,7 +269,7 @@ class TestJacobian:
         assert len(analytic_spy.call_args_list) == 0
 
         # the numeric pd method is only called for parameter 0
-        assert numeric_spy.call_args[0] == (tape, 0, dev)
+        assert numeric_spy.call_args[0] == (tape, 0)
 
     def test_no_trainable_parameters(self, mocker):
         """Test that if the tape has no trainable parameters, no
@@ -339,11 +339,10 @@ class TestJacobian:
         assert not np.allclose(res1, res2, atol=tol, rtol=0)
         assert tape.get_parameters() == [0.5, 0.6]
 
-    def test_numeric_pd_no_y0(self, mocker, tol):
+    def test_numeric_pd_no_y0(self, tol):
         """Test that, if y0 is not passed when calling the numeric_pd method,
         y0 is calculated."""
         dev = qml.device("default.qubit", wires=2)
-        execute_spy = mocker.spy(dev, "execute")
 
         params = [0.1, 0.2]
 
@@ -354,14 +353,18 @@ class TestJacobian:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # compute numeric gradient of parameter 0, without passing y0
-        res1 = tape.numeric_pd(0, dev)
-        assert len(execute_spy.call_args_list) == 2
+        tapes, fn = tape.numeric_pd(0)
+        assert len(tapes) == 2
+
+        res1 = fn([tape.execute(dev) for tape in tapes])
 
         # compute y0 in advance
         y0 = tape.execute(dev)
-        execute_spy.call_args_list = []
-        res2 = tape.numeric_pd(0, dev, y0=y0)
-        assert len(execute_spy.call_args_list) == 1
+        tapes, fn = tape.numeric_pd(0, y0=y0)
+        assert len(tapes) == 1
+
+        res2 = fn([tape.execute(dev) for tape in tapes])
+
         assert np.allclose(res1, res2, atol=tol, rtol=0)
 
     def test_numeric_unknown_order(self):
