@@ -85,7 +85,7 @@ class QubitParamShiftTape(JacobianTape):
         super()._update_circuit_info()
 
         # set parameter_shift as the analytic_pd method
-        self.analytic_pd = self.parameter_shift
+        self.analytic_diff = self.param_shift_diff
 
         # check if the quantum tape contains any variance measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
@@ -97,7 +97,7 @@ class QubitParamShiftTape(JacobianTape):
         if any(self.var_mask):
             # The tape contains variances.
             # Set parameter_shift_var as the analytic_pd method
-            self.analytic_pd = self.parameter_shift_var
+            self.analytic_diff = self.param_shift_var_diff
 
             # Finally, store the locations of any variance measurements in the
             # measurement queue.
