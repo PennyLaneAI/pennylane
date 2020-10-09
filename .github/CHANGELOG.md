@@ -27,7 +27,7 @@
    `grouped_ops`.
 
   - Pauli word partitioning utilities are performed by the `group_observables.PauliGroupingStrategy`
-    class.An input list of Pauli words can be partitioned into mutually commuting,
+    class. An input list of Pauli words can be partitioned into mutually commuting,
     qubit-wise-commuting, or anticommuting groupings.
 
     For example, partitioning Pauli words into anticommutative groupings by the Recursive Largest
