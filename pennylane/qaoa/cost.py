@@ -254,11 +254,7 @@ def max_independent_set(graph, constrained=True):
     share a common edge. The Maximum Independent Set problem, is the problem of finding the largest such set.
 
     Args:
-<<<<<<< HEAD
         graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
-=======
-        graph (nx.Graph): input graph defining the Maximum Independent Set problem
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -293,13 +289,8 @@ def max_independent_set(graph, constrained=True):
 
         The Maximum Independent Set cost Hamiltonian for unconstrained QAOA is defined as:
 
-<<<<<<< HEAD
         .. math:: H_C \ = \ 3 \sum_{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
                   \displaystyle\sum_{i \in V(G)} Z_i
-=======
-        .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \
-                  \displaystyle\sum_{i \in V(G)} Z_i,
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
@@ -334,11 +325,7 @@ def min_vertex_cover(graph, constrained=True):
     every edge in the graph has one of the vertices as an endpoint.
 
     Args:
-<<<<<<< HEAD
         graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
-=======
-        graph (nx.Graph): input graph defining the Minimum Vertex Cover problem
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -373,13 +360,8 @@ def min_vertex_cover(graph, constrained=True):
 
         The Minimum Vertex Cover cost Hamiltonian for unconstrained QAOA is defined as:
 
-<<<<<<< HEAD
         .. math:: H_C \ = \ 3 \sum_{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
                   \displaystyle\sum_{i \in V(G)} Z_i
-=======
-        .. math:: H_C \ = \ \sum_{(i, j) \in E(G)} (Z_i Z_j \ + \ Z_i \ + \ Z_j) \ - \
-                  \displaystyle\sum_{i \in V(G)} Z_i,
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
 
         where :math:`E(G)` is the set of edges of :math:`G`, :math:`V(G)` is the set of vertices,
         and :math:`Z_i` is the Pauli-Z operator acting on the :math:`i`-th vertex.
@@ -413,11 +395,7 @@ def max_clique(graph, constrained=True):
         graph --- the largest subgraph such that all vertices are connected by an edge.
 
         Args:
-    <<<<<<< HEAD
             graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
-    =======
-            graph (nx.Graph): input graph defining the Maximum Clique problem
-    >>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
             constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
         Returns:
@@ -454,13 +432,8 @@ def max_clique(graph, constrained=True):
 
             The Maximum Clique cost Hamiltonian for unconstrained QAOA is defined as:
 
-    <<<<<<< HEAD
             .. math:: H_C \ = \ 3 \sum_{(i, j) \in E(\bar{G})}
                       (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
-    =======
-            .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
-                      (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i,
-    >>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
 
             where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
             edges of the complement of :math:`G`, and :math:`Z_i` is the Pauli-Z operator applied to the
