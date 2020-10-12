@@ -258,7 +258,7 @@ MAXCUT = list(zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 CONSTRAINED = [True, True, False]
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.25, 0.75, 0.5, 0.25, 0.75]]
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, -0.5, 0.75, 0.25]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
@@ -312,7 +312,7 @@ MIS = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 '''GENERATES THE CASES TO TEST THE MIn VERTEX COVER PROBLEM'''
 
-COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.25, -0.75, -0.5, 0.25, -0.75]]
+COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
@@ -334,7 +334,7 @@ MVC = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 '''GENERATES THE CASES TO TEST THE MAXCLIQUE PROBLEM'''
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.25, 0.75, 0.75, 1]]
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
