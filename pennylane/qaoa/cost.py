@@ -319,7 +319,7 @@ def max_independent_set(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(graph, 0))
 
-    cost_h = 3*edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
+    cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
@@ -399,7 +399,7 @@ def min_vertex_cover(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 0), qaoa.bit_flip_mixer(graph, 1))
 
-    cost_h = 3*edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
+    cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
@@ -407,71 +407,71 @@ def min_vertex_cover(graph, constrained=True):
 
 def max_clique(graph, constrained=True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Clique problem,
-    for a given graph.
+        for a given graph.
 
-    The goal of Maximum Clique is to find the largest `clique <https://en.wikipedia.org/wiki/Clique_(graph_theory)>`__ of a
-    graph --- the largest subgraph such that all vertices are connected by an edge.
+        The goal of Maximum Clique is to find the largest `clique <https://en.wikipedia.org/wiki/Clique_(graph_theory)>`__ of a
+        graph --- the largest subgraph such that all vertices are connected by an edge.
 
-    Args:
-<<<<<<< HEAD
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
-=======
-        graph (nx.Graph): input graph defining the Maximum Clique problem
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
-        constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
+        Args:
+    <<<<<<< HEAD
+            graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+    =======
+            graph (nx.Graph): input graph defining the Maximum Clique problem
+    >>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
+            constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
-    Returns:
-        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
+        Returns:
+            (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
-    .. UsageDetails::
+        .. UsageDetails::
 
-        There are two variations of QAOA for this problem, constrained and unconstrained:
+            There are two variations of QAOA for this problem, constrained and unconstrained:
 
-        **Constrained**
+            **Constrained**
 
-        .. note::
+            .. note::
 
-            This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
+                This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
+                in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
 
-        The Maximum Clique cost Hamiltonian for constrained QAOA is defined as:
+            The Maximum Clique cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v},
+            .. math:: H_C \ = \ \displaystyle\sum_{v \in V(G)} Z_{v},
 
-        where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z operator
-        applied to the :math:`i`-th
-        vertex.
+            where :math:`V(G)` is the set of vertices of the input graph, and :math:`Z_i` is the Pauli-Z operator
+            applied to the :math:`i`-th
+            vertex.
 
-        The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`,
-        the complement of the graph.
+            The returned mixer Hamiltonian is :func:`~qaoa.bit_flip_mixer` applied to :math:`\bar{G}`,
+            the complement of the graph.
 
-        .. note::
+            .. note::
 
-            **Recommended initialization circuit:**
-                Each wire in the :math:`|0\rangle` state.
+                **Recommended initialization circuit:**
+                    Each wire in the :math:`|0\rangle` state.
 
-        **Unconstrained**
+            **Unconstrained**
 
-        The Maximum Clique cost Hamiltonian for unconstrained QAOA is defined as:
+            The Maximum Clique cost Hamiltonian for unconstrained QAOA is defined as:
 
-<<<<<<< HEAD
-        .. math:: H_C \ = \ 3 \sum_{(i, j) \in E(\bar{G})}
-                  (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
-=======
-        .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
-                  (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i,
->>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
+    <<<<<<< HEAD
+            .. math:: H_C \ = \ 3 \sum_{(i, j) \in E(\bar{G})}
+                      (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i
+    =======
+            .. math:: H_C \ = \ \sum_{(i, j) \in E(\bar{G})}
+                      (Z_i Z_j \ - \ Z_i \ - \ Z_j) \ + \ \displaystyle\sum_{i \in V(G)} Z_i,
+    >>>>>>> 8197ca95c8cd73c20e5468be0497530589e0f25b
 
-        where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
-        edges of the complement of :math:`G`, and :math:`Z_i` is the Pauli-Z operator applied to the
-        :math:`i`-th vertex.
+            where :math:`V(G)` is the set of vertices of the input graph :math:`G`, :math:`E(\bar{G})` is the set of
+            edges of the complement of :math:`G`, and :math:`Z_i` is the Pauli-Z operator applied to the
+            :math:`i`-th vertex.
 
-        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
+            The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
-        .. note::
+            .. note::
 
-            **Recommended initialization circuit:**
-                Even superposition over all basis states.
+                **Recommended initialization circuit:**
+                    Even superposition over all basis states.
 
     """
 
@@ -481,7 +481,7 @@ def max_clique(graph, constrained=True):
     if constrained:
         return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(nx.complement(graph), 0))
 
-    cost_h = 3*edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
+    cost_h = 3 * edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
