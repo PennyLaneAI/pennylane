@@ -913,7 +913,7 @@ class TestUCCSDUnitary:
                 [[0, 1, 2]],
                 [],
                 np.array([1.2, 1, 0, 0]),
-                "Elements of 'init_state' must be integers",
+                "BasisState parameter must consist of 0 or 1 integers",
             ),
             (
                 np.array([-2.8]),

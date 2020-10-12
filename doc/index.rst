@@ -27,8 +27,8 @@ PennyLane Documentation
     </style>
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for quantum machine learning,
-            automatic differentiation, and optimization of hybrid quantum-classical computations.
+            PennyLane is a cross-platform Python library for differentiable programming of quantum computers.
+            Train a quantum computer the same way as a neural network.
         </p>
         <div class="row mt-3">
             <div class="col-lg-4 mb-2 adlign-items-stretch">
@@ -210,6 +210,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_qchem
    code/qml_qnn
    code/qml_qnodes
+   code/qml_tape
    code/qml_templates
    code/qml_utils
    code/qml_variable
