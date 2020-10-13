@@ -489,12 +489,13 @@ class QNode:
                 "ascii" are supported.
 
         Raises:
-            ValueError: If the given charset is not supported
-            .QuantumFunctionError: Drawing is impossible because the underlying
+            ValueError: if the given charset is not supported
+            .QuantumFunctionError: drawing is impossible because the underlying
                 quantum tape has not yet been constructed
 
         Returns:
-            str: The circuit representation of the tape
+            str: the circuit representation of the tape
+
         """
         if self.qtape is None:
             raise qml.QuantumFunctionError(

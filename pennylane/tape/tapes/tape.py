@@ -840,10 +840,10 @@ class QuantumTape(AnnotatedQueue):
                 "ascii" are supported.
 
         Raises:
-            ValueError: If the given charset is not supported
+            ValueError: if the given charset is not supported
 
         Returns:
-            str: The circuit representation of the tape
+            str: the circuit representation of the tape
         """
         return self.graph.draw(charset=charset, show_variable_names=False)
 
