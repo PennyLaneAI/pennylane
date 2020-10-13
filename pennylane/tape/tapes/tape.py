@@ -812,6 +812,41 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
+    def draw(self, charset="unicode"):
+        """Draw the quantum tape as a circuit diagram.
+
+        Consider the following circuit as an example:
+
+        .. code-block:: python3
+
+            with QuantumTape() as tape:
+                qml.Hadamard(0)
+                qml.CRX(2.3, wires=[0, 1])
+                qml.Rot(1.2, 3.2, 0.7, wires=[1])
+                qml.CRX(-2.3, wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        We can draw the tape after construction:
+
+        >>> print(tape.draw())
+        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(tape.draw(charset="ascii"))
+        0: --H--+C----------------------------+C---------+| <Z @ Z>
+        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and
+                "ascii" are supported.
+
+        Raises:
+            ValueError: if the given charset is not supported
+
+        Returns:
+            str: the circuit representation of the tape
+        """
+        return self.graph.draw(charset=charset, show_variable_names=False)
+
     @property
     def data(self):
         """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
