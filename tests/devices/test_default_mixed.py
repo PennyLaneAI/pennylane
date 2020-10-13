@@ -670,6 +670,17 @@ class TestApply:
 
         assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 
+    def test_apply_state_vector_wires(self, tol):
+        """Tests that we correctly apply a `QubitStateVector` operation for the root state when
+        wires are passed as an ordered list"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=[0, 1, 2])
+        dim = 2 ** nr_wires
+        state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
+        dev.apply([QubitStateVector(state, wires=range(nr_wires))])
+
+        assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
+
     def test_raise_order_error_basis_state(self):
         """Tests that an error is raised if a state is prepared after BasisState has been
         applied"""

@@ -306,22 +306,22 @@ class DefaultMixed(QubitDevice):
             # Initialize the entire wires with the state
             rho = self._outer(state, self._conj(state))
             self._state = self._reshape(rho, [2] * 2 * self.num_wires)
-            return
 
-        # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+        else:
+            # generate basis states on subset of qubits via the cartesian product
+            basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
 
-        # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
+            # get basis states to alter on full set of qubits
+            unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+            unravelled_indices[:, device_wires] = basis_states
 
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+            # get indices for which the state is changed to input state vector elements
+            ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
-        rho = self._outer(state, self._conj(state))
-        rho = self._reshape(rho, [2] * 2 * self.num_wires)
-        self._state = self._asarray(rho, dtype=self.C_DTYPE)
+            state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+            rho = self._outer(state, self._conj(state))
+            rho = self._reshape(rho, [2] * 2 * self.num_wires)
+            self._state = self._asarray(rho, dtype=self.C_DTYPE)
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
