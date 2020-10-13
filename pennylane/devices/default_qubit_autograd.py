@@ -83,6 +83,7 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRX": autograd_ops.CRX,
         "CRY": autograd_ops.CRY,
         "CRZ": autograd_ops.CRZ,
+        "MultiRZ": autograd_ops.MultiRZ,
     }
 
     C_DTYPE = np.complex128
@@ -138,7 +139,10 @@ class DefaultQubitAutograd(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        if unitary.name in self.parametric_ops:
+        op_name = unitary.name
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
             return self.parametric_ops[unitary.name](*unitary.parameters)
 
         if isinstance(unitary, DiagonalOperation):

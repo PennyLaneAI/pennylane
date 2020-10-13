@@ -48,6 +48,9 @@ from .utils import inv
 from ._version import __version__
 from .io import *
 
+import pennylane.tape  # pylint: disable=wrong-import-order
+from .tape import enable_tape, disable_tape
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
@@ -254,11 +257,11 @@ def jacobian(func, argnum=None):
     This is a wrapper around the :mod:`autograd.jacobian` function.
 
     Args:
-        func (function): a vector-valued Python function or QNode that contains
+        func (function): A vector-valued Python function or QNode that contains
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
-        argnum (int or Sequence[int]): which argument to take the gradient
+        argnum (int or Sequence[int]): Which argument to take the gradient
             with respect to. If a sequence is given, the Jacobian matrix
             corresponding to all input elements and all output elements is returned.
 

@@ -23,7 +23,7 @@ import itertools
 
 import numpy as np
 
-from pennylane.operation import Sample, Variance, Expectation, Probability
+from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.wires import Wires
@@ -88,6 +88,7 @@ class QubitDevice(Device):
     _stack = staticmethod(np.stack)
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
+    _real = staticmethod(np.real)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -242,7 +243,7 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples and probabilities.
+        This includes returning expectation values, variance, samples, probabilities and states.
 
         Args:
             observables (List[:class:`Observable`]): the observables to be measured
@@ -269,12 +270,44 @@ class QubitDevice(Device):
             elif obs.return_type is Probability:
                 results.append(self.probability(wires=obs.wires))
 
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise QuantumFunctionError(
+                        "The state cannot be returned in combination with other return types"
+                    )
+
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
+
+                results.append(self.access_state())
+
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
                     "Unsupported return type specified for observable {}".format(obs.name)
                 )
 
         return results
+
+    def access_state(self):
+        """Check that the device has access to an internal state and return it if available.
+
+        Raises:
+            QuantumFunctionError: if the device is not capable of returning the state
+
+        Returns:
+            array or tensor: the state of the device
+        """
+        if not self.capabilities().get("returns_state"):
+            raise QuantumFunctionError("The current device is not capable of returning the state")
+
+        state = getattr(self, "state", None)
+
+        if state is None:
+            raise QuantumFunctionError("The state is not available in the current device")
+
+        return state
 
     def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.
@@ -314,21 +347,61 @@ class QubitDevice(Device):
         return np.random.choice(basis_states, self.shots, p=state_probability)
 
     @staticmethod
-    def states_to_binary(samples, num_wires):
+    def generate_basis_states(num_wires, dtype=np.uint32):
+        """
+        Generates basis states in binary representation according to the number
+        of wires specified.
+
+        The states_to_binary method creates basis states faster (for larger
+        systems at times over x25 times faster) than the approach using
+        ``itertools.product``, at the expense of using slightly more memory.
+
+        Due to the large size of the integer arrays for more than 32 bits,
+        memory allocation errors may arise in the states_to_binary method.
+        Hence we constraint the dtype of the array to represent unsigned
+        integers on 32 bits. Due to this constraint, an overflow occurs for 32
+        or more wires, therefore this approach is used only for fewer wires.
+
+        For smaller number of wires speed is comparable to the next approach
+        (using ``itertools.product``), hence we resort to that one for testing
+        purposes.
+
+        Args:
+            num_wires (int): the number wires
+            dtype=np.uint32 (type): the data type of the arrays to use
+
+        Returns:
+            np.ndarray: the sampled basis states
+        """
+        if 2 < num_wires < 32:
+            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
+            return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
+
+        # A slower, but less memory intensive method
+        basis_states_generator = itertools.product((0, 1), repeat=num_wires)
+        return np.fromiter(itertools.chain(*basis_states_generator), dtype=int).reshape(
+            -1, num_wires
+        )
+
+    @staticmethod
+    def states_to_binary(samples, num_wires, dtype=np.int64):
         """Convert basis states from base 10 to binary representation.
 
         This is an auxiliary method to the generate_samples method.
 
         Args:
             samples (List[int]): samples of basis states in base 10 representation
-            number_of_states (int): the number of basis states to sample from
+            num_wires (int): the number of qubits
+            dtype (type): Type of the internal integer array to be used. Can be
+                important to specify for large systems for memory allocation
+                purposes.
 
         Returns:
             List[int]: basis states in binary representation
         """
-        powers_of_two = 1 << np.arange(num_wires)
+        powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
+        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
 
     @property
     def circuit_hash(self):
@@ -480,7 +553,8 @@ class QubitDevice(Device):
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+        num_wires = len(device_wires)
+        basis_states = self.generate_basis_states(num_wires)
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
         )
