@@ -243,17 +243,23 @@ class Operator(abc.ABC):
 
     def __deepcopy__(self, memo):
         cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
+        copied_op = cls.__new__(cls)
 
-        for k, v in self.__dict__.items():
-            if k == "data":
-                # shallow copy the list of parameters
-                result.data = v.copy()
+        # The memo dict maps object ID to object, and is required by
+        # the deepcopy function to keep track of objects it as already
+        # deep copied.
+        memo[id(self)] = copied_op
+
+        for attribute, value in self.__dict__.items():
+            if attribute == "data":
+                # Shallow copy the list of parameters. We avoid a deep copy
+                # here, since PyTorch does not support deep copying of tensors
+                # within a differentiable computation.
+                copied_op.data = value.copy()
             else:
-                # deep copy every thing else
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+                # Deep copy every thing else.
+                setattr(copied_op, attribute, copy.deepcopy(value, memo))
+        return copied_op
 
     @classmethod
     def _matrix(cls, *params):

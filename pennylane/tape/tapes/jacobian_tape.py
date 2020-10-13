@@ -210,8 +210,8 @@ class JacobianTape(QuantumTape):
         return tuple(diff_methods.values())
 
     def numeric_pd(self, idx, params=None, **options):
-        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
-        position 'idx' using numeric differentiation.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
+        second order CV parameter-shift method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -224,7 +224,9 @@ class JacobianTape(QuantumTape):
                 to forward finite differences, ``2`` to centered finite differences.
 
         Returns:
-            list[QuantumTape], function
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated.
+            tapes.
         """
 
         if params is None:
@@ -253,7 +255,12 @@ class JacobianTape(QuantumTape):
                 tapes.append(self)
 
             def processing_fn(results):
-                """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+                """Computes the gradient of the parameter at index idx via first-order
+                forward finite differences.
+
+                Args:
+                    results (list[real]): evaluated quantum tapes
+                """
                 shifted = np.array(results[0])
                 unshifted = y0
 
@@ -276,7 +283,12 @@ class JacobianTape(QuantumTape):
             tapes = [shifted_forward, shifted_backward]
 
             def second_order_processing_fn(results):
-                """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+                """Computes the gradient of the parameter at index idx via second-order
+                centered finite differences.
+
+                Args:
+                    results (list[real]): evaluated quantum tapes
+                """
                 res0 = np.array(results[0])
                 res1 = np.array(results[1])
                 return (res0 - res1) / h
@@ -313,8 +325,9 @@ class JacobianTape(QuantumTape):
         return jac
 
     def analytic_pd(self, idx, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter using an analytic method.
+        """Generate the quantum tapes and classical post-processing function required to compute the
+        gradient of the tape with respect to a single trainable tape parameter using an analytic
+        method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -322,8 +335,9 @@ class JacobianTape(QuantumTape):
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
 
         Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated.
+            tapes.
         """
         raise NotImplementedError
 
@@ -467,9 +481,11 @@ class JacobianTape(QuantumTape):
 
         # collect all circuits (tapes) and postprocessing functions required
         # to compute the jacobian
+
         all_tapes = []
         reshape_info = []
         processing_fns = []
+
         for trainable_idx, param_method in enumerate(diff_methods):
 
             if (method == "best" and param_method[0] == "F") or (method == "numeric"):
