@@ -242,11 +242,11 @@ class Wires(Sequence):
 
         try:
             new_wires = Wires(new_wires)
-        except WireError:
+        except WireError as e:
             raise WireError(
                 "Failed to implement wire map {}. Make sure that the new labels are unique and "
                 "valid wire labels.".format(w, wire_map)
-            )
+            ) from e
 
         return new_wires
 
