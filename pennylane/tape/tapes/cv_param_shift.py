@@ -218,14 +218,16 @@ class CVParamShiftTape(QubitParamShiftTape):
     def parameter_shift_first_order(
         self, idx, params=None, **options
     ):  # pylint: disable=unused-argument
-        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
-        position 'idx' using first order cv parameter-shift based differentiation.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
+        first order CV parameter-shift method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
 
         Returns:
-            list[QuantumTape], function
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated.
+            tapes.
         """
 
         t_idx = list(self.trainable_params)[idx]
@@ -247,7 +249,12 @@ class CVParamShiftTape(QubitParamShiftTape):
         tapes = [shifted_forward, shifted_backward]
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index idx via the
+            first order CV parameter-shift method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+            """
             shifted_forward = np.array(results[0])
             shifted_backward = np.array(results[1])
 
@@ -256,14 +263,16 @@ class CVParamShiftTape(QubitParamShiftTape):
         return tapes, processing_fn
 
     def parameter_shift_second_order(self, idx, params=None, **options):
-        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
-        position 'idx' using second order cv parameter-shift based differentiation.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a
+        parameter using the second order CV parameter-shift method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
 
         Returns:
-            list[QuantumTape], function
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated.
+            tapes.
         """
 
         t_idx = list(self.trainable_params)[idx]
@@ -333,7 +342,12 @@ class CVParamShiftTape(QubitParamShiftTape):
         tapes = [tape]
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index idx via the
+            second order CV parameter-shift method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+            """
             res = results[0]
             grad = np.zeros_like(res)
             grad[transformed_obs_idx] = res
@@ -358,16 +372,18 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device that can execute quantum operations and return
-                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
             force_order2 (bool): iff True, use the order-2 method even if not necessary
+            device (.Device): A PennyLane device that can execute quantum operations and return
+                measurement statistics. This keyword argument is required, as the device labels
+                are required to generate the quantum tapes for computing the gradient.
 
         Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated.
+            tapes.
         """
         device = options["device"]
         grad_method = self._par_info[idx]["grad_method"]
@@ -384,10 +400,6 @@ class CVParamShiftTape(QubitParamShiftTape):
                     UserWarning,
                 )
                 return self.numeric_pd(idx, params, **options)
-
-            # we are tinkering with matrix representations of observables, so we need to know
-            # how wires are ordered on the device
-            options["dev_wires"] = device.wires
 
             return self.parameter_shift_second_order(idx, params=params, **options)
 
@@ -407,12 +419,13 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device): a PennyLane device that can execute quantum operations and return
-                measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
             force_order2 (bool): iff True, use the order-2 method even if not necessary
+            device (.Device): A PennyLane device that can execute quantum operations and return
+                measurement statistics. This keyword argument is required, as the device labels
+                are required to generate the quantum tapes for computing the gradient.
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
@@ -420,7 +433,6 @@ class CVParamShiftTape(QubitParamShiftTape):
         """
         # pylint: disable=protected-access
         device = options["device"]
-        options["dev_wires"] = device.wires
 
         if "PolyXP" not in device.observables:
             # If the device does not support PolyXP, must fallback
@@ -473,7 +485,13 @@ class CVParamShiftTape(QubitParamShiftTape):
             tapes.append(evA_tape)
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index ``idx`` via the
+            second order CV parameter-shift method for a circuit containing a mixture
+            of expectation values and variances.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+            """
             pdA = pdA_fn(results[0:2])
             pdA2 = pdA2_fn(results[2:4])
 

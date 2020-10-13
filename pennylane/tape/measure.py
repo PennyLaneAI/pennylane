@@ -17,6 +17,8 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -75,6 +77,20 @@ class MeasurementProcess:
 
         # Queue the measurement process
         self.queue()
+
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+
+        copied_op.return_type = self.return_type
+        copied_op.obs = copy.copy(self.obs)
+        copied_op._wires = self._wires
+        copied_op._eigvals = self._eigvals
+
+        copied_op.name = self.name
+        copied_op.diagonalizing_gates = self.diagonalizing_gates
+        copied_op.data = self.data
+        return copied_op
 
     @property
     def wires(self):
@@ -239,6 +255,11 @@ def sample(op):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
 
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
     **Example:**
 
     .. code-block:: python3
@@ -276,7 +297,9 @@ def probs(wires):
 
     This measurement function accepts no observables, and instead
     instructs the QNode to return a flat array containing the
-    probabilities of each quantum state.
+    probabilities :math:`|\langle i | \psi \rangle |^2` of measuring
+    the computational basis state :math:`| i \rangle` given the current
+    state :math:`| \psi \rangle`.
 
     Marginal probabilities may also be requested by restricting
     the wires to a subset of the full system; the size of the

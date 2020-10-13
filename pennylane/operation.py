@@ -241,19 +241,37 @@ class Operator(abc.ABC):
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.data = self.data.copy()
+        copied_op._wires = self.wires
+        copied_op._name = self._name
+
+        if hasattr(self, "_inverse"):
+            copied_op._inverse = self._inverse
+
+        return copied_op
+
     def __deepcopy__(self, memo):
         cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
+        copied_op = cls.__new__(cls)
 
-        for k, v in self.__dict__.items():
-            if k == "data":
-                # shallow copy the list of parameters
-                result.data = v.copy()
+        # The memo dict maps object ID to object, and is required by
+        # the deepcopy function to keep track of objects it as already
+        # deep copied.
+        memo[id(self)] = copied_op
+
+        for attribute, value in self.__dict__.items():
+            if attribute == "data":
+                # Shallow copy the list of parameters. We avoid a deep copy
+                # here, since PyTorch does not support deep copying of tensors
+                # within a differentiable computation.
+                copied_op.data = value.copy()
             else:
-                # deep copy every thing else
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+                # Deep copy every thing else.
+                setattr(copied_op, attribute, copy.deepcopy(value, memo))
+        return copied_op
 
     @classmethod
     def _matrix(cls, *params):
@@ -1162,6 +1180,13 @@ class Tensor(Observable):
                 self.obs.append(o)
             else:
                 raise ValueError("Can only perform tensor products between observables.")
+
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.obs = self.obs.copy()
+        copied_op._eigvals_cache = self._eigvals_cache
+        return copied_op
 
     def __str__(self):
         """Print the tensor product and some information."""

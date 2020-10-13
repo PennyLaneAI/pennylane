@@ -868,28 +868,21 @@ class QuantumTape(AnnotatedQueue):
             tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
                 If not provided, the same subclass is used as the original tape.
         """
-        if deep:
-            tape = copy.deepcopy(self)
-
-            if tape_cls is not None:
-                tape.__class__ = tape_cls
-
-            tape._caching = self._caching
-            tape.get_cache = self.get_cache
-            tape.set_cache = self.set_cache
-            return tape
-
         if tape_cls is None:
             tape = self.__class__()
         else:
             tape = tape_cls()
 
-        tape._prep = self._prep.copy()
-        tape._ops = self._ops.copy()
-        tape._measurements = self._measurements.copy()
+        if deep:
+            tape._prep = [copy.copy(op) for op in self._prep]
+            tape._ops = [copy.copy(op) for op in self._ops]
+            tape._measurements = [copy.copy(op) for op in self._measurements]
+        else:
+            tape._prep = self._prep.copy()
+            tape._ops = self._ops.copy()
+            tape._measurements = self._measurements.copy()
 
         tape._update()
-        tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
 
         tape._caching = self._caching
