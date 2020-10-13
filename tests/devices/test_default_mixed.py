@@ -677,7 +677,7 @@ class TestApply:
         dev = qml.device("default.mixed", wires=[0, 1, 2])
         dim = 2 ** nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
-        dev.apply([QubitStateVector(state, wires=range(nr_wires))])
+        dev.apply([QubitStateVector(state, wires=[0, 1, 2])])
 
         assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 

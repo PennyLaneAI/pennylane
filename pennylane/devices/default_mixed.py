@@ -299,9 +299,8 @@ class DefaultMixed(QubitDevice):
         if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if (
-            len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.labels
+        if len(device_wires) == self.num_wires and sorted(device_wires.labels) == list(
+            device_wires.labels
         ):
             # Initialize the entire wires with the state
             rho = self._outer(state, self._conj(state))
