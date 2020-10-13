@@ -529,11 +529,11 @@ class QNode:
             if self.qtape is not None:
                 TFInterface.apply(self.qtape, dtype=tf.as_dtype(self.dtype))
 
-        except ImportError:
+        except ImportError as e:
             raise qml.QuantumFunctionError(
                 "TensorFlow not found. Please install the latest "
                 "version of TensorFlow to enable the 'tf' interface."
-            )
+            ) from e
 
     def to_torch(self, dtype=None):
         """Apply the Torch interface to the internal quantum tape.
@@ -563,11 +563,11 @@ class QNode:
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
 
-        except ImportError:
+        except ImportError as e:
             raise qml.QuantumFunctionError(
                 "PyTorch not found. Please install the latest "
                 "version of PyTorch to enable the 'torch' interface."
-            )
+            ) from e
 
     def to_autograd(self):
         """Apply the Autograd interface to the internal quantum tape."""
