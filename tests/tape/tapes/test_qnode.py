@@ -352,6 +352,33 @@ class TestTapeConstruction:
 
         assert result == expected
 
+    def test_drawing_ascii(self):
+        """Test circuit drawing when using ASCII characters"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw(charset="ascii")
+        expected = """\
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
+"""
+
+        assert result == expected
     def test_drawing_exception(self):
         """Test that an error is raised if a QNode is drawn prior to
         construction."""
