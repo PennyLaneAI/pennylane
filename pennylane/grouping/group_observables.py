@@ -80,8 +80,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         self.graph_colourer = GRAPH_COLOURING_METHODS[graph_colourer.lower()]
         self.observables = observables
-        self.__wire_map = None
-        self.__n_qubits = None
+        self._wire_map = None
+        self._n_qubits = None
         self.binary_observables = None
         self.adj_matrix = None
         self.grouped_paulis = None
@@ -100,7 +100,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if wire_map is None:
-            self.__wire_map = {
+            self._wire_map = {
                 wire: c
                 for c, wire in enumerate(
                     Wires.all_wires([obs.wires for obs in self.observables]).tolist()
@@ -108,11 +108,11 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             }
 
         else:
-            self.__wire_map = wire_map
+            self._wire_map = wire_map
 
-        self.__n_qubits = n_qubits
+        self._n_qubits = n_qubits
 
-        return convert_observables_to_binary_matrix(self.observables, n_qubits, self.__wire_map)
+        return convert_observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
     def obtain_complement_adj_matrix_for_operator(self):
         """Constructs the adjacency matrix for the complement of the Pauli graph.
@@ -171,7 +171,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
 
         self.grouped_paulis = [
-            [binary_to_pauli(pauli_word, wire_map=self.__wire_map) for pauli_word in grouping]
+            [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
             for grouping in coloured_binary_paulis.values()
         ]
 

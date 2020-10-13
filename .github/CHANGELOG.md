@@ -2,17 +2,87 @@
 
 <h3>New features since last release</h3>
 
+* The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
+  observables. This includes  utility functions required for measurement reduction by
+  [qubit-wise-commuting (QWC) grouping](https://arxiv.org/abs/1907.03358).
+  [(#761)](https://github.com/PennyLaneAI/pennylane/pull/761)
+
+  - The `optimize_measurements` function will take as input a list of Pauli word observables and
+    their corresponding coefficients (if any), and will return the partitioned Pauli terms
+    diagonalized in the measurement basis and the corresponding diagonalizing circuits.
+
+    ```python
+    h, nr_qubits = qml.qchem.generate_hamiltonian(
+       mol_name='h2',
+       mol_geo_file='h2.xyz',
+       mol_charge=0,
+       multiplicity=1,
+       basis_set='sto-3g',
+       mapping='jordan_wigner')
+
+    rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping='qwc')
+    ```
+
+   The diagonalizing circuits of `rotations` correspond to the diagonalized Pauli word groupings of
+   `grouped_ops`.
+
+  - Pauli word partitioning utilities are performed by the `group_observables.PauliGroupingStrategy`
+    class. An input list of Pauli words can be partitioned into mutually commuting,
+    qubit-wise-commuting, or anticommuting groupings.
+
+    For example, partitioning Pauli words into anticommutative groupings by the Recursive Largest
+    First (RLF) graph colouring heuristic:
+
+    ```python
+    from pennylane import PauliX, PauliY, PauliZ, Identity
+    pauli_words = [Identity('a') @ Identity('b'),
+                   Identity('a') @ PauliX('b'),
+                   Identity('a') @ PauliY('b')
+                   PauliZ('a') @ PauliX('b'),
+                   PauliZ('a') @ PauliY('b'),
+                   PauliZ('a') @ PauliZ('b')]
+    from pennylane.grouping.group_observables import group_observables
+    groupings = group_observables(pauli_words, grouping_type='anticommuting', method='rlf')
+    ```
+
+  - Various utility functions are included in `grouping.utils` for obtaining and manipulating Pauli
+    words in the binary symplectic vector space representation.
+
+    For instance, two Pauli words may be converted to their binary vector representation:
+
+    ```pycon
+    >>> from pennylane.grouping.utils import pauli_to_binary
+    >>> from pennylane.wires import Wires
+    >>> wire_map = {Wires('a'): 0, Wires('b'): 1}
+    >>> pauli_vec_1 = pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b'))
+    >>> pauli_vec_2 = pauli_to_binary(qml.PauliZ('a') @ qml.PauliZ('b'))
+    >>> pauli_vec_1
+    [1. 1. 0. 1.]
+    >>> pauli_vec_2
+    [0. 0. 1. 1.]
+    ```
+
+    Their product up to a phase may be computed by taking the sum of their binary vector
+    representations, and returned in the operator representation.
+
+    ```pycon
+    from pennylane.grouping.utils import binary_to_pauli
+    product = binary_to_pauli((pauli_vec_1 + pauli_vec_2) % 2, wire_map)
+    >>> product
+    Tensor product ['PauliY', 'PauliX']: 0 params, wires ['a', 'b']
+    ```
+
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
-  
+
   Consider the following QNode:
   ```python
   import pennylane as qml
   from pennylane.beta.tapes import qnode
   from pennylane.beta.queuing import state
-  
+
   dev = qml.device("default.qubit", wires=3)
-  
+
   @qnode(dev)
   def qfunc(x, y):
       qml.RZ(x, wires=0)
@@ -21,9 +91,9 @@
       qml.CNOT(wires=[0, 2])
       return state()
   ```
-  
+
   Calling the QNode will return its state
-  
+
   ```pycon
   >>> qfunc(0.56, 0.1)
   array([0.95985437-0.27601028j, 0.        +0.j        ,
@@ -31,12 +101,12 @@
        0.        +0.j        , 0.        +0.j        ,
        0.        +0.j        , 0.        +0.j        ])
   ```
-  
+
   Differentiating the state is not yet fully supported, but is currently available when using the
   classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device.
 
-* Summation of two `Wires` objects is now supported and will return 
-  a `Wires` object containing the set of all wires defined by the 
+* Summation of two `Wires` objects is now supported and will return
+  a `Wires` object containing the set of all wires defined by the
   terms in the summation.
   [(#812)](https://github.com/PennyLaneAI/pennylane/pull/812)
 
@@ -65,20 +135,20 @@
   [(#817)](https://github.com/PennyLaneAI/pennylane/pull/817)
 
   Caching is available by passing a ``caching`` argument to the QNode:
-  
+
   ```python
   from pennylane.beta.tapes import qnode
   from pennylane.beta.queuing import expval
-    
+
   dev = qml.device("default.qubit", wires=2)
-    
+
   @qnode(dev, caching=10)  # cache up to 10 evaluations
   def qfunc(x):
       qml.RX(x, wires=0)
       qml.RX(0.3, wires=1)
       qml.CNOT(wires=[0, 1])
       return expval(qml.PauliZ(1))
-    
+
   qfunc(0.1)  # first evaluation executes on the device
   qfunc(0.1)  # second evaluation accesses the cached result
   ```
@@ -175,7 +245,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Antal Száva
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac,
+Nathan Killoran, Robert Lang, Cedric Lin, Antal Száva
 
 # Release 0.11.0 (current release)
 
