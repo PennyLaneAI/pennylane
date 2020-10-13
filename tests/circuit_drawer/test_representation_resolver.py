@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
 from pennylane.variable import Variable
 from pennylane.wires import Wires
-from pennylane.beta.queuing import state
+from pennylane.tape.measure import state
 
 
 @pytest.fixture

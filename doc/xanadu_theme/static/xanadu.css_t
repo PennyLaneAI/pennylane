@@ -173,8 +173,8 @@ tt {
 }
 
 code, pre {
-  line-height: 23px;
-  margin: 20px 0;
+  line-height: 23px !important;
+  margin: 20px 0 !important;
   word-wrap: normal;
   background-color: #fff;
 }

@@ -15,6 +15,7 @@
 reference plugin.
 """
 import numpy as np
+import semantic_version
 
 from pennylane.operation import DiagonalOperation
 
@@ -24,8 +25,10 @@ try:
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
+    SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
+
 except ImportError as e:
-    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
+    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
 # With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
@@ -158,6 +161,13 @@ class DefaultQubitTF(DefaultQubit):
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
+
+        # Versions of TF before 2.3.0 do not support using the special apply methods as they
+        # raise an error when calculating the gradient. For versions of TF after 2.3.0,
+        # special apply methods are also not supported when using more than 8 wires due to
+        # limitations with TF slicing.
+        if not SUPPORTS_APPLY_OPS or wires > 8:
+            self._apply_ops = {}
 
     @classmethod
     def capabilities(cls):

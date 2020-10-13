@@ -117,7 +117,7 @@ ARRAY_CREATION_FNS = [
     [np.empty_like, {}],
     [np.ones_like, {}],
     [np.zeros_like, {}],
-    [np.full_like, {"fill_value": 5}]
+    [np.full_like, {"fill_value": 5}],
 ]
 
 # The following NumPy functions all create
@@ -129,7 +129,7 @@ ARRAY_SHAPE_FNS = [
     [np.zeros, {}],
     [np.full, {"fill_value": 5}],
     [np.arange, {}],
-    [np.eye, {}]
+    [np.eye, {}],
 ]
 
 
@@ -179,18 +179,18 @@ class TestNumpyIntegration:
     def test_tensor_creation_from_string(self):
         """Test that a tensor is properly created from a string."""
         string = "5, 4, 1, 2"
-        x = np.fromstring(string, dtype=int, sep=',')
+        x = np.fromstring(string, dtype=int, sep=",")
 
         assert isinstance(x, np.tensor)
         assert x.requires_grad
 
-        x = np.fromstring(string, requires_grad=True, dtype=int, sep=',')
+        x = np.fromstring(string, requires_grad=True, dtype=int, sep=",")
         assert x.requires_grad
 
         x.requires_grad = False
         assert not x.requires_grad
 
-        x = np.fromstring(string, requires_grad=False, dtype=int, sep=',')
+        x = np.fromstring(string, requires_grad=False, dtype=int, sep=",")
         assert not x.requires_grad
 
     def test_wrapped_docstring(self, capsys):
@@ -300,7 +300,6 @@ class TestNumpyIntegration:
         assert isinstance(res, np.tensor)
         assert not res.requires_grad
 
-
     def test_binary_operators(self):
         """Test that binary operators (add, subtract, divide, multiply, matmul)
         correctly work on tensors."""
@@ -357,11 +356,12 @@ class TestAutogradIntegration:
 
     def test_gradient(self):
         """Test gradient computations continue to work"""
+
         def cost(x):
             return np.sum(np.sin(x))
 
         grad_fn = qml.grad(cost, argnum=[0])
-        arr1 = np.array([0., 1., 2.])
+        arr1 = np.array([0.0, 1.0, 2.0])
 
         res = grad_fn(arr1)
         expected = np.cos(arr1)
@@ -370,11 +370,78 @@ class TestAutogradIntegration:
 
     def test_non_differentiable_gradient(self):
         """Test gradient computation with requires_grad=False raises an error"""
+
         def cost(x):
             return np.sum(np.sin(x))
 
         grad_fn = qml.grad(cost, argnum=[0])
-        arr1 = np.array([0., 1., 2.], requires_grad=False)
+        arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
         with pytest.raises(np.NonDifferentiableError, match="non-differentiable"):
             grad_fn(arr1)
+
+
+class TestScalarHashing:
+    """Test for the hashing capability of scalar arrays."""
+
+    def test_create_set_scalar_arrays(self):
+        """Test that a collection of scalar arrays can be properly hashed
+        when creating a set"""
+        data = [np.array(1), np.array(2), np.array(1), np.array(3)]
+        res = set(data)
+        expected = {np.array(1), np.array(2), np.array(3)}
+        assert res == expected
+
+    def test_requires_grad_hashing(self):
+        """Test that the gradient information is correctly taken into account when hashing"""
+        data = [np.array(1), np.array(2), np.array(1, requires_grad=False), np.array(3)]
+        res = set(data)
+        expected = {np.array(1, requires_grad=False), np.array(1), np.array(2), np.array(3)}
+        assert res == expected
+
+    def test_create_set_from_array_iteration(self):
+        """Test that a one dimensional array correctly produces a set via iteration"""
+        data = np.array([1, 2, 1, 3], requires_grad=True)
+        res = set(data)
+        expected = {
+            np.array(1, requires_grad=True),
+            np.array(2, requires_grad=True),
+            np.array(3, requires_grad=True),
+        }
+        assert res == expected
+
+        data = np.array([1, 2, 1, 3], requires_grad=False)
+        res = set(data)
+        expected = {
+            np.array(1, requires_grad=False),
+            np.array(2, requires_grad=False),
+            np.array(3, requires_grad=False),
+        }
+        assert res == expected
+
+    def test_nonzero_dim_arrays_non_hashable(self):
+        """Test that a non-scalar array continues to remain non-hashable"""
+        with pytest.raises(TypeError, match=r"unhashable type: 'numpy\.tensor'"):
+            set(np.array([[1, 2], [3, 4]]))
+
+
+class TestNumpyConversion:
+    """Tests for the tensor.unwrap() and tensor.numpy() methods"""
+
+
+    def test_convert_scalar_array(self):
+        """Test that a scalar array converts to a python literal"""
+        data = np.array(1.543)
+        res = data.unwrap()
+        assert res == data.item()
+        assert isinstance(res, float)
+
+    def test_convert_array(self):
+        """Test that a numpy array successfully converts"""
+        data = np.array([1, 2, 3])
+        res = data.numpy()
+
+        assert np.shares_memory(res, data)
+        assert np.all(res == data)
+        assert isinstance(res, np.ndarray)
+        assert not isinstance(res, np.tensor)
