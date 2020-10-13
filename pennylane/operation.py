@@ -241,6 +241,18 @@ class Operator(abc.ABC):
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.data = self.data.copy()
+        copied_op._wires = self.wires
+        copied_op._name = self._name
+
+        if hasattr(self, "_inverse"):
+            copied_op._inverse = self._inverse
+
+        return copied_op
+
     def __deepcopy__(self, memo):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -1168,6 +1180,13 @@ class Tensor(Observable):
                 self.obs.append(o)
             else:
                 raise ValueError("Can only perform tensor products between observables.")
+
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.obs = self.obs.copy()
+        copied_op._eigvals_cache = self._eigvals_cache
+        return copied_op
 
     def __str__(self):
         """Print the tensor product and some information."""
