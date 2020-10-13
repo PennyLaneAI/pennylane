@@ -82,7 +82,7 @@ class MeasurementProcess:
         cls = self.__class__
 
         if self.obs is not None:
-            return cls(self.return_type, obs=self.obs)
+            return cls(self.return_type, obs=copy.copy(self.obs))
 
         return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
