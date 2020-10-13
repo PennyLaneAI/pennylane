@@ -183,6 +183,23 @@ class QubitDevice(Device):
 
         return self._asarray(results)
 
+    def batch_execute(self, circuits, **kwargs):
+        """Execute a batch of quantum circuits on the device.
+
+        For plugin developers: This function is to be overwritten if the device can efficiently run multiple
+        circuits on a backend. By default, the circuits are sent to the backend one-by-one.
+
+        Args:
+            circuits (list[~.CircuitGraph]): circuits to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        return [self.execute(circuit, **kwargs) for circuit in circuits]
+
     @abc.abstractmethod
     def apply(self, operations, **kwargs):
         """Apply quantum operations, rotate the circuit into the measurement
