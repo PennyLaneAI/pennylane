@@ -269,7 +269,7 @@ def max_independent_set(graph, constrained=True):
         .. note::
 
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
+            in [arXiv:1709.03489].
 
         The Maximum Independent Set cost Hamiltonian for constrained QAOA is defined as:
 
@@ -340,7 +340,7 @@ def min_vertex_cover(graph, constrained=True):
         .. note::
 
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
+            in [arXiv:1709.03489].
 
         The Minimum Vertex Cover cost Hamiltonian for constrained QAOA is defined as:
 
@@ -410,7 +410,7 @@ def max_clique(graph, constrained=True):
         .. note::
 
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in `[arXiv:1709.03489] <https://arxiv.org/abs/1709.03489>`__.
+            in [arXiv:1709.03489].
 
         The Maximum Clique cost Hamiltonian for constrained QAOA is defined as:
 
