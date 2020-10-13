@@ -340,7 +340,7 @@ def min_vertex_cover(graph, constrained=True):
         .. note::
 
             This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in [arXiv:1709.03489].
+            in arXiv:1709.03489.
 
         The Minimum Vertex Cover cost Hamiltonian for constrained QAOA is defined as:
 
