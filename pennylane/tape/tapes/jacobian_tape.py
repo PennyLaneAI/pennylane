@@ -510,16 +510,10 @@ class JacobianTape(QuantumTape):
             tape.execute(device) for tape in all_tapes
         ]  # soon to be: device.batch_execute(all_tapes)
 
-        if method == "numeric":
-            output_dim = all_tapes[0]._output_dim
-
-            if self.output_dim != output_dim:
-                self._output_dim = output_dim
-
         # post-process the results with the appropriate function to fill jacobian columns with gradients
-        jac = np.zeros((self.output_dim, len(params)), dtype=float)
-
+        jac = None
         start = 0
+
         for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
 
             # extract the correct results from the flat list
@@ -533,6 +527,12 @@ class JacobianTape(QuantumTape):
                 # object arrays cannot be flattened; must hstack them
                 g = np.hstack(g)
 
-            jac[:, i] = g.flatten()
+            g = g.flatten()
+
+            if jac is None:
+                jac = np.zeros((len(g), len(params)), dtype=float)
+                self._output_dim = len(g)
+
+            jac[:, i] = g
 
         return jac
