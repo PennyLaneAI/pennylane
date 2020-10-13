@@ -489,7 +489,7 @@ class JacobianTape(QuantumTape):
             reshape_info.append(len(tapes))
             processing_fns.append(processing_fn)
 
-        # execute all tapes
+        # execute all tapes at once
         results = device.batch_execute(all_tapes)
 
         if method == "numeric":

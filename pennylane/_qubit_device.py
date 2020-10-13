@@ -22,7 +22,6 @@ import abc
 import itertools
 
 import numpy as np
-#import dask
 
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
@@ -187,8 +186,10 @@ class QubitDevice(Device):
     def batch_execute(self, circuits, **kwargs):
         """Execute a batch of quantum circuits on the device.
 
-        For plugin developers: This function is to be overwritten if the device can efficiently run multiple
-        circuits on a backend. By default, the circuits are sent to the backend one-by-one.
+        The circuits are executed sequentially using the `self.execute` method, and the results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
             circuits (list[~.CircuitGraph]): circuits to execute on the device
@@ -199,10 +200,6 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # results = []
-        # for circuit in circuits:
-        #     results.append(dask.delayed(self.execute)(circuit, **kwargs))
-        # return dask.compute(*results, scheduler="threads")
         return [self.execute(circuit, **kwargs) for circuit in circuits]
 
     @abc.abstractmethod

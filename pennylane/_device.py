@@ -325,8 +325,11 @@ class Device(abc.ABC):
     def batch_execute(self, queue_list, observables_list, parameters_list=None, **kwargs):
         """Execute a batch of quantum operation queues and measurements on the device.
 
-        For plugin developers: This function is to be overwritten if the device can efficiently run multiple
-        circuits on a backend. By default, the circuits are sent to the backend one-by-one.
+        The queues, observables and parameters are executed sequentially using the `self.execute`
+        method, and the results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
             queue_list (list[Iterable[~.operation.Operation]]): list of operations to execute on the device
