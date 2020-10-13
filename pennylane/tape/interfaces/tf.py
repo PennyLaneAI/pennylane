@@ -29,13 +29,13 @@ from pennylane.tape.queuing import AnnotatedQueue
 
 
 class TFInterface(AnnotatedQueue):
-    """Mixin class for applying an TensorFlow interface to a :class:`~.QuantumTape`.
+    """Mixin class for applying an TensorFlow interface to a :class:`~.JacobianTape`.
 
     TensorFlow-compatible quantum tape classes can be created via subclassing:
 
     .. code-block:: python
 
-        class MyTFQuantumTape(TFInterface, QuantumTape):
+        class MyTFQuantumTape(TFInterface, JacobianTape):
 
     Alternatively, the TensorFlow interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
@@ -60,7 +60,7 @@ class TFInterface(AnnotatedQueue):
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            with TFInterface.apply(QuantumTape()) as qtape:
+            with TFInterface.apply(JacobianTape()) as qtape:
                 qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * tf.sin(p[2]), wires=0)
                 expval(qml.PauliX(0))
 
@@ -169,13 +169,13 @@ class TFInterface(AnnotatedQueue):
         """Apply the TensorFlow interface to an existing tape in-place.
 
         Args:
-            tape (.QuantumTape): a quantum tape to apply the TF interface to
+            tape (.JacobianTape): a quantum tape to apply the TF interface to
             dtype (tf.dtype): the dtype that the returned quantum tape should
                 output
 
         **Example**
 
-        >>> with QuantumTape() as tape:
+        >>> with JacobianTape() as tape:
         ...     qml.RX(0.5, wires=0)
         ...     expval(qml.PauliZ(0))
         >>> TFInterface.apply(tape)

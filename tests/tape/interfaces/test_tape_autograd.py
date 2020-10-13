@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import JacobianTape
 from pennylane.tape.interfaces.autograd import AutogradInterface
 
 
@@ -25,7 +25,7 @@ class TestAutogradQuantumTape:
 
     def test_interface_str(self):
         """Test that the interface string is correctly identified as autograd"""
-        with AutogradInterface.apply(QuantumTape()) as tape:
+        with AutogradInterface.apply(JacobianTape()) as tape:
             qml.RX(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
@@ -40,7 +40,7 @@ class TestAutogradQuantumTape:
         c = np.array(0.3, requires_grad=True)
         d = np.array(0.4, requires_grad=False)
 
-        with AutogradInterface.apply(QuantumTape()) as tape:
+        with AutogradInterface.apply(JacobianTape()) as tape:
             qml.Rot(a, b, c, wires=0)
             qml.RX(d, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -56,7 +56,7 @@ class TestAutogradQuantumTape:
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -72,7 +72,7 @@ class TestAutogradQuantumTape:
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
             assert tape.trainable_params == {0}
@@ -83,7 +83,7 @@ class TestAutogradQuantumTape:
         assert res.shape == (1,)
 
         # compare to standard tape jacobian
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -98,7 +98,7 @@ class TestAutogradQuantumTape:
         b = np.array(0.2, requires_grad=True)
 
         def cost(a, b, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -121,14 +121,14 @@ class TestAutogradQuantumTape:
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(JacobianTape, "numeric_pd")
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with AutogradInterface.apply(QuantumTape()) as qtape:
+            with AutogradInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -149,7 +149,7 @@ class TestAutogradQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with AutogradInterface.apply(QuantumTape()) as tape:
+        with AutogradInterface.apply(JacobianTape()) as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -187,7 +187,7 @@ class TestAutogradQuantumTape:
         c = np.array(0.3, requires_grad=True)
 
         def cost(a, b, c, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + np.sin(a), wires=0)
@@ -205,7 +205,7 @@ class TestAutogradQuantumTape:
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -236,7 +236,7 @@ class TestAutogradQuantumTape:
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, U, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -258,7 +258,7 @@ class TestAutogradQuantumTape:
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
+                tape = JacobianTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -268,7 +268,7 @@ class TestAutogradQuantumTape:
                 return tape
 
         def cost_fn(a, p, device):
-            tape = QuantumTape()
+            tape = JacobianTape()
 
             with tape:
                 qml.RX(a, wires=0)
@@ -312,7 +312,7 @@ class TestAutogradQuantumTape:
         with prob outputs"""
 
         def cost(x, y, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -353,7 +353,7 @@ class TestAutogradQuantumTape:
         with prob and expval outputs"""
 
         def cost(x, y, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -387,7 +387,7 @@ class TestAutogradQuantumTape:
         """Test sampling works as expected"""
 
         def cost(x, device):
-            with AutogradInterface.apply(QuantumTape()) as tape:
+            with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
@@ -423,7 +423,7 @@ class TestAutogradPassthru:
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -435,11 +435,11 @@ class TestAutogradPassthru:
 
     def test_scalar_jacobian(self, tol, mocker):
         """Test scalar jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
             return tape.execute(device)
@@ -450,7 +450,7 @@ class TestAutogradPassthru:
         assert res.shape == (1,)
 
         # compare to standard tape jacobian
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -460,12 +460,12 @@ class TestAutogradPassthru:
 
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
         def cost(a, b, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -478,7 +478,7 @@ class TestAutogradPassthru:
         assert res.shape == (2, 2)
 
         # compare to standard tape jacobian
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
@@ -490,13 +490,13 @@ class TestAutogradPassthru:
 
     def test_classical_processing(self, mocker, tol):
         """Test classical processing within the quantum tape"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
         c = np.array(0.3, requires_grad=True)
 
         def cost(a, b, c, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + np.sin(a), wires=0)
@@ -510,12 +510,12 @@ class TestAutogradPassthru:
 
     def test_no_trainable_parameters(self, mocker, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -541,12 +541,12 @@ class TestAutogradPassthru:
 
     def test_matrix_parameter(self, mocker, tol):
         """Test jacobian computation when the tape includes a matrix parameter"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, U, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -564,12 +564,12 @@ class TestAutogradPassthru:
     def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
+                tape = JacobianTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -579,7 +579,7 @@ class TestAutogradPassthru:
                 return tape
 
         def cost_fn(a, p, device):
-            tape = QuantumTape()
+            tape = JacobianTape()
 
             with tape:
                 qml.RX(a, wires=0)
@@ -625,10 +625,10 @@ class TestAutogradPassthru:
     def test_probability_differentiation(self, mocker, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
 
         def cost(x, y, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -670,7 +670,7 @@ class TestAutogradPassthru:
     def test_ragged_differentiation(self, mocker, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        spy = mocker.spy(QuantumTape, "jacobian")
+        spy = mocker.spy(JacobianTape, "jacobian")
         dev = qml.device("default.qubit.autograd", wires=2)
 
         def _asarray(args, dtype=np.float64):
@@ -684,7 +684,7 @@ class TestAutogradPassthru:
         monkeypatch.setattr(dev, "_asarray", _asarray)
 
         def cost(x, y, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -718,7 +718,7 @@ class TestAutogradPassthru:
         """Test sampling works as expected"""
 
         def cost(x, device):
-            with QuantumTape() as tape:
+            with JacobianTape() as tape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))

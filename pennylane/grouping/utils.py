@@ -497,14 +497,13 @@ def get_qwc_complement_adj_matrix(binary_observables):
 
     """
 
+    if isinstance(binary_observables, (list, tuple)):
+        binary_observables = np.asarray(binary_observables)
+
     if not np.array_equal(binary_observables, binary_observables.astype(bool)):
         raise ValueError("Expected a binary array, instead got {}".format(binary_observables))
 
     m_terms = np.shape(binary_observables)[0]
-
-    if isinstance(binary_observables, (list, tuple)):
-        binary_observables = np.asarray(binary_observables)
-
     adj = np.zeros((m_terms, m_terms))
 
     for i in range(m_terms):
