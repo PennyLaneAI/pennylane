@@ -123,16 +123,21 @@ class ReversibleTape(JacobianTape):
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)
 
     def reversible_diff(self, idx, params=None, **options):
-        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
-        position 'idx' using reversible differentiation.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a
+        parameter using the reversible backpropagation method.
 
         Args:
-          idx (int): trainable parameter index to differentiate with respect to
-          params (list[Any]): The quantum tape operation parameters. If not provided,
-             the current tape parameter values are used (via :meth:`~.get_parameters`).
+            idx (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            dev_wires (.Wires): wires on the device the reversible backpropagation method
+                is computed on
 
         Returns:
-          list[QuantumTape], function
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
         """
 
         # The reversible tape only support differentiating
@@ -210,7 +215,16 @@ class ReversibleTape(JacobianTape):
         tapes = [new_circuit]
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index idx via the
+            reversible backprop method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
+            """
             dstate = results[0][0]
 
             # compute matrix element <d(state)|O|state> for each observable O
