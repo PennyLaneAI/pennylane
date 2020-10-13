@@ -345,7 +345,7 @@ class Device(abc.ABC):
             list[array[float]]: list of measured value(s)
         """
         if parameters_list is None:
-            parameters_list = [{}]*len(queue_list)
+            parameters_list = [{}] * len(queue_list)
 
         res_list = []
         for queue, observables in zip(queue_list, observables_list, parameters_list):
