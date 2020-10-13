@@ -490,7 +490,9 @@ class JacobianTape(QuantumTape):
             processing_fns.append(processing_fn)
 
         # execute all tapes
-        results = [tape.execute(device) for tape in all_tapes]  # soon to be: device.batch_execute(all_tapes)
+        results = [
+            tape.execute(device) for tape in all_tapes
+        ]  # soon to be: device.batch_execute(all_tapes)
 
         if method == "numeric":
             output_dim = all_tapes[0]._output_dim
@@ -505,7 +507,7 @@ class JacobianTape(QuantumTape):
         for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
 
             # extract the correct results from the flat list
-            res = results[start: start + res_len]
+            res = results[start : start + res_len]
             start += res_len
 
             # postprocess results to compute the gradient
