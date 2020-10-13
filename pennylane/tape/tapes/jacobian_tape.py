@@ -490,9 +490,7 @@ class JacobianTape(QuantumTape):
             processing_fns.append(processing_fn)
 
         # execute all tapes
-        results = [
-            tape.execute(device) for tape in all_tapes
-        ]  # soon to be: device.batch_execute(all_tapes)
+        results = device.batch_execute(all_tapes)
 
         if method == "numeric":
             output_dim = all_tapes[0]._output_dim

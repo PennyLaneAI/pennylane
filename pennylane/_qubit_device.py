@@ -22,6 +22,7 @@ import abc
 import itertools
 
 import numpy as np
+#import dask
 
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
@@ -198,6 +199,10 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
+        # results = []
+        # for circuit in circuits:
+        #     results.append(dask.delayed(self.execute)(circuit, **kwargs))
+        # return dask.compute(*results, scheduler="threads")
         return [self.execute(circuit, **kwargs) for circuit in circuits]
 
     @abc.abstractmethod
