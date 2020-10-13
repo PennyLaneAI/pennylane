@@ -17,6 +17,7 @@ representation of a quantum circuit from an operator and observable queue.
 """
 import networkx as nx
 
+import pennylane as qml
 from pennylane import CircuitGraph
 
 
@@ -29,6 +30,12 @@ class TapeCircuitGraph(CircuitGraph):
     def __init__(self, ops, obs, wires):
         self._operations = ops
         self._observables = obs
+
+        for m in self._observables:
+            if m.return_type is qml.operation.State:
+                # state measurements are applied to all device wires
+                m._wires = wires  # pylint: disable=protected-access
+
         super().__init__(ops + obs, variable_deps={}, wires=wires)
 
     @property
