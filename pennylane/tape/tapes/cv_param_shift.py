@@ -461,6 +461,8 @@ class CVParamShiftTape(QubitParamShiftTape):
             return self.numeric_pd(idx, params, **options)
 
         tapes = []
+
+        # Get <A>, the expectation value of the tape with unshifted parameters.
         evA_tape = self.copy()
 
         # Temporarily convert all variance measurements on the tape into expectation values
@@ -495,8 +497,15 @@ class CVParamShiftTape(QubitParamShiftTape):
         pdA2_tapes, pdA2_fn = pdA2_tape.parameter_shift_second_order(idx, params, **options)
         tapes.extend(pdA2_tapes)
 
-        if self._evA is None:
+        # Make sure that the expectation value of the tape with unshifted parameters
+        # is only calculated once, if `self._append_evA_tape` is True.
+        if self._append_evA_tape:
             tapes.append(evA_tape)
+
+            # Now that the <A> tape has been appended, we want to avoid
+            # appending it for subsequent parameters, as the result can simply
+            # be re-used.
+            self._append_evA_tape = False
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index ``idx`` via the
@@ -513,7 +522,11 @@ class CVParamShiftTape(QubitParamShiftTape):
             pdA = pdA_fn(results[0:2])
             pdA2 = pdA2_fn(results[2:4])
 
+            # Check if the expectation value of the tape with unshifted parameters
+            # has already been calculated.
             if self._evA_result is None:
+                # The expectation value hasn't been previously calculated;
+                # it will be the last element of the `results` argument.
                 self._evA_result = np.array(results[-1])
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,

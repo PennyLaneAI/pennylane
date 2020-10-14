@@ -113,10 +113,11 @@ class QubitParamShiftTape(JacobianTape):
 
     def jacobian(self, device, params=None, **options):
         # The parameter_shift_var method needs to evaluate the circuit
-        # at the unshifted parameter values; these are stored in the
-        # self._evA attribute. Here, we set the value of the attribute to None
-        # before each Jacobian call, so that the expectation value is calculated only once.
-        self._evA = None
+        # at the unshifted parameter values; the result is stored in the
+        # self._evA_result attribute. As a result, we want the tape that computes
+        # the evA tape to only be generated *once*. We keep track of its generation
+        # via the self._append_evA_tape attribute.
+        self._append_evA_tape = True
         self._evA_result = None
         return super().jacobian(device, params, **options)
 
@@ -187,8 +188,7 @@ class QubitParamShiftTape(JacobianTape):
         """
         tapes = []
 
-        # Get <A>, the expectation value of the tape with unshifted parameters. This is only
-        # calculated once, if `self._evA` is not None.
+        # Get <A>, the expectation value of the tape with unshifted parameters.
         evA_tape = self.copy()
 
         # Convert all variance measurements on the tape into expectation values
@@ -225,9 +225,15 @@ class QubitParamShiftTape(JacobianTape):
             pdA2_tapes, pdA2_fn = pdA2_tape.parameter_shift(idx, params, **options)
             tapes.extend(pdA2_tapes)
 
-        if self._evA is None:
+        # Make sure that the expectation value of the tape with unshifted parameters
+        # is only calculated once, if `self._append_evA_tape` is True.
+        if self._append_evA_tape:
             tapes.append(evA_tape)
-            self._evA = 1
+
+            # Now that the <A> tape has been appended, we want to avoid
+            # appending it for subsequent parameters, as the result can simply
+            # be re-used.
+            self._append_evA_tape = False
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index ``idx`` via the
@@ -250,7 +256,11 @@ class QubitParamShiftTape(JacobianTape):
                 if involutory:
                     pdA2[np.array(involutory)] = 0
 
+            # Check if the expectation value of the tape with unshifted parameters
+            # has already been calculated.
             if self._evA_result is None:
+                # The expectation value hasn't been previously calculated;
+                # it will be the last element of the `results` argument.
                 self._evA_result = np.array(results[-1])
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,

@@ -194,7 +194,7 @@ class ReversibleTape(JacobianTape):
             generator, multiplier = op.generator
 
         # construct circuit to compute differentiated state
-        between_ops_inverse = [copy.deepcopy(op) for op in between_ops[::-1]]
+        between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]
 
         with QuantumTape() as new_circuit:
             # start with final state of original circuit
@@ -239,7 +239,7 @@ class ReversibleTape(JacobianTape):
         return tapes, processing_fn
 
     def jacobian(self, device, params=None, **options):
-        # The parameter_shift_var method needs to evaluate the circuit
+        # The reversible_diff method needs to evaluate the circuit
         # at the unshifted parameter values; the pre-rotated statevector is then stored
         # self._state attribute. Here, we set the value of the attribute to None
         # before each Jacobian call, so that the statevector is calculated only once.
