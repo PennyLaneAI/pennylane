@@ -164,19 +164,6 @@ def mock_device(monkeypatch):
         yield get_device
 
 
-with qml.tape.QuantumTape() as tp1:
-    qml.RY(0.1, wires=0)
-    qml.RX(0.2, wires=1)
-    qml.CNOT(wires=[0, 1])
-    [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-
-with qml.tape.JacobianTape() as tp2:
-    qml.RY(0.1, wires=0)
-    qml.RX(0.2, wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.expval(qml.PauliZ(0))
-
-
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -710,14 +697,24 @@ class TestDeviceInit:
                 qml.device("default.qubit", wires=0)
 
 
+with qml.tape.QuantumTape() as tp1:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+with qml.tape.JacobianTape() as tp2:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.expval(qml.PauliZ(0))
+    
+
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
     def test_results_no_interface(self, tol):
         """Tests that the correct results are computed using tapes without an interface."""
-        # skip test if interface cannot be imported
-
-        qml.enable_tape()
 
         a = 0.1
         b = 0.2
@@ -736,12 +733,8 @@ class TestBatchExecution:
             assert np.allclose(r, e, atol=tol, rtol=0)
         assert isinstance(res, list)
 
-        qml.disable_tape()
-
     def test_results_autograd_interface(self, tol):
         """Tests that the correct results are computed using tapes with the autograd interface."""
-
-        qml.enable_tape()
 
         a = 0.1
         b = 0.2
@@ -761,16 +754,12 @@ class TestBatchExecution:
             assert np.allclose(r, e, atol=tol, rtol=0)
         assert isinstance(res, list)
 
-        qml.disable_tape()
-
     def test_results_tf_interface(self, tol):
         """Tests that the correct results are computed using tapes with the tf interface."""
         # skip test if interface cannot be imported
         pytest.importorskip("tensorflow", minversion="2.1")
 
         from pennylane.tape.interfaces.tf import TFInterface
-
-        qml.enable_tape()
 
         a = 0.1
         b = 0.2
@@ -790,16 +779,12 @@ class TestBatchExecution:
             assert np.allclose(r, e, atol=tol, rtol=0)
         assert isinstance(res, list)
 
-        qml.disable_tape()
-
     def test_results_torch_interface(self, tol):
         """Tests that the correct results are computed using tapes with the torch interface."""
         # skip test if interface cannot be imported
         pytest.importorskip("torch", minversion="1.3")
 
         from pennylane.tape.interfaces.torch import TorchInterface
-
-        qml.enable_tape()
 
         a = 0.1
         b = 0.2
@@ -819,12 +804,9 @@ class TestBatchExecution:
             assert np.allclose(r, e, atol=tol, rtol=0)
         assert isinstance(res, list)
 
-        qml.disable_tape()
-
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls(self, n_tapes, mocker):
         """Tests that the device's execute method is called the correct number of times."""
-        qml.enable_tape()
 
         spy = mocker.spy(qml.QubitDevice, "execute")
 
@@ -832,5 +814,3 @@ class TestBatchExecution:
         dev.batch_execute([tp1]*n_tapes)
 
         assert spy.call_count == n_tapes
-
-        qml.disable_tape()
