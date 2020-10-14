@@ -22,9 +22,6 @@ from pennylane import Device, DeviceError
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
 from collections import OrderedDict
-from pennylane.tape.interfaces.autograd import AutogradInterface
-from pennylane.tape.interfaces.tf import TFInterface
-from pennylane.tape.interfaces.torch import TorchInterface
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -716,23 +713,98 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    @pytest.mark.parametrize("tapes", [(tp1, tp2),
-                                       (AutogradInterface.apply(tp1), AutogradInterface.apply(tp2)),
-                                       (TFInterface.apply(tp1), TFInterface.apply(tp2)),
-                                       (TorchInterface.apply(tp1), TorchInterface.apply(tp2)),
-                                       ])
-    def test_results_no_interface(self, tapes, tol):
-        """Tests that the correct results are computed using tapes with or without an interface."""
+    def test_results_no_interface(self, tol):
+        """Tests that the correct results are computed using tapes without an interface."""
         # skip test if interface cannot be imported
-        if isinstance(tapes[0], TFInterface):
-            pytest.importorskip("tensorflow", minversion="2.1")
-        if isinstance(tapes[0], TorchInterface):
-            pytest.importorskip("torch", minversion="1.3")
 
         qml.enable_tape()
 
         a = 0.1
         b = 0.2
+        tapes = (tp1, tp2)
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+        qml.disable_tape()
+
+    def test_results_autograd_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the autograd interface."""
+
+        qml.enable_tape()
+
+        a = 0.1
+        b = 0.2
+        tapes = (qml.tape.interfaces.autograd.AutogradInterface.apply(tp1),
+                 qml.tape.interfaces.autograd.AutogradInterface.apply(tp2))
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+        qml.disable_tape()
+
+    def test_results_tf_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the tf interface."""
+        # skip test if interface cannot be imported
+        pytest.importorskip("tensorflow", minversion="2.1")
+
+        from pennylane.tape.interfaces.tf import TFInterface
+
+        qml.enable_tape()
+
+        a = 0.1
+        b = 0.2
+        tapes = (TFInterface.apply(tp1),
+                 TFInterface.apply(tp2))
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+        qml.disable_tape()
+
+    def test_results_torch_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the torch interface."""
+        # skip test if interface cannot be imported
+        pytest.importorskip("torch", minversion="1.3")
+
+        from pennylane.tape.interfaces.torch import TorchInterface
+
+        qml.enable_tape()
+
+        a = 0.1
+        b = 0.2
+        tapes = (TorchInterface.apply(tp1),
+                 TorchInterface.apply(tp2))
 
         dev = qml.device('default.qubit', wires=2)
         res = dev.batch_execute(tapes)
