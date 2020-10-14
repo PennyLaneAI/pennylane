@@ -16,11 +16,15 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
 import pytest
+import numpy as np
 import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
 from collections import OrderedDict
+from pennylane.tape.interfaces.autograd import AutogradInterface
+from pennylane.tape.interfaces.tf import TFInterface
+from pennylane.tape.interfaces.torch import TorchInterface
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -161,6 +165,20 @@ def mock_device(monkeypatch):
             return Device(wires=wires)
 
         yield get_device
+
+
+with qml.tape.QuantumTape() as tp1:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+with qml.tape.JacobianTape() as tp2:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.expval(qml.PauliZ(0))
+
 
 
 class TestDeviceSupportedLogic:
@@ -694,3 +712,49 @@ class TestDeviceInit:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit", wires=0)
+
+
+class TestBatchExecution:
+    """Tests for the batch_execute method."""
+
+    @pytest.mark.parametrize("tapes", [(tp1, tp2),
+                                       (AutogradInterface.apply(tp1), AutogradInterface.apply(tp2)),
+                                       (TFInterface.apply(tp1), TFInterface.apply(tp2)),
+                                       (TorchInterface.apply(tp1), TorchInterface.apply(tp2)),
+                                       ])
+    def test_results(self, tapes, tol):
+        """Tests that the correct results are computed using an autograd tape."""
+
+        qml.enable_tape()
+
+        a = 0.1
+        b = 0.2
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+        qml.disable_tape()
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls(self, n_tapes, mocker):
+        """Tests that the device's execute method is called the correct number of times."""
+        qml.enable_tape()
+
+        spy = mocker.spy(qml.QubitDevice, "execute")
+
+        dev = qml.device('default.qubit', wires=2)
+        dev.batch_execute([tp1]*n_tapes)
+
+        assert spy.call_count == n_tapes
+        
+        qml.disable_tape()
