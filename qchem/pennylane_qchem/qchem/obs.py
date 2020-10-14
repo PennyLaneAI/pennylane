@@ -307,7 +307,6 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
                     type(ops)
                 )
             )
-
         mb_obs += ops
 
     # Map the fermionic operator to a qubit operator
