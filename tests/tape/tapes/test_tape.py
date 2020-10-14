@@ -1058,3 +1058,51 @@ class TestTapeCopying:
         for i, j in zip(copied_tape.get_parameters(), new_params):
             assert not np.all(i == j)
             assert i is not j
+
+    def test_casting(self):
+        """Test that copying and casting works as expected"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # copy and cast to a JacobianTape
+        copied_tape = tape.copy(tape_cls=qml.tape.tapes.JacobianTape)
+
+        # check that the copying worked
+        assert copied_tape is not tape
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # check that the casting worked
+        assert isinstance(copied_tape, qml.tape.tapes.JacobianTape)
+        assert not isinstance(tape, qml.tape.tapes.JacobianTape)
+
+    def test_caching(self, mocker, tol):
+        """Test that shallow copying allows the copied tapes to continue
+        sharing the same cache dictionary."""
+        with QuantumTape(caching=5) as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy()
+
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(dev, "execute")
+
+        assert not tape.get_cache()
+        assert not copied_tape.get_cache()
+
+        res1 = tape.execute(dev)
+
+        assert tape.get_cache() is copied_tape.get_cache()
+
+        res2 = copied_tape.execute(dev)
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        spy.assert_called_once()
