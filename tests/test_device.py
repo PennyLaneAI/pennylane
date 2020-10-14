@@ -721,8 +721,13 @@ class TestBatchExecution:
                                        (TFInterface.apply(tp1), TFInterface.apply(tp2)),
                                        (TorchInterface.apply(tp1), TorchInterface.apply(tp2)),
                                        ])
-    def test_results(self, tapes, tol):
+    def test_results_no_interface(self, tapes, tol):
         """Tests that the correct results are computed using tapes with or without an interface."""
+        # skip test if interface cannot be imported
+        if isinstance(tapes[0], TFInterface):
+            pytest.importorskip("tensorflow", minversion="2.1")
+        if isinstance(tapes[0], TorchInterface):
+            pytest.importorskip("torch", minversion="1.3")
 
         qml.enable_tape()
 
