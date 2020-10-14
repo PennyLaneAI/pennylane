@@ -130,7 +130,7 @@ class QubitParamShiftTape(JacobianTape):
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
         t_idx = list(self.trainable_params)[idx]
