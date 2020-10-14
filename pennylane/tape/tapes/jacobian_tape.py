@@ -246,7 +246,7 @@ class JacobianTape(QuantumTape):
             # get the stored result of the original circuit
             y0 = options.get("y0", None)
 
-            shifted = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
             tapes.append(shifted)
@@ -278,10 +278,10 @@ class JacobianTape(QuantumTape):
         if order == 2:
             # central finite difference
 
-            shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_forward.set_parameters(params + shift / 2)
 
-            shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_backward.set_parameters(params - shift / 2)
 
             tapes = [shifted_forward, shifted_backward]

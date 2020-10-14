@@ -147,10 +147,10 @@ class QubitParamShiftTape(JacobianTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_forward.set_parameters(params + shift)
 
-        shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_backward.set_parameters(params - shift)
 
         tapes = [shifted_forward, shifted_backward]

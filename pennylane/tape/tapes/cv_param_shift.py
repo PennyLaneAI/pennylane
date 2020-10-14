@@ -241,10 +241,10 @@ class CVParamShiftTape(QubitParamShiftTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_forward.set_parameters(params + shift)
 
-        shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_backward.set_parameters(params - shift)
 
         tapes = [shifted_forward, shifted_backward]
@@ -330,7 +330,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Z = B @ Z @ B_inv  # conjugation
 
-        tape = self.copy(deep=True, tape_cls=QuantumTape)
+        tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
 
         # change the observable
         # TODO: if the transformation produces only a constant term,
