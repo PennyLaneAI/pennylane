@@ -326,7 +326,7 @@ class Device(abc.ABC):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
-        tape's `execute` method. This ensures that the correct interface is applied to the tape.
+        tape's ``execute`` method. This ensures that the correct interface is applied to the tape.
         The results are collected in a list.
 
         For plugin developers: This function should be overwritten if the device can efficiently run multiple
