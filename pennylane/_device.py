@@ -322,24 +322,18 @@ class Device(abc.ABC):
 
             return self._asarray(results)
 
-    def batch_execute(self, queue_list, observables_list, parameters_list=None, **kwargs):
-        """Execute a batch of quantum operation queues and measurements on the device.
+    def batch_execute(self, circuits, **kwargs):
+        """Execute a batch of quantum circuits on the device.
 
-        The queues, observables and parameters are executed sequentially using the `self.execute`
-        method, and the results are collected in a list.
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        tape's `execute` method. This ensures that the correct interface is applied to the tape.
+        The results are collected in a list.
 
         For plugin developers: This function should be overwritten if the device can efficiently run multiple
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            queue_list (list[Iterable[~.operation.Operation]]): list of operations to execute on the device
-            observables_list (list[Iterable[~.operation.Observable]]): list of observables to measure and return
-            parameters_list (dict[int, list[ParameterDependency]]): List of mappings from free parameter index
-                to the list of :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
-
-        Keyword Args:
-            return_native_type (bool): If True, return the result in whatever type the device uses
-                internally, otherwise convert it into array[float]. Default: False.
+            circuits (list[~.CircuitGraph]): circuits to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -347,14 +341,7 @@ class Device(abc.ABC):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        if parameters_list is None:
-            parameters_list = [{}] * len(queue_list)
-
-        res_list = []
-        for queue, observables in zip(queue_list, observables_list, parameters_list):
-            res_list.append(self.execute(queue, observables, parameters_list, **kwargs))
-
-        return res_list
+        return [circuit.execute(self) for circuit in circuits]
 
     @property
     def op_queue(self):
