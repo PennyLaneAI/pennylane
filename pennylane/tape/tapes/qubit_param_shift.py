@@ -121,20 +121,18 @@ class QubitParamShiftTape(JacobianTape):
         return super().jacobian(device, params, **options)
 
     def parameter_shift(self, idx, params=None, **options):
-        """Generate the tapes and postprocessing methods required to compute the gradient of the parameter at
-        position 'idx' using the parameter shift differentiation.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a
+        parameter using the parameter-shift method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
             params (list[Any]): the quantum tape operation parameters
 
-        Keyword Args:
-            shift (float): the parameter shift value
-
         Returns:
-            list[QuantumTape], function
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
         """
-
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
@@ -158,7 +156,16 @@ class QubitParamShiftTape(JacobianTape):
         tapes = [shifted_forward, shifted_backward]
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index idx via the
+            parameter-shift method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
+            """
             res_forward = np.array(results[0])
             res_backward = np.array(results[1])
             return (res_forward - res_backward) / (2 * np.sin(s))
@@ -171,13 +178,12 @@ class QubitParamShiftTape(JacobianTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
         """
         tapes = []
 
@@ -224,7 +230,17 @@ class QubitParamShiftTape(JacobianTape):
             self._evA = 1
 
         def processing_fn(results):
-            """Function taking a list of executed tapes to the gradient of the parameter at index idx."""
+            """Computes the gradient of the parameter at index ``idx`` via the
+            parameter-shift method for a circuit containing a mixture
+            of expectation values and variances.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
+            """
             pdA = pdA_fn(results[0:2])
             pdA2 = 0
 

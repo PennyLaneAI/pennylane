@@ -258,7 +258,7 @@ class Operator(abc.ABC):
         copied_op = cls.__new__(cls)
 
         # The memo dict maps object ID to object, and is required by
-        # the deepcopy function to keep track of objects it as already
+        # the deepcopy function to keep track of objects it has already
         # deep copied.
         memo[id(self)] = copied_op
 
@@ -269,7 +269,7 @@ class Operator(abc.ABC):
                 # within a differentiable computation.
                 copied_op.data = value.copy()
             else:
-                # Deep copy every thing else.
+                # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
 

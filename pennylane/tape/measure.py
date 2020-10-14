@@ -80,17 +80,11 @@ class MeasurementProcess:
 
     def __copy__(self):
         cls = self.__class__
-        copied_op = cls.__new__(cls)
 
-        copied_op.return_type = self.return_type
-        copied_op.obs = copy.copy(self.obs)
-        copied_op._wires = self._wires
-        copied_op._eigvals = self._eigvals
+        if self.obs is not None:
+            return cls(self.return_type, obs=copy.copy(self.obs))
 
-        copied_op.name = self.name
-        copied_op.diagonalizing_gates = self.diagonalizing_gates
-        copied_op.data = self.data
-        return copied_op
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
     @property
     def wires(self):

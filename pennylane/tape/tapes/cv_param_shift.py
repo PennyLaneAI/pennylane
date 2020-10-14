@@ -223,10 +223,11 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
 
@@ -254,6 +255,10 @@ class CVParamShiftTape(QubitParamShiftTape):
 
             Args:
                 results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
             """
             shifted_forward = np.array(results[0])
             shifted_backward = np.array(results[1])
@@ -268,10 +273,14 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            dev_wires (.Wires): wires on the device the parameter-shift method is computed on
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
 
@@ -347,6 +356,10 @@ class CVParamShiftTape(QubitParamShiftTape):
 
             Args:
                 results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
             """
             res = results[0]
             grad = np.zeros_like(res)
@@ -382,10 +395,11 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
         device = options["device"]
+        options["dev_wires"] = device.wires
         grad_method = self._par_info[idx]["grad_method"]
 
         if options.get("force_order2", False) or grad_method == "A2":
@@ -491,6 +505,10 @@ class CVParamShiftTape(QubitParamShiftTape):
 
             Args:
                 results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
             """
             pdA = pdA_fn(results[0:2])
             pdA2 = pdA2_fn(results[2:4])

@@ -225,7 +225,7 @@ class JacobianTape(QuantumTape):
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
 
@@ -260,6 +260,10 @@ class JacobianTape(QuantumTape):
 
                 Args:
                     results (list[real]): evaluated quantum tapes
+
+                Returns:
+                    array[float]: 1-dimensional array of length determined by the tape output
+                    measurement statistics
                 """
                 shifted = np.array(results[0])
                 unshifted = y0
@@ -288,6 +292,10 @@ class JacobianTape(QuantumTape):
 
                 Args:
                     results (list[real]): evaluated quantum tapes
+
+                Returns:
+                    array[float]: 1-dimensional array of length determined by the tape output
+                    measurement statistics
                 """
                 res0 = np.array(results[0])
                 res1 = np.array(results[1])
@@ -336,7 +344,7 @@ class JacobianTape(QuantumTape):
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-            in addition to a post-processing function to be applied to the evaluated.
+            in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
         raise NotImplementedError
@@ -477,7 +485,9 @@ class JacobianTape(QuantumTape):
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
+        # some gradient methods need the device or the device wires
         options["device"] = device
+        options["dev_wires"] = device.wires
 
         # collect all circuits (tapes) and postprocessing functions required
         # to compute the jacobian
@@ -489,21 +499,20 @@ class JacobianTape(QuantumTape):
         for trainable_idx, param_method in enumerate(diff_methods):
 
             if (method == "best" and param_method[0] == "F") or (method == "numeric"):
-                # finite difference method
+                # numeric method
                 tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
 
             elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
-                # some analytic methods need the device wires
-                options["dev_wires"] = device.wires
-
                 # analytic method
                 tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
 
+            processing_fns.append(processing_fn)
+
             # we create a flat list here to feed at once to the device
             all_tapes.extend(tapes)
+
             # to extract the correct result for this parameter later, remember the number of tapes
             reshape_info.append(len(tapes))
-            processing_fns.append(processing_fn)
 
         # execute all tapes at once
         results = device.batch_execute(all_tapes)
@@ -528,8 +537,10 @@ class JacobianTape(QuantumTape):
             g = g.flatten()
 
             if jac is None:
-                jac = np.zeros((len(g), len(params)), dtype=float)
+                # update the tape's output dimension
                 self._output_dim = len(g)
+                # create the Jacobian matrix
+                jac = np.zeros((len(g), len(params)), dtype=float)
 
             jac[:, i] = g
 
