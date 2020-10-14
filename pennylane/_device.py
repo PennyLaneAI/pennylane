@@ -322,7 +322,7 @@ class Device(abc.ABC):
 
             return self._asarray(results)
 
-    def batch_execute(self, circuits, **kwargs):
+    def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
@@ -333,10 +333,7 @@ class Device(abc.ABC):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[~.CircuitGraph]): circuits to execute on the device
-
-        Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            circuits (list[~.tapes.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
