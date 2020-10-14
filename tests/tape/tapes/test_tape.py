@@ -979,3 +979,82 @@ class TestCVExecution:
 
         res = tape.execute(dev)
         assert res.shape == (2,)
+
+
+class TestTapeCopying:
+    """Test for tape copying behaviour"""
+
+    def test_shallow_copy(self):
+        """Test that shallow copying of a tape results in all
+        contained data being shared between the original tape and the copy"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy()
+
+        assert copied_tape is not tape
+
+        # the operations are simply references
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # check that all tape metadata is identical
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # since the copy is shallow, mutating the parameters
+        # on one tape will affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        # check that they are the same objects in memory
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert i is j
+
+    def test_shallow_copy_with_operations(self):
+        """Test that shallow copying of a tape and operations allows
+        parameters to be set independently"""
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy(copy_operations=True)
+
+        assert copied_tape is not tape
+
+        # the operations are not references; they are unique objects
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # however, the underlying operation data *is still shared*
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # Since they have unique operations, mutating the parameters
+        # on one tape will *not* affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert not np.all(i == j)
+            assert i is not j
