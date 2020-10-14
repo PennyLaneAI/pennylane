@@ -150,10 +150,10 @@ A qubit Hamiltonian has the form :math:`H_{q} = \sum_{I} C_I P_I` where
 `C_{I}` are numerical coefficients, and :math:`P_I` are Pauli words.
 
 A list of Pauli words can be partitioned according to a certain grouping
-strategies. As an example, the :meth:`group_observables` function from the
-:mod:`pennylane.grouping` module partitions a list of observables (Pauli
-operations and tensor products thereof) into groupings according to a binary
-relation (e.g. qubit-wise commuting):
+strategies. As an example, the :func:`~.group_observables`
+function from the :mod:`~.grouping` module partitions a list of
+observables (Pauli operations and tensor products thereof) into groupings
+according to a binary relation (e.g. qubit-wise commuting):
 
 .. code-block:: python
 
