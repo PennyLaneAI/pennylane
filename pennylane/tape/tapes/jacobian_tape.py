@@ -332,15 +332,14 @@ class JacobianTape(QuantumTape):
         self.set_parameters(saved_parameters)
         return jac
 
-    def analytic_pd(self, idx, params=None, **options):
+    def analytic_pd(self, idx, params, **options):
         """Generate the quantum tapes and classical post-processing function required to compute the
         gradient of the tape with respect to a single trainable tape parameter using an analytic
         method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
+            params (list[Any]): the quantum tape operation parameters
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,

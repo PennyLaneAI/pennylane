@@ -216,7 +216,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
     def parameter_shift_first_order(
-        self, idx, params=None, **options
+        self, idx, params, **options
     ):  # pylint: disable=unused-argument
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
         first order CV parameter-shift method.
@@ -267,7 +267,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift_second_order(self, idx, params=None, **options):
+    def parameter_shift_second_order(self, idx, params, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a
         parameter using the second order CV parameter-shift method.
 
@@ -368,7 +368,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift(self, idx, params=None, **options):
+    def parameter_shift(self, idx, params, **options):
         r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
 

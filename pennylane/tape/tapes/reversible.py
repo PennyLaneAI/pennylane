@@ -122,7 +122,7 @@ class ReversibleTape(JacobianTape):
 
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)
 
-    def reversible_diff(self, idx, params=None, **options):
+    def reversible_diff(self, idx, params, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a
         parameter using the reversible backpropagation method.
 
@@ -246,7 +246,7 @@ class ReversibleTape(JacobianTape):
         self._final_state = None
         return super().jacobian(device, params, **options)
 
-    def analytic_pd(self, idx, params=None, **options):
+    def analytic_pd(self, idx, params, **options):
         device = options["device"]
 
         # circuits constructed in reversible differentiation always start

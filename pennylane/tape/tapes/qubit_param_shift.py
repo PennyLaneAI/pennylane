@@ -120,7 +120,7 @@ class QubitParamShiftTape(JacobianTape):
         self._evA_result = None
         return super().jacobian(device, params, **options)
 
-    def parameter_shift(self, idx, params=None, **options):
+    def parameter_shift(self, idx, params, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a
         parameter using the parameter-shift method.
 
