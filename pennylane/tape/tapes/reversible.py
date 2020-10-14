@@ -92,7 +92,7 @@ class ReversibleTape(JacobianTape):
             vec1 (array[complex]): a length :math:`2^N` statevector
             obs (.Observable): a PennyLane observable
             vec2 (array[complex]): a length :math:`2^N` statevector
-            wires (pennylane.wires.Wires): wires of the device used to prepare the state
+            dev_wires (pennylane.wires.Wires): wires of the device used to prepare the state
         """
         # pylint: disable=protected-access
 
