@@ -269,7 +269,7 @@ class Operator(abc.ABC):
                 # within a differentiable computation.
                 copied_op.data = value.copy()
             else:
-                # Deep copy every thing else.
+                # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
 
