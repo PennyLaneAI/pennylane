@@ -241,7 +241,8 @@ class ReversibleTape(JacobianTape):
     def jacobian(self, device, params=None, **options):
         # The parameter_shift_var method needs to evaluate the circuit
         # at the unshifted parameter values; the pre-rotated statevector is then stored
-        # self._state attribute. Here, we set the value of the attribute to None
+        # in the self._state attribute. Here, we set the value of the attribute to None
+
         # before each Jacobian call, so that the statevector is calculated only once.
         self._final_state = None
         return super().jacobian(device, params, **options)
