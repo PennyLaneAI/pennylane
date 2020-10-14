@@ -171,7 +171,8 @@ class ReversibleTape(JacobianTape):
                 "reversible gradient method.".format(op.name)
             )
 
-        # get the stored final state of the original circuit, from which we start here
+        # get the stored final state of the original circuit, which we start from here
+
         final_state = self._final_state
         # get the number of wires on the device used for the differentiation
         dev_wires = options.get("dev_wires")
