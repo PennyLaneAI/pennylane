@@ -199,9 +199,9 @@ also be obtained using :func:`~.optimize_measurements`:
 The post measurement rotations can be used to diagonalize the partitions of
 observables found.
 
-For further details on measurement optimization, the graph coloring to be
-solved for grouping observables and a wide-range of auxiliary functions refer
-to the the :mod:`~.grouping` subpackage.
+For further details on measurement optimization, graph coloring to be solved
+for grouping observables and auxiliary functions refer to the the
+:mod:`~.grouping` subpackage.
 
 
 .. _intro_ref_ops_cv:
