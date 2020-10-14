@@ -180,7 +180,6 @@ with qml.tape.JacobianTape() as tp2:
     qml.expval(qml.PauliZ(0))
 
 
-
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -723,7 +722,7 @@ class TestBatchExecution:
                                        (TorchInterface.apply(tp1), TorchInterface.apply(tp2)),
                                        ])
     def test_results(self, tapes, tol):
-        """Tests that the correct results are computed using an autograd tape."""
+        """Tests that the correct results are computed using tapes with or without an interface."""
 
         qml.enable_tape()
 
@@ -756,5 +755,5 @@ class TestBatchExecution:
         dev.batch_execute([tp1]*n_tapes)
 
         assert spy.call_count == n_tapes
-        
+
         qml.disable_tape()
