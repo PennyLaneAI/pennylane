@@ -2,6 +2,35 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now supports a new device, `default.mixed`, designed for
+  simulating mixed-state quantum computations. This enables native
+  support for implementing noisy channels in a circuit, which generally
+  map pure states to mixed states.
+  [(#819)](https://github.com/PennyLaneAI/pennylane/pull/819)
+  [(#807)](https://github.com/PennyLaneAI/pennylane/pull/807)
+  [(#794)](https://github.com/PennyLaneAI/pennylane/pull/794)
+  
+  The device can be initialized as
+  ```pycon
+  >>> dev = qml.device("default.mixed", wires=1)
+  ```
+  
+  This allows the construction of QNodes that include non-unitary operations
+  such as noisy channels, as in this simple qubit rotation example
+  
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.AmplitudeDamping(0.5, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(circuit([0.54, 0.12]))
+  0.9257702929524184
+  >>> print(circuit([0, np.pi]))
+  0.0
+  ```
+
 * The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
   observables. This includes  utility functions required for measurement reduction by
   [qubit-wise-commuting (QWC) grouping](https://arxiv.org/abs/1907.03358).
@@ -486,7 +515,7 @@ Nathan Killoran, Robert Lang, Cedric Lin, Antal Száva
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arazzola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
+Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
 Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 # Release 0.10.0
