@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
-import pytest
+import copy
+
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, TapeCircuitGraph
@@ -1003,6 +1005,10 @@ class TestTapeCopying:
         assert copied_tape.measurements == tape.measurements
         assert copied_tape.operations[0] is tape.operations[0]
 
+        # operation data is also a reference
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
         # check that all tape metadata is identical
         assert tape.get_parameters() == copied_tape.get_parameters()
         assert tape.wires == copied_tape.wires
@@ -1020,7 +1026,8 @@ class TestTapeCopying:
         for i, j in zip(copied_tape.get_parameters(), new_params):
             assert i is j
 
-    def test_shallow_copy_with_operations(self):
+    @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)])
+    def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
         parameters to be set independently"""
 
@@ -1030,7 +1037,7 @@ class TestTapeCopying:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
-        copied_tape = tape.copy(copy_operations=True)
+        copied_tape = copy_fn(tape)
 
         assert copied_tape is not tape
 
@@ -1041,6 +1048,7 @@ class TestTapeCopying:
         assert copied_tape.operations[0] is not tape.operations[0]
 
         # however, the underlying operation data *is still shared*
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
 
         assert tape.get_parameters() == copied_tape.get_parameters()
@@ -1058,6 +1066,31 @@ class TestTapeCopying:
         for i, j in zip(copied_tape.get_parameters(), new_params):
             assert not np.all(i == j)
             assert i is not j
+
+    def test_deep_copy(self):
+        """Test that deep copying a tape works, and copies all constituent data"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = copy.deepcopy(tape)
+
+        assert copied_tape is not tape
+
+        # the operations are not references
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # The underlying operation data has also been copied
+        assert copied_tape.operations[0].wires is not tape.operations[0].wires
+
+        # however, the underlying operation *parameters* are still shared
+        # to support PyTorch, which does not support deep copying of tensors
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
 
     def test_casting(self):
         """Test that copying and casting works as expected"""
