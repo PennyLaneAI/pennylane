@@ -137,6 +137,33 @@ Qubit observables
 
 :html:`</div>`
 
+Grouping Pauli words
+^^^^^^^^^^^^^^^^^^^^
+
+A Pauli word is defined as :math:`P_I = \prod_{i=1}^{N}\sigma_i^{(I)}` where
+:math:`\sigma_i^{(I)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
+:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ`) or identity
+(:class:`~pennylane.Identity`) for the :math:`i^{th}` qubit.
+
+Pauli words can be used for expressing a qubit :class:`~pennylane.Hamiltonian`.
+A qubit Hamiltonian has the form :math:`H_{q} = \sum_{I} C_I P_I` where
+`C_{I}` are numerical coefficients, and :math:`P_I` are Pauli words.
+
+A list of Pauli words can be partitioned according to a certain grouping
+strategies. As an example, the :meth:`group_observables` function from the
+:mod:`pennylane.grouping` module partitions a list of observables (Pauli
+operations and tensor products thereof) into groupings according to a binary
+relation (e.g. qubit-wise commuting):
+
+.. code-block:: python
+
+    observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    obs_groupings = group_observables(observables)
+    obs_groupings
+    [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+     [PauliY(wires=[0]), PauliZ(wires=[1])]]
+
+
 .. _intro_ref_ops_cv:
 
 Continuous-variable (CV) operations
