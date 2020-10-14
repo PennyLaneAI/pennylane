@@ -902,6 +902,9 @@ class QuantumTape(AnnotatedQueue):
 
         return tape
 
+    def __copy__(self):
+        return self.copy(copy_operations=True)
+
     # ========================================================
     # execution methods
     # ========================================================
