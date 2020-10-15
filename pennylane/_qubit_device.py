@@ -174,9 +174,8 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        # TODO: Remove isinstance when circuit is always QuantumTape
         if self._caching:
-            try:
+            try:  # TODO: Remove try/except when circuit is always QuantumTape
                 circuit_hash = circuit.graph.hash
             except AttributeError as e:
                 raise ValueError("Caching is only available when using tape mode") from e
