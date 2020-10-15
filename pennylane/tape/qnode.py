@@ -109,11 +109,6 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
-        caching (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
-
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -132,7 +127,7 @@ class QNode:
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
-        self, func, device, interface="autograd", diff_method="best", caching=0, **diff_options
+        self, func, device, interface="autograd", diff_method="best", **diff_options
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
@@ -156,17 +151,6 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = 2
-
-        self._caching = caching
-        """float: number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-
-        if caching != 0 and self.diff_method == "backprop":
-            raise ValueError('Caching mode is incompatible with the "backprop" diff_method')
-
-        self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: A copy of the ``_cache_execute`` dictionary from the quantum
-        tape"""
 
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
@@ -371,7 +355,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self.qtape = self._tape(caching=self._caching)
+        self.qtape = self._tape()
 
         with self.qtape:
             measurement_processes = self.func(*args, **kwargs)
@@ -434,12 +418,6 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
-        if self._caching:
-            # Every time the QNode is called, it creates a new tape. We want the tape cache to
-            # persist over multiple tapes, so hence keep track of it as a QNode attribute and
-            # load it into the new tape
-            self.qtape._cache_execute = self._cache_execute
-
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
@@ -453,9 +431,6 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
-        if self._caching:
-            self._cache_execute = self.qtape._cache_execute
 
         return __import__(res_type_namespace).squeeze(res)
 
@@ -577,16 +552,10 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    @property
-    def caching(self):
-        """float: number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-        return self._caching
-
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_options):
+def qnode(device, interface="autograd", diff_method="best", **diff_options):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
@@ -666,11 +635,6 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum
               operation arguments.
 
-        caching (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
-
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -694,7 +658,6 @@ def qnode(device, interface="autograd", diff_method="best", caching=0, **diff_op
             device,
             interface=interface,
             diff_method=diff_method,
-            caching=caching,
             **diff_options,
         )
         return update_wrapper(qn, func)

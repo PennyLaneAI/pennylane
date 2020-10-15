@@ -19,6 +19,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 import abc
+from collections import OrderedDict
 import itertools
 
 import numpy as np
@@ -66,6 +67,10 @@ class QubitDevice(Device):
         analytic (bool): If ``True``, the device calculates probability, expectation values,
             and variances analytically. If ``False``, a finite number of samples set by
             the argument ``shots`` are used to estimate these quantities.
+        caching (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     # pylint: disable=too-many-public-methods
@@ -98,7 +103,7 @@ class QubitDevice(Device):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires=1, shots=1000, analytic=True):
+    def __init__(self, wires=1, shots=1000, analytic=True, caching=0):
         super().__init__(wires=wires, shots=shots)
 
         self.analytic = analytic
@@ -113,6 +118,14 @@ class QubitDevice(Device):
         self._circuit_hash = None
         """None or int: stores the hash of the circuit from the last execution which
         can be used by devices in :meth:`apply` for parametric compilation."""
+
+        self._caching = caching
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
+        device."""
 
     @classmethod
     def capabilities(cls):
@@ -161,6 +174,11 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if self._caching:
+            circuit_hash = circuit.graph.hash
+            if circuit_hash in self.get_cache():
+                return self.get_cache()[circuit_hash]
+
         self.check_validity(circuit.operations, circuit.observables)
 
         self._circuit_hash = circuit.hash
@@ -179,9 +197,30 @@ class QubitDevice(Device):
         # expvals and vars in superfluous arrays
         all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
         if circuit.is_sampled and not all_sampled:
-            return self._asarray(results, dtype="object")
+            results = self._asarray(results, dtype="object")
+        else:
+            results = self._asarray(results)
 
-        return self._asarray(results)
+        if self._caching and circuit_hash not in self.get_cache():
+            self.add_cache_value(circuit_hash, results)
+            if len(self.get_cache()) > self._caching:
+                self.get_cache().popitem(last=False)
+
+        return results
+
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching
+
+    def get_cache(self):  # pylint: disable=method-hidden
+        """Return the caching dictionary"""
+        return self._cache_execute
+
+    def add_cache_value(self, circuit_hash, value):  # pylint: disable=method-hidden
+        """Set a value in the caching dictionary"""
+        self._cache_execute[circuit_hash] = value
 
     def batch_execute(self, circuits):
         # TODO: This method can be deleted once Device.execute() has the same
