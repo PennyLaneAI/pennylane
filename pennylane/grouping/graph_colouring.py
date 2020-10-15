@@ -43,8 +43,8 @@ def largest_first(binary_observables, adj):
 
     Returns:
         dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-            are lists of Pauli words of the same colour in
-            binary vector representation.
+        are lists of Pauli words of the same colour in
+        binary vector representation.
 
     **Example**
 
@@ -96,7 +96,7 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
 
     Returns:
         dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-            are lists of Pauli words of the same colour in binary vector representation.
+        are lists of Pauli words of the same colour in binary vector representation.
 
     **Example**
 

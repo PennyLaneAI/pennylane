@@ -58,7 +58,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         ValueError: if arguments specified for `grouping_type` or
             `graph_colourer` are not recognized as elements of `GROUPING_TYPES` or
             `GRAPH_COLOURING_METHODS` respectively
-
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -97,7 +96,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             array[bool]: a column matrix of the Pauli words in binary vector representation
-
         """
 
         if wire_map is None:
@@ -123,7 +121,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             array[bool]: the square and symmetric adjacency matrix
-
         """
 
         if self.binary_observables is None:
@@ -163,7 +160,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             list[list[Observable]]: a list of the obtained groupings. Each grouping is itself a
             list of Pauli word `Observable` instances
-
         """
 
         if self.adj_matrix is None:
@@ -201,11 +197,11 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             can be 'lf' (Largest First) or 'rlf' (Recursive Largest First)
 
     Returns:
-       partitioned_paulis (list[list[Observable]]): A list of the obtained groupings. Each grouping
-            is itself a list of Pauli word `Observable` instances.
-       partitioned_coeffs (list[list[scalar]]): A list of coefficient groupings. Each coefficient
-           grouping is itself a list of the grouping's corresponding coefficients. This is only
-           output if coefficients are specified.
+       list[list[Observable]]: A list of the obtained groupings. Each grouping
+       is itself a list of Pauli word `Observable` instances.
+       list[list[scalar]]: A list of coefficient groupings. Each coefficient
+       grouping is itself a list of the grouping's corresponding coefficients. This is only
+       output if coefficients are specified.
 
     Raises:
         IndexError: if the input list of coefficients is not of the same length as the input list
