@@ -180,58 +180,6 @@ class TestQNodeCaching:
 
         spy.assert_not_called()
 
-    def test_gradient_autograd(self, mocker):
-        """Test that caching works when calculating the gradient method using the autograd
-        interface"""
-        qnode = get_qnode(caching=10, interface="autograd")
-        d_qnode = qml.grad(qnode)
-        args = [0.1, 0.2]
-
-        d_qnode(*args)
-        spy = mocker.spy(DefaultQubitAutograd, "execute")
-        d_qnode(*args)
-        spy.assert_not_called()
-
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    def test_gradient_tf(self, mocker):
-        """Test that caching works when calculating the gradient method using the TF interface"""
-        import tensorflow as tf
-
-        qnode = get_qnode(caching=10, interface="tf")
-        args0 = tf.Variable(0.1)
-        args1 = tf.Variable(0.2)
-
-        with tf.GradientTape() as tape:
-            res = qnode(args0, args1)
-
-        grad = tape.gradient(res, args0)
-        assert grad is not None
-
-        spy = mocker.spy(DefaultQubitAutograd, "execute")
-        with tf.GradientTape() as tape:
-            res = qnode(args0, args1)
-
-        tape.gradient(res, args0)
-        spy.assert_not_called()
-
-    @pytest.mark.usefixtures("skip_if_no_torch_support")
-    def test_gradient_torch(self, mocker):
-        """Test that caching works when calculating the gradient method using the Torch interface"""
-        import torch
-
-        qnode = get_qnode(caching=10, interface="torch")
-        args0 = torch.tensor(0.1, requires_grad=True)
-        args1 = torch.tensor(0.2)
-
-        res = qnode(args0, args1)
-        res.backward()
-        assert args0.grad is not None
-
-        spy = mocker.spy(DefaultQubitAutograd, "execute")
-        res = qnode(args0, args1)
-        res.backward()
-        spy.assert_not_called()
-
     def test_mutable_circuit(self, mocker):
         """Test that caching is compatible with circuit mutability. Caching should take place if
         the circuit and parameters are the same, and should not take place if the parameters are
@@ -276,31 +224,3 @@ class TestQNodeCaching:
 
         qfunc(0.1, 0.3)
         assert len(spy.call_args_list) == 2
-
-    def test_grad_classical_processing_in_circuit(self, mocker):
-        """Test that caching is compatible with calculating the gradient in QNodes which contain
-        classical processing"""
-
-        dev = qml.device("default.qubit", wires=3)
-
-        @qnode(dev, caching=10)
-        def qfunc(x, y):
-            qml.RX(x ** 2, wires=0)
-            qml.RX(x / y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return expval(qml.PauliZ(wires=1))
-
-        d_qfunc = qml.grad(qfunc)
-
-        spy = mocker.spy(DefaultQubit, "execute")
-        g = d_qfunc(0.1, 0.2)
-        calls1 = len(spy.call_args_list)
-        d_qfunc(0.1, 0.2)
-        calls2 = len(spy.call_args_list)
-        assert calls1 == calls2
-
-        d_qfunc(0.1, 0.3)
-        calls3 = len(spy.call_args_list)
-        assert calls3 == 2 * calls1
-
-        assert g is not None
