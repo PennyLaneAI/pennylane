@@ -73,7 +73,7 @@ Optimize measurements
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: group_observables, obtain_qwc_post_rotations_and_diagonalized_groupings
+    :skip: group_observables, diagonalize_qwc_groupings
 
 Transformations
 ---------------

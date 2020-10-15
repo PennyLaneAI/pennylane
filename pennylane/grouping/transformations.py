@@ -107,7 +107,7 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
-def diagonalize_qwc_grouping(qwc_grouping):
+def diagonalize_qwc_pauli_words(qwc_grouping):
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     **Usage example:**
@@ -115,7 +115,7 @@ def diagonalize_qwc_grouping(qwc_grouping):
     >>> qwc_group = [qml.PauliX(0) @ qml.PauliZ(1),
                      qml.PauliX(0) @ qml.PauliY(3),
                      qml.PauliZ(1) @ qml.PauliY(3)]
-    >>> diagonalize_qwc_grouping(qwc_group)
+    >>> diagonalize_qwc_pauli_words(qwc_group)
     ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
      [Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
      Tensor(PauliZ(wires=[0]), PauliZ(wires=[3])),
@@ -182,7 +182,7 @@ def diagonalize_qwc_grouping(qwc_grouping):
     return unitary, diag_terms
 
 
-def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
+def diagonalize_qwc_groupings(qwc_groupings):
     """Diagonalizes a list of qubit-wise commutative groupings of Pauli strings.
 
     **Usage example:**
@@ -193,7 +193,7 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
     >>> qwc_group_2 = [qml.PauliY(0),
                        qml.PauliY(0) @ qml.PauliX(2),
                        qml.PauliX(1) @ qml.PauliZ(3)]
-    >>> obtain_qwc_post_rotations_and_diagonalized_groupings([qwc_group_1, qwc_group_2])
+    >>> diagonalize_qwc_groupings([qwc_group_1, qwc_group_2])
     ([[RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
      [RX(1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[2]),
      RY(-1.5707963267948966, wires=[1])]],
@@ -221,7 +221,7 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
 
     for i in range(m_groupings):
 
-        diagonalizing_unitary, diag_grouping = diagonalize_qwc_grouping(qwc_groupings[i])
+        diagonalizing_unitary, diag_grouping = diagonalize_qwc_pauli_words(qwc_groupings[i])
         post_rotations.append(diagonalizing_unitary)
         diag_groupings.append(diag_grouping)
 

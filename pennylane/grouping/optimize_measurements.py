@@ -17,7 +17,7 @@ corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
 from pennylane.grouping.group_observables import group_observables
-from pennylane.grouping.transformations import obtain_qwc_post_rotations_and_diagonalized_groupings
+from pennylane.grouping.transformations import diagonalize_qwc_groupings
 
 
 def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="rlf"):
@@ -83,7 +83,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
         (
             post_rotations,
             diagonalized_groupings,
-        ) = obtain_qwc_post_rotations_and_diagonalized_groupings(grouped_obs)
+        ) = diagonalize_qwc_groupings(grouped_obs)
     else:
         raise NotImplementedError(
             "Measurement reduction by '{}' grouping not implemented.".format(grouping.lower())
