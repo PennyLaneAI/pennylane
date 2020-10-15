@@ -20,8 +20,8 @@ groupings according to a binary relation (e.g. qubit-wise commuting):
 
 .. code-block:: python
 
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> obs_groupings = group_observables(observables)
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> obs_groupings = group_observables(obs)
     >>> obs_groupings
     [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
      [PauliY(wires=[0]), PauliZ(wires=[1])]]
@@ -34,13 +34,9 @@ of observables:
 
 .. code-block:: python
 
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> obs_groupings, coeffs_groupings = group_observables(
-                                                            observables,
-                                                            coefficients,
-                                                            'qwc',
-                                                            'rlf')
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'qwc', 'rlf')
     >>> obs_groupings
     [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
      [PauliY(wires=[0]), PauliZ(wires=[1])]]
