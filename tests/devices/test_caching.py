@@ -124,10 +124,13 @@ class TestCaching:
 
         spy.assert_not_called()
 
-#     def test_backprop_error(self):
-#         """Test if an error is raised when caching is used with the backprop diff_method"""
-#         with pytest.raises(ValueError, match="Caching mode is incompatible"):
-#             get_qnode(caching=10, diff_method="backprop")
+    def test_backprop_error(self):
+        """Test if an error is raised when caching is used with the backprop diff_method"""
+        dev = qml.device("default.qubit", wires=2, caching=10)
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Device caching is incompatible with the backprop"
+        ):
+            QNode(qfunc, dev, diff_method="backprop")
 
     def test_gradient_autograd(self, mocker):
         """Test that caching works when calculating the gradient method using the autograd
