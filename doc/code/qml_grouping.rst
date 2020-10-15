@@ -64,7 +64,7 @@ Group observables
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: are_identical_pauli_words, binary_to_pauli, convert_observables_to_binary_matrix, get_qwc_complement_adj_matrix, largest_first, recursive_largest_first, Wires
+    :skip: are_identical_pauli_words, binary_to_pauli, observables_to_binary_matrix, qwc_complement_adj_matrix, largest_first, recursive_largest_first, Wires
 
 Optimize measurements
 ---------------------

@@ -413,7 +413,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
+def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     """Converts a list of Pauli words to the binary vector representation and yields a row matrix
         of the binary vectors.
 
@@ -422,7 +422,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
 
     **Usage example:**
 
-    >>> convert_observables_to_binary_matrix([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
+    >>> observables_to_binary_matrix([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
     array([[1., 1., 0., 0., 1., 0.],
            [0., 0., 0., 1., 1., 1.]])
 
@@ -465,7 +465,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
     return binary_mat
 
 
-def get_qwc_complement_adj_matrix(binary_observables):
+def qwc_complement_adj_matrix(binary_observables):
     """Obtains the adjacency matrix for the complementary graph of the qubit-wise commutativity
     graph for a given set of observables in the binary representation.
 
@@ -480,7 +480,7 @@ def get_qwc_complement_adj_matrix(binary_observables):
            [0., 1., 1., 1., 0., 1.],
            [0., 0., 0., 1., 0., 0.]])
 
-    >>> get_qwc_complement_adj_matrix(binary_observables)
+    >>> qwc_complement_adj_matrix(binary_observables)
     array([[0., 1., 1.],
            [1., 0., 0.],
            [1., 0., 0.]])

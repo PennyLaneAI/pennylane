@@ -17,10 +17,10 @@ This module contains the high-level Pauli word partitioning functionality used i
 
 from pennylane.wires import Wires
 from pennylane.grouping.utils import (
-    convert_observables_to_binary_matrix,
+    observables_to_binary_matrix,
     binary_to_pauli,
     are_identical_pauli_words,
-    get_qwc_complement_adj_matrix,
+    qwc_complement_adj_matrix,
 )
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 import numpy as np
@@ -113,7 +113,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         self._n_qubits = n_qubits
 
-        return convert_observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
+        return observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
     def obtain_complement_adj_matrix_for_operator(self):
         """Constructs the adjacency matrix for the complement of the Pauli graph.
@@ -132,7 +132,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         n_qubits = int(np.shape(self.binary_observables)[1] / 2)
 
         if self.grouping_type == "qwc":
-            adj = get_qwc_complement_adj_matrix(self.binary_observables)
+            adj = qwc_complement_adj_matrix(self.binary_observables)
 
         elif self.grouping_type in frozenset(["commuting", "anticommuting"]):
             symplectic_form = np.block(
