@@ -213,13 +213,9 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     **Example**
 
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> obs_groupings, coeffs_groupings = group_observables(
-                                                            observables,
-                                                            coefficients,
-                                                            'anticommuting',
-                                                            'lf')
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings
     [[Tensor(PauliZ(wires=[1])),
       Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
