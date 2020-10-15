@@ -184,7 +184,21 @@ class QubitDevice(Device):
         return self._asarray(results)
 
     def batch_execute(self, circuits):
-        # TODO: This method can be deleted once Device.execute() has the same
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[~.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        # TODO: This method and the tests can be moved to Device.execute() has the same
         # signature as QubitDevice.execute()
 
         results = []

@@ -710,3 +710,122 @@ class TestCapabilities:
                         "returns_probs": True,
                         }
         assert capabilities == QubitDevice.capabilities()
+
+
+with qml.tape.QuantumTape() as tp1:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+with qml.tape.JacobianTape() as tp2:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.expval(qml.PauliZ(0))
+
+
+class TestBatchExecution:
+    """Tests for the batch_execute method."""
+
+    def test_results_no_interface(self, tol):
+        """Tests that the correct results are computed using tapes without an interface."""
+
+        a = 0.1
+        b = 0.2
+        tapes = (tp1, tp2)
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+    def test_results_autograd_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the autograd interface."""
+
+        a = 0.1
+        b = 0.2
+        tapes = (qml.tape.interfaces.autograd.AutogradInterface.apply(tp1),
+                 qml.tape.interfaces.autograd.AutogradInterface.apply(tp2))
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+    def test_results_tf_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the tf interface."""
+        # skip test if interface cannot be imported
+        pytest.importorskip("tensorflow", minversion="2.1")
+
+        from pennylane.tape.interfaces.tf import TFInterface
+
+        a = 0.1
+        b = 0.2
+        tapes = (TFInterface.apply(tp1),
+                 TFInterface.apply(tp2))
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+    def test_results_torch_interface(self, tol):
+        """Tests that the correct results are computed using tapes with the torch interface."""
+        # skip test if interface cannot be imported
+        pytest.importorskip("torch", minversion="1.3")
+
+        from pennylane.tape.interfaces.torch import TorchInterface
+
+        a = 0.1
+        b = 0.2
+        tapes = (TorchInterface.apply(tp1),
+                 TorchInterface.apply(tp2))
+
+        dev = qml.device('default.qubit', wires=2)
+        res = dev.batch_execute(tapes)
+
+        exp1 = [np.cos(a), -np.cos(a) * np.sin(b)]
+        exp2 = np.cos(a)
+        expected = [exp1, exp2]
+
+        # need to compare element-wise because np.allclose
+        # does not work for a mix of lists and tensors
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e, atol=tol, rtol=0)
+        assert isinstance(res, list)
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls(self, n_tapes, mocker):
+        """Tests that the device's execute method is called the correct number of times."""
+
+        spy = mocker.spy(qml.QubitDevice, "execute")
+
+        dev = qml.device('default.qubit', wires=2)
+        dev.batch_execute([tp1]*n_tapes)
+
+        assert spy.call_count == n_tapes

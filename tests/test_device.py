@@ -705,8 +705,12 @@ with qml.tape.QuantumTape() as tp1:
 
 with qml.tape.JacobianTape() as tp2:
     qml.RY(0.1, wires=0)
-    qml.RX(0.2, wires=1)
-    qml.CNOT(wires=[0, 1])
+    qml.RX(0.2, wires=0)
+    qml.expval(qml.PauliZ(0))
+
+with qml.tape.JacobianTape() as tp2:
+    qml.RY(0.1, wires=0)
+    qml.RX(0.2, wires=0)
     qml.expval(qml.PauliZ(0))
 
 
@@ -805,12 +809,12 @@ class TestBatchExecution:
         assert isinstance(res, list)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls(self, n_tapes, mocker):
+    def test_calls(self, n_tapes, mocker, mock_device_with_observables):
         """Tests that the device's execute method is called the correct number of times."""
 
-        spy = mocker.spy(qml.QubitDevice, "execute")
+        spy = mocker.spy(mock_device_with_observables, "execute")
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = mock_device_with_observables
         dev.batch_execute([tp1]*n_tapes)
 
         assert spy.call_count == n_tapes
