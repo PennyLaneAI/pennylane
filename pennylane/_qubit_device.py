@@ -28,6 +28,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.wires import Wires
+from pennylane.tape import QuantumTape
 
 
 class QubitDevice(Device):
@@ -174,7 +175,8 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        if self._caching:
+        # TODO: Remove isinstance when circuit is always QuantumTape
+        if self._caching and isinstance(circuit, QuantumTape):
             circuit_hash = circuit.graph.hash
             if circuit_hash in self.get_cache():
                 return self.get_cache()[circuit_hash]
@@ -201,7 +203,8 @@ class QubitDevice(Device):
         else:
             results = self._asarray(results)
 
-        if self._caching and circuit_hash not in self.get_cache():
+        if self._caching and isinstance(circuit, QuantumTape) and circuit_hash not in \
+                self.get_cache():
             self.add_cache_value(circuit_hash, results)
             if len(self.get_cache()) > self._caching:
                 self.get_cache().popitem(last=False)
