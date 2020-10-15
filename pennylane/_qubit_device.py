@@ -183,6 +183,21 @@ class QubitDevice(Device):
 
         return self._asarray(results)
 
+    def batch_execute(self, circuits):
+        # TODO: This method can be deleted once Device.execute() has the same
+        # signature as QubitDevice.execute()
+
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit)
+            results.append(res)
+
+        return results
+
     @abc.abstractmethod
     def apply(self, operations, **kwargs):
         """Apply quantum operations, rotate the circuit into the measurement
