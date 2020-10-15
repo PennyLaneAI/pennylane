@@ -338,7 +338,8 @@ class Device(abc.ABC):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        return [circuit.execute(self) for circuit in circuits]
+        #return [circuit.execute(self) for circuit in circuits]
+        return [self.execute(circuit) for circuit in circuits]
 
     @property
     def op_queue(self):

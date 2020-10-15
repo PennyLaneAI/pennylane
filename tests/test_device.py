@@ -708,7 +708,7 @@ with qml.tape.JacobianTape() as tp2:
     qml.RX(0.2, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.expval(qml.PauliZ(0))
-    
+
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
