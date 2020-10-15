@@ -36,7 +36,17 @@ def largest_first(binary_observables, adj):
     """Performs graph colouring using the Largest Degree First heuristic. Runtime is quadratic in
     number of vertices.
 
-    **Usage example:**
+    Args:
+        binary_observables (array[bool]): the set of Pauli words represented by a column matrix
+            of the Pauli words in binary vector represenation
+        adj (array[bool]): the adjacency matrix of the Pauli graph
+
+    Returns:
+        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
+            are lists of Pauli words of the same colour in
+            binary vector representation.
+
+    **Example**
 
     >>> binary_observables
     array([[1., 1., 0.],
@@ -50,18 +60,6 @@ def largest_first(binary_observables, adj):
     >>> largest_first(binary_observables, adj)
     {1: [array([0., 0., 1., 1.])],
      2: [array([1., 0., 0., 0.]), array([1., 1., 0., 1.])]}
-
-
-    Args:
-        binary_observables (array[bool]): the set of Pauli words represented by a column matrix
-            of the Pauli words in binary vector represenation
-        adj (array[bool]): the adjacency matrix of the Pauli graph
-
-    Returns:
-        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-            are lists of Pauli words of the same colour in
-            binary vector representation.
-
     """
 
     n_terms = np.shape(adj)[0]
@@ -91,7 +89,16 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
     lower chromatic number than Largest Degree First, but takes longer (runtime is cubic in number
     of vertices).
 
-    **Usage example:**
+    Args:
+        binary_observables (array[bool]): the set of Pauli words represented by a column matrix of
+            the Pauli words in binary vector represenation
+        adj (array[bool]): the adjacency matrix of the Pauli graph
+
+    Returns:
+        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
+            are lists of Pauli words of the same colour in binary vector representation.
+
+    **Example**
 
     >>> binary_observables
     array([[1., 1., 0.],
@@ -104,16 +111,6 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
            [1., 1., 0.]])
     >>> recursive_largest_first(binary_observables, adj)
     {1: [array([0., 0., 1., 1.])], 2: [array([1., 1., 0., 1.]), array([1., 0., 0., 0.])]}
-
-    Args:
-        binary_observables (array[bool]): the set of Pauli words represented by a column matrix of
-            the Pauli words in binary vector represenation
-        adj (array[bool]): the adjacency matrix of the Pauli graph
-
-    Returns:
-        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-            are lists of Pauli words of the same colour in binary vector representation.
-
     """
 
     def n_0(m_array, coloured):

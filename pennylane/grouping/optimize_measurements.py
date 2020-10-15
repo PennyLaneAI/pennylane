@@ -30,24 +30,6 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     found. See arXiv:1907.03358 and arXiv:1907.09386 for technical details of the QWC and fully
     commuting measurement partitioning approaches respectively.
 
-    **Example usage:**
-
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> post_rotations,diagonalized_groupings,grouped_coeffs = optimize_measurements(
-                                                                                     observables,
-                                                                                     coefficients,
-                                                                                     'qwc',
-                                                                                     'rlf'
-                                                                                     )
-    >>> print(post_rotations)
-    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
-     [RX(1.5707963267948966, wires=[0])]]
-    >>> print(diagonalized_groupings)
-    [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
-    >>> print(grouped_coeffs)
-    [[4.21], [1.43, 0.97]]
-
     Args:
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
             instances thereof)
@@ -68,6 +50,23 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
             coefficient grouping is itself a list of the partitions corresponding coefficients.
             Only output if coefficients are specified.
 
+    **Example**
+
+    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coefficients = [1.43, 4.21, 0.97]
+    >>> post_rotations,diagonalized_groupings,grouped_coeffs = optimize_measurements(
+                                                                                     observables,
+                                                                                     coefficients,
+                                                                                     'qwc',
+                                                                                     'rlf'
+                                                                                     )
+    >>> print(post_rotations)
+    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
+     [RX(1.5707963267948966, wires=[0])]]
+    >>> print(diagonalized_groupings)
+    [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
+    >>> print(grouped_coeffs)
+    [[4.21], [1.43, 0.97]]
     """
 
     if coefficients is None:

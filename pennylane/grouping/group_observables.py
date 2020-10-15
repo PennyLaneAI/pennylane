@@ -188,22 +188,6 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     observables and edges encode the binary relation, then 2) solving minimum clique cover for the
     graph using graph-coloring heuristic algorithms.
 
-    **Example usage:**
-
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> obs_groupings, coeffs_groupings = group_observables(
-                                                            observables,
-                                                            coefficients,
-                                                            'anticommuting',
-                                                            'lf')
-    >>> obs_groupings
-    [[Tensor(PauliZ(wires=[1])),
-      Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
-     [Tensor(PauliY(wires=[0]))]]
-    >>> coeffs_groupings
-    [[0.97, 4.21], [1.43]]
-
     Args:
         observables (list[Observable]): a list of Pauli word `Observable` instances (Pauli
             operation instances and Tensor instances thereof)
@@ -226,6 +210,22 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Raises:
         IndexError: if the input list of coefficients is not of the same length as the input list
             of Pauli words
+
+    **Example**
+
+    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coefficients = [1.43, 4.21, 0.97]
+    >>> obs_groupings, coeffs_groupings = group_observables(
+                                                            observables,
+                                                            coefficients,
+                                                            'anticommuting',
+                                                            'lf')
+    >>> obs_groupings
+    [[Tensor(PauliZ(wires=[1])),
+      Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+     [Tensor(PauliY(wires=[0]))]]
+    >>> coeffs_groupings
+    [[0.97, 4.21], [1.43]]
     """
 
     if coefficients is not None:
