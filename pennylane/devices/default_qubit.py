@@ -124,7 +124,7 @@ class DefaultQubit(QubitDevice):
 
     def __init__(self, wires, *, shots=1000, analytic=True, caching=0):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic, caching)
+        super().__init__(wires, shots, analytic, caching=caching)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.

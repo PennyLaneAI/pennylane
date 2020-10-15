@@ -68,7 +68,20 @@ class DefaultQubitAutograd(DefaultQubit):
       outputs will result in an error.
 
     Args:
-        wires (int): the number of wires to initialize the device with
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to 1000 if not specified.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances, and only controls the number
+            of samples returned by ``sample``.
+        analytic (bool): indicates if the device should calculate expectations
+            and variances analytically
+        caching (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     name = "Default qubit (Autograd) PennyLane plugin"
@@ -104,8 +117,8 @@ class DefaultQubitAutograd(DefaultQubit):
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic)
+    def __init__(self, wires, *, shots=1000, analytic=True, caching=0):
+        super().__init__(wires, shots=shots, analytic=analytic, caching=caching)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation
