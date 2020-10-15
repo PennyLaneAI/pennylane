@@ -198,8 +198,8 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # TODO: This method and the tests can be moved to Device.execute() has the same
-        # signature as QubitDevice.execute()
+        # TODO: This method and the tests can be globally implemented by Device
+        # once it has the same signature in the execute() method
 
         results = []
         for circuit in circuits:

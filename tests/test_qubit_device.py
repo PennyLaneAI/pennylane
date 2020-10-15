@@ -756,7 +756,7 @@ class TestBatchExecution:
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_result(self, n_tapes, mock_qubit_device_with_apply, tol):
-        """Tests that the result has the correct shape and entries."""
+        """Tests that the result has the correct shape and entry types."""
 
         dev = mock_qubit_device_with_apply(wires=2)
 

@@ -731,7 +731,6 @@ class TestBatchExecution:
         """Tests that the device's reset method is called the correct number of times."""
 
         dev = mock_device_with_apply(wires=2)
-
         spy = mocker.spy(Device, "reset")
 
         tapes = [qml.tape.QuantumTape()]*n_tapes
@@ -741,10 +740,9 @@ class TestBatchExecution:
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_result(self, n_tapes, mock_device_with_apply, tol):
-        """Tests that the result has the correct shape and entries."""
+        """Tests that the result has the correct shape and entry types."""
 
         dev = mock_device_with_apply(wires=2)
-
         tapes = [qml.tape.QuantumTape()]*n_tapes
         res = dev.batch_execute(tapes)
 
