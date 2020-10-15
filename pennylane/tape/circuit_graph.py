@@ -30,6 +30,7 @@ class TapeCircuitGraph(CircuitGraph):
     def __init__(self, ops, obs, wires):
         self._operations = ops
         self._observables = obs
+        self._depth = 0
 
         for m in self._observables:
             if m.return_type is qml.operation.State:
@@ -47,6 +48,11 @@ class TapeCircuitGraph(CircuitGraph):
     def observables(self):
         """Observables in the circuit."""
         return self._observables
+
+    @property
+    def depth(self):
+        """Depth of the depth of a quantum circuit (longest path in the DAG)."""
+        return nx.dag_longest_path_length(self._graph)
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
