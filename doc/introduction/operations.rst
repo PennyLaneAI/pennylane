@@ -157,8 +157,8 @@ The post measurement rotations can be used to diagonalize the partitions of
 observables found.
 
 For further details on measurement optimization, graph coloring to be solved
-for grouping observables and auxiliary functions refer to the the
-:mod:`pennylane.grouping` subpackage.
+for grouping observables and auxiliary functions refer to the
+:doc:`/code/qml_grouping` subpackage.
 
 
 .. _intro_ref_ops_cv:
