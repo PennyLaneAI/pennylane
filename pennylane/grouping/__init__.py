@@ -11,17 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This subpackage defines functions and classes for Pauli word partitioning
 functionality used in measurement optimization.
-
-.. currentmodule:: pennylane.grouping
-.. autosummary::
-    :toctree: api
-
-    graph_colouring
-    group_observables
-    optimize_measurements
-    transformations
-    utils
 """
