@@ -858,26 +858,36 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self, deep=False, tape_cls=None):
-        """Returns a copy of the quantum tape.
+    def copy(self, copy_operations=False, tape_cls=None):
+        """Returns a shallow copy of the quantum tape.
 
         Args:
-            deep (bool): If True, a deep copy of the quantum tape is returned.
-                If not, a shallow copy is returned; both the copied tape and the
-                original tape will share the same operation instances.
+            copy_operations (bool): If True, the tape operations are also shallow copied.
+                Otherwise, if False, the copied tape operations will simply be references
+                to the original tape operations; changing the parameters of one tape will likewise
+                change the parameters of all copies.
             tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
                 If not provided, the same subclass is used as the original tape.
+
+        Returns:
+            .QuantumTape: a shallow copy of the tape
         """
         if tape_cls is None:
             tape = self.__class__()
         else:
             tape = tape_cls()
 
-        if deep:
+        if copy_operations:
+            # Perform a shallow copy of all operations in the state prep, operation, and measurement
+            # queues. The operations will continue to share data with the original tape operations
+            # unless modified.
             tape._prep = [copy.copy(op) for op in self._prep]
             tape._ops = [copy.copy(op) for op in self._ops]
             tape._measurements = [copy.copy(op) for op in self._measurements]
         else:
+            # Perform a shallow copy of the state prep, operation, and measurement queues. The
+            # operations within the queues will be references to the original tape operations;
+            # changing the original operations will always alter the operations on the copied tape.
             tape._prep = self._prep.copy()
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
@@ -885,11 +895,15 @@ class QuantumTape(AnnotatedQueue):
         tape._update()
         tape.trainable_params = self.trainable_params.copy()
 
+        # copied tapes share their cache with the original tape
         tape._caching = self._caching
         tape.get_cache = self.get_cache
-        tape.set_cache = self.set_cache
+        tape.add_cache_value = self.add_cache_value
 
         return tape
+
+    def __copy__(self):
+        return self.copy(copy_operations=True)
 
     # ========================================================
     # execution methods
@@ -991,7 +1005,7 @@ class QuantumTape(AnnotatedQueue):
         self.set_parameters(saved_parameters)
 
         if self._caching and circuit_hash not in self.get_cache():
-            self.set_cache(circuit_hash, res)
+            self.add_cache_value(circuit_hash, res)
             if len(self.get_cache()) > self._caching:
                 self.get_cache().popitem(last=False)
 
@@ -1012,6 +1026,6 @@ class QuantumTape(AnnotatedQueue):
         """Return the caching dictionary"""
         return self._cache_execute
 
-    def set_cache(self, circuit_hash, value):  # pylint: disable=method-hidden
+    def add_cache_value(self, circuit_hash, value):  # pylint: disable=method-hidden
         """Set a value in the caching dictionary"""
         self._cache_execute[circuit_hash] = value

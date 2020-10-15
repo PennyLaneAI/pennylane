@@ -122,7 +122,7 @@ class ReversibleTape(JacobianTape):
 
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)
 
-    def reversible_diff(self, idx, params=None, **options):
+    def reversible_diff(self, idx, params, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a
         parameter using the reversible backpropagation method.
 
@@ -171,9 +171,11 @@ class ReversibleTape(JacobianTape):
                 "reversible gradient method.".format(op.name)
             )
 
-        # get the stored final state of the original circuit, from which we start here
+        # get the stored final state of the original circuit, which we start from here
+
         final_state = self._final_state
-        # get the number of wires on the device used for the differentiation
+        # get the wires on the device used for the differentiation
+
         dev_wires = options.get("dev_wires")
 
         self.set_parameters(params)
@@ -193,7 +195,7 @@ class ReversibleTape(JacobianTape):
             generator, multiplier = op.generator
 
         # construct circuit to compute differentiated state
-        between_ops_inverse = [copy.deepcopy(op) for op in between_ops[::-1]]
+        between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]
 
         with QuantumTape() as new_circuit:
             # start with final state of original circuit
@@ -238,14 +240,15 @@ class ReversibleTape(JacobianTape):
         return tapes, processing_fn
 
     def jacobian(self, device, params=None, **options):
-        # The parameter_shift_var method needs to evaluate the circuit
+        # The reversible_diff method needs to evaluate the circuit
         # at the unshifted parameter values; the pre-rotated statevector is then stored
-        # self._state attribute. Here, we set the value of the attribute to None
+        # in the self._state attribute. Here, we set the value of the attribute to None
+
         # before each Jacobian call, so that the statevector is calculated only once.
         self._final_state = None
         return super().jacobian(device, params, **options)
 
-    def analytic_pd(self, idx, params=None, **options):
+    def analytic_pd(self, idx, params, **options):
         device = options["device"]
 
         # circuits constructed in reversible differentiation always start

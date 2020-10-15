@@ -246,7 +246,7 @@ class JacobianTape(QuantumTape):
             # get the stored result of the original circuit
             y0 = options.get("y0", None)
 
-            shifted = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
             tapes.append(shifted)
@@ -278,10 +278,10 @@ class JacobianTape(QuantumTape):
         if order == 2:
             # central finite difference
 
-            shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_forward.set_parameters(params + shift / 2)
 
-            shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+            shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_backward.set_parameters(params - shift / 2)
 
             tapes = [shifted_forward, shifted_backward]
@@ -332,15 +332,14 @@ class JacobianTape(QuantumTape):
         self.set_parameters(saved_parameters)
         return jac
 
-    def analytic_pd(self, idx, params=None, **options):
+    def analytic_pd(self, idx, params, **options):
         """Generate the quantum tapes and classical post-processing function required to compute the
         gradient of the tape with respect to a single trainable tape parameter using an analytic
         method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
+            params (list[Any]): the quantum tape operation parameters
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,

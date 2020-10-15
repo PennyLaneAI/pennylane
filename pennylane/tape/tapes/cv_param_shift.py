@@ -216,7 +216,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
     def parameter_shift_first_order(
-        self, idx, params=None, **options
+        self, idx, params, **options
     ):  # pylint: disable=unused-argument
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
         first order CV parameter-shift method.
@@ -241,10 +241,10 @@ class CVParamShiftTape(QubitParamShiftTape):
         shift = np.zeros_like(params)
         shift[idx] = s
 
-        shifted_forward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_forward.set_parameters(params + shift)
 
-        shifted_backward = self.copy(deep=True, tape_cls=QuantumTape)
+        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_backward.set_parameters(params - shift)
 
         tapes = [shifted_forward, shifted_backward]
@@ -267,7 +267,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift_second_order(self, idx, params=None, **options):
+    def parameter_shift_second_order(self, idx, params, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a
         parameter using the second order CV parameter-shift method.
 
@@ -330,12 +330,13 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         Z = B @ Z @ B_inv  # conjugation
 
-        tape = self.copy(deep=True, tape_cls=QuantumTape)
+        tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
 
         # change the observable
         # TODO: if the transformation produces only a constant term,
         # `_transform_observable` has only a single non-zero element in the
-        # 0th position) then  there is no need to execute the device---the constant term
+        # 0th position, then there is no need to execute the device---the constant term
+
         # represents the gradient.
 
         # transform the descendant observables into their derivatives using Z
@@ -368,7 +369,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return tapes, processing_fn
 
-    def parameter_shift(self, idx, params=None, **options):
+    def parameter_shift(self, idx, params, **options):
         r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
 
@@ -461,6 +462,8 @@ class CVParamShiftTape(QubitParamShiftTape):
             return self.numeric_pd(idx, params, **options)
 
         tapes = []
+
+        # Get <A>, the expectation value of the tape with unshifted parameters.
         evA_tape = self.copy()
 
         # Temporarily convert all variance measurements on the tape into expectation values
@@ -495,8 +498,15 @@ class CVParamShiftTape(QubitParamShiftTape):
         pdA2_tapes, pdA2_fn = pdA2_tape.parameter_shift_second_order(idx, params, **options)
         tapes.extend(pdA2_tapes)
 
-        if self._evA is None:
+        # Make sure that the expectation value of the tape with unshifted parameters
+        # is only calculated once, if `self._append_evA_tape` is True.
+        if self._append_evA_tape:
             tapes.append(evA_tape)
+
+            # Now that the <A> tape has been appended, we want to avoid
+            # appending it for subsequent parameters, as the result can simply
+            # be re-used.
+            self._append_evA_tape = False
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index ``idx`` via the
@@ -513,7 +523,11 @@ class CVParamShiftTape(QubitParamShiftTape):
             pdA = pdA_fn(results[0:2])
             pdA2 = pdA2_fn(results[2:4])
 
+            # Check if the expectation value of the tape with unshifted parameters
+            # has already been calculated.
             if self._evA_result is None:
+                # The expectation value hasn't been previously calculated;
+                # it will be the last element of the `results` argument.
                 self._evA_result = np.array(results[-1])
 
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
