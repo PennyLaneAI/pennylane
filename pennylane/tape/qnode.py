@@ -656,7 +656,13 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options,)
+        qn = QNode(
+            func,
+            device,
+            interface=interface,
+            diff_method=diff_method,
+            **diff_options,
+        )
         return update_wrapper(qn, func)
 
     return qfunc_decorator
