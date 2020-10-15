@@ -52,18 +52,13 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
 
     **Example**
 
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> post_rotations,diagonalized_groupings,grouped_coeffs = optimize_measurements(
-                                                                                     observables,
-                                                                                     coefficients,
-                                                                                     'qwc',
-                                                                                     'rlf'
-                                                                                     )
-    >>> print(post_rotations)
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> rotations, groupings, grouped_coeffs = optimize_measurements(obs, coeffs, 'qwc', 'rlf')
+    >>> print(rotations)
     [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
      [RX(1.5707963267948966, wires=[0])]]
-    >>> print(diagonalized_groupings)
+    >>> print(groupings)
     [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
     >>> print(grouped_coeffs)
     [[4.21], [1.43, 0.97]]
