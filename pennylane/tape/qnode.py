@@ -126,9 +126,7 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
-    def __init__(
-        self, func, device, interface="autograd", diff_method="best", **diff_options
-    ):
+    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
@@ -251,8 +249,9 @@ class QNode:
         backprop_interface = device.capabilities().get("passthru_interface", None)
 
         if device.caching != 0:
-            raise qml.QuantumFunctionError("Device caching is incompatible with the backprop "
-                                           "diff_method")
+            raise qml.QuantumFunctionError(
+                "Device caching is incompatible with the backprop " "diff_method"
+            )
 
         if backprop_interface is not None:
 
@@ -657,13 +656,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        qn = QNode(
-            func,
-            device,
-            interface=interface,
-            diff_method=diff_method,
-            **diff_options,
-        )
+        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options,)
         return update_wrapper(qn, func)
 
     return qfunc_decorator
