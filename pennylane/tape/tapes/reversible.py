@@ -174,7 +174,8 @@ class ReversibleTape(JacobianTape):
         # get the stored final state of the original circuit, which we start from here
 
         final_state = self._final_state
-        # get the number of wires on the device used for the differentiation
+        # get the wires on the device used for the differentiation
+
         dev_wires = options.get("dev_wires")
 
         self.set_parameters(params)
