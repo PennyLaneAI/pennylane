@@ -140,50 +140,7 @@ Qubit observables
 Grouping Pauli words
 ^^^^^^^^^^^^^^^^^^^^
 
-A Pauli word is defined as :math:`P_I = \prod_{i=1}^{N}\sigma_i^{(I)}` where
-:math:`\sigma_i^{(I)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
-:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ`) or identity
-(:class:`~pennylane.Identity`) for the :math:`i^{th}` qubit.
-
-Pauli words can be used for expressing a qubit :class:`~pennylane.Hamiltonian`.
-A qubit Hamiltonian has the form :math:`H_{q} = \sum_{I} C_I P_I` where
-:math:`C_{I}` are numerical coefficients, and :math:`P_I` are Pauli words.
-
-A list of Pauli words can be partitioned according to certain grouping
-strategies. As an example, the :func:`~.group_observables` function partitions
-a list of observables (Pauli operations and tensor products thereof) into
-groupings according to a binary relation (e.g. qubit-wise commuting):
-
-.. code-block:: python
-
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> obs_groupings = group_observables(observables)
-    >>> obs_groupings
-    [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
-     [PauliY(wires=[0]), PauliZ(wires=[1])]]
-
-The :math:`C_{I}` coefficients for each :math:`P_I` Pauli word making up a
-Hamiltonian can also be specified along with further options such as the Pauli
-word grouping method (``qubit-wise commutativity``) and the underlying graph
-coloring algorithm (``recursive largest first``) used for creating the groups
-of observables:
-
-.. code-block:: python
-
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> obs_groupings, coeffs_groupings = group_observables(
-                                                            observables,
-                                                            coefficients,
-                                                            'qwc',
-                                                            'rlf')
-    >>> obs_groupings
-    [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
-     [PauliY(wires=[0]), PauliZ(wires=[1])]]
-    >>> coeffs_groupings
-    [[4.21], [1.43, 0.97]]
-
-Grouping observables can be used for the optimizing the measurement of qubit
+Grouping Pauli words can be used for the optimizing the measurement of qubit
 Hamiltonians. Along with groups of observables, post measurement rotations can
 also be obtained using :func:`~.optimize_measurements`:
 
