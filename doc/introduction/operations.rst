@@ -158,7 +158,7 @@ observables found.
 
 For further details on measurement optimization, graph coloring to be solved
 for grouping observables and auxiliary functions refer to the the
-:mod:`~.grouping` subpackage.
+:mod:`pennylane.grouping` subpackage.
 
 
 .. _intro_ref_ops_cv:
