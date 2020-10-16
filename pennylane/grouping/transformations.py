@@ -71,7 +71,7 @@ def diagonalize_pauli_word(pauli_word):
 
     Raises:
         TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or `Tensor`
-        instances thereof
+            instances thereof
 
     **Example**
 
@@ -112,10 +112,12 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
             qubit-wise commutative Pauli words
 
     Returns:
-        unitary (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
-            qubit-wise commuting grouping
-        diag_terms (list[Observable]): list of Pauli string observables diagonal in the
-            computational basis
+        tuple:
+
+            * list[Operation]: an instance of the qwc_rotation template which
+              diagonalizes the qubit-wise commuting grouping
+            * list[Observable]: list of Pauli string observables diagonal in
+              the computational basis
 
     Raises:
         ValueError: if any 2 elements in the input QWC grouping are not qubit-wise commutative
@@ -186,11 +188,13 @@ def diagonalize_qwc_groupings(qwc_groupings):
             of Pauli string observables
 
     Returns:
-        post_rotations (list[list[Operation]]): a list of instances of the qwc_rotation template
-            which diagonalizes the qubit-wise commuting grouping, order corresponding to
-            qwc_groupings
-        diag_groupings (list[list[Observable]]): a list of QWC groupings diagonalized in the
-            computational basis, order corresponding to qwc_groupings
+        tuple:
+
+            * list[list[Operation]]: a list of instances of the qwc_rotation
+              template which diagonalizes the qubit-wise commuting grouping,
+              order corresponding to qwc_groupings
+            * list[list[Observable]]: a list of QWC groupings diagonalized in the
+              computational basis, order corresponding to qwc_groupings
 
     **Example**
 

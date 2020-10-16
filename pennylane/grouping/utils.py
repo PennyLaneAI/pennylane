@@ -251,8 +251,8 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     Returns:
         Tensor(Union[Identity, PauliX, PauliY, PauliZ]): The Pauli word corresponding to the input
-            binary vector. Note that if a zero vector is input, then the resulting Pauli word will
-            be an `Identity` instance.
+        binary vector. Note that if a zero vector is input, then the resulting Pauli word will
+        be an `Identity` instance.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly
@@ -340,7 +340,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     Returns:
         bool: returns True if the input Pauli words are qubit-wise commutative, returns False
-            otherwise
+        otherwise
 
     Raises:
         ValueError: if the input vectors are of different dimension, if the vectors are not of even

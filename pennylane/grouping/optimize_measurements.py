@@ -42,13 +42,17 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
             partitions
 
     Returns:
-        post_rotations (list[Template]): a list of the post-rotation qml.Templates instances, one
-            for each partition
-        diagonalized_groupings (list[list[Observable]]): A list of the obtained groupings. Each
-            grouping is itself a list of Pauli words diagonal in the measurement basis.
-        grouped_coeffs (list[list[scalar]]): A list of coefficient groupings. Each
-            coefficient grouping is itself a list of the partitions corresponding coefficients.
-            Only output if coefficients are specified.
+        tuple:
+
+            * list[Template]: a list of the post-rotation qml.Templates instances, one
+              for each partition
+            * list[list[Observable]]: A list of the obtained groupings. Each
+              grouping is itself a list of Pauli words diagonal in the
+              measurement basis.
+            * list[list[scalar]]: A list of coefficient groupings. Each
+              coefficient grouping is itself a list of the partitions
+              corresponding coefficients.  Only output if coefficients are
+              specified.
 
     **Example**
 

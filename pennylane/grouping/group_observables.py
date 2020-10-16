@@ -197,11 +197,13 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             can be 'lf' (Largest First) or 'rlf' (Recursive Largest First)
 
     Returns:
-       list[list[Observable]]: A list of the obtained groupings. Each grouping
-       is itself a list of Pauli word `Observable` instances.
-       list[list[scalar]]: A list of coefficient groupings. Each coefficient
-       grouping is itself a list of the grouping's corresponding coefficients. This is only
-       output if coefficients are specified.
+       tuple:
+
+           * list[list[Observable]]: A list of the obtained groupings. Each grouping
+             is itself a list of Pauli word `Observable` instances.
+           * list[list[scalar]]: A list of coefficient groupings. Each coefficient
+             grouping is itself a list of the grouping's corresponding coefficients. This is only
+             output if coefficients are specified.
 
     Raises:
         IndexError: if the input list of coefficients is not of the same length as the input list
