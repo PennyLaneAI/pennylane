@@ -37,7 +37,7 @@ def qwc_rotation(pauli_operators):
             operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
         TypeError: if any elements of ``pauli_operators`` are not instances of
-            ``qml.PauliX``, ``qml.PauliY``, ``qml.PauliZ``, or ``qml.Identity``
+            :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, or :class:`~.Identity`
 
     **Example**
 
@@ -70,8 +70,8 @@ def diagonalize_pauli_word(pauli_word):
         Observable: the Pauli word diagonalized in the computational basis
 
     Raises:
-        TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or ``Tensor``
-            instances thereof
+        TypeError: if the input is not a Pauli word, i.e., a Pauli operator,
+            ``Identity``, or ``Tensor`` instances thereof
 
     **Example**
 

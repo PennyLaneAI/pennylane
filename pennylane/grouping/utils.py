@@ -32,8 +32,8 @@ def is_pauli_word(observable):
     Checks if an observable instance is a Pauli word.
 
     Args:
-        observable (Observable): an observable, either a Tensor instance or single-qubit
-            observable.
+        observable (Observable): an observable, either a ``Tensor`` instance or
+            single-qubit observable.
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -66,12 +66,12 @@ def is_pauli_word(observable):
 def are_identical_pauli_words(pauli_1, pauli_2):
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
-    This is a convenience function that checks if two given Tensor instances specify the same
-    Pauli word. This function only checks if both Tensor instances have the same wires and name
+    This is a convenience function that checks if two given ``Tensor`` instances specify the same
+    Pauli word. This function only checks if both ``Tensor`` instances have the same wires and name
     attributes, and hence won't perform any simplification to identify if the two Pauli words are
-    algebraically equivalent. For instance, this function will not identify that
-    PauliX(0) @ PauliX(0) = Identity(0), or PauliX(0) @ Identity(1) = PauliX(0), or
-    Identity(0) = Identity(1), etc.
+    algebraically equivalent. For instance, this function will not identify
+    that ``PauliX(0) @ PauliX(0) = Identity(0)``, or ``PauliX(0) @ Identity(1)
+    = PauliX(0)``, or ``Identity(0) = Identity(1)``, etc.
 
     Args:
         pauli_1 (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the first Pauli word
@@ -81,8 +81,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
         bool: whether ``pauli_1`` and ``pauli_2`` have the same wires and name attributes
 
     Raises:
-        TypeError: if pauli_1 or pauli_2 are not Identity, PauliX, PauliY, PauliZ, or Tensor
-            instances
+        TypeError: if ``pauli_1`` or ``pauli_2`` are not ``Identity``,
+            ``PauliX``, ``PauliY``, ``PauliZ``, or ``Tensor`` instances
 
     **Example**
 
@@ -247,9 +247,9 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
             unique integer labels as their values
 
     Returns:
-        Tensor(Union[Identity, PauliX, PauliY, PauliZ]): The Pauli word corresponding to the input
-        binary vector. Note that if a zero vector is input, then the resulting Pauli word will
-        be an ``Identity`` instance.
+        Tensor: The Pauli word corresponding to the input binary vector. Note
+        that if a zero vector is input, then the resulting Pauli word will be
+        an ``Identity`` instance.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly
@@ -263,14 +263,15 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     >>> binary_to_pauli([0,1,1,0,1,0])
     Tensor(PauliY(wires=[1]), PauliX(wires=[2]))
 
-    An arbitrary labelling can be assigned by using ``wire_map``
+    An arbitrary labelling can be assigned by using ``wire_map``:
+
     >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
     Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
 
-    Note that the values of ``wire_map``, if specified, must be 0,1,..., N, where N is the dimension
-    of the vector divided by two, i.e., ``list(wire_map.values())`` must be
-    ``list(range(len(binary_vector)/2))``.
+    Note that the values of ``wire_map``, if specified, must be ``0,1,..., N``,
+    where ``N`` is the dimension of the vector divided by two, i.e.,
+    ``list(wire_map.values())`` must be ``list(range(len(binary_vector)/2))``.
     """
 
     if isinstance(binary_vector, (list, tuple)):
