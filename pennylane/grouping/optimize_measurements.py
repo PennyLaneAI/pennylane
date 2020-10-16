@@ -44,7 +44,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     Returns:
         tuple:
 
-            * list[Template]: a list of the post-rotation qml.Templates instances, one
+            * list[callable]: a list of the post-rotation templates, one
               for each partition
             * list[list[Observable]]: A list of the obtained groupings. Each
               grouping is itself a list of Pauli words diagonal in the
