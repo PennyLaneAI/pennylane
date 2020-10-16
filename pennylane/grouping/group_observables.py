@@ -184,7 +184,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
-    groupings according to a binary relation (qubit-wise commuting, fully commuting, or
+    groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
     anticommuting).
 
     Partitions are found by 1) mapping the list of observables to a graph where vertices represent
