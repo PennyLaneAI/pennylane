@@ -424,6 +424,12 @@ class TestInternalFunctions:
                                 (Wires(-1), Wires(2)), (Wires(3), Wires(3))])
         assert dev.wire_map == expected
 
+    def test_execution_property(self, mock_device):
+        """Tests that the number of executions is initialised correctly"""
+        dev = mock_device()
+        expected = 0
+        assert dev.execution == expected
+
 
 class TestClassmethods:
     """Test the classmethods of Device"""

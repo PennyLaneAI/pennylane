@@ -1018,6 +1018,68 @@ class TestQNodeEvaluate:
         res = node(0.432, 0.12)
         assert res.shape == (10,)
 
+    def test_device_executions(self):
+        """Test the number of times a QNode running on the device is evaluated
+        is equal to the number of times a the device is executed"""
+
+        dev_1 = qml.device("default.qubit", wires=2)
+
+        def circuit_1(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_1 = BaseQNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        for _ in range(num_evals_1):
+            node_1(0.432, 0.12)
+        assert dev_1.execution ==  num_evals_1
+
+        # test a second instance of a default qubit device
+        dev_2 = qml.device("default.qubit", wires=2)
+
+        def circuit_2(x, y):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_2 = BaseQNode(circuit_2, dev_2)
+        num_evals_2 = 5
+
+        for _ in range(num_evals_2):
+            node_2(0.432, 0.12)
+        assert dev_2.execution ==  num_evals_2
+
+        # test a new circuit on an existing instance of a qubit device
+        def circuit_3(x, y):
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_3 = BaseQNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        for _ in range(num_evals_3):
+            node_3(0.432, 0.12)
+        assert dev_1.execution == num_evals_1 + num_evals_3
+
+        # test default Gaussian device
+        dev_gauss = qml.device("default.gaussian", wires=1)
+
+        def circuit_gauss(mag_alpha, phase_alpha, phi):
+            qml.Displacement(mag_alpha, phase_alpha, wires=0)
+            qml.Rotation(phi, wires=0)
+            return qml.expval(qml.NumberOperator(0))
+
+        node_gauss = BaseQNode(circuit_gauss, dev_gauss)
+        num_evals_gauss = 12
+
+        for i in range(num_evals_gauss):
+            node_gauss(0.015, 0.02, 0.005)
+        assert dev_gauss.execution == num_evals_gauss
+
 
 class TestDecomposition:
     """Test for queue decomposition"""

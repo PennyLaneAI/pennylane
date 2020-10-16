@@ -72,9 +72,11 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
+        self._execution = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
 
     def __repr__(self):
         """String representation."""
@@ -153,6 +155,12 @@ class Device(abc.ABC):
         """Ordered dictionary that defines the map from user-provided wire labels to
         the wire labels used on this device"""
         return self._wire_map
+
+    @property
+    def execution(self):
+        """Number of times this device is executed by the evaluation of QNodes
+         running on this device"""
+        return self._execution
 
     @shots.setter
     def shots(self, shots):
