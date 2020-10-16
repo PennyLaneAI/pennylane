@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 Utility functions used in Pauli partitioning and measurement reduction schemes utilizing the
-symplectic vector space representation of Pauli words. For information on the symplectic binary
+symplectic vector-space representation of Pauli words. For information on the symplectic binary
 representation of Pauli words and applications, see:
 
 * `arXiv:quant-ph/9705052 <https://arxiv.org/abs/quant-ph/9705052>`_
@@ -372,7 +372,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     if len(pauli_vec_1) % 2 != 0:
         raise ValueError(
-            "Symplectic vector space must have even dimension, instead got vectors of shape {}.".format(
+            "Symplectic vector-space must have even dimension, instead got vectors of shape {}.".format(
                 np.shape(pauli_vec_1)
             )
         )

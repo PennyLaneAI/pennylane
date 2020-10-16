@@ -55,8 +55,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             the Pauli words, can be ``'qwc'``(qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
         graph_colourer (str): the heuristic algorithm to employ for graph
-            colouring, can be ``'lf'`` (largest first) or ``'rlf'`` (recursive
-            largest first)
+            colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
+            Largest First)
 
     Raises:
         ValueError: if arguments specified for `grouping_type` or

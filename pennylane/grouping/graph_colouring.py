@@ -24,7 +24,7 @@ A module for heuristic algorithms for colouring Pauli graphs.
 
 A Pauli graph is a graph where vertices represent Pauli words and edges denote
 if a specified symmetric binary relation (e.g., commutation) is satisfied for the
-corresponding Pauli words. The graph colouring problem is to assign a colour to
+corresponding Pauli words. The graph-colouring problem is to assign a colour to
 each vertex such that no vertices of the same colour are connected, using the
 fewest number of colours (lowest "chromatic number") as possible.
 """
@@ -33,7 +33,7 @@ import numpy as np
 
 
 def largest_first(binary_observables, adj):
-    """Performs graph colouring using the Largest Degree First heuristic. Runtime is quadratic in
+    """Performs graph-colouring using the Largest Degree First heuristic. Runtime is quadratic in
     number of vertices.
 
     **Usage example:**
@@ -87,7 +87,7 @@ def largest_first(binary_observables, adj):
 
 
 def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many-locals
-    """Performs graph colouring using the Recursive Largest Degree First heuristic. Often yields a
+    """Performs graph-colouring using the Recursive Largest Degree First heuristic. Often yields a
     lower chromatic number than Largest Degree First, but takes longer (runtime is cubic in number
     of vertices).
 
