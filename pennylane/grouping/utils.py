@@ -125,7 +125,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
              unique integer labels as their values
 
     Returns:
-        array: the 2*n_qubits dimensional binary vector representation of the input Pauli word.
+        array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word.
 
     Raises:
         TypeError: if the input ``pauli_word`` is not an instance of Identity, PauliX, PauliY,
@@ -343,7 +343,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     Raises:
         ValueError: if the input vectors are of different dimension, if the vectors are not of even
-        dimension, or if the vector components are not strictly binary
+            dimension, or if the vector components are not strictly binary
 
     **Example**
 
@@ -411,7 +411,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     """Converts a list of Pauli words to the binary vector representation and yields a row matrix
-        of the binary vectors.
+    of the binary vectors.
 
     The dimension of the binary vectors will be implied from the highest wire being acted on
     non-trivially by the Pauli words in observables.
