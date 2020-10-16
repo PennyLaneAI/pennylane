@@ -377,6 +377,8 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
+        self._resources = None
+        self._depth = 0
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
