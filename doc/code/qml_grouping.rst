@@ -1,7 +1,8 @@
 qml.grouping
 ============
 
-This subpackage defines functions and classes for Pauli word partitioning
+This subpackage defines functions and classes for Pauli-word partitioning
+
 functionality used in measurement optimization.
 
 A Pauli word is defined as :math:`P_J = \prod_{i=1}^{N}\sigma_i^{(J)}`, where
