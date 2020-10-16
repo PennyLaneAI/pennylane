@@ -4,7 +4,7 @@ qml.grouping
 This subpackage defines functions and classes for Pauli word partitioning
 functionality used in measurement optimization.
 
-A Pauli word is defined as :math:`P_I = \prod_{i=1}^{N}\sigma_i^{(I)}` where
+A Pauli word is defined as :math:`P_I = \prod_{i=1}^{N}\sigma_i^{(I)}`, where
 :math:`\sigma_i^{(I)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
 :class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ`) or identity
 (:class:`~pennylane.Identity`) for the :math:`i^{th}` qubit.
