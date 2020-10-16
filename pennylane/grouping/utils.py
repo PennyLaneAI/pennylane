@@ -32,7 +32,7 @@ def is_pauli_word(observable):
     Checks if an observable instance is a Pauli word.
 
     Args:
-        observable (Observable): an observable, either a ``Tensor`` instance or
+        observable (Observable): an observable, either a :class:`~.Tensor` instance or
             single-qubit observable.
 
     Returns:
@@ -66,8 +66,8 @@ def is_pauli_word(observable):
 def are_identical_pauli_words(pauli_1, pauli_2):
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
-    This is a convenience function that checks if two given ``Tensor`` instances specify the same
-    Pauli word. This function only checks if both ``Tensor`` instances have the same wires and name
+    This is a convenience function that checks if two given :class:`~.Tensor` instances specify the same
+    Pauli word. This function only checks if both :class:`~.Tensor` instances have the same wires and name
     attributes, and hence won't perform any simplification to identify if the two Pauli words are
     algebraically equivalent. For instance, this function will not identify
     that ``PauliX(0) @ PauliX(0) = Identity(0)``, or ``PauliX(0) @ Identity(1)
@@ -81,8 +81,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
         bool: whether ``pauli_1`` and ``pauli_2`` have the same wires and name attributes
 
     Raises:
-        TypeError: if ``pauli_1`` or ``pauli_2`` are not ``Identity``,
-            ``PauliX``, ``PauliY``, ``PauliZ``, or ``Tensor`` instances
+        TypeError: if ``pauli_1`` or ``pauli_2`` are not :class:`~.Identity`,
+            :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, or
+            :class:`~.Tensor` instances
 
     **Example**
 
@@ -249,7 +250,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     Returns:
         Tensor: The Pauli word corresponding to the input binary vector. Note
         that if a zero vector is input, then the resulting Pauli word will be
-        an ``Identity`` instance.
+        an :class:`~.Identity` instance.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly

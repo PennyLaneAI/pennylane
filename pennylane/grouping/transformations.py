@@ -71,7 +71,7 @@ def diagonalize_pauli_word(pauli_word):
 
     Raises:
         TypeError: if the input is not a Pauli word, i.e., a Pauli operator,
-            ``Identity``, or ``Tensor`` instances thereof
+            :class:`~.Identity`, or :class:`~.Tensor` instances thereof
 
     **Example**
 
