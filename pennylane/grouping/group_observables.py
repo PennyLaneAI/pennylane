@@ -51,13 +51,16 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             grouping strategy
 
     Keyword Args:
-        grouping_type (str): the binary relation used to define partitions of the Pauli words
-        graph_colourer (str): the heuristic algorithm to employ for graph colouring
+        grouping_type (str): the binary relation used to define partitions of
+            the Pauli words, can be ``'qwc'``(qubit-wise commuting), ``'commuting'``, or
+            ``'anticommuting'``.
+        graph_colourer (str): the heuristic algorithm to employ for graph
+            colouring, can be ``'lf'`` (largest first) or ``'rlf'`` (recursive
+            largest first)
 
     Raises:
         ValueError: if arguments specified for `grouping_type` or
-            `graph_colourer` are not recognized as elements of `GROUPING_TYPES` or
-            `GRAPH_COLOURING_METHODS` respectively
+            `graph_colourer` are not recognized
 
     """
 
