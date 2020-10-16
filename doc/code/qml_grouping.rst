@@ -4,19 +4,19 @@ qml.grouping
 This subpackage defines functions and classes for Pauli word partitioning
 functionality used in measurement optimization.
 
-A Pauli word is defined as :math:`P_I = \prod_{i=1}^{N}\sigma_i^{(I)}` where
-:math:`\sigma_i^{(I)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
+A Pauli word is defined as :math:`P_J = \prod_{i=1}^{N}\sigma_i^{(J)}`, where
+:math:`\sigma_i^{(J)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
 :class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ`) or identity
-(:class:`~pennylane.Identity`) for the :math:`i^{th}` qubit.
+(:class:`~pennylane.Identity`) acting on the :math:`i^{th}` qubit.
 
 Pauli words can be used for expressing a qubit :class:`~pennylane.Hamiltonian`.
-A qubit Hamiltonian has the form :math:`H_{q} = \sum_{I} C_I P_I` where
-:math:`C_{I}` are numerical coefficients, and :math:`P_I` are Pauli words.
+A qubit Hamiltonian has the form :math:`H_{q} = \sum_{J} C_J P_J` where
+:math:`C_{J}` are numerical coefficients, and :math:`P_J` are Pauli words.
 
 A list of Pauli words can be partitioned according to certain grouping
 strategies. As an example, the :func:`~.group_observables` function partitions
 a list of observables (Pauli operations and tensor products thereof) into
-groupings according to a binary relation (e.g. qubit-wise commuting):
+groupings according to a binary relation (e.g., qubit-wise commuting):
 
 .. code-block:: python
 
@@ -26,11 +26,11 @@ groupings according to a binary relation (e.g. qubit-wise commuting):
     [[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
      [PauliY(wires=[0]), PauliZ(wires=[1])]]
 
-The :math:`C_{I}` coefficients for each :math:`P_I` Pauli word making up a
-Hamiltonian can also be specified along with further options such as the Pauli
-word grouping method (``qubit-wise commutativity``) and the underlying graph
-coloring algorithm (``recursive largest first``) used for creating the groups
-of observables:
+The :math:`C_{J}` coefficients for each :math:`P_J` Pauli word making up a
+Hamiltonian can also be specified along with further options, such as the Pauli
+word grouping method (e.g., *qubit-wise commuting*) and the underlying graph-
+colouring algorithm (e.g., *recursive largest first*) used for creating the
+groups of observables:
 
 .. code-block:: python
 

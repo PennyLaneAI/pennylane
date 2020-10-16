@@ -49,13 +49,16 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     Args:
         observables (list[Observable]): a list of Pauli words to be partitioned according to a
             grouping strategy
-        grouping_type (str): the binary relation used to define partitions of the Pauli words
-        graph_colourer (str): the heuristic algorithm to employ for graph colouring
+        grouping_type (str): the binary relation used to define partitions of
+            the Pauli words, can be ``'qwc'``(qubit-wise commuting), ``'commuting'``, or
+            ``'anticommuting'``.
+        graph_colourer (str): the heuristic algorithm to employ for graph
+            colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
+            Largest First)
 
     Raises:
-        ValueError: if arguments specified for ``grouping_type`` or
-            ``graph_colourer`` are not recognized as elements of ``GROUPING_TYPES`` or
-            ``GRAPH_COLOURING_METHODS`` respectively
+        ValueError: if arguments specified for `grouping_type` or
+            `graph_colourer` are not recognized
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -84,7 +87,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         self.adj_matrix = None
         self.grouped_paulis = None
 
-    def obtain_binary_repr(self, n_qubits=None, wire_map=None):
+    def binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
         Args:
@@ -111,7 +114,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
-    def obtain_complement_adj_matrix_for_operator(self):
+    def complement_adj_matrix_for_operator(self):
         """Constructs the adjacency matrix for the complement of the Pauli graph.
 
         The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
@@ -122,7 +125,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.binary_observables is None:
-            self.binary_observables = self.obtain_binary_repr()
+            self.binary_observables = self.binary_repr()
 
         n_qubits = int(np.shape(self.binary_observables)[1] / 2)
 
@@ -161,7 +164,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.adj_matrix is None:
-            self.adj_matrix = self.obtain_complement_adj_matrix_for_operator()
+            self.adj_matrix = self.complement_adj_matrix_for_operator()
 
         coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
 
@@ -175,12 +178,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
-    groupings according to a binary relation (qubit-wise commuting, fully commuting, or
+    groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
     anticommuting).
 
     Partitions are found by 1) mapping the list of observables to a graph where vertices represent
     observables and edges encode the binary relation, then 2) solving minimum clique cover for the
-    graph using graph-coloring heuristic algorithms.
+    graph using graph-colouring heuristic algorithms.
 
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli

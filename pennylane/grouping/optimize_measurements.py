@@ -30,7 +30,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     partitions are then found. See `arXiv:1907.03358
     <https://arxiv.org/abs/1907.03358>`_ and `arXiv:1907.09386
     <https://arxiv.org/abs/1907.09386>`_ for technical details of the QWC and
-    fully commuting measurement partitioning approaches respectively.
+    fully-commuting measurement-partitioning approaches respectively.
 
     Args:
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor

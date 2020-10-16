@@ -51,7 +51,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
@@ -64,7 +64,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
@@ -77,7 +77,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -95,7 +95,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
@@ -108,7 +108,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
@@ -121,7 +121,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -289,8 +289,8 @@ class TestGroupObservables:
         with pytest.raises(IndexError, match="must be the same length"):
             group_observables(observables, coefficients)
 
-    def test_obtain_binary_repr_custom_wire_map(self):
-        """Tests that the ``obtain_binary_repr`` method sets a custom
+    def test_binary_repr_custom_wire_map(self):
+        """Tests that the ``binary_repr`` method sets a custom
          wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
@@ -298,6 +298,6 @@ class TestGroupObservables:
 
         n_qubits = 3
         wire_map = {"alice": 1, "bob": 0, "charlie": 2}
-        _ = grouping_instance.obtain_binary_repr(n_qubits, wire_map)
+        _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
         assert grouping_instance._wire_map == wire_map
