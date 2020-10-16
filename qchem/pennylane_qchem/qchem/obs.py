@@ -545,7 +545,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         if all(indices[j][i] in active for j in range(len(indices)))
     ]
 
-    # Represent the operator T as a FermionOperator
+    # Build the FermionOperator representing T
     t_op = FermionOperator("") * t_core
     for i, pair in enumerate(pairs):
         alpha, beta = pair
@@ -714,7 +714,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         if all(indices[j][i] in active for j in range(len(indices)))
     ]
 
-    # Represent the operator V as a FermionOperator
+    # Build the FermionOperator representing V
     v_op = FermionOperator("") * v_core
     for i, quad in enumerate(quads):
         alpha, beta, gamma, delta = quad

@@ -114,7 +114,7 @@ t_op_4 = {
 
 
 @pytest.mark.parametrize(
-    ("core", "active", "op_exp"),
+    ("core", "active", "t_op_exp"),
     [
         (None, None, t_op_1),
         ([0, 1, 2, 3], [4, 5], t_op_2),
@@ -122,7 +122,7 @@ t_op_4 = {
         (None, [0, 1, 2, 3, 4, 5], t_op_4),
     ],
 )
-def test_table_one_particle(core, active, op_exp):
+def test_table_one_particle(core, active, t_op_exp):
     r"""Test the correctness of the FermionOperator built by the `'one_particle'` function
     of the `obs` module"""
 
@@ -130,7 +130,7 @@ def test_table_one_particle(core, active, op_exp):
 
     t_op = qchem.one_particle(hf.one_body_integrals, core=core, active=active)
 
-    assert t_op.terms == op_exp
+    assert t_op.terms == t_op_exp
 
 
 table_1D = np.array([1, 2, 3])
