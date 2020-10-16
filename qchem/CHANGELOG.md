@@ -17,7 +17,7 @@
 
 * Many-body observables are now built from the FermionOperator representation of
   one-particle and two-particle second-quantized operators.
-  [(#)]()
+  [(#854)](https://github.com/PennyLaneAI/pennylane/pull/854)
 
   This improvement brings the following advantages:
 
