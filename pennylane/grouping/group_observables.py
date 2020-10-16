@@ -90,7 +90,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         self.adj_matrix = None
         self.grouped_paulis = None
 
-    def obtain_binary_repr(self, n_qubits=None, wire_map=None):
+    def binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
         Keyword args:
@@ -118,7 +118,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
-    def obtain_complement_adj_matrix_for_operator(self):
+    def complement_adj_matrix_for_operator(self):
         """Constructs the adjacency matrix for the complement of the Pauli graph.
 
         The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
@@ -130,7 +130,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.binary_observables is None:
-            self.binary_observables = self.obtain_binary_repr()
+            self.binary_observables = self.binary_repr()
 
         n_qubits = int(np.shape(self.binary_observables)[1] / 2)
 
@@ -170,7 +170,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.adj_matrix is None:
-            self.adj_matrix = self.obtain_complement_adj_matrix_for_operator()
+            self.adj_matrix = self.complement_adj_matrix_for_operator()
 
         coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
 
