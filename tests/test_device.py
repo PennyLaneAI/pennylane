@@ -166,7 +166,7 @@ def mock_device(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_device_with_apply(monkeypatch):
-    """ A function to create a mock device that mocks the apply() method."""
+    """A function to create a mock device that mocks the apply() method."""
     with monkeypatch.context() as m:
         m.setattr(Device, '__abstractmethods__', frozenset())
         m.setattr(Device, 'short_name', 'MockDevice')
