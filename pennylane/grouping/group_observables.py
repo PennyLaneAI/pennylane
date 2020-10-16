@@ -189,7 +189,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     Partitions are found by 1) mapping the list of observables to a graph where vertices represent
     observables and edges encode the binary relation, then 2) solving minimum clique cover for the
-    graph using graph-coloring heuristic algorithms.
+    graph using graph-colouring heuristic algorithms.
 
     **Example usage:**
 
@@ -216,7 +216,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             output `partitioned_coeffs` is not returned.
         grouping_type (str): The type of binary relation between Pauli words. Can be 'qwc',
             'commuting', or 'anticommuting'.
-        method (str): the graph coloring heuristic to use in solving minimum clique cover, which
+        method (str): the graph colouring heuristic to use in solving minimum clique cover, which
             can be 'lf' (Largest First) or 'rlf' (Recursive Largest First)
 
     Returns:

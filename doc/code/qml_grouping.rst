@@ -28,9 +28,9 @@ groupings according to a binary relation (e.g., qubit-wise commuting):
 
 The :math:`C_{J}` coefficients for each :math:`P_J` Pauli word making up a
 Hamiltonian can also be specified along with further options, such as the Pauli
-word grouping method (*qubit-wise commuting*) and the underlying graph
-coloring algorithm (*recursive largest first*) used for creating the groups
-of observables:
+word grouping method (e.g., *qubit-wise commuting*) and the underlying graph-
+colouring algorithm (e.g., *recursive largest first*) used for creating the
+groups of observables:
 
 .. code-block:: python
 
