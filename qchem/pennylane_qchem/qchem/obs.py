@@ -287,8 +287,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25)
     >>> v = FermionOperator("1^ 0^ 0 1", -0.15) + FermionOperator("2^ 0^ 2 0", 0.3)
-    >>> fermion_ops = [t, v]
-    >>> print(observable(fermion_ops, mapping="jordan_wigner"))
+    >>> print(observable([t, v], mapping="jordan_wigner"))
     (0.2625) [I0]
     + (-0.1375) [Z0]
     + (-0.0875) [Z1]
@@ -606,7 +605,6 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \langle i, \alpha \vert \hat{v} \vert i, \beta \rangle)~
         [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] \\
-
         && v_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
         [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle -
         \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle].
