@@ -79,6 +79,7 @@ jobs:
           # - {device: "default.qubit", analytic: false, shots: 1000}
           # - {device: "default.qubit.tf", analytic: true, shots: 1000}
           - {device: "default.qubit.autograd", analytic: true, shots: 1000}
+          - {device: "default.mixed", analytic: true, shots: 1000}
 
     steps:
       - name: Cancel Previous Runs
