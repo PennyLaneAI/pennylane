@@ -191,10 +191,10 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Keyword args:
         coefficients (list[scalar]): A list of scalar coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
-        grouping_type (str): The type of binary relation between Pauli words. Can be 'qwc',
-            'commuting', or 'anticommuting'.
+        grouping_type (str): The type of binary relation between Pauli words.
+            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): the graph coloring heuristic to use in solving minimum clique cover, which
-            can be 'lf' (Largest First) or 'rlf' (Recursive Largest First)
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First)
 
     Returns:
        tuple:
