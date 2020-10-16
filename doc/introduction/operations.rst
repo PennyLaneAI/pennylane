@@ -141,7 +141,7 @@ Grouping Pauli words
 ^^^^^^^^^^^^^^^^^^^^
 
 Grouping Pauli words can be used for the optimizing the measurement of qubit
-Hamiltonians. Along with groups of observables, post measurement rotations can
+Hamiltonians. Along with groups of observables, post-measurement rotations can
 also be obtained using :func:`~.optimize_measurements`:
 
 .. code-block:: python
@@ -153,7 +153,7 @@ also be obtained using :func:`~.optimize_measurements`:
     [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
      [RX(1.5707963267948966, wires=[0])]]
 
-The post measurement rotations can be used to diagonalize the partitions of
+The post-measurement rotations can be used to diagonalize the partitions of
 observables found.
 
 For further details on measurement optimization, graph coloring to be solved
