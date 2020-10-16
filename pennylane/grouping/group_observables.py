@@ -55,9 +55,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         graph_colourer (str): the heuristic algorithm to employ for graph colouring
 
     Raises:
-        ValueError: if arguments specified for `grouping_type` or
-            `graph_colourer` are not recognized as elements of `GROUPING_TYPES` or
-            `GRAPH_COLOURING_METHODS` respectively
+        ValueError: if arguments specified for ``grouping_type`` or
+            ``graph_colourer`` are not recognized as elements of ``GROUPING_TYPES`` or
+            ``GRAPH_COLOURING_METHODS`` respectively
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -159,7 +159,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             list[list[Observable]]: a list of the obtained groupings. Each grouping is itself a
-            list of Pauli word `Observable` instances
+            list of Pauli word ``Observable`` instances
         """
 
         if self.adj_matrix is None:
@@ -185,12 +185,12 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     graph using graph-coloring heuristic algorithms.
 
     Args:
-        observables (list[Observable]): a list of Pauli word `Observable` instances (Pauli
+        observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and Tensor instances thereof)
 
     Keyword args:
         coefficients (list[scalar]): A list of scalar coefficients. If not specified,
-            output `partitioned_coeffs` is not returned.
+            output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words. Can be 'qwc',
             'commuting', or 'anticommuting'.
         method (str): the graph coloring heuristic to use in solving minimum clique cover, which
@@ -200,7 +200,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
        tuple:
 
            * list[list[Observable]]: A list of the obtained groupings. Each grouping
-             is itself a list of Pauli word `Observable` instances.
+             is itself a list of Pauli word ``Observable`` instances.
            * list[list[scalar]]: A list of coefficient groupings. Each coefficient
              grouping is itself a list of the grouping's corresponding coefficients. This is only
              output if coefficients are specified.

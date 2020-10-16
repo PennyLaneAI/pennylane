@@ -36,7 +36,7 @@ def qwc_rotation(pauli_operators):
         pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): Single-qubit Pauli
             operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
-        TypeError: if any elements of `pauli_operators` are not instances of qml.PauliX, qml.PauliY,
+        TypeError: if any elements of ``pauli_operators`` are not instances of qml.PauliX, qml.PauliY,
             qml.PauliZ, or qml.Identity
 
     **Example**
@@ -70,7 +70,7 @@ def diagonalize_pauli_word(pauli_word):
         Observable: the Pauli word diagonalized in the computational basis
 
     Raises:
-        TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or `Tensor`
+        TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or ``Tensor``
             instances thereof
 
     **Example**

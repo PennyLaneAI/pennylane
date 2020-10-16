@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The main function for measurement reduction, `optimize_measurements` returns the partitions and
+The main function for measurement reduction, ``optimize_measurements`` returns the partitions and
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
