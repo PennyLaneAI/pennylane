@@ -15,9 +15,10 @@
 Utility functions used in Pauli partitioning and measurement reduction schemes utilizing the
 symplectic vector space representation of Pauli words. For information on the symplectic binary
 representation of Pauli words and applications, see:
-arXiv:quant-ph/9705052
-arXiv:1701.08213
-arXiv:1907.09386
+
+* `arXiv:quant-ph/9705052 <https://arxiv.org/abs/quant-ph/9705052>`_
+* `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
+* `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
 
 from pennylane import PauliX, PauliY, PauliZ, Identity

@@ -26,9 +26,11 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
 
     The input list of observables are partitioned into mutually qubit-wise commuting (QWC) or
     mutually commuting partitions by approximately solving minimum clique cover on a graph where
-    each observable represents a vertex. The unitaries which diagonalize the partitions are then
-    found. See arXiv:1907.03358 and arXiv:1907.09386 for technical details of the QWC and fully
-    commuting measurement partitioning approaches respectively.
+    each observable represents a vertex. The unitaries which diagonalize the
+    partitions are then found. See `arXiv:1907.03358
+    <https://arxiv.org/abs/1907.03358>`_ and `arXiv:1907.09386
+    <https://arxiv.org/abs/1907.09386>`_ for technical details of the QWC and
+    fully commuting measurement partitioning approaches respectively.
 
     Args:
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
