@@ -93,7 +93,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 and unique integer labels as their values
 
         Returns:
-            array[bool]: a column matrix of the Pauli words in binary vector representation
+            array[int]: a column matrix of the Pauli words in binary vector representation
         """
 
         if wire_map is None:
@@ -118,7 +118,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
 
         Returns:
-            array[bool]: the square and symmetric adjacency matrix
+            array[int]: the square and symmetric adjacency matrix
         """
 
         if self.binary_observables is None:

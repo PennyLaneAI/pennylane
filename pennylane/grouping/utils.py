@@ -423,7 +423,7 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
 
 
     Returns:
-        array[array[bool]]: a matrix whose rows are Pauli words in binary vector representation
+        array[array[int]]: a matrix whose rows are Pauli words in binary vector representation
 
     **Example**
 
@@ -464,11 +464,11 @@ def qwc_complement_adj_matrix(binary_observables):
     commuting.
 
     Args:
-        binary_observables (array[array[bool]]): a matrix whose rows are the Pauli words in the
+        binary_observables (array[array[int]]): a matrix whose rows are the Pauli words in the
             binary vector representation
 
     Returns:
-        array[array[bool]]: the adjacency matrix for the complement of the qubit-wise commutativity graph
+        array[array[int]]: the adjacency matrix for the complement of the qubit-wise commutativity graph
 
     Raises:
         ValueError: if input binary observables contain components which are not strictly binary

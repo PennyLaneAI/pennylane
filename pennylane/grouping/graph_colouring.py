@@ -37,14 +37,13 @@ def largest_first(binary_observables, adj):
     number of vertices.
 
     Args:
-        binary_observables (array[bool]): the set of Pauli words represented by a column matrix
+        binary_observables (array[int]): the set of Pauli words represented by a column matrix
             of the Pauli words in binary vector represenation
-        adj (array[bool]): the adjacency matrix of the Pauli graph
+        adj (array[int]): the adjacency matrix of the Pauli graph
 
     Returns:
-        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-        are lists of Pauli words of the same colour in
-        binary vector representation.
+        dict(int, list[array[int]]): keys correspond to colours (labelled by integers) and values
+        are lists of Pauli words of the same colour in binary vector representation.
 
     **Example**
 
@@ -90,12 +89,12 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
     of vertices).
 
     Args:
-        binary_observables (array[bool]): the set of Pauli words represented by a column matrix of
+        binary_observables (array[int]): the set of Pauli words represented by a column matrix of
             the Pauli words in binary vector represenation
-        adj (array[bool]): the adjacency matrix of the Pauli graph
+        adj (array[int]): the adjacency matrix of the Pauli graph
 
     Returns:
-        dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
+        dict(int, list[array[int]]): keys correspond to colours (labelled by integers) and values
         are lists of Pauli words of the same colour in binary vector representation.
 
     **Example**
