@@ -332,7 +332,7 @@ class Device(abc.ABC):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[~.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
