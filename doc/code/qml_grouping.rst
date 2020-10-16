@@ -27,7 +27,7 @@ groupings according to a binary relation (e.g. qubit-wise commuting):
      [PauliY(wires=[0]), PauliZ(wires=[1])]]
 
 The :math:`C_{I}` coefficients for each :math:`P_I` Pauli word making up a
-Hamiltonian can also be specified along with further options such as the Pauli
+Hamiltonian can also be specified along with further options, such as the Pauli
 word grouping method (*qubit-wise commutativity*) and the underlying graph
 coloring algorithm (*recursive largest first*) used for creating the groups
 of observables:
