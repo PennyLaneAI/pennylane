@@ -125,7 +125,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
              unique integer labels as their values
 
     Returns:
-        array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word.
+        array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
 
     Raises:
         TypeError: if the input ``pauli_word`` is not an instance of Identity, PauliX, PauliY,
