@@ -36,8 +36,8 @@ def qwc_rotation(pauli_operators):
         pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): Single-qubit Pauli
             operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
-        TypeError: if any elements of ``pauli_operators`` are not instances of qml.PauliX, qml.PauliY,
-            qml.PauliZ, or qml.Identity
+        TypeError: if any elements of ``pauli_operators`` are not instances of
+            ``qml.PauliX``, ``qml.PauliY``, ``qml.PauliZ``, or ``qml.Identity``
 
     **Example**
 

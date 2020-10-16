@@ -36,7 +36,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
             instances thereof)
         coefficients (list[float]): a list of float coefficients, for instance the weights of
-        the Pauli words comprising a Hamiltonian
+            the Pauli words comprising a Hamiltonian
         grouping (str): the binary symmetric relation to use for operator partitioning
         colouring_method (str): the graph-colouring heuristic to use in obtaining the operator
             partitions
