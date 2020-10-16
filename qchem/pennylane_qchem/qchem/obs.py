@@ -470,7 +470,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
     run over the active orbitals and the contribution due to core orbitals is computed as
-    :math:`T_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}
+    :math:`t_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}
     \langle \alpha \vert \hat{t} \vert \alpha \rangle`.
 
     Args:
@@ -508,7 +508,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None:
+    if core is None or not core:
         t_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -522,7 +522,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         t_core = 2 * np.sum(matrix_elements[np.array(core), np.array(core)])
 
     if active is None:
-        if core is None:
+        if core is None or not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
@@ -547,7 +547,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     # Build the FermionOperator representing T
     t_op = FermionOperator("") * t_core
-    for i, pair in enumerate(pairs):
+    for pair in pairs:
         alpha, beta = pair
         element = matrix_elements[alpha, beta]
 
@@ -596,10 +596,20 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \phi_\gamma(r_2) \phi_\delta(r_1).
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
-    run over the active orbitals and the contribution due to core orbitals, is computed as
-    :math:`V_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
-    [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle
-    - \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle ]`.
+    run over the active orbitals and the contribution due to core orbitals is computed as
+
+    .. math::
+
+        && \hat{V}_\mathrm{core} = v_\mathrm{core} +
+        \sum_{\alpha, \beta \in \mathrm{active}} \sum_{i \in \mathrm{core}}
+        (2 \langle i, \alpha \vert \hat{v} \vert \beta, i \rangle -
+        \langle i, \alpha \vert \hat{v} \vert i, \beta \rangle)~
+        [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
+        \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] \\
+
+        && v_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
+        [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle -
+        \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle].
 
     Args:
         matrix_elements (array[float]): 4D NumPy array with the matrix elements
@@ -670,7 +680,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None:
+    if core is None or not core:
         v_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -691,7 +701,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         )
 
     if active is None:
-        if core is None:
+        if core is None or not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
@@ -716,7 +726,26 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     # Build the FermionOperator representing V
     v_op = FermionOperator("") * v_core
-    for i, quad in enumerate(quads):
+
+    # add renormalized (due to core orbitals) "one-particle" operators
+    if core:
+        for alpha in active:
+            for beta in active:
+
+                element = 2 * np.sum(
+                    matrix_elements[np.array(core), alpha, beta, np.array(core)]
+                ) - np.sum(matrix_elements[np.array(core), alpha, np.array(core), beta])
+
+                # up-up term
+                a = 2 * active.index(alpha)
+                b = 2 * active.index(beta)
+                v_op += FermionOperator(((a, 1), (b, 0)), element)
+
+                # down-down term
+                v_op += FermionOperator(((a + 1, 1), (b + 1, 0)), element)
+
+    # add two-particle operators
+    for quad in quads:
         alpha, beta, gamma, delta = quad
         element = matrix_elements[alpha, beta, gamma, delta]
 
