@@ -185,7 +185,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and Tensor instances thereof)
-        coefficients (list[scalar]): A list of scalar coefficients. If not specified,
+        coefficients (list[float]): A list of float coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
@@ -197,7 +197,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
            * list[list[Observable]]: A list of the obtained groupings. Each grouping
              is itself a list of Pauli word ``Observable`` instances.
-           * list[list[scalar]]: A list of coefficient groupings. Each coefficient
+           * list[list[float]]: A list of coefficient groupings. Each coefficient
              grouping is itself a list of the grouping's corresponding coefficients. This is only
              output if coefficients are specified.
 
