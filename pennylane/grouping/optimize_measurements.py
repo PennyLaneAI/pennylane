@@ -35,8 +35,6 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     Args:
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
             instances thereof)
-
-    Keyword args:
         coefficients (list[scalar]): a list of scalar coefficients, for instance the weights of
         the Pauli words comprising a Hamiltonian
         grouping (str): the binary symmetric relation to use for operator partitioning

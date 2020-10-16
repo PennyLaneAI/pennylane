@@ -119,8 +119,6 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     Args:
         pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the Pauli word to be
             converted to binary vector representation
-
-    Keyword args:
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
                          unique integer labels as their values
@@ -245,8 +243,6 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     Args:
         binary_vector (Union[list, tuple, array]): binary vector of even dimension representing a
             unique Pauli word
-
-    Keyword args:
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
             unique integer labels as their values
 
@@ -421,8 +417,6 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     Args:
         observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor]]): the list of Pauli
             words
-
-    Keyword args:
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
             unique integer labels as their values

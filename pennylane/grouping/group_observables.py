@@ -49,8 +49,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     Args:
         observables (list[Observable]): a list of Pauli words to be partitioned according to a
             grouping strategy
-
-    Keyword Args:
         grouping_type (str): the binary relation used to define partitions of the Pauli words
         graph_colourer (str): the heuristic algorithm to employ for graph colouring
 
@@ -89,7 +87,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     def obtain_binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
-        Keyword args:
+        Args:
             n_qubits (int): number of qubits to specify dimension of binary vector representation
             wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys,
                 and unique integer labels as their values
@@ -187,8 +185,6 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and Tensor instances thereof)
-
-    Keyword args:
         coefficients (list[scalar]): A list of scalar coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
