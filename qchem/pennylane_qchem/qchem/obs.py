@@ -247,7 +247,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
     Coulomb interaction between the electrons.
 
-    - The observable is built by adding the operators 
+    - The observable is built by adding the operators
       :math:`\sum_{\alpha, \beta} t_{\alpha\beta}^{(i)}
       \hat{c}_\alpha^\dagger \hat{c}_\beta` and
       :math:`\frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
@@ -285,7 +285,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     **Example**
 
-    >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25) 
+    >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25)
     >>> v = FermionOperator("1^ 0^ 0 1", -0.15) + FermionOperator("2^ 0^ 2 0", 0.3)
     >>> fermion_ops = [t, v]
     >>> print(observable(fermion_ops, mapping="jordan_wigner"))
