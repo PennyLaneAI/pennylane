@@ -1035,7 +1035,7 @@ class TestQNodeEvaluate:
 
         for _ in range(num_evals_1):
             node_1(0.432, 0.12)
-        assert dev_1.execution ==  num_evals_1
+        assert dev_1.num_executions ==  num_evals_1
 
         # test a second instance of a default qubit device
         dev_2 = qml.device("default.qubit", wires=2)
@@ -1050,7 +1050,7 @@ class TestQNodeEvaluate:
 
         for _ in range(num_evals_2):
             node_2(0.432, 0.12)
-        assert dev_2.execution ==  num_evals_2
+        assert dev_2.num_executions ==  num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
@@ -1063,7 +1063,7 @@ class TestQNodeEvaluate:
 
         for _ in range(num_evals_3):
             node_3(0.432, 0.12)
-        assert dev_1.execution == num_evals_1 + num_evals_3
+        assert dev_1.num_executions == num_evals_1 + num_evals_3
 
         # test default Gaussian device
         dev_gauss = qml.device("default.gaussian", wires=1)
@@ -1078,7 +1078,7 @@ class TestQNodeEvaluate:
 
         for i in range(num_evals_gauss):
             node_gauss(0.015, 0.02, 0.005)
-        assert dev_gauss.execution == num_evals_gauss
+        assert dev_gauss.num_executions == num_evals_gauss
 
 
 class TestDecomposition:

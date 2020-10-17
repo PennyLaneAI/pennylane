@@ -428,7 +428,7 @@ class TestInternalFunctions:
         """Tests that the number of executions is initialised correctly"""
         dev = mock_device()
         expected = 0
-        assert dev.execution == expected
+        assert dev.num_executions == expected
 
 
 class TestClassmethods:

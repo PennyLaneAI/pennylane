@@ -72,11 +72,10 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
-        self._execution = 0
+        self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
-
 
     def __repr__(self):
         """String representation."""
@@ -157,10 +156,14 @@ class Device(abc.ABC):
         return self._wire_map
 
     @property
-    def execution(self):
+    def num_executions(self):
         """Number of times this device is executed by the evaluation of QNodes
-         running on this device"""
-        return self._execution
+        running on this device
+
+        Returns:
+            int: number of executions
+        """
+        return self._num_executions
 
     @shots.setter
     def shots(self, shots):
@@ -216,12 +219,12 @@ class Device(abc.ABC):
         """
         try:
             mapped_wires = wires.map(self.wire_map)
-        except WireError:
+        except WireError as e:
             raise WireError(
                 "Did not find some of the wires {} on device with wires {}.".format(
                     wires, self.wires
                 )
-            )
+            ) from e
 
         return mapped_wires
 

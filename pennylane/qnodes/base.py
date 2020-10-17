@@ -123,10 +123,10 @@ def decompose_queue(ops, device):
     for op in ops:
         try:
             new_ops.extend(_decompose_queue([op], device))
-        except NotImplementedError:
+        except NotImplementedError as e:
             raise qml.DeviceError(
                 "Gate {} not supported on device {}".format(op.name, device.short_name)
-            )
+            ) from e
 
     return new_ops
 
@@ -832,7 +832,7 @@ class BaseQNode(qml.QueuingContext):
                 return_native_type=temp,
             )
 
-        self.device._execution += 1
+        self.device._num_executions += 1
 
         return self.output_conversion(ret)
 
