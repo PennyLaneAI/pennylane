@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for `PauliGroupingStrategy` and `group_observables` in `grouping/group_observables.py`.
+Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``grouping/group_observables.py``.
 """
 import pytest
 import numpy as np
@@ -218,7 +218,7 @@ anticommuting_sols = [
 
 class TestGroupObservables:
     """
-    Tests for `group_observables` function using QWC, commuting, and anticommuting partitioning.
+    Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
     qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
@@ -282,7 +282,7 @@ class TestGroupObservables:
                 assert are_identical_pauli_words(pauli, anticom_partitions_sol[i][j])
 
     def test_group_observables_exception(self):
-        """Tests that the `group_observables` function raises an exception if
+        """Tests that the ``group_observables`` function raises an exception if
         the lengths of coefficients and observables do not agree."""
         observables = [Identity(0), PauliX(1)]
         coefficients = [0.5]
@@ -290,7 +290,7 @@ class TestGroupObservables:
             group_observables(observables, coefficients)
 
     def test_binary_repr_custom_wire_map(self):
-        """Tests that the `binary_repr` method sets a custom
+        """Tests that the ``binary_repr`` method sets a custom
          wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]

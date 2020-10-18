@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The main function for measurement reduction, `optimize_measurements` returns the partitions and
+The main function for measurement reduction, ``optimize_measurements`` returns the partitions and
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
@@ -32,44 +32,40 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     <https://arxiv.org/abs/1907.09386>`_ for technical details of the QWC and
     fully-commuting measurement-partitioning approaches respectively.
 
-    **Example usage:**
-
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> post_rotations,diagonalized_groupings,grouped_coeffs = optimize_measurements(
-                                                                                     observables,
-                                                                                     coefficients,
-                                                                                     'qwc',
-                                                                                     'rlf'
-                                                                                     )
-    >>> print(post_rotations)
-    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
-     [RX(1.5707963267948966, wires=[0])]]
-    >>> print(diagonalized_groupings)
-    [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
-    >>> print(grouped_coeffs)
-    [[4.21], [1.43, 0.97]]
-
     Args:
         observables (list[Observable]): a list of Pauli words (Pauli operation instances and Tensor
             instances thereof)
-
-    Keyword args:
-        coefficients (list[scalar]): a list of scalar coefficients, for instance the weights of
-        the Pauli words comprising a Hamiltonian
+        coefficients (list[float]): a list of float coefficients, for instance the weights of
+            the Pauli words comprising a Hamiltonian
         grouping (str): the binary symmetric relation to use for operator partitioning
         colouring_method (str): the graph-colouring heuristic to use in obtaining the operator
             partitions
 
     Returns:
-        post_rotations (list[Template]): a list of the post-rotation qml.Templates instances, one
-            for each partition
-        diagonalized_groupings (list[list[Observable]]): A list of the obtained groupings. Each
-            grouping is itself a list of Pauli words diagonal in the measurement basis.
-        grouped_coeffs (list[list[scalar]]): A list of coefficient groupings. Each
-            coefficient grouping is itself a list of the partitions corresponding coefficients.
-            Only output if coefficients are specified.
+        tuple:
 
+            * list[callable]: a list of the post-rotation templates, one
+              for each partition
+            * list[list[Observable]]: A list of the obtained groupings. Each
+              grouping is itself a list of Pauli words diagonal in the
+              measurement basis.
+            * list[list[float]]: A list of coefficient groupings. Each
+              coefficient grouping is itself a list of the partitions
+              corresponding coefficients.  Only output if coefficients are
+              specified.
+
+    **Example**
+
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> rotations, groupings, grouped_coeffs = optimize_measurements(obs, coeffs, 'qwc', 'rlf')
+    >>> print(rotations)
+    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
+     [RX(1.5707963267948966, wires=[0])]]
+    >>> print(groupings)
+    [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))], [PauliZ(wires=[0]), PauliZ(wires=[1])]]
+    >>> print(grouped_coeffs)
+    [[4.21], [1.43, 0.97]]
     """
 
     if coefficients is None:

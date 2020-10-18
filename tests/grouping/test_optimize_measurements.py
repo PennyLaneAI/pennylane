@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for `optimize_measurements` function in `grouping/optimize_measurements.py`.
+Unit tests for ``optimize_measurements`` function in ``grouping/optimize_measurements.py``.
 """
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -21,7 +21,7 @@ from pennylane.grouping.optimize_measurements import optimize_measurements
 
 
 class TestOptimizeMeasurements:
-    """Tests for the `optimize_measurements` function."""
+    """Tests for the ``optimize_measurements`` function."""
 
     observables_diagonalized = [
         (
@@ -112,7 +112,7 @@ class TestOptimizeMeasurements:
         )
 
     def test_optimize_measurements_not_implemented_catch(self):
-        """Tests that NotImplementedError is raised for methods other than 'qwc'."""
+        """Tests that NotImplementedError is raised for methods other than ``'qwc'``."""
 
         observables = [PauliY(0), PauliX(0) @ PauliX(1), PauliZ(1)]
         grouping = "anticommuting"

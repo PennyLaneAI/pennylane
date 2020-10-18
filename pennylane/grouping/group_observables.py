@@ -49,8 +49,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     Args:
         observables (list[Observable]): a list of Pauli words to be partitioned according to a
             grouping strategy
-
-    Keyword Args:
         grouping_type (str): the binary relation used to define partitions of
             the Pauli words, can be ``'qwc'``(qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
@@ -61,7 +59,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     Raises:
         ValueError: if arguments specified for `grouping_type` or
             `graph_colourer` are not recognized
-
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -93,14 +90,13 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     def binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
-        Keyword args:
+        Args:
             n_qubits (int): number of qubits to specify dimension of binary vector representation
             wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys,
                 and unique integer labels as their values
 
         Returns:
-            array[bool]: a column matrix of the Pauli words in binary vector representation
-
+            array[int]: a column matrix of the Pauli words in binary vector representation
         """
 
         if wire_map is None:
@@ -125,8 +121,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
 
         Returns:
-            array[bool]: the square and symmetric adjacency matrix
-
+            array[int]: the square and symmetric adjacency matrix
         """
 
         if self.binary_observables is None:
@@ -165,8 +160,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             list[list[Observable]]: a list of the obtained groupings. Each grouping is itself a
-            list of Pauli word `Observable` instances
-
+            list of Pauli word ``Observable`` instances
         """
 
         if self.adj_matrix is None:
@@ -191,44 +185,40 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     observables and edges encode the binary relation, then 2) solving minimum clique cover for the
     graph using graph-colouring heuristic algorithms.
 
-    **Example usage:**
+    Args:
+        observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
+            operation instances and :class:`~.Tensor` instances thereof)
+        coefficients (list[float]): A list of float coefficients. If not specified,
+            output ``partitioned_coeffs`` is not returned.
+        grouping_type (str): The type of binary relation between Pauli words.
+            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+        method (str): the graph coloring heuristic to use in solving minimum clique cover, which
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First)
 
-    >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coefficients = [1.43, 4.21, 0.97]
-    >>> obs_groupings, coeffs_groupings = group_observables(
-                                                            observables,
-                                                            coefficients,
-                                                            'anticommuting',
-                                                            'lf')
+    Returns:
+       tuple:
+
+           * list[list[Observable]]: A list of the obtained groupings. Each grouping
+             is itself a list of Pauli word ``Observable`` instances.
+           * list[list[float]]: A list of coefficient groupings. Each coefficient
+             grouping is itself a list of the grouping's corresponding coefficients. This is only
+             output if coefficients are specified.
+
+    Raises:
+        IndexError: if the input list of coefficients is not of the same length as the input list
+            of Pauli words
+
+    **Example**
+
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings
     [[Tensor(PauliZ(wires=[1])),
       Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
      [Tensor(PauliY(wires=[0]))]]
     >>> coeffs_groupings
     [[0.97, 4.21], [1.43]]
-
-    Args:
-        observables (list[Observable]): a list of Pauli word `Observable` instances (Pauli
-            operation instances and Tensor instances thereof)
-
-    Keyword args:
-        coefficients (list[scalar]): A list of scalar coefficients. If not specified,
-            output `partitioned_coeffs` is not returned.
-        grouping_type (str): The type of binary relation between Pauli words. Can be 'qwc',
-            'commuting', or 'anticommuting'.
-        method (str): the graph colouring heuristic to use in solving minimum clique cover, which
-            can be 'lf' (Largest First) or 'rlf' (Recursive Largest First)
-
-    Returns:
-       partitioned_paulis (list[list[Observable]]): A list of the obtained groupings. Each grouping
-            is itself a list of Pauli word `Observable` instances.
-       partitioned_coeffs (list[list[scalar]]): A list of coefficient groupings. Each coefficient
-           grouping is itself a list of the grouping's corresponding coefficients. This is only
-           output if coefficients are specified.
-
-    Raises:
-        IndexError: if the input list of coefficients is not of the same length as the input list
-            of Pauli words
     """
 
     if coefficients is not None:
