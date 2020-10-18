@@ -150,6 +150,31 @@ class TestApply:
         assert isinstance(res, tf.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_full_subsystem_statevector(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(tf.reshape(dev._state, [-1]) == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem_statevector(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = tf.reshape(tf.reduce_sum(dev._state, axis=(1,)), [-1])
+
+        assert np.all(res == state)
+        spy.assert_called()
+
     def test_invalid_qubit_state_vector_size(self):
         """Test that an exception is raised if the state
         vector is the wrong size"""
