@@ -9,15 +9,15 @@
   [(#819)](https://github.com/PennyLaneAI/pennylane/pull/819)
   [(#807)](https://github.com/PennyLaneAI/pennylane/pull/807)
   [(#794)](https://github.com/PennyLaneAI/pennylane/pull/794)
-  
+
   The device can be initialized as
   ```pycon
   >>> dev = qml.device("default.mixed", wires=1)
   ```
-  
+
   This allows the construction of QNodes that include non-unitary operations
   such as noisy channels, as in this simple qubit rotation example
-  
+
   ```pycon
   >>> @qml.qnode(dev)
   ... def circuit(params):
@@ -267,6 +267,10 @@
 * Changed to use lists for storing variable values inside `BaseQNode`
   allowing complex matrices to be passed to `QubitUnitary`.
   [(#773)](https://github.com/PennyLaneAI/pennylane/pull/773)
+
+* Fixed a bug within `default.qubit`, resulting in greater efficiency
+  when applying a state vector to all wires on the device.
+  [(#849)](https://github.com/PennyLaneAI/pennylane/pull/849)
 
 <h3>Documentation</h3>
 
