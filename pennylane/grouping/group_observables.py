@@ -50,15 +50,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         observables (list[Observable]): a list of Pauli words to be partitioned according to a
             grouping strategy
         grouping_type (str): the binary relation used to define partitions of
-            the Pauli words, can be ``'qwc'``(qubit-wise commuting), ``'commuting'``, or
+            the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
         graph_colourer (str): the heuristic algorithm to employ for graph
             colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
             Largest First)
 
     Raises:
-        ValueError: if arguments specified for `grouping_type` or
-            `graph_colourer` are not recognized
+        ValueError: if arguments specified for ``grouping_type`` or
+            ``graph_colourer`` are not recognized
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
