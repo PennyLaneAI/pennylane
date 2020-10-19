@@ -36,8 +36,7 @@
 <h4>New tools for optimizing measurements</h4>
 
 * The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
-  observables. This includes  utility functions required for measurement reduction by
-  [qubit-wise-commuting (QWC) grouping](https://arxiv.org/abs/1907.03358).
+  observables. 
   [(#761)](https://github.com/PennyLaneAI/pennylane/pull/761)
   [(#850)](https://github.com/PennyLaneAI/pennylane/pull/850)
   [(#852)](https://github.com/PennyLaneAI/pennylane/pull/852)
@@ -52,8 +51,8 @@
     rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping="qwc")
     ```
 
-   The diagonalizing circuits of `rotations` correspond to the diagonalized Pauli word groupings of
-   `grouped_ops`.
+    The diagonalizing circuits of `rotations` correspond to the diagonalized Pauli word groupings of
+    `grouped_ops`.
 
   - Pauli word partitioning utilities are performed by the `PauliGroupingStrategy`
     class. An input list of Pauli words can be partitioned into mutually commuting,
