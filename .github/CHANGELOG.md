@@ -48,7 +48,7 @@
 
     ```python
     from pennylane.grouping import optimize_measurements
-    h, nr_qubits = qml.qchem.molecular_hamiltonian("h2", "qchem/tests/test_ref_files/h2_ref.xyz")
+    h, nr_qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
     rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping="qwc")
     ```
 
@@ -64,6 +64,7 @@
 
     ```python
     from pennylane import PauliX, PauliY, PauliZ, Identity
+    from pennylane.grouping import group_observables
     pauli_words = [
         Identity('a') @ Identity('b'),
         Identity('a') @ PauliX('b'),
@@ -72,7 +73,6 @@
         PauliZ('a') @ PauliY('b'),
         PauliZ('a') @ PauliZ('b')
     ]
-    from pennylane.grouping import group_observables
     groupings = group_observables(pauli_words, grouping_type='anticommuting', method='rlf')
     ```
 
@@ -97,9 +97,8 @@
     representations, and returned in the operator representation.
 
     ```pycon
-    from pennylane.grouping import binary_to_pauli
-    product = binary_to_pauli((pauli_vec_1 + pauli_vec_2) % 2, wire_map)
-    >>> product
+    >>> from pennylane.grouping import binary_to_pauli
+    >>> binary_to_pauli((pauli_vec_1 + pauli_vec_2) % 2, wire_map)
     Tensor product ['PauliY', 'PauliX']: 0 params, wires ['a', 'b']
     ```
 
@@ -107,23 +106,23 @@
     [grouping module documentation](https://pennylane.readthedocs.io/en/stable/code/qml_grouping.html)
 
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
+  Note that returning the state is only supported in the new and experimental tape-mode.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
   Consider the following QNode:
   ```python
   import pennylane as qml
-  from pennylane.beta.tapes import qnode
-  from pennylane.beta.queuing import state
 
   dev = qml.device("default.qubit", wires=3)
+  qml.enable_tape()
 
-  @qnode(dev)
+  @qml.qnode(dev)
   def qfunc(x, y):
       qml.RZ(x, wires=0)
       qml.CNOT(wires=[0, 1])
       qml.RY(y, wires=1)
       qml.CNOT(wires=[0, 2])
-      return state()
+      return qml.state()
   ```
 
   Calling the QNode will return its state
@@ -148,7 +147,6 @@
   real hardware, and to test error-correction techniques. Moreover,
   differentiable quantum channels could be a unique feature for
   PennyLane not present in other libraries.
-
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
@@ -220,22 +218,21 @@
 
 * QNode caching has been introduced, allowing the QNode to keep track of the results of previous
   device executions and reuse those results in subsequent calls.
+  Note that QNode caching is only supported in the new and experimental tape-mode.
   [(#817)](https://github.com/PennyLaneAI/pennylane/pull/817)
 
   Caching is available by passing a ``caching`` argument to the QNode:
 
   ```python
-  from pennylane.beta.tapes import qnode
-  from pennylane.beta.queuing import expval
-
   dev = qml.device("default.qubit", wires=2)
+  qml.enable_tape()
 
-  @qnode(dev, caching=10)  # cache up to 10 evaluations
+  @qml.qnode(dev, caching=10)  # cache up to 10 evaluations
   def qfunc(x):
       qml.RX(x, wires=0)
       qml.RX(0.3, wires=1)
       qml.CNOT(wires=[0, 1])
-      return expval(qml.PauliZ(1))
+      return qml.expval(qml.PauliZ(1))
 
   qfunc(0.1)  # first evaluation executes on the device
   qfunc(0.1)  # second evaluation accesses the cached result
@@ -259,7 +256,7 @@
   Hamiltonians can now easily be defined as sums of observables:
 
   ```pycon3
-  >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
+  >>> H = 3*qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
   >>> print(H)
   (7.0) [Z0] + (-1.0) [X0 X1]
   ```
@@ -365,6 +362,7 @@ Killoran, Robert Lang, Cedric Lin, Olivia Di Matteo, Nicolás Quesada, Maria Sch
 <h3>New features since last release</h3>
 
 <h4>New and improved simulators</h4>
+
 * Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
   This device supports classical backpropagation (`diff_method="backprop"`); this can
   be faster than the parameter-shift rule for computing quantum gradients
