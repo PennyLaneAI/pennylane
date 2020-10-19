@@ -714,40 +714,47 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
+    with qml.tape.QuantumTape() as tape1:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+    with qml.tape.JacobianTape() as tape2:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0))
+
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_apply):
+    def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
         """Tests that the device's execute method is called the correct number of times."""
 
-        dev = mock_device_with_apply(wires=2)
+        dev = mock_device_with_paulis_and_methods(wires=2)
         spy = mocker.spy(Device, "execute")
 
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_reset(self, n_tapes, mocker, mock_device_with_apply):
+    def test_calls_to_reset(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
         """Tests that the device's reset method is called the correct number of times."""
 
-        dev = mock_device_with_apply(wires=2)
+        dev = mock_device_with_paulis_and_methods(wires=2)
         spy = mocker.spy(Device, "reset")
 
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_result(self, n_tapes, mock_device_with_apply, tol):
+    def test_result(self, n_tapes, mock_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types."""
 
-        dev = mock_device_with_apply(wires=2)
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        dev = mock_device_with_paulis_and_methods(wires=2)
+        tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
 
-        assert len(res) == n_tapes
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0)
 
-        tp = qml.tape.QuantumTape()
-        expected = dev.execute(tp.operations, tp.observables)
-        assert np.allclose(res[0], expected, rtol=tol, atol=0)

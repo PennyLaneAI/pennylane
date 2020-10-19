@@ -115,7 +115,7 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
         m.setattr(QubitDevice, "expval", lambda self, x: 0)
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
-        m.setattr(QubitDevice, "apply", lambda self, x: None)
+        m.setattr(QubitDevice, "apply", lambda self, x, rotations: None)
 
         def get_qubit_device(wires=1):
             return QubitDevice(wires=wires)
@@ -136,20 +136,6 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
         m.setattr(QubitDevice, "apply", lambda self, x: None)
-
-        def get_qubit_device(wires=1):
-            return QubitDevice(wires=wires)
-
-        yield get_qubit_device
-
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_with_apply(monkeypatch):
-    """ A function to create a mock device that mocks the apply() method."""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, "__abstractmethods__", frozenset())
-        m.setattr(QubitDevice, "short_name", "MockDevice")
-        m.setattr(QubitDevice, "apply", lambda self, x, rotations=None: None)
 
         def get_qubit_device(wires=1):
             return QubitDevice(wires=wires)
@@ -729,39 +715,47 @@ class TestCapabilities:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
+    with qml.tape.QuantumTape() as tape1:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+    with qml.tape.JacobianTape() as tape2:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0))
+
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_apply):
+    def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
         """Tests that the device's execute method is called the correct number of times."""
 
-        dev = mock_qubit_device_with_apply(wires=2)
+        dev = mock_qubit_device_with_paulis_and_methods(wires=2)
         spy = mocker.spy(QubitDevice, "execute")
 
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_reset(self, n_tapes, mocker, mock_qubit_device_with_apply):
+    def test_calls_to_reset(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
         """Tests that the device's reset method is called the correct number of times."""
 
-        dev = mock_qubit_device_with_apply(wires=2)
+        dev = mock_qubit_device_with_paulis_and_methods(wires=2)
 
         spy = mocker.spy(QubitDevice, "reset")
 
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
-    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_result(self, n_tapes, mock_qubit_device_with_apply, tol):
+    def test_result(self, mock_qubit_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types."""
 
-        dev = mock_qubit_device_with_apply(wires=2)
+        dev = mock_qubit_device_with_paulis_and_methods(wires=2)
 
-        tapes = [qml.tape.QuantumTape()] * n_tapes
+        tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
 
-        assert len(res) == n_tapes
-        assert np.allclose(res[0], dev.execute(qml.tape.QuantumTape()), rtol=tol, atol=0)
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
