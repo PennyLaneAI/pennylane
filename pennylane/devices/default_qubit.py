@@ -414,7 +414,7 @@ class DefaultQubit(QubitDevice):
 
         if (
             len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.labels
+            and sorted(device_wires.labels) == device_wires.tolist()
         ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)

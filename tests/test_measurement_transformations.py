@@ -22,7 +22,7 @@ from pennylane.grouping.utils import are_identical_pauli_words
 from pennylane.grouping.transformations import (
     qwc_rotation,
     diagonalize_pauli_word,
-    diagonalize_qwc_grouping,
+    diagonalize_qwc_pauli_words,
 )
 
 
@@ -152,10 +152,10 @@ class TestMeasurementTransformations:
     ]
 
     @pytest.mark.parametrize("qwc_grouping,qwc_sol_tuple", qwc_diagonalization_io)
-    def test_diagonalize_qwc_grouping(self, qwc_grouping, qwc_sol_tuple):
-        """Tests for validating diagonalize_qwc_grouping solutions."""
+    def test_diagonalize_qwc_pauli_words(self, qwc_grouping, qwc_sol_tuple):
+        """Tests for validating diagonalize_qwc_pauli_words solutions."""
 
-        qwc_rot, diag_qwc_grouping = diagonalize_qwc_grouping(qwc_grouping)
+        qwc_rot, diag_qwc_grouping = diagonalize_qwc_pauli_words(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
         assert all(
@@ -178,8 +178,8 @@ class TestMeasurementTransformations:
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)
-    def test_diagonalize_qwc_grouping_catch_when_not_qwc(self, not_qwc_grouping):
-        """Test for ValueError raise when diagonalize_qwc_grouping is not given a list of
+    def test_diagonalize_qwc_pauli_words_catch_when_not_qwc(self, not_qwc_grouping):
+        """Test for ValueError raise when diagonalize_qwc_pauli_words is not given a list of
         qubit-wise commuting Pauli words."""
 
-        assert pytest.raises(ValueError, diagonalize_qwc_grouping, not_qwc_grouping)
+        assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)

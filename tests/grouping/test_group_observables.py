@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for `PauliGroupingStrategy` and `group_observables` in `grouping/group_observables.py`.
+Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``grouping/group_observables.py``.
 """
 import pytest
 import numpy as np
@@ -51,7 +51,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
@@ -64,7 +64,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
@@ -77,7 +77,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -95,7 +95,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
@@ -108,7 +108,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
@@ -121,7 +121,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.obtain_complement_adj_matrix_for_operator()
+            grouping_instance.complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -218,7 +218,7 @@ anticommuting_sols = [
 
 class TestGroupObservables:
     """
-    Tests for `group_observables` function using QWC, commuting, and anticommuting partitioning.
+    Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
     qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
@@ -282,15 +282,15 @@ class TestGroupObservables:
                 assert are_identical_pauli_words(pauli, anticom_partitions_sol[i][j])
 
     def test_group_observables_exception(self):
-        """Tests that the `group_observables` function raises an exception if
+        """Tests that the ``group_observables`` function raises an exception if
         the lengths of coefficients and observables do not agree."""
         observables = [Identity(0), PauliX(1)]
         coefficients = [0.5]
         with pytest.raises(IndexError, match="must be the same length"):
             group_observables(observables, coefficients)
 
-    def test_obtain_binary_repr_custom_wire_map(self):
-        """Tests that the `obtain_binary_repr` method sets a custom
+    def test_binary_repr_custom_wire_map(self):
+        """Tests that the ``binary_repr`` method sets a custom
          wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
@@ -298,6 +298,6 @@ class TestGroupObservables:
 
         n_qubits = 3
         wire_map = {"alice": 1, "bob": 0, "charlie": 2}
-        _ = grouping_instance.obtain_binary_repr(n_qubits, wire_map)
+        _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
         assert grouping_instance._wire_map == wire_map
