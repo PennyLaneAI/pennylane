@@ -354,8 +354,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Soran Jahangiri, Nathan
-Killoran, Robert Lang, Cedric Lin, Olivia Di Matteo, Nicolás Quesada, Maria Schuld, Antal Száva.
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac,
+Soran Jahangiri, Nathan Killoran, Robert Lang, Cedric Lin, Olivia Di Matteo, Nicolás Quesada, Maria
+Schuld, Antal Száva.
 
 # Release 0.11.0
 
