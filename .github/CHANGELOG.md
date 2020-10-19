@@ -151,8 +151,8 @@
 
 <h4>Preview the next-generation PennyLane QNode</h4>
 
-* The new PennyLane tape module provides a re-formulated QNode class, rewritten from the ground-up,
-  that uses a `QuantumTape` to represent the internal variational quantum circuit. Tape mode
+* The new PennyLane `tape` module provides a re-formulated QNode class, rewritten from the ground-up,
+  that uses a new `QuantumTape` object to represent the QNode's quantum circuit. Tape mode
   provides several advantages over the standard PennyLane QNode.
   [(#785)](https://github.com/PennyLaneAI/pennylane/pull/785)
   [(#792)](https://github.com/PennyLaneAI/pennylane/pull/792)
