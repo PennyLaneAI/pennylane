@@ -17,8 +17,8 @@
   >>> dev = qml.device("default.mixed", wires=1)
   ```
 
-  This allows the construction of QNodes that include non-unitary operations
-  such as noisy channels, as in this simple qubit rotation example
+  This allows the construction of QNodes that include non-unitary operations,
+  such as noisy channels:
 
   ```pycon
   >>> @qml.qnode(dev)
