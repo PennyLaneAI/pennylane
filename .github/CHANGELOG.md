@@ -1,14 +1,16 @@
-# Release 0.12.0 (development release)
+# Release 0.12.0 (current release)
 
 <h3>New features since last release</h3>
+
+<h4>New and improved simulators</h4>
 
 * PennyLane now supports a new device, `default.mixed`, designed for
   simulating mixed-state quantum computations. This enables native
   support for implementing noisy channels in a circuit, which generally
   map pure states to mixed states.
-  [(#819)](https://github.com/PennyLaneAI/pennylane/pull/819)
-  [(#807)](https://github.com/PennyLaneAI/pennylane/pull/807)
   [(#794)](https://github.com/PennyLaneAI/pennylane/pull/794)
+  [(#807)](https://github.com/PennyLaneAI/pennylane/pull/807)
+  [(#819)](https://github.com/PennyLaneAI/pennylane/pull/819)
 
   The device can be initialized as
   ```pycon
@@ -31,10 +33,14 @@
   0.0
   ```
 
+<h4>New measurement functions and tools</h4>
+
 * The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
   observables. This includes  utility functions required for measurement reduction by
   [qubit-wise-commuting (QWC) grouping](https://arxiv.org/abs/1907.03358).
   [(#761)](https://github.com/PennyLaneAI/pennylane/pull/761)
+  [(#850)](https://github.com/PennyLaneAI/pennylane/pull/850)
+  [(#852)](https://github.com/PennyLaneAI/pennylane/pull/852)
 
   - The `optimize_measurements` function will take as input a list of Pauli word observables and
     their corresponding coefficients (if any), and will return the partitioned Pauli terms
@@ -133,10 +139,7 @@
   Differentiating the state is not yet fully supported, but is currently available when using the
   classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device.
 
-* Summation of two `Wires` objects is now supported and will return
-  a `Wires` object containing the set of all wires defined by the
-  terms in the summation.
-  [(#812)](https://github.com/PennyLaneAI/pennylane/pull/812)
+<h4>New operations and channels</h4>
 
 * Quantum noisy channels: quantum channels provide a general
   formalism for discussing state evolution, including the evolution
@@ -155,6 +158,63 @@
   into `qml.RY`, `qml.CNOT`, and `qml.S` operations.
   [(#806)](https://github.com/PennyLaneAI/pennylane/pull/806)
 
+<h4>Preview the next-generation PennyLane QNode</h4>
+
+* The new PennyLane tape module provides a re-formulated QNode class, rewritten from the ground-up,
+  that uses a `QuantumTape` to represent the internal variational quantum circuit. Tape mode
+  provides several advantages over the standard PennyLane QNode.
+  [(#785)](https://github.com/PennyLaneAI/pennylane/pull/785)
+  [(#792)](https://github.com/PennyLaneAI/pennylane/pull/792)
+  [(#796)](https://github.com/PennyLaneAI/pennylane/pull/796)
+  [(#800)](https://github.com/PennyLaneAI/pennylane/pull/800)
+  [(#803)](https://github.com/PennyLaneAI/pennylane/pull/803)
+  [(#804)](https://github.com/PennyLaneAI/pennylane/pull/804)
+  [(#805)](https://github.com/PennyLaneAI/pennylane/pull/805)
+  [(#808)](https://github.com/PennyLaneAI/pennylane/pull/808)
+  [(#810)](https://github.com/PennyLaneAI/pennylane/pull/810)
+  [(#811)](https://github.com/PennyLaneAI/pennylane/pull/811)
+  [(#815)](https://github.com/PennyLaneAI/pennylane/pull/815)
+  [(#820)](https://github.com/PennyLaneAI/pennylane/pull/820)
+  [(#823)](https://github.com/PennyLaneAI/pennylane/pull/823)
+  [(#824)](https://github.com/PennyLaneAI/pennylane/pull/824)
+  [(#829)](https://github.com/PennyLaneAI/pennylane/pull/829)
+
+  - Support for in-QNode classical processing: Tape mode allows for differentiable classical
+    processing within the QNode.
+
+  - No more Variable wrapping: In tape mode, QNode arguments no longer become `Variable`
+    objects within the QNode.
+
+  - Less restrictive QNode signatures: There is no longer any restriction on the QNode signature;
+    the QNode can be defined and called following the same rules as standard Python functions.
+
+  - Unifying all QNodes: The tape-mode QNode merges all QNodes (including the
+    `JacobianQNode` and the `PassthruQNode`) into a single unified QNode, with
+    identical behaviour regardless of the differentiation type.
+
+  - Optimizations: Tape mode provides various performance optimizations, reducing pre- and
+    post-processing overhead, and reduces the number of quantum evaluations in certain cases.
+
+  Note that tape mode is **experimental**, and does not currently have feature-parity with the
+  existing QNode. [Feedback and bug reports](https://github.com/PennyLaneAI/pennylane/issues) are
+  encouraged and will help improve the new tape mode.
+
+  Tape mode can be enabled globally via the `qml.enable_tape` function, without changing your
+  PennyLane code:
+
+  ```python
+  qml.enable_tape()
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev, interface="tf")
+  def circuit(p):
+      print("Parameter value:", p)
+      qml.RX(tf.sin(p[0])**2 + p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  For more details, please see the [tape mode
+  documentation](https://pennylane.readthedocs.io/en/stable/code/qml_tape.html).
 
 <h3>Improvements</h3>
 
@@ -185,6 +245,10 @@
   manipulation tricks. The following gates are affected: `PauliX`, `PauliY`, `PauliZ`,
   `Hadamard`, `SWAP`, `S`, `T`, `CNOT`, `CZ`.
   [(#772)](https://github.com/PennyLaneAI/pennylane/pull/772)
+
+* The computation of marginal probabilities has been made more efficient for devices
+  with a large number of wires, achieving in some cases a 5x speedup.
+  [(#799)](https://github.com/PennyLaneAI/pennylane/pull/799)
 
 * Adds arithmetic operations (addition, tensor product,
   subtraction, and scalar multiplication) between `Hamiltonian`,
@@ -231,6 +295,11 @@
 * Added a new bit-flip mixer to the `qml.qaoa` module.
   [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
+* Summation of two `Wires` objects is now supported and will return
+  a `Wires` object containing the set of all wires defined by the
+  terms in the summation.
+  [(#812)](https://github.com/PennyLaneAI/pennylane/pull/812)
+
 <h3>Breaking changes</h3>
 
 * The PennyLane NumPy module now returns scalar (zero-dimensional) arrays where
@@ -261,6 +330,13 @@
   Note, however, that information regarding array differentiability will be
   lost.
 
+* The device capabilities dictionary has been redesigned, for clarity and robustness. In particular,
+  the capabilities dictionary is now inherited from the parent class, various keys have more
+  expressive names, and all keys are now defined in the base device class. For more details, please
+  [refer to the developer
+  documentation](https://pennylane.readthedocs.io/en/stable/development/plugins.html#device-capabilities).
+  [(#781)](https://github.com/PennyLaneAI/pennylane/pull/781/files)
+
 <h3>Bug fixes</h3>
 
 * Changed to use lists for storing variable values inside `BaseQNode`
@@ -273,14 +349,18 @@
 
 <h3>Documentation</h3>
 
+* Equations have been added to the `qml.sample` and `qml.probs` docstrings
+  to clarify the mathematical foundation of the performed measurements.
+  [(#843)](https://github.com/PennyLaneAI/pennylane/pull/843)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac,
-Nathan Killoran, Robert Lang, Cedric Lin, Antal Száva
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Soran Jahangiri, Nathan
+Killoran, Robert Lang, Cedric Lin, Olivia Di Matteo, Nicolás Quesada, Maria Schuld, Antal Száva.
 
-# Release 0.11.0 (current release)
+# Release 0.11.0
 
 <h3>New features since last release</h3>
 
