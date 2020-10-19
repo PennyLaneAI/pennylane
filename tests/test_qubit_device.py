@@ -736,7 +736,7 @@ class TestBatchExecution:
         dev = mock_qubit_device_with_apply(wires=2)
         spy = mocker.spy(QubitDevice, "execute")
 
-        tapes = [qml.tape.QuantumTape()]*n_tapes
+        tapes = [qml.tape.QuantumTape()] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
