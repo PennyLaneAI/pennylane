@@ -33,7 +33,7 @@
   0.0
   ```
 
-<h4>New measurement functions and tools</h4>
+<h4>New tools for optimizing measurements</h4>
 
 * The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
   observables. This includes  utility functions required for measurement reduction by
