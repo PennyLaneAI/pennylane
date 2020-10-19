@@ -106,10 +106,8 @@
     [grouping module documentation](https://pennylane.readthedocs.io/en/stable/code/qml_grouping.html)
 
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
-  Note that returning the state is only supported in the new and experimental tape-mode.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
-  Consider the following QNode:
   ```python
   import pennylane as qml
 
@@ -123,11 +121,7 @@
       qml.RY(y, wires=1)
       qml.CNOT(wires=[0, 2])
       return qml.state()
-  ```
 
-  Calling the QNode will return its state
-
-  ```pycon
   >>> qfunc(0.56, 0.1)
   array([0.95985437-0.27601028j, 0.        +0.j        ,
        0.04803275-0.01381203j, 0.        +0.j        ,
@@ -136,7 +130,8 @@
   ```
 
   Differentiating the state is not yet fully supported, but is currently available when using the
-  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device.
+  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device
+  and when using the new tape mode.
 
 <h4>New operations and channels</h4>
 
