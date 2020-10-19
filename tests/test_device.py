@@ -164,20 +164,6 @@ def mock_device(monkeypatch):
         yield get_device
 
 
-@pytest.fixture(scope="function")
-def mock_device_with_apply(monkeypatch):
-    """A function to create a mock device that mocks the apply() method."""
-    with monkeypatch.context() as m:
-        m.setattr(Device, '__abstractmethods__', frozenset())
-        m.setattr(Device, 'short_name', 'MockDevice')
-        m.setattr(Device, 'apply', lambda self, x, y, z: None)
-
-        def get_device(wires=1):
-            return Device(wires=wires)
-
-        yield get_device
-
-
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -758,3 +744,14 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0)
 
+    def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0)

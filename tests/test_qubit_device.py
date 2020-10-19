@@ -759,3 +759,15 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+
+    def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_qubit_device_with_paulis_and_methods(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
