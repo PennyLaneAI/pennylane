@@ -743,7 +743,7 @@ class TestBatchExecution:
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_device_with_apply(wires=2)
-        tapes = [qml.tape.QuantumTape()]*n_tapes
+        tapes = [qml.tape.QuantumTape()] * n_tapes
         res = dev.batch_execute(tapes)
 
         assert len(res) == n_tapes
