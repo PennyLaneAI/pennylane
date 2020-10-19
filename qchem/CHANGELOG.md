@@ -10,7 +10,7 @@
   [(#809)](https://github.com/PennyLaneAI/pennylane/pull/809)
 
 * The function `observable` in the `obs` module has been generalized to build
-  many-body observables combining one- and two-particle operators (e.g. Hamiltonians)
+  many-body observables combining one- and two-particle operators (e.g., Hamiltonians)
   [(#791)](https://github.com/PennyLaneAI/pennylane/pull/791)
 
 <h3>Bug fixes</h3>
