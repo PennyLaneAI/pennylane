@@ -131,8 +131,8 @@
        0.        +0.j        , 0.        +0.j        ])
   ```
 
-  Differentiating the state is not yet fully supported, but is currently available when using the
-  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device
+  Differentiating the state is currently available when using the
+  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device,
   and when using the new tape mode.
 
 <h4>New operations and channels</h4>
