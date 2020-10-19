@@ -141,12 +141,8 @@
 <h4>New operations and channels</h4>
 
 * Quantum noisy channels: quantum channels provide a general
-  formalism for discussing state evolution, including the evolution
-  of pure states into mixed states due to noise and decoherence. It
-  allows the user to simulate noise, benchmark algorithms running on
-  real hardware, and to test error-correction techniques. Moreover,
-  differentiable quantum channels could be a unique feature for
-  PennyLane not present in other libraries.
+  formalism for state evolution, including the evolution
+  of pure states into mixed states due to noise and decoherence. 
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
