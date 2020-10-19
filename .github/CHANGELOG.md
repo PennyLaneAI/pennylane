@@ -104,6 +104,9 @@
     For more details on the grouping module, see the
     [grouping module documentation](https://pennylane.readthedocs.io/en/stable/code/qml_grouping.html)
 
+
+<h4>Returning the quantum state from simulators</h4>
+
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
