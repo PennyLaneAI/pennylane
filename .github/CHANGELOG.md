@@ -41,21 +41,15 @@
     diagonalized in the measurement basis and the corresponding diagonalizing circuits.
 
     ```python
-    h, nr_qubits = qml.qchem.generate_hamiltonian(
-       mol_name='h2',
-       mol_geo_file='h2.xyz',
-       mol_charge=0,
-       multiplicity=1,
-       basis_set='sto-3g',
-       mapping='jordan_wigner')
-
-    rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping='qwc')
+    from pennylane.grouping import optimize_measurements
+    h, nr_qubits = qml.qchem.molecular_hamiltonian("h2", "qchem/tests/test_ref_files/h2_ref.xyz")
+    rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping="qwc")
     ```
 
    The diagonalizing circuits of `rotations` correspond to the diagonalized Pauli word groupings of
    `grouped_ops`.
 
-  - Pauli word partitioning utilities are performed by the `group_observables.PauliGroupingStrategy`
+  - Pauli word partitioning utilities are performed by the `PauliGroupingStrategy`
     class. An input list of Pauli words can be partitioned into mutually commuting,
     qubit-wise-commuting, or anticommuting groupings.
 
@@ -64,23 +58,25 @@
 
     ```python
     from pennylane import PauliX, PauliY, PauliZ, Identity
-    pauli_words = [Identity('a') @ Identity('b'),
-                   Identity('a') @ PauliX('b'),
-                   Identity('a') @ PauliY('b')
-                   PauliZ('a') @ PauliX('b'),
-                   PauliZ('a') @ PauliY('b'),
-                   PauliZ('a') @ PauliZ('b')]
-    from pennylane.grouping.group_observables import group_observables
+    pauli_words = [
+        Identity('a') @ Identity('b'),
+        Identity('a') @ PauliX('b'),
+        Identity('a') @ PauliY('b'),
+        PauliZ('a') @ PauliX('b'),
+        PauliZ('a') @ PauliY('b'),
+        PauliZ('a') @ PauliZ('b')
+    ]
+    from pennylane.grouping import group_observables
     groupings = group_observables(pauli_words, grouping_type='anticommuting', method='rlf')
     ```
 
-  - Various utility functions are included in `grouping.utils` for obtaining and manipulating Pauli
+  - Various utility functions are included for obtaining and manipulating Pauli
     words in the binary symplectic vector space representation.
 
     For instance, two Pauli words may be converted to their binary vector representation:
 
     ```pycon
-    >>> from pennylane.grouping.utils import pauli_to_binary
+    >>> from pennylane.grouping import pauli_to_binary
     >>> from pennylane.wires import Wires
     >>> wire_map = {Wires('a'): 0, Wires('b'): 1}
     >>> pauli_vec_1 = pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b'))
@@ -95,11 +91,14 @@
     representations, and returned in the operator representation.
 
     ```pycon
-    from pennylane.grouping.utils import binary_to_pauli
+    from pennylane.grouping import binary_to_pauli
     product = binary_to_pauli((pauli_vec_1 + pauli_vec_2) % 2, wire_map)
     >>> product
     Tensor product ['PauliY', 'PauliX']: 0 params, wires ['a', 'b']
     ```
+
+    For more details on the grouping module, see the
+    [grouping module documentation](https://pennylane.readthedocs.io/en/stable/code/qml_grouping.html)
 
 * The quantum state of a QNode can now be returned using the ``state()`` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
