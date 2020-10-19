@@ -1020,7 +1020,7 @@ class TestQNodeEvaluate:
 
     def test_device_executions(self):
         """Test the number of times a QNode running on the device is evaluated
-        is equal to the number of times a the device is executed"""
+        is equal to the number of times the device is executed"""
 
         dev_1 = qml.device("default.qubit", wires=2)
 
