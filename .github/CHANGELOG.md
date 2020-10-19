@@ -137,9 +137,9 @@
 
 <h4>New operations and channels</h4>
 
-* Quantum noisy channels: quantum channels provide a general
-  formalism for state evolution, including the evolution
-  of pure states into mixed states due to noise and decoherence. 
+* PennyLane now includes standard channels such as the Amplitude-damping,
+  Phase-damping, and Depolarizing channels, as well as the ability 
+  to make custom qubit channels.
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
