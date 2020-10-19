@@ -867,10 +867,12 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
-        if not len(pauli_word) == len(wires):
+        num_wires = 1 if isinstance(wires, int) else len(wires)
+        
+        if not len(pauli_word) == num_wires:
             raise ValueError(
                 "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), len(wires), wires
+                    len(pauli_word), num_wires, wires
                 )
             )
 
