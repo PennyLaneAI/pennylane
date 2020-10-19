@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for heuristic Pauli graph colouring functions in `grouping/graph_colouring.py`.
+Unit tests for heuristic Pauli graph colouring functions in ``grouping/graph_colouring.py``.
 """
 import pytest
 import numpy as np
