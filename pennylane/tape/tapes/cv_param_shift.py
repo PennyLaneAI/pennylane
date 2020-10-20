@@ -336,7 +336,6 @@ class CVParamShiftTape(QubitParamShiftTape):
         # TODO: if the transformation produces only a constant term,
         # `_transform_observable` has only a single non-zero element in the
         # 0th position, then there is no need to execute the device---the constant term
-
         # represents the gradient.
 
         # transform the descendant observables into their derivatives using Z

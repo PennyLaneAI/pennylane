@@ -174,8 +174,8 @@ class QubitParamShiftTape(JacobianTape):
         return tapes, processing_fn
 
     def parameter_shift_var(self, idx, params, **options):
-        r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
-        of expectation values and variances of observables.
+        """Generate the tapes and postprocessing methods required to compute the gradient of a
+        parameter and its variance using the parameter-shift method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
