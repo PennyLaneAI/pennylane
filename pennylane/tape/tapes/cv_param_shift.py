@@ -391,7 +391,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             force_order2 (bool): iff True, use the order-2 method even if not necessary
             device (.Device): A PennyLane device that can execute quantum operations and return
                 measurement statistics. This keyword argument is required, as the device labels
-                are required to generate the quantum tapes for computing the gradient.
+                may be needed to generate the quantum tapes for computing the gradient.
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
@@ -439,7 +439,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             force_order2 (bool): iff True, use the order-2 method even if not necessary
             device (.Device): A PennyLane device that can execute quantum operations and return
                 measurement statistics. This keyword argument is required, as the device labels
-                are required to generate the quantum tapes for computing the gradient.
+                may be needed to generate the quantum tapes for computing the gradient.
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
