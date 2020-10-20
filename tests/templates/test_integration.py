@@ -40,7 +40,7 @@ import pennylane as qml
 #######################################
 # Interfaces
 
-INTERFACES = [('autograd', np.array)]
+INTERFACES = [('numpy', np.array)]
 
 try:
     import torch
