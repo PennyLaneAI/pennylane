@@ -15,6 +15,7 @@ r"""
 Contains the ``QAOAEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
@@ -35,8 +36,11 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (Wires): wires that the template acts on
     """
 
-    feature_encoding_wires = wires[: len(features)]
-    remaining_wires = wires[len(features) :]
+    interface = features.__class__.__module__.split(".")[0]
+    fn = qml.tape.MLFunctionWrapper[interface]
+
+    feature_encoding_wires = wires[: fn.len(features)]
+    remaining_wires = wires[fn.len(features) :]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)

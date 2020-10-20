@@ -20,11 +20,12 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
+import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_type, get_shape, check_is_in_options
+from pennylane.templates.utils import get_shape, check_is_in_options
 from pennylane.wires import Wires
 
+OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
 
 ###################
 # helpers to define pattern wire sequences
@@ -488,23 +489,13 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 circuit(pars)
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
-    #########
-    # Input checks
-
     wires = Wires(wires)
-
+    custom_pattern = None
     if kwargs is None:
         kwargs = {}
 
-    check_type(
-        kwargs,
-        [dict],
-        msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
-    )
-
-    custom_pattern = None
+    #########
+    # Input checks
 
     if isinstance(pattern, str):
         check_is_in_options(
@@ -546,7 +537,9 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 )
             )
         if len(shape) == 1:
-            parameters = np.expand_dims(parameters, axis=1)
+            interface = parameters.__class__.__module__.split(".")[0]
+            fn = qml.tape.MLFunctionWrapper[interface]
+            parameters = fn.expand_dims(parameters, 1)
 
 
 
@@ -571,4 +564,4 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     else:
         for i in range(len(wire_sequence)):
             # TODO: Find solution here
-            unitary(parameters[i], wires=wire_sequence[i], **kwargs)
+            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)

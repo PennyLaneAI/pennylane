@@ -19,7 +19,6 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape
 from pennylane.variable import Variable
@@ -91,7 +90,7 @@ def _compute_theta(alpha):
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
-        entry = sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
+        entry = np.sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
         entry *= factor
         if abs(entry) > 1e-6:
             theta[row, 0] = entry
@@ -260,19 +259,23 @@ def MottonenStatePreparation(state_vector, wires):
         "".format(expected_shape, get_shape(state_vector)),
     )
 
+    interface = state_vector.__class__.__module__.split(".")[0]
+    fn = qml.tape.MLFunctionWrapper[interface]
+
     # check if state_vector is normalized
     if isinstance(state_vector[0], Variable):
+        # Todo: delete when tape is core
         state_vector_values = [s.val for s in state_vector]
         norm = np.sum(np.abs(state_vector_values) ** 2)
     else:
-        norm = np.sum(np.abs(state_vector) ** 2)
+        norm = fn.sum(fn.abs(state_vector) ** 2)
     if not np.isclose(norm, 1.0, atol=1e-3):
         raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
     #######################
 
     # Change ordering of indices, original code was for IBM machines
-    state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
+    state_vector = fn.reshape(state_vector, [2] * n_wires).T.flatten()[:, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
 
     a = sparse.dok_matrix(state_vector.shape)
