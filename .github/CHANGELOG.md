@@ -77,8 +77,8 @@
 
 <h3>Bug fixes</h3>
 
-* The `PauliRot` operation now gracefully handles single-qubit Paulis, and
-	all-identity Paulis [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
+* The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
+  [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
 
 <h3>Contributors</h3>
 
