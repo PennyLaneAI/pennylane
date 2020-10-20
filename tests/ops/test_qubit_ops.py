@@ -821,7 +821,22 @@ class TestPauliRot:
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_PauliRot_wire_as_int(self):
+        """Test that passing a single wire as an integer works."""
+
+        theta = 0.4
+        op = qml.PauliRot(theta, "Z", wires=0)
+        decomp_ops = op.decomposition(theta, "Z", wires=0)
+
+        assert len(decomp_ops) == 1
+
+        assert decomp_ops[0].name == "MultiRZ"
+
+        assert decomp_ops[0].wires == Wires([0])
+        assert decomp_ops[0].data[0] == theta
         
+
     def test_PauliRot_decomposition_Identity(self):
         """Test that decomposing the all-identity Pauli has no effect."""
 

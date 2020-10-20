@@ -930,6 +930,10 @@ class PauliRot(Operation):
     @staticmethod
     @template
     def decomposition(theta, pauli_word, wires):
+        # Catch cases when the wire is passed as a single int.
+        if isinstance(wires, int):
+            wires = [wires]
+
         # Check for identity and do nothing
         if pauli_word == "I" * len(wires):
             return
