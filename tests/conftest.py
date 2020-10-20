@@ -33,6 +33,13 @@ class DummyDevice(DefaultGaussian):
     _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
 
 
+def pytest_configure(config):
+    # register custom markers
+    config.addinivalue_line(
+        "markers", "supports_tape: mark test to run in tape mode"
+    )
+
+
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
@@ -163,3 +170,9 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
+
+@pytest.fixture
+def uses_tape():
+    qml.enable_tape()
+    yield
+    qml.disable_tape()
