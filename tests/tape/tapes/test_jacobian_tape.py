@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import JacobianTape
+from pennylane.tape import JacobianTape, QuantumTape
 
 
 class TestConstruction:
@@ -159,7 +159,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
-        tape.analytic_pd.return_value = np.array([1.0])
+        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.])]
 
         tape.jacobian(dev, method="analytic")
         assert len(tape.analytic_pd.call_args_list) == 2
@@ -215,7 +215,7 @@ class TestJacobian:
         # modify the output dim
         tape._output_dim = 2
 
-        res = tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2, method="numeric")
 
         # output dim should be correct
         assert tape.output_dim == sum([2, 2])
@@ -241,7 +241,7 @@ class TestJacobian:
         # modify the output dim
         tape._output_dim = 2
 
-        res = tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2, method="numeric")
 
         # output dim should be correct
         assert tape.output_dim == sum([2, 4])
@@ -269,7 +269,7 @@ class TestJacobian:
         assert len(analytic_spy.call_args_list) == 0
 
         # the numeric pd method is only called for parameter 0
-        assert numeric_spy.call_args[0] == (tape, 0, dev)
+        assert numeric_spy.call_args[0] == (tape, 0)
 
     def test_no_trainable_parameters(self, mocker):
         """Test that if the tape has no trainable parameters, no
@@ -296,7 +296,8 @@ class TestJacobian:
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
         values."""
-        execute_spy = mocker.spy(JacobianTape, "execute_device")
+        dev = qml.device("default.qubit", wires=2)
+        execute_spy = mocker.spy(dev, "execute")
         numeric_spy = mocker.spy(JacobianTape, "numeric_pd")
 
         with JacobianTape() as tape:
@@ -304,7 +305,6 @@ class TestJacobian:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=2)
         res = tape.jacobian(dev, order=1)
 
         # the execute device method is called once per parameter,
@@ -339,12 +339,11 @@ class TestJacobian:
         assert not np.allclose(res1, res2, atol=tol, rtol=0)
         assert tape.get_parameters() == [0.5, 0.6]
 
-    def test_numeric_pd_no_y0(self, mocker, tol):
+    def test_numeric_pd_no_y0(self, tol):
         """Test that, if y0 is not passed when calling the numeric_pd method,
         y0 is calculated."""
-        execute_spy = mocker.spy(JacobianTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=2)
+
         params = [0.1, 0.2]
 
         with JacobianTape() as tape:
@@ -354,14 +353,18 @@ class TestJacobian:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # compute numeric gradient of parameter 0, without passing y0
-        res1 = tape.numeric_pd(0, dev)
-        assert len(execute_spy.call_args_list) == 2
+        tapes, fn = tape.numeric_pd(0)
+        assert len(tapes) == 2
+
+        res1 = fn([tape.execute(dev) for tape in tapes])
 
         # compute y0 in advance
         y0 = tape.execute(dev)
-        execute_spy.call_args_list = []
-        res2 = tape.numeric_pd(0, dev, y0=y0)
-        assert len(execute_spy.call_args_list) == 1
+        tapes, fn = tape.numeric_pd(0, y0=y0)
+        assert len(tapes) == 1
+
+        res2 = fn([tape.execute(dev) for tape in tapes])
+
         assert np.allclose(res1, res2, atol=tol, rtol=0)
 
     def test_numeric_unknown_order(self):
