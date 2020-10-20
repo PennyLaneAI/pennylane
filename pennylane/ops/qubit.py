@@ -23,10 +23,7 @@ import numpy as np
 
 from pennylane.templates import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import pauli_eigs, expand
 from pennylane._queuing import OperationRecorder
 
@@ -181,11 +178,7 @@ class PauliY(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [
-            PauliZ(wires=self.wires),
-            S(wires=self.wires),
-            Hadamard(wires=self.wires),
-        ]
+        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
     @staticmethod
     def decomposition(wires):
@@ -732,24 +725,14 @@ class Rot(Operation):
 
         return np.array(
             [
-                [
-                    cmath.exp(-0.5j * (phi + omega)) * c,
-                    -cmath.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    cmath.exp(-0.5j * (phi - omega)) * s,
-                    cmath.exp(0.5j * (phi + omega)) * c,
-                ],
+                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
             ]
         )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires),
-        ]
+        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
 
 
@@ -1016,10 +999,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-        -1 / 2,
-    ]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1086,10 +1066,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
-        -1 / 2,
-    ]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1154,10 +1131,7 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1236,18 +1210,8 @@ class CRot(Operation):
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [
-                    0,
-                    0,
-                    cmath.exp(-0.5j * (phi + omega)) * c,
-                    -cmath.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    0,
-                    0,
-                    cmath.exp(-0.5j * (phi - omega)) * s,
-                    cmath.exp(0.5j * (phi + omega)) * c,
-                ],
+                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
             ]
         )
 
@@ -1335,10 +1299,7 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
         return INV_SQRT2 * np.array(
-            [
-                [1, -cmath.exp(1j * lam)],
-                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
-            ]
+            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
         )
 
     @staticmethod
