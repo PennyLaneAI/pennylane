@@ -67,7 +67,7 @@ class TapeCircuitGraph(CircuitGraph):
             if self._truncated_graph is None:
                 self._truncated_graph = CircuitGraph(
                     self.operations, self.variable_deps, self.wires
-                )._graph
+                ).graph
 
             self._depth = nx.dag_longest_path_length(self._truncated_graph) + 1
 
