@@ -740,6 +740,16 @@ PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
 PAULI_ROT_MATRIX_TEST_DATA = [
     (
         np.pi,
+        "Z",
+        np.array(
+            [
+                [-1j, 0],
+                [0, 1j]
+            ]
+        )
+    ),
+    (
+        np.pi,
         "XIZ",
         np.array(
             [
@@ -821,6 +831,15 @@ class TestPauliRot:
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        
+    def test_PauliRot_decomposition_Identity(self):
+        """Test that decomposing the all-identity Pauli has no effect."""
+
+        theta = 0.4
+        op = qml.PauliRot(theta, "II", wires=[0, 1])
+        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+
+        assert len(decomp_ops) == 0
 
     def test_PauliRot_decomposition_ZZ(self):
         """Test that the decomposition for a ZZ rotation is correct."""
