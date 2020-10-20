@@ -107,7 +107,7 @@
 
 <h4>Returning the quantum state from simulators</h4>
 
-* The quantum state of a QNode can now be returned using the ``state()`` return function.
+* The quantum state of a QNode can now be returned using the `qml.state()` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
   ```python
