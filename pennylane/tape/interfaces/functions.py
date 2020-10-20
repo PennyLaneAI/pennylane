@@ -22,6 +22,7 @@ from unittest.mock import MagicMock
 import numpy as np
 from pennylane import numpy as anp
 from scipy.linalg import block_diag
+from scipy import sparse
 
 # STILL NEEDED:
 # np.flip
@@ -51,6 +52,8 @@ class NumPyFunctions:
     complex128 = anp.complex128
 
     abs = anp.abs
+    angle = anp.angle
+    arcsin = anp.arcsin
     asarray = anp.asarray
     block_diag = block_diag
     cast = anp.asarray
@@ -62,6 +65,8 @@ class NumPyFunctions:
     gather = lambda array, indices: array[indices]
     len = len
     reshape = anp.reshape
+    shape = lambda obj: obj.shape
+    sparse_matrix = lambda shape: sparse.dok_matrix(shape, dtype=np.float64)
     sqrt = np.sqrt
     sum = anp.sum
     stack = anp.stack
@@ -87,7 +92,9 @@ class TensorFlowFunctions:
     float64 = tf.float64
     complex128 = tf.complex128
 
-    abs = tf.abs
+    abs = tf.math.abs
+    angle = tf.math.angle
+    arcsin = tf.math.asin
     asarray = tf.convert_to_tensor
     cast = tf.cast
     diag = tf.linalg.diag
@@ -100,7 +107,9 @@ class TensorFlowFunctions:
     reduce_sum = tf.reduce_sum
     reshape = tf.reshape
     scatter = tf.scatter_nd
-    sqrt = tf.sqrt
+    shape = lambda obj: obj.shape
+    sparse_matrix = lambda shape: tf.SparseTensor(dense_shape=shape)
+    sqrt = tf.math.sqrt
     stack = tf.stack
     sum = tf.reduce_sum
     tensordot = tf.tensordot
@@ -131,6 +140,8 @@ class TorchFunctions:
     complex128 = torch.complex128
 
     abs = torch.abs
+    angle = torch.angle
+    arcsin = torch.asin
     asarray = torch.as_tensor
     cast = lambda tensor, dtype: tensor.to(dtype=dtype)
     diag = lambda tensor: torch.diag(torch.stack(tensor))
@@ -139,8 +150,11 @@ class TorchFunctions:
     expand_dims = lambda a, axis: torch.unsqueeze(a, axis)
     flatten = torch.flatten
     gather = lambda array, indices: array[indices]
+    len = lambda obj: obj.size()[0]
     reduce_sum = torch.sum
     reshape = torch.reshape
+    shape = lambda obj: obj.size()
+    sparse_matrix = lambda shape: torch.sparse.FloatTensor(*shape)
     sqrt = torch.sqrt
     stack = torch.stack
     sum = torch.sum
@@ -180,7 +194,7 @@ MLFunctionWrapper = {
     "numpy": NumPyFunctions,
     "autograd": NumPyFunctions,
     "pennylane": NumPyFunctions,
-    "builtins":NumPyFunctions,
+    "builtins": NumPyFunctions,
     "tf": TensorFlowFunctions,
     "tensorflow": TensorFlowFunctions,
     "torch": TorchFunctions,
@@ -188,11 +202,3 @@ MLFunctionWrapper = {
 """dict[str, namespace]: dictionary mapping various machine learning
 library namespaces/nicknames/interface names to the corresponding wrapper
 class above"""
-
-# Importing this module will result in the dictionary above
-# being imported. E.g.,
-# >>> from pennylane.tape.transforms functions as fn
-# >>> fn["np"]
-# <class NumPyFunctions>
-# >>> fn["np"].abs
-#sys.modules[__name__] = MLFunctionWrapper
