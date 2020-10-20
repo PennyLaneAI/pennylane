@@ -53,7 +53,8 @@ class JacobianTape(QuantumTape):
         caching (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
+            executions to keep the cache up to date. The cache is not available for
+            gradient-based calculations.
 
     **Example**
 
@@ -186,19 +187,19 @@ class JacobianTape(QuantumTape):
         if "grad_method" not in self._par_info[0]:
             self._update_gradient_info()
 
-        allowed_param_methods = {
+        diff_methods = {
             idx: info["grad_method"]
             for idx, info in self._par_info.items()
             if idx in self.trainable_params
         }
 
         # check and raise an error if any parameters are non-differentiable
-        nondiff_params = {idx for idx, g in allowed_param_methods.items() if g is None}
+        nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
 
         if nondiff_params:
             raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
-        numeric_params = {idx for idx, g in allowed_param_methods.items() if g == "F"}
+        numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
 
         # If explicitly using analytic mode, ensure that all parameters
         # support analytic differentiation.
@@ -207,18 +208,16 @@ class JacobianTape(QuantumTape):
                 f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
             )
 
-        return tuple(allowed_param_methods.values())
+        return tuple(diff_methods.values())
 
-    def numeric_pd(self, idx, device, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter using numerical finite-differences.
+    def numeric_pd(self, idx, params=None, **options):
+        """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
+        finite-difference method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
+               the current tape parameter values are used (via :meth:`~.get_parameters`).
 
         Keyword Args:
             h=1e-7 (float): finite difference method step size
@@ -226,9 +225,11 @@ class JacobianTape(QuantumTape):
                 to forward finite differences, ``2`` to centered finite differences.
 
         Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
         """
+
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -239,22 +240,69 @@ class JacobianTape(QuantumTape):
         shift[idx] = h
 
         if order == 1:
-            # Forward finite-difference.
-            # Check if the device has already be pre-computed with
-            # unshifted parameter values, to avoid redundant evaluations.
+            # forward finite-difference.
+
+            tapes = []
+
+            # get the stored result of the original circuit
             y0 = options.get("y0", None)
 
-            if y0 is None:
-                y0 = np.asarray(self.execute_device(params, device))
+            shifted = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted.set_parameters(params + shift)
 
-            y = np.asarray(self.execute_device(params + shift, device))
-            return (y - y0) / h
+            tapes.append(shifted)
+
+            if y0 is None:
+                tapes.append(self)
+
+            def processing_fn(results):
+                """Computes the gradient of the parameter at index idx via first-order
+                forward finite differences.
+
+                Args:
+                    results (list[real]): evaluated quantum tapes
+
+                Returns:
+                    array[float]: 1-dimensional array of length determined by the tape output
+                    measurement statistics
+                """
+                shifted = np.array(results[0])
+                unshifted = y0
+
+                if unshifted is None:
+                    unshifted = np.array(results[1])
+
+                return (shifted - unshifted) / h
+
+            return tapes, processing_fn
 
         if order == 2:
             # central finite difference
-            shift_forward = np.array(self.execute_device(params + shift / 2, device))
-            shift_backward = np.array(self.execute_device(params - shift / 2, device))
-            return (shift_forward - shift_backward) / h
+
+            shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted_forward.set_parameters(params + shift / 2)
+
+            shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted_backward.set_parameters(params - shift / 2)
+
+            tapes = [shifted_forward, shifted_backward]
+
+            def second_order_processing_fn(results):
+                """Computes the gradient of the parameter at index idx via second-order
+                centered finite differences.
+
+                Args:
+                    results (list[real]): evaluated quantum tapes
+
+                Returns:
+                    array[float]: 1-dimensional array of length determined by the tape output
+                    measurement statistics
+                """
+                res0 = np.array(results[0])
+                res1 = np.array(results[1])
+                return (res0 - res1) / h
+
+            return tapes, second_order_processing_fn
 
         raise ValueError("Order must be 1 or 2.")
 
@@ -285,20 +333,19 @@ class JacobianTape(QuantumTape):
         self.set_parameters(saved_parameters)
         return jac
 
-    def analytic_pd(self, idx, device, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter using an analytic method.
+    def analytic_pd(self, idx, params, **options):
+        """Generate the quantum tapes and classical post-processing function required to compute the
+        gradient of the tape with respect to a single trainable tape parameter using an analytic
+        method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
+            params (list[Any]): the quantum tape operation parameters
 
         Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
         """
         raise NotImplementedError
 
@@ -422,14 +469,14 @@ class JacobianTape(QuantumTape):
             return self.device_pd(device, params=params, **options)
 
         # perform gradient method validation
-        allowed_param_methods = self._grad_method_validation(method)
+        diff_methods = self._grad_method_validation(method)
 
-        if not params.size or all(g == "0" for g in allowed_param_methods):
+        if not params.size or all(g == "0" for g in diff_methods):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
 
-        if method == "numeric" or "F" in allowed_param_methods:
+        if method == "numeric" or "F" in diff_methods:
             # there exist parameters that will be differentiated numerically
 
             if options.get("order", 1) == 1:
@@ -438,34 +485,63 @@ class JacobianTape(QuantumTape):
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
-        jac = None
-        p_ind = range(len(params))
+        # some gradient methods need the device or the device wires
+        options["device"] = device
+        options["dev_wires"] = device.wires
 
-        # loop through each parameter and compute the gradient
-        for idx, (l, param_method) in enumerate(zip(p_ind, allowed_param_methods)):
+        # collect all circuits (tapes) and postprocessing functions required
+        # to compute the jacobian
 
-            if param_method == "0":
-                # Independent parameter. Skip, as this parameter has a gradient of 0.
-                continue
+        all_tapes = []
+        reshape_info = []
+        processing_fns = []
+
+        for trainable_idx, param_method in enumerate(diff_methods):
 
             if (method == "best" and param_method[0] == "F") or (method == "numeric"):
-                # finite difference method
-                g = self.numeric_pd(l, device, params=params, **options)
+                # numeric method
+                tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
 
             elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
                 # analytic method
-                g = self.analytic_pd(l, device, params=params, **options)
+                tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
+
+            processing_fns.append(processing_fn)
+
+            # we create a flat list here to feed at once to the device
+            all_tapes.extend(tapes)
+
+            # to extract the correct result for this parameter later, remember the number of tapes
+            reshape_info.append(len(tapes))
+
+        # execute all tapes at once
+        results = device.batch_execute(all_tapes)
+
+        # post-process the results with the appropriate function to fill jacobian columns with gradients
+        jac = None
+        start = 0
+
+        for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
+
+            # extract the correct results from the flat list
+            res = results[start : start + res_len]
+            start += res_len
+
+            # postprocess results to compute the gradient
+            g = processing_fn(res)
 
             if g.dtype is np.dtype("object"):
                 # object arrays cannot be flattened; must hstack them
                 g = np.hstack(g)
 
-            if jac is None:
-                # The Jacobian matrix has not yet been created, as we needed at least
-                # one device execution to occur so that we could ensure that the output
-                # dimension is known.
-                jac = np.zeros((self.output_dim, len(params)), dtype=float)
+            g = g.flatten()
 
-            jac[:, idx] = g.flatten()
+            if jac is None:
+                # update the tape's output dimension
+                self._output_dim = len(g)
+                # create the Jacobian matrix
+                jac = np.zeros((len(g), len(params)), dtype=float)
+
+            jac[:, i] = g
 
         return jac
