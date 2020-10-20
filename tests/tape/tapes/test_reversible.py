@@ -46,15 +46,17 @@ class TestReversibleTape:
 
         assert tape0 is tape
 
-        assert len(tape1.operations) == 3
-        assert not tape1.measurements
-        assert tape1.operations[0].name == "RY.inv"
-        assert tape1.operations[1].name == "PauliX"
-        assert tape1.operations[2].name == "RY"
+        assert len(tape1.operations) == 4
+        assert len(tape1.measurements) == 1
+        assert tape1.operations[0].name == "QubitStateVector"
+        assert tape1.operations[1].name == "RY.inv"
+        assert tape1.operations[2].name == "PauliX"
+        assert tape1.operations[3].name == "RY"
 
-        assert len(tape2.operations) == 1
-        assert not tape2.measurements
-        assert tape2.operations[0].name == "PauliY"
+        assert len(tape2.operations) == 2
+        assert len(tape1.measurements) == 1
+        assert tape1.operations[0].name == "QubitStateVector"
+        assert tape2.operations[1].name == "PauliY"
 
     def test_rot_diff_circuit_construction(self, mocker):
         """Test that the diff circuit is correctly constructed for the Rot gate"""
@@ -75,23 +77,26 @@ class TestReversibleTape:
 
         assert tape0 is tape
 
-        assert len(tape1.operations) == 5
-        assert not tape1.measurements
-        assert tape1.operations[0].name == "RZ.inv"
-        assert tape1.operations[1].name == "RY.inv"
-        assert tape1.operations[2].name == "PauliZ"
-        assert tape1.operations[3].name == "RY"
-        assert tape1.operations[4].name == "RZ"
+        assert len(tape1.operations) == 6
+        assert len(tape1.measurements) == 1
+        assert tape1.operations[0].name == "QubitStateVector"
+        assert tape1.operations[1].name == "RZ.inv"
+        assert tape1.operations[2].name == "RY.inv"
+        assert tape1.operations[3].name == "PauliZ"
+        assert tape1.operations[4].name == "RY"
+        assert tape1.operations[5].name == "RZ"
 
-        assert len(tape2.operations) == 3
-        assert not tape2.measurements
-        assert tape2.operations[0].name == "RZ.inv"
-        assert tape2.operations[1].name == "PauliY"
-        assert tape2.operations[2].name == "RZ"
+        assert len(tape2.operations) == 4
+        assert len(tape1.measurements) == 1
+        assert tape1.operations[0].name == "QubitStateVector"
+        assert tape2.operations[1].name == "RZ.inv"
+        assert tape2.operations[2].name == "PauliY"
+        assert tape2.operations[3].name == "RZ"
 
-        assert len(tape3.operations) == 1
-        assert not tape3.measurements
-        assert tape3.operations[0].name == "PauliZ"
+        assert len(tape3.operations) == 2
+        assert len(tape1.measurements) == 1
+        assert tape1.operations[0].name == "QubitStateVector"
+        assert tape3.operations[1].name == "PauliZ"
 
     @pytest.mark.parametrize("op, name", [(qml.CRX, "CRX"), (qml.CRY, "CRY"), (qml.CRZ, "CRZ")])
     def test_controlled_rotation_gates_exception(self, op, name):
@@ -474,7 +479,7 @@ class TestHelperFunctions:
 
     one_qubit_vec1 = np.array([1, 1])
     one_qubit_vec2 = np.array([1, 1j])
-    two_qubit_vec = np.array([1, 1, 1, -1]).reshape([2, 2])
+    two_qubit_vec = np.array([1, 1, 1, -1])
     single_qubit_obs1 = qml.PauliZ(0)
     single_qubit_obs2 = qml.PauliY(0)
     two_qubit_obs = qml.Hermitian(np.eye(4), wires=[0, 1])
@@ -497,7 +502,6 @@ class TestHelperFunctions:
     )
     def test_matrix_elem(self, wires, vec1, obs, vec2, expected):
         """Tests for the helper function _matrix_elem"""
-        dev = qml.device("default.qubit", wires=wires)
         tape = ReversibleTape()
-        res = tape._matrix_elem(vec1, obs, vec2, dev)
+        res = tape._matrix_elem(vec1, obs, vec2, qml.wires.Wires(range(wires)))
         assert res == expected
