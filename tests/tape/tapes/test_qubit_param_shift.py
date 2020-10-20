@@ -353,12 +353,13 @@ class TestJacobianIntegration:
 
     def test_involutory_variance(self, mocker, tol):
         """Tests qubit observable that are involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
+
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -389,13 +390,13 @@ class TestJacobianIntegration:
 
     def test_non_involutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=1)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -428,13 +429,13 @@ class TestJacobianIntegration:
     def test_involutory_and_noninvolutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         a involutory observable."""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=2)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)

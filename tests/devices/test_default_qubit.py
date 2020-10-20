@@ -21,7 +21,7 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice
+from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.operation import Operation
 
 U = np.array(
@@ -1849,3 +1849,33 @@ class TestApplyOps:
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
+
+
+class TestStateVector:
+    """Unit tests for the _apply_state_vector method"""
+
+    def test_full_subsystem(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubit(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(dev._state.flatten() == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+
+        dev = DefaultQubit(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 1, 0]) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = np.sum(dev._state, axis=(1,)).flatten()
+
+        assert np.all(res == state)
+        spy.assert_called()
