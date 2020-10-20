@@ -145,19 +145,6 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
 
     repeat = check_number_of_layers([weights])
 
-    check_type(
-        initial_layer_weights,
-        [list, np.ndarray],
-        msg="'initial_layer_weights' must be of type list or np.ndarray; got type {}".format(
-            type(initial_layer_weights)
-        ),
-    )
-    check_type(
-        weights,
-        [list, np.ndarray],
-        msg="'weights' must be of type list or np.ndarray; got type {}".format(type(weights)),
-    )
-
     expected_shape_initial = (len(wires),)
     check_shape(
         initial_layer_weights,

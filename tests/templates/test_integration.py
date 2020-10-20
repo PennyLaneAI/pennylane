@@ -40,7 +40,7 @@ import pennylane as qml
 #######################################
 # Interfaces
 
-INTERFACES = [('numpy', np.array)]
+INTERFACES = [('autograd', np.array)]
 
 try:
     import torch
@@ -303,7 +303,6 @@ CV_INIT = [(qml.templates.CVNeuralNetLayers,
            ]
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestIntegrationQnode:
     """Tests the integration of templates into qnodes when differentiable arguments are passed as
     primary or auxiliary arguments to the qnode, using different interfaces.
@@ -317,6 +316,7 @@ class TestIntegrationQnode:
     All templates should work no matter how the "differentiable arguments" are passed to the qnode.
     """
 
+    @pytest.mark.usefixtures("tape_mode")
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_qubit_qnode_primary_args(self, template, diffable, nondiffable, n_wires, interface, to_var):

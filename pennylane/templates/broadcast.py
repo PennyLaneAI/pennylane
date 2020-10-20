@@ -545,16 +545,11 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 )
             )
 
-        # repackage for consistent unpacking
-        if len(shape) == 1:
-            parameters = [[p] for p in parameters]
-    else:
-        parameters = [[] for _ in range(n_parameters[pattern])]
 
     #########
 
     # define wire sequences for patterns
-    wire_sequence = {
+    pattern_to_wires = {
         "single": [wires[i] for i in range(len(wires))],
         "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
         "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
@@ -565,6 +560,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "custom": custom_pattern,
     }
 
-    # broadcast the unitary
-    for wires, pars in zip(wire_sequence[pattern], parameters):
-        unitary(*pars, wires=wires, **kwargs)
+    wire_sequence = pattern_to_wires[pattern]
+    if parameters is None:
+        for i in range(len(wire_sequence)):
+            unitary(wires=wire_sequence[i], **kwargs)
+    else:
+        for i in range(len(wire_sequence)):
+            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
