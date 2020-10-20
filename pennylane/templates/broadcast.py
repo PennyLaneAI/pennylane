@@ -20,6 +20,7 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+from pennylane import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
@@ -544,6 +545,9 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                     n_parameters[pattern], shape[0]
                 )
             )
+        if len(shape) == 1:
+            parameters = np.expand_dims(parameters, axis=1)
+
 
 
     #########
@@ -566,4 +570,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             unitary(wires=wire_sequence[i], **kwargs)
     else:
         for i in range(len(wire_sequence)):
-            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
+            # TODO: Find solution here
+            unitary(parameters[i], wires=wire_sequence[i], **kwargs)
