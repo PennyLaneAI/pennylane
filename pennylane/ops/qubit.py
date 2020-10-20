@@ -899,6 +899,10 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
+        # Simplest case is if the Pauli is the identity matrix
+        if pauli_word == 'I' * len(pauli_word):
+            return np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word))
+        
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
