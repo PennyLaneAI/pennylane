@@ -55,7 +55,7 @@ class TapeCircuitGraph(CircuitGraph):
 
     @property
     def depth(self):
-        """Depth of the depth of a quantum circuit (longest path in the DAG)."""
+        """Depth of the quantum circuit (longest path in the DAG)."""
         # If there are no operations in the circuit, the depth is 0
         if len(self._operations) == 0:
             self._depth = 0
