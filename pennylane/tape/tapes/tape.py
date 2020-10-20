@@ -113,9 +113,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(
-                obj, (qml.operation.Operation, qml.tape.measure.MeasurementProcess)
-            ):
+            if isinstance(obj, (qml.operation.Operation, qml.tape.measure.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -306,9 +304,7 @@ class QuantumTape(AnnotatedQueue):
             if isinstance(obj, QuantumTape):
                 self._ops.append(obj)
 
-            elif isinstance(obj, qml.operation.Operation) and not info.get(
-                "owner", False
-            ):
+            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
 
                 if self._measurements:
@@ -346,9 +342,7 @@ class QuantumTape(AnnotatedQueue):
                     self.is_sampled = True
 
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-                raise ValueError(
-                    f"Observable {obj} does not have a measurement type specified."
-                )
+                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update()
 
@@ -505,9 +499,7 @@ class QuantumTape(AnnotatedQueue):
             for obj in queue:
                 # index the number of parameters on each operation
                 num_obj_params = len(obj.data)
-                obj_params.append(
-                    list(range(param_count, param_count + num_obj_params))
-                )
+                obj_params.append(list(range(param_count, param_count + num_obj_params)))
 
                 # keep track of the total number of parameters encountered so far
                 param_count += num_obj_params
@@ -822,9 +814,7 @@ class QuantumTape(AnnotatedQueue):
             .TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = TapeCircuitGraph(
-                self.operations, self.observables, self.wires
-            )
+            self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
 
         return self._graph
 

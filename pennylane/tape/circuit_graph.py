@@ -70,7 +70,7 @@ class TapeCircuitGraph(CircuitGraph):
                 )._graph
 
             self._depth = nx.dag_longest_path_length(self._truncated_graph) + 1
-            
+
         return self._depth
 
     def has_path(self, a, b):
