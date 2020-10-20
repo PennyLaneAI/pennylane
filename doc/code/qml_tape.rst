@@ -21,7 +21,7 @@ Tape-mode QNodes
 
 The PennyLane tape module provides a new QNode class, rewritten from the ground-up,
 that uses a :class:`~.QuantumTape` to represent the internal variational quantum circuit.
-Tape mode provides several advantanges over the standard PennyLane QNode.
+Tape mode provides several advantages over the standard PennyLane QNode.
 
 * **Support for in-QNode classical processing**: Tape mode allows for differentiable classical
   processing within the QNode.
@@ -124,7 +124,7 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   tensor(0.8396) tensor([0.0289, 0.0193]) tensor(0.8387)
 
 * **Unifying all QNodes**: The tape-mode QNode merges all QNodes (including the :class:`~.JacobianQNode`
-  and the :class:`~.PassthruQNode`) into a single unified QNode, with identicaly behaviour regardless
+  and the :class:`~.PassthruQNode`) into a single unified QNode, with identical behaviour regardless
   of the differentiation type.
 
   In addition, it is now possible to inspect the internal variational quantum circuit structure
