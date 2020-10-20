@@ -13,11 +13,12 @@
 # limitations under the License.
 """
 Utility functions used in Pauli partitioning and measurement reduction schemes utilizing the
-symplectic vector space representation of Pauli words. For information on the symplectic binary
+symplectic vector-space representation of Pauli words. For information on the symplectic binary
 representation of Pauli words and applications, see:
-arXiv:quant-ph/9705052
-arXiv:1701.08213
-arXiv:1907.09386
+
+* `arXiv:quant-ph/9705052 <https://arxiv.org/abs/quant-ph/9705052>`_
+* `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
+* `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
 
 from pennylane import PauliX, PauliY, PauliZ, Identity
@@ -30,7 +31,17 @@ def is_pauli_word(observable):
     """
     Checks if an observable instance is a Pauli word.
 
-    **Example usage:**
+    Args:
+        observable (Observable): an observable, either a :class:`~.Tensor` instance or
+            single-qubit observable.
+
+    Returns:
+        bool: true if the input observable is a Pauli word, false otherwise.
+
+    Raises:
+        TypeError: if input observable is not an Observable instance.
+
+    **Example**
 
     >>> is_pauli_word(qml.Identity(0))
     True
@@ -38,16 +49,6 @@ def is_pauli_word(observable):
     True
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
-
-    Args:
-        observable (Observable): an observable, either a Tensor instance or single-qubit
-            observable.
-
-    Returns:
-        bool: true if the input observable is a Pauli word, false otherwise.
-
-    Raises:
-        TypeError: if input observable is not an Observable instance.
     """
 
     if not isinstance(observable, Observable):
@@ -63,33 +64,33 @@ def is_pauli_word(observable):
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
-    """Performs a check if two Pauli words have the same `wires` and `name` attributes.
+    """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
-    This is a convenience function that checks if two given Tensor instances specify the same
-    Pauli word. This function only checks if both Tensor instances have the same wires and name
+    This is a convenience function that checks if two given :class:`~.Tensor` instances specify the same
+    Pauli word. This function only checks if both :class:`~.Tensor` instances have the same wires and name
     attributes, and hence won't perform any simplification to identify if the two Pauli words are
-    algebraically equivalent. For instance, this function will not identify that
-    PauliX(0) @ PauliX(0) = Identity(0), or PauliX(0) @ Identity(1) = PauliX(0), or
-    Identity(0) = Identity(1), etc.
-
-    **Usage example:**
-
-    >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1))
-    True
-    >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
-    False
+    algebraically equivalent. For instance, this function will not identify
+    that ``PauliX(0) @ PauliX(0) = Identity(0)``, or ``PauliX(0) @ Identity(1)
+    = PauliX(0)``, or ``Identity(0) = Identity(1)``, etc.
 
     Args:
         pauli_1 (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the first Pauli word
         pauli_2 (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the second Pauli word
 
     Returns:
-        bool: whether `pauli_1` and `pauli_2` have the same wires and name attributes
+        bool: whether ``pauli_1`` and ``pauli_2`` have the same wires and name attributes
 
     Raises:
-        TypeError: if pauli_1 or pauli_2 are not Identity, PauliX, PauliY, PauliZ, or Tensor
-            instances
+        TypeError: if ``pauli_1`` or ``pauli_2`` are not :class:`~.Identity`,
+            :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, or
+            :class:`~.Tensor` instances
 
+    **Example**
+
+    >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1))
+    True
+    >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
+    False
     """
 
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
@@ -116,11 +117,26 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     This functions follows convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.
 
-    **Usage example:**
+    Args:
+        pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the Pauli word to be
+            converted to binary vector representation
+        n_qubits (int): number of qubits to specify dimension of binary vector representation
+        wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
+             unique integer labels as their values
 
-    If `n_qubits` and `wire_map` are both unspecified, the dimensionality of the binary vector
-    will be `2 * len(pauli_word.wires)`. Regardless of wire labels, the vector components encoding
-    Pauli operations will be read from left-to-right in the tensor product when `wire_map` is
+    Returns:
+        array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
+
+    Raises:
+        TypeError: if the input ``pauli_word`` is not an instance of Identity, PauliX, PauliY,
+            PauliZ or tensor products thereof
+        ValueError: if ``n_qubits`` is less than the number of wires acted on by the Pauli word
+
+    **Example**
+
+    If ``n_qubits`` and ``wire_map`` are both unspecified, the dimensionality of the binary vector
+    will be ``2 * len(pauli_word.wires)``. Regardless of wire labels, the vector components encoding
+    Pauli operations will be read from left-to-right in the tensor product when ``wire_map`` is
     unspecified, e.g.,
 
     >>> pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b') @ qml.PauliZ('c'))
@@ -131,7 +147,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     The above cases have the same binary representation since they are equivalent up to a
     relabelling of the wires. To keep binary vector component enumeration consistent with wire
     labelling across multiple Pauli words, or define any arbitrary enumeration, one can use
-    keyword argument `wire_map` to set this enumeration.
+    keyword argument ``wire_map`` to set this enumeration.
 
     >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
     >>> pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b') @ qml.PauliZ('c'), wire_map=wire_map)
@@ -143,7 +159,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     components are consistently mapped from the wire labels, rather than enumerated
     left-to-right.
 
-    If `n_qubits` is unspecified, the dimensionality of the vector representation will be inferred
+    If ``n_qubits`` is unspecified, the dimensionality of the vector representation will be inferred
     from the size of support of the Pauli word,
 
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(1))
@@ -151,7 +167,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5))
     array([1., 1., 0., 0.])
 
-    Dimensionality higher than twice the support can be specified by `n_qubits`,
+    Dimensionality higher than twice the support can be specified by ``n_qubits``,
 
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(1), n_qubits=6)
     array([1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
@@ -159,7 +175,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     array([1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
 
     For these Pauli words to have a consistent mapping to vector representation, we once again
-    need to specify a `wire_map`.
+    need to specify a ``wire_map``.
 
     >>> wire_map = {Wires(0):0, Wires(1):1, Wires(5):5}
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(1), n_qubits=6, wire_map=wire_map)
@@ -167,29 +183,12 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5), n_qubits=6, wire_map=wire_map)
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
 
-    Note that if `n_qubits` is unspecified and `wire_map` is specified, the dimensionality of the
-    vector representation will be inferred from the highest integer in `wire_map.values()`.
+    Note that if ``n_qubits`` is unspecified and ``wire_map`` is specified, the dimensionality of the
+    vector representation will be inferred from the highest integer in ``wire_map.values()``.
 
     >>> wire_map = {Wires(0):0, Wires(1):1, Wires(5):5}
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5),  wire_map=wire_map)
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
-
-    Args:
-        pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the Pauli word to be
-            converted to binary vector representation
-
-    Keyword args:
-        n_qubits (int): number of qubits to specify dimension of binary vector representation
-        wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-                         unique integer labels as their values
-
-    Returns:
-        array: the 2*n_qubits dimensional binary vector representation of the input Pauli word.
-
-    Raises:
-        TypeError: if the input `pauli_word` is not an instance of Identity, PauliX, PauliY,
-            PauliZ or tensor products thereof
-        ValueError: if `n_qubits` is less than the number of wires acted on by the Pauli word
     """
 
     if not is_pauli_word(pauli_word):
@@ -242,40 +241,38 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     This functions follows the convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.
 
-    **Usage example:**
-
-    If `wire_map` is unspecified, the Pauli operations follow the same enumerations as the vector
-    components, i.e., the `i` and `N+i` components specify the Pauli operation on wire `i`,
-
-    >>> binary_to_pauli([0,1,1,0,1,0])
-    Tensor(PauliY(wires=[1]), PauliX(wires=[2]))
-
-    An arbitrary labelling can be assigned by using `wire_map`
-    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
-    >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
-    Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
-
-    Note that the values of `wire_map`, if specified, must be 0,1,..., N, where N is the dimension
-    of the vector divided by two, i.e., `list(wire_map.values())` must be
-    `list(range(len(binary_vector)/2))`.
-
     Args:
         binary_vector (Union[list, tuple, array]): binary vector of even dimension representing a
             unique Pauli word
-
-    Keyword args:
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
             unique integer labels as their values
 
     Returns:
-        Tensor(Union[Identity, PauliX, PauliY, PauliZ]): The Pauli word corresponding to the input
-            binary vector. Note that if a zero vector is input, then the resulting Pauli word will
-            be an `Identity` instance.
+        Tensor: The Pauli word corresponding to the input binary vector. Note
+        that if a zero vector is input, then the resulting Pauli word will be
+        an :class:`~.Identity` instance.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly
             binary components
 
+    **Example**
+
+    If ``wire_map`` is unspecified, the Pauli operations follow the same enumerations as the vector
+    components, i.e., the ``i`` and ``N+i`` components specify the Pauli operation on wire ``i``,
+
+    >>> binary_to_pauli([0,1,1,0,1,0])
+    Tensor(PauliY(wires=[1]), PauliX(wires=[2]))
+
+    An arbitrary labelling can be assigned by using ``wire_map``:
+
+    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
+    >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
+    Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
+
+    Note that the values of ``wire_map``, if specified, must be ``0,1,..., N``,
+    where ``N`` is the dimension of the vector divided by two, i.e.,
+    ``list(wire_map.values())`` must be ``list(range(len(binary_vector)/2))``.
     """
 
     if isinstance(binary_vector, (list, tuple)):
@@ -334,13 +331,6 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 def is_qwc(pauli_vec_1, pauli_vec_2):
     """Checks if two Pauli words in the binary vector representation are qubit-wise commutative.
 
-    **Usage example:**
-
-    >>> is_qwc([1,0,0,1,1,0],[1,0,1,0,1,0])
-    False
-    >>> is_qwc([1,0,1,1,1,0],[1,0,0,1,1,0])
-    True
-
     Args:
         pauli_vec_1 (Union[list, tuple, array]): first binary vector argument in qubit-wise
             commutator
@@ -349,12 +339,18 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     Returns:
         bool: returns True if the input Pauli words are qubit-wise commutative, returns False
-            otherwise
+        otherwise
 
     Raises:
         ValueError: if the input vectors are of different dimension, if the vectors are not of even
-        dimension, or if the vector components are not strictly binary
+            dimension, or if the vector components are not strictly binary
 
+    **Example**
+
+    >>> is_qwc([1,0,0,1,1,0],[1,0,1,0,1,0])
+    False
+    >>> is_qwc([1,0,1,1,1,0],[1,0,0,1,1,0])
+    True
     """
 
     if isinstance(pauli_vec_1, (list, tuple)):
@@ -371,7 +367,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     if len(pauli_vec_1) % 2 != 0:
         raise ValueError(
-            "Symplectic vector space must have even dimension, instead got vectors of shape {}.".format(
+            "Symplectic vector-space must have even dimension, instead got vectors of shape {}.".format(
                 np.shape(pauli_vec_1)
             )
         )
@@ -413,33 +409,29 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
+def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     """Converts a list of Pauli words to the binary vector representation and yields a row matrix
-        of the binary vectors.
+    of the binary vectors.
 
     The dimension of the binary vectors will be implied from the highest wire being acted on
     non-trivially by the Pauli words in observables.
 
-    **Usage example:**
-
-    >>> convert_observables_to_binary_matrix([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
-    array([[1., 1., 0., 0., 1., 0.],
-           [0., 0., 0., 1., 1., 1.]])
-
-
     Args:
         observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor]]): the list of Pauli
             words
-
-    Keyword args:
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
             unique integer labels as their values
 
 
     Returns:
-        array[array[bool]]: a matrix whose rows are Pauli words in binary vector representation
+        array[array[int]]: a matrix whose rows are Pauli words in binary vector representation
 
+    **Example**
+
+    >>> observables_to_binary_matrix([PauliX(0) @ PauliY(2), PauliZ(0) @ PauliZ(1) @ PauliZ(2)])
+    array([[1., 1., 0., 0., 1., 0.],
+           [0., 0., 0., 1., 1., 1.]])
     """
 
     m_cols = len(observables)
@@ -465,7 +457,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
     return binary_mat
 
 
-def get_qwc_complement_adj_matrix(binary_observables):
+def qwc_complement_adj_matrix(binary_observables):
     """Obtains the adjacency matrix for the complementary graph of the qubit-wise commutativity
     graph for a given set of observables in the binary representation.
 
@@ -473,28 +465,27 @@ def get_qwc_complement_adj_matrix(binary_observables):
     and two nodes are connected if and only if the corresponding Pauli words are qubit-wise
     commuting.
 
-    **Usage example:**
+    Args:
+        binary_observables (array[array[int]]): a matrix whose rows are the Pauli words in the
+            binary vector representation
+
+    Returns:
+        array[array[int]]: the adjacency matrix for the complement of the qubit-wise commutativity graph
+
+    Raises:
+        ValueError: if input binary observables contain components which are not strictly binary
+
+    **Example**
 
     >>> binary_observables
     array([[1., 0., 1., 0., 0., 1.],
            [0., 1., 1., 1., 0., 1.],
            [0., 0., 0., 1., 0., 0.]])
 
-    >>> get_qwc_complement_adj_matrix(binary_observables)
+    >>> qwc_complement_adj_matrix(binary_observables)
     array([[0., 1., 1.],
            [1., 0., 0.],
            [1., 0., 0.]])
-
-    Args:
-        binary_observables (array[array[bool]]): a matrix whose rows are the Pauli words in the
-            binary vector representation
-
-    Returns:
-        array[array[bool]]: the adjacency matrix for the complement of the qubit-wise commutativity graph
-
-    Raises:
-        ValueError: if input binary observables contain components which are not strictly binary
-
     """
 
     if isinstance(binary_observables, (list, tuple)):
