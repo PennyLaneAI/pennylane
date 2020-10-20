@@ -183,6 +183,35 @@ class QubitDevice(Device):
 
         return self._asarray(results)
 
+    def batch_execute(self, circuits):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        # TODO: This method and the tests can be globally implemented by Device
+        # once it has the same signature in the execute() method
+
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit)
+            results.append(res)
+
+        return results
+
     @abc.abstractmethod
     def apply(self, operations, **kwargs):
         """Apply quantum operations, rotate the circuit into the measurement

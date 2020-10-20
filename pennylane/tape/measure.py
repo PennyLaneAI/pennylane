@@ -17,6 +17,8 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -75,6 +77,14 @@ class MeasurementProcess:
 
         # Queue the measurement process
         self.queue()
+
+    def __copy__(self):
+        cls = self.__class__
+
+        if self.obs is not None:
+            return cls(self.return_type, obs=copy.copy(self.obs))
+
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
     @property
     def wires(self):

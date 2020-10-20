@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
-import pytest
+import copy
+
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, TapeCircuitGraph
@@ -979,3 +981,161 @@ class TestCVExecution:
 
         res = tape.execute(dev)
         assert res.shape == (2,)
+
+
+class TestTapeCopying:
+    """Test for tape copying behaviour"""
+
+    def test_shallow_copy(self):
+        """Test that shallow copying of a tape results in all
+        contained data being shared between the original tape and the copy"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy()
+
+        assert copied_tape is not tape
+
+        # the operations are simply references
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # operation data is also a reference
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+        # check that all tape metadata is identical
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # since the copy is shallow, mutating the parameters
+        # on one tape will affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        # check that they are the same objects in memory
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert i is j
+
+    @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)])
+    def test_shallow_copy_with_operations(self, copy_fn):
+        """Test that shallow copying of a tape and operations allows
+        parameters to be set independently"""
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = copy_fn(tape)
+
+        assert copied_tape is not tape
+
+        # the operations are not references; they are unique objects
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # however, the underlying operation data *is still shared*
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # Since they have unique operations, mutating the parameters
+        # on one tape will *not* affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert not np.all(i == j)
+            assert i is not j
+
+    def test_deep_copy(self):
+        """Test that deep copying a tape works, and copies all constituent data except parameters"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = copy.deepcopy(tape)
+
+        assert copied_tape is not tape
+
+        # the operations are not references
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # The underlying operation data has also been copied
+        assert copied_tape.operations[0].wires is not tape.operations[0].wires
+
+        # however, the underlying operation *parameters* are still shared
+        # to support PyTorch, which does not support deep copying of tensors
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+    def test_casting(self):
+        """Test that copying and casting works as expected"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # copy and cast to a JacobianTape
+        copied_tape = tape.copy(tape_cls=qml.tape.tapes.JacobianTape)
+
+        # check that the copying worked
+        assert copied_tape is not tape
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # check that the casting worked
+        assert isinstance(copied_tape, qml.tape.tapes.JacobianTape)
+        assert not isinstance(tape, qml.tape.tapes.JacobianTape)
+
+    def test_caching(self, mocker, tol):
+        """Test that shallow copying allows the copied tapes to continue
+        sharing the same cache dictionary."""
+        with QuantumTape(caching=5) as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy()
+
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(dev, "execute")
+
+        assert not tape.get_cache()
+        assert not copied_tape.get_cache()
+
+        res1 = tape.execute(dev)
+
+        assert tape.get_cache() is copied_tape.get_cache()
+
+        res2 = copied_tape.execute(dev)
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        spy.assert_called_once()

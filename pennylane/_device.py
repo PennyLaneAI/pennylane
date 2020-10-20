@@ -322,6 +322,32 @@ class Device(abc.ABC):
 
             return self._asarray(results)
 
+    def batch_execute(self, circuits):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit.operations, circuit.observables)
+            results.append(res)
+
+        return results
+
     @property
     def op_queue(self):
         """The operation queue to be applied.

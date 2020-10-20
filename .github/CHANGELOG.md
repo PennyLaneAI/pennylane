@@ -2,7 +2,74 @@
 
 <h3>New features since last release</h3>
 
+* The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
+  This method accepts a *list* of tapes, and returns a list of evaluated numerical values.
+  This may be useful for devices that support performing numerous quantum evaluations
+  simultaneously. If not overridden, by default the list of tapes will be executed
+  in serial by calling the `execute()` method.
+  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
+
 <h3>Improvements</h3>
+
+* The gradient methods in tape mode now fully separate the quantum and classical processing.Rather
+  than returning the evaluated gradients directly, they now return a tuple containing the required
+  quantum and classical processing steps.
+  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
+
+  ```python
+  def gradient_method(idx, param, **options):
+      # generate the quantum tapes that must be computed
+      # to determine the quantum gradient
+      tapes = quantum_gradient_tapes(self)
+
+      def processing_fn(results):
+          # perform classical processing on the evaluated tapes
+          # returning the evaluated quantum gradient
+          return classical_processing(results)
+
+      return tapes, processing_fn
+  ```
+
+  The `JacobianTape.jacobian()` method has been similarly modified to accumulate all gradient
+  quantum tapes and classical processing functions, evaluate all quantum tapes simultaneously,
+  and then apply the post-processing functions to the evaluated tape results.
+
+* The `Operation`, `Tensor`, and `MeasurementProcess` classes now has the `__copy__` special method
+  defined. This allows us to ensure that, when a shallow copy is performed of an operation, the
+  mutable list storing the operation parameters is *also* shallow copied. Both the old operation and
+  the copied operation will continue to share the same parameter data,
+  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
+
+  ```pycon
+  >>> import copy
+  >>> op = qml.RX(0.2, wires=0)
+  >>> op2 = copy.copy(op)
+  >>> op.data[0] is op2.data[0]
+  True
+  ```
+
+  however the *list container* is not a reference:
+
+  ```pycon
+  >>> op.data is op2.data
+  False
+  ```
+
+  This allows the parameters of the copied operation to be modified, without mutating
+  the parameters of the original operation.
+
+* The `QuantumTape.copy` method has been tweaked so that:
+  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
+
+  - Optionally, the tape's operations are shallow copied in addition to the tape by passing the
+    `copy_operations=True` boolean flag. This allows the copied tape's parameters to be mutated
+    without affecting the original tape's parameters. (Note: the two tapes will share parameter data
+    *until* one of the tapes has their parameter list modified.)
+
+  - Copied tapes continue to share the *same* caching dictionary as the original tape.
+
+  - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
+    argument.
 
 <h3>Breaking changes</h3>
 
@@ -14,6 +81,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Thomas Bromley, Josh Izaac, Nathan Killoran, Maria Schuld
 
 # Release 0.12.0 (current release)
 
