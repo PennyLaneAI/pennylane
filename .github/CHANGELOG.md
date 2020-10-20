@@ -36,7 +36,7 @@
 <h4>New tools for optimizing measurements</h4>
 
 * The new `grouping` module provides functionality for grouping simultaneously measurable Pauli word
-  observables. 
+  observables.
   [(#761)](https://github.com/PennyLaneAI/pennylane/pull/761)
   [(#850)](https://github.com/PennyLaneAI/pennylane/pull/850)
   [(#852)](https://github.com/PennyLaneAI/pennylane/pull/852)
@@ -126,19 +126,19 @@
 
   >>> qfunc(0.56, 0.1)
   array([0.95985437-0.27601028j, 0.        +0.j        ,
-       0.04803275-0.01381203j, 0.        +0.j        ,
-       0.        +0.j        , 0.        +0.j        ,
-       0.        +0.j        , 0.        +0.j        ])
+         0.04803275-0.01381203j, 0.        +0.j        ,
+         0.        +0.j        , 0.        +0.j        ,
+         0.        +0.j        , 0.        +0.j        ])
   ```
 
   Differentiating the state is currently available when using the
-  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device,
+  classical backpropagation differentiation method (`diff_method="backprop"`) with a compatible device,
   and when using the new tape mode.
 
 <h4>New operations and channels</h4>
 
 * PennyLane now includes standard channels such as the Amplitude-damping,
-  Phase-damping, and Depolarizing channels, as well as the ability 
+  Phase-damping, and Depolarizing channels, as well as the ability
   to make custom qubit channels.
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
@@ -214,7 +214,7 @@
   Note that QNode caching is only supported in the new and experimental tape-mode.
   [(#817)](https://github.com/PennyLaneAI/pennylane/pull/817)
 
-  Caching is available by passing a ``caching`` argument to the QNode:
+  Caching is available by passing a `caching` argument to the QNode:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
