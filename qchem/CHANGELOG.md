@@ -2,20 +2,16 @@
 
 <h3>New features since last release</h3>
 
-* The functions ``one_particle`` and ``two_particle`` have been implemented
+* The functions `one_particle` and `two_particle` have been implemented
   to extend PennyLane-QChem capabilities to construct observables of many-body
   quantum systems. These functions can be used in conjunction with the
-  ``observable`` function to construct electronic structure hamiltonians
+  `observable` function to construct electronic structure hamiltonians
   involving one- and two-particle operators.
   [(#809)](https://github.com/PennyLaneAI/pennylane/pull/809)
 
-* The function ``observable`` in the ``obs`` module has been generalized to build
-  many-body observables combining one- and two-particle operators (e.g. Hamiltonians)
+* The function `observable` in the `obs` module has been generalized to build
+  many-body observables combining one- and two-particle operators (e.g., Hamiltonians)
   [(#791)](https://github.com/PennyLaneAI/pennylane/pull/791)
-
-<h3>Improvements</h3>
-
-<h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
 
@@ -23,11 +19,11 @@
   function two_particle.
   [(#825)](https://github.com/PennyLaneAI/pennylane/pull/825)
 
-<h3>Documentation</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Thomas Bromley, Alain Delgado, Josh Izaac, Soran Jahangiri.
 
 # Release 0.11.0
 
