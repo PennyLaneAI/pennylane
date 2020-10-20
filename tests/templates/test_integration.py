@@ -303,7 +303,6 @@ CV_INIT = [(qml.templates.CVNeuralNetLayers,
            ]
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestIntegrationQnode:
     """Tests the integration of templates into qnodes when differentiable arguments are passed as
     primary or auxiliary arguments to the qnode, using different interfaces.
