@@ -740,16 +740,6 @@ PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
 PAULI_ROT_MATRIX_TEST_DATA = [
     (
         np.pi,
-        "Z",
-        np.array(
-            [
-                [-1j, 0],
-                [0, 1j]
-            ]
-        )
-    ),
-    (
-        np.pi,
         "XIZ",
         np.array(
             [
