@@ -40,7 +40,7 @@ import pennylane as qml
 #######################################
 # Interfaces
 
-INTERFACES = [('numpy', np.array)]
+INTERFACES = [('autograd', np.array)]
 
 try:
     import torch
@@ -303,6 +303,7 @@ CV_INIT = [(qml.templates.CVNeuralNetLayers,
            ]
 
 
+@pytest.mark.usefixtures("tape_mode")
 class TestIntegrationQnode:
     """Tests the integration of templates into qnodes when differentiable arguments are passed as
     primary or auxiliary arguments to the qnode, using different interfaces.

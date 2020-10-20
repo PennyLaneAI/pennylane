@@ -173,6 +173,7 @@ class TestAmplitudeEmbedding:
         # No normalization error is raised
         circuit(x=inputs)
 
+
 class TestAngleEmbedding:
     """ Tests the AngleEmbedding method."""
 
