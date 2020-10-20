@@ -53,7 +53,8 @@ class JacobianTape(QuantumTape):
         caching (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
+            executions to keep the cache up to date. The cache is not available for
+            gradient-based calculations.
 
     **Example**
 
@@ -513,8 +514,8 @@ class JacobianTape(QuantumTape):
             # to extract the correct result for this parameter later, remember the number of tapes
             reshape_info.append(len(tapes))
 
-        # Execute all tapes. This will soon be replaced with batch execution.
-        results = [tape.execute(device) for tape in all_tapes]
+        # execute all tapes at once
+        results = device.batch_execute(all_tapes)
 
         # post-process the results with the appropriate function to fill jacobian columns with gradients
         jac = None
