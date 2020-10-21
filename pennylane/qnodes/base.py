@@ -832,8 +832,6 @@ class BaseQNode(qml.QueuingContext):
                 return_native_type=temp,
             )
 
-        self.device._num_executions += 1
-
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):

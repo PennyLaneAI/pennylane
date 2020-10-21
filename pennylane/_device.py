@@ -324,6 +324,9 @@ class Device(abc.ABC):
             self._obs_queue = None
             self._parameters = None
 
+            # increment counter for number of executions of device
+            self._num_executions += 1
+
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
