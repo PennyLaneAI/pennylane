@@ -859,7 +859,7 @@ class QuantumTape(AnnotatedQueue):
         """Depth of the quantum circuit.
 
         Returns:
-            int: Circuit depth, computed as the longest path in the circuits directed acyclic graph representation.
+            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
 
         **Example**
 
