@@ -823,7 +823,7 @@ class QuantumTape(AnnotatedQueue):
         """Resource requirements of a quantum circuit.
 
         Returns:
-            dict[Operation : int]: how many times the constituent Operations are applied
+            dict[str, int]: how many times constituent operations are applied
         """
         if self._resources is None:
             self._resources = {}
