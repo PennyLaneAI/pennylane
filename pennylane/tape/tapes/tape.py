@@ -15,6 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+import copy
 from collections import OrderedDict
 import contextlib
 
@@ -146,7 +147,8 @@ class QuantumTape(AnnotatedQueue):
         caching (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
+            executions to keep the cache up to date. The cache is not available for
+            gradient-based calculations.
 
     **Example**
 
@@ -857,18 +859,52 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self):
-        """Returns a shallow copy of the quantum tape."""
-        tape = self.__class__()
-        tape._prep = self._prep.copy()
-        tape._ops = self._ops.copy()
-        tape._measurements = self._measurements.copy()
+    def copy(self, copy_operations=False, tape_cls=None):
+        """Returns a shallow copy of the quantum tape.
+
+        Args:
+            copy_operations (bool): If True, the tape operations are also shallow copied.
+                Otherwise, if False, the copied tape operations will simply be references
+                to the original tape operations; changing the parameters of one tape will likewise
+                change the parameters of all copies.
+            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
+                If not provided, the same subclass is used as the original tape.
+
+        Returns:
+            .QuantumTape: a shallow copy of the tape
+        """
+        if tape_cls is None:
+            tape = self.__class__()
+        else:
+            tape = tape_cls()
+
+        if copy_operations:
+            # Perform a shallow copy of all operations in the state prep, operation, and measurement
+            # queues. The operations will continue to share data with the original tape operations
+            # unless modified.
+            tape._prep = [copy.copy(op) for op in self._prep]
+            tape._ops = [copy.copy(op) for op in self._ops]
+            tape._measurements = [copy.copy(op) for op in self._measurements]
+        else:
+            # Perform a shallow copy of the state prep, operation, and measurement queues. The
+            # operations within the queues will be references to the original tape operations;
+            # changing the original operations will always alter the operations on the copied tape.
+            tape._prep = self._prep.copy()
+            tape._ops = self._ops.copy()
+            tape._measurements = self._measurements.copy()
 
         tape._update()
-
-        tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
+
+        # copied tapes share their cache with the original tape
+        tape._caching = self._caching
+        tape.get_cache = self.get_cache
+        tape.add_cache_value = self.add_cache_value
+
         return tape
+
+    def __copy__(self):
+        return self.copy(copy_operations=True)
 
     # ========================================================
     # execution methods
@@ -930,7 +966,6 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-
         device.reset()
 
         # backup the current parameters
@@ -941,9 +976,9 @@ class QuantumTape(AnnotatedQueue):
 
         if self._caching:
             circuit_hash = self.graph.hash
-            if circuit_hash in self._cache_execute:
+            if circuit_hash in self.get_cache():
                 self.set_parameters(saved_parameters)
-                return self._cache_execute[circuit_hash]
+                return self.get_cache()[circuit_hash]
 
         if isinstance(device, qml.QubitDevice):
             res = device.execute(self)
@@ -970,10 +1005,10 @@ class QuantumTape(AnnotatedQueue):
         # restore original parameters
         self.set_parameters(saved_parameters)
 
-        if self._caching and circuit_hash not in self._cache_execute:
-            self._cache_execute[circuit_hash] = res
-            if len(self._cache_execute) > self._caching:
-                self._cache_execute.popitem(last=False)
+        if self._caching and circuit_hash not in self.get_cache():
+            self.add_cache_value(circuit_hash, res)
+            if len(self.get_cache()) > self._caching:
+                self.get_cache().popitem(last=False)
 
         return res
 
@@ -987,3 +1022,11 @@ class QuantumTape(AnnotatedQueue):
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
         return self._caching
+
+    def get_cache(self):  # pylint: disable=method-hidden
+        """Return the caching dictionary"""
+        return self._cache_execute
+
+    def add_cache_value(self, circuit_hash, value):  # pylint: disable=method-hidden
+        """Set a value in the caching dictionary"""
+        self._cache_execute[circuit_hash] = value
