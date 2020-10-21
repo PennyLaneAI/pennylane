@@ -169,8 +169,9 @@ def tape_mode(request, mocker):
     """Tests using this fixture will be run twice, once in tape mode and once without."""
     if request.param:
         mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
-        mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.qtape.jacobian_options["h"]), create=True)
-        mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.qtape.jacobian_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
+        mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.jacobian", lambda self: self.qtape.jacobian, create=True)
         qml.enable_tape()
 
     yield
