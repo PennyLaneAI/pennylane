@@ -214,18 +214,15 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         )
 
     # normalize
-    interface = features.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
     if isinstance(features[0], Variable):
         feature_values = [s.val for s in features]
         norm = np.sum(np.abs(feature_values) ** 2)
     else:
-        norm = fn.sum(fn.abs(features) ** 2)
+        norm = qml.tape.interfaces.functions.WrapperFunctions.sum(qml.tape.interfaces.functions.WrapperFunctions.abs(features) ** 2)
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE):
         if normalize or pad:
-            features = features / fn.sqrt(norm)
+            features = features / qml.tape.interfaces.functions.WrapperFunctions.sqrt(norm)
         else:
             raise ValueError(
                 "'features' must be a vector of length 1.0; got length {}."

@@ -15,4 +15,4 @@
 This subpackage defines functions convert quantum tapes to interface with different machine
 learning libraries.
 """
-from .functions import MLFunctionWrapper
+from .functions import WrapperFunctions

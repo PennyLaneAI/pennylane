@@ -30,7 +30,7 @@ from .tapes import (
     CVParamShiftTape,
     ReversibleTape,
 )
-from .interfaces import MLFunctionWrapper
+from .interfaces import WrapperFunctions
 
 
 _mock_stack = []

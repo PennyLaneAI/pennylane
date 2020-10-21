@@ -549,9 +549,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         # expand dimension so that parameter sets for each unitary can be unpacked
         if len(shape) == 1:
-            interface = parameters.__class__.__module__.split(".")[0]
-            fn = qml.tape.MLFunctionWrapper[interface]
-            parameters = fn.expand_dims(parameters, 1)
+            parameters = qml.tape.interfaces.functions.WrapperFunctions.expand_dims(parameters, 1)
 
     wire_sequence = pattern_to_wires[pattern]
     if parameters is None:

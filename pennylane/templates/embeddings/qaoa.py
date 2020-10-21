@@ -36,11 +36,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (Wires): wires that the template acts on
     """
 
-    interface = features.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
-    feature_encoding_wires = wires[: fn.len(features)]
-    remaining_wires = wires[fn.len(features) :]
+    feature_encoding_wires = wires[: qml.tape.interfaces.functions.WrapperFunctions.len(features)]
+    remaining_wires = wires[qml.tape.interfaces.functions.WrapperFunctions.len(features) :]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)

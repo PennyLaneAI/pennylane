@@ -87,17 +87,14 @@ def _compute_theta(alpha):
         (array[float]): rotation angles theta
     """
 
-    interface = alpha.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
-    k = fn.log2(alpha.shape[0])
+    k = qml.tape.interfaces.functions.WrapperFunctions.log2(alpha.shape[0])
     factor = 2 ** (-k)
 
-    theta = fn.sparse_matrix(fn.shape(alpha))
+    theta = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix(qml.tape.interfaces.functions.WrapperFunctions.shape(alpha))
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
-        entry = fn.sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
+        entry = qml.tape.interfaces.functions.WrapperFunctions.sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
         entry *= factor
         if abs(entry) > 1e-6:
             theta[row, 0] = entry
@@ -117,9 +114,6 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    interface = alpha.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
     theta = _compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
@@ -132,7 +126,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     num_selections = len(code)
 
     control_indices = [
-        int(fn.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
+        int(qml.tape.interfaces.functions.WrapperFunctions.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
         for i in range(num_selections)
     ]
 
@@ -153,12 +147,9 @@ def _get_alpha_y(a, n, k):
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
     """
 
-    interface = a.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
-    alpha = fn.sparse_matrix((2 ** (n - k), 1))
-    numerator = fn.sparse_matrix((2 ** (n - k), 1))
-    denominator = fn.sparse_matrix((2 ** (n - k), 1))
+    alpha = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
+    numerator = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
+    denominator = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
 
     for (i, _), e in a.items():
         j = int(math.ceil((i + 1) / 2 ** k))
@@ -170,13 +161,13 @@ def _get_alpha_y(a, n, k):
         denominator[j - 1, 0] += e * e
 
     for (j, _), e in numerator.items():
-        numerator[j, 0] = fn.sqrt(e)
+        numerator[j, 0] = qml.tape.interfaces.functions.WrapperFunctions.sqrt(e)
     for (j, _), e in denominator.items():
-        denominator[j, 0] = 1 / fn.sqrt(e)
+        denominator[j, 0] = 1 / qml.tape.interfaces.functions.WrapperFunctions.sqrt(e)
 
     pre_alpha = numerator.multiply(denominator)  # type: sparse.csr_matrix
     for (j, _), e in pre_alpha.items():
-        alpha[j, 0] = 2 * fn.arcsin(e)
+        alpha[j, 0] = 2 * qml.tape.interfaces.functions.WrapperFunctions.arcsin(e)
 
     return alpha
 
@@ -193,10 +184,7 @@ def _get_alpha_z(omega, n, k):
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
     """
 
-    interface = omega.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
-    alpha_z_k = fn.sparse_matrix((2 ** (n - k), 1))
+    alpha_z_k = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
 
     for (i, _), om in omega.items():
         i += 1
@@ -249,9 +237,6 @@ def MottonenStatePreparation(state_vector, wires):
         "".format(expected_shape, get_shape(state_vector)),
     )
 
-    interface = state_vector.__class__.__module__.split(".")[0]
-    fn = qml.tape.MLFunctionWrapper[interface]
-
     if isinstance(state_vector[0], Variable):
         # "Old" qnode
         # Todo: delete this entire branch when tape is core
@@ -280,18 +265,18 @@ def MottonenStatePreparation(state_vector, wires):
     else:
         # Tape mode
 
-        norm = fn.sum(fn.abs(state_vector) ** 2)
+        norm = qml.tape.interfaces.functions.WrapperFunctions.sum(qml.tape.interfaces.functions.WrapperFunctions.abs(state_vector) ** 2)
         if not np.isclose(norm, 1.0, atol=1e-3):
             raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
         # Change ordering of indices, original code was for IBM machines
-        state_vector = fn.reshape(state_vector, [2] * n_wires)
-        state_vector = fn.flatten(fn.transpose(state_vector))
-        state_vector = fn.expand_dims(state_vector, axis=1)  # [: newaxis]
+        state_vector = qml.tape.interfaces.functions.WrapperFunctions.reshape(state_vector, [2] * n_wires)
+        state_vector = qml.tape.interfaces.functions.WrapperFunctions.flatten(qml.tape.interfaces.functions.WrapperFunctions.transpose(state_vector))
+        state_vector = qml.tape.interfaces.functions.WrapperFunctions.expand_dims(state_vector, axis=1)  # [: newaxis]
 
-        state_vector = fn.sparse_matrix(state_vector)
-        a = fn.abs(state_vector)
-        omega = fn.angle(state_vector)
+        state_vector = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix(state_vector)
+        a = qml.tape.interfaces.functions.WrapperFunctions.abs(state_vector)
+        omega = qml.tape.interfaces.functions.WrapperFunctions.angle(state_vector)
 
     # This code is directly applying the inverse of Carsten Blank's
     # code to avoid inverting at the end
