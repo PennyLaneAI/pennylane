@@ -11,6 +11,23 @@
 
 <h3>Improvements</h3>
 
+* The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
+  [(#853)](https://github.com/PennyLaneAI/pennylane/pull/853)
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ... def circuit(x, y):
+  ...    qml.RX(x, wires=[0])
+  ...    qml.RY(y, wires=[1])
+  ...    qml.CNOT(wires=[0, 1])
+  ...    return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  >>> for _ in range(10):
+  ...    circuit(0.432, 0.12)
+  >>> print(dev.num_executions)
+  10
+  ```
+
 * The gradient methods in tape mode now fully separate the quantum and classical processing.Rather
   than returning the evaluated gradients directly, they now return a tuple containing the required
   quantum and classical processing steps.
@@ -81,7 +98,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
 
 # Release 0.12.0 (current release)
 
