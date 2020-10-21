@@ -824,6 +824,24 @@ class QuantumTape(AnnotatedQueue):
 
         Returns:
             dict[str, int]: how many times constituent operations are applied
+
+        **Example**
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.RZ(0.26, wires=1)
+                qml.CNOT(wires=[1, 0])
+                qml.Rot(1.8, -2.7, 0.2, wires=0)
+                qml.Hadamard(wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the resources produces a dictionary as shown below:
+
+        >>> tape.resources
+        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
         """
         if self._resources is None:
             self._resources = {}
@@ -838,7 +856,28 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def depth(self):
-        """Returns the depth of the quantum circuit."""
+        """Depth of the quantum circuit.
+
+        Returns:
+            int: Circuit depth, computed as the longest path in the circuits directed acyclic graph representation.
+
+        **Example**
+
+        .. code-block:: python3
+
+            with QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.PauliX(wires=1)
+                qml.CRX(2.3, wires=[0, 1])
+                qml.Rot(1.2, 3.2, 0.7, wires=[1])
+                qml.CRX(-2.3, wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the resources produces a dictionary as shown below:
+
+        >>> tape.depth
+        4
+        """
         if self._depth == 0:
             self._depth = self.graph.depth
 
