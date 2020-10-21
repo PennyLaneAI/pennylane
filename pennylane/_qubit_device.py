@@ -181,6 +181,9 @@ class QubitDevice(Device):
         if circuit.is_sampled and not all_sampled:
             return self._asarray(results, dtype="object")
 
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
+
         return self._asarray(results)
 
     def batch_execute(self, circuits):
