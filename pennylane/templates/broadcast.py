@@ -494,9 +494,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     if kwargs is None:
         kwargs = {}
 
-    #########
-    # Input checks
-
     if isinstance(pattern, str):
         check_is_in_options(
             pattern,
@@ -509,7 +506,20 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         # set "pattern" to "custom", indicating that custom settings have to be used
         pattern = "custom"
 
-    n_parameters = {
+    # define wire sequences for patterns
+    pattern_to_wires = {
+        "single": [wires[i] for i in range(len(wires))],
+        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
+        "ring": wires_ring(wires),
+        "pyramid": wires_pyramid(wires),
+        "all_to_all": wires_all_to_all(wires),
+        "custom": custom_pattern,
+    }
+
+    # define required number of parameters
+    pattern_to_num_params = {
         "single": len(wires),
         "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
         "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
@@ -530,32 +540,18 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 "the ring pattern with 2 wires is an exception and only applies one unitary"
             )
 
-        if shape[0] != n_parameters[pattern]:
+        if shape[0] != pattern_to_num_params[pattern]:
             raise ValueError(
                 "'parameters' must contain entries for {} unitaries; got {} entries".format(
-                    n_parameters[pattern], shape[0]
+                    pattern_to_num_params[pattern], shape[0]
                 )
             )
+
+        # expand dimension so that parameter sets for each unitary can be unpacked
         if len(shape) == 1:
             interface = parameters.__class__.__module__.split(".")[0]
             fn = qml.tape.MLFunctionWrapper[interface]
             parameters = fn.expand_dims(parameters, 1)
-
-
-
-    #########
-
-    # define wire sequences for patterns
-    pattern_to_wires = {
-        "single": [wires[i] for i in range(len(wires))],
-        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-        "ring": wires_ring(wires),
-        "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern,
-    }
 
     wire_sequence = pattern_to_wires[pattern]
     if parameters is None:
@@ -563,5 +559,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             unitary(wires=wire_sequence[i], **kwargs)
     else:
         for i in range(len(wire_sequence)):
-            # TODO: Find solution here
+            # TODO: Find solution here to not unpack, since this is slow in tf
             unitary(*parameters[i], wires=wire_sequence[i], **kwargs)

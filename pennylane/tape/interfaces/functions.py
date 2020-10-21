@@ -24,14 +24,6 @@ from pennylane import numpy as anp
 from scipy.linalg import block_diag
 from scipy import sparse
 
-# STILL NEEDED:
-# np.flip
-# np.pi
-# np.log2
-# ceil
-# sparse.dok_matrix
-# sqrt
-# arcsin
 
 try:
     import torch
