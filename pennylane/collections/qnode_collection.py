@@ -207,12 +207,12 @@ class QNodeCollection(Sequence):
         if parallel:
             try:
                 import dask
-            except:  # pragma: no cover
+            except ImportError as e:  # pragma: no cover
                 raise ImportError(
                     "Dask must be installed for parallel evaluation. "
                     "\nDask can be installed using pip:"
                     "\n\npip install dask[delayed]"
-                )
+                ) from e
 
             if self.interface == "tf":
                 warnings.warn(
@@ -252,6 +252,7 @@ class QNodeCollection(Sequence):
         """
         if interface == "tf":
             import tensorflow as tf
+
             return tf.stack(results)
 
         if interface == "torch":
