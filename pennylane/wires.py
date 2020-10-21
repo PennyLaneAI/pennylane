@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
-from collections import Sequence, Iterable
+from collections.abc import Sequence, Iterable
 import numpy as np
 from numbers import Number
 
