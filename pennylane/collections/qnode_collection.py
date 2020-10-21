@@ -252,7 +252,6 @@ class QNodeCollection(Sequence):
         """
         if interface == "tf":
             import tensorflow as tf
-
             return tf.stack(results)
 
         if interface == "torch":

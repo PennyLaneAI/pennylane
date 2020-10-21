@@ -380,8 +380,6 @@ class QNode:
         if not isinstance(measurement_processes, Sequence):
             measurement_processes = (measurement_processes,)
 
-        print(measurement_processes)
-
         if not all(isinstance(m, qml.tape.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "

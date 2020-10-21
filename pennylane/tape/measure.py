@@ -172,7 +172,8 @@ class MeasurementProcess:
             try:
                 qml.tape.QueuingContext.update_info(self.obs, owner=self)
             except ValueError:
-                pass
+                self.obs.queue()
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
 
             qml.tape.QueuingContext.append(self, owns=self.obs)
         else:

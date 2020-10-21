@@ -194,7 +194,7 @@ class TestEvalation:
         the Autograd interface"""
         qnode1, qnode2 = qnodes
 
-        params = np.array([0.5643, -0.45])
+        params = [0.5643, -0.45]
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost_qc = lambda params: np.sum(qc(params))
         grad_qc = qml.grad(cost_qc)
