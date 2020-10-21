@@ -163,3 +163,12 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
+
+@pytest.fixture(params=[True, False])
+def tape_mode(request):
+    """Tests using this fixture will be run twice, once in tape mode and once without."""
+    if request.param:
+        qml.enable_tape()
+    yield
+    if request.param:
+        qml.disable_tape()
