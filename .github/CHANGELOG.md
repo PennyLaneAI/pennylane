@@ -98,7 +98,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
 
 # Release 0.12.0 (current release)
 
