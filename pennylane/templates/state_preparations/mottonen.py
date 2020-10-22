@@ -99,9 +99,15 @@ def _compute_theta(alpha):
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies sequence of inverse rotations to the target qubit
-    that are controlled by the control qubits. The controls select all possible
-    basis states.
+    """Applies a sequence of multi-controlled inverse rotations to the target qubit.
+
+    Each of the rotations is conditioned on the control wires being in a
+    different computational basis state, so that there are
+    `2**len(control_wires)` multi-controlled rotations altogether. The angles
+    of the rotations are provided by the alpha vector.
+
+    To implement a multi-controlled rotation, a decomposition based on gray codes is
+    used. For more details, see `Möttönen and Vartiainen (2005) <https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
         gate (~.Operation): gate to be applied, needs to have exactly
@@ -201,7 +207,7 @@ def _get_alpha_y(a, n, k):
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. (Quantum Info. Comput., 2005; arXiv:0407010).
+    by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
 
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
@@ -249,13 +255,13 @@ def MottonenStatePreparation(state_vector, wires):
 
     #######################
 
-    # Change ordering of indices, original code was for IBM machines
+    # change ordering of indices, original code was written for IBM machines
     state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()
 
     if isinstance(state_vector[0], Variable):
         # TODO: delete when tape is new core
         state_vector = np.array([s.val for s in state_vector])
-        
+
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
 
