@@ -20,6 +20,8 @@ import inspect
 from unittest import mock
 import warnings
 
+import pennylane as qml
+
 from . import measure
 from .circuit_graph import TapeCircuitGraph
 from .queuing import AnnotatedQueue, Queue, QueuingContext
