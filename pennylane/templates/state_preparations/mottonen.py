@@ -16,7 +16,6 @@ Contains the ``MottonenStatePreparation`` template.
 """
 import math
 import numpy as np
-from scipy import sparse
 
 import pennylane as qml
 
@@ -26,7 +25,7 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
-# pylint: disable=len-as-condition,arguments-out-of-order
+# pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
     """Generates the Gray code of given rank.
 
@@ -100,8 +99,9 @@ def _compute_theta(alpha):
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a given inverse rotation to the target qubit
-    that is uniformly controlled by the control qubits.
+    """Applies sequence of inverse rotations to the target qubit
+    that are controlled by the control qubits. The controls select all possible
+    basis states.
 
     Args:
         gate (~.Operation): gate to be applied, needs to have exactly
@@ -133,11 +133,11 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
 
 def _get_alpha_z(omega, n, k):
-    r"""Computes the rotation angles alpha for the Z rotations.
+    r"""Computes the rotation angles for the Z rotations applied to the k'th qubit.
 
     .. math::
 
-        \alpha^k_{j} = \sum_{l=1}^{2^{j-1}} \frac{\omega_{(2k-1) 2^{j-1}+l} - \omega_{(2k-2) 2^{j-1}+l}}{2^{j-1}}
+        \alpha^{z,k}_j = \sum_{l=1}^{2^{j-1}} \frac{\omega_{(2k-1) 2^{j-1}+l} - \omega_{(2k-2) 2^{j-1}+l}}{2^{j-1}}
 
     Args:
         omega (float): phases of the input
@@ -145,7 +145,7 @@ def _get_alpha_z(omega, n, k):
         k (int): index of current qubit
 
     Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
+        array representing :math:`\alpha^{z,k}`
     """
     alpha_z_k = np.zeros((2 ** (n - k),), dtype=np.float64)
 
@@ -159,13 +159,13 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles alpha for the Y rotations applied to the k'th qubit.
+    r"""Computes the rotation angles for the Y rotations applied to the k'th qubit.
 
-    Implements the equation:
+    The angles are related to a as:
 
     .. math::
 
-        \alpha^k_{j} = 2 \arcsin \left( \frac{\sqrt{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2 } }{\sqrt{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2 } } \right)
+        \alpha^{y,k}_j = 2 \arcsin \left( \frac{\sqrt{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2 } }{\sqrt{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2 } } \right)
 
     Args:
         a (float): absolute values of the input
@@ -173,7 +173,7 @@ def _get_alpha_y(a, n, k):
         k (int): index of current qubit
 
     Returns:
-        array representing :math:`\alpha^k{j}`
+        array representing :math:`\alpha^{y,k}`
     """
 
     numerator = np.zeros((2 ** (n - k), ), dtype=np.float64)
@@ -252,17 +252,12 @@ def MottonenStatePreparation(state_vector, wires):
     # Change ordering of indices, original code was for IBM machines
     state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()
 
-    a = np.zeros(state_vector.shape)
-    omega = np.zeros(state_vector.shape)
-
     if isinstance(state_vector[0], Variable):
         # TODO: delete when tape is new core
-        for i in range(len(state_vector)):
-            a[i] = np.absolute(state_vector[i].val)
-            omega[i] = np.angle(state_vector[i].val)
-    else:
-        a = np.absolute(state_vector)
-        omega = np.angle(state_vector)
+        state_vector = np.array([s.val for s in state_vector])
+        
+    a = np.absolute(state_vector)
+    omega = np.angle(state_vector)
 
     # Apply y rotation cascade
     for k in range(n_wires, 0, -1):
