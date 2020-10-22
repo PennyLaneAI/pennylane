@@ -239,44 +239,36 @@ def MottonenStatePreparation(state_vector, wires):
 
     if isinstance(state_vector[0], Variable):
         # "Old" qnode
-        # Todo: delete this entire branch when tape is core
+        # Todo: delete this branch when tape is core
 
         # check if state_vector is normalized
         state_vector_values = [s.val for s in state_vector]
         norm = np.sum(np.abs(state_vector_values) ** 2)
         if not np.isclose(norm, 1.0, atol=1e-3):
             raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
-
-        # Change ordering of indices, original code was for IBM machines
-        state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
-        state_vector = sparse.dok_matrix(state_vector)
-
-        a = sparse.dok_matrix(state_vector.shape)
-        omega = sparse.dok_matrix(state_vector.shape)
-
-        for (i, j), v in state_vector.items():
-            if isinstance(v, Variable):
-                a[i, j] = np.absolute(v.val)
-                omega[i, j] = np.angle(v.val)
-            else:
-                a[i, j] = np.absolute(v)
-                omega[i, j] = np.angle(v)
-
     else:
         # Tape mode
-
-        norm = qml.tape.interfaces.functions.WrapperFunctions.sum(qml.tape.interfaces.functions.WrapperFunctions.abs(state_vector) ** 2)
+        norm = qml.tape.interfaces.WrapperFunctions.sum(qml.tape.interfaces.WrapperFunctions.abs(state_vector) ** 2)
         if not np.isclose(norm, 1.0, atol=1e-3):
             raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
-        # Change ordering of indices, original code was for IBM machines
-        state_vector = qml.tape.interfaces.functions.WrapperFunctions.reshape(state_vector, [2] * n_wires)
-        state_vector = qml.tape.interfaces.functions.WrapperFunctions.flatten(qml.tape.interfaces.functions.WrapperFunctions.transpose(state_vector))
-        state_vector = qml.tape.interfaces.functions.WrapperFunctions.expand_dims(state_vector, axis=1)  # [: newaxis]
+    # Change ordering of indices, original code was for IBM machines
+    state_vector = qml.tape.interfaces.WrapperFunctions.reshape(state_vector, [2] * n_wires)
+    state_vector = qml.tape.interfaces.WrapperFunctions.flatten(qml.tape.interfaces.WrapperFunctions.transpose(state_vector))
+    state_vector = qml.tape.interfaces.WrapperFunctions.expand_dims(state_vector, axis=1)  # [: newaxis]
 
-        state_vector = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix(state_vector)
-        a = qml.tape.interfaces.functions.WrapperFunctions.abs(state_vector)
-        omega = qml.tape.interfaces.functions.WrapperFunctions.angle(state_vector)
+    state_vector = qml.tape.interfaces.WrapperFunctions.sparse_matrix(state_vector)
+    shp = qml.tape.interfaces.WrapperFunctions.shape(state_vector)
+    a = qml.tape.interfaces.WrapperFunctions.zeros(shp)
+    omega = qml.tape.interfaces.WrapperFunctions.zeros(shp)
+
+    for (i, j), v in state_vector.items():
+        if isinstance(v, Variable):
+            a[i, j] = np.absolute(v.val)
+            omega[i, j] = np.angle(v.val)
+        else:
+            a[i, j] = np.absolute(v)
+            omega[i, j] = np.angle(v)
 
     # This code is directly applying the inverse of Carsten Blank's
     # code to avoid inverting at the end

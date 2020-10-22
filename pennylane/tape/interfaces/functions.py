@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Classical machine learning compatibility layer for common functions.
-This module currently provides common wrappers for basic functions in
-Autograd/NumPy, TensorFlow, and Torch.
+Wrappers for common functions that manipulate or create
+NumPy, TensorFlow, and Torch data structures.
 """
 from unittest.mock import MagicMock
 
 import numpy as np
+import scipy as sp
 from pennylane import numpy as anp
 from scipy.linalg import block_diag
 from scipy import sparse
@@ -42,16 +42,16 @@ class WrapperFunctions:
     def wrapper_class(obj):
         """Return the correct wrapper class for the type of input.
         """
-        if isinstance(obj, np.ndarray):
+        if isinstance(obj, (np.ndarray, sp.sparse.spmatrix)):
             return NumpyArrayFunctions
         elif isinstance(obj, (tf.Tensor, tf.Variable)):
             return TfTensorFunctions
         elif isinstance(obj, torch.Tensor):
             return TorchTensorFunctions
-        elif isinstance(obj, list):
+        elif isinstance(obj, (list, tuple)):
             return NumpyArrayFunctions
         else:
-            raise ValueError("Unknown input of type {}".format(type(obj)))
+            raise ValueError("No wrapper defined for input of type {}".format(type(obj)))
 
     @staticmethod
     def abs(array):
@@ -132,9 +132,9 @@ class WrapperFunctions:
         return fn.reduce_sum(array)
 
     @staticmethod
-    def reshape(array):
+    def reshape(array, new_shape):
         fn = WrapperFunctions.wrapper_class(array)
-        return fn.reshape(array)
+        return fn.reshape(array, new_shape)
 
     @staticmethod
     def scatter(array):
@@ -196,7 +196,7 @@ class WrapperFunctions:
         fn = WrapperFunctions.wrapper_class(array)
         return fn.zeros(array)
 
-# Problem: asarray
+# Problem: asarray, cast?
 
 
 class NumpyArrayFunctions:
