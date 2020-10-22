@@ -867,10 +867,12 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
-        if not len(pauli_word) == len(wires):
+        num_wires = 1 if isinstance(wires, int) else len(wires)
+
+        if not len(pauli_word) == num_wires:
             raise ValueError(
                 "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), len(wires), wires
+                    len(pauli_word), num_wires, wires
                 )
             )
 
@@ -897,6 +899,10 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
+        # Simplest case is if the Pauli is the identity matrix
+        if pauli_word == "I" * len(pauli_word):
+            return np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word))
+
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
@@ -919,11 +925,23 @@ class PauliRot(Operation):
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
+        # Identity must be treated specially because its eigenvalues are all the same
+        if pauli_word == "I" * len(pauli_word):
+            return np.exp(-1j * theta / 2) * np.ones(2 ** len(pauli_word))
+
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
     @template
     def decomposition(theta, pauli_word, wires):
+        # Catch cases when the wire is passed as a single int.
+        if isinstance(wires, int):
+            wires = [wires]
+
+        # Check for identity and do nothing
+        if pauli_word == "I" * len(wires):
+            return
+
         active_wires, active_gates = zip(
             *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
         )

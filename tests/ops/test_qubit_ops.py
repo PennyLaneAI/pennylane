@@ -822,6 +822,44 @@ class TestPauliRot:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_PauliRot_wire_as_int(self):
+        """Test that passing a single wire as an integer works."""
+
+        theta = 0.4
+        op = qml.PauliRot(theta, "Z", wires=0)
+        decomp_ops = op.decomposition(theta, "Z", wires=0)
+
+        assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
+        assert np.allclose(op.matrix, np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
+
+        assert len(decomp_ops) == 1
+
+        assert decomp_ops[0].name == "MultiRZ"
+
+        assert decomp_ops[0].wires == Wires([0])
+        assert decomp_ops[0].data[0] == theta
+
+    def test_PauliRot_all_Identity(self):
+        """Test handling of the all-identity Pauli."""
+
+        theta = 0.4
+        op = qml.PauliRot(theta, "II", wires=[0, 1])
+        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+
+        assert np.allclose(op.eigvals, np.exp(-1j * theta / 2) * np.ones(4))
+        assert np.allclose(op.matrix / op.matrix[0, 0], np.eye(4))
+
+        assert len(decomp_ops) == 0
+
+    def test_PauliRot_decomposition_Identity(self):
+        """Test that decomposing the all-identity Pauli has no effect."""
+
+        theta = 0.4
+        op = qml.PauliRot(theta, "II", wires=[0, 1])
+        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+
+        assert len(decomp_ops) == 0
+
     def test_PauliRot_decomposition_ZZ(self):
         """Test that the decomposition for a ZZ rotation is correct."""
 
