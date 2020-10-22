@@ -244,12 +244,12 @@ def MottonenStatePreparation(state_vector, wires):
         "".format(expected_shape, get_shape(state_vector)),
     )
 
-    # check if state_vector is normalized
+    # TODO: delete when tape is new core
     if isinstance(state_vector[0], Variable):
-        state_vector_values = [s.val for s in state_vector]
-        norm = np.sum(np.abs(state_vector_values) ** 2)
-    else:
-        norm = np.sum(np.abs(state_vector) ** 2)
+        state_vector = np.array([s.val for s in state_vector])
+
+    # check if normalized
+    norm = np.sum(np.abs(state_vector) ** 2)
     if not np.isclose(norm, 1.0, atol=1e-3):
         raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
@@ -258,21 +258,17 @@ def MottonenStatePreparation(state_vector, wires):
     # change ordering of indices, original code was written for IBM machines
     state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()
 
-    if isinstance(state_vector[0], Variable):
-        # TODO: delete when tape is new core
-        state_vector = np.array([s.val for s in state_vector])
-
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
 
-    # Apply y rotation cascade
+    # Apply inverse y rotation cascade to prepare correct absolute values
     for k in range(n_wires, 0, -1):
         alpha_y_k = _get_alpha_y(a, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply z rotation cascade
+    # Apply inverse z rotation cascade to prepare correct phases
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
