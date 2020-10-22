@@ -349,13 +349,7 @@ class TorchLayer(Module):
             tensor: output datapoint
         """
         kwargs = {**{self.input_arg: x}, **self.qnode_weights}
-        res = self.qnode(**kwargs).type(x.dtype)
-
-        if res.dim() == 0:
-            # result is 0-dimensional; add an extra dimension as the tests expect it
-            return torch.unsqueeze(res, dim=0)
-
-        return res
+        return self.qnode(**kwargs).type(x.dtype)
 
     def __str__(self):
         detail = "<Quantum Torch Layer: func={}>"
