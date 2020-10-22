@@ -141,9 +141,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles for the Z rotations applied to the k'th qubit.
 
-    .. math::
-
-        \alpha^{z,k}_j = \sum_{l=1}^{2^{j-1}} \frac{\omega_{(2k-1) 2^{j-1}+l} - \omega_{(2k-2) 2^{j-1}+l}}{2^{j-1}}
+    .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
         omega (float): phases of the input
@@ -169,9 +167,7 @@ def _get_alpha_y(a, n, k):
 
     The angles are related to a as:
 
-    .. math::
-
-        \alpha^{y,k}_j = 2 \arcsin \left( \frac{\sqrt{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2 } }{\sqrt{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2 } } \right)
+    .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
         a (float): absolute values of the input
