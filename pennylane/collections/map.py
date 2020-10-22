@@ -100,6 +100,7 @@ def map(
     >>> qnodes(params)
     array([-0.06154835  0.99280864])
     """
+    # TODO: return measure_map to a module variable when tape-mode is default
     measure_map = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
 
     if not callable(template):
