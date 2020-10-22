@@ -86,7 +86,7 @@ def _compute_theta(alpha):
     k = np.log2(alpha.shape[0])
     factor = 2 ** (-k)
 
-    theta = np.zeros(alpha.shape, dtype=np.float64)
+    theta = qml.tape.interfaces.WrapperFunctions.zeros(alpha, alpha.shape)
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
@@ -153,7 +153,7 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    alpha_z_k = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k),))
+    alpha_z_k = qml.tape.interfaces.WrapperFunctions.zeros(omega, (2 ** (n - k),))
 
     for i in range(len(omega)):
         j = int(np.ceil((i+1) * 2 ** (-k)))
@@ -176,15 +176,15 @@ def _get_alpha_y(a, n, k):
     Args:
         a (float): absolute values of the input
         n (int): total number of qubits
-        k (int): index of current qubit
+        k (int): index of current qubit (in [1,...,n])
 
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
 
-    numerator = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
-    denominator = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
-    alpha = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
+    numerator = qml.tape.interfaces.WrapperFunctions.zeros(a, (2 ** (n - k), ))
+    denominator = qml.tape.interfaces.WrapperFunctions.zeros(a, (2 ** (n - k), ))
+    alpha = qml.tape.interfaces.WrapperFunctions.zeros(a, (2 ** (n - k), ))
 
     # compute all numerators/denominators at once for efficiency
     for i in range(len(a)):
@@ -253,8 +253,8 @@ def MottonenStatePreparation(state_vector, wires):
         state_vector = np.array(state_vector)
 
     # check if normalized
-    norm = qml.tape.interfaces.WrapperFunctions.sum(qml.tape.interfaces.WrapperFunctions.abs(state_vector))
-    if qml.tape.interfaces.WrapperFunctions.isclose(norm, 1, atol=1e-8):
+    norm = qml.tape.interfaces.WrapperFunctions.sum(qml.tape.interfaces.WrapperFunctions.abs(state_vector)**2)
+    if not qml.tape.interfaces.WrapperFunctions.isclose(norm, 1, atol=1e-8):
         raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
     #######################

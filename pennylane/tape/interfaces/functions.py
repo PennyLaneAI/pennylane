@@ -197,9 +197,9 @@ class WrapperFunctions:
         return fn.transpose(array)
 
     @staticmethod
-    def zeros(array):
+    def zeros(array, shp):
         fn = WrapperFunctions.wrapper_class(array)
-        return fn.zeros(array)
+        return fn.zeros(array, shp)
 
 # Problem: asarray, cast?
 
@@ -232,7 +232,7 @@ class NumpyArrayFunctions:
     stack = anp.stack
     tensordot = anp.tensordot
     transpose = lambda array: array.T
-    zeros = anp.zeros
+    zeros = lambda array, shp: anp.zeros(shp, dtype=array.dtype)
 
     @staticmethod
     def scatter_element_add(array, index, value):
@@ -274,7 +274,7 @@ class TfTensorFunctions:
     sum = tf.reduce_sum
     tensordot = tf.tensordot
     transpose = tf.transpose
-    zeros = tf.zeros
+    zeros = lambda array, shp: tf.zeros(shp, dtype=array.dtype)
 
     @staticmethod
     def isclose(array, val, atol):
@@ -324,7 +324,8 @@ class TorchTensorFunctions:
     sum = torch.sum
     tensordot = torch.tensordot
     transpose = lambda tensor: tensor.T
-    zeros = torch.zeros
+    zeros = lambda array, shp: torch.zeros(shp, dtype=array.dtype)
+
 
     @staticmethod
     def isclose(array, val, atol):
