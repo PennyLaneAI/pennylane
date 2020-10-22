@@ -199,7 +199,6 @@ class QubitDevice(Device):
         # Ensures that a combination with sample does not put
         # expvals and vars in superfluous arrays
         all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
-
         if circuit.is_sampled and not all_sampled:
             results = self._asarray(results, dtype="object")
         else:

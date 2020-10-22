@@ -122,10 +122,6 @@ class DefaultQubitTF(DefaultQubit):
             of samples returned by ``sample``.
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
-        caching (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default qubit (TensorFlow) PennyLane plugin"
@@ -160,8 +156,8 @@ class DefaultQubitTF(DefaultQubit):
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
 
-    def __init__(self, wires, *, shots=1000, analytic=True, caching=0):
-        super().__init__(wires, shots=shots, analytic=analytic, caching=caching)
+    def __init__(self, wires, *, shots=1000, analytic=True):
+        super().__init__(wires, shots=shots, analytic=analytic, caching=0)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
