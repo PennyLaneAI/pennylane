@@ -136,7 +136,7 @@ def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles alpha for the Z rotations.
 
     Args:
-        omega (float): phase of the input
+        omega (float): phases of the input
         n (int): total number of qubits
         k (int): index of current qubit
 
@@ -155,21 +155,26 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles alpha for the Y rotations.
+    r"""Computes the rotation angles alpha for the Y rotations applied to the k'th qubit.
+
+    Implements the equation:
+
+    .. math::
+
+        \alpha^k_{j} = 2 \arcsin \left( \frac{\sqrt{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2 } }{\sqrt{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2 } } \right)
 
     Args:
-        omega (float): phase of the input
+        a (float): absolute values of the input
         n (int): total number of qubits
         k (int): index of current qubit
 
     Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
+        array representing :math:`\alpha^k{j}`
     """
-
-    alpha = np.zeros((2 ** (n - k), ), dtype=np.float64)
 
     numerator = np.zeros((2 ** (n - k), ), dtype=np.float64)
     denominator = np.zeros((2 ** (n - k), ), dtype=np.float64)
+    alpha = np.zeros((2 ** (n - k), ), dtype=np.float64)
 
     for i in range(len(a)):
         j_ = int(math.ceil((i + 1) / 2 ** k))
@@ -180,16 +185,11 @@ def _get_alpha_y(a, n, k):
             numerator[j_ - 1] += a[i] * a[i]
         denominator[j_ - 1] += a[i] * a[i]
 
-    numerator = np.sqrt(numerator)
-
-    for i in range(len(denominator)):
+    for i in range(len(alpha)):
         if denominator[i] != 0.:
-            denominator[i] = 1 / denominator[i]
+            alpha[i] = numerator[i]/denominator[i]
 
-    pre_alpha = denominator * numerator
-    alpha = 2 * np.arcsin(pre_alpha)
-
-    return alpha
+    return 2 * np.arcsin(np.sqrt(alpha))
 
 
 @template
