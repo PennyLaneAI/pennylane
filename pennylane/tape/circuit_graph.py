@@ -41,7 +41,7 @@ class TapeCircuitGraph(CircuitGraph):
 
         # For computing depth; want only a graph with the operations, not
         # including the observables
-        self._truncated_graph = None
+        self._operation_graph = None
 
     @property
     def operations(self):
@@ -64,8 +64,9 @@ class TapeCircuitGraph(CircuitGraph):
         # with only the operations, and return the longest path + 1 (since the path is
         # expressed in terms of edges, and we want it in terms of nodes.
         if self._depth == 0 and len(self.operations) > 0:
-            self._operation_graph = self.graph.subgraph(self.operations)
-            self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
+            if self._operation_graph is None:
+                self._operation_graph = self.graph.subgraph(self.operations)
+                self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
 
         return self._depth
 
