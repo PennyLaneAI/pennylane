@@ -11,7 +11,7 @@
 
 <h3>Improvements</h3>
 
-* QNode caching has been updated to device-based caching. Caching is now accessed by passing a
+* Device-based caching has replaced QNode caching. Caching is now accessed by passing a
   `caching` argument to the device.
   [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
 
