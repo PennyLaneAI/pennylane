@@ -156,9 +156,9 @@ def _get_alpha_z(omega, n, k):
     alpha_z_k = np.zeros((2 ** (n - k),), dtype=np.float64)
 
     for i in range(len(omega)):
-        j = int(np.ceil((i+1) * 2 ** (-k)))
+        j = int(np.ceil((i + 1) * 2 ** (-k)))
         s_condition = 2 ** (k - 1) * (2 * j - 1)
-        s_i = 1.0 if (i+1) > s_condition else -1.0
+        s_i = 1.0 if (i + 1) > s_condition else -1.0
         alpha_z_k[j - 1] = alpha_z_k[j - 1] + s_i * omega[i] / 2 ** (k - 1)
 
     return alpha_z_k
@@ -182,9 +182,9 @@ def _get_alpha_y(a, n, k):
         array representing :math:`\alpha^{y,k}`
     """
 
-    numerator = np.zeros((2 ** (n - k), ), dtype=np.float64)
-    denominator = np.zeros((2 ** (n - k), ), dtype=np.float64)
-    alpha = np.zeros((2 ** (n - k), ), dtype=np.float64)
+    numerator = np.zeros((2 ** (n - k),), dtype=np.float64)
+    denominator = np.zeros((2 ** (n - k),), dtype=np.float64)
+    alpha = np.zeros((2 ** (n - k),), dtype=np.float64)
 
     # compute all numerators/denominators at once for efficiency
     for i in range(len(a)):
@@ -197,8 +197,8 @@ def _get_alpha_y(a, n, k):
         denominator[j_ - 1] += a[i] * a[i]
 
     for i in range(len(alpha)):
-        if denominator[i] != 0.:
-            alpha[i] = numerator[i]/denominator[i]
+        if denominator[i] != 0.0:
+            alpha[i] = numerator[i] / denominator[i]
 
     return 2 * np.arcsin(np.sqrt(alpha))
 
