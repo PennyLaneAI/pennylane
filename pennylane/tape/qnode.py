@@ -15,7 +15,6 @@
 This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
-from collections import OrderedDict
 from functools import lru_cache, update_wrapper
 
 import numpy as np
