@@ -16,21 +16,18 @@ Contains the ``MottonenStatePreparation`` template.
 """
 import math
 import numpy as np
-from scipy import sparse
 
 import pennylane as qml
+
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape
 from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
-# pylint: disable=len-as-condition,arguments-out-of-order
+# pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
     """Generates the Gray code of given rank.
-
-    A gray code is an ordering of binary strings
-    such that two successive values differ in only one bit.
 
     Args:
         rank (int): rank of the Gray code (i.e. number of bits)
@@ -65,7 +62,7 @@ def _matrix_M_entry(row, col):
     Returns:
         (float): transformation matrix entry at given row and column
     """
-    # (col >> 1) ^ col is the integer representation of the col'th Gray code bit string
+    # (col >> 1) ^ col is the Gray code of col
     b_and_g = row & ((col >> 1) ^ col)
     sum_of_ones = 0
     while b_and_g > 0:
@@ -86,25 +83,31 @@ def _compute_theta(alpha):
     Returns:
         (array[float]): rotation angles theta
     """
-
-    k = qml.tape.interfaces.functions.WrapperFunctions.log2(alpha.shape[0])
+    k = np.log2(alpha.shape[0])
     factor = 2 ** (-k)
 
-    theta = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix(qml.tape.interfaces.functions.WrapperFunctions.shape(alpha))
+    theta = np.zeros(alpha.shape, dtype=np.float64)
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
-        entry = qml.tape.interfaces.functions.WrapperFunctions.sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
+        entry = sum(_matrix_M_entry(col, row) * alpha[col] for col in range(len(alpha)))
         entry *= factor
         if abs(entry) > 1e-6:
-            theta[row, 0] = entry
+            theta[row] = entry
 
     return theta
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a given inverse rotation to the target qubit
-    that is uniformly controlled by the control qubits.
+    """Applies a sequence of multi-controlled inverse rotations to the target qubit.
+
+    Each of the rotations is conditioned on the control wires being in a
+    different computational basis state, so that there are
+    `2**len(control_wires)` multi-controlled rotations altogether. The angles
+    of the rotations are provided by the alpha vector.
+
+    To implement a multi-controlled rotation, a decomposition based on gray codes is
+    used. For more details, see `Möttönen and Vartiainen (2005) <https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
         gate (~.Operation): gate to be applied, needs to have exactly
@@ -119,88 +122,92 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        gate(theta[0, 0], wires=[target_wire])
+        gate(theta[0], wires=[target_wire])
         return
 
     code = gray_code(gray_code_rank)
     num_selections = len(code)
 
     control_indices = [
-        int(qml.tape.interfaces.functions.WrapperFunctions.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
+        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
         for i in range(num_selections)
     ]
 
     for i, control_index in enumerate(control_indices):
-        gate(theta[i, 0], wires=[target_wire])
+        gate(theta[i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
-def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles alpha for the Y rotations.
+def _get_alpha_z(omega, n, k):
+    r"""Computes the rotation angles for the Z rotations applied to the k'th qubit.
+
+    .. math::
+
+        \alpha^{z,k}_j = \sum_{l=1}^{2^{j-1}} \frac{\omega_{(2k-1) 2^{j-1}+l} - \omega_{(2k-2) 2^{j-1}+l}}{2^{j-1}}
 
     Args:
-        omega (float): phase of the input
+        omega (float): phases of the input
         n (int): total number of qubits
         k (int): index of current qubit
 
     Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
+        array representing :math:`\alpha^{z,k}`
+    """
+    alpha_z_k = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k),))
+
+    for i in range(len(omega)):
+        j = int(np.ceil((i+1) * 2 ** (-k)))
+        s_condition = 2 ** (k - 1) * (2 * j - 1)
+        s_i = 1.0 if (i+1) > s_condition else -1.0
+        alpha_z_k[j - 1] = alpha_z_k[j - 1] + s_i * omega[i] / 2 ** (k - 1)
+
+    return alpha_z_k
+
+
+def _get_alpha_y(a, n, k):
+    r"""Computes the rotation angles for the Y rotations applied to the k'th qubit.
+
+    The angles are related to a as:
+
+    .. math::
+
+        \alpha^{y,k}_j = 2 \arcsin \left( \frac{\sqrt{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2 } }{\sqrt{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2 } } \right)
+
+    Args:
+        a (float): absolute values of the input
+        n (int): total number of qubits
+        k (int): index of current qubit
+
+    Returns:
+        array representing :math:`\alpha^{y,k}`
     """
 
-    alpha = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
-    numerator = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
-    denominator = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
+    numerator = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
+    denominator = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
+    alpha = qml.tape.interfaces.WrapperFunctions.zeros((2 ** (n - k), ))
 
-    for (i, _), e in a.items():
-        j = int(math.ceil((i + 1) / 2 ** k))
-        l = (i + 1) - (2 * j - 1) * 2 ** (k - 1)
+    # compute all numerators/denominators at once for efficiency
+    for i in range(len(a)):
+        j_ = int(math.ceil((i + 1) / 2 ** k))
+        l = (i + 1) - (2 * j_ - 1) * 2 ** (k - 1)
         is_part_numerator = 1 <= l <= 2 ** (k - 1)
 
         if is_part_numerator:
-            numerator[j - 1, 0] += e * e
-        denominator[j - 1, 0] += e * e
+            numerator[j_ - 1] += a[i] * a[i]
+        denominator[j_ - 1] += a[i] * a[i]
 
-    for (j, _), e in numerator.items():
-        numerator[j, 0] = qml.tape.interfaces.functions.WrapperFunctions.sqrt(e)
-    for (j, _), e in denominator.items():
-        denominator[j, 0] = 1 / qml.tape.interfaces.functions.WrapperFunctions.sqrt(e)
+    for i in range(len(alpha)):
+        if denominator[i] != 0.:
+            alpha[i] = numerator[i]/denominator[i]
 
-    pre_alpha = numerator.multiply(denominator)  # type: sparse.csr_matrix
-    for (j, _), e in pre_alpha.items():
-        alpha[j, 0] = 2 * qml.tape.interfaces.functions.WrapperFunctions.arcsin(e)
-
-    return alpha
-
-
-def _get_alpha_z(omega, n, k):
-    r"""Computes the rotation angles alpha for the Z rotations.
-
-    Args:
-        omega (float): phase of the input
-        n (int): total number of qubits
-        k (int): index of current qubit
-
-    Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
-    """
-
-    alpha_z_k = qml.tape.interfaces.functions.WrapperFunctions.sparse_matrix((2 ** (n - k), 1))
-
-    for (i, _), om in omega.items():
-        i += 1
-        j = int(np.ceil(i * 2 ** (-k)))
-        s_condition = 2 ** (k - 1) * (2 * j - 1)
-        s_i = 1.0 if i > s_condition else -1.0
-        alpha_z_k[j - 1, 0] = alpha_z_k[j - 1, 0] + s_i * om / 2 ** (k - 1)
-
-    return alpha_z_k
+    return 2 * qml.tape.interfaces.WrapperFunctions.arcsin(qml.tape.interfaces.WrapperFunctions.sqrt(alpha))
 
 
 @template
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. (Quantum Info. Comput., 2005).
+    by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
 
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
@@ -237,53 +244,40 @@ def MottonenStatePreparation(state_vector, wires):
         "".format(expected_shape, get_shape(state_vector)),
     )
 
+    # TODO: delete when tape is new core
     if isinstance(state_vector[0], Variable):
-        # "Old" qnode
-        # Todo: delete this branch when tape is core
+        state_vector = np.array([s.val for s in state_vector])
 
-        # check if state_vector is normalized
-        state_vector_values = [s.val for s in state_vector]
-        norm = np.sum(np.abs(state_vector_values) ** 2)
-        if not np.isclose(norm, 1.0, atol=1e-3):
-            raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
-    else:
-        # Tape mode
-        norm = qml.tape.interfaces.WrapperFunctions.sum(qml.tape.interfaces.WrapperFunctions.abs(state_vector) ** 2)
-        if not np.isclose(norm, 1.0, atol=1e-3):
-            raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
+    if isinstance(state_vector, list):
+        # input is not trainable, can just turn into a numpy array
+        state_vector = np.array(state_vector)
 
-    # Change ordering of indices, original code was for IBM machines
+    # check if normalized
+    norm = qml.tape.interfaces.WrapperFunctions.sum(qml.tape.interfaces.WrapperFunctions.abs(state_vector))
+    if qml.tape.interfaces.WrapperFunctions.isclose(norm, 1, atol=1e-8):
+        raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
+
+    #######################
+
+    # change ordering of indices, original code was written for IBM machines
     state_vector = qml.tape.interfaces.WrapperFunctions.reshape(state_vector, [2] * n_wires)
-    state_vector = qml.tape.interfaces.WrapperFunctions.flatten(qml.tape.interfaces.WrapperFunctions.transpose(state_vector))
-    state_vector = qml.tape.interfaces.WrapperFunctions.expand_dims(state_vector, axis=1)  # [: newaxis]
+    state_vector = qml.tape.interfaces.WrapperFunctions.transpose(state_vector)
+    state_vector = qml.tape.interfaces.WrapperFunctions.flatten(state_vector)
 
-    state_vector = qml.tape.interfaces.WrapperFunctions.sparse_matrix(state_vector)
-    shp = qml.tape.interfaces.WrapperFunctions.shape(state_vector)
-    a = qml.tape.interfaces.WrapperFunctions.zeros(shp)
-    omega = qml.tape.interfaces.WrapperFunctions.zeros(shp)
+    a = qml.tape.interfaces.WrapperFunctions.abs(state_vector)
+    omega = qml.tape.interfaces.WrapperFunctions.angle(state_vector)
 
-    for (i, j), v in state_vector.items():
-        if isinstance(v, Variable):
-            a[i, j] = np.absolute(v.val)
-            omega[i, j] = np.angle(v.val)
-        else:
-            a[i, j] = np.absolute(v)
-            omega[i, j] = np.angle(v)
-
-    # This code is directly applying the inverse of Carsten Blank's
-    # code to avoid inverting at the end
-
-    # Apply y rotations
+    # Apply inverse y rotation cascade to prepare correct absolute values
     for k in range(n_wires, 0, -1):
         alpha_y_k = _get_alpha_y(a, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply z rotations
+    # Apply inverse z rotation cascade to prepare correct phases
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
-            _uniform_rotation_dagger(qml.RZ, alpha_y_k, control, target)
+            _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)

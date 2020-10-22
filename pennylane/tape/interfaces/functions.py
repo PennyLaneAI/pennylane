@@ -122,6 +122,11 @@ class WrapperFunctions:
         return fn.gather(array)
 
     @staticmethod
+    def isclose(array, val, atol=None):
+        fn = WrapperFunctions.wrapper_class(array)
+        return fn.isclose(array, val, atol)
+
+    @staticmethod
     def len(array):
         fn = WrapperFunctions.wrapper_class(array)
         return fn.len(array)
@@ -206,6 +211,7 @@ class NumpyArrayFunctions:
     complex128 = anp.complex128
 
     abs = anp.abs
+    isclose = lambda array, other, atol: anp.isclose(array, other, atol=atol)
     angle = anp.angle
     arcsin = anp.arcsin
     asarray = anp.asarray
@@ -271,8 +277,8 @@ class TfTensorFunctions:
     zeros = tf.zeros
 
     @staticmethod
-    def scatter_element_add(tensor, index, value):
-        return tensor + TfTensorFunctions.scatter_element(index, value, tensor.shape)
+    def isclose(array, val, atol):
+        return tf.abs(array - val) <= atol
 
     @staticmethod
     def scatter_element(index, value, new_dimensions):
@@ -285,6 +291,10 @@ class TfTensorFunctions:
         linop_blocks = [tf.linalg.LinearOperatorFullMatrix(block) for block in tensors]
         linop_block_diagonal = tf.linalg.LinearOperatorBlockDiag(linop_blocks)
         return linop_block_diagonal.to_dense()
+
+    @staticmethod
+    def scatter_element_add(tensor, index, value):
+        return tensor + TfTensorFunctions.scatter_element(index, value, tensor.shape)
 
 
 class TorchTensorFunctions:
@@ -315,6 +325,11 @@ class TorchTensorFunctions:
     tensordot = torch.tensordot
     transpose = lambda tensor: tensor.T
     zeros = torch.zeros
+
+    @staticmethod
+    def isclose(array, val, atol):
+        val = torch.tensor(val, dtype=array.dtype)
+        return torch.isclose(array, val, atol=atol)
 
     @staticmethod
     def scatter_element_add(tensor, index, value):
