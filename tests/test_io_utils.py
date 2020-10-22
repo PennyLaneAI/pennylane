@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.io` module.
+Unit tests for the :mod:`pennylane.io_utils` module.
 """
 import pytest
 from unittest.mock import Mock
@@ -50,7 +50,7 @@ def mock_plugin_converters(monkeypatch):
     mock_plugin_converter_dict = {
         entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
     }
-    monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
+    monkeypatch.setattr(qml.io_utils, "plugin_converters", mock_plugin_converter_dict)
 
     yield mock_plugin_converter_dict
 
