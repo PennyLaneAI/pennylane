@@ -135,6 +135,10 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles alpha for the Z rotations.
 
+    .. math::
+
+        \alpha^k_{j} = \sum_{l=1}^{2^{j-1}} \frac{\omega_{(2k-1) 2^{j-1}+l} - \omega_{(2k-2) 2^{j-1}+l}}{2^{j-1}}
+
     Args:
         omega (float): phases of the input
         n (int): total number of qubits
@@ -176,6 +180,7 @@ def _get_alpha_y(a, n, k):
     denominator = np.zeros((2 ** (n - k), ), dtype=np.float64)
     alpha = np.zeros((2 ** (n - k), ), dtype=np.float64)
 
+    # compute all numerators/denominators at once for efficiency
     for i in range(len(a)):
         j_ = int(math.ceil((i + 1) / 2 ** k))
         l = (i + 1) - (2 * j_ - 1) * 2 ** (k - 1)
@@ -196,7 +201,7 @@ def _get_alpha_y(a, n, k):
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. (Quantum Info. Comput., 2005).
+    by Möttönen et al. (Quantum Info. Comput., 2005; arXiv:0407010).
 
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
@@ -250,25 +255,23 @@ def MottonenStatePreparation(state_vector, wires):
     a = np.zeros(state_vector.shape)
     omega = np.zeros(state_vector.shape)
 
-    for i in range(len(state_vector)):
-        v = state_vector[i]
-        if isinstance(v, Variable):
-            a[i] = np.absolute(v.val)
-            omega[i] = np.angle(v.val)
-        else:
-            a[i] = np.absolute(v)
-            omega[i] = np.angle(v)
-    # This code is directly applying the inverse of Carsten Blank's
-    # code to avoid inverting at the end
+    if isinstance(state_vector[0], Variable):
+        # TODO: delete when tape is new core
+        for i in range(len(state_vector)):
+            a[i] = np.absolute(state_vector[i].val)
+            omega[i] = np.angle(state_vector[i].val)
+    else:
+        a = np.absolute(state_vector)
+        omega = np.angle(state_vector)
 
-    # Apply y rotations
+    # Apply y rotation cascade
     for k in range(n_wires, 0, -1):
         alpha_y_k = _get_alpha_y(a, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply z rotations
+    # Apply z rotation cascade
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
