@@ -107,4 +107,4 @@ def disable_tape():
 
 def tape_mode_active():
     """Returns whether tape mode is enabled."""
-    return bool(_mock_stack)
+    return inspect.isclass(qml.QNode) and issubclass(qml.QNode, qml.tape.QNode)
