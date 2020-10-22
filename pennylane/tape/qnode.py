@@ -379,15 +379,17 @@ class QNode:
             self.qfunc_output = self.func(*args, **kwargs)
 
         if not isinstance(self.qfunc_output, Sequence):
-            self.qfunc_output = (self.qfunc_output,)
+            measurement_processes = (self.qfunc_output,)
+        else:
+            measurement_processes = self.qfunc_output
 
-        if not all(isinstance(m, qml.tape.MeasurementProcess) for m in self.qfunc_output):
+        if not all(isinstance(m, qml.tape.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
 
-        state_returns = any([m.return_type is State for m in self.qfunc_output])
+        state_returns = any([m.return_type is State for m in measurement_processes])
 
         # apply the interface (if any)
         if self.interface is not None:
@@ -399,7 +401,7 @@ class QNode:
             else:
                 self.INTERFACE_MAP[self.interface](self)
 
-        if not all(ret == m for ret, m in zip(self.qfunc_output, self.qtape.measurements)):
+        if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
