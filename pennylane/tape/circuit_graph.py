@@ -30,7 +30,7 @@ class TapeCircuitGraph(CircuitGraph):
     def __init__(self, ops, obs, wires):
         self._operations = ops
         self._observables = obs
-        self._depth = 0
+        self._depth = None
 
         for m in self._observables:
             if m.return_type is qml.operation.State:
@@ -63,7 +63,7 @@ class TapeCircuitGraph(CircuitGraph):
         # If there are operations but depth is uncomputed, compute the truncated graph
         # with only the operations, and return the longest path + 1 (since the path is
         # expressed in terms of edges, and we want it in terms of nodes.
-        if self._depth == 0 and len(self.operations) > 0:
+        if self._depth is None and len(self.operations) > 0:
             if self._operation_graph is None:
                 self._operation_graph = self.graph.subgraph(self.operations)
                 self._depth = nx.dag_longest_path_length(self._operation_graph) + 1

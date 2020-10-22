@@ -363,12 +363,18 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
+        assert tape.depth == 3
+        assert len(tape.resources) == 3
+        assert tape.resources['RX'] == 2
+        assert tape.resources['Rot'] == 1
+        assert tape.resources['CNOT'] == 1
+
         with tape as tape:
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.1, wires=3)
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
-            
+
         assert tape.depth == 4
         assert len(tape.resources) == 4
         assert tape.resources['RX'] == 2

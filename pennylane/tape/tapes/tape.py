@@ -228,7 +228,7 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = set()
         self._graph = None
         self._resources = None
-        self._depth = 0
+        self._depth = None
         self._output_dim = 0
 
         self.wires = qml.wires.Wires([])
@@ -374,7 +374,7 @@ class QuantumTape(AnnotatedQueue):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
         self._resources = None
-        self._depth = 0
+        self._depth = None
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
@@ -873,12 +873,12 @@ class QuantumTape(AnnotatedQueue):
                 qml.CRX(-2.3, wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        Asking for the resources produces a dictionary as shown below:
+        The depth can be obtained like so:
 
         >>> tape.depth
         4
         """
-        if self._depth == 0:
+        if self._depth is None:
             self._depth = self.graph.depth
 
         return self._depth
