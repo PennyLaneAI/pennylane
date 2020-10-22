@@ -87,8 +87,6 @@
     without affecting the original tape's parameters. (Note: the two tapes will share parameter data
     *until* one of the tapes has their parameter list modified.)
 
-  - Copied tapes continue to share the *same* caching dictionary as the original tape.
-
   - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
     argument.
 
