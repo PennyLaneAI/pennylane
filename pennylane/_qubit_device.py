@@ -199,6 +199,7 @@ class QubitDevice(Device):
         # Ensures that a combination with sample does not put
         # expvals and vars in superfluous arrays
         all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
+
         if circuit.is_sampled and not all_sampled:
             results = self._asarray(results, dtype="object")
         else:
@@ -208,6 +209,9 @@ class QubitDevice(Device):
             self.add_cache_value(circuit_hash, results)
             if len(self.get_cache()) > self._caching:
                 self.get_cache().popitem(last=False)
+
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
 
         return results
 
@@ -235,7 +239,7 @@ class QubitDevice(Device):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[~.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`grouping` utility functions in `grouping/utils.py`.
+Unit tests for the :mod:`grouping` utility functions in ``grouping/utils.py``.
 """
 import pytest
 import numpy as np
@@ -25,8 +25,8 @@ from pennylane.grouping.utils import (
     pauli_to_binary,
     binary_to_pauli,
     is_qwc,
-    convert_observables_to_binary_matrix,
-    get_qwc_complement_adj_matrix,
+    observables_to_binary_matrix,
+    qwc_complement_adj_matrix,
 )
 
 
@@ -51,7 +51,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("op,vec", ops_to_vecs_explicit_wires)
     def test_pauli_to_binary_no_wire_map(self, op, vec):
         """Test conversion of Pauli word from operator to binary vector representation when no
-        `wire_map` is specified."""
+        ``wire_map`` is specified."""
 
         assert (pauli_to_binary(op) == vec).all()
 
@@ -65,7 +65,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("op,vec", ops_to_vecs_abstract_wires)
     def test_pauli_to_binary_with_wire_map(self, op, vec):
         """Test conversion of Pauli word from operator to binary vector representation if a
-        `wire_map` is specified."""
+        ``wire_map`` is specified."""
 
         wire_map = {Wires("a"): 0, Wires("b"): 1, Wires("c"): 2, Wires(6): 3}
 
@@ -97,7 +97,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no
-        `wire_map` is specified."""
+        ``wire_map`` is specified."""
 
         assert are_identical_pauli_words(binary_to_pauli(vec), op)
 
@@ -111,7 +111,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("vec,op", vecs_to_ops_abstract_wires)
     def test_binary_to_pauli_with_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when
-        `wire_map` is specified."""
+        ``wire_map`` is specified."""
 
         wire_map = {Wires("alice"): 0, Wires("bob"): 1, Wires("ancilla"): 2}
 
@@ -140,7 +140,7 @@ class TestGroupingUtils:
 
         assert pytest.raises(ValueError, binary_to_pauli, not_binary_symplectic)
 
-    def test_convert_observables_to_binary_matrix(self):
+    def test_observables_to_binary_matrix(self):
         """Test conversion of list of Pauli word operators to representation as a binary matrix."""
 
         observables = [Identity(1), PauliX(1), PauliZ(0) @ PauliZ(1)]
@@ -149,9 +149,9 @@ class TestGroupingUtils:
             [[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
         ).T
 
-        assert (convert_observables_to_binary_matrix(observables) == binary_observables).all()
+        assert (observables_to_binary_matrix(observables) == binary_observables).all()
 
-    def test_convert_observables_to_binary_matrix_n_qubits_arg(self):
+    def test_observables_to_binary_matrix_n_qubits_arg(self):
         """Tests if ValueError is raised when specified n_qubits is not large enough to support
         the number of distinct wire labels in input observables."""
 
@@ -159,7 +159,7 @@ class TestGroupingUtils:
         n_qubits_invalid = 3
 
         assert pytest.raises(
-            ValueError, convert_observables_to_binary_matrix, observables, n_qubits_invalid
+            ValueError, observables_to_binary_matrix, observables, n_qubits_invalid
         )
 
     def test_is_qwc(self):
@@ -209,7 +209,7 @@ class TestGroupingUtils:
         assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
 
     def test_is_pauli_word(self):
-        """Test for determining whether input `Observable` instance is a Pauli word."""
+        """Test for determining whether input ``Observable`` instance is a Pauli word."""
 
         observable_1 = PauliX(0)
         observable_2 = PauliZ(1) @ PauliX(2) @ PauliZ(4)
@@ -222,7 +222,7 @@ class TestGroupingUtils:
         assert not is_pauli_word(observable_4)
 
     def test_are_identical_pauli_words(self):
-        """Tests for determining if two Pauli words have the same `wires` and `name` attributes."""
+        """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
 
         pauli_word_1 = PauliX(0) @ PauliY(1)
         pauli_word_2 = PauliY(1) @ PauliX(0)
@@ -251,13 +251,13 @@ class TestGroupingUtils:
         with pytest.raises(TypeError):
             are_identical_pauli_words(non_pauli_word, non_pauli_word)
 
-    def test_get_qwc_complement_adj_matrix(self):
-        """Tests that the `get_qwc_complement_adj_matrix` function returns the correct
+    def test_qwc_complement_adj_matrix(self):
+        """Tests that the ``qwc_complement_adj_matrix`` function returns the correct
         adjacency matrix."""
         binary_observables = np.array([[1., 0., 1., 0., 0., 1.],
                                        [0., 1., 1., 1., 0., 1.],
                                        [0., 0., 0., 1., 0., 0.]])
-        adj = get_qwc_complement_adj_matrix(binary_observables)
+        adj = qwc_complement_adj_matrix(binary_observables)
 
         expected = np.array([[0., 1., 1.],
                              [1., 0., 0.],
@@ -266,19 +266,19 @@ class TestGroupingUtils:
         assert np.all(adj == expected)
 
         binary_obs_list = list(binary_observables)
-        adj = get_qwc_complement_adj_matrix(binary_obs_list)
+        adj = qwc_complement_adj_matrix(binary_obs_list)
         assert np.all(adj == expected)
 
         binary_obs_tuple = tuple(binary_observables)
-        adj = get_qwc_complement_adj_matrix(binary_obs_tuple)
+        adj = qwc_complement_adj_matrix(binary_obs_tuple)
         assert np.all(adj == expected)
 
-    def test_get_qwc_complement_adj_matrix_exception(self):
-        """Tests that the `get_qwc_complement_adj_matrix` function raises an exception if
+    def test_qwc_complement_adj_matrix_exception(self):
+        """Tests that the ``qwc_complement_adj_matrix`` function raises an exception if
         the matrix is not binary."""
         not_binary_observables = np.array([[1.1, 0.5, 1., 0., 0., 1.],
                                            [0., 1.3, 1., 1., 0., 1.],
                                            [2.2, 0., 0., 1., 0., 0.]])
 
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
-            get_qwc_complement_adj_matrix(not_binary_observables)
+            qwc_complement_adj_matrix(not_binary_observables)

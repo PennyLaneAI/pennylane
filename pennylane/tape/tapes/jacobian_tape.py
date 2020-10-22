@@ -207,7 +207,7 @@ class JacobianTape(QuantumTape):
 
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
-        second order CV parameter-shift method.
+        finite-difference method.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to

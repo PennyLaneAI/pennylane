@@ -1068,7 +1068,7 @@ class TestTapeCopying:
             assert i is not j
 
     def test_deep_copy(self):
-        """Test that deep copying a tape works, and copies all constituent data"""
+        """Test that deep copying a tape works, and copies all constituent data except parameters"""
         with QuantumTape() as tape:
             qml.BasisState(np.array([1, 0]), wires=[0, 1])
             qml.RY(0.5, wires=[1])

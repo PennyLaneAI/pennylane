@@ -19,7 +19,8 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.qnodes import QuantumFunctionError
+from pennylane.qnodes import QuantumFunctionError 
+from pennylane.qnodes.base import BaseQNode
 from pennylane.wires import Wires
 from collections import OrderedDict
 
@@ -156,20 +157,6 @@ def mock_device(monkeypatch):
         m.setattr(Device, 'expval', lambda self, x, y, z: 0)
         m.setattr(Device, 'var', lambda self, x, y, z: 0)
         m.setattr(Device, 'sample', lambda self, x, y, z: 0)
-        m.setattr(Device, 'apply', lambda self, x, y, z: None)
-
-        def get_device(wires=1):
-            return Device(wires=wires)
-
-        yield get_device
-
-
-@pytest.fixture(scope="function")
-def mock_device_with_apply(monkeypatch):
-    """ A function to create a mock device that mocks the apply() method."""
-    with monkeypatch.context() as m:
-        m.setattr(Device, '__abstractmethods__', frozenset())
-        m.setattr(Device, 'short_name', 'MockDevice')
         m.setattr(Device, 'apply', lambda self, x, y, z: None)
 
         def get_device(wires=1):
@@ -438,6 +425,31 @@ class TestInternalFunctions:
         expected = OrderedDict([(Wires('a1'), Wires(0)), (Wires('q'), Wires(1)),
                                 (Wires(-1), Wires(2)), (Wires(3), Wires(3))])
         assert dev.wire_map == expected
+
+    def test_execution_property(self, mock_device):
+        """Tests that the number of executions is initialised correctly"""
+        dev = mock_device()
+        expected = 0
+        assert dev.num_executions == expected
+
+    def test_device_executions(self):
+        """Test the number of times a device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        # test default Gaussian device
+        dev_gauss = qml.device("default.gaussian", wires=1)
+
+        def circuit_gauss(mag_alpha, phase_alpha, phi):
+            qml.Displacement(mag_alpha, phase_alpha, wires=0)
+            qml.Rotation(phi, wires=0)
+            return qml.expval(qml.NumberOperator(0))
+
+        node_gauss = BaseQNode(circuit_gauss, dev_gauss)
+        num_evals_gauss = 12
+
+        for i in range(num_evals_gauss):
+            node_gauss(0.015, 0.02, 0.005)
+        assert dev_gauss.num_executions == num_evals_gauss
 
 
 class TestClassmethods:
@@ -714,40 +726,58 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
+    with qml.tape.QuantumTape() as tape1:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+    with qml.tape.JacobianTape() as tape2:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0))
+
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_apply):
+    def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
         """Tests that the device's execute method is called the correct number of times."""
 
-        dev = mock_device_with_apply(wires=2)
+        dev = mock_device_with_paulis_and_methods(wires=2)
         spy = mocker.spy(Device, "execute")
 
-        tapes = [qml.tape.QuantumTape()]*n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_reset(self, n_tapes, mocker, mock_device_with_apply):
+    def test_calls_to_reset(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
         """Tests that the device's reset method is called the correct number of times."""
 
-        dev = mock_device_with_apply(wires=2)
+        dev = mock_device_with_paulis_and_methods(wires=2)
         spy = mocker.spy(Device, "reset")
 
-        tapes = [qml.tape.QuantumTape()]*n_tapes
+        tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)
 
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_result(self, n_tapes, mock_device_with_apply, tol):
+    def test_result(self, n_tapes, mock_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types."""
 
-        dev = mock_device_with_apply(wires=2)
-        tapes = [qml.tape.QuantumTape()]*n_tapes
+        dev = mock_device_with_paulis_and_methods(wires=2)
+        tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
 
-        assert len(res) == n_tapes
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0)
 
-        tp = qml.tape.QuantumTape()
-        expected = dev.execute(tp.operations, tp.observables)
-        assert np.allclose(res[0], expected, rtol=tol, atol=0)
+    def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0)
