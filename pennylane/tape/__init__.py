@@ -16,6 +16,7 @@ This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
 import contextlib
+import inspect
 from unittest import mock
 import warnings
 
