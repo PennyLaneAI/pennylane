@@ -247,7 +247,7 @@ class QNode:
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
 
-        if getattr(device, "caching", 0):
+        if getattr(device, "cache", 0):
             raise qml.QuantumFunctionError(
                 "Device caching is incompatible with the backprop diff_method"
             )

@@ -157,7 +157,7 @@ class DefaultQubitTF(DefaultQubit):
     _stack = staticmethod(tf.stack)
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic, caching=0)
+        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]

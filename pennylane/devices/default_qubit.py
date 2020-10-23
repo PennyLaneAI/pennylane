@@ -79,7 +79,7 @@ class DefaultQubit(QubitDevice):
             of samples returned by ``sample``.
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
-        caching (int): Number of device executions to store in a cache to speed up subsequent
+        cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
             executions to keep the cache up to date.
@@ -122,9 +122,9 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=1000, analytic=True, caching=0):
+    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic, caching=caching)
+        super().__init__(wires, shots, analytic, cache=cache)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
