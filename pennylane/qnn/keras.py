@@ -207,7 +207,9 @@ class KerasLayer(Layer):
         if qml.tape_mode_active():
             self._signature_validation_tape_mode(qnode, weight_shapes)
             self.qnode = qnode
-            self.qnode.to_tf(dtype=tf.float32)
+
+            dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
+            self.qnode.to_tf(dtype=dtype)
         else:
             self._signature_validation(qnode, weight_shapes)
             self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
