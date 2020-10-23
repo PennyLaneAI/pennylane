@@ -67,7 +67,7 @@ class QubitDevice(Device):
         analytic (bool): If ``True``, the device calculates probability, expectation values,
             and variances analytically. If ``False``, a finite number of samples set by
             the argument ``shots`` are used to estimate these quantities.
-        caching (int): Number of device executions to store in a cache to speed up subsequent
+        cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
             executions to keep the cache up to date.
@@ -103,7 +103,7 @@ class QubitDevice(Device):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires=1, shots=1000, analytic=True, caching=0):
+    def __init__(self, wires=1, shots=1000, analytic=True, cache=0):
         super().__init__(wires=wires, shots=shots)
 
         self.analytic = analytic
@@ -119,7 +119,7 @@ class QubitDevice(Device):
         """None or int: stores the hash of the circuit from the last execution which
         can be used by devices in :meth:`apply` for parametric compilation."""
 
-        self._caching = caching
+        self._cache = cache
         """int: Number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
@@ -174,7 +174,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        if self._caching:
+        if self._cache:
             try:  # TODO: Remove try/except when circuit is always QuantumTape
                 circuit_hash = circuit.graph.hash
             except AttributeError as e:
@@ -204,9 +204,9 @@ class QubitDevice(Device):
         else:
             results = self._asarray(results)
 
-        if self._caching and circuit_hash not in self.get_cache():
+        if self._cache and circuit_hash not in self.get_cache():
             self.add_cache_value(circuit_hash, results)
-            if len(self.get_cache()) > self._caching:
+            if len(self.get_cache()) > self._cache:
                 self.get_cache().popitem(last=False)
 
         # increment counter for number of executions of qubit device
@@ -215,10 +215,10 @@ class QubitDevice(Device):
         return results
 
     @property
-    def caching(self):
+    def cache(self):
         """int: Number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
-        return self._caching
+        return self._cache
 
     def get_cache(self):  # pylint: disable=method-hidden
         """Return the caching dictionary"""
