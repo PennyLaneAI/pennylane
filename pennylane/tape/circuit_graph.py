@@ -63,7 +63,7 @@ class TapeCircuitGraph(CircuitGraph):
         # If there are operations but depth is uncomputed, compute the truncated graph
         # with only the operations, and return the longest path + 1 (since the path is
         # expressed in terms of edges, and we want it in terms of nodes.
-        if self._depth is None and len(self.operations) > 0:
+        if self._depth is None and self.operations:
             if self._operation_graph is None:
                 self._operation_graph = self.graph.subgraph(self.operations)
                 self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
