@@ -185,7 +185,7 @@ def _get_alpha_y(a, n, k):
     # compute all numerators/denominators at once for efficiency
     for i in range(len(a)):
         j = int(math.ceil((i + 1) / 2 ** k))
-        l = (i + 1) - (2 * j_ - 1) * 2 ** (k - 1)
+        l = (i + 1) - (2 * j - 1) * 2 ** (k - 1)
         is_part_numerator = 1 <= l <= 2 ** (k - 1)
 
         if is_part_numerator:
