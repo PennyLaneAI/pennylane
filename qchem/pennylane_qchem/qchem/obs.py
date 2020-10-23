@@ -234,11 +234,8 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
         \hat{c}_\gamma \hat{c}_\delta
 
     In the latter equations the indices :math:`\alpha, \beta, \gamma, \delta` run over the
-    basis of single-particle states. If an `active space <https://en.wikipedia.org/wiki/
-    Complete_active_space>`_ (see :func:`~.active_space`) is defined,
-    :math:`\alpha, \beta, \gamma, \delta` run over the subset of active orbitals.
-    The operators :math:`\hat{c}^\dagger` and
-    :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
+    basis of single-particle states. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively.
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
     the single-particle operator :math:`\hat{t}` entering the observable. For example,
     in electronic structure calculations, this is the case for: the kinetic energy operator,
@@ -254,10 +251,12 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
       v_{\alpha\beta\gamma\delta}^{(i)}
       \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger \hat{c}_\gamma \hat{c}_\delta`.
 
-    - All second-quantized one-particle and two-particle operators contributing to the
+    - Second-quantized operators contributing to the
       many-body observable must be represented using the `FermionOperator
       <https://github.com/quantumlib/OpenFermion/blob/master/docs/
       tutorials/intro_to_openfermion.ipynb>`_ data structure as implemented in OpenFermion.
+      See the functions :func:`~.one_particle` and :func:`~.two_particle` to build the
+      FermionOperator representations of one-particle and two-particle operators.
 
     - The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
       to map the resulting fermionic Hamiltonian to the basis of Pauli matrices via the
