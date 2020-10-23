@@ -306,6 +306,9 @@ class KerasLayer(Layer):
         outputs = []
         for x in inputs:  # iterate over batch
 
+            if qml.tape_mode_active():
+                return self._evaluate_qnode_tape_mode(x)
+
             # The QNode can require some passed arguments to be positional and others to be keyword.
             # The following loops through input arguments in order and uses functools.partial to
             # bind the argument to the QNode.
@@ -323,6 +326,18 @@ class KerasLayer(Layer):
             outputs.append(qnode())
 
         return tf.stack(outputs)
+
+    def _evaluate_qnode_tape_mode(self, x):
+        """Evaluates a tape-mode QNode for a single input datapoint.
+
+        Args:
+            x (tensor): the datapoint
+
+        Returns:
+            tensor: output datapoint
+        """
+        kwargs = {**{self.input_arg: x}, **self.qnode_weights}
+        return self.qnode(**kwargs).type(x.dtype)
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
