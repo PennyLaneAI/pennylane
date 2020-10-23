@@ -133,7 +133,7 @@ class TestCaching:
             QNode(qfunc, dev, diff_method="backprop")
 
     def test_gradient_autograd(self, mocker):
-        """Test that caching works when calculating the gradient method using the autograd
+        """Test that caching works when calculating the gradient using the autograd
         interface"""
         dev = qml.device("default.qubit", wires=2, caching=10)
         qn = QNode(qfunc, dev, interface="autograd")
@@ -147,7 +147,7 @@ class TestCaching:
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_gradient_tf(self, mocker):
-        """Test that caching works when calculating the gradient method using the TF interface"""
+        """Test that caching works when calculating the gradient using the TF interface"""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2, caching=10)
@@ -170,7 +170,7 @@ class TestCaching:
 
     @pytest.mark.usefixtures("skip_if_no_torch_support")
     def test_gradient_torch(self, mocker):
-        """Test that caching works when calculating the gradient method using the Torch interface"""
+        """Test that caching works when calculating the gradient using the Torch interface"""
         import torch
 
         dev = qml.device("default.qubit", wires=2, caching=10)

@@ -120,7 +120,7 @@ class QubitDevice(Device):
         can be used by devices in :meth:`apply` for parametric compilation."""
 
         self._caching = caching
-        """float: number of device executions to store in a cache to speed up subsequent
+        """int: Number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
         self._cache_execute = OrderedDict()
@@ -216,7 +216,7 @@ class QubitDevice(Device):
 
     @property
     def caching(self):
-        """float: number of device executions to store in a cache to speed up subsequent
+        """int: Number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
         return self._caching
 
