@@ -5,23 +5,40 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion.ops import FermionOperator, QubitOperator
+
+t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
+
+v = (
+    FermionOperator("0^ 0^ 0 0", 0.25)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.5)
+)
+
+v1 = (
+    FermionOperator("0^ 0^ 0 0", 0.25)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("0^ 2^ 2 0", 0.25)
+    + FermionOperator("0^ 3^ 3 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.25)
+    + FermionOperator("2^ 0^ 0 2", 0.25)
+)
+
+v2 = (
+    FermionOperator("0^ 0^ 0 0", 0.5)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("0^ 2^ 2 0", 0.5)
+    + FermionOperator("0^ 3^ 3 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.25)
+    + FermionOperator("2^ 0^ 0 2", -0.25)
+)
 
 
 @pytest.mark.parametrize(
-    ("matrix_elements", "init_term", "mapping", "terms_exp"),
+    ("fermion_ops", "init_term", "mapping", "terms_exp"),
     [
         (
-            [
-                np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]]),
-                np.array(
-                    [
-                        [0.0, 0.0, 0.0, 0.0, 0.5],
-                        [0.0, 1.0, 1.0, 0.0, -0.5],
-                        [1.0, 0.0, 0.0, 1.0, -1.0],
-                    ]
-                ),
-            ],
+            [t, v],
             1 / 4,
             "bravyi_KITAEV",
             {
@@ -32,16 +49,7 @@ from openfermion.ops._qubit_operator import QubitOperator
             },
         ),
         (
-            [
-                np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]]),
-                np.array(
-                    [
-                        [0.0, 0.0, 0.0, 0.0, 0.5],
-                        [0.0, 1.0, 1.0, 0.0, -0.5],
-                        [1.0, 0.0, 0.0, 1.0, -1.0],
-                    ]
-                ),
-            ],
+            [t, v],
             1 / 4,
             "JORDAN_wigner",
             {
@@ -52,36 +60,14 @@ from openfermion.ops._qubit_operator import QubitOperator
             },
         ),
         (
-            [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])],
+            [t],
             1 / 2,
             "JORDAN_wigner",
             {(): (0.5 + 0j), ((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
         ),
+        ([t], 0, "JORDAN_wigner", {((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},),
         (
-            [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])],
-            0,
-            "JORDAN_wigner",
-            {((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
-        ),
-        (
-            [np.array([[0.0, 0.0, 0.2], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])],
-            1 / 2,
-            "bravyi_KITAEV",
-            {(): (0.35 + 0j), ((0, "Z"),): (-0.1 + 0j), ((0, "Z"), (1, "Z")): (0.25 + 0j),},
-        ),
-        (
-            [
-                np.array(
-                    [
-                        [0.0, 0.0, 0.0, 0.0, 0.5],
-                        [0.0, 1.0, 1.0, 0.0, -0.5],
-                        [0.0, 2.0, 2.0, 0.0, 0.5],
-                        [0.0, 3.0, 3.0, 0.0, -0.5],
-                        [1.0, 0.0, 0.0, 1.0, -0.5],
-                        [2.0, 0.0, 0.0, 2.0, 0.5],
-                    ]
-                )
-            ],
+            [v1],
             1 / 2,
             "JORDAN_wigner",
             {
@@ -96,18 +82,7 @@ from openfermion.ops._qubit_operator import QubitOperator
             },
         ),
         (
-            [
-                np.array(
-                    [
-                        [0.0, 0.0, 0.0, 0.0, 1.0],
-                        [0.0, 1.0, 1.0, 0.0, -0.5],
-                        [0.0, 2.0, 2.0, 0.0, 1.0],
-                        [0.0, 3.0, 3.0, 0.0, -0.5],
-                        [1.0, 0.0, 0.0, 1.0, -0.5],
-                        [2.0, 0.0, 0.0, 2.0, -0.5],
-                    ]
-                )
-            ],
+            [v2],
             1 / 4,
             "bravyi_KITAEV",
             {
@@ -123,7 +98,7 @@ from openfermion.ops._qubit_operator import QubitOperator
         ),
     ],
 )
-def test_observable(matrix_elements, init_term, mapping, terms_exp, custom_wires, monkeypatch):
+def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
     The parametrized inputs `terms_exp` are `.terms` attribute of the corresponding
@@ -132,7 +107,7 @@ def test_observable(matrix_elements, init_term, mapping, terms_exp, custom_wires
     """
 
     res_obs = qchem.observable(
-        matrix_elements, init_term=init_term, mapping=mapping, wires=custom_wires
+        fermion_ops, init_term=init_term, mapping=mapping, wires=custom_wires
     )
 
     qubit_op = QubitOperator()
@@ -141,34 +116,21 @@ def test_observable(matrix_elements, init_term, mapping, terms_exp, custom_wires
     assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
-msg1 = "Expected entries of matrix element tables to be of shape"
-msg2 = "Expected dimension for arrays in 'matrix_elements' is 2"
+msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"
+msg2 = "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'"
 
 
 @pytest.mark.parametrize(
-    ("matrix_elements", "msg_match"),
+    ("fermion_ops", "mapping", "msg_match"),
     [
-        ([np.array([[0.0, 0.0, 1.0, 0.5]])], msg1),
-        ([np.array([[0.0, 0.0, 1.0, 0.0, 1.0, 0.5]])], msg1),
-        ([np.array([[0.0, 0.0, 0.5]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.25]])], msg1),
-        ([np.array([[0.0, 0.0, 0.5, 3]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.25]])], msg1),
-        ([np.array([0.0, 0.0, 1.0, 0.5])], msg2),
-        ([np.array([[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 0.5]])], msg2),
+        ([FermionOperator("0^ 0", 0.5), "notFermionOperator"], "JORDAN_wigner", msg1),
+        ([FermionOperator("0^ 0", 0.5)], "no_valid_transformation", msg2),
     ],
 )
-def test_exceptions_observable(matrix_elements, msg_match):
-    """Test that the 'observable' function throws an exception if the
-    array containing the matrix elements has incorrect shapes."""
-
-    with pytest.raises(ValueError, match=msg_match):
-        qchem.observable(matrix_elements)
-
-
-def test_mapping_observable(msg_match="transformation is not available"):
-    """Test that the 'observable' function throws an exception if the
-    fermionic-to-qubit mapping is not properly defined."""
-
-    matrix_elements = [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])]
+def test_exceptions_observable(fermion_ops, mapping, msg_match):
+    """Test that the 'observable' function throws an exception if any element
+    in the list 'fermion_ops' is not a FermionOperator objector or if the
+    fermionic-to-qubit transformation is not properly defined."""
 
     with pytest.raises(TypeError, match=msg_match):
-        qchem.observable(matrix_elements, mapping="no_valid_transformation")
+        qchem.observable(fermion_ops, mapping=mapping)
