@@ -103,6 +103,7 @@ class TestKerasLayer:
             with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
                 KerasLayer(c, w, output_dim)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_no_input(self):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of KerasLayer"""
@@ -140,6 +141,7 @@ class TestKerasLayer:
         with pytest.raises(ValueError, match="Must specify a shape for every non-input parameter"):
             KerasLayer(c, w, output_dim)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_pos(self):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
@@ -151,7 +153,7 @@ class TestKerasLayer:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
-            KerasLayer(circuit, weight_shapes)
+            KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword(self, get_circuit, monkeypatch, output_dim):
@@ -175,6 +177,7 @@ class TestKerasLayer:
             with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
                 KerasLayer(c, w, output_dim)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword_tape_mode(self):
         """Test that variable number of keyword arguments works in tape mode"""
         if not qml.tape_mode_active():
@@ -194,7 +197,7 @@ class TestKerasLayer:
             "w7": 0,
         }
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="tf")
         def c(inputs, **kwargs):
             """A circuit that embeds data using the AngleEmbedding and then performs a variety of
             operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
@@ -209,11 +212,14 @@ class TestKerasLayer:
             qml.RX(kwargs["w7"], wires=4 % n_qubits)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c, w)
-        x = tf.ones(n_qubits)
+        layer = KerasLayer(c, w, output_dim=output_dim)
+        x = tf.ones((2, n_qubits))
 
-        layer_out = layer._evaluate_qnode(x)
-        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
+        layer_out = layer(x)
+        circ_weights = layer.qnode_weights.copy()
+        circ_weights["w4"] = 1.0 * circ_weights["w4"]
+        circ_weights["w6"] = 1.0 * circ_weights["w6"]
+        circuit_out = c(x[0], **circ_weights)
 
         assert np.allclose(layer_out, circuit_out)
 
@@ -262,6 +268,7 @@ class TestKerasLayer:
         ):
             KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_non_input_defaults_tape_mode(self):
         """Test that everything works when default arguments that are not the input argument are
         present in the QNode in tape mode"""
@@ -282,7 +289,7 @@ class TestKerasLayer:
             "w7": 0,
         }
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="tf")
         def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
             """A circuit that embeds data using the AngleEmbedding and then performs a variety of
             operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
@@ -297,11 +304,14 @@ class TestKerasLayer:
             qml.RX(w7, wires=4 % n_qubits)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c, w)
-        x = tf.ones(n_qubits)
+        layer = KerasLayer(c, w, output_dim=output_dim)
+        x = tf.ones((2, n_qubits))
 
-        layer_out = layer._evaluate_qnode(x)
-        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
+        layer_out = layer(x)
+        circ_weights = layer.qnode_weights.copy()
+        circ_weights["w4"] = 1.0 * circ_weights["w4"]
+        circ_weights["w6"] = 1.0 * circ_weights["w6"]
+        circuit_out = c(x[0], **circ_weights)
 
         assert np.allclose(layer_out, circuit_out)
 
@@ -460,8 +470,12 @@ class TestKerasLayer:
 
         g_layer = tape.gradient(out_layer, layer.trainable_variables)
 
+        circuit_weights = layer.trainable_variables.copy()
+        circuit_weights[3] = 1.0 * circuit_weights[3]
+        circuit_weights[5] = 1.0 * circuit_weights[5]
+
         with tf.GradientTape() as tape:
-            out_circuit = c(x[0], *layer.trainable_variables)
+            out_circuit = c(x[0], *circuit_weights)
 
         g_circuit = tape.gradient(out_circuit, layer.trainable_variables)
 

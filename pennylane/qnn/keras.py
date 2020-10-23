@@ -207,7 +207,7 @@ class KerasLayer(Layer):
         if qml.tape_mode_active():
             self._signature_validation_tape_mode(qnode, weight_shapes)
             self.qnode = qnode
-            self.qnode.to_tf(dtype=tf.keras.backend.floatx())
+            self.qnode.to_tf(dtype=tf.float32)
         else:
             self._signature_validation(qnode, weight_shapes)
             self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
@@ -307,23 +307,24 @@ class KerasLayer(Layer):
         for x in inputs:  # iterate over batch
 
             if qml.tape_mode_active():
-                return self._evaluate_qnode_tape_mode(x)
+                res = self._evaluate_qnode_tape_mode(x)
+                outputs.append(res)
+            else:
+                # The QNode can require some passed arguments to be positional and others to be
+                # keyword. The following loops through input arguments in order and uses
+                # functools.partial to bind the argument to the QNode.
+                qnode = self.qnode
 
-            # The QNode can require some passed arguments to be positional and others to be keyword.
-            # The following loops through input arguments in order and uses functools.partial to
-            # bind the argument to the QNode.
-            qnode = self.qnode
-
-            for arg in self.sig:
-                if arg is not self.input_arg:  # Non-input arguments must always be positional
-                    w = self.qnode_weights[arg]
-                    qnode = functools.partial(qnode, w)
-                else:
-                    if self.input_is_default:  # The input argument can be positional or keyword
-                        qnode = functools.partial(qnode, **{self.input_arg: x})
+                for arg in self.sig:
+                    if arg is not self.input_arg:  # Non-input arguments must always be positional
+                        w = self.qnode_weights[arg]
+                        qnode = functools.partial(qnode, w)
                     else:
-                        qnode = functools.partial(qnode, x)
-            outputs.append(qnode())
+                        if self.input_is_default:  # The input argument can be positional or keyword
+                            qnode = functools.partial(qnode, **{self.input_arg: x})
+                        else:
+                            qnode = functools.partial(qnode, x)
+                outputs.append(qnode())
 
         return tf.stack(outputs)
 
@@ -336,8 +337,8 @@ class KerasLayer(Layer):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x}, **self.qnode_weights}
-        return self.qnode(**kwargs).type(x.dtype)
+        kwargs = {**{self.input_arg: x}, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+        return self.qnode(**kwargs)
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
