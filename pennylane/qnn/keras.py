@@ -224,9 +224,9 @@ class KerasLayer(Layer):
         super().__init__(dynamic=True, **kwargs)
 
     def _signature_validation_tape_mode(self, qnode, weight_shapes):
-        self.sig = inspect.signature(qnode.func).parameters
+        sig = inspect.signature(qnode.func).parameters
 
-        if self.input_arg not in self.sig:
+        if self.input_arg not in sig:
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(
                     self.input_arg
@@ -239,13 +239,13 @@ class KerasLayer(Layer):
                 "weight_shapes".format(self.input_arg)
             )
 
-        param_kinds = [p.kind for p in self.sig.values()]
+        param_kinds = [p.kind for p in sig.values()]
 
         if inspect.Parameter.VAR_POSITIONAL in param_kinds:
             raise TypeError("Cannot have a variable number of positional arguments")
 
         if inspect.Parameter.VAR_KEYWORD not in param_kinds:
-            if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
+            if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
                 raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
     def _signature_validation(self, qnode, weight_shapes):
