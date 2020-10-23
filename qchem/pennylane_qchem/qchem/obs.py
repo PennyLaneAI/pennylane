@@ -507,7 +507,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None or not core:
+    if not core:
         t_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -521,7 +521,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         t_core = 2 * np.sum(matrix_elements[np.array(core), np.array(core)])
 
     if active is None:
-        if core is None or not core:
+        if not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
@@ -678,7 +678,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None or not core:
+    if not core:
         v_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -699,7 +699,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         )
 
     if active is None:
-        if core is None or not core:
+        if not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
