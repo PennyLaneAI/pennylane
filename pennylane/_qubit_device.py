@@ -179,8 +179,8 @@ class QubitDevice(Device):
                 circuit_hash = circuit.graph.hash
             except AttributeError as e:
                 raise ValueError("Caching is only available when using tape mode") from e
-            if circuit_hash in self.get_cache():
-                return self.get_cache()[circuit_hash]
+            if circuit_hash in self._cache_execute:
+                return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
 
@@ -204,10 +204,10 @@ class QubitDevice(Device):
         else:
             results = self._asarray(results)
 
-        if self._cache and circuit_hash not in self.get_cache():
-            self.add_cache_value(circuit_hash, results)
-            if len(self.get_cache()) > self._cache:
-                self.get_cache().popitem(last=False)
+        if self._cache and circuit_hash not in self._cache_execute:
+            self._cache_execute[circuit_hash] = results
+            if len(self._cache_execute) > self._cache:
+                self._cache_execute.popitem(last=False)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -219,14 +219,6 @@ class QubitDevice(Device):
         """int: Number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
         return self._cache
-
-    def get_cache(self):  # pylint: disable=method-hidden
-        """Return the caching dictionary"""
-        return self._cache_execute
-
-    def add_cache_value(self, circuit_hash, value):  # pylint: disable=method-hidden
-        """Set a value in the caching dictionary"""
-        self._cache_execute[circuit_hash] = value
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
