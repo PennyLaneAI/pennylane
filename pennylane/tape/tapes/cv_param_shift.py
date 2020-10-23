@@ -464,6 +464,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         # Get <A>, the expectation value of the tape with unshifted parameters.
         evA_tape = self.copy()
+        evA_tape.set_parameters(params)
 
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
