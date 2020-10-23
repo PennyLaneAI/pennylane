@@ -189,8 +189,8 @@ def _get_alpha_y(a, n, k):
         is_part_numerator = 1 <= l <= 2 ** (k - 1)
 
         if is_part_numerator:
-            numerator[j_ - 1] += a[i] * a[i]
-        denominator[j_ - 1] += a[i] * a[i]
+            numerator[j - 1] += a[i] * a[i]
+        denominator[j - 1] += a[i] * a[i]
 
     for i in range(len(alpha)):
         if denominator[i] != 0.0:
