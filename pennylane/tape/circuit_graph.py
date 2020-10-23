@@ -57,7 +57,7 @@ class TapeCircuitGraph(CircuitGraph):
     def depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""
         # If there are no operations in the circuit, the depth is 0
-        if len(self.operations) == 0:
+        if not self.operations:
             self._depth = 0
 
         # If there are operations but depth is uncomputed, compute the truncated graph
