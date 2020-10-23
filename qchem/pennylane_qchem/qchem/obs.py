@@ -205,25 +205,28 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     sz = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
 
     table = _spin2_matrix_elements(sz)
-    # To be consistent with the 'observable' function
-    table[:, 4] = 2 * table[:, 4]
 
-    return observable([table], init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
+    # create the list of ``FermionOperator`` objects
+    s2_op = FermionOperator("") * 3 / 4 * electrons
+    for i in table:
+        s2_op += FermionOperator(
+            ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
+        )
+
+    return observable([s2_op], mapping=mapping, wires=wires)
 
 
-def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None):
+def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
-    r"""Builds the many-body observable whose expectation value can be
+    r"""Builds the Fermion many-body observable whose expectation value can be
     measured in PennyLane.
 
-    This function can be used to build second-quantized operators in the basis
-    of single-particle states (e.g., HF states) and to transform them into
-    PennyLane observables. In general, the many-body observable :math:`\hat{O}` can combine
-    one-particle and two-particle operators, as in the case for electronic Hamiltonians:
+    The second-quantized operator of the Fermion many-body system can combine one-particle
+    and two-particle operators as in the case of electronic Hamiltonians :math:`\hat{H}`:
 
     .. math::
 
-        \hat{O} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} +
+        \hat{H} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} +
         \cdots + \hat{t}^{(n)} \vert \beta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta
         + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
         \langle \alpha, \beta \vert \hat{v}^{(1)} + \cdots + \hat{v}^{(n)}
@@ -236,36 +239,38 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
     the single-particle operator :math:`\hat{t}` entering the observable. For example,
     in electronic structure calculations, this is the case for: the kinetic energy operator,
-    the nuclei Coulomb potential, or any other external fields included in the model Hamiltonian.
+    the nuclei Coulomb potential, or any other external fields included in the Hamiltonian.
     On the other hand, :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
     Coulomb interaction between the electrons.
 
-    If an `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_
-    (see :func:`~.active_space`) is defined, the observable is expanded over the truncated
-    basis of active orbitals. The contribution of core orbitals can be passed to the
-    function using the keyword argument ``init_term``.
+    - The observable is built by adding the operators
+      :math:`\sum_{\alpha, \beta} t_{\alpha\beta}^{(i)}
+      \hat{c}_\alpha^\dagger \hat{c}_\beta` and
+      :math:`\frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
+      v_{\alpha\beta\gamma\delta}^{(i)}
+      \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger \hat{c}_\gamma \hat{c}_\delta`.
 
-    The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
-    to build the second-quantized operator and map it to basis of Pauli matrices via the
-    Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is
-    converted to a a PennyLane observable by the function :func:`~.convert_observable`.
+    - Second-quantized operators contributing to the
+      many-body observable must be represented using the `FermionOperator
+      <https://github.com/quantumlib/OpenFermion/blob/master/docs/
+      tutorials/intro_to_openfermion.ipynb>`_ data structure as implemented in OpenFermion.
+      See the functions :func:`~.one_particle` and :func:`~.two_particle` to build the
+      FermionOperator representations of one-particle and two-particle operators.
+
+    - The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
+      to map the resulting fermionic Hamiltonian to the basis of Pauli matrices via the
+      Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is converted
+      to a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
-        matrix_elements (list(array[float])): list containing 2D numpy arrays with the matrix
-            elements of the operators :math:`\hat{t}` and :math:`\hat{v}`.
-            For single-particle operators the :math:`i`-th array in the list will have shape
-            ``(matrix_elements[i].shape[0], 3)`` with each row containing the indices
-            :math:`\alpha`, :math:`\beta` and the matrix element
-            :math:`\langle \alpha \vert \hat{t}^{(i)}\vert \beta \rangle`.
-            For two-particle operators the :math:`j`-th array in the list
-            will have shape ``(matrix_elements[j].shape[0], 5)`` with each row containing
-            the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
-            the matrix element
-            :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
-        init_term (float): the contribution of core orbitals, if any, or other quantity
-            required to initialize the many-body observable.
-        mapping (str): specifies the fermion-to-qubit mapping. Input values can
+        fermion_ops (list[FermionOperator]): list containing the FermionOperator data structures
+            representing the one-particle and/or two-particle operators entering the many-body
+            observable
+        init_term (float): Any quantity required to initialize the many-body observable. For
+            example, this can be used to pass the nuclear-nuclear repulsion energy :math:`V_{nn}`
+            which is typically included in the electronic Hamiltonian of molecules.
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable measurable in a PennyLane ansatz.
@@ -279,14 +284,15 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
 
     **Example**
 
-    >>> t = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
-    >>> v = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
-    >>> matrix_elements = [t, v]
-    >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev"))
-    (0.15625) [I0]
-    + (-0.15625) [Z0]
-    + (0.34375) [Z0 Z1]
-    + (-0.09375) [Z1]
+    >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25)
+    >>> v = FermionOperator("1^ 0^ 0 1", -0.15) + FermionOperator("2^ 0^ 2 0", 0.3)
+    >>> print(observable([t, v], mapping="jordan_wigner"))
+    (0.2625) [I0]
+    + (-0.1375) [Z0]
+    + (-0.0875) [Z1]
+    + (-0.0375) [Z0 Z1]
+    + (0.075) [Z2]
+    + (-0.075) [Z0 Z2]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
@@ -296,34 +302,15 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
         )
 
     # Initialize the FermionOperator
-    mb_obs = FermionOperator() + FermionOperator("") * init_term
-
-    for table in matrix_elements:
-
-        if len(table.shape) != 2:
-            raise ValueError(
-                "Expected dimension for arrays in 'matrix_elements' is 2; got {}".format(
-                    table.shape
+    mb_obs = FermionOperator("") * init_term
+    for ops in fermion_ops:
+        if not isinstance(ops, FermionOperator):
+            raise TypeError(
+                "Elements in the lists are expected to be of type 'FermionOperator'; got {}".format(
+                    type(ops)
                 )
             )
-
-        if table.shape[1] not in (3, 5):
-            raise ValueError(
-                "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
-                    table.shape[1]
-                )
-            )
-
-        if table.shape[1] == 5:
-            # two-particle operator
-            for i in table:
-                mb_obs += FermionOperator(
-                    ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4] / 2
-                )
-        else:
-            # single-particle operator
-            for i in table:
-                mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+        mb_obs += ops
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
@@ -382,7 +369,11 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    return observable([table], mapping=mapping, wires=wires)
+    sz_op = FermionOperator()
+    for i in table:
+        sz_op += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+
+    return observable([sz_op], mapping=mapping, wires=wires)
 
 
 def particle_number(orbitals, mapping="jordan_wigner", wires=None):
@@ -441,11 +432,16 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T
 
-    return observable([table], mapping=mapping, wires=wires)
+    N_obs = FermionOperator()
+    for i in table:
+        N_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+
+    return observable([N_obs], mapping=mapping, wires=wires)
 
 
 def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
-    r"""Generates the table of matrix elements of a given one-particle operator
+    r"""Generates the `FermionOperator <https://github.com/quantumlib/OpenFermion/blob/master/docs/
+    tutorials/intro_to_openfermion.ipynb>`_ representing a given one-particle operator
     required to build many-body qubit observables.
 
     Second quantized one-particle operators are expanded in the basis of single-particle
@@ -472,7 +468,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
     run over the active orbitals and the contribution due to core orbitals is computed as
-    :math:`T_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}
+    :math:`t_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}
     \langle \alpha \vert \hat{t} \vert \alpha \rangle`.
 
     Args:
@@ -486,40 +482,19 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             matrix elements with absolute value less than ``cutoff`` are neglected.
 
     Returns:
-        tuple: Table of indices and matrix elements of the one-particle operator
-        and the contribution due to core orbitals. The returned table is a 2D Numpy
-        array where each row contains three elements, the *spin*-orbital indices
-        :math:`\alpha, \beta` and the matrix element
-        :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle`.
+        FermionOperator: an instance of OpenFermion's ``FermionOperator`` representing the
+        one-particle operator :math:`\hat{T}`.
 
     **Example**
 
-    >>> matrix_elements = np.array(
-    ...     [[-4.72739313e+00, -1.05499666e-01, -1.66961416e-01,
-    ...       6.18014041e-16,  2.86964662e-16, -3.46772026e-02],
-    ...      [-1.05499666e-01, -1.49264622e+00, 3.28928073e-02,
-    ...       -2.20398308e-16,  1.93277291e-16, 5.27078882e-02],
-    ...      [-1.66961416e-01,  3.28928073e-02, -1.12554473e+00,
-    ...       -2.82912389e-17,  2.55224784e-16, -3.04455743e-02],
-    ...      [ 6.18014041e-16, -2.20398308e-16, -2.82912389e-17,
-    ...       -1.13579985e+00, -1.94289029e-16, -2.36158697e-16],
-    ...      [ 2.86964662e-16,  1.93277291e-16,  2.55224784e-16,
-    ...       -2.77555756e-16, -1.13579985e+00,  2.06665432e-16],
-    ...      [-3.46772026e-02,  5.27078882e-02, -3.04455743e-02,
-    ...       -2.36158697e-16,  2.06665432e-16, -9.50966595e-01]]
-    ... )
-    >>> table, t_core = one_particle(matrix_elements, core=[0], active=[1, 2])
-    >>> print(table)
-    [[ 0.          0.         -1.49264622]
-     [ 1.          1.         -1.49264622]
-     [ 0.          2.          0.03289281]
-     [ 1.          3.          0.03289281]
-     [ 2.          0.          0.03289281]
-     [ 3.          1.          0.03289281]
-     [ 2.          2.         -1.12554473]
-     [ 3.          3.         -1.12554473]]
-    >>> print(t_core)
-    -9.45478626
+    >>> matrix_elements = np.array([[-1.27785301e+00,  0.00000000e+00],
+    ...                             [ 1.52655666e-16, -4.48299696e-01]])
+    >>> t_op = one_particle(matrix_elements)
+    >>> print(t_op)
+    -1.277853006156875 [0^ 0] +
+    -1.277853006156875 [1^ 1] +
+    -0.44829969610163756 [2^ 2] +
+    -0.44829969610163756 [3^ 3]
     """
 
     orbitals = matrix_elements.shape[0]
@@ -531,7 +506,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None:
+    if not core:
         t_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -545,7 +520,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         t_core = 2 * np.sum(matrix_elements[np.array(core), np.array(core)])
 
     if active is None:
-        if core is None:
+        if not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
@@ -568,28 +543,26 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         if all(indices[j][i] in active for j in range(len(indices)))
     ]
 
-    # Building the table of indices and matrix elements
-    table = np.zeros((2 * len(pairs), 3))
-
-    for i, pair in enumerate(pairs):
+    # Build the FermionOperator representing T
+    t_op = FermionOperator("") * t_core
+    for pair in pairs:
         alpha, beta = pair
         element = matrix_elements[alpha, beta]
 
         # spin-up term
-        table[2 * i, 0] = 2 * active.index(alpha)
-        table[2 * i, 1] = 2 * active.index(beta)
-        table[2 * i, 2] = element
+        a = 2 * active.index(alpha)
+        b = 2 * active.index(beta)
+        t_op += FermionOperator(((a, 1), (b, 0)), element)
 
         # spin-down term
-        table[2 * i + 1, 0] = 2 * active.index(alpha) + 1
-        table[2 * i + 1, 1] = 2 * active.index(beta) + 1
-        table[2 * i + 1, 2] = element
+        t_op += FermionOperator(((a + 1, 1), (b + 1, 0)), element)
 
-    return table, t_core
+    return t_op
 
 
 def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
-    r"""Generates the table of matrix elements of a given two-particle operator
+    r"""Generates the `FermionOperator <https://github.com/quantumlib/OpenFermion/blob/master/docs/
+    tutorials/intro_to_openfermion.ipynb>`_ representing a given two-particle operator
     required to build many-body qubit observables.
 
     Second quantized two-particle operators are expanded in the basis of single-particle
@@ -621,10 +594,19 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         \phi_\gamma(r_2) \phi_\delta(r_1).
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
-    run over the active orbitals and the contribution due to core orbitals, is computed as
-    :math:`V_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
-    [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle
-    - \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle ]`.
+    run over the active orbitals and the contribution due to core orbitals is computed as
+
+    .. math::
+
+        && \hat{V}_\mathrm{core} = v_\mathrm{core} +
+        \sum_{\alpha, \beta \in \mathrm{active}} \sum_{i \in \mathrm{core}}
+        (2 \langle i, \alpha \vert \hat{v} \vert \beta, i \rangle -
+        \langle i, \alpha \vert \hat{v} \vert i, \beta \rangle)~
+        [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
+        \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] \\
+        && v_\mathrm{core} = \sum_{\alpha,\beta \in \mathrm{core}}
+        [2 \langle \alpha, \beta \vert \hat{v} \vert \beta, \alpha \rangle -
+        \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle].
 
     Args:
         matrix_elements (array[float]): 4D NumPy array with the matrix elements
@@ -637,11 +619,8 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             matrix elements with absolute value less than ``cutoff`` are neglected.
 
     Returns:
-        tuple: Table with indices and matrix elements of the two-particle operator
-        and the contribution due to core orbitals. The returned table is a 2D Numpy
-        array where each row contains five elements, the *spin*-orbital indices
-        :math:`\alpha, \beta, \gamma, \delta` and the matrix element
-        :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`.
+        FermionOperator: an instance of OpenFermion's ``FermionOperator`` representing the
+        two-particle operator :math:`\hat{V}`.
 
     **Example**
 
@@ -653,14 +632,40 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ...                               [ 1.79000576e-01, -8.32667268e-17]],
     ...                              [[ 1.79000576e-16, -8.32667268e-17],
     ...                               [ 0.00000000e+00,  7.05105632e-01]]]])
-    >>> table, v_core = two_particle(matrix_elements, core=[0], active=[1])
-    >>> print(table)
-    [[0.         0.         0.         0.         0.70510563]
-     [0.         1.         1.         0.         0.70510563]
-     [1.         0.         0.         1.         0.70510563]
-     [1.         1.         1.         1.         0.70510563]]
-    >>> print(v_core)
-    0.682389533
+    >>> v_op = two_particle(matrix_elements)
+    >>> print(v_op)
+    0.3411947665760211 [0^ 0^ 0 0]
+    + 0.08950028803070323 [0^ 0^ 2 2]
+    + 0.3411947665760211 [0^ 1^ 1 0]
+    + 0.08950028803070323 [0^ 1^ 3 2]
+    + 0.08950028803070323 [0^ 2^ 0 2]
+    + 0.3353663891543792 [0^ 2^ 2 0]
+    + 0.08950028803070323 [0^ 3^ 1 2]
+    + 0.3353663891543792 [0^ 3^ 3 0]
+    + 0.3411947665760211 [1^ 0^ 0 1]
+    + 0.08950028803070323 [1^ 0^ 2 3]
+    + 0.3411947665760211 [1^ 1^ 1 1]
+    + 0.08950028803070323 [1^ 1^ 3 3]
+    + 0.08950028803070323 [1^ 2^ 0 3]
+    + 0.3353663891543792 [1^ 2^ 2 1]
+    + 0.08950028803070323 [1^ 3^ 1 3]
+    + 0.3353663891543792 [1^ 3^ 3 1]
+    + 0.3353663891543792 [2^ 0^ 0 2]
+    + 0.08950028803070323 [2^ 0^ 2 0]
+    + 0.3353663891543792 [2^ 1^ 1 2]
+    + 0.08950028803070323 [2^ 1^ 3 0]
+    + 0.08950028803070323 [2^ 2^ 0 0]
+    + 0.352552816086392 [2^ 2^ 2 2]
+    + 0.08950028803070323 [2^ 3^ 1 0]
+    + 0.352552816086392 [2^ 3^ 3 2]
+    + 0.3353663891543792 [3^ 0^ 0 3]
+    + 0.08950028803070323 [3^ 0^ 2 1]
+    + 0.3353663891543792 [3^ 1^ 1 3]
+    + 0.08950028803070323 [3^ 1^ 3 1]
+    + 0.08950028803070323 [3^ 2^ 0 1]
+    + 0.352552816086392 [3^ 2^ 2 3]
+    + 0.08950028803070323 [3^ 3^ 1 1]
+    + 0.352552816086392 [3^ 3^ 3 3]
     """
 
     orbitals = matrix_elements.shape[0]
@@ -672,7 +677,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
         )
 
-    if core is None:
+    if not core:
         v_core = 0
     else:
         if any([i > orbitals - 1 or i < 0 for i in core]):
@@ -693,7 +698,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         )
 
     if active is None:
-        if core is None:
+        if not core:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
@@ -716,42 +721,56 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         if all(indices[j][i] in active for j in range(len(indices)))
     ]
 
-    # Building the table of matrix elements
-    table = np.zeros((4 * len(quads), 5))
+    # Build the FermionOperator representing V
+    v_op = FermionOperator("") * v_core
 
-    for i, quad in enumerate(quads):
+    # add renormalized (due to core orbitals) "one-particle" operators
+    if core:
+        for alpha in active:
+            for beta in active:
+
+                element = 2 * np.sum(
+                    matrix_elements[np.array(core), alpha, beta, np.array(core)]
+                ) - np.sum(matrix_elements[np.array(core), alpha, np.array(core), beta])
+
+                # up-up term
+                a = 2 * active.index(alpha)
+                b = 2 * active.index(beta)
+                v_op += FermionOperator(((a, 1), (b, 0)), element)
+
+                # down-down term
+                v_op += FermionOperator(((a + 1, 1), (b + 1, 0)), element)
+
+    # add two-particle operators
+    for quad in quads:
         alpha, beta, gamma, delta = quad
         element = matrix_elements[alpha, beta, gamma, delta]
 
         # up-up-up-up term
-        table[4 * i, 0] = 2 * active.index(alpha)
-        table[4 * i, 1] = 2 * active.index(beta)
-        table[4 * i, 2] = 2 * active.index(gamma)
-        table[4 * i, 3] = 2 * active.index(delta)
-        table[4 * i, 4] = element
+        a = 2 * active.index(alpha)
+        b = 2 * active.index(beta)
+        g = 2 * active.index(gamma)
+        d = 2 * active.index(delta)
+        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # up-down-down-up term
-        table[4 * i + 1, 0] = 2 * active.index(alpha)
-        table[4 * i + 1, 1] = 2 * active.index(beta) + 1
-        table[4 * i + 1, 2] = 2 * active.index(gamma) + 1
-        table[4 * i + 1, 3] = 2 * active.index(delta)
-        table[4 * i + 1, 4] = element
+        b = 2 * active.index(beta) + 1
+        g = 2 * active.index(gamma) + 1
+        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # down-up-up-down term
-        table[4 * i + 2, 0] = 2 * active.index(alpha) + 1
-        table[4 * i + 2, 1] = 2 * active.index(beta)
-        table[4 * i + 2, 2] = 2 * active.index(gamma)
-        table[4 * i + 2, 3] = 2 * active.index(delta) + 1
-        table[4 * i + 2, 4] = element
+        a = 2 * active.index(alpha) + 1
+        b = 2 * active.index(beta)
+        g = 2 * active.index(gamma)
+        d = 2 * active.index(delta) + 1
+        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # down-down-down-down term
-        table[4 * i + 3, 0] = 2 * active.index(alpha) + 1
-        table[4 * i + 3, 1] = 2 * active.index(beta) + 1
-        table[4 * i + 3, 2] = 2 * active.index(gamma) + 1
-        table[4 * i + 3, 3] = 2 * active.index(delta) + 1
-        table[4 * i + 3, 4] = element
+        b = 2 * active.index(beta) + 1
+        g = 2 * active.index(gamma) + 1
+        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
-    return table, v_core
+    return v_op
 
 
 __all__ = [
