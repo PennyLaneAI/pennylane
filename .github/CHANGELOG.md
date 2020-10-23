@@ -12,8 +12,15 @@
 <h3>Improvements</h3>
 
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
-  `caching` argument to the device.
+  `cache` argument to the device.
   [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
+  
+  The `cache` argument should be an integer specifying the size of the cache. For example, a
+  cache of size 10 is created using:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, cache=10)
+  ```
 
 * The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
   [(#853)](https://github.com/PennyLaneAI/pennylane/pull/853)
