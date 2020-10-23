@@ -90,17 +90,26 @@
   - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
     argument.
 
+* Support for tape mode has improved across PennyLane. The following features now work in tape mode:
+
+  - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
 
+* The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
+  [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
+
 
 # Release 0.12.0 (current release)
 

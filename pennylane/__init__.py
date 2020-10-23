@@ -49,7 +49,7 @@ from ._version import __version__
 from .io import *
 
 import pennylane.tape  # pylint: disable=wrong-import-order
-from .tape import enable_tape, disable_tape
+from .tape import enable_tape, disable_tape, tape_mode_active
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
