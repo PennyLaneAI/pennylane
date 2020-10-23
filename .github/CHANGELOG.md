@@ -9,9 +9,9 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
-* The `QuantumTape` class now contains basic resource estimation functionality. The property
-  `tape.resources` contains a dictionary with a list of the constituent operations and the
-  number of times they were run. Similarly, `tape.depth` computes the circuit depth.
+* The `QuantumTape` class now contains basic resource estimation functionality. The method
+  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
+  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
   [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
 
 <h3>Improvements</h3>

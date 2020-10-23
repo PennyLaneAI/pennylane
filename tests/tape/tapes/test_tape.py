@@ -344,30 +344,33 @@ class TestResourceEstimation:
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        assert tape.depth == 0
-        assert len(tape.resources) == 0
+        assert tape.get_depth() == 0
+        assert len(tape.get_resources()) == 0
 
     def test_resources_tape(self, make_tape):
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        assert tape.depth == 3
+        assert tape.get_depth() == 3
 
         # Verify resource counts
-        assert len(tape.resources) == 3
-        assert tape.resources['RX'] == 2
-        assert tape.resources['Rot'] == 1
-        assert tape.resources['CNOT'] == 1
+        resources = tape.get_resources()
+        assert len(resources) == 3
+        assert resources['RX'] == 2
+        assert resources['Rot'] == 1
+        assert resources['CNOT'] == 1
 
     def test_resources_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        assert tape.depth == 3
-        assert len(tape.resources) == 3
-        assert tape.resources['RX'] == 2
-        assert tape.resources['Rot'] == 1
-        assert tape.resources['CNOT'] == 1
+        assert tape.get_depth() == 3
+
+        resources = tape.get_resources()
+        assert len(resources) == 3
+        assert resources['RX'] == 2
+        assert resources['Rot'] == 1
+        assert resources['CNOT'] == 1
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -375,12 +378,14 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        assert tape.depth == 4
-        assert len(tape.resources) == 4
-        assert tape.resources['RX'] == 2
-        assert tape.resources['Rot'] == 1
-        assert tape.resources['CNOT'] == 2
-        assert tape.resources['RZ'] == 1
+        assert tape.get_depth() == 4
+
+        resources = tape.get_resources()
+        assert len(resources) == 4
+        assert resources['RX'] == 2
+        assert resources['Rot'] == 1
+        assert resources['CNOT'] == 2
+        assert resources['RZ'] == 1
         
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""

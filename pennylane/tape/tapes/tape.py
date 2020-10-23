@@ -818,8 +818,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-    @property
-    def resources(self):
+    def get_resources(self):
         """Resource requirements of a quantum circuit.
 
         Returns:
@@ -840,7 +839,7 @@ class QuantumTape(AnnotatedQueue):
 
         Asking for the resources produces a dictionary as shown below:
 
-        >>> tape.resources
+        >>> tape.get_resources()
         {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
         """
         if self._resources is None:
@@ -854,8 +853,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._resources
 
-    @property
-    def depth(self):
+    def get_depth(self):
         """Depth of the quantum circuit.
 
         Returns:
@@ -875,11 +873,11 @@ class QuantumTape(AnnotatedQueue):
 
         The depth can be obtained like so:
 
-        >>> tape.depth
+        >>> tape.get_depth()
         4
         """
         if self._depth is None:
-            self._depth = self.graph.depth
+            self._depth = self.graph.get_depth()
 
         return self._depth
 
