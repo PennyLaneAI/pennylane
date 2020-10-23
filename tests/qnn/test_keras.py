@@ -482,6 +482,35 @@ class TestKerasLayer:
         for i in range(len(out_layer)):
             assert np.allclose(g_layer[i], g_circuit[i])
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_backprop_gradients(self, mocker):
+        """Test if KerasLayer is compatible with the backprop diff method."""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def f(inputs, weights):
+            qml.templates.AngleEmbedding(inputs, wires=range(2))
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        weight_shapes = {"weights": (3, 2, 3)}
+
+        qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+
+        inputs = tf.ones((4, 2))
+
+        with tf.GradientTape() as tape:
+            out = tf.reduce_sum(qlayer(inputs))
+
+        spy = mocker.spy(qml.tape.tapes.QubitParamShiftTape, "jacobian")
+
+        grad = tape.gradient(out, qlayer.trainable_weights)
+        assert grad is not None
+        spy.assert_not_called()
+
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))

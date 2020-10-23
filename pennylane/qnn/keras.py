@@ -209,7 +209,9 @@ class KerasLayer(Layer):
             self.qnode = qnode
 
             dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
-            self.qnode.to_tf(dtype=dtype)
+
+            if self.qnode.diff_method != "backprop":
+                self.qnode.to_tf(dtype=dtype)
         else:
             self._signature_validation(qnode, weight_shapes)
             self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
