@@ -17,6 +17,7 @@ import functools
 import inspect
 from collections.abc import Iterable
 from typing import Optional
+import pennylane as qml
 
 try:
     import tensorflow as tf
@@ -198,6 +199,54 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
+        self.weight_shapes = {
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            for weight, size in weight_shapes.items()
+        }
+
+        if qml.tape_mode_active():
+            self._signature_validation_tape_mode(qnode, weight_shapes)
+            self.qnode = qnode
+            self.qnode.to_tf(dtype=tf.keras.backend.floatx())
+        else:
+            self._signature_validation(qnode, weight_shapes)
+            self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
+
+        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
+        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+
+        self.weight_specs = weight_specs if weight_specs is not None else {}
+
+        self.qnode_weights = {}
+
+        super().__init__(dynamic=True, **kwargs)
+
+    def _signature_validation_tape_mode(self, qnode, weight_shapes):
+        self.sig = inspect.signature(qnode.func).parameters
+
+        if self.input_arg not in self.sig:
+            raise TypeError(
+                "QNode must include an argument with name {} for inputting data".format(
+                    self.input_arg
+                )
+            )
+
+        if self.input_arg in set(weight_shapes.keys()):
+            raise ValueError(
+                "{} argument should not have its dimension specified in "
+                "weight_shapes".format(self.input_arg)
+            )
+
+        param_kinds = [p.kind for p in self.sig.values()]
+
+        if inspect.Parameter.VAR_POSITIONAL in param_kinds:
+            raise TypeError("Cannot have a variable number of positional arguments")
+
+        if inspect.Parameter.VAR_KEYWORD not in param_kinds:
+            if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
+                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+
+    def _signature_validation(self, qnode, weight_shapes):
         self.sig = qnode.func.sig
 
         if self.input_arg not in self.sig:
@@ -213,38 +262,25 @@ class KerasLayer(Layer):
                 "weight_shapes".format(self.input_arg)
             )
 
-        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
-            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
-
         if qnode.func.var_pos:
             raise TypeError("Cannot have a variable number of positional arguments")
 
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
 
-        self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
-        self.weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
-            for weight, size in weight_shapes.items()
-        }
-
-        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
-        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
+            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
         defaults = {
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
         }
+
         self.input_is_default = self.input_arg in defaults
+
         if defaults - {self.input_arg} != set():
             raise TypeError(
                 "Only the argument {} is permitted to have a default".format(self.input_arg)
             )
-
-        self.weight_specs = weight_specs if weight_specs is not None else {}
-
-        self.qnode_weights = {}
-
-        super().__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
         """Initializes the QNode weights.
