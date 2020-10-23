@@ -252,12 +252,13 @@ class TestCaching:
         calls1 = len(spy.call_args_list)
         d_qfunc(0.1, 0.2)
         calls2 = len(spy.call_args_list)
-        assert calls1 == calls2
 
         d_qfunc(0.1, 0.3)
         calls3 = len(spy.call_args_list)
-        assert calls3 == 2 * calls1
 
+        assert calls1 == 5
+        assert calls2 == 5
+        assert calls3 == 10
         assert g is not None
 
     def test_non_tape_mode(self):
