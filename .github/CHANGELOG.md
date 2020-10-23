@@ -88,6 +88,11 @@
   - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
     argument.
 
+* Support for tape mode has improved across PennyLane. The following features now work in tape mode:
+
+  - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
