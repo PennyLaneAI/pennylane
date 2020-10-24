@@ -24,7 +24,6 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
-
 pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
