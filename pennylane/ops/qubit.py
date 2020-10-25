@@ -306,7 +306,7 @@ class SX(Operation):
             1-i &   1+i \\
         \end{bmatrix}.
 
-    ** Details: **
+    **Details:**
 
     * Number of wires: 1
     * Number of parameters: 0

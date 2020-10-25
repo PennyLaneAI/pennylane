@@ -268,7 +268,10 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        return .5*((1+1j) * state + (1-1j) * self._apply_x(state, axes))
+        if inverse:
+            return 0.5*((1-1j) * state + (1+1j) * self._apply_x(state, axes))
+        else:
+            return 0.5*((1+1j) * state + (1-1j) * self._apply_x(state, axes))
 
     def _apply_cnot(self, state, axes, **kwargs):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
