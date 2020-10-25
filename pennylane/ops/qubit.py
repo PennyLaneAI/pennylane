@@ -317,11 +317,10 @@ class SX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    matrix = 0.5 * np.array([[1+1j, 1-1j], [1-1j, 1+1j]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return 0.5 * np.array([[1+1j, 1-1j], [1-1j, 1+1j]])
 
     @classmethod
     def _eigvals(cls, *params):
