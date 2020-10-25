@@ -9,6 +9,17 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
+* Adds the square root X gate `SX` and its implmentation in `default.qubit`.
+
+  ```python
+  dev = qml.device("default.qubit", wires = 1)
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.SX(wires=[0])
+    return qml.expval(qml.PauliZ(wires=[0]))
+  ```
+
 <h3>Improvements</h3>
 
 * The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
@@ -106,7 +117,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
 
 
 # Release 0.12.0 (current release)
