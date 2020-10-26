@@ -259,7 +259,7 @@ class DefaultQubit(QubitDevice):
         return self._apply_phase(state, axes, TPHASE, inverse)
 
     def _apply_sx(self, state, axes, inverse=False):
-        """Apply the Square Root X gate
+        """Apply the Square Root X gate.
 
         Args:
             state (array[complex]): input state
