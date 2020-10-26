@@ -227,6 +227,8 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = set()
         self._graph = None
+        self._resources = None
+        self._depth = None
         self._output_dim = 0
 
         self.wires = qml.wires.Wires([])
@@ -371,6 +373,8 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
+        self._resources = None
+        self._depth = None
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
@@ -813,6 +817,69 @@ class QuantumTape(AnnotatedQueue):
             self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
 
         return self._graph
+
+    def get_resources(self):
+        """Resource requirements of a quantum circuit.
+
+        Returns:
+            dict[str, int]: how many times constituent operations are applied
+
+        **Example**
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.RZ(0.26, wires=1)
+                qml.CNOT(wires=[1, 0])
+                qml.Rot(1.8, -2.7, 0.2, wires=0)
+                qml.Hadamard(wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the resources produces a dictionary as shown below:
+
+        >>> tape.get_resources()
+        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+        """
+        if self._resources is None:
+            self._resources = {}
+
+            for op in self.operations:
+                if op.name not in self._resources.keys():
+                    self._resources[op.name] = 1
+                else:
+                    self._resources[op.name] += 1
+
+        return self._resources
+
+    def get_depth(self):
+        """Depth of the quantum circuit.
+
+        Returns:
+            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
+
+        **Example**
+
+        .. code-block:: python3
+
+            with QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.PauliX(wires=1)
+                qml.CRX(2.3, wires=[0, 1])
+                qml.Rot(1.2, 3.2, 0.7, wires=[1])
+                qml.CRX(-2.3, wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        The depth can be obtained like so:
+
+        >>> tape.get_depth()
+        4
+        """
+        if self._depth is None:
+            self._depth = self.graph.get_depth()
+
+        return self._depth
 
     def draw(self, charset="unicode"):
         """Draw the quantum tape as a circuit diagram.
