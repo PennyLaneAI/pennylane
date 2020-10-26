@@ -30,6 +30,7 @@ class TapeCircuitGraph(CircuitGraph):
     def __init__(self, ops, obs, wires):
         self._operations = ops
         self._observables = obs
+        self._depth = None
 
         for m in self._observables:
             if m.return_type is qml.operation.State:
@@ -37,6 +38,10 @@ class TapeCircuitGraph(CircuitGraph):
                 m._wires = wires  # pylint: disable=protected-access
 
         super().__init__(ops + obs, variable_deps={}, wires=wires)
+
+        # For computing depth; want only a graph with the operations, not
+        # including the observables
+        self._operation_graph = None
 
     @property
     def operations(self):
@@ -47,6 +52,22 @@ class TapeCircuitGraph(CircuitGraph):
     def observables(self):
         """Observables in the circuit."""
         return self._observables
+
+    def get_depth(self):
+        """Depth of the quantum circuit (longest path in the DAG)."""
+        # If there are no operations in the circuit, the depth is 0
+        if not self.operations:
+            self._depth = 0
+
+        # If there are operations but depth is uncomputed, compute the truncated graph
+        # with only the operations, and return the longest path + 1 (since the path is
+        # expressed in terms of edges, and we want it in terms of nodes).
+        if self._depth is None and self.operations:
+            if self._operation_graph is None:
+                self._operation_graph = self.graph.subgraph(self.operations)
+                self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
+
+        return self._depth
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
