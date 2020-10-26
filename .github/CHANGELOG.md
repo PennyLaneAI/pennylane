@@ -17,8 +17,8 @@
 
   @qml.qnode(dev)
   def circuit():
-    qml.SX(wires=[0])
-    return qml.expval(qml.PauliZ(wires=[0]))
+      qml.SX(wires=[0])
+      return qml.expval(qml.PauliZ(wires=[0]))
   ```
 
 <h3>Improvements</h3>
