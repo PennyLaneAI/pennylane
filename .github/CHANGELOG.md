@@ -9,7 +9,8 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
-* Adds the square root X gate `SX` and its implmentation in `default.qubit`.
+* Adds the square root X gate `SX`.
+  [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
   dev = qml.device("default.qubit", wires = 1)
