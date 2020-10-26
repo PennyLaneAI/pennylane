@@ -420,6 +420,28 @@ class TestOperations:
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_sx_decomposition(self, tol):
+        """Tests that the decomposition of the SX gate is correct"""
+        op = qml.SX(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 4
+
+        assert all([res[i].wires == Wires([0]) for i in range(4)])
+
+        assert res[0].name == "RZ"
+        assert res[1].name == "RY"
+        assert res[2].name == "RZ"
+        assert res[3].name == "PhaseShift"
+
+        assert res[0].data[0] == np.pi / 2
+        assert res[1].data[0] == np.pi / 2
+        assert res[2].data[0] == -np.pi
+        assert res[3].data[0] == np.pi / 2
+
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
         op = qml.Hadamard(wires=0)
