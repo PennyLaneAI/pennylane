@@ -21,6 +21,12 @@
       return qml.expval(qml.PauliZ(wires=[0]))
   ```
 
+* The `QuantumTape` class now contains basic resource estimation functionality. The method
+  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
+  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
+  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+
+
 <h3>Improvements</h3>
 
 * The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
