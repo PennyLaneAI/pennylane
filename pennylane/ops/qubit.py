@@ -299,7 +299,7 @@ class T(DiagonalOperation):
 
 class SX(Operation):
     r"""SX(wires)
-    The single-qubit Square-Root X operator
+    The single-qubit Square-Root X operator.
 
     .. math:: SX = \sqrt{X} = \frac{1}{2} \begin{bmatrix}
             1+i &   1-i \\
