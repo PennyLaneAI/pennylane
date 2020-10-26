@@ -31,7 +31,7 @@ try:
     if int(v[0]) != 0 and int(v[1]) < 3:
         raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 except ImportError as e:
-    raise ImportError("default.tensor device requires TensorNetwork>=0.3")
+    raise ImportError("default.tensor device requires TensorNetwork>=0.3") from e
 
 
 # tolerance for numerical errors
@@ -99,8 +99,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.12"
-    version = "0.12.0"
+    pennylane_requires = "0.13"
+    version = "0.13.0"
     author = "Xanadu Inc."
 
     _operation_map = {

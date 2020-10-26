@@ -17,14 +17,10 @@ Contains the map function, for mapping templates over observables and devices.
 # pylint: disable=too-many-arguments
 from collections.abc import Sequence
 
-from pennylane.qnodes import QNode
-from pennylane.measure import expval, var, sample
+import pennylane as qml
 from pennylane.operation import Observable
 
 from .qnode_collection import QNodeCollection
-
-
-MEASURE_MAP = {"expval": expval, "var": var, "sample": sample}
 
 
 def map(
@@ -104,6 +100,9 @@ def map(
     >>> qnodes(params)
     array([-0.06154835  0.99280864])
     """
+    # TODO: return measure_map to a module variable when tape-mode is default
+    measure_map = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
+
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
 
@@ -135,9 +134,9 @@ def map(
             params, _obs=obs, _m=m, _wires=wires, **circuit_kwargs
         ):  # pylint: disable=dangerous-default-value, function-redefined
             template(params, wires=_wires, **circuit_kwargs)
-            return MEASURE_MAP[_m](_obs)
+            return measure_map[_m](_obs)
 
-        qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
+        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
         qnodes.append(qnode)
 
     return qnodes

@@ -60,6 +60,9 @@ jobs:
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -76,6 +79,7 @@ jobs:
           # - {device: "default.qubit", analytic: false, shots: 1000}
           # - {device: "default.qubit.tf", analytic: true, shots: 1000}
           - {device: "default.qubit.autograd", analytic: true, shots: 1000}
+          - {device: "default.mixed", analytic: true, shots: 1000}
 
     steps:
       - name: Cancel Previous Runs
@@ -117,6 +121,9 @@ jobs:
             --analytic=${{ matrix.config.analytic }} \
             --shots=${{ matrix.config.shots }} \
             --cov=pennylane $COVERAGE_FLAGS
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

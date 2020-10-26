@@ -59,11 +59,11 @@ def operation_expand(self):
     * If a decomposition is not available, it simply returns itself.
 
     Returns:
-        .QuantumTape: Returns a quantum tape that contains the
+        .JacobianTape: Returns a quantum tape that contains the
         operations decomposition, or if not implemented, simply
         the operation itself.
     """
-    tape = qml.tape.QuantumTape()
+    tape = qml.tape.JacobianTape()
 
     with tape:
         self.decomposition(*self.data, wires=self.wires)

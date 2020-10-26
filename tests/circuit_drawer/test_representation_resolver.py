@@ -74,7 +74,7 @@ class TestRepresentationResolver:
         assert RepresentationResolver.index_of_array_or_append(element, list) == index
         assert list == list_after
 
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
+    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
     def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
         """Test that single parameters are properly resolved."""
         assert unicode_representation_resolver.single_parameter_representation(par) == expected
@@ -95,7 +95,7 @@ class TestRepresentationResolver:
             unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
         )
 
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
+    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
     def test_single_parameter_representation_varnames(
         self, unicode_representation_resolver_varnames, par, expected
     ):

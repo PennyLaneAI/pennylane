@@ -17,6 +17,8 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -76,6 +78,14 @@ class MeasurementProcess:
         # Queue the measurement process
         self.queue()
 
+    def __copy__(self):
+        cls = self.__class__
+
+        if self.obs is not None:
+            return cls(self.return_type, obs=copy.copy(self.obs))
+
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+
     @property
     def wires(self):
         r"""The wires the measurement process acts on."""
@@ -117,7 +127,7 @@ class MeasurementProcess:
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumTape: a quantum tape containing the operations
+            .JacobianTape: a quantum tape containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -148,9 +158,9 @@ class MeasurementProcess:
         if self.obs is None:
             raise NotImplementedError("Cannot expand a measurement process with no observable.")
 
-        from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel
+        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
-        with QuantumTape() as tape:
+        with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
             MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
 
@@ -159,7 +169,12 @@ class MeasurementProcess:
     def queue(self):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            try:
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            except ValueError:
+                self.obs.queue()
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+
             qml.tape.QueuingContext.append(self, owns=self.obs)
         else:
             qml.tape.QueuingContext.append(self)
@@ -239,6 +254,11 @@ def sample(op):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
 
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
     **Example:**
 
     .. code-block:: python3
@@ -276,7 +296,9 @@ def probs(wires):
 
     This measurement function accepts no observables, and instead
     instructs the QNode to return a flat array containing the
-    probabilities of each quantum state.
+    probabilities :math:`|\langle i | \psi \rangle |^2` of measuring
+    the computational basis state :math:`| i \rangle` given the current
+    state :math:`| \psi \rangle`.
 
     Marginal probabilities may also be requested by restricting
     the wires to a subset of the full system; the size of the

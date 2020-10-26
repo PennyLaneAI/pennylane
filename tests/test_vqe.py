@@ -487,6 +487,7 @@ class TestHamiltonian:
             H -= A
 
 
+@pytest.mark.usefixtures("tape_mode")
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
@@ -582,24 +583,24 @@ class TestVQE:
             assert qnode.order == 2
 
 
+@pytest.mark.usefixtures("tape_mode")
 class TestAutogradInterface:
     """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device, interface):
         """Test that QNodes have the Autograd interface"""
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev, interface=interface)
 
         assert all(c.interface == "autograd" for c in circuits)
-        assert all(c.__class__.__name__ == "AutogradQNode" for c in circuits)
 
         res = [c(params) for c in circuits]
-        assert all(isinstance(val, float) for val in res)
+        assert all(isinstance(val, (np.ndarray, float)) for val in res)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_gradient(self, tol, interface):
         """Test differentiation works"""
         dev = qml.device("default.qubit", wires=1)
@@ -627,6 +628,7 @@ class TestAutogradInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchInterface:
     """Tests for the PyTorch interface"""
@@ -672,6 +674,7 @@ class TestTorchInterface:
 
 
 
+@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFInterface:
     """Tests for the TF interface"""
@@ -718,6 +721,7 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestMultipleInterfaceIntegration:
@@ -755,7 +759,7 @@ class TestMultipleInterfaceIntegration:
         # NumPy interface
         params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.VQECost(ansatz, H, dev, interface="numpy")
+        cost = qml.VQECost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 

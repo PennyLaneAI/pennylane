@@ -72,6 +72,7 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
+        self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -154,6 +155,16 @@ class Device(abc.ABC):
         the wire labels used on this device"""
         return self._wire_map
 
+    @property
+    def num_executions(self):
+        """Number of times this device is executed by the evaluation of QNodes
+        running on this device
+
+        Returns:
+            int: number of executions
+        """
+        return self._num_executions
+
     @shots.setter
     def shots(self, shots):
         """Changes the number of shots.
@@ -208,12 +219,12 @@ class Device(abc.ABC):
         """
         try:
             mapped_wires = wires.map(self.wire_map)
-        except WireError:
+        except WireError as e:
             raise WireError(
                 "Did not find some of the wires {} on device with wires {}.".format(
                     wires, self.wires
                 )
-            )
+            ) from e
 
         return mapped_wires
 
@@ -313,6 +324,9 @@ class Device(abc.ABC):
             self._obs_queue = None
             self._parameters = None
 
+            # increment counter for number of executions of device
+            self._num_executions += 1
+
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
@@ -321,6 +335,32 @@ class Device(abc.ABC):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
+
+    def batch_execute(self, circuits):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit.operations, circuit.observables)
+            results.append(res)
+
+        return results
 
     @property
     def op_queue(self):

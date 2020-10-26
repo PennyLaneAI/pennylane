@@ -150,6 +150,31 @@ class TestApply:
         assert isinstance(res, tf.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_full_subsystem_statevector(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(tf.reshape(dev._state, [-1]) == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem_statevector(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = tf.reshape(tf.reduce_sum(dev._state, axis=(1,)), [-1])
+
+        assert np.all(res == state)
+        spy.assert_called()
+
     def test_invalid_qubit_state_vector_size(self):
         """Test that an exception is raised if the state
         vector is the wrong size"""
@@ -319,6 +344,48 @@ class TestApply:
         res = dev.state
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_apply_ops_not_supported(self, mocker, monkeypatch):
+        """Test that when a version of TensorFlow before 2.3.0 is used, the _apply_ops dictionary is
+        empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
+        with monkeypatch.context() as m:
+            m.setattr("pennylane.devices.default_qubit_tf.SUPPORTS_APPLY_OPS", False)
+            dev = DefaultQubitTF(wires=3)
+            assert dev._apply_ops == {}
+
+            spy = mocker.spy(DefaultQubitTF, "_apply_unitary_einsum")
+
+            queue = [qml.CNOT(wires=[1, 2])]
+            dev.apply(queue)
+
+            spy.assert_called_once()
+
+    def test_apply_ops_above_8_wires(self, mocker):
+        """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
+        CNOT gate is performed using _apply_unitary_einsum"""
+        dev = DefaultQubitTF(wires=9)
+        assert dev._apply_ops == {}
+
+        spy = mocker.spy(DefaultQubitTF, "_apply_unitary_einsum")
+
+        queue = [qml.CNOT(wires=[1, 2])]
+        dev.apply(queue)
+
+        spy.assert_called_once()
+
+    @pytest.mark.xfail(
+        raises=tf.errors.UnimplementedError,
+        reason="Slicing is not supported for more than 8 wires",
+        strict=True,
+    )
+    def test_apply_ops_above_8_wires_using_special(self):
+        """Test that special apply methods that involve slicing function correctly when using 9
+        wires"""
+        dev = DefaultQubitTF(wires=9)
+        dev._apply_ops = {"CNOT": dev._apply_cnot}
+
+        queue = [qml.CNOT(wires=[1, 2])]
+        dev.apply(queue)
 
 
 THETA = np.linspace(0.11, 1, 3)

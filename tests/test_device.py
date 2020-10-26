@@ -16,9 +16,11 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
 import pytest
+import numpy as np
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.qnodes import QuantumFunctionError
+from pennylane.qnodes import QuantumFunctionError 
+from pennylane.qnodes.base import BaseQNode
 from pennylane.wires import Wires
 from collections import OrderedDict
 
@@ -424,6 +426,31 @@ class TestInternalFunctions:
                                 (Wires(-1), Wires(2)), (Wires(3), Wires(3))])
         assert dev.wire_map == expected
 
+    def test_execution_property(self, mock_device):
+        """Tests that the number of executions is initialised correctly"""
+        dev = mock_device()
+        expected = 0
+        assert dev.num_executions == expected
+
+    def test_device_executions(self):
+        """Test the number of times a device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        # test default Gaussian device
+        dev_gauss = qml.device("default.gaussian", wires=1)
+
+        def circuit_gauss(mag_alpha, phase_alpha, phi):
+            qml.Displacement(mag_alpha, phase_alpha, wires=0)
+            qml.Rotation(phi, wires=0)
+            return qml.expval(qml.NumberOperator(0))
+
+        node_gauss = BaseQNode(circuit_gauss, dev_gauss)
+        num_evals_gauss = 12
+
+        for i in range(num_evals_gauss):
+            node_gauss(0.015, 0.02, 0.005)
+        assert dev_gauss.num_executions == num_evals_gauss
+
 
 class TestClassmethods:
     """Test the classmethods of Device"""
@@ -694,3 +721,63 @@ class TestDeviceInit:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit", wires=0)
+
+
+class TestBatchExecution:
+    """Tests for the batch_execute method."""
+
+    with qml.tape.QuantumTape() as tape1:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+    with qml.tape.JacobianTape() as tape2:
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0))
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
+        """Tests that the device's execute method is called the correct number of times."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+        spy = mocker.spy(Device, "execute")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_reset(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
+        """Tests that the device's reset method is called the correct number of times."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+        spy = mocker.spy(Device, "reset")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_result(self, n_tapes, mock_device_with_paulis_and_methods, tol):
+        """Tests that the result has the correct shape and entry types."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+        tapes = [self.tape1, self.tape2]
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0)
+
+    def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0)

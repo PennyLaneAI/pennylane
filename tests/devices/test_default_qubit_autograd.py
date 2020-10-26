@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 
 
 class TestQNodeIntegration:
@@ -368,3 +369,47 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(cost)(weights)[0]
         assert grad.shape == weights.shape
+
+class TestOps:
+    """Unit tests for operations supported by the default.qubit.autograd device"""
+
+    def test_multirz_jacobian(self):
+        """Test that the patched numpy functions are used for the MultiRZ
+        operation and the jacobian can be computed."""
+        wires = 4
+        dev = qml.device('default.qubit.autograd', wires=wires)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0,1])
+            return qml.probs(wires = list(range(wires)))
+
+        param = 0.3
+        res = qml.jacobian(circuit)(param)
+        assert np.allclose(res, np.zeros(wires **2))
+
+    def test_full_subsystem(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubitAutograd(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(dev._state.flatten() == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+
+        dev = DefaultQubitAutograd(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 1, 0]) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = np.sum(dev._state, axis=(1,)).flatten()
+
+        assert np.all(res == state)
+        spy.assert_called()

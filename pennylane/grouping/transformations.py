@@ -32,20 +32,18 @@ import numpy as np
 def qwc_rotation(pauli_operators):
     """Performs circuit implementation of diagonalizing unitary for a Pauli word.
 
-
-    **Usage example:**
-
-    >>> pauli_operators = [qml.PauliX('a'), qml.PauliY('b'), qml.PauliZ('c')]
-    >>> qwc_rotation(pauli_operators)
-    [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
-
     Args:
         pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): Single-qubit Pauli
             operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
-        TypeError: if any elements of `pauli_operators` are not instances of qml.PauliX, qml.PauliY,
-            qml.PauliZ, or qml.Identity
+        TypeError: if any elements of ``pauli_operators`` are not instances of
+            :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, or :class:`~.Identity`
 
+    **Example**
+
+    >>> pauli_operators = [qml.PauliX('a'), qml.PauliY('b'), qml.PauliZ('c')]
+    >>> qwc_rotation(pauli_operators)
+    [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
     """
     paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
@@ -65,11 +63,6 @@ def qwc_rotation(pauli_operators):
 def diagonalize_pauli_word(pauli_word):
     """Transforms the Pauli word to diagonal form in the computational basis.
 
-    **Usage example:**
-
-    >>> diagonalize_pauli_word(PauliX('a') @ PauliY('b') @ PauliZ('c'))
-    Tensor(PauliZ(wires=['a']), PauliZ(wires=['b']), PauliZ(wires=['c']))
-
     Args:
         pauli_word (Observable): the Pauli word to diagonalize in computational basis
 
@@ -77,9 +70,13 @@ def diagonalize_pauli_word(pauli_word):
         Observable: the Pauli word diagonalized in the computational basis
 
     Raises:
-        TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or `Tensor`
-        instances thereof
+        TypeError: if the input is not a Pauli word, i.e., a Pauli operator,
+            :class:`~.Identity`, or :class:`~.Tensor` instances thereof
 
+    **Example**
+
+    >>> diagonalize_pauli_word(PauliX('a') @ PauliY('b') @ PauliZ('c'))
+    Tensor(PauliZ(wires=['a']), PauliZ(wires=['b']), PauliZ(wires=['c']))
     """
 
     if not is_pauli_word(pauli_word):
@@ -107,33 +104,34 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
-def diagonalize_qwc_grouping(qwc_grouping):
+def diagonalize_qwc_pauli_words(qwc_grouping):
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
-
-    **Usage example:**
-
-    >>> qwc_group = [qml.PauliX(0) @ qml.PauliZ(1),
-                     qml.PauliX(0) @ qml.PauliY(3),
-                     qml.PauliZ(1) @ qml.PauliY(3)]
-    >>> diagonalize_qwc_grouping(qwc_group)
-    ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
-     [Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
-     Tensor(PauliZ(wires=[0]), PauliZ(wires=[3])),
-     Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))])
 
     Args:
         qwc_grouping (list[Observable]): a list of observables containing mutually
             qubit-wise commutative Pauli words
 
     Returns:
-        unitary (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
-            qubit-wise commuting grouping
-        diag_terms (list[Observable]): list of Pauli string observables diagonal in the
-            computational basis
+        tuple:
+
+            * list[Operation]: an instance of the qwc_rotation template which
+              diagonalizes the qubit-wise commuting grouping
+            * list[Observable]: list of Pauli string observables diagonal in
+              the computational basis
 
     Raises:
         ValueError: if any 2 elements in the input QWC grouping are not qubit-wise commutative
 
+    **Example**
+
+    >>> qwc_group = [qml.PauliX(0) @ qml.PauliZ(1),
+                     qml.PauliX(0) @ qml.PauliY(3),
+                     qml.PauliZ(1) @ qml.PauliY(3)]
+    >>> diagonalize_qwc_pauli_words(qwc_group)
+    ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
+     [Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
+     Tensor(PauliZ(wires=[0]), PauliZ(wires=[3])),
+     Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))])
     """
     m_paulis = len(qwc_grouping)
     all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
@@ -182,10 +180,23 @@ def diagonalize_qwc_grouping(qwc_grouping):
     return unitary, diag_terms
 
 
-def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
+def diagonalize_qwc_groupings(qwc_groupings):
     """Diagonalizes a list of qubit-wise commutative groupings of Pauli strings.
 
-    **Usage example:**
+    Args:
+        qwc_groupings (list[list[Observable]]): a list of mutually qubit-wise commutative groupings
+            of Pauli string observables
+
+    Returns:
+        tuple:
+
+            * list[list[Operation]]: a list of instances of the qwc_rotation
+              template which diagonalizes the qubit-wise commuting grouping,
+              order corresponding to qwc_groupings
+            * list[list[Observable]]: a list of QWC groupings diagonalized in the
+              computational basis, order corresponding to qwc_groupings
+
+    **Example**
 
     >>> qwc_group_1 = [qml.PauliX(0) @ qml.PauliZ(1),
                        qml.PauliX(0) @ qml.PauliY(3),
@@ -193,7 +204,7 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
     >>> qwc_group_2 = [qml.PauliY(0),
                        qml.PauliY(0) @ qml.PauliX(2),
                        qml.PauliX(1) @ qml.PauliZ(3)]
-    >>> obtain_qwc_post_rotations_and_diagonalized_groupings([qwc_group_1, qwc_group_2])
+    >>> diagonalize_qwc_groupings([qwc_group_1, qwc_group_2])
     ([[RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
      [RX(1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[2]),
      RY(-1.5707963267948966, wires=[1])]],
@@ -201,18 +212,6 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
        Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))], [Tensor(PauliZ(wires=[0])),
        Tensor(PauliZ(wires=[0]), PauliZ(wires=[2])), Tensor(PauliZ(wires=[1]),
        PauliZ(wires=[3]))]])
-
-    Args:
-        qwc_groupings (list[list[Observable]]): a list of mutually qubit-wise commutative groupings
-            of Pauli string observables
-
-    Returns:
-        post_rotations (list[list[Operation]]): a list of instances of the qwc_rotation template
-            which diagonalizes the qubit-wise commuting grouping, order corresponding to
-            qwc_groupings
-        diag_groupings (list[list[Observable]]): a list of QWC groupings diagonalized in the
-            computational basis, order corresponding to qwc_groupings
-
     """
 
     post_rotations = []
@@ -221,7 +220,7 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
 
     for i in range(m_groupings):
 
-        diagonalizing_unitary, diag_grouping = diagonalize_qwc_grouping(qwc_groupings[i])
+        diagonalizing_unitary, diag_grouping = diagonalize_qwc_pauli_words(qwc_groupings[i])
         post_rotations.append(diagonalizing_unitary)
         diag_groupings.append(diag_grouping)
 

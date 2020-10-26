@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
+from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
 from pennylane.tape.measure import MeasurementProcess
 
 
@@ -49,7 +49,7 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
         tape_class, interface, method = QNode._validate_device_method(dev, "interface")
 
-        assert tape_class is QuantumTape
+        assert tape_class is JacobianTape
         assert method == "device"
         assert interface == "interface"
 
@@ -81,7 +81,7 @@ class TestValidation:
 
         tape_class, interface, method = QNode._validate_backprop_method(dev, test_interface)
 
-        assert tape_class is QuantumTape
+        assert tape_class is JacobianTape
         assert method == "backprop"
         assert interface == None
 
@@ -124,11 +124,11 @@ class TestValidation:
 
         # backprop is given priority
         res = QNode.get_best_method(dev, "some_interface")
-        assert res == (QuantumTape, None, "backprop")
+        assert res == (JacobianTape, None, "backprop")
 
         # device is the next priority
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QuantumTape, "another_interface", "device")
+        assert res == (JacobianTape, "another_interface", "device")
 
         # The next fallback is parameter-shift.
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
@@ -143,7 +143,7 @@ class TestValidation:
 
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QuantumTape, "another_interface", "numeric")
+        assert res == (JacobianTape, "another_interface", "numeric")
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff-method correctly returns the right
@@ -177,7 +177,7 @@ class TestValidation:
         mock_device.assert_called_once()
 
         qn = QNode(None, dev, diff_method="finite-diff")
-        assert qn._tape == QuantumTape
+        assert qn._tape == JacobianTape
         assert qn.diff_options["method"] == "numeric"
 
         qn = QNode(None, dev, diff_method="parameter-shift")
@@ -217,7 +217,7 @@ class TestTapeConstruction:
 
         res = qn(x, y)
 
-        assert isinstance(qn.qtape, QuantumTape)
+        assert isinstance(qn.qtape, JacobianTape)
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
@@ -324,7 +324,84 @@ class TestTapeConstruction:
         assert qn.qtape.operations == [op1, op2, op3]
         assert qn.qtape.measurements == [m1, m2]
 
+    def test_drawing(self):
+        """Test circuit drawing"""
+        from pennylane import numpy as anp
 
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw()
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+        assert result == expected
+
+    def test_drawing_ascii(self):
+        """Test circuit drawing when using ASCII characters"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw(charset="ascii")
+        expected = """\
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
+"""
+
+        assert result == expected
+    def test_drawing_exception(self):
+        """Test that an error is raised if a QNode is drawn prior to
+        construction."""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
+            circuit.draw()
+
+            
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
@@ -349,14 +426,41 @@ class TestTFInterface:
         ):
             qn(0.1, 0.1)
 
+    def test_drawing(self):
+        """Test circuit drawing when using the TF interface"""
+        tf = pytest.importorskip("tensorflow", minversion="2.1")
+
+        x = tf.Variable(0.1, dtype=tf.float64)
+        y = tf.Variable([0.2, 0.3], dtype=tf.float64)
+        z = tf.Variable(0.4, dtype=tf.float64)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="tf")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.state()
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw()
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
+ 1: ──RY(0.06)───────────╰X──╰┤ State 
+"""
+
+        assert result == expected
+
 
 class TestTorchInterface:
     """Unittests for applying the torch interface"""
 
-    torch = pytest.importorskip("torch", minversion="1.3")
-
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
+        torch = pytest.importorskip("torch", minversion="1.3")
         mock = mocker.patch("pennylane.tape.interfaces.torch.TorchInterface.apply")
         mock.side_effect = ImportError()
 
@@ -374,6 +478,34 @@ class TestTorchInterface:
             match="PyTorch not found. Please install the latest version of PyTorch to enable the 'torch' interface",
         ):
             qn(0.1, 0.1)
+
+    def test_drawing(self):
+        """Test circuit drawing when using the torch interface"""
+        torch = pytest.importorskip("torch", minversion="1.3")
+
+        x = torch.tensor(0.1, requires_grad=True)
+        y = torch.tensor([0.2, 0.3], requires_grad=True)
+        z = torch.tensor(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="torch")
+        def circuit(p1, p2=y, **kwargs):
+          qml.RX(p1, wires=0)
+          qml.RY(p2[0] * p2[1], wires=1)
+          qml.RX(kwargs["p3"], wires=0)
+          qml.CNOT(wires=[0, 1])
+          return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw()
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
+ 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
+"""
+
+        assert result == expected
 
 
 class TestDecorator:
@@ -399,7 +531,7 @@ class TestDecorator:
 
         res = func(x, y)
 
-        assert isinstance(func.qtape, QuantumTape)
+        assert isinstance(func.qtape, JacobianTape)
         assert len(func.qtape.operations) == 3
         assert len(func.qtape.observables) == 1
         assert func.qtape.num_params == 2

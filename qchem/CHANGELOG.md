@@ -1,16 +1,51 @@
+# Release 0.13.0
+
+<h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+* Many-body observables are now built from the FermionOperator representation of
+  one-particle and two-particle second-quantized operators.
+  [(#854)](https://github.com/PennyLaneAI/pennylane/pull/854)
+
+  This improvement brings the following advantages:
+
+  - Extra tables to store the indices of the orbitals and the corresponding 
+    matrix elements are not needed.
+
+  - The functions ``observable``, ``one_particle`` and ``two_particle`` are
+    significantly simplified.
+
+  - The methodology to build many-body observables in PL-QChem is more consistent.
+
+  - Users do not need to keep track of the contribution due to core orbitals
+    when an active space is defined. This is now handle internally.
+
+  - It makes the implementation of observables cleaner and easier to maintain. 
+
+<h3>Breaking changes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
 # Release 0.12.0
 
 <h3>New features since last release</h3>
 
-* The functions ``one_particle`` and ``two_particle`` have been implemented
+* The functions `one_particle` and `two_particle` have been implemented
   to extend PennyLane-QChem capabilities to construct observables of many-body
   quantum systems. These functions can be used in conjunction with the
-  ``observable`` function to construct electronic structure hamiltonians
+  `observable` function to construct electronic structure hamiltonians
   involving one- and two-particle operators.
   [(#809)](https://github.com/PennyLaneAI/pennylane/pull/809)
 
-* The function ``observable`` in the ``obs`` module has been generalized to build
-  many-body observables combining one- and two-particle operators (e.g. Hamiltonians)
+* The function `observable` in the `obs` module has been generalized to build
+  many-body observables combining one- and two-particle operators (e.g., Hamiltonians)
   [(#791)](https://github.com/PennyLaneAI/pennylane/pull/791)
 
 <h3>Improvements</h3>
@@ -23,11 +58,11 @@
   function two_particle.
   [(#825)](https://github.com/PennyLaneAI/pennylane/pull/825)
 
-<h3>Documentation</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Thomas Bromley, Alain Delgado, Josh Izaac, Soran Jahangiri.
 
 # Release 0.11.0
 
