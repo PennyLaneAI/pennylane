@@ -164,11 +164,23 @@ def tear_down_hermitian():
     qml.Hermitian._eigs = {}
 
 
-@pytest.fixture(params=[True, False])
-def tape_mode(request):
+@pytest.fixture(params=[False, True])
+def tape_mode(request, mocker):
     """Tests using this fixture will be run twice, once in tape mode and once without."""
+
     if request.param:
+        # Several attributes and methods on the old QNode have a new location on the new QNode/tape.
+        # Here, we dynamically mock so that the tests do not have to be modified to support both
+        # tape and non-tape mode. Once tape mode is default, we can make the equivalent
+        # changes directly in the tests.
+        mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
+        mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
+        mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.jacobian", lambda self: self.qtape.jacobian, create=True)
+
         qml.enable_tape()
+
     yield
+
     if request.param:
         qml.disable_tape()
