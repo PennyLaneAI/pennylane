@@ -13,7 +13,7 @@
   [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
-  dev = qml.device("default.qubit", wires = 1)
+  dev = qml.device("default.qubit", wires=1)
 
   @qml.qnode(dev)
   def circuit():
