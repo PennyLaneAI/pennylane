@@ -329,10 +329,10 @@ class SX(Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi / 2, wires=wires),
-            RZ(-np.pi, wires=wires),
-            RY(np.pi / 2, wires=wires),
             RZ(np.pi / 2, wires=wires),
+            RY(np.pi / 2, wires=wires),
+            RZ(-np.pi, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
