@@ -16,6 +16,33 @@
 
 <h3>Improvements</h3>
 
+* The `qnn.KerasLayer` class now supports differentiating the QNode through classical
+  backpropagation in tape mode.
+  [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
+  
+  ```python
+  qml.enable_tape()
+
+  dev = qml.device("default.qubit.tf", wires=2)
+
+  @qml.qnode(dev, interface="tf", diff_method="backprop")
+  def f(inputs, weights):
+      qml.templates.AngleEmbedding(inputs, wires=range(2))
+      qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+      return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+  weight_shapes = {"weights": (3, 2, 3)}
+
+  qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+
+  inputs = tf.constant(np.random.random((4, 2)), dtype=tf.float32)
+
+  with tf.GradientTape() as tape:
+      out = qlayer(inputs)
+
+  tape.jacobian(out, qlayer.trainable_weights)
+  ```
+
 * The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
   [(#853)](https://github.com/PennyLaneAI/pennylane/pull/853)
 

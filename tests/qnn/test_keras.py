@@ -160,7 +160,9 @@ class TestKerasLayer:
         """Test if a TypeError is raised when instantiated with a variable number of keyword
         arguments"""
         if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode, so will not raise an exception.")
+            pytest.skip(
+                "This functionality is supported in tape mode, so will not raise an exception."
+            )
 
         c, w = get_circuit
 
@@ -217,7 +219,7 @@ class TestKerasLayer:
 
         layer_out = layer(x)
         circ_weights = layer.qnode_weights.copy()
-        circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])
+        circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])  # To allow for slicing
         circ_weights["w6"] = tf.convert_to_tensor(circ_weights["w6"])
         circuit_out = c(x[0], **circ_weights)
 
@@ -253,7 +255,9 @@ class TestKerasLayer:
         """Test if a TypeError is raised when default arguments that are not the input argument are
         present in the QNode"""
         if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode, so will not raise an exception.")
+            pytest.skip(
+                "This functionality is supported in tape mode, so will not raise an exception."
+            )
 
         c, w = get_circuit
 
@@ -309,8 +313,8 @@ class TestKerasLayer:
 
         layer_out = layer(x)
         circ_weights = layer.qnode_weights.copy()
-        circ_weights["w4"] = 1.0 * circ_weights["w4"]
-        circ_weights["w6"] = 1.0 * circ_weights["w6"]
+        circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])  # To allow for slicing
+        circ_weights["w6"] = tf.convert_to_tensor(circ_weights["w6"])
         circuit_out = c(x[0], **circ_weights)
 
         assert np.allclose(layer_out, circuit_out)
@@ -471,8 +475,8 @@ class TestKerasLayer:
         g_layer = tape.gradient(out_layer, layer.trainable_variables)
 
         circuit_weights = layer.trainable_variables.copy()
-        circuit_weights[3] = 1.0 * circuit_weights[3]
-        circuit_weights[5] = 1.0 * circuit_weights[5]
+        circuit_weights[3] = tf.convert_to_tensor(circuit_weights[3])  # To allow for slicing
+        circuit_weights[5] = tf.convert_to_tensor(circuit_weights[5])
 
         with tf.GradientTape() as tape:
             out_circuit = c(x[0], *circuit_weights)
