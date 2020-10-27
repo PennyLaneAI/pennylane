@@ -160,12 +160,18 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    indices1 = [[(2*j-1)*2**(k-1)+l-1 for l in range(1, 2**(k-1)+1)] for j in range(1, 2**(n-k)+1)]
-    indices2 = [[(2*j-2)*2**(k-1)+l-1 for l in range(1, 2**(k-1)+1)] for j in range(1, 2**(n-k)+1)]
+    indices1 = [
+        [(2 * j - 1) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
+        for j in range(1, 2 ** (n - k) + 1)
+    ]
+    indices2 = [
+        [(2 * j - 2) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
+        for j in range(1, 2 ** (n - k) + 1)
+    ]
 
     term1 = np.take(omega, indices=indices1)
     term2 = np.take(omega, indices=indices2)
-    diff = (term1 - term2) / 2**(k-1)
+    diff = (term1 - term2) / 2 ** (k - 1)
 
     return np.sum(diff, axis=1)
 
@@ -186,17 +192,24 @@ def _get_alpha_y(a, n, k):
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
-    indices_numerator = [[(2*(j+1)-1)*2**(k-1)+l for l in range(2**(k-1))] for j in range(2**(n-k))]
+    indices_numerator = [
+        [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
+        for j in range(2 ** (n - k))
+    ]
     numerator = np.take(a, indices=indices_numerator)
-    numerator = np.sum(np.abs(numerator)**2, axis=1)
+    numerator = np.sum(np.abs(numerator) ** 2, axis=1)
 
-    indices_denominator = [[j*2**k+l for l in range(0, int(2**k))] for j in range(2**(n-k))]
+    indices_denominator = [
+        [j * 2 ** k + l for l in range(0, int(2 ** k))] for j in range(2 ** (n - k))
+    ]
     denominator = np.take(a, indices=indices_denominator)
-    denominator = np.sum(np.abs(denominator)**2, axis=1)
+    denominator = np.sum(np.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the nominator is also zero in the corresponding entries.
-    division = np.divide(numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator!=0.)
+    division = np.divide(
+        numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
+    )
 
     return 2 * np.arcsin(np.sqrt(division))
 
