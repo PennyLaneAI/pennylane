@@ -146,67 +146,57 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
 def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
-    applied to the k'th qubit.
+    applied to the :math:`k`th qubit.
 
-    The angles are related to the phases omega of the desired amplitudes via:
+    The :math:`j`th angle is related to the phases omega of the desired amplitudes via:
 
     .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
-        omega (float): phases of the state to prepare
+        omega (array): phases of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    alpha_z_k = np.zeros((2 ** (n - k),), dtype=np.float64)
+    indices1 = [[(2*j-1)*2**(k-1)+l-1 for l in range(1, 2**(k-1)+1)] for j in range(1, 2**(n-k)+1)]
+    indices2 = [[(2*j-2)*2**(k-1)+l-1 for l in range(1, 2**(k-1)+1)] for j in range(1, 2**(n-k)+1)]
 
-    for i in range(len(omega)):
-        j = int(np.ceil((i + 1) * 2 ** (-k)))
-        s_condition = 2 ** (k - 1) * (2 * j - 1)
-        s_i = 1.0 if (i + 1) > s_condition else -1.0
-        alpha_z_k[j - 1] = alpha_z_k[j - 1] + s_i * omega[i] / 2 ** (k - 1)
+    term1 = np.take(omega, indices=indices1)
+    term2 = np.take(omega, indices=indices2)
+    diff = (term1 - term2) / 2**(k-1)
 
-    return alpha_z_k
+    return np.sum(diff, axis=1)
 
 
 def _get_alpha_y(a, n, k):
     r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
-    applied to the k'th qubit.
+    applied to the :math:`k`th qubit.
 
-    The angles are related to the absolute values a of the desired amplitudes via:
+    The :math:`j`th angle is related to the absolute values a of the desired amplitudes via:
 
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        a (float): absolute values of the state to prepare
+        a (array): absolute values of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
+    indices_numerator = [[(2*j-1)*2**(k-1)+l-1 for l in range(1, int(2**(k-1))+1)] for j in range(1, int(2**(n-k))+1)]
+    numerator = np.take(a, indices=indices_numerator)
+    numerator = np.sum(np.abs(numerator)**2, axis=1)
 
-    numerator = np.zeros((2 ** (n - k),), dtype=np.float64)
-    denominator = np.zeros((2 ** (n - k),), dtype=np.float64)
-    alpha = np.zeros((2 ** (n - k),), dtype=np.float64)
+    indices_denominator = [[(j-1)*2**k+l-1 for l in range(1, int(2**k)+1)] for j in range(1, int(2**(n-kgit ))+1)]
+    denominator = np.take(a, indices=indices_denominator)
+    denominator = np.sum(np.abs(denominator)**2, axis=1)
 
-    # compute all numerators/denominators at once for efficiency
-    for i in range(len(a)):
-        j = int(math.ceil((i + 1) / 2 ** k))
-        l = (i + 1) - (2 * j - 1) * 2 ** (k - 1)
-        is_part_numerator = 1 <= l <= 2 ** (k - 1)
+    division = np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator!=0)
 
-        if is_part_numerator:
-            numerator[j - 1] += a[i] * a[i]
-        denominator[j - 1] += a[i] * a[i]
-
-    for i in range(len(alpha)):
-        if denominator[i] != 0.0:
-            alpha[i] = numerator[i] / denominator[i]
-
-    return 2 * np.arcsin(np.sqrt(alpha))
+    return 2 * np.arcsin(np.sqrt(division))
 
 
 @template
