@@ -14,7 +14,6 @@
 r"""
 Contains the ``MottonenStatePreparation`` template.
 """
-import math
 import numpy as np
 
 import pennylane as qml
