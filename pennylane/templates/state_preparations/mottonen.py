@@ -139,6 +139,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
+        print(target_wire, control_wires[control_index])
         gate(theta[i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
@@ -261,7 +262,7 @@ def MottonenStatePreparation(state_vector, wires):
     #######################
 
     # change ordering of wires, original code was written for IBM machines
-    wires = wires[::-1]
+    wires_reverse = wires[::-1]
 
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
@@ -269,14 +270,14 @@ def MottonenStatePreparation(state_vector, wires):
     # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
     for k in range(n_wires, 0, -1):
         alpha_y_k = _get_alpha_y(a, n_wires, k)
-        control = wires[k:]
-        target = wires[k - 1]
+        control = wires_reverse[k:]
+        target = wires_reverse[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
     # Apply inverse z rotation cascade to prepare correct phases of amplitudes
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
-        control = wires[k:]
-        target = wires[k - 1]
+        control = wires_reverse[k:]
+        target = wires_reverse[k - 1]
         if len(alpha_z_k) > 0:
             _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
