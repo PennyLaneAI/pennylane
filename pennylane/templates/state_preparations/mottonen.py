@@ -76,7 +76,7 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly-controlled rotation
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
      to the rotation angles used in the Gray code implementation.
 
     Args:
