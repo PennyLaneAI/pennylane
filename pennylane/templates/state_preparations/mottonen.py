@@ -55,6 +55,8 @@ def gray_code(rank):
 def _matrix_M_entry(row, col):
     """Returns one entry for the matrix that maps alpha to theta.
 
+    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+
     Args:
         row (int): one-based row number
         col (int): one-based column number
@@ -206,7 +208,7 @@ def _get_alpha_y(a, n, k):
     denominator = np.sum(np.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
-    # The equation guarantees that the numeragtor is also zero in the corresponding entries.
+    # The equation guarantees that the numerator is also zero in the corresponding entries.
     division = np.divide(
         numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
     )
@@ -229,6 +231,11 @@ def MottonenStatePreparation(state_vector, wires):
     uniformly controlled Y rotations.
 
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
+
+    .. note::
+
+        Due to numerical errors stemming from finite precision, the final prepared state
+        is only an approximation of the input state vector. However, the fidelity with the desired state is
 
     Args:
         state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
