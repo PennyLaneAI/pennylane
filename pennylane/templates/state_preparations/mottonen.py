@@ -178,7 +178,7 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
     applied to the :math:`k`th qubit.
 
     The :math:`j`th angle is related to the absolute values a of the desired amplitudes via:
