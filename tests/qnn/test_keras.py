@@ -22,6 +22,8 @@ from pennylane.qnn.keras import KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
 
 @pytest.mark.usefixtures("get_circuit")
 @pytest.fixture
@@ -68,13 +70,18 @@ class TestKerasLayer:
                 KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self, get_circuit, output_dim):
+    def test_no_input(self):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of KerasLayer"""
-        c, w = get_circuit
-        del c.func.sig[qml.qnn.keras.KerasLayer._input_arg]
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(w1, w2):
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
-            KerasLayer(c, w, output_dim)
+            KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_input_in_weight_shapes(self, get_circuit, n_qubits, output_dim):
@@ -101,28 +108,28 @@ class TestKerasLayer:
             KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self, get_circuit, monkeypatch, output_dim):
+    def test_var_pos(self):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
-        c, w = get_circuit
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
 
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
+        @qml.qnode(dev, interface="tf")
+        def circuit(inputs, w1, w2, *args):
+            return qml.expval(qml.PauliZ(0))
 
-            sig = c.func.sig
-            var_pos = True
-            var_keyword = False
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
-                KerasLayer(c, w, output_dim)
+        with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
+            KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword(self, get_circuit, monkeypatch, output_dim):
         """Test if a TypeError is raised when instantiated with a variable number of keyword
         arguments"""
+        if qml.tape_mode_active():
+            pytest.skip(
+                "This functionality is supported in tape mode, so will not raise an exception."
+            )
+
         c, w = get_circuit
 
         class FuncPatch:
@@ -137,6 +144,52 @@ class TestKerasLayer:
 
             with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
                 KerasLayer(c, w, output_dim)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_var_keyword_tape_mode(self):
+        """Test that variable number of keyword arguments works in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        n_qubits = 2
+        output_dim = 2
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
+
+        @qml.qnode(dev, interface="tf")
+        def c(inputs, **kwargs):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(kwargs["w1"], wires=list(range(n_qubits)))
+            qml.RX(kwargs["w2"][0], wires=0 % n_qubits)
+            qml.RX(kwargs["w3"], wires=1 % n_qubits)
+            qml.Rot(*kwargs["w4"], wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(kwargs["w5"], wires=list(range(n_qubits)))
+            qml.Rot(*kwargs["w6"], wires=3 % n_qubits)
+            qml.RX(kwargs["w7"], wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = KerasLayer(c, w, output_dim=output_dim)
+        x = tf.ones((2, n_qubits))
+
+        layer_out = layer(x)
+        circ_weights = layer.qnode_weights.copy()
+        circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])  # To allow for slicing
+        circ_weights["w6"] = tf.convert_to_tensor(circ_weights["w6"])
+        circuit_out = c(x[0], **circ_weights)
+
+        assert np.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits", [1])
     @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]]))
@@ -167,6 +220,11 @@ class TestKerasLayer:
     def test_non_input_defaults(self, get_circuit, output_dim, n_qubits):
         """Test if a TypeError is raised when default arguments that are not the input argument are
         present in the QNode"""
+        if qml.tape_mode_active():
+            pytest.skip(
+                "This functionality is supported in tape mode, so will not raise an exception."
+            )
+
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
@@ -179,6 +237,53 @@ class TestKerasLayer:
             match="Only the argument {} is permitted".format(qml.qnn.keras.KerasLayer._input_arg),
         ):
             KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_non_input_defaults_tape_mode(self):
+        """Test that everything works when default arguments that are not the input argument are
+        present in the QNode in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        n_qubits = 2
+        output_dim = 2
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
+
+        @qml.qnode(dev, interface="tf")
+        def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0 % n_qubits)
+            qml.RX(w3, wires=1 % n_qubits)
+            qml.Rot(*w4, wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=3 % n_qubits)
+            qml.RX(w7, wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = KerasLayer(c, w, output_dim=output_dim)
+        x = tf.ones((2, n_qubits))
+
+        layer_out = layer(x)
+        circ_weights = layer.qnode_weights.copy()
+        circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])  # To allow for slicing
+        circ_weights["w6"] = tf.convert_to_tensor(circ_weights["w6"])
+        circuit_out = c(x[0], **circ_weights)
+
+        assert np.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_qnode_weights(self, get_circuit, n_qubits, output_dim):
@@ -335,16 +440,49 @@ class TestKerasLayer:
 
         g_layer = tape.gradient(out_layer, layer.trainable_variables)
 
+        circuit_weights = layer.trainable_variables.copy()
+        circuit_weights[3] = tf.convert_to_tensor(circuit_weights[3])  # To allow for slicing
+        circuit_weights[5] = tf.convert_to_tensor(circuit_weights[5])
+
         with tf.GradientTape() as tape:
-            out_circuit = c(x[0], *layer.trainable_variables)
+            out_circuit = c(x[0], *circuit_weights)
 
         g_circuit = tape.gradient(out_circuit, layer.trainable_variables)
 
         for i in range(len(out_layer)):
             assert np.allclose(g_layer[i], g_circuit[i])
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_backprop_gradients(self, mocker):
+        """Test if KerasLayer is compatible with the backprop diff method."""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
 
-@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def f(inputs, weights):
+            qml.templates.AngleEmbedding(inputs, wires=range(2))
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        weight_shapes = {"weights": (3, 2, 3)}
+
+        qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+
+        inputs = tf.ones((4, 2))
+
+        with tf.GradientTape() as tape:
+            out = tf.reduce_sum(qlayer(inputs))
+
+        spy = mocker.spy(qml.tape.tapes.QubitParamShiftTape, "jacobian")
+
+        grad = tape.gradient(out, qlayer.trainable_weights)
+        assert grad is not None
+        spy.assert_not_called()
+
+
+@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
