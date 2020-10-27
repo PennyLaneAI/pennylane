@@ -304,9 +304,9 @@ class TestMottonenStatePreparation:
             MottonenStatePreparation(state_vector, wires)
 
     @pytest.mark.parametrize("current_qubit, expected", [
-        (0, np.array([0, 0, 0, 1.23095942])),
-        (1, np.array([2.01370737, 3.14159265])),
-        (2, np.array([1.15927948])),
+        (1, np.array([0, 0, 0, 1.23095942])),
+        (2, np.array([2.01370737, 3.14159265])),
+        (3, np.array([1.15927948])),
     ])
     def test_get_alpha_y(self, current_qubit, expected, tol):
         """Test the _get_alpha_y helper function."""
