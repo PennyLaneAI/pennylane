@@ -69,6 +69,15 @@ class DefaultQubitAutograd(DefaultQubit):
 
     Args:
         wires (int): the number of wires to initialize the device with
+        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to 1000 if not specified.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances, and only controls the number
+            of samples returned by ``sample``.
+        analytic (bool): Indicates if the device should calculate expectations
+            and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
+            QNode differentiation method is not supported and it is recommended to consider
+            switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
     """
 
     name = "Default qubit (Autograd) PennyLane plugin"
@@ -105,7 +114,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _stack = staticmethod(np.stack)
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation
