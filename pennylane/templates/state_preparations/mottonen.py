@@ -76,8 +76,8 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly-controlled rotation
-     to the rotation angles used in the gray-code implementation.
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
+     to the rotation angles used in the Gray code implementation.
 
     Args:
         alpha (array[float]): alpha parameters
@@ -178,7 +178,7 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
     applied to the :math:`k`th qubit.
 
     The :math:`j`th angle is related to the absolute values a of the desired amplitudes via:
