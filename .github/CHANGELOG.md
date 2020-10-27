@@ -19,7 +19,7 @@
 * The `qnn.KerasLayer` class now supports differentiating the QNode through classical
   backpropagation in tape mode.
   [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
-  
+
   ```python
   qml.enable_tape()
 
