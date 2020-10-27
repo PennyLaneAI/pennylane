@@ -127,7 +127,8 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        gate(theta[0], wires=[target_wire])
+        if theta[0] != 0.0:
+            gate(theta[0], wires=[target_wire])
         return
 
     code = gray_code(gray_code_rank)
@@ -139,8 +140,8 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        print(target_wire, control_wires[control_index])
-        gate(theta[i], wires=[target_wire])
+        if theta[i] != 0.0:
+            gate(theta[i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
@@ -263,6 +264,7 @@ def MottonenStatePreparation(state_vector, wires):
 
     # change ordering of wires, original code was written for IBM machines
     wires_reverse = wires[::-1]
+    #state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
 
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
