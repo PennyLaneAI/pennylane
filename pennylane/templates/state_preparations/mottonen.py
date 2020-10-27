@@ -224,7 +224,7 @@ def MottonenStatePreparation(state_vector, wires):
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
     composed from all possible controlled rotations on said qubit and can be used to address individual
-    elements of the state vector. In the work of Mottonen et al., the inverse of their state preparation
+    elements of the state vector. In the work of Möttönen et al., the inverse of their state preparation
     is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations
     and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via
     uniformly controlled Y rotations.
@@ -233,8 +233,7 @@ def MottonenStatePreparation(state_vector, wires):
 
     .. note::
 
-        Due to numerical errors stemming from finite precision, the final prepared state
-        is only an approximation of the input state vector. However, the fidelity with the desired state is
+        The final state is only equal to the input state vector up to a global phase.
 
     Args:
         state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
