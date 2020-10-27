@@ -206,7 +206,7 @@ def _get_alpha_y(a, n, k):
     denominator = np.sum(np.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
-    # The equation guarantees that the nominator is also zero in the corresponding entries.
+    # The equation guarantees that the numeragtor is also zero in the corresponding entries.
     division = np.divide(
         numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
     )
