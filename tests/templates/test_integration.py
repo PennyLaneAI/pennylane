@@ -66,6 +66,8 @@ except ImportError as e:
 # Fixtures for integration tests
 #########################################
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
 # Each entry to QUBIT_DIFFABLE_NONDIFFABLE or CV_DIFFABLE_NONDIFFABLE
 # adds a template with specified inputs to the integration tests
 # ``TestIntegrationQnode``, ``TestIntegrationOtherOps``, ``TestIntegrationGradient``
