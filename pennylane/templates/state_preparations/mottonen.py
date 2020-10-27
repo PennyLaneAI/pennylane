@@ -262,9 +262,8 @@ def MottonenStatePreparation(state_vector, wires):
 
     #######################
 
-    # change ordering of wires, original code was written for IBM machines
+    # change ordering of wires, since original code was written for IBM machines
     wires_reverse = wires[::-1]
-    #state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
 
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
