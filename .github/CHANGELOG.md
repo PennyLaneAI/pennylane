@@ -16,6 +16,17 @@
 
 <h3>Improvements</h3>
 
+* Device-based caching has replaced QNode caching. Caching is now accessed by passing a
+  `cache` argument to the device.
+  [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
+  
+  The `cache` argument should be an integer specifying the size of the cache. For example, a
+  cache of size 10 is created using:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, cache=10)
+  ```
+
 * The `qnn.KerasLayer` class now supports differentiating the QNode through classical
   backpropagation in tape mode.
   [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
@@ -114,8 +125,6 @@
     `copy_operations=True` boolean flag. This allows the copied tape's parameters to be mutated
     without affecting the original tape's parameters. (Note: the two tapes will share parameter data
     *until* one of the tapes has their parameter list modified.)
-
-  - Copied tapes continue to share the *same* caching dictionary as the original tape.
 
   - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
     argument.
