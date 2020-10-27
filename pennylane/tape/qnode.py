@@ -150,6 +150,7 @@ class QNode:
         self.func = func
         self.device = device
         self.qtape = None
+        self.qfunc_output = None
 
         self._tape, self.interface, self.diff_method = self.get_tape(device, interface, diff_method)
         self.diff_options = diff_options or {}
@@ -375,10 +376,12 @@ class QNode:
         self.qtape = self._tape(caching=self._caching)
 
         with self.qtape:
-            measurement_processes = self.func(*args, **kwargs)
+            self.qfunc_output = self.func(*args, **kwargs)
 
-        if not isinstance(measurement_processes, Sequence):
-            measurement_processes = (measurement_processes,)
+        if not isinstance(self.qfunc_output, Sequence):
+            measurement_processes = (self.qfunc_output,)
+        else:
+            measurement_processes = self.qfunc_output
 
         if not all(isinstance(m, qml.tape.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
@@ -444,8 +447,14 @@ class QNode:
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
-        # HOTFIX: to maintain compatibility with core, we squeeze
-        # all outputs.
+        if self._caching:
+            self._cache_execute = self.qtape._cache_execute
+
+        if isinstance(self.qfunc_output, Sequence):
+            return res
+
+        # HOTFIX: Output is a single measurement function. To maintain compatibility
+        # with core, we squeeze all outputs.
 
         # Get the namespace associated with the return type
         res_type_namespace = res.__class__.__module__.split(".")[0]
@@ -454,9 +463,6 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
-        if self._caching:
-            self._cache_execute = self.qtape._cache_execute
 
         return __import__(res_type_namespace).squeeze(res)
 

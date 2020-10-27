@@ -97,6 +97,7 @@
 
   - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
   - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
 
 <h3>Breaking changes</h3>
 
