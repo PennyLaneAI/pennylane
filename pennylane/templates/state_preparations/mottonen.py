@@ -75,7 +75,8 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Calculates the rotation angles from the alpha vector.
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly-controlled rotation
+     to the rotation angles used in the gray-code implementation.
 
     Args:
         alpha (array[float]): alpha parameters
@@ -99,20 +100,24 @@ def _compute_theta(alpha):
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a sequence of multi-controlled inverse rotations to the target qubit.
+    """Applies a uniformly-controlled rotation to the target qubit.
 
-    Each of the rotations is conditioned on the control wires being in a
-    different computational basis state, so that there are
-    `2**len(control_wires)` multi-controlled rotations altogether. The angles
-    of the rotations are provided by the alpha vector.
+    A uniformly-controlled rotation is a sequence of multi-controlled
+    rotations, each of which is conditioned on the control qubits being in a different state.
+    For example, a uniformly-controlled rotation with two control qubits decomposes into
+    four multi-controlled rotations, each applying the rotation only if the control qubits
+    are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
+    For more details, see Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_
 
-    To implement a multi-controlled rotation, a decomposition based on gray codes is
-    used. For more details, see `Möttönen and Vartiainen (2005) <https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
+    To implement a uniformly-controlled rotation, a decomposition based on gray codes is
+    used. For this purpose, the multi-controlled rotation angles alpha have to be converted into
+    a different set of rotation angles.
+
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
-        gate (~.Operation): gate to be applied, needs to have exactly
-            one parameter
-        alpha (array[float]): alpha parameters
+        gate (~.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
     """
@@ -134,19 +139,21 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        print(control_wires[control_index], "->", target_wire)
         gate(theta[i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
 def _get_alpha_z(omega, n, k):
-    r"""Computes the rotation angles for the Z rotations applied to the k'th qubit.
+    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    applied to the k'th qubit.
+
+    The angles are related to the phases omega of the desired amplitudes via:
 
     .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
-        omega (float): phases of the input
-        n (int): total number of qubits
+        omega (float): phases of the state to prepare
+        n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
@@ -164,15 +171,16 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles for the Y rotations applied to the k'th qubit.
+    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    applied to the k'th qubit.
 
-    The angles are related to a as:
+    The angles are related to the absolute values a of the desired amplitudes via:
 
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        a (float): absolute values of the input
-        n (int): total number of qubits
+        a (float): absolute values of the state to prepare
+        n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
@@ -258,14 +266,14 @@ def MottonenStatePreparation(state_vector, wires):
     a = np.absolute(state_vector)
     omega = np.angle(state_vector)
 
-    # Apply inverse y rotation cascade to prepare correct absolute values
+    # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
     for k in range(n_wires, 0, -1):
         alpha_y_k = _get_alpha_y(a, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply inverse z rotation cascade to prepare correct phases
+    # Apply inverse z rotation cascade to prepare correct phases of amplitudes
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
