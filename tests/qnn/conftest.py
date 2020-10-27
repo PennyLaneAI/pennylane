@@ -19,7 +19,7 @@ import pennylane as qml
 
 
 @pytest.fixture
-def get_circuit(n_qubits, output_dim, interface):
+def get_circuit(n_qubits, output_dim, interface, tape_mode):
     """Fixture for getting a sample quantum circuit with a controllable qubit number and output
     dimension. Returns both the circuit and the shape of the weights."""
 
