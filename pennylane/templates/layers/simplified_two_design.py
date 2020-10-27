@@ -15,14 +15,12 @@ r"""
 Contains the ``SimplifiedTwoDesign`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
     check_number_of_layers,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires
@@ -144,19 +142,6 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     wires = Wires(wires)
 
     repeat = check_number_of_layers([weights])
-
-    check_type(
-        initial_layer_weights,
-        [list, np.ndarray],
-        msg="'initial_layer_weights' must be of type list or np.ndarray; got type {}".format(
-            type(initial_layer_weights)
-        ),
-    )
-    check_type(
-        weights,
-        [list, np.ndarray],
-        msg="'weights' must be of type list or np.ndarray; got type {}".format(type(weights)),
-    )
 
     expected_shape_initial = (len(wires),)
     check_shape(

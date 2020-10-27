@@ -17,13 +17,10 @@ Contains the ``AmplitudeEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import math
 import numpy as np
+
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
-from pennylane.templates.utils import (
-    check_shape,
-    check_type,
-    get_shape,
-)
 from pennylane.variable import Variable
 from pennylane.wires import Wires
 
@@ -172,33 +169,15 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Input checks
 
     wires = Wires(wires)
+    features = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(features)
 
     n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)
-    if pad is None:
-        shape = check_shape(
-            features,
-            expected_shape,
-            msg="'features' must be of shape {}; got {}. Use the 'pad' "
-            "argument for automated padding."
-            "".format(expected_shape, get_shape(features)),
-        )
-    else:
-        shape = check_shape(
-            features,
-            expected_shape,
-            bound="max",
-            msg="'features' must be of shape {} or smaller "
-            "to be padded; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
 
-    check_type(
-        pad,
-        [float, complex, type(None)],
-        msg="'pad' must be a float or complex; got {}".format(pad),
-    )
-    check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
+    if pad is None:
+        if features.shape != expected_shape:
+            raise ValueError("features must be of shape {}; got {}. Use the 'pad' argument for automated padding."
+                             .format(expected_shape, features.shape))
 
     ###############
 
@@ -206,7 +185,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Preprocessing
 
     # pad
-    n_features = shape[0]
+    n_features = len(features)
     if pad is not None and n_amplitudes > n_features:
         features = np.pad(
             features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad
@@ -230,5 +209,4 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     ###############
 
-    features = np.array(features)
     QubitStateVector(features, wires=wires)

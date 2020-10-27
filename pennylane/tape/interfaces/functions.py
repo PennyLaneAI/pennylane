@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as anp
 
 
 try:
@@ -41,7 +42,7 @@ class WrapperFunctions:
         """
         if isinstance(obj, (np.ndarray, qml.numpy.tensor)):
             return NumpyArrayFunctions
-        elif isinstance(obj, (tf.Tensor, tf.Variable)):
+        elif isinstance(obj, (tf.Tensor, tf.Variable, tf.python.ops.resource_variable_ops.ResourceVariable)):
             return TfTensorFunctions
         elif isinstance(obj, torch.Tensor):
             return TorchTensorFunctions
@@ -50,26 +51,60 @@ class WrapperFunctions:
         else:
             raise ValueError("No wrapper defined for input of type {}".format(type(obj)))
 
-    # @staticmethod
-    # def abs(array):
-    #     """Entry-wise absolute value of array.
-    #     Args:
-    #         array (array-like): array with real or complex-valued entries
-    #     Returns:
-    #         array-like
-    #     """
-    #     fn = WrapperFunctions.wrapper_class(array)
-    #     return fn.abs(array)
+    @staticmethod
+    def expand_dims(array, axis):
+        fn = WrapperFunctions.wrapper_class(array)
+        return fn.expand_dims(array, axis=axis)
+
+    @staticmethod
+    def ones_like(array):
+        fn = WrapperFunctions.wrapper_class(array)
+        return fn.ones_like(array)
+
+
+    @staticmethod
+    def to_ndarray(array):
+        fn = WrapperFunctions.wrapper_class(array)
+        return fn.to_ndarray(array)
 
 
 class NumpyArrayFunctions:
     """Wrapper functions taking ndarrays."""
 
+    expand_dims = lambda array, axis: anp.expand_dims(array, axis=axis)
+
+    @staticmethod
+    def to_ndarray(array):
+        return anp.array(array)
+
+    @staticmethod
+    def ones_like(array):
+        return anp.ones_like(array)
+
 
 class TfTensorFunctions:
     """Wrapper functions taking TensorFlow tensors."""
+
+    expand_dims = lambda array, axis: tf.expand_dims(array, axis=axis)
+
+    @staticmethod
+    def to_ndarray(array):
+        return array.numpy()
+
+    @staticmethod
+    def ones_like(array):
+        return tf.ones_like(array)
 
 
 class TorchTensorFunctions:
     """Wrapper functions taking PyTorch tensors."""
 
+    expand_dims = lambda array, axis: torch.unsqueeze(array, dim=axis)
+
+    @staticmethod
+    def to_ndarray(array):
+        return array.detach.numpy()
+
+    @staticmethod
+    def ones_like(array):
+        return torch.ones_like(array)

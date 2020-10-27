@@ -40,13 +40,11 @@ import pennylane as qml
 #######################################
 # Interfaces
 
-INTERFACES = [('numpy', np.array)]
+INTERFACES = [('autograd', np.array)]
 
 try:
     import torch
-    from torch.autograd import Variable as TorchVariable
-
-    INTERFACES.append(('torch', torch.tensor))
+    INTERFACES.append(('torch', lambda x: torch.tensor(x, requires_grad=True)))
 except ImportError as e:
     pass
 
@@ -551,13 +549,17 @@ class TestIntegrationGradient:
         for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
-            if interface == 'numpy':
+            if interface == 'autograd':
                 grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
+                for i in range(len(diffable)):
+                    if i != argnum:
+                        diffable[i].requires_grad = False
+                diffable[argnum].requires_grad = True
+
                 res = circuit(*diffable)
                 res.backward()
                 diffable[argnum].grad.numpy()
@@ -600,13 +602,17 @@ class TestIntegrationGradient:
         for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
-            if interface == 'numpy':
+            if interface == 'autograd':
                 grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
+                for i in range(len(diffable)):
+                    if i != argnum:
+                        diffable[i].requires_grad = False
+                diffable[argnum].requires_grad = True
+                
                 res = circuit(*diffable)
                 res.backward()
                 diffable[argnum].grad.numpy()
@@ -683,8 +689,6 @@ class TestNonConsecutiveWires:
             kwargs2['wires2'] = nonconsecutive_wires[2:]
         # some kwargs in UCSSD need to be manually replaced
         if template.__name__ == 'UCCSD':
-             # kwargs2['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
-             # kwargs2['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
              kwargs2['s_wires'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
              kwargs2['d_wires'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
 

@@ -15,7 +15,7 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
+from collections.abc import Iterable
 from itertools import combinations
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard

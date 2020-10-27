@@ -251,6 +251,8 @@ def MottonenStatePreparation(state_vector, wires):
     # Input checks
 
     wires = Wires(wires)
+    state_vector = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(state_vector)
+
 
     n_wires = len(wires)
     expected_shape = (2 ** n_wires,)

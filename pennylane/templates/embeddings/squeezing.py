@@ -15,6 +15,7 @@ r"""
 Contains the ``SqueezingEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing
 from pennylane.templates import broadcast
@@ -80,7 +81,7 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
 
     ##############
 
-    constants = [c] * len(features)
+    constants = c * qml.tape.interfaces.functions.WrapperFunctions.ones_like(features)
 
     if method == "amplitude":
         broadcast(

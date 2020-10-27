@@ -35,8 +35,15 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (Wires): wires that the template acts on
     """
 
-    feature_encoding_wires = wires[: len(features)]
-    remaining_wires = wires[len(features) :]
+    try:
+        # works for tensors
+        n_features = features.shape[0]
+    except AttributeError:
+        # works for lists and tuples
+        n_features = len(features)
+
+    feature_encoding_wires = wires[: n_features]
+    remaining_wires = wires[n_features:]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)

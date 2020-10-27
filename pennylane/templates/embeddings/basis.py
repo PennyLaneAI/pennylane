@@ -15,7 +15,7 @@ r"""
 Contains the ``BasisEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
+from collections.abc import Iterable
 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape, check_type

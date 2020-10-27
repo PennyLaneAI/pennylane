@@ -20,10 +20,12 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_type, get_shape, check_is_in_options
+from pennylane.templates.utils import get_shape, check_is_in_options
 from pennylane.wires import Wires
 
+OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
 
 ###################
 # helpers to define pattern wire sequences
@@ -487,23 +489,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 circuit(pars)
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
-    #########
-    # Input checks
-
     wires = Wires(wires)
-
+    custom_pattern = None
     if kwargs is None:
         kwargs = {}
-
-    check_type(
-        kwargs,
-        [dict],
-        msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
-    )
-
-    custom_pattern = None
 
     if isinstance(pattern, str):
         check_is_in_options(
@@ -517,7 +506,20 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         # set "pattern" to "custom", indicating that custom settings have to be used
         pattern = "custom"
 
-    n_parameters = {
+    # define wire sequences for patterns
+    pattern_to_wires = {
+        "single": [wires[i] for i in range(len(wires))],
+        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
+        "ring": wires_ring(wires),
+        "pyramid": wires_pyramid(wires),
+        "all_to_all": wires_all_to_all(wires),
+        "custom": custom_pattern,
+    }
+
+    # define required number of parameters
+    pattern_to_num_params = {
         "single": len(wires),
         "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
         "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
@@ -538,33 +540,22 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 "the ring pattern with 2 wires is an exception and only applies one unitary"
             )
 
-        if shape[0] != n_parameters[pattern]:
+        if shape[0] != pattern_to_num_params[pattern]:
             raise ValueError(
                 "'parameters' must contain entries for {} unitaries; got {} entries".format(
-                    n_parameters[pattern], shape[0]
+                    pattern_to_num_params[pattern], shape[0]
                 )
             )
 
-        # repackage for consistent unpacking
+        # expand dimension so that parameter sets for each unitary can be unpacked
         if len(shape) == 1:
-            parameters = [[p] for p in parameters]
+            parameters = qml.tape.interfaces.functions.WrapperFunctions.expand_dims(parameters, 1)
+
+    wire_sequence = pattern_to_wires[pattern]
+    if parameters is None:
+        for i in range(len(wire_sequence)):
+            unitary(wires=wire_sequence[i], **kwargs)
     else:
-        parameters = [[] for _ in range(n_parameters[pattern])]
-
-    #########
-
-    # define wire sequences for patterns
-    wire_sequence = {
-        "single": [wires[i] for i in range(len(wires))],
-        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-        "ring": wires_ring(wires),
-        "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern,
-    }
-
-    # broadcast the unitary
-    for wires, pars in zip(wire_sequence[pattern], parameters):
-        unitary(*pars, wires=wires, **kwargs)
+        for i in range(len(wire_sequence)):
+            # TODO: Find solution here to not unpack, since this is slow in tf
+            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
