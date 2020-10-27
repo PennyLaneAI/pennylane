@@ -120,8 +120,10 @@ class DefaultQubitTF(DefaultQubit):
             If ``analytic == True``, then the number of shots is ignored
             in the calculation of expectation values and variances, and only controls the number
             of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
+        analytic (bool): Indicates if the device should calculate expectations
+            and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
+            QNode differentiation method is not supported and it is recommended to consider
+            switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
     """
 
     name = "Default qubit (TensorFlow) PennyLane plugin"
@@ -157,7 +159,7 @@ class DefaultQubitTF(DefaultQubit):
     _stack = staticmethod(tf.stack)
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
