@@ -24,6 +24,42 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
+@pytest.fixture
+def get_circuit(n_qubits, output_dim, interface, tape_mode):
+    """Fixture for getting a sample quantum circuit with a controllable qubit number and output
+    dimension. Returns both the circuit and the shape of the weights."""
+
+    dev = qml.device("default.qubit", wires=n_qubits)
+    weight_shapes = {
+        "w1": (3, n_qubits, 3),
+        "w2": (1,),
+        "w3": 1,
+        "w4": [3],
+        "w5": (2, n_qubits, 3),
+        "w6": 3,
+        "w7": 0,
+    }
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+        """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+        operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+        parameters, w5, are specified as non-trainable."""
+        qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+        qml.RX(w2[0], wires=0 % n_qubits)
+        qml.RX(w3, wires=1 % n_qubits)
+        qml.Rot(*w4, wires=2 % n_qubits)
+        qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+        qml.Rot(*w6, wires=3 % n_qubits)
+        qml.RX(w7, wires=4 % n_qubits)
+        return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+    return circuit, weight_shapes
+
 
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
@@ -74,13 +110,18 @@ class TestTorchLayer:
                 TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self, get_circuit):
+    def test_no_input(self):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of TorchLayer"""
-        c, w = get_circuit
-        del c.func.sig[qml.qnn.torch.TorchLayer._input_arg]
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(w1, w2):
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
-            TorchLayer(c, w)
+            TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_input_in_weight_shapes(self, get_circuit, n_qubits):
@@ -107,28 +148,26 @@ class TestTorchLayer:
             TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self, get_circuit, monkeypatch):
+    def test_var_pos(self):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
-        c, w = get_circuit
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
 
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
+        @qml.qnode(dev, interface="torch")
+        def circuit(inputs, w1, w2, *args):
+            return qml.expval(qml.PauliZ(0))
 
-            sig = c.func.sig
-            var_pos = True
-            var_keyword = False
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
-                TorchLayer(c, w)
+        with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
+            TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword(self, get_circuit, monkeypatch):
         """Test if a TypeError is raised when instantiated with a variable number of keyword
         arguments"""
+        if qml.tape_mode_active():
+            pytest.skip("This functionality is supported in tape mode.")
+
         c, w = get_circuit
 
         class FuncPatch:
@@ -143,6 +182,46 @@ class TestTorchLayer:
 
             with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
                 TorchLayer(c, w)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_var_keyword_tape_mode(self, n_qubits, output_dim):
+        """Test that variable number of keyword arguments works in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
+
+        @qml.qnode(dev, interface="torch")
+        def c(inputs, **kwargs):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(kwargs["w1"], wires=list(range(n_qubits)))
+            qml.RX(kwargs["w2"][0], wires=0 % n_qubits)
+            qml.RX(kwargs["w3"], wires=1 % n_qubits)
+            qml.Rot(*kwargs["w4"], wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(kwargs["w5"], wires=list(range(n_qubits)))
+            qml.Rot(*kwargs["w6"], wires=3 % n_qubits)
+            qml.RX(kwargs["w7"], wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x)
+        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
+
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_nonspecified_init(self, get_circuit, n_qubits, monkeypatch):
@@ -160,6 +239,9 @@ class TestTorchLayer:
     def test_non_input_defaults(self, get_circuit, n_qubits):
         """Test if a TypeError is raised when default arguments that are not the input argument are
         present in the QNode"""
+        if qml.tape_mode_active():
+            pytest.skip("This functionality is supported in tape mode.")
+
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
@@ -172,6 +254,47 @@ class TestTorchLayer:
             match="Only the argument {} is permitted".format(qml.qnn.torch.TorchLayer._input_arg),
         ):
             TorchLayer(c_dummy, {**w, **{"w8": 1}})
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_non_input_defaults_tape_mode(self, n_qubits, output_dim):
+        """Test that everything works when default arguments that are not the input argument are
+        present in the QNode in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
+
+        @qml.qnode(dev, interface="torch")
+        def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0 % n_qubits)
+            qml.RX(w3, wires=1 % n_qubits)
+            qml.Rot(*w4, wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=3 % n_qubits)
+            qml.RX(w7, wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x)
+        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
+
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_qnode_weights_shapes(self, get_circuit, n_qubits):
@@ -330,7 +453,7 @@ class TestTorchLayer:
         assert len(weights) == len(list(layer.parameters()))
 
 
-@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 @pytest.mark.usefixtures("skip_if_no_tf_support")
