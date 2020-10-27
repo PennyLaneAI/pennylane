@@ -110,7 +110,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
 
     To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
-    a decomposition based on gray codes is used. For this purpose, the multi-controlled rotation
+    a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
     angles alpha have to be converted into a set of non-controlled rotation angles theta.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
