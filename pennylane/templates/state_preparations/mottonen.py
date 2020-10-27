@@ -104,14 +104,13 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     A uniformly-controlled rotation is a sequence of multi-controlled
     rotations, each of which is conditioned on the control qubits being in a different state.
-    For example, a uniformly-controlled rotation with two control qubits decomposes into
+    For example, a uniformly-controlled rotation with two control qubits describes a sequence of
     four multi-controlled rotations, each applying the rotation only if the control qubits
     are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
-    For more details, see Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_
 
-    To implement a uniformly-controlled rotation, a decomposition based on gray codes is
-    used. For this purpose, the multi-controlled rotation angles alpha have to be converted into
-    a different set of rotation angles.
+    To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
+    a decomposition based on gray codes is used. For this purpose, the multi-controlled rotation
+    angles alpha have to be converted into a set of non-controlled rotation angles theta.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
