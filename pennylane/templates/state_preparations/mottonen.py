@@ -85,19 +85,17 @@ def _compute_theta(alpha):
     Returns:
         (array[float]): rotation angles theta
     """
+    ln = alpha.shape[0]
     k = np.log2(alpha.shape[0])
-    factor = 2 ** (-k)
 
-    theta = np.zeros(alpha.shape, dtype=np.float64)
+    M_trans = np.zeros(shape=(ln, ln))
+    for i in range(len(M_trans)):
+        for j in range(len(M_trans[0])):
+            M_trans[i, j] = _matrix_M_entry(j, i)
 
-    for row in range(alpha.shape[0]):
-        # Use transpose of M:
-        entry = sum(_matrix_M_entry(col, row) * alpha[col] for col in range(len(alpha)))
-        entry *= factor
-        if abs(entry) > 1e-6:
-            theta[row] = entry
+    theta = M_trans @ alpha
 
-    return theta
+    return theta / 2**k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
