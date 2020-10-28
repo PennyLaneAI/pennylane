@@ -15,6 +15,7 @@ r"""
 Contains the ``DisplacementEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import Displacement
 from pennylane.templates import broadcast
@@ -76,20 +77,26 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     #############
 
-    constants = [c] * len(features)
+    constants = c * qml.tape.interfaces.functions.WrapperFunctions.ones_like(features)
 
     if method == "amplitude":
+
+        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([features, constants], axis=1)
+
         broadcast(
             unitary=Displacement,
             pattern="single",
             wires=wires,
-            parameters=list(zip(features, constants)),
+            parameters=pars,
         )
 
     elif method == "phase":
+
+        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([constants, features], axis=1)
+
         broadcast(
             unitary=Displacement,
             pattern="single",
             wires=wires,
-            parameters=list(zip(constants, features)),
+            parameters=pars,
         )

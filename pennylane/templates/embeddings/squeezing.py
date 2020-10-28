@@ -84,17 +84,21 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     constants = c * qml.tape.interfaces.functions.WrapperFunctions.ones_like(features)
 
     if method == "amplitude":
+        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([features, constants], axis=1)
+
         broadcast(
             unitary=Squeezing,
             pattern="single",
             wires=wires,
-            parameters=list(zip(features, constants)),
+            parameters=pars,
         )
 
     elif method == "phase":
+        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([constants, features], axis=1)
+
         broadcast(
             unitary=Squeezing,
             pattern="single",
             wires=wires,
-            parameters=list(zip(constants, features)),
+            parameters=pars,
         )

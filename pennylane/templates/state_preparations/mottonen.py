@@ -251,8 +251,6 @@ def MottonenStatePreparation(state_vector, wires):
     # Input checks
 
     wires = Wires(wires)
-    state_vector = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(state_vector)
-
 
     n_wires = len(wires)
     expected_shape = (2 ** n_wires,)
@@ -266,6 +264,8 @@ def MottonenStatePreparation(state_vector, wires):
     # TODO: delete when tape is new core
     if isinstance(state_vector[0], Variable):
         state_vector = np.array([s.val for s in state_vector])
+    else:
+        state_vector = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(state_vector)
 
     # check if normalized
     norm = np.sum(np.abs(state_vector) ** 2)

@@ -20,6 +20,7 @@ from pennylane.ops import Beamsplitter, Rotation
 from pennylane.templates.utils import (
     check_shapes,
     check_is_in_options,
+    get_shape
 )
 from pennylane.wires import Wires
 
@@ -164,6 +165,8 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 n += 1
 
     # apply the final local phase shifts to all modes
-    for i, p in enumerate(varphi):
+    shp = get_shape(varphi)
+
+    for i in range(shp[0]):
         act_on = wires[i]
-        Rotation(p, wires=act_on)
+        Rotation(varphi[i], wires=act_on)

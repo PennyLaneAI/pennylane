@@ -33,14 +33,13 @@ Templates are tested with a range of interfaces. To test templates with an addit
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-import numpy as np
 import pennylane as qml
-
+from pennylane import numpy as np
 
 #######################################
-# Interfaces
+# Interfaces and their methods to create differentiable tensors
 
-INTERFACES = [('autograd', np.array)]
+INTERFACES = [('autograd', lambda x: np.array(x, requires_grad=True))]
 
 try:
     import torch
@@ -319,8 +318,7 @@ class TestIntegrationQnode:
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_qubit_qnode_primary_args(self, template, diffable, nondiffable, n_wires, interface, to_var):
-        """Tests integration of qubit templates with other operations, passing differentiable arguments
-        as primary arguments to qnode."""
+        """Tests integration of qubit templates with other operations."""
 
         # Extract keys and items
         keys_diffable = [*diffable]
@@ -329,15 +327,14 @@ class TestIntegrationQnode:
         # Turn into correct format
         diffable = [to_var(i) for i in diffable]
 
-        # Generate qnode
-        dev = qml.device('default.qubit', wires=n_wires)
-
         # Generate qnode in which differentiable arguments are passed
         # as primary argument
+        dev = qml.device('default.qubit', wires=n_wires)
+
         @qml.qnode(dev, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            all_args = {key: item for key, item in zip(keys_diffable, diffable)}
+            all_args = dict(zip(keys_diffable, diffable))
 
             # Merge with nondiffables
             all_args.update(nondiffable)

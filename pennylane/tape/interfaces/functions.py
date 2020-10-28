@@ -61,6 +61,10 @@ class WrapperFunctions:
         fn = WrapperFunctions.wrapper_class(array)
         return fn.ones_like(array)
 
+    @staticmethod
+    def stack(array, axis):
+        fn = WrapperFunctions.wrapper_class(array)
+        return fn.stack(array, axis=axis)
 
     @staticmethod
     def to_ndarray(array):
@@ -72,6 +76,7 @@ class NumpyArrayFunctions:
     """Wrapper functions taking ndarrays."""
 
     expand_dims = lambda array, axis: anp.expand_dims(array, axis=axis)
+    stack = anp.stack
 
     @staticmethod
     def to_ndarray(array):
@@ -86,6 +91,7 @@ class TfTensorFunctions:
     """Wrapper functions taking TensorFlow tensors."""
 
     expand_dims = lambda array, axis: tf.expand_dims(array, axis=axis)
+    stack = tf.stack
 
     @staticmethod
     def to_ndarray(array):
@@ -102,9 +108,17 @@ class TorchTensorFunctions:
     expand_dims = lambda array, axis: torch.unsqueeze(array, dim=axis)
 
     @staticmethod
-    def to_ndarray(array):
-        return array.detach.numpy()
+    def stack(array, axis):
+        return torch.stack(array, dim=axis)
 
     @staticmethod
     def ones_like(array):
         return torch.ones_like(array)
+
+    @staticmethod
+    def to_ndarray(array):
+        try:
+            a = array.detach().numpy()
+        except AttributeError:
+            a = array.numpy()
+        return a

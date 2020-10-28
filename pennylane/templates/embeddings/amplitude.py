@@ -23,6 +23,7 @@ from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
 from pennylane.variable import Variable
 from pennylane.wires import Wires
+from pennylane.templates.utils import check_shape, get_shape
 
 # tolerance for normalization
 TOLERANCE = 1e-10
@@ -169,15 +170,27 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Input checks
 
     wires = Wires(wires)
-    features = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(features)
 
     n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)
 
     if pad is None:
-        if features.shape != expected_shape:
-            raise ValueError("features must be of shape {}; got {}. Use the 'pad' argument for automated padding."
-                             .format(expected_shape, features.shape))
+        shape = check_shape(
+            features,
+            expected_shape,
+            msg="'features' must be of shape {}; got {}. Use the 'pad' "
+                "argument for automated padding."
+                "".format(expected_shape, get_shape(features)),
+        )
+    else:
+        shape = check_shape(
+            features,
+            expected_shape,
+            bound="max",
+            msg="'features' must be of shape {} or smaller "
+                "to be padded; got {}"
+                "".format(expected_shape, get_shape(features)),
+        )
 
     ###############
 
@@ -185,7 +198,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Preprocessing
 
     # pad
-    n_features = len(features)
+    n_features = shape[0]
     if pad is not None and n_amplitudes > n_features:
         features = np.pad(
             features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad
@@ -196,6 +209,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         feature_values = [s.val for s in features]
         norm = np.sum(np.abs(feature_values) ** 2)
     else:
+        features = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(features)
         norm = np.sum(np.abs(features) ** 2)
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE):
