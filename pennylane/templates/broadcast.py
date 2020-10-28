@@ -568,5 +568,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     # broadcast the unitary
     wire_sequence = pattern_to_wires[pattern]
     for i in range(len(wire_sequence)):
-        # note: iteration over indices is faster in tensorflow than iteration over parameters
-        unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
+        pars = [parameters[i, j] for j in range(len(parameters[i]))]
+        unitary(*pars, wires=wire_sequence[i], **kwargs)
