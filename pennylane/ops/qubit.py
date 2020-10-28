@@ -297,6 +297,46 @@ class T(DiagonalOperation):
         return decomp_ops
 
 
+class SX(Operation):
+    r"""SX(wires)
+    The single-qubit Square-Root X operator.
+
+    .. math:: SX = \sqrt{X} = \frac{1}{2} \begin{bmatrix}
+            1+i &   1-i \\
+            1-i &   1+i \\
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 0
+    num_wires = 1
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1, 1j])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            RZ(np.pi / 2, wires=wires),
+            RY(np.pi / 2, wires=wires),
+            RZ(-np.pi, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
 class CNOT(Operation):
     r"""CNOT(wires)
     The controlled-NOT operator
@@ -1628,6 +1668,7 @@ ops = {
     "MultiRZ",
     "S",
     "T",
+    "SX",
     "CNOT",
     "CZ",
     "CY",
