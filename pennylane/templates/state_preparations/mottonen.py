@@ -116,7 +116,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
-        gate (~.Operation): gate to be applied, needs to have exactly one parameter
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
         alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
