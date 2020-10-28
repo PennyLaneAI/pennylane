@@ -181,7 +181,7 @@ def _get_alpha_y(a, n, k):
     r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
     applied to the :math:`k`th qubit.
 
-    The :math:`j`th angle is related to the absolute values a of the desired amplitudes via:
+    The :math:`j`-th angle is related to the absolute values, a, of the desired amplitudes via:
 
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
