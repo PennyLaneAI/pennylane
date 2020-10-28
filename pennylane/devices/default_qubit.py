@@ -79,6 +79,10 @@ class DefaultQubit(QubitDevice):
             of samples returned by ``sample``.
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
+        cache (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -99,6 +103,7 @@ class DefaultQubit(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
         "CSWAP",
@@ -118,9 +123,9 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
+    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic)
+        super().__init__(wires, shots, analytic, cache=cache)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -134,6 +139,7 @@ class DefaultQubit(QubitDevice):
             "Hadamard": self._apply_hadamard,
             "S": self._apply_s,
             "T": self._apply_t,
+            "SX": self._apply_sx,
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
@@ -255,6 +261,21 @@ class DefaultQubit(QubitDevice):
 
     def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
+
+    def _apply_sx(self, state, axes, inverse=False):
+        """Apply the Square Root X gate.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        if inverse:
+            return 0.5 * ((1 - 1j) * state + (1 + 1j) * self._apply_x(state, axes))
+
+        return 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
 
     def _apply_cnot(self, state, axes, **kwargs):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then

@@ -297,6 +297,46 @@ class T(DiagonalOperation):
         return decomp_ops
 
 
+class SX(Operation):
+    r"""SX(wires)
+    The single-qubit Square-Root X operator.
+
+    .. math:: SX = \sqrt{X} = \frac{1}{2} \begin{bmatrix}
+            1+i &   1-i \\
+            1-i &   1+i \\
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 0
+    num_wires = 1
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1, 1j])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            RZ(np.pi / 2, wires=wires),
+            RY(np.pi / 2, wires=wires),
+            RZ(-np.pi, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
 class CNOT(Operation):
     r"""CNOT(wires)
     The controlled-NOT operator
@@ -867,10 +907,12 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
-        if not len(pauli_word) == len(wires):
+        num_wires = 1 if isinstance(wires, int) else len(wires)
+
+        if not len(pauli_word) == num_wires:
             raise ValueError(
                 "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), len(wires), wires
+                    len(pauli_word), num_wires, wires
                 )
             )
 
@@ -897,6 +939,10 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
+        # Simplest case is if the Pauli is the identity matrix
+        if pauli_word == "I" * len(pauli_word):
+            return np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word))
+
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
@@ -919,11 +965,23 @@ class PauliRot(Operation):
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
+        # Identity must be treated specially because its eigenvalues are all the same
+        if pauli_word == "I" * len(pauli_word):
+            return np.exp(-1j * theta / 2) * np.ones(2 ** len(pauli_word))
+
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
     @template
     def decomposition(theta, pauli_word, wires):
+        # Catch cases when the wire is passed as a single int.
+        if isinstance(wires, int):
+            wires = [wires]
+
+        # Check for identity and do nothing
+        if pauli_word == "I" * len(wires):
+            return
+
         active_wires, active_gates = zip(
             *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
         )
@@ -1610,6 +1668,7 @@ ops = {
     "MultiRZ",
     "S",
     "T",
+    "SX",
     "CNOT",
     "CZ",
     "CY",

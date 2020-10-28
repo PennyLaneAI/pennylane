@@ -4,6 +4,25 @@
 
 <h3>Improvements</h3>
 
+* Many-body observables are now built from the FermionOperator representation of
+  one-particle and two-particle second-quantized operators.
+  [(#854)](https://github.com/PennyLaneAI/pennylane/pull/854)
+
+  This improvement brings the following advantages:
+
+  - Extra tables to store the indices of the orbitals and the corresponding 
+    matrix elements are not needed.
+
+  - The functions ``observable``, ``one_particle`` and ``two_particle`` are
+    significantly simplified.
+
+  - The methodology to build many-body observables in PL-QChem is more consistent.
+
+  - Users do not need to keep track of the contribution due to core orbitals
+    when an active space is defined. This is now handle internally.
+
+  - It makes the implementation of observables cleaner and easier to maintain. 
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -28,6 +47,10 @@ This release contains contributions from (in alphabetical order):
 * The function `observable` in the `obs` module has been generalized to build
   many-body observables combining one- and two-particle operators (e.g., Hamiltonians)
   [(#791)](https://github.com/PennyLaneAI/pennylane/pull/791)
+
+<h3>Improvements</h3>
+
+<h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
 
