@@ -28,7 +28,7 @@ from pennylane.templates.state_preparations import (BasisStatePreparation,
                                                     ArbitraryStatePreparation)
 from pennylane.templates.state_preparations.mottonen import gray_code
 from pennylane.templates.state_preparations.arbitrary_state_preparation import _state_preparation_pauli_words
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, _get_alpha_z
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
 
