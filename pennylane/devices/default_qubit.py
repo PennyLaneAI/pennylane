@@ -103,6 +103,7 @@ class DefaultQubit(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
         "CSWAP",
@@ -138,6 +139,7 @@ class DefaultQubit(QubitDevice):
             "Hadamard": self._apply_hadamard,
             "S": self._apply_s,
             "T": self._apply_t,
+            "SX": self._apply_sx,
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
@@ -259,6 +261,21 @@ class DefaultQubit(QubitDevice):
 
     def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
+
+    def _apply_sx(self, state, axes, inverse=False):
+        """Apply the Square Root X gate.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        if inverse:
+            return 0.5 * ((1 - 1j) * state + (1 + 1j) * self._apply_x(state, axes))
+
+        return 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
 
     def _apply_cnot(self, state, axes, **kwargs):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then

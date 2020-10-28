@@ -1813,6 +1813,7 @@ class TestApplyOps:
         (qml.Hadamard, dev._apply_hadamard),
         (qml.S, dev._apply_s),
         (qml.T, dev._apply_t),
+        (qml.SX, dev._apply_sx),
     ]
     two_qubit_ops = [
         (qml.CNOT, dev._apply_cnot),
