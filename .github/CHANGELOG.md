@@ -26,7 +26,6 @@
   number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
   [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
 
-
 <h3>Improvements</h3>
 
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
