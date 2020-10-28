@@ -58,6 +58,7 @@ Qubit gates
     ~pennylane.PauliZ
     ~pennylane.S
     ~pennylane.T
+    ~pennylane.SX
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY

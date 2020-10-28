@@ -69,6 +69,7 @@ class DefaultMixed(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
         "CSWAP",

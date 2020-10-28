@@ -62,6 +62,7 @@ ops = {
     "S": qml.S(wires=[0]),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
+    "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
 }
 
@@ -75,6 +76,7 @@ Z = np.array([[1, 0], [0, -1]])
 H = np.array([[1, 1], [1, -1]]) / sqrt(2)
 S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
+SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
@@ -141,6 +143,7 @@ single_qubit = [
     (qml.Hadamard, H),
     (qml.S, S),
     (qml.T, T),
+    (qml.SX, SX),
 ]
 
 # list of all parametrized single-qubit gates
