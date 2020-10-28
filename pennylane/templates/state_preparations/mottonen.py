@@ -95,7 +95,7 @@ def _compute_theta(alpha):
 
     theta = M_trans @ alpha
 
-    return theta / 2**k
+    return theta / 2 ** k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
