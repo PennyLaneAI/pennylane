@@ -464,8 +464,8 @@ class DefaultQubit(QubitDevice):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if (
-                len(device_wires) == self.num_wires
-                and sorted(device_wires.labels) == device_wires.tolist()
+            len(device_wires) == self.num_wires
+            and sorted(device_wires.labels) == device_wires.tolist()
         ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
@@ -556,7 +556,7 @@ class DefaultQubit(QubitDevice):
         affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires: self.num_wires + len(device_wires)]
+        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices
