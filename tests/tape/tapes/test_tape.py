@@ -559,6 +559,15 @@ class TestParameters:
 
         assert np.all(obs.data[0] == H2)
 
+    def test_multiple_expectations_same_wire(self, make_tape):
+        """Test if a QuantumFunctionError is raised if more than one expectation value is
+        evaluated on a given wire"""
+        tape, _ = make_tape
+
+        with pytest.raises(qml.QuantumFunctionError, match="Each wire in the quantum circuit"):
+            with tape:
+                qml.expval(qml.PauliZ("a"))
+
 
 class TestInverse:
     """Tests for tape inversion"""
