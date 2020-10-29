@@ -731,5 +731,5 @@ class TestParticleConservingU1:
                     # assert the gates in ``rec.queue`` againts the expected ones in 'gates_ent'
                     assert isinstance(rec.queue[idx], exp_gate)
 
-                    # assert the wires each elementary gates decomposing ``u1_ex_gate`` act on 
+                    # assert the wires each gate decomposing ``u1_ex_gate`` act on 
                     assert rec.queue[idx]._wires == exp_wires[j]
