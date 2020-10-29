@@ -34,6 +34,9 @@ from pennylane.wires import Wires
 TOLERANCE = 1e-8
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestCVNeuralNet:
     """Tests for the CVNeuralNet from the pennylane.template module."""
 
@@ -351,6 +354,8 @@ class TestRandomLayers:
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
+        if qml.tape_mode_active():
+            pytest.skip("Immutable QNodes no longer exist in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1] * 100]

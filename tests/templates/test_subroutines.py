@@ -37,6 +37,10 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _n_k_gray_code,
 )
 
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 # fmt: off
 PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),
@@ -342,8 +346,8 @@ class TestInterferometer:
         assert np.allclose(res, expected, atol=tol)
 
         # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
-        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
+        jac_A = circuit.jacobian((theta, phi, varphi), method="A", options={"device": dev})
+        jac_F = circuit.jacobian((theta, phi, varphi), method="F", options={"device": dev})
         assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
