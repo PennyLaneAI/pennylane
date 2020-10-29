@@ -25,7 +25,7 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     distribution.
 
     Each parameter is drawn uniformly at random from between ``low`` and ``high``.
-    The parameters define the trainable angles entering the particle-conserving 
+    The parameters define the trainable angles entering the particle-conserving
     exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
     :func:`~.u1_ex_gate()`.
 
@@ -55,7 +55,7 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     distribution.
 
     Each parameter is drawn from a normal distribution with ``mean`` and ``variance``.
-    The parameters define the trainable angles entering the particle-conserving 
+    The parameters define the trainable angles entering the particle-conserving
     exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
     :func:`~.u1_ex_gate()`.
 
