@@ -166,7 +166,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
         :width: 60%
         :target: javascript:void(0);
 
-    |    
+    |
 
 
     Args:
