@@ -341,9 +341,13 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(observables) > 1:
                     raise QuantumFunctionError(
-                        "The state cannot be returned in combination with other return types"
+                        "The state respectively density matrix cannot be returned in combination"
+                        " with other return types"
                     )
-
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
@@ -373,7 +377,7 @@ class QubitDevice(Device):
             raise QuantumFunctionError("The state is not available in the current device")
 
         if wires:
-            return self.density_matrix(wires=wires)
+            return getattr(self, "density_matrix", None)(wires)
 
         return state
 

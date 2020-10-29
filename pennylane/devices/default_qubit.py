@@ -427,9 +427,6 @@ class DefaultQubit(QubitDevice):
         wires = list(wires.labels)
         dim_trace = dim - len(wires)
 
-        entire_system = list(range(0, dim))
-        subsystem = [x for x in entire_system if x not in wires]
-
         # If we are tracing over all subsystems we return the trace which is 1 for a valid quantum state.
         if dim_trace == 0:
             trace = np.zeros(1, dtype=np.complex128)
@@ -438,10 +435,11 @@ class DefaultQubit(QubitDevice):
             return trace
 
         # Return the reduced density matrix by using tensor product,
-
         state = self._pre_rotated_state
-        traced_subsystem = dim - 1 - np.array(subsystem)
-        density_matrix = self._tensordot(state, self._conj(state), axes=(traced_subsystem, traced_subsystem))
+
+        density_matrix = self._tensordot(state, self._conj(state), axes=(wires, wires))
+        density_matrix = self._reshape(density_matrix, (2 ** dim_trace, 2 ** dim_trace))
+
         return density_matrix
 
     def _apply_state_vector(self, state, device_wires):
