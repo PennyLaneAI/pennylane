@@ -330,6 +330,13 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
+        # check that no wires are measured more than once
+        m_wires = list(w for m in self._measurements for w in m.obs.wires)
+        if len(m_wires) != len(set(m_wires)):
+            raise qml.QuantumFunctionError(
+                "Each wire in the quantum circuit can only be measured once."
+            )
+
         self._update()
 
     def _update_circuit_info(self):
