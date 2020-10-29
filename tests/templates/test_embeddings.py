@@ -244,9 +244,9 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        res = circuit(x=features[:n_subsystems])
+        res = circuit(x=features)
         target = [-1, 1, 1, 1, 1]
-        assert np.allclose(res, target[:n_subsystems])
+        assert np.allclose(res, target)
 
     @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
     def test_angle_embedding_exception_fewer_rotations(self, strategy):
