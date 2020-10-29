@@ -19,7 +19,7 @@ import abc
 
 
 class UnifiedTensor(abc.ABC):
-    """Creates a unified tensor wrapper, that represents interface array/tensor datatypes
+    """Creates a unified tensor wrapper that represents interface array/tensor datatypes
     using a common API.
 
     While this is an abstract base class, this class may be 'instantiated' directly;
@@ -40,7 +40,7 @@ class UnifiedTensor(abc.ABC):
     >>> y.ones_like()
     tf.Tensor([1. 1. 1.], shape=(3,), dtype=float32)
 
-    Unless specified, the returned tensots are also unified tensors, allowing
+    Unless specified, the returned tensors are also unified tensors, allowing
     for method chaining:
 
     >>> y.ones_like().expand_dims(0)
@@ -94,7 +94,6 @@ class UnifiedTensor(abc.ABC):
         if isinstance(other, UnifiedTensor):
             other = other.data
 
-        print(self, other)
         return self.__class__(self.data * other)
 
     def __rmul__(self, other):
