@@ -154,6 +154,8 @@
 
 <h3>Bug fixes</h3>
 
+* The new tape mode now prevents multiple expectation values from being evaluated on the same wire.
+
 * The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
   [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
 
