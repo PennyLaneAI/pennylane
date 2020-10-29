@@ -720,13 +720,16 @@ class TestParticleConservingU1:
         # test initialization of the qubit register
         assert isinstance(rec.queue[0], qml.BasisState)
 
-        # assert the gates in ``rec.queue`` againts the expected ones as defined in 'gates_ent'
+        # checking the quantum operations
         for l in range(layers):
             for i in range(qubits - 1):
                 exp_wires = _wires_gates_u1(nm_wires[i])
 
                 for j, exp_gate in enumerate(gates_ent):
                     idx = gates_per_layer * l + gates_per_u1 * i + j + 1
-
+                    
+                    # assert the gates in ``rec.queue`` againts the expected ones in 'gates_ent'
                     assert isinstance(rec.queue[idx], exp_gate)
+
+                    # assert the wires each elementary gates decomposing ``u1_ex_gate`` act on 
                     assert rec.queue[idx]._wires == exp_wires[j]
