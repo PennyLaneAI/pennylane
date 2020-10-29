@@ -169,6 +169,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
 
+    print(features)
     wires = Wires(wires)
 
     n_amplitudes = 2 ** len(wires)
@@ -179,8 +180,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             features,
             expected_shape,
             msg="'features' must be of shape {}; got {}. Use the 'pad' "
-                "argument for automated padding."
-                "".format(expected_shape, get_shape(features)),
+            "argument for automated padding."
+            "".format(expected_shape, get_shape(features)),
         )
     else:
         shape = check_shape(
@@ -188,8 +189,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             expected_shape,
             bound="max",
             msg="'features' must be of shape {} or smaller "
-                "to be padded; got {}"
-                "".format(expected_shape, get_shape(features)),
+            "to be padded; got {}"
+            "".format(expected_shape, get_shape(features)),
         )
 
     ###############
@@ -209,8 +210,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         feature_values = [s.val for s in features]
         norm = np.sum(np.abs(feature_values) ** 2)
     else:
-        features = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(features)
-        norm = np.sum(np.abs(features) ** 2)
+        norm = np.sum(np.abs(qml.tape.UnifiedTensor(features).numpy()) ** 2)
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE):
         if normalize or pad:
@@ -222,5 +222,4 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             )
 
     ###############
-
     QubitStateVector(features, wires=wires)

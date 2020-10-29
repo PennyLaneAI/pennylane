@@ -549,7 +549,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         # expand dimension so that parameter sets for each unitary can be unpacked
         if len(shape) == 1:
-            parameters = qml.tape.interfaces.functions.WrapperFunctions.expand_dims(parameters, 1)
+            if qml.tape_mode_active():
+                parameters = qml.tape.UnifiedTensor(parameters).expand_dims(1).data
+            else:
+                parameters = [[p] for p in parameters]
 
     wire_sequence = pattern_to_wires[pattern]
     if parameters is None:

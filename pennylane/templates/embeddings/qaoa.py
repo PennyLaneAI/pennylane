@@ -42,7 +42,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         # works for lists and tuples
         n_features = len(features)
 
-    feature_encoding_wires = wires[: n_features]
+    feature_encoding_wires = wires[:n_features]
     remaining_wires = wires[n_features:]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
