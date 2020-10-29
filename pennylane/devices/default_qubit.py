@@ -412,6 +412,38 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
+    def density_matrix(self, wires=None):
+        """Return the reduced density matrix given a set of wires to be traced out.
+
+        Args:
+            wires (Sequence[int] or int): the wires that will be traced out
+
+        Returns:
+            tensor[complex]: complex tensor of shape ``2^(self.num_wires-len(wires))``
+            representing the reduced density matrix.
+        """
+        dim = self.num_wires
+
+        wires = list(wires.labels)
+        dim_trace = dim - len(wires)
+
+        entire_system = list(range(0, dim))
+        subsystem = [x for x in entire_system if x not in wires]
+
+        # If we are tracing over all subsystems we return the trace which is 1 for a valid quantum state.
+        if dim_trace == 0:
+            trace = np.zeros(1, dtype=np.complex128)
+            trace[0] = 1
+            trace = self._asarray(trace, dtype=self.C_DTYPE)
+            return trace
+
+        # Return the reduced density matrix by using tensor product,
+
+        state = self._pre_rotated_state
+        traced_subsystem = dim - 1 - np.array(subsystem)
+        density_matrix = self._tensordot(state, self._conj(state), axes=(traced_subsystem, traced_subsystem))
+        return density_matrix
+
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
@@ -434,8 +466,8 @@ class DefaultQubit(QubitDevice):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if (
-            len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.tolist()
+                len(device_wires) == self.num_wires
+                and sorted(device_wires.labels) == device_wires.tolist()
         ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
@@ -526,7 +558,7 @@ class DefaultQubit(QubitDevice):
         affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
+        new_indices = ABC[self.num_wires: self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices

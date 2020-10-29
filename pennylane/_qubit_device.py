@@ -94,6 +94,7 @@ class QubitDevice(Device):
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
+    _delete = staticmethod(np.delete)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -309,7 +310,8 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples, probabilities and states.
+        This includes returning expectation values, variance, samples, probabilities, states and
+        density matrices.
 
         Args:
             observables (List[:class:`Observable`]): the observables to be measured
@@ -342,12 +344,9 @@ class QubitDevice(Device):
                         "The state cannot be returned in combination with other return types"
                     )
 
-                if self.wires.labels != tuple(range(self.num_wires)):
-                    raise QuantumFunctionError(
-                        "Returning the state is not supported when using custom wire labels"
-                    )
-
-                results.append(self.access_state())
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.access_state(wires=obs.wires))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -356,14 +355,14 @@ class QubitDevice(Device):
 
         return results
 
-    def access_state(self):
+    def access_state(self, wires=None):
         """Check that the device has access to an internal state and return it if available.
 
         Raises:
             QuantumFunctionError: if the device is not capable of returning the state
 
         Returns:
-            array or tensor: the state of the device
+            array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
             raise QuantumFunctionError("The current device is not capable of returning the state")
@@ -372,6 +371,9 @@ class QubitDevice(Device):
 
         if state is None:
             raise QuantumFunctionError("The state is not available in the current device")
+
+        if wires:
+            return self.density_matrix(wires=wires)
 
         return state
 
@@ -480,6 +482,16 @@ class QubitDevice(Device):
     @property
     def state(self):
         """Returns the state vector of the circuit prior to measurement.
+
+        .. note::
+
+            Only state vector simulators support this property. Please see the
+            plugin documentation for more details.
+        """
+        raise NotImplementedError
+
+    def density_matrix(self, wires=None):
+        """Returns the reduced density matrix prior to measurement.
 
         .. note::
 
