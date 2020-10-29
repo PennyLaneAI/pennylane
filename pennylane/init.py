@@ -20,6 +20,60 @@ from math import pi
 from pennylane import numpy as np
 
 
+def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU2`, drawn from a uniform
+    distribution.
+    Each parameter is drawn uniformly at random from between ``low`` and ``high``.
+    The parameters define the trainable angles entering the rotation gate
+    :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate :math:`U_{2,\mathrm{ex}}`
+    implemented by the :func:`~.u2_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+
+    params = np.random.uniform(low=low, high=high, size=(n_layers, 2 * n_wires - 1))
+    return params
+
+
+def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a normal
+    distribution.
+    Each parameter is drawn uniformly at random from between ``low`` and ``high``.
+    The parameters define the trainable angles entering the rotation gate
+    :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate :math:`U_{2,\mathrm{ex}}`
+    implemented by the :func:`~.u2_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+
+    params = np.random.normal(loc=mean, scale=std, size=(n_layers, 2 * n_wires - 1))
+    return params
+
+
 def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.QAOAEmbedding`, drawn from a uniform
     distribution.
