@@ -1012,11 +1012,6 @@ class TestUCCSDUnitary:
         res = circuit(w0, w1, w2)
         assert np.allclose(res, np.array(expected), atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((w0, w1, w2), method="A")
-        jac_F = circuit.jacobian((w0, w1, w2), method="F")
-        assert np.allclose(jac_A, jac_F, atol=tol)
-
 
 class TestApproxTimeEvolution:
     """Tests for the ApproxTimeEvolution template from the pennylane.templates.subroutine module."""
