@@ -458,7 +458,7 @@ class TestAutogradPassthru:
         assert expected.shape == (1, 1)
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
 
-    def test_jacsobian(self, mocker, tol):
+    def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
         spy = mocker.spy(JacobianTape, "jacobian")
         a = np.array(0.1, requires_grad=True)
