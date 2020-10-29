@@ -19,7 +19,7 @@ import abc
 
 
 class UnifiedTensor(abc.ABC):
-    """Creates a unified tensor wrapper, that represents interface array/tensor datatypes
+    """Creates a unified tensor wrapper that represents interface array/tensor datatypes
     using a common API.
 
     While this is an abstract base class, this class may be 'instantiated' directly;
