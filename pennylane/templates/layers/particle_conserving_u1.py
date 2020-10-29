@@ -225,12 +225,32 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     wires = Wires(wires)
 
-    pair_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
-    pair_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
+    layers = weights.shape[0]
+
+    expected_shape = (layers, len(wires) - 1, 2)
+    check_shape(
+        weights,
+        expected_shape,
+        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+    )
+
+    check_type(
+        init_state,
+        [np.ndarray],
+        msg="'init_state' must be a Numpy array; got {}".format(init_state),
+    )
+    for i in init_state:
+        check_type(
+            i,
+            [int, np.int64, np.ndarray],
+            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
+        )
+
+    nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
 
     qml.BasisState(init_state, wires=wires)
 
-    layers = weights.shape[0]
     for l in range(layers):
-        for i, wires_ in enumerate(pair_wires):
+        for i, wires_ in enumerate(nm_wires):
             u1_ex_gate(*weights[l, i], wires=wires_)
