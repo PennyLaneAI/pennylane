@@ -171,7 +171,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
-            ``D`` is the number of entangler block layers and ``M``=:math:`N_\mathrm{qubits}-1`
+            ``D`` is the number of entangler block layers and ``M`` = :math:`N_\mathrm{qubits}-1`
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
