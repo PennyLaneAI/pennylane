@@ -40,7 +40,7 @@ class UnifiedTensor(abc.ABC):
     >>> y.ones_like()
     tf.Tensor([1. 1. 1.], shape=(3,), dtype=float32)
 
-    Unless specified, the returned tensots are also unified tensors, allowing
+    Unless specified, the returned tensors are also unified tensors, allowing
     for method chaining:
 
     >>> y.ones_like().expand_dims(0)
