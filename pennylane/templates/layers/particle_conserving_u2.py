@@ -62,11 +62,11 @@ def u2_ex_gate(phi, wires=None):
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
     """
 
-    qml.CNOT(wires=wires)
+    CNOT(wires=wires)
 
-    qml.CRX(phi, wires=wires[::-1])
+    CRX(phi, wires=wires[::-1])
 
-    qml.CNOT(wires=wires)
+    CNOT(wires=wires)
 
 
 @template
