@@ -169,7 +169,6 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
 
-    print(features)
     wires = Wires(wires)
 
     n_amplitudes = 2 ** len(wires)

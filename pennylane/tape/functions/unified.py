@@ -94,7 +94,6 @@ class UnifiedTensor(abc.ABC):
         if isinstance(other, UnifiedTensor):
             other = other.data
 
-        print(self, other)
         return self.__class__(self.data * other)
 
     def __rmul__(self, other):
