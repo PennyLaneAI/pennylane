@@ -26,10 +26,12 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    ParticleConservingU1,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
+from pennylane.init import particle_conserving_u1_normal
 
 TOLERANCE = 1e-8
 
@@ -642,3 +644,89 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+
+class TestParticleConservingU1:
+    """Tests for the ParticleConservingU1 template from the
+    pennylane.templates.layers module."""
+
+    def test_particle_conserving_u1_operations(self):
+        """Test the correctness of the ParticleConservingU1 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+
+        qubits = 4
+        layers = 2
+        weights = particle_conserving_u1_normal(layers, qubits)
+
+        gates_per_u1 = 16
+        gates_per_layer = gates_per_u1 * (qubits - 1)
+        gate_count = layers * gates_per_layer + 1
+
+        gates_u1 = [
+            qml.CZ,
+            qml.CRot,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+        ]
+        gates_ent = gates_u1 + [qml.CZ, qml.CRot] + gates_u1
+
+        # wires = range(qubits)
+        wires = Wires(range(qubits))
+
+        nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+
+        def _wires_gates_u1(wires):
+            """Auxiliary function giving the wires that the elementary gates decomposing
+            ``u1_ex_gate`` act on."""
+
+            exp_wires = []
+
+            exp_wires.append(wires)
+            exp_wires.append(wires)
+
+            exp_wires.append(wires[1])
+            exp_wires.append(wires)
+            exp_wires.append(wires[1])
+            exp_wires.append(wires)
+            exp_wires.append(wires[0])
+
+            exp_wires.append(wires[::-1])
+            exp_wires.append(wires[::-1])
+
+            exp_wires.append(wires)
+            exp_wires.append(wires)
+
+            exp_wires.append(wires[1])
+            exp_wires.append(wires)
+            exp_wires.append(wires[1])
+            exp_wires.append(wires)
+            exp_wires.append(wires[0])
+
+            return exp_wires
+
+        electrons = 2
+        hf_state = qml.qchem.hf_state(electrons, qubits)
+
+        with pennylane._queuing.OperationRecorder() as rec:
+            ParticleConservingU1(weights, wires, init_state=hf_state)
+
+        assert gate_count == len(rec.queue)
+
+        # test initialization of the qubit register
+        assert isinstance(rec.queue[0], qml.BasisState)
+
+        # assert the gates in ``rec.queue`` againts the expected ones as defined in 'gates_ent'
+        for l in range(layers):
+            for i in range(qubits - 1):
+                exp_wires = _wires_gates_u1(nm_wires[i])
+
+                for j, exp_gate in enumerate(gates_ent):
+                    idx = gates_per_layer * l + gates_per_u1 * i + j + 1
+
+                    assert isinstance(rec.queue[idx], exp_gate)
+                    assert rec.queue[idx]._wires == exp_wires[j]
