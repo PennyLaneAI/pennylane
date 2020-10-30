@@ -759,3 +759,34 @@ class TestParticleConservingU1:
                                 exp_params = -phi
 
                         assert rec.queue[idx].parameters == exp_params
+
+    @pytest.mark.parametrize(
+        ("weights", "n_wires", "init_state", "msg_match"),
+        [
+            (np.ones((2, 3, 2)), 4, [1, 1, 0, 0], "'init_state' must be a Numpy array"),
+            (np.ones((4, 3, 2)), 4, (1, 1, 0, 0), "'init_state' must be a Numpy array"),
+            (np.ones((4, 2, 2)), 4, np.array([1, 1, 0, 0]), "'weights' must be of shape"),
+            (np.ones((4, 3, 1)), 4, np.array([1, 1, 0, 0]), "'weights' must be of shape"),
+            (
+                np.ones((4, 3, 1)),
+                1,
+                np.array([1, 1, 0, 0]),
+                "This template requires the number of qubits to be >= 2",
+            ),
+        ],
+    )
+    def test_particle_conserving_u1_exceptions(self, weights, n_wires, init_state, msg_match):
+        """Test that ParticleConservingU1 throws an exception if the parameter array have illegal
+        shape."""
+
+        wires = range(n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        print(weights.shape)
+
+        def circuit(weights=weights, wires=wires, init_state=init_state):
+            ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit(weights=weights, wires=wires, init_state=init_state)
