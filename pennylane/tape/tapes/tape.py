@@ -40,8 +40,6 @@ STATE_PREP_OPS = (
     qml.GaussianState,
 )
 
-OBSERVABLE_MEASUREMENTS = [qml.operation.Expectation, qml.operation.Variance, qml.operation.Sample]
-
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
@@ -334,7 +332,8 @@ class QuantumTape(AnnotatedQueue):
 
         m_wires = []  # The wires upon which an observable is measured
         for m in self._measurements:
-            m_wires.extend([w for w in m.wires if m.return_type in OBSERVABLE_MEASUREMENTS])
+            if m.obs is not None:
+                m_wires.extend(m.wires)
 
         if len(m_wires) != len(set(m_wires)):
             raise qml.QuantumFunctionError(
