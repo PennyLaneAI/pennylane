@@ -87,8 +87,9 @@ def AngleEmbedding(features, wires, rotation="X"):
         _broadcast_no_shape_check(unitary=RZ, pattern="single", wires=wires, parameters=features)
 
 def _broadcast_no_shape_check(unitary, pattern, wires, parameters):
-    """This is a temporary auxiliary function that enables AngleEmbedding for
-    fewer number of features as qubits of the system.
+    """This is a temporary auxiliary function that turns off the internal shape
+    check of the ``broadcast`` function used by AngleEmbedding to allow for
+    fewer number of features as qubits.
 
     This behaviour will be revisited after tape mode has been introduced for
     templates.
