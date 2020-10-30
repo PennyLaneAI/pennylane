@@ -790,3 +790,29 @@ class TestParticleConservingU1:
 
         with pytest.raises(ValueError, match=msg_match):
             circuit(weights=weights, wires=wires, init_state=init_state)
+
+    def test_integration(self, tol):
+        """Test integration with PennyLane"""
+
+        N = 4
+        wires = range(N)
+        layers = 2
+        weights = np.array(
+            [
+                [[-0.09009989, -0.00090317], [-0.16034551, -0.13278097], [-0.02926428, 0.05175079]],
+                [[-0.07988132, 0.11315495], [-0.16079166, 0.09439518], [-0.04321269, 0.13678911]],
+            ]
+        )
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(weights)
+
+        exp = np.array([-0.99993177, -0.9853332, 0.98531251, 0.99995246])
+        assert np.allclose(res, np.array(expected), atol=tol)
