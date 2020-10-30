@@ -650,6 +650,36 @@ class TestParticleConservingU1:
     """Tests for the ParticleConservingU1 template from the
     pennylane.templates.layers module."""
 
+    @staticmethod
+    def _wires_gates_u1(wires):
+        """Auxiliary function giving the wires that the elementary gates decomposing
+        ``u1_ex_gate`` act on."""
+
+        exp_wires = []
+
+        exp_wires.append(wires)
+        exp_wires.append(wires)
+
+        exp_wires.append(wires[1])
+        exp_wires.append(wires)
+        exp_wires.append(wires[1])
+        exp_wires.append(wires)
+        exp_wires.append(wires[0])
+
+        exp_wires.append(wires[::-1])
+        exp_wires.append(wires[::-1])
+
+        exp_wires.append(wires)
+        exp_wires.append(wires)
+
+        exp_wires.append(wires[1])
+        exp_wires.append(wires)
+        exp_wires.append(wires[1])
+        exp_wires.append(wires)
+        exp_wires.append(wires[0])
+
+        return exp_wires
+
     def test_particle_conserving_u1_operations(self):
         """Test the correctness of the ParticleConservingU1 template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
@@ -674,40 +704,10 @@ class TestParticleConservingU1:
         ]
         gates_ent = gates_u1 + [qml.CZ, qml.CRot] + gates_u1
 
-        # wires = range(qubits)
         wires = Wires(range(qubits))
 
         nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
         nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
-
-        def _wires_gates_u1(wires):
-            """Auxiliary function giving the wires that the elementary gates decomposing
-            ``u1_ex_gate`` act on."""
-
-            exp_wires = []
-
-            exp_wires.append(wires)
-            exp_wires.append(wires)
-
-            exp_wires.append(wires[1])
-            exp_wires.append(wires)
-            exp_wires.append(wires[1])
-            exp_wires.append(wires)
-            exp_wires.append(wires[0])
-
-            exp_wires.append(wires[::-1])
-            exp_wires.append(wires[::-1])
-
-            exp_wires.append(wires)
-            exp_wires.append(wires)
-
-            exp_wires.append(wires[1])
-            exp_wires.append(wires)
-            exp_wires.append(wires[1])
-            exp_wires.append(wires)
-            exp_wires.append(wires[0])
-
-            return exp_wires
 
         electrons = 2
         hf_state = qml.qchem.hf_state(electrons, qubits)
@@ -717,19 +717,48 @@ class TestParticleConservingU1:
 
         assert gate_count == len(rec.queue)
 
-        # test initialization of the qubit register
+        # check initialization of the qubit register
         assert isinstance(rec.queue[0], qml.BasisState)
 
-        # checking the quantum operations
+        # check all quantum operations
+        idx_CRot = 8
         for l in range(layers):
             for i in range(qubits - 1):
-                exp_wires = _wires_gates_u1(nm_wires[i])
+                exp_wires = self._wires_gates_u1(nm_wires[i])
+
+                phi = weights[l, i, 0]
+                theta = weights[l, i, 1]
 
                 for j, exp_gate in enumerate(gates_ent):
                     idx = gates_per_layer * l + gates_per_u1 * i + j + 1
-                    
-                    # assert the gates in ``rec.queue`` againts the expected ones in 'gates_ent'
+
+                    # check that the gates are applied in the right order
                     assert isinstance(rec.queue[idx], exp_gate)
 
-                    # assert the wires each gate decomposing ``u1_ex_gate`` act on 
+                    # check the wires the gates act on
                     assert rec.queue[idx]._wires == exp_wires[j]
+
+                    # check that parametrized gates takes the parameters \phi and \theta properly
+                    if exp_gate is qml.CRot:
+
+                        if j < idx_CRot:
+                            exp_params = [-phi, np.pi, phi]
+                        if j > idx_CRot:
+                            exp_params = [phi, np.pi, -phi]
+                        if j == idx_CRot:
+                            exp_params = [0, 2 * theta, 0]
+
+                        assert rec.queue[idx].parameters == exp_params
+
+                    elif exp_gate is qml.PhaseShift:
+
+                        if j < idx_CRot:
+                            exp_params = -phi
+                            if j == idx_CRot / 2:
+                                exp_params = phi
+                        if j > idx_CRot:
+                            exp_params = phi
+                            if j == (3 * idx_CRot + 2) / 2:
+                                exp_params = -phi
+
+                        assert rec.queue[idx].parameters == exp_params
