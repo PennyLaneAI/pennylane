@@ -709,11 +709,8 @@ class TestParticleConservingU1:
         nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
         nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
 
-        electrons = 2
-        hf_state = qml.qchem.hf_state(electrons, qubits)
-
         with pennylane._queuing.OperationRecorder() as rec:
-            ParticleConservingU1(weights, wires, init_state=hf_state)
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
 
         assert gate_count == len(rec.queue)
 
