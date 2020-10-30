@@ -78,10 +78,27 @@ def AngleEmbedding(features, wires, rotation="X"):
     ###############
 
     if rotation == "X":
-        broadcast(unitary=RX, pattern="single", wires=wires, parameters=features)
+        _broadcast_no_shape_check(unitary=RX, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Y":
-        broadcast(unitary=RY, pattern="single", wires=wires, parameters=features)
+        _broadcast_no_shape_check(unitary=RY, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Z":
-        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
+        _broadcast_no_shape_check(unitary=RZ, pattern="single", wires=wires, parameters=features)
+
+def _broadcast_no_shape_check(unitary, pattern, wires, parameters):
+    """This is a temporary auxiliary function that enables AngleEmbedding for
+    fewer number of features as qubits of the system.
+
+    This behaviour will be revisited after tape mode has been introduced for
+    templates.
+    """
+    try:
+        broadcast(unitary=unitary, pattern=pattern, wires=wires, parameters=parameters)
+    except ValueError as e:
+        msg = "must contain entries for {} unitaries".format(len(wires))
+
+        # Re-raise the error if it did not occur when the error message refers
+        # to a mismatch of the parameters for unitaries
+        if msg not in str(e):
+            raise e
