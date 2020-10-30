@@ -86,6 +86,7 @@ def AngleEmbedding(features, wires, rotation="X"):
     elif rotation == "Z":
         _broadcast_no_shape_check(unitary=RZ, pattern="single", wires=wires, parameters=features)
 
+
 # TODO: remove when revisiting templates after tape mode integration
 def _broadcast_no_shape_check(unitary, pattern, wires, parameters):
     """This is a temporary auxiliary function that turns off the internal shape
