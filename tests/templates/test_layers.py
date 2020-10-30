@@ -782,8 +782,6 @@ class TestParticleConservingU1:
         wires = range(n_wires)
         dev = qml.device("default.qubit", wires=n_wires)
 
-        print(weights.shape)
-
         def circuit(weights=weights, wires=wires, init_state=init_state):
             ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
