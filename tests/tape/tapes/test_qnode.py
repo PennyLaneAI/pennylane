@@ -17,7 +17,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
-from pennylane.tape.measure import MeasurementProcess
 
 
 class TestValidation:
@@ -401,6 +400,27 @@ class TestTapeConstruction:
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
+    def test_multiple_observables_same_wire(self, mocker):
+        """Test that the QNode supports returning observables that are on the same wire (provided
+        that they are Pauli words and qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        w = np.random.random((2, 2, 3))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = circuit(w)
+        spy.assert_called_once()
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
+        res_2 = qnodes(w)
+
+        assert np.allclose(res, res_2)
             
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
