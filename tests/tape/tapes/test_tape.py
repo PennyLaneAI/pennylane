@@ -577,6 +577,15 @@ class TestParameters:
             with tape:
                 qml.var(qml.PauliZ("a"))
 
+    def test_multiple_expectations_and_sample_same_wire(self, make_tape):
+        """Test if a QuantumFunctionError is raised if a sampling measurement follows an
+        expectation value measurement on the same wire"""
+        tape, _ = make_tape
+
+        with pytest.raises(qml.QuantumFunctionError, match="Each wire in the quantum circuit"):
+            with tape:
+                qml.sample(qml.PauliZ("a"))
+
 
 class TestInverse:
     """Tests for tape inversion"""

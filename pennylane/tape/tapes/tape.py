@@ -40,7 +40,7 @@ STATE_PREP_OPS = (
     qml.GaussianState,
 )
 
-FORBIDDEN_ON_SAME_WIRE = [qml.operation.Expectation, qml.operation.Variance]
+OBSERVABLE_MEASUREMENTS = [qml.operation.Expectation, qml.operation.Variance, qml.operation.Sample]
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -332,14 +332,13 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
-        m_wires = []  # The wires upon which an expectation value or variance is measured
+        m_wires = []  # The wires upon which an observable is measured
         for m in self._measurements:
-            m_wires.extend([w for w in m.wires if m.return_type in FORBIDDEN_ON_SAME_WIRE])
+            m_wires.extend([w for w in m.wires if m.return_type in OBSERVABLE_MEASUREMENTS])
 
         if len(m_wires) != len(set(m_wires)):
             raise qml.QuantumFunctionError(
-                "Each wire in the quantum circuit can only be measured by one expectation value "
-                "or variance."
+                "Each wire in the quantum circuit can only be measured by a single observable"
             )
 
         self._update()
