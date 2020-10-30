@@ -28,9 +28,8 @@ from pennylane.templates.utils import (
 
 @template
 def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
-    r"""
-    Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
-     where :math:`N\leq M`.
+    r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
+    where :math:`N\leq M`.
 
     The mathematical definition of the displacement gate is given by the operator
 
