@@ -26,6 +26,8 @@ from pennylane.operation import State
 
 from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
 from pennylane.tape.tapes import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.grouping import diagonalize_qwc_pauli_words
+from pennylane.tape.measure import MeasurementProcess
 
 
 class QNode:
@@ -407,6 +409,30 @@ class QNode:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
             )
+
+        # extract observables, and their place in the measurement queue
+        obs = [m.obs for m in self.qtape.measurements if m is not None]
+        m_idx = [i for i, m in enumerate(self.qtape.measurements) if m is not None]
+
+        # get wires for observables
+        wires = []
+        for m in obs:
+            if m is not None:
+                wires.extend([w for w in m.wires])
+
+        if len(wires) == len(set(wires)):
+            # return if no observables use the same wires
+            return
+
+        # if observables use the same wires, assume commuting and attempt to diagonalize
+        rotations, obs = diagonalize_qwc_pauli_words(obs)
+        self.qtape._ops.extend(rotations)
+
+        for i, o in zip(m_idx, obs):
+            new_m = MeasurementProcess(self.qtape.measurements[i].return_type, obs=o)
+            self.qtape._measurements[i] = new_m
+
+        self.qtape._update()
 
     def __call__(self, *args, **kwargs):
 
