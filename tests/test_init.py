@@ -250,6 +250,12 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal,
                       (qml.init.basic_entangler_layers_uniform,
                        {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
                        (2, 2)),
+                      (qml.init.particle_conserving_u2_uniform,
+                       {"n_layers": 2, "n_wires": 4, "low": 0, "high": 1},
+                       (2, 7)),
+                      (qml.init.particle_conserving_u2_normal,
+                       {"n_layers": 2, "n_wires": 4, "mean": 0, "std": 1},
+                       (2, 7)),
                       ]
 # Functions returning a list of parameter arrays
 INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, {'n_layers': 2, 'n_wires': 3},

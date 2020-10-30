@@ -40,15 +40,17 @@ def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     if seed is not None:
         np.random.seed(seed)
 
-    if n_wires < 2:
-        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+    if n_wires == 0:
+        size = (n_layers, 0)
+    else:
+        size = (n_layers, 2 * n_wires - 1)
 
-    params = np.random.uniform(low=low, high=high, size=(n_layers, 2 * n_wires - 1))
+    params = np.random.uniform(low=low, high=high, size=size)
     return params
 
 
-def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a normal
+def particle_conserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU2`, drawn from a normal
     distribution.
     Each parameter is drawn uniformly at random from between ``low`` and ``high``.
     The parameters define the trainable angles entering the rotation gate
@@ -67,10 +69,12 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     if seed is not None:
         np.random.seed(seed)
 
-    if n_wires < 2:
-        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+    if n_wires == 0:
+        size = (n_layers, 0)
+    else:
+        size = (n_layers, 2 * n_wires - 1)
 
-    params = np.random.normal(loc=mean, scale=std, size=(n_layers, 2 * n_wires - 1))
+    params = np.random.normal(loc=mean, scale=std, size=size)
     return params
 
 

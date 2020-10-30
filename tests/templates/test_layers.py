@@ -716,3 +716,31 @@ class TestParticleConservingU2:
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "expected"),
+        [
+            (
+                np.array([[-2.712, -1.958, 1.875, 1.811, 0.296, -0.412, 1.723]]),
+                [0, 1, 2, 3],
+                [-1.0, 0.1516167, -0.1516167, 1.0],
+            )
+        ],
+    )
+    def test_integration(self, weights, wires, expected):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = len(wires)
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit():
+            ParticleConservingU2(
+                weights,
+                wires,
+                init_state=np.array([1, 1, 0, 0]),
+            )
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit()
+        assert np.allclose(res, np.array(expected))
