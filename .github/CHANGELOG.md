@@ -154,6 +154,11 @@
 
 <h3>Bug fixes</h3>
 
+* Inverses of common gates can now be applied using array/tensor manipulation tricks. The
+  following gates are affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
+  `T`, `CNOT`, `CZ`.
+  [(#872)](https://github.com/PennyLaneAI/pennylane/pull/872)
+
 * The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
   [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
 
