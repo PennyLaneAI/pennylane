@@ -177,17 +177,18 @@ def ParticleConservingU2(weights, wires, init_state=None):
         msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
     )
 
+    for i in init_state:
+        check_type(
+            i,
+            [int, np.int64, np.ndarray],
+            msg="BasisState parameter must consist of 0 or 1 integers; got {}".format(init_state),
+        )
+
     check_type(
         init_state,
         [np.ndarray],
         msg="'init_state' must be a Numpy array; got {}".format(init_state),
     )
-    for i in init_state:
-        check_type(
-            i,
-            [int, np.int64, np.ndarray],
-            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
-        )
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]

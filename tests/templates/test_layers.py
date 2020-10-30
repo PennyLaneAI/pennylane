@@ -26,6 +26,7 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    ParticleConservingU2,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
@@ -642,3 +643,76 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+
+class TestParticleConservingU2:
+    """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "init_state", "msg_match"),
+        [
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0],
+                np.array([1, 1, 0, 0]),
+                "This template requires the number of qubits to be >= 2",
+            ),
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383]]),
+                [0, 1, 2, 3],
+                np.array([1, 1, 0, 0]),
+                "'weights' must be of shape",
+            ),
+            (
+                np.array(
+                    [
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                    ]
+                ),
+                [0, 1, 2, 3],
+                np.array([1, 1, 0, 0]),
+                "'weights' must be of shape",
+            ),
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0, 1, 2, 3],
+                np.array([1.5, 1, 0, 0]),
+                "BasisState parameter must consist of 0 or 1",
+            ),
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0, 1, 2, 3],
+                [1, 1, 0, 0],
+                "'init_state' must be a Numpy array",
+            ),
+            (
+                np.array(
+                    [
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856],
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856],
+                    ]
+                ),
+                [0, 1, 2, 3],
+                (1, 1, 0, 0),
+                "'init_state' must be a Numpy array",
+            ),
+        ],
+    )
+    def test_u2_exceptions(self, weights, wires, init_state, msg_match):
+        """Test that ParticleConservingU2 throws an exception if the parameters have illegal
+        shapes, types or values."""
+        N = len(wires)
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit():
+            ParticleConservingU2(
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
+            )
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
