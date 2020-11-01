@@ -416,29 +416,28 @@ class DefaultQubit(QubitDevice):
         """Return the reduced density matrix given a set of wires to be traced out.
 
         Args:
-            wires (Sequence[int] or int): the wires that will be traced out
+            wires (Sequence[int] or int): the wires of the subsytem.
 
         Returns:
             tensor[complex]: complex tensor of shape ``2^(self.num_wires-len(wires))``
             representing the reduced density matrix.
         """
         dim = self.num_wires
-
         wires = list(wires.labels)
-        dim_trace = dim - len(wires)
-
-        # If we are tracing over all subsystems we return the trace which is 1 for a valid quantum state.
-        if dim_trace == 0:
-            trace = np.zeros(1, dtype=np.complex128)
-            trace[0] = 1
-            trace = self._asarray(trace, dtype=self.C_DTYPE)
-            return trace
-
-        # Return the reduced density matrix by using tensor product,
         state = self._pre_rotated_state
 
-        density_matrix = self._tensordot(state, self._conj(state), axes=(wires, wires))
-        density_matrix = self._reshape(density_matrix, (2 ** dim_trace, 2 ** dim_trace))
+        # Return the reduced density matrix by using numpy tensor product
+
+        if wires == self.wires:
+            return self._tensordot(state, self._conj(state), 0)
+
+        complete_system = list(range(0, dim))
+        traced_system = [x for x in complete_system if x not in wires]
+
+        density_matrix = self._tensordot(
+            state, self._conj(state), axes=(traced_system, traced_system)
+        )
+        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
 
         return density_matrix
 

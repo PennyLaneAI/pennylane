@@ -388,10 +388,10 @@ def density_matrix(wires):
 
         For more details on tape mode, see :mod:`pennylane.tape`.
 
-    This function accepts no observables and instead instructs the QNode to return its density matrix
-    (respectively reduced density matrix). The ``wires`` argument gives the possibility to trace out
-    a part of the system. It can result in obtaining a mixed state, which can be only represented by
-    the reduced density matrix.
+    This function accepts no observables and instead instructs the QNode to return its density
+    matrix (respectively reduced density matrix). The ``wires`` argument gives the possibility
+    to trace out a part of the system. It can result in obtaining a mixed state, which can be
+    only represented by the reduced density matrix.
 
     **Example:**
 
@@ -405,7 +405,7 @@ def density_matrix(wires):
         def circuit():
             qml.PauliY(wires=0)
             qml.Hadamard(wires=1)
-            return qml.density_matrix([1])
+            return qml.density_matrix([0])
 
     Executing this QNode:
 
@@ -413,16 +413,16 @@ def density_matrix(wires):
     array([[0.+0.j 0.+0.j]
         [0.+0.j 1.+0.j]])
 
-    The returned matrix is the reduced density matrix, where the system 1 is traced out (wires =[1]).
+    The returned matrix is the reduced density matrix, where the system 1 is traced out.
 
     Args:
-        wires (Sequence[int] or int): the wires that will be traced out
+        wires (Sequence[int] or int): the wires of the subsystem
 
     .. note::
 
-        Calculating the derivative of :func:`~.density_matrix` is currently only supported when using the
-        classical backpropagation differentiation method (``diff_method="backprop"``) with a
-        compatible device.
+        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
