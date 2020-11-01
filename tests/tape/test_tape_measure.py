@@ -701,11 +701,10 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_three_wires_qubit(self):
         """Test that the correct density matrix for an example with three wires"""
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def func():
             qml.Hadamard(0)
             qml.Hadamard(1)
@@ -730,11 +729,10 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_three_wires_mixed(self):
         """Test that the correct density matrix for an example with three wires"""
-        qml.enable_tape()
 
         dev = qml.device("default.mixed", wires=3)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def func():
             qml.Hadamard(0)
             qml.Hadamard(1)
@@ -759,11 +757,10 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_mixed_state_qubit(self):
         """Test that the correct density matrix for an example with a mixed state"""
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def func():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
@@ -775,11 +772,10 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_mixed_state_mixed(self):
         """Test that the correct density matrix for an example with a mixed state"""
-        qml.enable_tape()
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def func():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
