@@ -182,9 +182,9 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
-        if operation.name in self._apply_ops:
+        if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            self._state = self._apply_ops[operation.name](
+            self._state = self._apply_ops[operation.base_name](
                 self._state, axes, inverse=operation.inverse
             )
             return
