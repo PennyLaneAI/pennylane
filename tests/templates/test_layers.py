@@ -653,6 +653,7 @@ class TestParticleConservingU2:
         [
             (2, 4, np.array([1, 1, 0, 0])),
             (1, 6, np.array([1, 1, 0, 0, 0, 0])),
+            (1, 5, np.array([1, 1, 0, 0, 0])),
         ],
     )
     def test_u2_operations(self, layers, qubits, init_state):
