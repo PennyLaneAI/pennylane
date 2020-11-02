@@ -648,12 +648,20 @@ class TestBasicEntangler:
 class TestParticleConservingU2:
     """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
 
-    def test_u2_operations(self):
+    @pytest.mark.parametrize(
+        "layers, qubits, init_state",
+        [
+            (2, 4, np.array([1, 1, 0, 0])),
+            (1, 6, np.array([1, 1, 0, 0, 0, 0])),
+        ],
+    )
+    def test_u2_operations(self, layers, qubits, init_state):
         """Test the correctness of the ParticleConservingU2 template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
         layers = 2
         qubits = 4
+
         weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
 
         n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
@@ -663,7 +671,7 @@ class TestParticleConservingU2:
         ) * layers
 
         with pennylane._queuing.OperationRecorder() as rec:
-            ParticleConservingU2(weights, wires=range(qubits), init_state=np.array([1, 1, 0, 0]))
+            ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
 
             # number of gates
             assert len(rec.queue) == n_gates
