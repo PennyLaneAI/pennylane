@@ -199,6 +199,12 @@ class TestProperties:
         m = MeasurementProcess(Expectation, obs=obs)
         assert m.eigvals is None
 
+    def test_repr(self):
+        """Test the string representation of a MeasurementProcess."""
+        m = MeasurementProcess(Expectation, obs=qml.PauliZ(wires='a') @ qml.PauliZ(wires='b'))
+        expected = "Expectation(Tensor product ['PauliZ', 'PauliZ']: 0 params, wires ['a', 'b'])"
+        assert str(m) == expected
+
 
 class TestExpansion:
     """Test for measurement expansion"""
