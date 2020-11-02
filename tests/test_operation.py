@@ -577,6 +577,24 @@ class TestObservableConstruction:
         assert cv_obs.wires == Wires([1])
         assert cv_obs.ev_order == 2
 
+    def test_repr(self):
+        """Test the string representation of a MeasurementProcess."""
+        m = qml.expval(qml.PauliZ(wires=['a']) @ qml.PauliZ(wires=['b']))
+        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        assert str(m) == expected
+
+        m = qml.probs(wires=['a'])
+        expected = "probs(wires=['a'])"
+        assert str(m) == expected
+
+        m = qml.PauliZ(wires=['a']) @ qml.PauliZ(wires=['b'])
+        expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
+        assert str(m) == expected
+
+        m = qml.PauliZ(wires=['a'])
+        expected = "PauliZ(wires=['a'])"
+        assert str(m) == expected
+
 
 class TestOperatorIntegration:
     """ Integration tests for the Operator class"""

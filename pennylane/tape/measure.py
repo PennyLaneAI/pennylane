@@ -79,8 +79,14 @@ class MeasurementProcess:
         self.queue()
 
     def __repr__(self):
-        """String representation of this class."""
-        return "{}({})".format(self.return_type.name, self.obs)
+        """Representation of this class."""
+        if self.obs is None:
+            return "{}(None)".format(self.return_type.value)
+
+        if self.obs.return_type is None:
+            return "{}({})".format(self.return_type.value, self.obs)
+
+        return "{}".format(self.obs)
 
     def __copy__(self):
         cls = self.__class__
