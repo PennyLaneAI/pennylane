@@ -39,29 +39,13 @@ def decompose_ua(phi, wires=None):
 
     in terms of the quantum operations supported by PennyLane.
 
-    # :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
-    # to define two-qubit exchange gates that are used to build particle-conserving
-    # VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
+    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
+    to define two-qubit exchange gates that are used to build particle-conserving
+    VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
 
-    # This unitary can be expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
-    # which are supported by PennyLane
-    # :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`. The figures below shows
-    # the decomposition of controlled-:math:`U_A` in terms of these operations:
-
-    # |
-
-    # .. figure:: ../../_static/templates/layers/ua_decomposition.png
-    #     :align: center
-    #     :width: 60%
-    #     :target: javascript:void(0);
-
-
-    # .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
-    #     :align: center
-    #     :width: 60%
-    #     :target: javascript:void(0);
-
-    # |
+    This unitary can be expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
+    which are supported by PennyLane
+    :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
 
     Args:
         phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
@@ -85,60 +69,6 @@ def u1_ex_gate(phi, theta, wires=None):
     r"""Implement the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
     particle-conserving VQE ansatze for Quantum Chemistry simulations.
-
-    # The unitary matrix :math:`U_{1, \mathrm{ex}}` acts on the Hilbert space of two qubits
-
-    # .. math::
-
-    #     U_{1, \mathrm{ex}}(\phi, \theta) = \left(\begin{array}{cccc}
-    #     1 & 0 & 0 & 0 \\
-    #     0 & \mathrm{cos}(\theta) & e^{i\phi} \mathrm{sin}(\theta) & 0 \\
-    #     0 & e^{-i\phi} \mathrm{sin}(\theta) & -\mathrm{cos}(\theta) & 0 \\
-    #     0 & 0 & 0 & 1 \\
-    #     \end{array}\right).
-
-    # The figure below shows the circuit use to decompose of :math:`U_{1, \mathrm{ex}}` in
-    # elementary gates
-
-    # |
-
-    # .. figure:: ../../_static/templates/layers/u1_decomposition.png
-    #     :align: center
-    #     :width: 60%
-    #     :target: javascript:void(0);
-
-    # |
-
-    # The unitary :math:`U_A(\phi)`
-
-    # .. math::
-
-    #     U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right).
-
-    # is further decomposed in terms of the quantum operations supported by PennyLane as shown
-    # in the circuits below
-
-    # |
-
-    # .. figure:: ../../_static/templates/layers/ua_decomposition.png
-    #     :align: center
-    #     :width: 60%
-    #     :target: javascript:void(0);
-
-
-    # .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
-    #     :align: center
-    #     :width: 60%
-    #     :target: javascript:void(0);
-
-    # |
-
-    # The quantum circuits decomposing the unitaries :math:`U_A(\phi)` and :math:`U_{1, \mathrm{ex}}`
-    # are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua` functions.
-
-
-
-    # See the :func:`~.decompose_ua` function for more details.
 
     Args:
         phi (float): angle entering the unitary :math:`U_A(\phi)`
