@@ -389,7 +389,8 @@ class TestInit:
 
 
     def test_particle_conserving_u1_init_exceptions(self):
-        """Test that an error message is raised if the number of wires is less than two."""
+        """Test exceptions the functions 'particle_conserving_u1_uniform' and
+        'particle_conserving_u1_normal'."""
 
         n_layers = 4
         n_wires = 1
