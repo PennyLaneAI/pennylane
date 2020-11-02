@@ -104,7 +104,7 @@ class AutogradInterface(AnnotatedQueue):
             if getattr(p, "requires_grad", False) or isinstance(p, ArrayBox):
                 trainable_params.add(idx)
 
-        self.trainable_params = sorted(trainable_params)
+        self.trainable_params = trainable_params
         self._all_parameter_values = params
 
     def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
