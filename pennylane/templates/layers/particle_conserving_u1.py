@@ -176,7 +176,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
     units across several qubits are shown in dotted boxes. Each layer
     contains :math:`N_\mathrm{qubits}-1` particle-conserving two-parameter exchange gates
     :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest neighbors qubits.
-    
+
     The unitary matrix representing :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
     (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) acts on the Hilbert space of
     two qubits
