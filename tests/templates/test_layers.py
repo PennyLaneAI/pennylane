@@ -648,6 +648,38 @@ class TestBasicEntangler:
 class TestParticleConservingU2:
     """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
 
+    def test_u2_operations(self):
+        """Test the correctness of the ParticleConservingU2 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+        layers = 2
+        qubits = 4
+        weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
+
+        n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
+
+        exp_gates = ([qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)) * layers
+
+        with pennylane._queuing.OperationRecorder() as rec:
+            ParticleConservingU2(weights, wires=range(qubits), init_state=np.array([1, 1, 0, 0]))
+
+            # number of gates
+            assert len(rec.queue) == n_gates
+
+            # initialization
+            assert isinstance(rec.queue[0], qml.BasisState)
+
+            # order of gates
+            for op1, op2 in zip(rec.queue[1:], exp_gates):
+                assert isinstance(op1, op2)
+
+            # gate parameter
+            params = np.array([rec.queue[i].parameters for i in range(1, n_gates) if
+                               rec.queue[i].parameters != []])
+            assert np.allclose(params.flatten(), weights.flatten())
+
+            # gate wires
+
     @pytest.mark.parametrize(
         ("weights", "wires", "init_state", "msg_match"),
         [
@@ -727,7 +759,7 @@ class TestParticleConservingU2:
             )
         ],
     )
-    def test_integration(self, weights, wires, expected):
+    def test_u2_integration(self, weights, wires, expected):
         """Test integration with PennyLane and gradient calculations"""
 
         N = len(wires)
