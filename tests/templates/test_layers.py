@@ -658,7 +658,9 @@ class TestParticleConservingU2:
 
         n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
 
-        exp_gates = ([qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)) * layers
+        exp_gates = (
+            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
+        ) * layers
 
         with pennylane._queuing.OperationRecorder() as rec:
             ParticleConservingU2(weights, wires=range(qubits), init_state=np.array([1, 1, 0, 0]))
@@ -674,8 +676,13 @@ class TestParticleConservingU2:
                 assert isinstance(op1, op2)
 
             # gate parameter
-            params = np.array([rec.queue[i].parameters for i in range(1, n_gates) if
-                               rec.queue[i].parameters != []])
+            params = np.array(
+                [
+                    rec.queue[i].parameters
+                    for i in range(1, n_gates)
+                    if rec.queue[i].parameters != []
+                ]
+            )
             assert np.allclose(params.flatten(), weights.flatten())
 
             # gate wires
