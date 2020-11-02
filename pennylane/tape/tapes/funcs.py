@@ -115,14 +115,14 @@ def _all_paths_through_branch_tape(batch_tape, path={}):
 
         else:
             if isinstance(obj_, qml.tape.QuantumTape):
-                yield from _all_paths(obj_, path=new_path)
+                yield from all_paths(obj_, path=new_path)
 
             else:
                 # is an operation
                 yield new_path
 
 
-def _all_paths(tape, path={}):
+def all_paths(tape, path={}):
     """
     Generator that adds all possible paths through batches in
     a tape to an existing path.
@@ -190,7 +190,7 @@ def _all_paths(tape, path={}):
 
             # todo: do not collect the items from the generator here to save memory
             if isinstance(obj, qml.tape.QuantumTape):
-                new_paths.append(list(_all_paths(obj, path=path)))
+                new_paths.append(list(all_paths(obj, path=path)))
 
         # todo: avoid duplicates from batches with the same name
         kron_dicts = product(*new_paths)
@@ -200,125 +200,3 @@ def _all_paths(tape, path={}):
             for batch in extension:
                 new_path.update(batch)
             yield new_path
-
-
-def _unraveled_tape(tape, path, new_tape=None):
-    """Record a new quantum tape that uses the batching alternatives defined in path.
-
-    Args:
-        tape (QuantumTape): tape to unravel
-
-        path (dict): dictionary representing a path by defining batch
-            names (keys) and the objects selected (values)
-
-        new_tape (QuantumTape): new tape to which objects are queued, empty tape at first call
-
-    Returns:
-        QuantumTape: new tape recorded by following path in tape
-
-    **Example**
-
-    ..code-block:: python
-
-        with QuantumTape() as tape:
-
-            qml.RX(0.2, wires='a')
-
-            with QuantumTape(name="q2"):
-
-                with BranchTape(name="b1"):
-                    qml.RY(0.5, wires='b')
-                    qml.RY(0.5, wires='c')
-
-                with BatchTape(name="b2"):
-                    qml.RZ(0.1, wires='d')
-                    qml.RZ(0.1, wires='e')
-
-        path = {"b1": 0, "b2": 1}
-
-        new_tape = _tape_from_path(q1, path)
-
-        print(new_tape.operations)
-        # [RX(0.2, wires=['a']), RY(0.5, wires=['b']), RZ(0.1, wires=['e'])]
-    """
-
-    if new_tape is None:
-        new_tape = tape.__class__(name=tape.name)
-
-    if isinstance(tape, qml.tape.BranchTape):
-
-        # select object in the batch according to path
-        idx = path[tape.name]
-        # todo: faster if we iterate "select" times and grab the last
-        batch = list(tape.iterator())
-        obj = batch[idx]
-        # recursion in case the object contains more batches
-        new_tape = _unraveled_tape(obj, path, new_tape)
-
-    elif isinstance(tape, qml.tape.QuantumTape):
-        # tape is a QuantumTape, iterate through to queue its objects
-        for obj in tape.iterator():
-            new_tape = _unraveled_tape(obj, path, new_tape)
-    else:
-        # tape is actually the object to queue
-        obj = tape
-
-        # queue the object in the new tape
-        with new_tape:
-            # todo: update when more elegant API for queueing available
-            if isinstance(obj, qml.beta.queuing.MeasurementProcess):
-                obj.obs.queue()
-            obj.queue()
-
-    return new_tape
-
-
-def unravel(tape, paths=None):
-    """
-    Returns a generator that yields tapes constructed from combining the
-    alternative queues represented by ``BranchTape`` objects in this tape.
-
-    Args:
-        tape (QuantumTape): tape to unravel
-
-    Returns:
-        GeneratorObject: generator of quantum tapes
-
-    **Examples**
-
-    ..code-block:: python
-
-        with QuantumTape() as tape:
-            qml.RX(0.2, wires='a')
-
-            with BranchTape(name="b1"):
-                qml.RY(0.5, wires='b')
-                qml.RY(0.5, wires='c')
-
-            with BranchTape(name="measure"):
-                qml.tape.measure.expval(qml.PauliZ(wires='a'))
-                qml.tape.measure.expval(qml.PauliZ(wires='b'))
-
-        for t in _unravel(tape):
-            print(t.operations)
-            print(t.measurements)
-
-        # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
-        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
-
-        # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
-        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
-
-        # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
-        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
-
-        # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
-        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
-    """
-
-    if paths is None:
-        paths = _all_paths(tape)
-
-    for path in paths:
-
-        yield _unraveled_tape(tape, path)

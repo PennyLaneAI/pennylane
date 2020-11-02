@@ -14,9 +14,10 @@
 """
 This module contains a branching quantum tape.
 """
-import pennylane as qml
+from pennylane.tape.tapes.tape import QuantumTape
 
-class BranchTape(qml.tape.QuantumTape):
+
+class BranchTape(QuantumTape):
     """A quantum tape recorder whose queue records elements which are interpreted as alternatives to each other.
 
        A QuantumTape containing BranchTape(s) or of the class BranchTape is interpreted as a compact representation

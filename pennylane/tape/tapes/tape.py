@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
-
+from pennylane.tape.tapes.funcs import all_paths
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -132,6 +132,130 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
+def _unraveled_tape(tape, path, new_tape=None):
+    """Record a new quantum tape that uses the branch defined in path.
+
+    Args:
+        tape (QuantumTape): tape to unravel
+
+        path (dict): dictionary representing a path by defining batch
+            names (keys) and the objects selected (values)
+
+        new_tape (QuantumTape): new tape to which objects are queued, empty tape at first call
+
+    Returns:
+        QuantumTape: new tape recorded by following path in tape
+
+    **Example**
+
+    ..code-block:: python
+
+        with QuantumTape() as tape:
+
+            qml.RX(0.2, wires='a')
+
+            with QuantumTape(name="q2"):
+
+                with BranchTape(name="b1"):
+                    qml.RY(0.5, wires='b')
+                    qml.RY(0.5, wires='c')
+
+                with BatchTape(name="b2"):
+                    qml.RZ(0.1, wires='d')
+                    qml.RZ(0.1, wires='e')
+
+        path = {"b1": 0, "b2": 1}
+
+        new_tape = _tape_from_path(q1, path)
+
+        print(new_tape.operations)
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['b']), RZ(0.1, wires=['e'])]
+    """
+
+    if new_tape is None:
+        new_tape = tape.__class__(name=tape.name)
+
+    if isinstance(tape, qml.tape.BranchTape):
+
+        # select object in the batch according to path
+        idx = path[tape.name]
+        # todo: delete line when indexing possible
+        batch = list(tape.iterator())
+        obj = batch[idx]
+        # recursion in case the object contains more batches
+        new_tape = _unraveled_tape(obj, path, new_tape)
+
+    elif isinstance(tape, qml.tape.QuantumTape):
+        # tape is not a BranchTape, call this function objects in the queue
+        for obj in tape.iterator():
+            new_tape = _unraveled_tape(obj, path, new_tape)
+    else:
+        # tape is actually the object to queue
+        obj = tape
+
+        # queue the object in the new tape
+        with new_tape:
+            # todo: update when more elegant API for queueing available
+            if isinstance(obj, qml.tape.measure.MeasurementProcess):
+                obj.obs.queue()
+            obj.queue()
+
+    return new_tape
+
+
+def unravel(tape, strategy):
+    """
+    Returns a generator that yields tapes constructed from combining the
+    alternative queues represented by ``BranchTape`` objects in this tape.
+
+    Args:
+        tape (QuantumTape): tape to unravel
+        strategy (str): identifier of an unraveling strategy # TODO: multiple strat
+
+    Returns:
+        GeneratorObject: generator of quantum tapes
+
+    **Examples**
+
+    ..code-block:: python
+
+        with QuantumTape() as tape:
+            qml.RX(0.2, wires='a')
+
+            with BranchTape(name="b1"):
+                qml.RY(0.5, wires='b')
+                qml.RY(0.5, wires='c')
+
+            with BranchTape(name="measure"):
+                qml.tape.measure.expval(qml.PauliZ(wires='a'))
+                qml.tape.measure.expval(qml.PauliZ(wires='b'))
+
+        for t in _unravel(tape):
+            print(t.operations)
+            print(t.measurements)
+
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
+        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
+
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['b'])]
+        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
+
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
+        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
+
+        # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
+        # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
+    """
+    if strategy not in tape.unraveling:
+        raise ValueError("Unraveling strategy {} not registered.".format(strategy))
+
+    path_generator = tape.unraveling[strategy]
+
+    for path in path_generator(tape):
+
+        yield _unraveled_tape(tape, path)
+
+
 # pylint: disable=too-many-public-methods
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
@@ -233,6 +357,8 @@ class QuantumTape(AnnotatedQueue):
         self.inverse = False
 
         self._stack = None
+
+        self._unraveling = {"all": all_paths}
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -963,16 +1089,35 @@ class QuantumTape(AnnotatedQueue):
     # Branching methods
     # =====================
 
+    @property
+    def unraveling(self):
+        """Returns all possible unravelings of a tape.
+
+        Returns:
+            list[str]: registered unravelings
+
+        **Example**
+        # TODO
+        """
+        return self._unraveling
+
     def unravel(self, strategy=None):
-        """Separate branches in this tape into multiple tapes.
+        """Separate branches in this tape into multiple tapes using a registered strategy of this tape.
+
+        All tapes have the strategy "all", which unravels all branches. Other registered strategies
+        can be queried by calling `tape.unravel_options`.
 
         Args:
-            strategy (??): ??
+            strategy (str, list[str]): Identifier of internal unraveling strategy. A list specifies multiple
+                unraveling strategies to apply at the same time.
 
         Returns:
             GeneratorObject: generator for the unraveled tapes
         """
-        return qml.tape.funcs.unravel(self, strategy=strategy)
+        if strategy is None:
+            strategy = "all"
+
+        return unravel(self, strategy=strategy)
 
     @property
     def contains_branches(self):
