@@ -760,6 +760,11 @@ class QuantumTape(AnnotatedQueue):
         """
         return self._measurements
 
+    def iterator(self):
+        """Generator iterating over the full queue."""
+        for o in self.operations + self.measurements:
+            yield o
+
     @property
     def num_params(self):
         """Returns the number of trainable parameters on the quantum tape."""
@@ -953,6 +958,40 @@ class QuantumTape(AnnotatedQueue):
 
     def __copy__(self):
         return self.copy(copy_operations=True)
+
+    # ====================
+    # Branching methods
+    # =====================
+
+    def unravel(self, strategy=None):
+        """Separate branches in this tape into multiple tapes.
+
+        Args:
+            strategy (??): ??
+
+        Returns:
+            GeneratorObject: generator for the unraveled tapes
+        """
+        return qml.tape.funcs.unravel(self, strategy=strategy)
+
+    @property
+    def contains_branches(self):
+        """Checks if there are branches indicating alternative operations in the tape.
+
+        Returns:
+            bool
+        """
+
+        if isinstance(self, qml.BranchTape):
+            return True
+
+        for obj in self.iterator():
+            if isinstance(obj, qml.BranchTape):
+                return True
+
+        # Todo: Search in full tree of a potentially nested structure
+
+        return False
 
     # ========================================================
     # execution methods
