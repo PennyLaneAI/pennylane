@@ -578,7 +578,8 @@ class TestObservableConstruction:
         assert cv_obs.ev_order == 2
 
     def test_repr(self):
-        """Test the string representation of a MeasurementProcess."""
+        """Test the string representation of an observable with and without a return type."""
+
         m = qml.expval(qml.PauliZ(wires=['a']) @ qml.PauliZ(wires=['b']))
         expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
         assert str(m) == expected
