@@ -249,10 +249,12 @@ def unravel(tape, strategy):
     if strategy not in tape.unraveling:
         raise ValueError("Unraveling strategy {} not registered.".format(strategy))
 
-    path_generator = tape.unraveling[strategy]
+    if strategy is None:
+        path_generator = all_paths(tape)
+    else:
+        path_generator = tape.unraveling[strategy]
 
-    for path in path_generator(tape):
-
+    for path in path_generator():
         yield _unraveled_tape(tape, path)
 
 
@@ -358,7 +360,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._unraveling = {"all": all_paths}
+        self._unraveling = {}
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -1114,8 +1116,6 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             GeneratorObject: generator for the unraveled tapes
         """
-        if strategy is None:
-            strategy = "all"
 
         return unravel(self, strategy=strategy)
 
