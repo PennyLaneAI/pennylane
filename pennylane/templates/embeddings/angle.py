@@ -60,7 +60,7 @@ def AngleEmbedding(features, wires, rotation="X"):
 
     wires = Wires(wires)
 
-    check_shape(
+    shp = check_shape(
         features,
         (len(wires),),
         bound="max",
@@ -75,33 +75,15 @@ def AngleEmbedding(features, wires, rotation="X"):
         msg="did not recognize option {} for 'rotation'.".format(rotation),
     )
 
+    wires = wires[:shp[0]]
+
     ###############
 
     if rotation == "X":
-        _broadcast_no_shape_check(unitary=RX, pattern="single", wires=wires, parameters=features)
+        broadcast(unitary=RX, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Y":
-        _broadcast_no_shape_check(unitary=RY, pattern="single", wires=wires, parameters=features)
+        broadcast(unitary=RY, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Z":
-        _broadcast_no_shape_check(unitary=RZ, pattern="single", wires=wires, parameters=features)
-
-
-# TODO: remove when revisiting templates after tape mode integration
-def _broadcast_no_shape_check(unitary, pattern, wires, parameters):
-    """This is a temporary auxiliary function that turns off the internal shape
-    check of the ``broadcast`` function used by AngleEmbedding to allow for
-    fewer number of features as qubits.
-
-    This behaviour will be revisited after tape mode has been introduced for
-    templates.
-    """
-    try:
-        broadcast(unitary=unitary, pattern=pattern, wires=wires, parameters=parameters)
-    except ValueError as e:
-        msg = "must contain entries for {} unitaries".format(len(wires))
-
-        # Re-raise the error if it did not occur when the error message refers
-        # to a mismatch of the parameters for unitaries
-        if msg not in str(e):
-            raise e
+        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
