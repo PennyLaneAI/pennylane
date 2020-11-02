@@ -39,29 +39,29 @@ def decompose_ua(phi, wires=None):
 
     in terms of the quantum operations supported by PennyLane.
 
-    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
-    to define two-qubit exchange gates that are used to build particle-conserving
-    VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
+    # :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
+    # to define two-qubit exchange gates that are used to build particle-conserving
+    # VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
 
-    This unitary can be expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
-    which are supported by PennyLane
-    :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`. The figures below shows
-    the decomposition of controlled-:math:`U_A` in terms of these operations:
+    # This unitary can be expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
+    # which are supported by PennyLane
+    # :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`. The figures below shows
+    # the decomposition of controlled-:math:`U_A` in terms of these operations:
 
-    |
+    # |
 
-    .. figure:: ../../_static/templates/layers/ua_decomposition.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
+    # .. figure:: ../../_static/templates/layers/ua_decomposition.png
+    #     :align: center
+    #     :width: 60%
+    #     :target: javascript:void(0);
 
 
-    .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
+    # .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
+    #     :align: center
+    #     :width: 60%
+    #     :target: javascript:void(0);
 
-    |
+    # |
 
     Args:
         phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
@@ -86,37 +86,59 @@ def u1_ex_gate(phi, theta, wires=None):
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
     particle-conserving VQE ansatze for Quantum Chemistry simulations.
 
-    The unitary matrix :math:`U_{1, \mathrm{ex}}` acts on the Hilbert space of two qubits
+    # The unitary matrix :math:`U_{1, \mathrm{ex}}` acts on the Hilbert space of two qubits
 
-    .. math::
+    # .. math::
 
-        U_{1, \mathrm{ex}}(\phi, \theta) = \left(\begin{array}{cccc}
-        1 & 0 & 0 & 0 \\
-        0 & \mathrm{cos}(\theta) & e^{i\phi} \mathrm{sin}(\theta) & 0 \\
-        0 & e^{-i\phi} \mathrm{sin}(\theta) & -\mathrm{cos}(\theta) & 0 \\
-        0 & 0 & 0 & 1 \\
-        \end{array}\right).
+    #     U_{1, \mathrm{ex}}(\phi, \theta) = \left(\begin{array}{cccc}
+    #     1 & 0 & 0 & 0 \\
+    #     0 & \mathrm{cos}(\theta) & e^{i\phi} \mathrm{sin}(\theta) & 0 \\
+    #     0 & e^{-i\phi} \mathrm{sin}(\theta) & -\mathrm{cos}(\theta) & 0 \\
+    #     0 & 0 & 0 & 1 \\
+    #     \end{array}\right).
 
-    The figure below shows the circuit use to decompose of :math:`U_{1, \mathrm{ex}}` in
-    elementary gates
+    # The figure below shows the circuit use to decompose of :math:`U_{1, \mathrm{ex}}` in
+    # elementary gates
 
-    |
+    # |
 
-    .. figure:: ../../_static/templates/layers/u1_decomposition.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
+    # .. figure:: ../../_static/templates/layers/u1_decomposition.png
+    #     :align: center
+    #     :width: 60%
+    #     :target: javascript:void(0);
 
-    |
+    # |
 
-    The unitary :math:`U_A(\phi)`
+    # The unitary :math:`U_A(\phi)`
 
-    .. math::
+    # .. math::
 
-        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right).
+    #     U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right).
 
-    is further decomposed in terms of the quantum operations supported by PennyLane.
-    See the :func:`~.decompose_ua` function for more details.
+    # is further decomposed in terms of the quantum operations supported by PennyLane as shown
+    # in the circuits below
+
+    # |
+
+    # .. figure:: ../../_static/templates/layers/ua_decomposition.png
+    #     :align: center
+    #     :width: 60%
+    #     :target: javascript:void(0);
+
+
+    # .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
+    #     :align: center
+    #     :width: 60%
+    #     :target: javascript:void(0);
+
+    # |
+
+    # The quantum circuits decomposing the unitaries :math:`U_A(\phi)` and :math:`U_{1, \mathrm{ex}}`
+    # are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua` functions.
+
+
+
+    # See the :func:`~.decompose_ua` function for more details.
 
     Args:
         phi (float): angle entering the unitary :math:`U_A(\phi)`
@@ -153,21 +175,61 @@ def ParticleConservingU1(weights, wires, init_state=None):
     The circuit implementing the entangler blocks is shown in the figure below. The repeated
     units across several qubits are shown in dotted boxes. Each layer
     contains :math:`N_\mathrm{qubits}-1` particle-conserving two-parameter exchange gates
-    :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest-neighbors qubits.
+    :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest neighbors qubits.
+    
     The unitary matrix representing :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
-    (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) was decomposed
-    into its elementary gates and implemented by the :func:`~.u1_ex_gate` and
-    :func:`~.decompose_ua` functions using PennyLane quantum operations.
+    (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) acts on the Hilbert space of
+    two qubits
+
+    .. math::
+
+        U_{1, \mathrm{ex}}(\phi, \theta) = \left(\begin{array}{cccc}
+        1 & 0 & 0 & 0 \\
+        0 & \mathrm{cos}(\theta) & e^{i\phi} \mathrm{sin}(\theta) & 0 \\
+        0 & e^{-i\phi} \mathrm{sin}(\theta) & -\mathrm{cos}(\theta) & 0 \\
+        0 & 0 & 0 & 1 \\
+        \end{array}\right).
+
+    The figure below shows the circuit decomposing :math:`U_{1, \mathrm{ex}}` in
+    elementary gates. :math:`\sigma_z` and :math:`R(0, 2 \theta, 0)` apply the Pauli Z operator
+    and an arbitrary rotation on the qubit ``n``.
 
     |
 
-    .. figure:: ../../_static/templates/layers/particle_conserving_u1.png
+    .. figure:: ../../_static/templates/layers/u1_decomposition.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
     |
 
+    On the other hand, :math:`U_A(\phi)` is the unitary matrix
+
+    .. math::
+
+        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
+
+    acting on the state of qubit ``n`` which is further decomposed in terms of the
+    quantum operations supported by PennyLane as shown in the circuits below.
+
+    |
+
+    .. figure:: ../../_static/templates/layers/ua_decomposition.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+
+    .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    |
+
+    The quantum circuits decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)` and
+    :math:`U_A(\phi)` are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua`
+    functions, respectively.
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
@@ -196,16 +258,14 @@ def ParticleConservingU1(weights, wires, init_state=None):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import qchem
             from pennylane.templates import ParticleConservingU1
-
             from functools import partial
 
             # Build the electronic Hamiltonian
-            h, qubits = qchem.molecular_hamiltonian("h2", "h2.xyz")
+            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
             # Define the HF state
-            ref_state = qchem.hf_state(electrons=2, qubits)
+            ref_state = qml.qchem.hf_state(electrons=2, qubits)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
@@ -216,11 +276,10 @@ def ParticleConservingU1(weights, wires, init_state=None):
             # Define the cost function
             cost_fn = qml.VQECost(ansatz, h, dev)
 
-            # Compute the expectation value of 'h' for given set of parameters
-            layers = 1
-            params = np.random.normal(0, 2*np.pi, (layers, qubits-1, 2))
+            # Compute the expectation value of 'h'
+            layers = 2
+            params = qml.init.particle_conserving_u1_normal(layers, qubits)
             print(cost_fn(params))
-
     """
 
     wires = Wires(wires)
