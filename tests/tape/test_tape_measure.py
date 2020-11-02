@@ -202,7 +202,11 @@ class TestProperties:
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
         m = MeasurementProcess(Expectation, obs=qml.PauliZ(wires='a') @ qml.PauliZ(wires='b'))
-        expected = "Expectation(Tensor product ['PauliZ', 'PauliZ']: 0 params, wires ['a', 'b'])"
+        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        assert str(m) == expected
+
+        m = MeasurementProcess(Probability, obs=qml.PauliZ(wires='a'))
+        expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
 
 
