@@ -686,6 +686,22 @@ class TestParticleConservingU2:
             assert np.allclose(params.flatten(), weights.flatten())
 
             # gate wires
+            wires = Wires(range(qubits))
+            nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+            nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+
+            exp_wires = []
+            for _ in range(layers):
+                for i in range(qubits):
+                    exp_wires.append(wires.subset([i]))
+                for j in nm_wires:
+                    exp_wires.append(j)
+                    exp_wires.append(j[::-1])
+                    exp_wires.append(j)
+
+            res_wires = [rec.queue[i]._wires for i in range(1, n_gates)]
+
+            assert res_wires == exp_wires
 
     @pytest.mark.parametrize(
         ("weights", "wires", "init_state", "msg_match"),
