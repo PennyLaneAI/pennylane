@@ -78,6 +78,10 @@ class MeasurementProcess:
         # Queue the measurement process
         self.queue()
 
+    def __repr__(self):
+        """String representation of this class."""
+        return "{}({})".format(self.return_type.name, self.obs)
+
     def __copy__(self):
         cls = self.__class__
 
