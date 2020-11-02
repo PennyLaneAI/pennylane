@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* A new hardware-efficient particle-conserving template has been implemented
+  to perform VQE-based quantum chemistry simulations. The new template applies
+  several layers of the particle-conserving entangler proposed in Fig. 2a
+  of the article by Barkoutsos *et al*. in
+  `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ 
+  [(#875)](https://github.com/PennyLaneAI/pennylane/pull/875)
+
 * The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
   This method accepts a *list* of tapes, and returns a list of evaluated numerical values.
   This may be useful for devices that support performing numerous quantum evaluations

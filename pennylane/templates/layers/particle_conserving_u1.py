@@ -159,27 +159,36 @@ def u1_ex_gate(phi, theta, wires=None):
 @template
 def ParticleConservingU1(weights, wires, init_state=None):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
-    particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed in
+    particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed by Barkoutsos *et al.* in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ .
 
-    This template prepares N-qubit trial states by applying :math:`D` layers of the
+    This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the
     entangler block :math:`U_\mathrm{ent}(\vec{\phi}, \vec{\theta})` to the Hartree-Fock
     state
 
     .. math::
 
-        \vert \Psi(\vec{\phi}, \vec{\theta}) = \hat{U}^{(D)}_\mathrm{ent}(\vec{\phi}_D,
+        \vert \Psi(\vec{\phi}, \vec{\theta}) \rangle = \hat{U}^{(D)}_\mathrm{ent}(\vec{\phi}_D,
         \vec{\theta}_D) \dots \hat{U}^{(2)}_\mathrm{ent}(\vec{\phi}_2, \vec{\theta}_2)
         \hat{U}^{(1)}_\mathrm{ent}(\vec{\phi}_1, \vec{\theta}_1) \vert \mathrm{HF}\rangle.
 
-    The circuit implementing the entangler blocks is shown in the figure below. The repeated
-    units across several qubits are shown in dotted boxes. Each layer
+    The circuit implementing the entangler blocks is shown in the figure below.
+
+    |
+
+    .. figure:: ../../_static/templates/layers/particle_conserving_u1.png
+        :align: center
+        :width: 80%
+        :target: javascript:void(0);
+
+    |
+
+    The repeated units across several qubits are shown in dotted boxes. Each layer
     contains :math:`N_\mathrm{qubits}-1` particle-conserving two-parameter exchange gates
     :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest neighbors qubits.
-
     The unitary matrix representing :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
-    (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_) acts on the Hilbert space of
-    two qubits
+    acts on the Hilbert space of two qubits
+    (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
 
     .. math::
 
@@ -192,42 +201,45 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     The figure below shows the circuit decomposing :math:`U_{1, \mathrm{ex}}` in
     elementary gates. :math:`\sigma_z` and :math:`R(0, 2 \theta, 0)` apply the Pauli Z operator
-    and an arbitrary rotation on the qubit ``n``.
+    and an arbitrary rotation on the qubit ``n``,
 
     |
 
     .. figure:: ../../_static/templates/layers/u1_decomposition.png
         :align: center
-        :width: 60%
+        :width: 80%
         :target: javascript:void(0);
 
     |
 
-    On the other hand, :math:`U_A(\phi)` is the unitary matrix
+    :math:`U_A(\phi)` is the unitary matrix
 
     .. math::
 
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
 
-    acting on the state of qubit ``n`` which is further decomposed in terms of the
-    quantum operations supported by PennyLane as shown in the circuits below.
+    acting on the state of qubit ``m`` which is further decomposed in terms of the
+    quantum operations supported by PennyLane,
 
     |
 
     .. figure:: ../../_static/templates/layers/ua_decomposition.png
         :align: center
-        :width: 60%
-        :target: javascript:void(0);
-
-
-    .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
-        :align: center
-        :width: 60%
+        :width: 80%
         :target: javascript:void(0);
 
     |
 
-    The quantum circuits decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)` and
+    |
+
+    .. figure:: ../../_static/templates/layers/phaseshift_decomposition.png
+        :align: center
+        :width: 80%
+        :target: javascript:void(0);
+
+    |
+
+    The quantum circuits above decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)` and
     :math:`U_A(\phi)` are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua`
     functions, respectively.
 
@@ -250,7 +262,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
-        #. The number of trainable parameters scales with the number of layers :math:`D` as
+        #. The number of trainable parameters scales linearly with the number of layers as
            :math:`2D(N_\mathrm{qubits}-1)`.
 
         An example of how to use this template is shown below:
