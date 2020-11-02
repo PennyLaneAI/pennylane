@@ -132,7 +132,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
-def _unraveled_tape(tape, path, new_tape=None):
+def _unravelled_tape(tape, path, new_tape=None):
     """Record a new quantum tape that uses the branch defined in path.
 
     Args:
@@ -183,12 +183,12 @@ def _unraveled_tape(tape, path, new_tape=None):
         batch = list(tape.iterator())
         obj = batch[idx]
         # recursion in case the object contains more batches
-        new_tape = _unraveled_tape(obj, path, new_tape)
+        new_tape = _unravelled_tape(obj, path, new_tape)
 
     elif isinstance(tape, qml.tape.QuantumTape):
         # tape is not a BranchTape, call this function objects in the queue
         for obj in tape.iterator():
-            new_tape = _unraveled_tape(obj, path, new_tape)
+            new_tape = _unravelled_tape(obj, path, new_tape)
     else:
         # tape is actually the object to queue
         obj = tape
@@ -246,16 +246,17 @@ def unravel(tape, strategy):
         # [RX(0.2, wires=['a']), RY(0.5, wires=['c'])]
         # [<pennylane.beta.queuing.measure.MeasurementProcess object at ...>]
     """
-    if strategy not in tape.unraveling:
-        raise ValueError("Unraveling strategy {} not registered.".format(strategy))
 
     if strategy is None:
         path_generator = all_paths(tape)
     else:
+        if strategy not in tape.unraveling:
+            raise ValueError("Unraveling strategy {} not registered.".format(strategy))
+
         path_generator = tape.unraveling[strategy]
 
-    for path in path_generator():
-        yield _unraveled_tape(tape, path)
+    for path in path_generator:
+        yield _unravelled_tape(tape, path)
 
 
 # pylint: disable=too-many-public-methods
@@ -360,7 +361,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._unraveling = {}
+        self._unravelling = {}
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -1101,7 +1102,7 @@ class QuantumTape(AnnotatedQueue):
         **Example**
         # TODO
         """
-        return self._unraveling
+        return self._unravelling
 
     def unravel(self, strategy=None):
         """Separate branches in this tape into multiple tapes using a registered strategy of this tape.
@@ -1127,11 +1128,11 @@ class QuantumTape(AnnotatedQueue):
             bool
         """
 
-        if isinstance(self, qml.BranchTape):
+        if isinstance(self, qml.tape.BranchTape):
             return True
 
         for obj in self.iterator():
-            if isinstance(obj, qml.BranchTape):
+            if isinstance(obj, qml.tape.BranchTape):
                 return True
 
         # Todo: Search in full tree of a potentially nested structure
