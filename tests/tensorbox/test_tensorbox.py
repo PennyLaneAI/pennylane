@@ -228,13 +228,13 @@ class TestAutogradBox:
         """Test that autodifferentiation is preserved when writing
         a cost function that uses TensorBox method chaining"""
         np = qml.numpy
-        x = np.array([[1., 2., 3.], [4., 5., 6.]])
+        x = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
         cost_fn = lambda a: (qml.TensorBox(a).T ** 2).unbox()[0, 1]
         grad_fn = qml.grad(cost_fn)
 
         res = grad_fn(x)[0]
-        expected = np.array([[0., 0., 0.], [8., 0., 0.]])
+        expected = np.array([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
         assert np.all(res == expected)
 
 
@@ -340,10 +340,122 @@ class TestTorchBox:
     def test_autodifferentiation(self, torch):
         """Test that autodifferentiation is preserved when writing
         a cost function that uses TensorBox method chaining"""
-        x = torch.tensor([[1., 2., 3.], [4., 5., 6.]], requires_grad=True)
+        x = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], requires_grad=True)
         y = (qml.TensorBox(x).T ** 2).unbox()[0, 1]
         y.backward()
 
         res = x.grad
-        expected = torch.tensor([[0., 0., 0.], [8., 0., 0.]])
+        expected = torch.tensor([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
         assert torch.allclose(res, expected)
+
+
+class TestTensorFlowBox:
+    """Tests for the TensorFlowBox class"""
+
+    @pytest.fixture
+    def tf(self):
+        tf = pytest.importorskip("tensorflow", minversion="2.0")
+        return tf
+
+    def test_creation(self, tf):
+        """Test that a TensorFlowBox is automatically created from a tf tensor"""
+        from pennylane.tensorbox.tf_box import TensorFlowBox
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+        res = qml.TensorBox(x)
+        assert isinstance(res, TensorFlowBox)
+        assert res.interface == "tf"
+        assert isinstance(res.unbox(), tf.Variable)
+        assert np.all(res.unbox() == x)
+
+    def test_len(self, tf):
+        """Test length"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        res = qml.TensorBox(x)
+        assert len(res) == len(x.numpy()) == 2
+
+    def test_multiplication(self, tf):
+        """Test multiplication between tensors and arrays"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        y = tf.Variable([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT * y
+        assert np.allclose(res.unbox(), x * y)
+
+        yT = qml.TensorBox(y)
+        res = x * yT
+        assert np.allclose(res.unbox(), x * y)
+
+        res = xT * yT
+        assert np.allclose(res.unbox(), x * y)
+
+    def test_unbox_list(self, tf):
+        """Test unboxing a mixed list works correctly"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        y = tf.Variable([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT.unbox_list([y, xT, x])
+
+        assert np.all(res == [y, x, x])
+
+    def test_shape(self, tf):
+        """Test that arrays return the right shape"""
+        x = tf.Variable([[[1, 2], [3, 4]]])
+        x = qml.TensorBox(x)
+        res = x.shape
+        assert res == (1, 2, 2)
+
+    def test_expand_dims(self, tf):
+        """Test that dimension expansion works"""
+        from pennylane.tensorbox.tf_box import TensorFlowBox
+
+        x = tf.Variable([1, 2, 3])
+        xT = qml.TensorBox(x)
+
+        res = xT.expand_dims(axis=1)
+        expected = tf.expand_dims(x, 1)
+        assert isinstance(res, TensorFlowBox)
+        assert np.allclose(res.unbox(), expected)
+
+    def test_ones_like(self, tf):
+        """Test that all ones arrays are correctly created"""
+        from pennylane.tensorbox.tf_box import TensorFlowBox
+
+        x = tf.Variable([[1, 2, 3], [4, 5, 6]])
+        xT = qml.TensorBox(x)
+
+        res = xT.ones_like()
+        expected = tf.ones_like(x)
+        assert isinstance(res, TensorFlowBox)
+        assert np.allclose(res.unbox(), expected)
+
+    def test_stack(self, tf):
+        """Test that arrays are correctly stacked together"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        y = tf.Variable([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT.stack([y, xT, x])
+
+        assert np.allclose(res.unbox(), tf.stack([y, x, x]))
+
+    def test_transpose(self, tf):
+        """Test that the transpose is correct"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+
+        assert np.allclose(xT.T.unbox(), tf.transpose(x))
+
+    def test_autodifferentiation(self, tf):
+        """Test that autodifferentiation is preserved when writing
+        a cost function that uses TensorBox method chaining"""
+        x = tf.Variable([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+        with tf.GradientTape() as tape:
+            y = (qml.TensorBox(x).T ** 2).unbox()[0, 1]
+
+        res = tape.gradient(y, x)
+        expected = tf.constant([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
+        assert np.allclose(res, expected)

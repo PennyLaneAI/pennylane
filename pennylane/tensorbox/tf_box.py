@@ -28,6 +28,12 @@ class TensorFlowBox(qml.TensorBox):
     def interface(self):
         return "tf"
 
+    def __len__(self):
+        if isinstance(self.unbox(), tf.Variable):
+            return len(tf.convert_to_tensor(self.unbox()))
+
+        return super().__len__()
+
     @staticmethod
     def stack(values, axis=0):
         res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
