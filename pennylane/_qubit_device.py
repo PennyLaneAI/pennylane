@@ -310,7 +310,7 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples, probabilities, states and
+        This includes returning expectation values, variance, samples, probabilities, states, and
         density matrices.
 
         Args:
