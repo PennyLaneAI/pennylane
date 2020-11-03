@@ -28,6 +28,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.wires import Wires
+import pennylane as qml
 
 
 class QubitDevice(Device):
@@ -186,6 +187,23 @@ class QubitDevice(Device):
 
         self._circuit_hash = circuit.hash
 
+        original_obs = circuit.observables.copy()
+
+        if isinstance(circuit, qml.tape.QuantumTape):
+            stop_at = self.operations
+
+            # Hotfix that allows controlled rotations to return the correct gradients
+            # when using the parameter shift rule.
+            if isinstance(circuit, qml.tape.QubitParamShiftTape):
+                # controlled rotations aren't supported by the parameter-shift rule
+                stop_at = set(self.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+
+            # expand out the tape, if any operations are not supported on the device
+            if not {op.name for op in circuit.operations}.issubset(stop_at):
+                circuit = circuit.expand(
+                    depth=1, stop_at=lambda obj: obj.name in stop_at, expand_measurements=True
+                )
+
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
@@ -194,7 +212,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        results = self.statistics(circuit.observables)
+        results = self.statistics(original_obs)
 
         # Ensures that a combination with sample does not put
         # expvals and vars in superfluous arrays
