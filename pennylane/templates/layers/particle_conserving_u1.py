@@ -149,7 +149,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
 
     acting on the state of qubit ``m`` which is further decomposed in terms of the
-    quantum operations supported by PennyLane,
+    quantum `operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
+    supported by PennyLane,
 
     |
 
