@@ -496,9 +496,7 @@ class CU3(Operation):
             ]
         )
 
-
-    
-    # Decomposition of CU3 (theta, phi, lam) is as follows 
+    # Decomposition of CU3 (theta, phi, lam) is as follows
     # (with wire[0] as control):
     #
     # U1((lam + phi) / 2, wires=0)
