@@ -119,6 +119,7 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
+        "CU3",
     }
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
