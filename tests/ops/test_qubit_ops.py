@@ -498,6 +498,43 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_CU3_decomposition(self, tol):
+        """Tests that the decomposition of Controlled U3 gate is correct."""
+        theta = 0.65
+        phi = 0.432
+        lam = -0.12
+
+        op = qml.CU3(theta, phi, lam, wires=[0, 1])
+        res = op.decomposition(theta, phi, lam, wires=op.wires)
+
+        assert len(res) == 10
+
+        assert res[0].name == "PhaseShift"
+        assert res[1].name == "PhaseShift"
+        assert res[2].name == "CNOT"
+        assert res[3].name == "Rot"
+        assert res[4].name == "PhaseShift"
+        assert res[5].name == "PhaseShift"
+        assert res[6].name == "CNOT"
+        assert res[7].name == "Rot"
+        assert res[8].name == "PhaseShift"
+        assert res[9].name == "PhaseShift"
+
+        mats = []
+        for i in reversed(res):
+            wire_list = i.wires.tolist()
+            if len(wire_list) == 1:
+                if wire_list[0] == 0 :
+                    mats.append(np.kron(i.matrix, np.eye(2)))
+                else :
+                    mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 

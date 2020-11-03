@@ -452,11 +452,14 @@ class CU3(Operation):
 
     .. math::
 
-        CU_3(\theta, \phi, \lambda) = \begin{bmatrix}
+        CU3(\theta, \phi, \lambda)\ =
+        |0\rangle\langle 0| \otimes I +
+        |1\rangle\langle 1| \otimes U3(\theta,\phi,\lambda) =
+        \begin{bmatrix}
             1 & 0 & 0 & 0 \\
-            0 & \cos(\theta/2) & 0 & -\exp(i \lambda)\sin(\theta/2)\\
-            0 & 0 & 1 & 0\\
-            0 & \exp(i \phi)\sin(\theta/2) & 0 & \exp(i (\phi + \lambda))\cos(\theta/2)
+            0 & 1 & 0 & 0\\
+            0 & 0 & \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2)\\
+            0 & 0 & \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2)
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
@@ -487,9 +490,9 @@ class CU3(Operation):
         return np.array(
             [
                 [1, 0, 0, 0],
-                [0, c, 0, -s * cmath.exp(1j * lam)],
-                [0, 0, 1, 0],
-                [0, s * cmath.exp(1j * phi), 0, c * cmath.exp(1j * (phi + lam))],
+                [0, 1, 0, 0],
+                [0, 0, c, -s * cmath.exp(1j * lam)],
+                [0, 0, s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
             ]
         )
 
@@ -498,28 +501,28 @@ class CU3(Operation):
     Decomposition of CU3 (theta, phi, lam) is as follows 
     (with wire[0] as control):
 
-    U1((lam + phi) / 2, wires=wires[0])
-    U1((lam - phi) / 2, wires=wires[1])
-    CNOT([wires[0], wires[1]])
-    U3(-theta / 2, 0, -(phi + lam)/ 2, wires=wires[1])
-    CNOT([wires[0], wires[1]])
-    U3(theta / 2, phi, 0, wires=wires[1])
+    U1((lam + phi) / 2, wires=0)
+    U1((lam - phi) / 2, wires=1)
+    CNOT(wires=[0, 1])
+    U3(-theta / 2, 0, -(phi + lam)/ 2, wires=1)
+    CNOT(wires=[0, 1])
+    U3(theta / 2, phi, 0, wires=1)
 
     U1 and U3 are then further decomposed into Rot and PhaseShift gates.
     """
     @staticmethod
     def decomposition(theta, phi, lam, wires):
         decomp_ops = [
-            PhaseShift((lam + phi) / 2, wires=wires[0])
-            PhaseShift((lam - phi) / 2, wires=wires[1]),
-            CNOT([wires[0], wires[1]]),
-            Rot(-(phi + lam)/ 2, -theta / 2, (phi + lam)/ 2, wires=wires[1]),
-            PhaseShift(-(phi + lam)/ 2, wires=wires[1]),
-            PhaseShift(0, wires=wires[1]),
-            CNOT([wires[0], wires[1]]),
-            Rot(0, theta / 2, 0, wires=wires[1]),
-            PhaseShift(0, wires=wires[1]),
-            PhaseShift(phi, wires=wires[1])
+            PhaseShift((lam + phi) / 2, wires=0),
+            PhaseShift((lam - phi) / 2, wires=1),
+            CNOT(wires=[0, 1]),
+            Rot(-(phi + lam)/ 2, -theta / 2, (phi + lam)/ 2, wires=1),
+            PhaseShift(-(phi + lam)/ 2, wires=1),
+            PhaseShift(0, wires=1),
+            CNOT(wires=[0, 1]),
+            Rot(0, theta / 2, 0, wires=1),
+            PhaseShift(0, wires=1),
+            PhaseShift(phi, wires=1),
         ]
         return decomp_ops
 
