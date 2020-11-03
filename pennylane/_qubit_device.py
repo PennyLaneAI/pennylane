@@ -378,11 +378,6 @@ class QubitDevice(Device):
 
         if wires:
             density_matrix = self.density_matrix(wires)
-
-            if density_matrix is None:
-                return QuantumFunctionError(
-                    "The density matrix is not available in the" " current device"
-                )
             return density_matrix
 
         return state
