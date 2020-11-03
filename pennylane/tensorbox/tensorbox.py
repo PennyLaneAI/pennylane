@@ -132,6 +132,9 @@ class TensorBox(abc.ABC):
 
         return self.__class__(self.unbox() ** other)
 
+    def __rpow__(self, other):
+        return self.__class__(other ** self.unbox())
+
     __rmul__ = __mul__
 
     @staticmethod

@@ -28,11 +28,7 @@ class AutogradBox(qml.TensorBox):
         outputs = kwargs.get("out", ())
         items = self.unbox_list(inputs + outputs)
         res = getattr(ufunc, method)(*items, **kwargs)
-
-        if isinstance(res, np.ndarray):
-            return AutogradBox(res)
-
-        return res
+        return AutogradBox(res)
 
     @property
     def interface(self):
@@ -42,10 +38,7 @@ class AutogradBox(qml.TensorBox):
         return AutogradBox(np.expand_dims(self.unbox(), axis=axis))
 
     def numpy(self):
-        if hasattr(self.unbox(), "numpy"):
-            return self.unbox().numpy()
-
-        return self.unbox()
+        return self.unbox().numpy()
 
     def ones_like(self):
         return AutogradBox(np.ones_like(self.unbox()))

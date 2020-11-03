@@ -40,11 +40,29 @@ class TestNumpyBox:
         assert isinstance(res.unbox(), np.ndarray)
         assert np.all(res.unbox() == x)
 
+    def test_creation_from_tensorbox(self):
+        """Test that a tensorbox input simply returns itself"""
+        x = qml.TensorBox(np.array([0.1, 0.2, 0.3]))
+        res = qml.TensorBox(x)
+        assert x is res
+
+    def test_unknown_input_type(self):
+        """Test that an exception is raised if the input type
+        is unknown"""
+        with pytest.raises(ValueError, match="Unknown tensor type"):
+            qml.TensorBox(True)
+
     def test_len(self):
         """Test length"""
         x = np.array([[1, 2], [3, 4]])
         res = qml.TensorBox(x)
         assert len(res) == len(x) == 2
+
+    def test_ufunc_compatibility(self):
+        """Test that the NumpyBox class has ufunc compatibility"""
+        x = np.array([0.1, 0.2, 0.3])
+        res = np.sum(np.sin(qml.TensorBox(x)))
+        assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
 
     def test_multiplication(self):
         """Test multiplication between tensors and arrays"""
@@ -62,6 +80,22 @@ class TestNumpyBox:
         res = xT * yT
         assert np.all(res.unbox() == x * y)
 
+    def test_exponentiation(self):
+        """Test exponentiation between tensors and arrays"""
+        x = np.array([[1, 2], [3, 4]])
+        y = np.array([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT ** 2
+        assert np.all(res.unbox() == x ** 2)
+
+        yT = qml.TensorBox(y)
+        res = 2 ** yT
+        assert np.all(res.unbox() == 2 ** y)
+
+        res = xT ** yT
+        assert np.all(res.unbox() == x ** y)
+
     def test_unbox_list(self):
         """Test unboxing a mixed list works correctly"""
         x = np.array([[1, 2], [3, 4]])
@@ -71,6 +105,14 @@ class TestNumpyBox:
         res = xT.unbox_list([y, xT, x])
 
         assert np.all(res == [y, x, x])
+
+    def test_numpy(self):
+        """Test that calling numpy() returns a NumPy array representation
+        of the TensorBox"""
+        x = np.array([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+        assert isinstance(xT.numpy(), np.ndarray)
+        assert np.all(xT.numpy() == x)
 
     def test_shape(self):
         """Test that arrays return the right shape"""
@@ -143,6 +185,13 @@ class TestAutogradBox:
         res = qml.TensorBox(x)
         assert len(res) == len(x) == 2
 
+    def test_ufunc_compatibility(self, autograd):
+        """Test that the AutogradBox class has ufunc compatibility"""
+        np = qml.numpy
+        x = np.array([0.1, 0.2, 0.3])
+        res = np.sum(np.sin(qml.TensorBox(x)))
+        assert res.unbox().item() == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
+
     def test_multiplication(self, autograd):
         """Test multiplication between tensors and arrays"""
         np = qml.numpy
@@ -170,6 +219,15 @@ class TestAutogradBox:
         res = xT.unbox_list([y, xT, x])
 
         assert np.all(res == [y, x, x])
+
+    def test_numpy(self, autograd):
+        """Test that calling numpy() returns a NumPy array representation
+        of the TensorBox"""
+        x = qml.numpy.array([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+        assert isinstance(xT.numpy(), np.ndarray)
+        assert not isinstance(xT.numpy(), qml.numpy.tensor)
+        assert np.all(xT.numpy() == x)
 
     def test_shape(self, autograd):
         """Test that arrays return the right shape"""
@@ -289,6 +347,15 @@ class TestTorchBox:
 
         assert np.all(res == [y, x, x])
 
+    def test_numpy(self, torch):
+        """Test that calling numpy() returns a NumPy array representation
+        of the TensorBox"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+        assert isinstance(xT.numpy(), np.ndarray)
+        assert not isinstance(xT.numpy(), torch.Tensor)
+        assert np.all(xT.numpy() == x.numpy())
+
     def test_shape(self, torch):
         """Test that arrays return the right shape"""
         x = torch.tensor([[[1, 2], [3, 4]]])
@@ -374,6 +441,10 @@ class TestTensorFlowBox:
         res = qml.TensorBox(x)
         assert len(res) == len(x.numpy()) == 2
 
+        x = tf.constant([[1, 2], [3, 4], [5, 6]])
+        res = qml.TensorBox(x)
+        assert len(res) == len(x.numpy()) == 3
+
     def test_multiplication(self, tf):
         """Test multiplication between tensors and arrays"""
         x = tf.Variable([[1, 2], [3, 4]])
@@ -399,6 +470,15 @@ class TestTensorFlowBox:
         res = xT.unbox_list([y, xT, x])
 
         assert np.all(res == [y, x, x])
+
+    def test_numpy(self, tf):
+        """Test that calling numpy() returns a NumPy array representation
+        of the TensorBox"""
+        x = tf.Variable([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+        assert isinstance(xT.numpy(), np.ndarray)
+        assert not isinstance(xT.numpy(), tf.Variable)
+        assert np.all(xT.numpy() == x.numpy())
 
     def test_shape(self, tf):
         """Test that arrays return the right shape"""
