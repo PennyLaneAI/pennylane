@@ -314,7 +314,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            observables (List[:class:`Observable`]): the observables to be measured
+            observables (List[.Observable]): the observables to be measured
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
