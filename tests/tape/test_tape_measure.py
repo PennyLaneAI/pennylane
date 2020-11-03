@@ -581,7 +581,7 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_product_state_first_qubit(self):
         """Test that the correct density matrix  is returned when
-        trace out a product state"""
+        tracing out a product state"""
 
         dev = qml.device("default.qubit", wires=2)
 
