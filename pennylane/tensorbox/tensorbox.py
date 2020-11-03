@@ -126,6 +126,12 @@ class TensorBox(abc.ABC):
 
         return self.__class__(self.unbox() * other)
 
+    def __pow__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.unbox()
+
+        return self.__class__(self.unbox() ** other)
+
     __rmul__ = __mul__
 
     @staticmethod

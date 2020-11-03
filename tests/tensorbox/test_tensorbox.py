@@ -223,3 +223,16 @@ class TestAutogradBox:
         xT = qml.TensorBox(x)
 
         assert np.all(xT.T.unbox() == x.T)
+
+    def test_autodifferentiation(self, autograd):
+        """Test that autodifferentiation is preserved when writing
+        a cost function that uses TensorBox method chaining"""
+        np = qml.numpy
+        x = np.array([[1., 2., 3.], [4., 5., 6.]])
+
+        cost_fn = lambda a: (qml.TensorBox(a).T ** 2).unbox()[0, 1]
+        grad_fn = qml.grad(cost_fn)
+
+        res = grad_fn(x)[0]
+        expected = np.array([[0., 0., 0.], [8., 0., 0.]])
+        assert np.all(res == expected)
