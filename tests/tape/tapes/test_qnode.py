@@ -335,11 +335,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -363,11 +363,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -378,6 +378,7 @@ class TestTapeConstruction:
 """
 
         assert result == expected
+
     def test_drawing_exception(self):
         """Test that an error is raised if a QNode is drawn prior to
         construction."""
@@ -391,37 +392,16 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
-    def test_multiple_observables_same_wire(self, mocker):
-        """Test that the QNode supports returning observables that are on the same wire (provided
-        that they are Pauli words and qubit-wise commuting)"""
-        dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev)
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
-
-        w = np.random.random((2, 2, 3))
-
-        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
-        res = circuit(w)
-        spy.assert_called_once()
-
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
-        res_2 = qnodes(w)
-
-        assert np.allclose(res, res_2)
-            
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
@@ -458,11 +438,11 @@ class TestTFInterface:
 
         @qnode(dev, interface="tf")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.state()
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
 
         circuit(p1=x, p3=z)
 
@@ -511,11 +491,11 @@ class TestTorchInterface:
 
         @qnode(dev, interface="torch")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
