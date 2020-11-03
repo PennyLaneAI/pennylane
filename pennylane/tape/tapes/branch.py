@@ -20,45 +20,45 @@ from pennylane.tape.tapes.tape import QuantumTape
 class BranchTape(QuantumTape):
     """A quantum tape recorder whose queue records elements which are interpreted as alternatives to each other.
 
-       A QuantumTape containing BranchTape(s) or of the class BranchTape is interpreted as a compact representation
-       of multiple quantum tapes.
+    A QuantumTape containing BranchTape(s) or of the class BranchTape is interpreted as a compact representation
+    of multiple quantum tapes.
 
 
-        **Example**
+     **Example**
 
-       .. code-block:: python
+    .. code-block:: python
 
-           with QuantumTape() as tape:
-               qml.CNOT(wires=['a', 0])
+        with QuantumTape() as tape:
+            qml.CNOT(wires=['a', 0])
 
-               with BranchTape() as batch:
-                   qml.RY(0.2, wires='a')
-                   qml.RX(0.2, wires='a')
+            with BranchTape() as batch:
+                qml.RY(0.2, wires='a')
+                qml.RX(0.2, wires='a')
 
-               probs(wires=0), probs(wires='a')
+            probs(wires=0), probs(wires='a')
 
-       The ``tape`` now contains a ``BranchTape`` object:
+    The ``tape`` now contains a ``BranchTape`` object:
 
-       >>> tape.operations
-       [CNOT(wires=[0, 'a']), <BranchTape: wires=[0], n=2>]
+    >>> tape.operations
+    [CNOT(wires=[0, 'a']), <BranchTape: wires=[0], n=2>]
 
-       We can also branch measurements:
+    We can also branch measurements:
 
-        .. code-block:: python
+     .. code-block:: python
 
-           with QuantumTape() as tape:
+        with QuantumTape() as tape:
 
-               qml.CNOT(wires=['a', 0])
+            qml.CNOT(wires=['a', 0])
 
-               with BranchTape() as branches:
-                   probs(wires=0)
-                   probs(wires='a')
+            with BranchTape() as branches:
+                probs(wires=0)
+                probs(wires='a')
 
-       >>> tape.measurements
-       [<BranchTape: wires=[0, 'a'], n=2>]
+    >>> tape.measurements
+    [<BranchTape: wires=[0, 'a'], n=2>]
 
 
-       """
+    """
 
     def __init__(self, name=None):
         # Todo: make uniquely identifyable name

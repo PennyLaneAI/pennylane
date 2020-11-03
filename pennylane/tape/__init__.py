@@ -33,7 +33,7 @@ from .tapes import (
     QubitParamShiftTape,
     CVParamShiftTape,
     ReversibleTape,
-    BranchTape
+    BranchTape,
 )
 
 
