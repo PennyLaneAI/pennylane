@@ -136,8 +136,7 @@ class DefaultMixed(QubitDevice):
         return self._reshape(self._pre_rotated_state, (dim, dim))
 
     def density_matrix(self, wires=None):
-        """Return the reduced density matrix representing a computational basis state
-         over the given wires.
+        """Return the reduced density matrix over the given wires.
 
         Args:
             wires (Wires): wires of the reduced system
