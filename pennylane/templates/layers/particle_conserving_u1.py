@@ -108,7 +108,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/particle_conserving_u1.png
         :align: center
-        :width: 60%
+        :width: 50%
         :target: javascript:void(0);
 
     |
