@@ -122,7 +122,7 @@ crot = lambda phi, theta, omega: np.array(
         [0, 1, 0, 0],
         [
             0,
-            0,  
+            0,
             exp(-0.5j * (phi + omega)) * cos(theta / 2),
             -exp(0.5j * (phi - omega)) * sin(theta / 2),
         ],
@@ -139,15 +139,15 @@ cu3 = lambda theta, phi, lam : np.array(
         [1, 0, 0, 0],
         [0, 1, 0, 0],
         [
-            0, 
-            0, 
-            cos(theta / 2), 
+            0,
+            0,
+            cos(theta / 2),
             -sin(theta / 2) * exp(1j * lam)
         ],
         [
-            0, 
-            0, 
-            sin(theta / 2) * exp(1j * phi), 
+            0,
+            0,
+            sin(theta / 2) * exp(1j * phi),
             cos(theta / 2) * exp(1j * (phi + lam))
         ],
     ]
