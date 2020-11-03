@@ -487,7 +487,7 @@ class CU3(Operation):
     num_params = 3
     num_wires = 2
     par_domain = "R"
-    grad_method = "A"
+    grad_method = "F"
 
     @classmethod
     def _matrix(cls, *params):
