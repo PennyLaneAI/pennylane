@@ -42,6 +42,7 @@ ops = {
     "CRX": qml.CRX(0, wires=[0, 1]),
     "CRY": qml.CRY(0, wires=[0, 1]),
     "CRZ": qml.CRZ(0, wires=[0, 1]),
+    "CU3": qml.CU3(0, 0, 0, wires=[0, 1]),
     "CRot": qml.CRot(0, 0, 0, wires=[0, 1]),
     "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
     "CZ": qml.CZ(wires=[0, 1]),
@@ -121,7 +122,7 @@ crot = lambda phi, theta, omega: np.array(
         [0, 1, 0, 0],
         [
             0,
-            0,
+            0,  
             exp(-0.5j * (phi + omega)) * cos(theta / 2),
             -exp(0.5j * (phi - omega)) * sin(theta / 2),
         ],
@@ -130,6 +131,24 @@ crot = lambda phi, theta, omega: np.array(
             0,
             exp(-0.5j * (phi - omega)) * sin(theta / 2),
             exp(0.5j * (phi + omega)) * cos(theta / 2),
+        ],
+    ]
+)
+cu3 = lambda theta, phi, lam : np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [
+            0, 
+            0, 
+            cos(theta / 2), 
+            -sin(theta / 2) * exp(1j * lam)
+        ],
+        [
+            0, 
+            0, 
+            sin(theta / 2) * exp(1j * phi), 
+            cos(theta / 2) * exp(1j * (phi + lam))
         ],
     ]
 )
@@ -158,7 +177,7 @@ single_qubit_param = [
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
 two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz)]
-two_qubit_multi_param = [(qml.CRot, crot)]
+two_qubit_multi_param = [(qml.CRot, crot), (qml.CU3, cu3)]
 # list of all three-qubit gates
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
 
