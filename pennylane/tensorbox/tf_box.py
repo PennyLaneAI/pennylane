@@ -11,38 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the TorchBox implementation of the TensorBox API.
+"""This module contains the TensorFlowBox implementation of the TensorBox API.
 """
-import numpy as np
-import torch
+import tensorflow as tf
 
-from .tensorbox import TensorBox
+import pennylane as qml
 
 
-class TorchBox(TensorBox):
-    """Implements the :class:`~.TensorBox` API for Torch tensors.
+class TensorFlowBox(qml.TensorBox):
+    """Implements the :class:`~.TensorBox` API for TensorFlow tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
     @staticmethod
     def stack(values, axis=0):
-        res = torch.stack(TorchBox.unbox_list(values), axis=axis)
-        return TorchBox(res)
+        res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
+        return TensorFlowBox(res)
 
     @property
     def shape(self):
         return tuple(self.unbox().shape)
 
     def expand_dims(self, axis):
-        return TorchBox(torch.unsqueeze(self.unbox(), dim=axis))
+        return TensorFlowBox(tf.expand_dims(self.unbox(), axis=axis))
 
     def numpy(self):
-        return self.unbox().detach().cpu().numpy()
+        return self.unbox().numpy()
 
     def ones_like(self):
-        return TorchBox(torch.ones_like(self.unbox()))
+        return TensorFlowBox(tf.ones_like(self.unbox()))
 
     @property
     def T(self):
-        return TorchBox(torch.transpose(self.unbox()))
+        return TensorFlowBox(tf.transpose(self.unbox()))

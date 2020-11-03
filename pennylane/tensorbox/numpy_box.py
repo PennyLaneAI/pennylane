@@ -11,38 +11,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the TensorFlowBox implementation of the TensorBox API.
+"""This module contains the NumpyBox implementation of the TensorBox API.
 """
 import numpy as np
-import tensorflow as tf
-
-from .tensorbox import TensorBox
+import pennylane as qml
 
 
-class TensorFlowBox(TensorBox):
-    """Implements the :class:`~.TensorBox` API for TensorFlow tensors.
+class NumpyBox(qml.TensorBox):
+    """Implements the :class:`~.TensorBox` API for ``numpy.ndarray``.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    def expand_dims(self, axis):
+        return NumpyBox(np.expand_dims(self.unbox(), axis=axis))
+
+    def numpy(self):
+        return self.unbox()
+
+    def ones_like(self):
+        return NumpyBox(np.ones_like(self.unbox()))
+
     @staticmethod
     def stack(values, axis=0):
-        res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
-        return TensorFlowBox(res)
+        return NumpyBox(np.stack(NumpyBox.unbox_list(values), axis=axis))
 
     @property
     def shape(self):
-        return tuple(self.unbox().shape)
-
-    def expand_dims(self, axis):
-        return TensorFlowBox(tf.expand_dims(self.unbox(), axis=axis))
-
-    def numpy(self):
-        return self.unbox().numpy()
-
-    def ones_like(self):
-        return TensorFlowBox(tf.ones_like(self.unbox()))
+        return self.unbox().shape
 
     @property
     def T(self):
-        return TensorFlowBox(tf.transpose(self.unbox()))
+        return NumpyBox(self.unbox().T)

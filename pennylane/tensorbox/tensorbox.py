@@ -15,6 +15,7 @@
 Wrappers for common functions that manipulate or create
 NumPy, TensorFlow, and Torch data structures.
 """
+# pylint: disable=import-outside-toplevel
 import abc
 
 
@@ -87,27 +88,27 @@ class TensorBox(abc.ABC):
         if cls is not TensorBox:
             return super(TensorBox, cls).__new__(cls)
 
-        if isinstance(tensor, (list, tuple)):
-            from .autograd import AutogradTensor, np
-
-            return AutogradTensor.__new__(AutogradTensor, np.array(tensor))
-
         namespace = tensor.__class__.__module__.split(".")[0]
 
-        if namespace in ("pennylane", "autograd", "numpy"):
-            from .autograd import AutogradTensor
+        if isinstance(tensor, (list, tuple)) or namespace == "numpy":
+            from .numpy_box import NumpyBox, np
 
-            return AutogradTensor.__new__(AutogradTensor, tensor)
+            return NumpyBox.__new__(NumpyBox, np.array(tensor))
+
+        if namespace in ("pennylane", "autograd"):
+            from .autograd_box import AutogradBox
+
+            return AutogradBox.__new__(AutogradBox, tensor)
 
         if namespace == "tensorflow":
-            from .tf import TensorFlowTensor
+            from .tf_box import TensorFlowBox
 
-            return TensorFlowTensor.__new__(TensorFlowTensor, tensor)
+            return TensorFlowBox.__new__(TensorFlowBox, tensor)
 
         if namespace == "torch":
-            from .torch import TorchTensor
+            from .torch_box import TorchBox
 
-            return TorchTensor.__new__(TorchTensor, tensor)
+            return TorchBox.__new__(TorchBox, tensor)
 
         raise ValueError(f"Unknown tensor type {type(tensor)}")
 

@@ -13,12 +13,12 @@
 # limitations under the License.
 """This module contains the AutogradBox implementation of the TensorBox API.
 """
+# pylint: disable=no-member
+import pennylane as qml
 from pennylane import numpy as np
 
-from .tensorbox import TensorBox
 
-
-class AutogradBox(TensorBox):
+class AutogradBox(qml.TensorBox):
     """Implements the :class:`~.TensorBox` API for ``pennylane.numpy`` tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
