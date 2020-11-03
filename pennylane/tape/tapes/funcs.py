@@ -14,12 +14,12 @@
 """
 This module contains the base quantum tape.
 """
-import pennylane as qml
 from copy import copy
 from itertools import product
+import pennylane as qml
 
 
-def _all_paths_through_branch_tape(batch_tape, path={}):
+def _all_paths_through_branch_tape(batch_tape, path=None):
     """Generator that adds all paths through a branch tape to an existing path.
         Paths are represented by dictionaries of the form
 
@@ -92,6 +92,8 @@ def _all_paths_through_branch_tape(batch_tape, path={}):
         # {"b1":2, "b2":0, "b3": 1, "b5": 1, "b6":0}
         # {"b1":2, "b2":0, "b3": 1, "b5": 1, "b6":1}
     """
+    if path is None:
+        path = {}
 
     counter = 0
     add_batch = True
@@ -122,7 +124,7 @@ def _all_paths_through_branch_tape(batch_tape, path={}):
                 yield new_path
 
 
-def all_paths(tape, path={}):
+def all_paths(tape, path=None):
     """
     Generator that adds all possible paths through batches in
     a tape to an existing path.
@@ -180,8 +182,11 @@ def all_paths(tape, path={}):
         # {"b1":2, "b2":0, "b4":1, "b5":0}
         # {"b1":2, "b2":0, "b4":1, "b5":1}
     """
+    if path is None:
+        path = {}
+
     # If the tape is itself a batch tape, call batch method
-    if type(tape) == qml.tape.BranchTape:
+    if type(tape) == qml.tape.BranchTape:  # pylint: disable=unidiomatic-typecheck
         yield from _all_paths_through_branch_tape(tape, path=path)
 
     else:

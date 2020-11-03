@@ -72,4 +72,9 @@ class BranchTape(QuantumTape):
 
     @property
     def num_branches(self):
+        """Returns the number of branches that this branch tape contains.
+
+        Returns:
+            int: number of branches
+        """
         return len(self.operations) + len(self.observables)
