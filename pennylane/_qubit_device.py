@@ -341,7 +341,7 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(observables) > 1:
                     raise QuantumFunctionError(
-                        "The state respectively density matrix cannot be returned in combination"
+                        "The state or density matrix cannot be returned in combination"
                         " with other return types"
                     )
                 if self.wires.labels != tuple(range(self.num_wires)):
