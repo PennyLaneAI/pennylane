@@ -75,7 +75,7 @@ def AngleEmbedding(features, wires, rotation="X"):
         msg="did not recognize option {} for 'rotation'.".format(rotation),
     )
 
-    wires = wires[:shp[0]]
+    wires = wires[: shp[0]]
 
     ###############
 
