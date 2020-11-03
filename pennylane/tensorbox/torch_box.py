@@ -24,6 +24,10 @@ class TorchBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @property
+    def interface(self):
+        return "torch"
+
     @staticmethod
     def stack(values, axis=0):
         res = torch.stack(TorchBox.unbox_list(values), axis=axis)

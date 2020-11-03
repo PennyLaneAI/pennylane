@@ -23,6 +23,10 @@ class NumpyBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @property
+    def interface(self):
+        return "numpy"
+
     def expand_dims(self, axis):
         return NumpyBox(np.expand_dims(self.unbox(), axis=axis))
 

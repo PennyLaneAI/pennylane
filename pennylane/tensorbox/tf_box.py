@@ -24,6 +24,10 @@ class TensorFlowBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @property
+    def interface(self):
+        return "tf"
+
     @staticmethod
     def stack(values, axis=0):
         res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)

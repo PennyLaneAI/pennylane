@@ -23,6 +23,9 @@ class TensorBox(abc.ABC):
     """A container for array-like objects that allows array manipulation to be performed in a
     unified manner for supported linear algebra packages.
 
+    Args:
+        tensor (array_like): instantiate the ``TensorBox`` container with an array-like object
+
     .. warning::
 
         The :class:`TensorBox` class is designed for internal use **only**, to ensure that
@@ -32,8 +35,6 @@ class TensorBox(abc.ABC):
         For front-facing usage, consider using an established package such as
         `EagerPy <https://github.com/jonasrauber/eagerpy>`_.
 
-    Args:
-        tensor (array_like): instantiate the ``TensorBox`` container with an array-like object
 
     By wrapping array-like objects in a ``TensorBox`` class, array manipulations are
     performed by simply chaining method calls. Under the hood, the method call is dispatched
@@ -41,18 +42,12 @@ class TensorBox(abc.ABC):
     the need to import any external libraries manually. As a result, autodifferentiation is
     preserved where needed.
 
+    Currently, the following linear algebra packages are supported:
 
-    The following subclasses provide support for linear algebra libraries such
-    as Autograd, TensorFlow, and PyTorch:
-
-    .. currentmodule:: pennylane.tensorbox
-    .. autosummary::
-        :toctree: api
-
-        autograd
-        numpy
-        tf
-        torch
+    * NumPy
+    * Autograd
+    * TensorFlow
+    * Torch
 
     **Example**
 
@@ -62,10 +57,14 @@ class TensorBox(abc.ABC):
 
     >>> x = tf.Variable([0.4, 0.1, 0.5])
     >>> y = TensorBox(x)
+    >>> print(y)
     >>> type(y)
-    <class 'pennylane.tape.functions.tf.TensorFlowTensor'>
+    <TensorBox <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>>
 
-    The original tensor is available via the ``data`` attribute.
+    The original tensor is available via the :meth:`~.unbox()` method:
+
+    >>> y.unbox()
+    <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>
 
     In addition, this class defines various abstract methods that all subclasses
     must define. These methods allow for common manipulations and
@@ -171,7 +170,9 @@ class TensorBox(abc.ABC):
     @property
     @abc.abstractmethod
     def interface(self):
-        """str, None: The linear algebra package """
+        """str, None: The linear algebra package that the :class:`.TensorBox` class
+        will dispatch to. The returned strings correspond to those used for PennyLane
+        :doc:`interfaces </introduction/interfaces>`."""
 
     @property
     @abc.abstractmethod

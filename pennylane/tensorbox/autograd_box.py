@@ -24,6 +24,10 @@ class AutogradBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @property
+    def interface(self):
+        return "autograd"
+
     def expand_dims(self, axis):
         return AutogradBox(np.expand_dims(self.unbox(), axis=axis))
 
