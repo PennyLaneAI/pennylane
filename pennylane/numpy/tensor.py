@@ -57,6 +57,7 @@ class tensor(_np.ndarray):
             an array. This includes lists, lists of tuples, tuples, tuples of tuples,
             tuples of lists and ndarrays.
         requires_grad (bool): whether the tensor supports differentiation
+        is_input (bool): flags the tensor as an input to a quantum function
 
     **Example**
 
@@ -89,12 +90,13 @@ class tensor(_np.ndarray):
         [0., 0., 0.]], requires_grad=True)
     """
 
-    def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
+    def __new__(cls, input_array, *args, requires_grad=True, is_input=None, **kwargs):
         obj = _np.array(input_array, *args, **kwargs)
 
         if isinstance(obj, _np.ndarray):
             obj = obj.view(cls)
             obj.requires_grad = requires_grad
+            obj.is_input = is_input
 
         return obj
 
@@ -104,10 +106,14 @@ class tensor(_np.ndarray):
             return
 
         self.requires_grad = getattr(obj, "requires_grad", None)
+        self.is_input = getattr(obj, "is_input", None)
 
     def __repr__(self):
         string = super().__repr__()
-        return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+        if self.is_input is None:
+            return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+
+        return string[:-1] + ", requires_grad={}, is_input={})".format(self.requires_grad, self.is_input)
 
     def __array_wrap__(self, obj):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
@@ -117,7 +123,7 @@ class tensor(_np.ndarray):
         item = super().__getitem__(*args, **kwargs)
 
         if not isinstance(item, tensor):
-            item = tensor(item, requires_grad=self.requires_grad)
+            item = tensor(item, requires_grad=self.requires_grad, is_input=self.is_input)
 
         return item
 
