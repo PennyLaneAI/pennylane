@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 
 
 def decompose_ua(phi, wires=None):
-    r"""Implement the two-qubit circuit decomposing the controlled application of the unitary
+    r"""Implement the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
     .. math::
@@ -40,11 +40,10 @@ def decompose_ua(phi, wires=None):
     in terms of the quantum operations supported by PennyLane.
 
     :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
-    to define two-qubit exchange gates that are used to build particle-conserving
+    to define two-qubit exchange gates required to build particle-conserving
     VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
 
-    This unitary can be expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
-    which are supported by PennyLane
+    :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
     :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
 
     Args:
@@ -68,7 +67,8 @@ def decompose_ua(phi, wires=None):
 def u1_ex_gate(phi, theta, wires=None):
     r"""Implement the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
-    particle-conserving VQE ansatze for Quantum Chemistry simulations.
+    a hardware-efficient particle-conserving VQE ansatz for Quantum Chemistry
+    simulations.
 
     Args:
         phi (float): angle entering the unitary :math:`U_A(\phi)`
@@ -149,8 +149,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
 
     acting on the state of qubit ``m`` which is further decomposed in terms of the
-    quantum `operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
-    supported by PennyLane,
+    `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
+    supported by preparesnnyLane,
 
     |
 
