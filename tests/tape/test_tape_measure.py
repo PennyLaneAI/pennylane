@@ -321,10 +321,10 @@ class TestState:
             return state(), expval(qml.PauliZ(1))
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="The state or density matrix"
-            " cannot be returned in combination"
-            " with other return types",
+                QuantumFunctionError,
+                match="The state or density matrix"
+                      " cannot be returned in combination"
+                      " with other return types",
         ):
             func()
 
@@ -659,6 +659,26 @@ class TestDensityMatrix:
         assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_all_wires(self, dev_name):
+        """Test that the correct density matrix is returned when all wires are given"""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.density_matrix(wires=[0, 1])
+
+        density = func()
+
+        assert np.allclose(np.array([[0.5 + 0.j, 0. + 0.j, 0. + 0.j, 0.5 + 0.j],
+                                     [0. + 0.j, 0. + 0.j, 0. + 0.j, 0. + 0.j],
+                                     [0. + 0.j, 0. + 0.j, 0. + 0.j, 0. + 0.j],
+                                     [0.5 + 0.j, 0. + 0.j, 0. + 0.j, 0.5 + 0.j]]), density)
+
+
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_return_with_other_types(self, dev_name):
         """Test that an exception is raised when a state is returned along with another return
         type"""
@@ -671,10 +691,10 @@ class TestDensityMatrix:
             return density_matrix(0), expval(qml.PauliZ(1))
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="The state or density matrix"
-            " cannot be returned in combination"
-            " with other return types",
+                QuantumFunctionError,
+                match="The state or density matrix"
+                      " cannot be returned in combination"
+                      " with other return types",
         ):
             func()
 
@@ -692,8 +712,8 @@ class TestDensityMatrix:
         with monkeypatch.context() as m:
             m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
-                QuantumFunctionError,
-                match="The current device is not capable" " of returning the state",
+                    QuantumFunctionError,
+                    match="The current device is not capable" " of returning the state",
             ):
                 func()
 
