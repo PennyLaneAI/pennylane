@@ -81,8 +81,9 @@ class MeasurementProcess:
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:
-            return "{}(None)".format(self.return_type.value)
+            return "{}(wires={})".format(self.return_type.value, self.wires)
 
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         if self.obs.return_type is None:
             return "{}({})".format(self.return_type.value, self.obs)
 
