@@ -134,22 +134,12 @@ crot = lambda phi, theta, omega: np.array(
         ],
     ]
 )
-cu3 = lambda theta, phi, lam : np.array(
+cu3 = lambda theta, phi, lam: np.array(
     [
         [1, 0, 0, 0],
         [0, 1, 0, 0],
-        [
-            0,
-            0,
-            cos(theta / 2),
-            -sin(theta / 2) * exp(1j * lam)
-        ],
-        [
-            0,
-            0,
-            sin(theta / 2) * exp(1j * phi),
-            cos(theta / 2) * exp(1j * (phi + lam))
-        ],
+        [0, 0, cos(theta / 2), -sin(theta / 2) * exp(1j * lam)],
+        [0, 0, sin(theta / 2) * exp(1j * phi), cos(theta / 2) * exp(1j * (phi + lam))],
     ]
 )
 
@@ -201,7 +191,9 @@ U = np.array(
 U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / sqrt(3)
 
 # single qubit Hermitian observable
-A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+A = np.array(
+    [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+)
 
 
 # ===============================================================
@@ -299,7 +291,9 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(
+        self, device, init_state, op, mat, tol, skip_if
+    ):
         """Test PauliX application."""
         n_wires = 1
         dev = device(n_wires)
@@ -320,7 +314,9 @@ class TestGatesQubit:
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
+    def test_single_qubit_parameters(
+        self, device, init_state, op, func, gamma, tol, skip_if
+    ):
         """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
@@ -383,7 +379,9 @@ class TestGatesQubit:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(
+        self, device, init_state, op, func, theta, tol, skip_if
+    ):
         """Test parametrized two qubit gates taking a single scalar argument."""
         n_wires = 2
         dev = device(n_wires)
@@ -453,7 +451,9 @@ class TestInverseGatesQubit:
     """Test the device's probability vector after application of inverse of gates."""
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(
+        self, device, init_state, op, mat, tol, skip_if
+    ):
         """Test inverse single qubit gate application."""
         n_wires = 1
         dev = device(n_wires)
@@ -476,7 +476,9 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
+    def test_single_qubit_parameters(
+        self, device, init_state, op, func, gamma, tol, skip_if
+    ):
         """Test inverse single qubit gates taking one scalar parameter."""
         n_wires = 1
         dev = device(n_wires)
@@ -547,7 +549,9 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
+    def test_two_qubit_parameters(
+        self, device, init_state, op, func, gamma, tol, skip_if
+    ):
         """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)

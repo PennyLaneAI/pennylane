@@ -23,7 +23,10 @@ import numpy as np
 
 from pennylane.templates import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import pauli_eigs, expand
 from pennylane._queuing import OperationRecorder
 
@@ -178,7 +181,11 @@ class PauliY(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+        return [
+            PauliZ(wires=self.wires),
+            S(wires=self.wires),
+            Hadamard(wires=self.wires),
+        ]
 
     @staticmethod
     def decomposition(wires):
@@ -446,6 +453,7 @@ class CY(Operation):
         decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
+
 class CU3(Operation):
     r"""CU3(theta, phi, lambda, wires)
     The controlled arbitrary single qubit unitary operator.
@@ -513,8 +521,8 @@ class CU3(Operation):
             PhaseShift((lam + phi) / 2, wires=wires[0]),
             PhaseShift((lam - phi) / 2, wires=wires[1]),
             CNOT(wires=wires),
-            Rot(-(phi + lam)/ 2, -theta / 2, (phi + lam)/ 2, wires=wires[1]),
-            PhaseShift(-(phi + lam)/ 2, wires=wires[1]),
+            Rot(-(phi + lam) / 2, -theta / 2, (phi + lam) / 2, wires=wires[1]),
+            PhaseShift(-(phi + lam) / 2, wires=wires[1]),
             PhaseShift(0, wires=wires[1]),
             CNOT(wires=wires),
             Rot(0, theta / 2, 0, wires=wires[1]),
@@ -522,6 +530,7 @@ class CU3(Operation):
             PhaseShift(phi, wires=wires[1]),
         ]
         return decomp_ops
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -841,14 +850,24 @@ class Rot(Operation):
 
         return np.array(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires),
+        ]
         return decomp_ops
 
 
@@ -1123,7 +1142,10 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1190,7 +1212,10 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1255,7 +1280,10 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1334,8 +1362,18 @@ class CRot(Operation):
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
@@ -1423,7 +1461,10 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
         return INV_SQRT2 * np.array(
-            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+            [
+                [1, -cmath.exp(1j * lam)],
+                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
+            ]
         )
 
     @staticmethod
@@ -1732,7 +1773,11 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        return [
+            QubitUnitary(
+                self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)
+            )
+        ]
 
 
 ops = {
