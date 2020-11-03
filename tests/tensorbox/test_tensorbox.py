@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for TensorBox subclasses"""
-import pennylane as qml
 import numpy as np
+import pytest
 
+import pennylane as qml
 from pennylane.tensorbox.numpy_box import NumpyBox
 
 
@@ -119,32 +120,32 @@ class TestNumpyBox:
 class TestAutogradBox:
     """Tests for the AutogradBox class"""
 
-    def test_creation_from_list(self):
-        """Test that a NumpyBox is automatically created from a list"""
-        x = [0.1, 0.2, 0.3]
+    @pytest.fixture
+    def autograd(self):
+        autograd = pytest.importorskip("autograd")
+        return autograd
+
+    def test_creation(self, autograd):
+        """Test that a AutogradBox is automatically created from a list"""
+        from pennylane.tensorbox.autograd_box import AutogradBox
+
+        x = qml.numpy.array([0.1, 0.2, 0.3])
         res = qml.TensorBox(x)
-        assert isinstance(res, NumpyBox)
-        assert res.interface == "numpy"
+        assert isinstance(res, AutogradBox)
+        assert res.interface == "autograd"
         assert isinstance(res.unbox(), np.ndarray)
         assert np.all(res.unbox() == x)
 
-    def test_creation_from_tuple(self):
-        """Test that a NumpyBox is automatically created from a tuple"""
-        x = (0.1, 0.2, 0.3)
-        res = qml.TensorBox(x)
-        assert isinstance(res, NumpyBox)
-        assert res.interface == "numpy"
-        assert isinstance(res.unbox(), np.ndarray)
-        assert np.all(res.unbox() == x)
-
-    def test_len(self):
+    def test_len(self, autograd):
         """Test length"""
+        np = qml.numpy
         x = np.array([[1, 2], [3, 4]])
         res = qml.TensorBox(x)
         assert len(res) == len(x) == 2
 
-    def test_multiplication(self):
+    def test_multiplication(self, autograd):
         """Test multiplication between tensors and arrays"""
+        np = qml.numpy
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[1, 0], [0, 1]])
 
@@ -159,8 +160,9 @@ class TestAutogradBox:
         res = xT * yT
         assert np.all(res.unbox() == x * y)
 
-    def test_unbox_list(self):
+    def test_unbox_list(self, autograd):
         """Test unboxing a mixed list works correctly"""
+        np = qml.numpy
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[1, 0], [0, 1]])
 
@@ -169,46 +171,55 @@ class TestAutogradBox:
 
         assert np.all(res == [y, x, x])
 
-    def test_shape(self):
+    def test_shape(self, autograd):
         """Test that arrays return the right shape"""
+        np = qml.numpy
         x = np.array([[[1, 2], [3, 4]]])
         x = qml.TensorBox(x)
         res = x.shape
         assert res == (1, 2, 2)
 
-    def test_expand_dims(self):
+    def test_expand_dims(self, autograd):
         """Test that dimension expansion works"""
+        from pennylane.tensorbox.autograd_box import AutogradBox
+
+        np = qml.numpy
         x = np.array([1, 2, 3])
         xT = qml.TensorBox(x)
 
         res = xT.expand_dims(axis=1)
         expected = np.expand_dims(x, axis=1)
-        assert isinstance(res, NumpyBox)
-        assert np.all(res == expected)
+        assert isinstance(res, AutogradBox)
+        assert np.all(res.unbox() == expected)
 
-    def test_ones_like(self):
+    def test_ones_like(self, autograd):
         """Test that all ones arrays are correctly created"""
+        from pennylane.tensorbox.autograd_box import AutogradBox
+
+        np = qml.numpy
         x = np.array([[1, 2, 3], [4, 5, 6]])
         xT = qml.TensorBox(x)
 
         res = xT.ones_like()
         expected = np.ones_like(x)
-        assert isinstance(res, NumpyBox)
-        assert np.all(res == expected)
+        assert isinstance(res, AutogradBox)
+        assert np.all(res.unbox() == expected)
 
-    def test_stack(self):
+    def test_stack(self, autograd):
         """Test that arrays are correctly stacked together"""
+        np = qml.numpy
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[1, 0], [0, 1]])
 
         xT = qml.TensorBox(x)
         res = xT.stack([y, xT, x])
 
-        assert np.all(res == np.stack([y, x, x]))
+        assert np.all(res.unbox() == np.stack([y, x, x]))
 
-    def test_transpose(self):
+    def test_transpose(self, autograd):
         """Test that the transpose is correct"""
+        np = qml.numpy
         x = np.array([[1, 2], [3, 4]])
         xT = qml.TensorBox(x)
 
-        assert np.all(xT.T == x.T)
+        assert np.all(xT.T.unbox() == x.T)
