@@ -44,6 +44,7 @@ from .measure import expval, var, sample, probs
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
+from .tensorbox import TensorBox
 from .utils import inv
 from ._version import __version__
 from .io import *
