@@ -77,11 +77,17 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     #############
 
-    constants = c * qml.tape.interfaces.functions.WrapperFunctions.ones_like(features)
+    if qml.tape_mode_active():
+        constants = c * qml.tape.UnifiedTensor(features).ones_like()
+    else:
+        constants = [c] * len(features)
 
     if method == "amplitude":
 
-        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([features, constants], axis=1)
+        if qml.tape_mode_active():
+            pars = constants.stack([features, constants], axis=1).data
+        else:
+            pars = list(zip(features, constants))
 
         broadcast(
             unitary=Displacement,
@@ -92,7 +98,10 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     elif method == "phase":
 
-        pars = qml.tape.interfaces.functions.WrapperFunctions.stack([constants, features], axis=1)
+        if qml.tape_mode_active():
+            pars = constants.stack([constants, features], axis=1).data
+        else:
+            pars = list(zip(constants, features))
 
         broadcast(
             unitary=Displacement,

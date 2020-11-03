@@ -265,7 +265,7 @@ def MottonenStatePreparation(state_vector, wires):
     if isinstance(state_vector[0], Variable):
         state_vector = np.array([s.val for s in state_vector])
     else:
-        state_vector = qml.tape.interfaces.functions.WrapperFunctions.to_ndarray(state_vector)
+        state_vector = qml.tape.UnifiedTensor(state_vector).numpy()
 
     # check if normalized
     norm = np.sum(np.abs(state_vector) ** 2)

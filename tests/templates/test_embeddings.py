@@ -31,6 +31,9 @@ from pennylane import Beamsplitter
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestAmplitudeEmbedding:
     """ Tests the AmplitudeEmbedding method."""
 

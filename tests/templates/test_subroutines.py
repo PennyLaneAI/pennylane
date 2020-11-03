@@ -37,6 +37,10 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _n_k_gray_code,
 )
 
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 # fmt: off
 PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),
@@ -341,11 +345,6 @@ class TestInterferometer:
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
-        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
-
 
 class TestSingleExcitationUnitary:
     """Tests for the SingleExcitationUnitary template from the
@@ -474,19 +473,13 @@ class TestSingleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0]))
+            init_state = np.array([0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=wires)
             SingleExcitationUnitary(weight, wires=single_wires)
-
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestArbitraryUnitary:
@@ -770,19 +763,13 @@ class TestDoubleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0, 0]))
+            init_state = np.array([0, 0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=range(N))
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
-
             return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestUCCSDUnitary:
@@ -1024,11 +1011,6 @@ class TestUCCSDUnitary:
 
         res = circuit(w0, w1, w2)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((w0, w1, w2), method="A")
-        jac_F = circuit.jacobian((w0, w1, w2), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestApproxTimeEvolution:

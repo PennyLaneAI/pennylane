@@ -26,6 +26,10 @@ from pennylane.ops import RX, RY, T, S, Rot, CRX, CRot, CNOT
 from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires_ring
 from pennylane.wires import Wires
 
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 @template
 def ConstantTemplate(wires):
     T(wires=wires)

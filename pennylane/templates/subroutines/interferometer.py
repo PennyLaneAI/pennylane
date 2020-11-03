@@ -17,11 +17,7 @@ Contains the ``Interferometer`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.templates.utils import (
-    check_shapes,
-    check_is_in_options,
-    get_shape
-)
+from pennylane.templates.utils import check_shapes, check_is_in_options, get_shape
 from pennylane.wires import Wires
 
 

@@ -54,7 +54,7 @@ try:
         tf.enable_eager_execution()
 
     from tensorflow import Variable as TFVariable
-    INTERFACES.append(('tf', TFVariable))
+    INTERFACES.append(('tf', lambda x: TFVariable(x, dtype=tf.float64)))
 
 except ImportError as e:
     pass
@@ -145,7 +145,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                               (qml.templates.UCCSD,
                                {'weights': [3.90575761, -1.89772083, -1.36689032]},
                                {'wires': [0, 1, 2, 3], 's_wires': [[0, 1, 2], [1, 2, 3]],
-                                'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0])},
+                                'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0], requires_grad=False)},
                                4),
                               ]
 
@@ -456,6 +456,7 @@ class TestIntegrationOtherOps:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
+        nondiffable = nondiffable.copy()
         nondiffable.update(diffable)
 
         # Generate qnode
@@ -488,6 +489,7 @@ class TestIntegrationOtherOps:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
+        nondiffable = nondiffable.copy()
         nondiffable.update(diffable)
 
         # Make qnode
@@ -518,6 +520,8 @@ class TestIntegrationGradient:
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_integration_qubit_grad(self, template, diffable, nondiffable, n_wires, interface, to_var):
         """Tests that gradient calculations of qubit templates execute without error."""
+        if template.__name__ in ("AmplitudeEmbedding", "MottonenStatePreparation"):
+            pytest.skip("Template cannot be differentiated")
 
         # Extract keys and items
         keys_diffable = [*diffable]
@@ -665,6 +669,11 @@ class TestNonConsecutiveWires:
 
         # merge differentiable and non-differentiable arguments:
         # we don't need them separate here
+        # Extract keys and items
+        if template.__name__ == "AmplitudeEmbedding":
+            diffable = diffable.copy()
+            diffable["features"] = np.array(diffable["features"])
+
         kwargs = {**nondiffable, **diffable}
 
         # construct qnode with consecutive wires
