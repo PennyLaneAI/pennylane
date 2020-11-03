@@ -199,7 +199,7 @@ def _get_alpha_y(a, n, k):
     numerator = np.sum(np.abs(numerator) ** 2, axis=1)
 
     indices_denominator = [
-        [j * 2 ** k + l for l in range(0, int(2 ** k))] for j in range(2 ** (n - k))
+        [j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))
     ]
     denominator = np.take(a, indices=indices_denominator)
     denominator = np.sum(np.abs(denominator) ** 2, axis=1)
