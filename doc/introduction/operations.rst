@@ -77,6 +77,7 @@ Qubit gates
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
+    ~pennylane.CU3
     ~pennylane.Toffoli
     ~pennylane.CSWAP
     ~pennylane.QubitUnitary

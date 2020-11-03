@@ -446,6 +446,64 @@ class CY(Operation):
         decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
+class CU3(Operation):
+    r"""CU3(theta, phi, lambda, wires)
+    The controlled arbitrary single qubit unitary operator.
+
+    .. math::
+
+        CU_3(\theta, \phi, \lambda) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \cos(\theta/2) & 0 & -\exp(i \lambda)\sin(\theta/2)\\
+            0 & 0 & 1 & 0\\
+            0 & \exp(i \phi)\sin(\theta/2) & 0 & \exp(i (\phi + \lambda))\cos(\theta/2)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 3
+
+    Args:
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        lambda (float): quantum phase :math:`\lambda`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+    """
+
+    num_params = 3
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta, phi, lam = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, c, 0, -s * cmath.exp(1j * lam)],
+                [0, 0, 1, 0],
+                [0, s * cmath.exp(1j * phi), 0, c * cmath.exp(1j * (phi + lam))],
+            ]
+        )
+
+    @staticmethod
+    def decomposition(theta, phi, lam, wires):
+        decomp_ops = [
+            U1((lam + phi) / 2, wires=wires[0]),
+            U1((lam - phi) / 2, wires=wires[1]),
+            CNOT([wires[0], wires[1]]),
+            U3(-theta / 2, 0, -(phi + lam)/ 2, wires=wires[1]),
+            CNOT([wires[0], wires[1]]),
+            U3(theta / 2, phi, 0, wires=wires[1]),
+        ]
+        return decomp_ops
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -1684,6 +1742,7 @@ ops = {
     "CRY",
     "CRZ",
     "CRot",
+    "CU3",
     "U1",
     "U2",
     "U3",
