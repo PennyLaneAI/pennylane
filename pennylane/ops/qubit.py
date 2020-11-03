@@ -1773,11 +1773,7 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [
-            QubitUnitary(
-                self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)
-            )
-        ]
+        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
 ops = {
