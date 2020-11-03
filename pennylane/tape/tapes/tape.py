@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.grouping import diagonalize_qwc_pauli_words
 
 
 STATE_PREP_OPS = (
@@ -95,6 +96,20 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+
+    if expand_measurements:
+        obs = [m.obs for m in tape.measurements if m.obs is not None]
+        m_idx = [i for i, m in enumerate(tape.measurements) if m.obs is not None]
+        obs_wires = [wire for m in tape.measurements for wire in m.wires if m.obs is not None]
+
+        if len(obs_wires) != len(set(obs_wires)):
+            rotations, diag_obs = diagonalize_qwc_pauli_words(obs)
+
+            tape._ops.extend(rotations)
+
+            for o, i in zip(diag_obs, m_idx):
+                new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+                tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
