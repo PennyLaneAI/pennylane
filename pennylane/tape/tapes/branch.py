@@ -57,11 +57,10 @@ class BranchTape(QuantumTape):
     >>> tape.measurements
     [<BranchTape: wires=[0, 'a'], n=2>]
 
-
     """
 
     def __init__(self, name=None):
-        # Todo: make uniquely identifyable name
+        # Todo: make uniquely identifiable name
         super().__init__(name=name)
 
     def __repr__(self):
