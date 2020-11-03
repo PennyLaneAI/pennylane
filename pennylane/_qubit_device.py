@@ -198,8 +198,16 @@ class QubitDevice(Device):
                 # controlled rotations aren't supported by the parameter-shift rule
                 stop_at = set(self.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
-            # expand out the tape, if any operations are not supported on the device
-            if not {op.name for op in circuit.operations}.issubset(stop_at):
+            obs_wires = [
+                wire for m in circuit.measurements for wire in m.wires if m.obs is not None
+            ]
+
+            obs_on_same_wire = len(obs_wires) != len(set(obs_wires))
+            ops_not_supported = not {op.name for op in circuit.operations}.issubset(stop_at)
+
+            # expand out the tape, if any operations are not supported on the device or multiple
+            # observables are measured on the same wire
+            if ops_not_supported or obs_on_same_wire:
                 circuit = circuit.expand(
                     depth=1, stop_at=lambda obj: obj.name in stop_at, expand_measurements=True
                 )
