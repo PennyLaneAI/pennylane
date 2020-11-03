@@ -17,6 +17,11 @@ This module contains a branching quantum tape.
 from pennylane.tape.tapes.tape import QuantumTape
 
 
+def branches(name=None):
+    """User-facing wrapper of the branch tape."""
+    return BranchTape(name=name)
+
+
 class BranchTape(QuantumTape):
     """A quantum tape recorder whose queue records elements which are interpreted as alternatives to each other.
 
@@ -55,7 +60,7 @@ class BranchTape(QuantumTape):
                 probs(wires='a')
 
     >>> tape.measurements
-    [<BranchTape: wires=[0, 'a'], n=2>]
+    [<BranchTape: wires=[0, 'a'], n=2>]git
 
     """
 
@@ -64,10 +69,16 @@ class BranchTape(QuantumTape):
         super().__init__(name=name)
 
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__}: wires={self.wires.tolist()} "
-            f"n={self.num_branches}, name={self.name}>"
-        )
+        if self.name is None:
+            return (
+                f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
+                f"n={self.num_branches}>"
+            )
+        else:
+            return (
+                f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
+                f"n={self.num_branches}, name={self.name}>"
+            )
 
     @property
     def num_branches(self):

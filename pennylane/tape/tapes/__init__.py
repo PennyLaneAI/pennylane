@@ -20,4 +20,4 @@ from .jacobian_tape import JacobianTape
 from .cv_param_shift import CVParamShiftTape
 from .qubit_param_shift import QubitParamShiftTape
 from .reversible import ReversibleTape
-from .branch import BranchTape
+from .branch import BranchTape, branches

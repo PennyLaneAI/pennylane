@@ -125,9 +125,16 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_tape._prep += expanded_tape._prep
-            new_tape._ops += expanded_tape._ops
-            new_tape._measurements += expanded_tape._measurements
+            if isinstance(expanded_tape, qml.tape.BranchTape):
+                # queue the entire expanded branch tape
+                # to not loose the branch structure
+                expanded_tape._update_circuit_info()
+                getattr(new_tape, queue).append(expanded_tape)
+            else:
+                # queue the objects inside the expanded tape
+                new_tape._prep += expanded_tape._prep
+                new_tape._ops += expanded_tape._ops
+                new_tape._measurements += expanded_tape._measurements
 
     return new_tape
 
@@ -250,10 +257,10 @@ def unravel(tape, strategy):
     if strategy is None:
         path_generator = all_paths(tape)
     else:
-        if strategy not in tape.unraveling:
+        if strategy not in tape.unravelling:
             raise ValueError("Unraveling strategy {} not registered.".format(strategy))
 
-        path_generator = tape.unraveling[strategy]
+        path_generator = tape.unravelling[strategy]
 
     for path in path_generator:
         yield _unravelled_tape(tape, path)
@@ -1093,7 +1100,7 @@ class QuantumTape(AnnotatedQueue):
     # =====================
 
     @property
-    def unraveling(self):
+    def unravelling(self):
         """Returns all possible unravelings of a tape.
 
         Returns:
