@@ -322,7 +322,7 @@ class TestState:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="The state respectively density matrix"
+            match="The state or density matrix"
             " cannot be returned in combination"
             " with other return types",
         ):
@@ -518,11 +518,12 @@ class TestDensityMatrix:
     """Tests for the density matrix function"""
 
     @pytest.mark.parametrize("wires", range(2, 5))
-    def test_density_matrix_shape_and_dtype_qubit(self, wires):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_density_matrix_shape_and_dtype(self, dev_name, wires):
         """Test that the density matrix is of correct size and dtype for a
         trivial circuit"""
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device(dev_name, wires=wires)
 
         @qnode(dev)
         def circuit():
@@ -533,26 +534,11 @@ class TestDensityMatrix:
         assert state_val.shape == (2, 2)
         assert state_val.dtype == np.complex128
 
-    @pytest.mark.parametrize("wires", range(2, 5))
-    def test_density_matrix_shape_and_dtype_mixed(self, wires):
-        """Test that the density matrix is of correct size and dtype for a
-        trivial circuit"""
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        @qnode(dev)
-        def circuit():
-            return density_matrix([0])
-
-        state_val = circuit()
-
-        assert state_val.shape == (2, 2)
-        assert state_val.dtype == np.complex128
-
-    def test_return_type_is_state_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_return_type_is_state(self, dev_name):
         """Test that the return type of the observable is State"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev)
         def func():
@@ -564,26 +550,12 @@ class TestDensityMatrix:
         assert len(obs) == 1
         assert obs[0].return_type is State
 
-    def test_return_type_is_state_mixed(self):
-        """Test that the return type of the observable is State"""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(0)
-            return density_matrix(0)
-
-        func()
-        obs = func.qtape.observables
-        assert len(obs) == 1
-        assert obs[0].return_type is State
-
-    def test_correct_density_matrix_product_state_first_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_product_state_first(self, dev_name):
         """Test that the correct density matrix  is returned when
         tracing out a product state"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev)
         def func():
@@ -597,29 +569,12 @@ class TestDensityMatrix:
             np.array([[0.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]), density_first
         )
 
-    def test_correct_density_matrix_product_state_first_mixed(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_product_state_second(self, dev_name):
         """Test that the correct density matrix  is returned when
         tracing out a product state"""
 
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(wires=1)
-            qml.PauliY(wires=0)
-            return density_matrix(0)
-
-        density_first = func()
-
-        assert np.allclose(
-            np.array([[0.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]), density_first
-        )
-
-    def test_correct_density_matrix_product_state_second_qubit(self):
-        """Test that the correct density matrix  is returned when
-        tracing out a product state"""
-
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev)
         def func():
@@ -632,28 +587,12 @@ class TestDensityMatrix:
             np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_second
         )
 
-    def test_correct_density_matrix_product_state_second_mixed(self):
-        """Test that the correct density matrix  is returned when
-        tracing out a product state"""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(wires=1)
-            qml.PauliY(wires=0)
-            return density_matrix(1)
-
-        density_second = func()
-        assert np.allclose(
-            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_second
-        )
-
-    def test_correct_density_matrix_all_wires_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_all_wires(self, dev_name):
         """Test that the correct density matrix  is returned when
         all wires are given"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(dev_name, wires=3)
 
         @qnode(dev)
         def func():
@@ -674,35 +613,11 @@ class TestDensityMatrix:
             density_full,
         )
 
-    def test_correct_density_matrix_all_wires_mixed(self):
-        """Test that the correct density matrix  is returned when
-        all wires are given"""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(wires=1)
-            qml.PauliY(wires=0)
-            return density_matrix([0, 1])
-
-        density_full = func()
-        assert np.allclose(
-            np.array(
-                [
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
-                ]
-            ),
-            density_full,
-        )
-
-    def test_correct_density_matrix_three_wires_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_three_wires(self, dev_name):
         """Test that the correct density matrix for an example with three wires"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(dev_name, wires=3)
 
         @qnode(dev)
         def func():
@@ -727,38 +642,11 @@ class TestDensityMatrix:
             density,
         )
 
-    def test_correct_density_matrix_three_wires_mixed(self):
-        """Test that the correct density matrix for an example with three wires"""
-
-        dev = qml.device("default.mixed", wires=3)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            qml.CNOT(wires=[1, 2])
-            return qml.density_matrix(wires=[1, 2])
-
-        density = func()
-
-        assert np.allclose(
-            np.array(
-                [
-                    [
-                        [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
-                        [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                        [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                        [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
-                    ]
-                ]
-            ),
-            density,
-        )
-
-    def test_correct_density_matrix_mixed_state_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_mixed_state(self, dev_name):
         """Test that the correct density matrix for an example with a mixed state"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev)
         def func():
@@ -770,26 +658,12 @@ class TestDensityMatrix:
 
         assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
 
-    def test_correct_density_matrix_mixed_state_mixed(self):
-        """Test that the correct density matrix for an example with a mixed state"""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(0)
-            qml.CNOT(wires=[0, 1])
-            return qml.density_matrix(wires=[1])
-
-        density = func()
-
-        assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
-
-    def test_return_with_other_types_qubit(self):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_return_with_other_types(self, dev_name):
         """Test that an exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev)
         def func():
@@ -798,35 +672,15 @@ class TestDensityMatrix:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="The state respectively density matrix"
-            " cannot be returned in combination"
-            " with other return types",
-        ):
-            func()
-
-    def test_return_with_other_types_mixed(self):
-        """Test that an exception is raised when a state is returned along with another return
-        type"""
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qnode(dev)
-        def func():
-            qml.Hadamard(wires=0)
-            return density_matrix(0), expval(qml.PauliZ(1))
-
-        with pytest.raises(
-            QuantumFunctionError,
-            match="The state respectively density matrix"
+            match="The state or density matrix"
             " cannot be returned in combination"
             " with other return types",
         ):
             func()
 
     def test_no_state_capability(self, monkeypatch):
-        """Test if an error is raised for devices that are not capable of returning the state
-        respectively the density matrix. This is tested by changing the capability of
-        default.qubit"""
+        """Test if an error is raised for devices that are not capable of returning
+        the density matrix. This is tested by changing the capability of default.qubit"""
         dev = qml.device("default.qubit", wires=2)
         capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
@@ -843,7 +697,7 @@ class TestDensityMatrix:
             ):
                 func()
 
-    def test_state_not_supported(self):
+    def test_density_matrix_not_supported(self):
         """Test if an error is raised for devices inheriting from the base Device class,
         which do not currently support returning the state"""
         dev = qml.device("default.gaussian", wires=2)
@@ -856,9 +710,10 @@ class TestDensityMatrix:
             func()
 
     @pytest.mark.parametrize("wires", [[0, 2, 3, 1], ["a", -1, "b", 1000]])
-    def test_custom_wire_labels(self, wires):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_custom_wire_labels(self, wires, dev_name):
         """Test if an error is raised when custom wire labels are used"""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device(dev_name, wires=wires)
 
         @qnode(dev)
         def func():

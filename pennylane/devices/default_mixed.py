@@ -123,7 +123,6 @@ class DefaultMixed(QubitDevice):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model="mixed",
             returns_state=True,
         )
         return capabilities
@@ -145,18 +144,17 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
-
         # Return the full density matrix if all the wires are given
         if wires == self.wires:
             return self.state
 
-        wires = list(wires.labels)
+        wires = wires.labels
 
-        traced_system = [x for x in list(self.wires.labels) if x not in wires]
+        traced_system = [x for x in self.wires.labels if x not in wires]
         traced_wires = Wires(traced_system)
 
         # Trace first subsystem by applying kraus operators of the partial trace
-        tr_op = np.asarray(np.eye(2).reshape(1, 4), dtype=self.C_DTYPE))
+        tr_op = self._cast(np.eye(2).reshape(1, 4), dtype=self.C_DTYPE)
         tr_op = self._reshape(tr_op, (2, 1, 2))
 
         self._apply_channel(tr_op, traced_wires[0])

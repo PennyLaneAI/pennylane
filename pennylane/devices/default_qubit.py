@@ -413,7 +413,7 @@ class DefaultQubit(QubitDevice):
         return self._flatten(self._pre_rotated_state)
 
     def density_matrix(self, wires=None):
-        """Return the reduced density matrix given a set of wires to be traced out.
+        """Return the reduced density matrix of a given set of wires.
 
         Args:
             wires (Sequence[int] or int): the wires of the subsytem.

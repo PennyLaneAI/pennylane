@@ -377,7 +377,13 @@ class QubitDevice(Device):
             raise QuantumFunctionError("The state is not available in the current device")
 
         if wires:
-            return getattr(self, "density_matrix", None)(wires)
+            density_matrix = self.density_matrix(wires)
+
+            if density_matrix is None:
+                return QuantumFunctionError(
+                    "The density matrix is not available in the" " current device"
+                )
+            return density_matrix
 
         return state
 
