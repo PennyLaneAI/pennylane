@@ -634,7 +634,7 @@ class TestDensityMatrix:
 
     def test_correct_density_matrix_product_state_second_mixed(self):
         """Test that the correct density matrix  is returned when
-        trace out a product state"""
+        tracing out a product state"""
 
         dev = qml.device("default.mixed", wires=2)
 
