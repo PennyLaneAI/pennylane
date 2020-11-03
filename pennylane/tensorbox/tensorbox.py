@@ -92,7 +92,7 @@ class TensorBox(abc.ABC):
         if isinstance(tensor, (list, tuple)) or namespace == "numpy":
             from .numpy_box import NumpyBox, np
 
-            return NumpyBox.__new__(NumpyBox, np.array(tensor))
+            return NumpyBox.__new__(NumpyBox, tensor)
 
         if namespace in ("pennylane", "autograd"):
             from .autograd_box import AutogradBox
@@ -126,11 +126,7 @@ class TensorBox(abc.ABC):
 
         return self.__class__(self.unbox() * other)
 
-    def __rmul__(self, other):
-        if isinstance(other, TensorBox):
-            other = other.unbox()
-
-        return self.__class__(other * self.unbox())
+    __rmul__ = __mul__
 
     @staticmethod
     def unbox_list(tensors):
