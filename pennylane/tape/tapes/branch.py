@@ -74,8 +74,8 @@ class BranchTape(QuantumTape):
                 f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
                 f"n={self.num_branches}>"
             )
-        else:
-            return (
+        
+        return (
                 f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
                 f"n={self.num_branches}, name={self.name}>"
             )
