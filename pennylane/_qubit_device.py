@@ -187,7 +187,7 @@ class QubitDevice(Device):
 
         self._circuit_hash = circuit.hash
 
-        original_obs = circuit.observables.copy()
+        obs = circuit.observables.copy()
 
         if isinstance(circuit, qml.tape.QuantumTape):
             stop_at = self.operations
@@ -212,11 +212,11 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        results = self.statistics(original_obs)
+        results = self.statistics(obs)
 
         # Ensures that a combination with sample does not put
         # expvals and vars in superfluous arrays
-        all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
+        all_sampled = all(o.return_type is Sample for o in obs)
         if circuit.is_sampled and not all_sampled:
             results = self._asarray(results, dtype="object")
         else:
