@@ -74,11 +74,11 @@ class BranchTape(QuantumTape):
                 f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
                 f"n={self.num_branches}>"
             )
-        
+
         return (
-                f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
-                f"n={self.num_branches}, name={self.name}>"
-            )
+            f"<{self.__class__.__name__}: wires={self.wires.tolist()}, "
+            f"n={self.num_branches}, name={self.name}>"
+        )
 
     @property
     def num_branches(self):
