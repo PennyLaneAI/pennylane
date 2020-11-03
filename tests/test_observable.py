@@ -15,14 +15,8 @@
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-from pennylane import numpy as np
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.qnodes import QuantumFunctionError
-from pennylane.devices import DefaultQubit
-
-import pytest
 
 
 def test_pass_positional_wires_to_observable():
