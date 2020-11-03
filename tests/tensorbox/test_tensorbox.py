@@ -126,7 +126,7 @@ class TestAutogradBox:
         return autograd
 
     def test_creation(self, autograd):
-        """Test that a AutogradBox is automatically created from a list"""
+        """Test that a AutogradBox is automatically created from a PennyLane numpy tensor"""
         from pennylane.tensorbox.autograd_box import AutogradBox
 
         x = qml.numpy.array([0.1, 0.2, 0.3])
@@ -236,3 +236,114 @@ class TestAutogradBox:
         res = grad_fn(x)[0]
         expected = np.array([[0., 0., 0.], [8., 0., 0.]])
         assert np.all(res == expected)
+
+
+class TestTorchBox:
+    """Tests for the TorchBox class"""
+
+    @pytest.fixture
+    def torch(self):
+        torch = pytest.importorskip("torch")
+        return torch
+
+    def test_creation(self, torch):
+        """Test that a TorchBox is automatically created from a torch tensor"""
+        from pennylane.tensorbox.torch_box import TorchBox
+
+        x = torch.tensor([0.1, 0.2, 0.3])
+        res = qml.TensorBox(x)
+        assert isinstance(res, TorchBox)
+        assert res.interface == "torch"
+        assert isinstance(res.unbox(), torch.Tensor)
+        assert torch.allclose(res.unbox(), x)
+
+    def test_len(self, torch):
+        """Test length"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        res = qml.TensorBox(x)
+        assert len(res) == len(x) == 2
+
+    def test_multiplication(self, torch):
+        """Test multiplication between tensors and arrays"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        y = torch.tensor([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT * y
+        assert torch.allclose(res.unbox(), x * y)
+
+        yT = qml.TensorBox(y)
+        res = x * yT
+        assert torch.allclose(res.unbox(), x * y)
+
+        res = xT * yT
+        assert torch.allclose(res.unbox(), x * y)
+
+    def test_unbox_list(self, torch):
+        """Test unboxing a mixed list works correctly"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        y = torch.tensor([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT.unbox_list([y, xT, x])
+
+        assert np.all(res == [y, x, x])
+
+    def test_shape(self, torch):
+        """Test that arrays return the right shape"""
+        x = torch.tensor([[[1, 2], [3, 4]]])
+        x = qml.TensorBox(x)
+        res = x.shape
+        assert res == (1, 2, 2)
+
+    def test_expand_dims(self, torch):
+        """Test that dimension expansion works"""
+        from pennylane.tensorbox.torch_box import TorchBox
+
+        x = torch.tensor([1, 2, 3])
+        xT = qml.TensorBox(x)
+
+        res = xT.expand_dims(axis=1)
+        expected = torch.unsqueeze(x, dim=1)
+        assert isinstance(res, TorchBox)
+        assert torch.allclose(res.unbox(), expected)
+
+    def test_ones_like(self, torch):
+        """Test that all ones arrays are correctly created"""
+        from pennylane.tensorbox.torch_box import TorchBox
+
+        x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        xT = qml.TensorBox(x)
+
+        res = xT.ones_like()
+        expected = torch.ones_like(x)
+        assert isinstance(res, TorchBox)
+        assert torch.allclose(res.unbox(), expected)
+
+    def test_stack(self, torch):
+        """Test that arrays are correctly stacked together"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        y = torch.tensor([[1, 0], [0, 1]])
+
+        xT = qml.TensorBox(x)
+        res = xT.stack([y, xT, x])
+
+        assert torch.allclose(res.unbox(), torch.stack([y, x, x]))
+
+    def test_transpose(self, torch):
+        """Test that the transpose is correct"""
+        x = torch.tensor([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+
+        assert torch.allclose(xT.T.unbox(), x.T)
+
+    def test_autodifferentiation(self, torch):
+        """Test that autodifferentiation is preserved when writing
+        a cost function that uses TensorBox method chaining"""
+        x = torch.tensor([[1., 2., 3.], [4., 5., 6.]], requires_grad=True)
+        y = (qml.TensorBox(x).T ** 2).unbox()[0, 1]
+        y.backward()
+
+        res = x.grad
+        expected = torch.tensor([[0., 0., 0.], [8., 0., 0.]])
+        assert torch.allclose(res, expected)

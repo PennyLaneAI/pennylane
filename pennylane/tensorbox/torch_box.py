@@ -48,4 +48,4 @@ class TorchBox(qml.TensorBox):
 
     @property
     def T(self):
-        return TorchBox(torch.transpose(self.unbox()))
+        return TorchBox(self.unbox().T)
