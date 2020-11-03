@@ -11,10 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Wrappers for common functions that manipulate or create
-NumPy, TensorFlow, and Torch data structures.
-"""
+"""This module contains the TensorBox abstract base class."""
 # pylint: disable=import-outside-toplevel
 import abc
 
