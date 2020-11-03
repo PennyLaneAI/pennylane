@@ -305,8 +305,10 @@ class TestGraph:
         assert g2 is g
         spy.assert_called_once()
 
+
 class TestResourceEstimation:
     """Tests for verifying resource counts and depths of tapes."""
+
     @pytest.fixture
     def make_empty_tape(self):
         with QuantumTape() as tape:
@@ -339,7 +341,7 @@ class TestResourceEstimation:
             qml.RX(params[4], wires=4)
 
         return tape
-    
+
     def test_resources_empty_tape(self, make_empty_tape):
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
@@ -356,9 +358,9 @@ class TestResourceEstimation:
         # Verify resource counts
         resources = tape.get_resources()
         assert len(resources) == 3
-        assert resources['RX'] == 2
-        assert resources['Rot'] == 1
-        assert resources['CNOT'] == 1
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 1
 
     def test_resources_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct number of resources after adding to them."""
@@ -368,9 +370,9 @@ class TestResourceEstimation:
 
         resources = tape.get_resources()
         assert len(resources) == 3
-        assert resources['RX'] == 2
-        assert resources['Rot'] == 1
-        assert resources['CNOT'] == 1
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 1
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -382,11 +384,12 @@ class TestResourceEstimation:
 
         resources = tape.get_resources()
         assert len(resources) == 4
-        assert resources['RX'] == 2
-        assert resources['Rot'] == 1
-        assert resources['CNOT'] == 2
-        assert resources['RZ'] == 1
-        
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 2
+        assert resources["RZ"] == 1
+
+
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""
 
@@ -778,6 +781,78 @@ class TestExpand:
         expected = [None, [1, -1, -1, 1], [0, 5]]
         assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
 
+    def test_multiple_observables_same_wire_expval(self, mocker):
+        """Test that the tape supports returning expectation values of observables that are on the
+        same wire (provided that they are Pauli words and qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        with QuantumTape() as tape:
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = tape.execute(dev)
+        spy.assert_called_once()
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
+        res_2 = qnodes(w)
+
+        assert np.allclose(res, res_2)
+
+    def test_multiple_observables_same_wire_mixed(self, mocker):
+        """Test that the tape supports returning observables that are on the
+        same wire but with different return types (provided that the observables are Pauli words and
+        qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        with QuantumTape() as tape:
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = tape.execute(dev)
+        spy.assert_called_once()
+
+        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
+        q2 = qml.map(
+            qml.templates.StronglyEntanglingLayers,
+            [qml.PauliX(0) @ qml.PauliZ(1)],
+            dev,
+            measure="var",
+        )
+
+        res_2 = np.array([q1(w), q2(w)]).squeeze()
+
+        assert np.allclose(res, res_2)
+
+    def test_expand_tape_multiple_wires(self):
+        """Test the expand() method when measurements with more than one observable on the same
+        wire are used"""
+        with QuantumTape() as tape1:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+
+        with QuantumTape() as tape2:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.RY(-np.pi / 2, wires=0)
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        tape1_exp = tape1.expand(expand_measurements=True)
+        tape2_exp = tape2.expand(expand_measurements=True)
+
+        assert tape1_exp.graph.hash == tape2_exp.graph.hash
+
 
 class TestExecution:
     """Tests for tape execution"""
@@ -1107,7 +1182,9 @@ class TestTapeCopying:
         for i, j in zip(copied_tape.get_parameters(), new_params):
             assert i is j
 
-    @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)])
+    @pytest.mark.parametrize(
+        "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
+    )
     def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
         parameters to be set independently"""
