@@ -22,6 +22,7 @@ class NumpyBox(qml.TensorBox):
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
+
     def __init__(self, tensor):
         if not isinstance(tensor, np.ndarray):
             tensor = np.asarray(tensor)
@@ -29,7 +30,7 @@ class NumpyBox(qml.TensorBox):
         super().__init__(tensor)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        outputs = kwargs.get('out', ())
+        outputs = kwargs.get("out", ())
         items = self.unbox_list(inputs + outputs)
         res = getattr(ufunc, method)(*items, **kwargs)
 

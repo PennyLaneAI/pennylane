@@ -90,7 +90,7 @@ class TensorBox(abc.ABC):
         namespace = tensor.__class__.__module__.split(".")[0]
 
         if isinstance(tensor, (list, tuple)) or namespace == "numpy":
-            from .numpy_box import NumpyBox, np
+            from .numpy_box import NumpyBox
 
             return NumpyBox.__new__(NumpyBox, tensor)
 
