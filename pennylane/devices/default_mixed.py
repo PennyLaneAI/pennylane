@@ -156,7 +156,7 @@ class DefaultMixed(QubitDevice):
         traced_wires = Wires(traced_system)
 
         # Trace first subsystem by applying kraus operators of the partial trace
-        tr_op = np.asarray(np.eye(2).reshape(1, 4), dtype=complex)
+        tr_op = np.asarray(np.eye(2).reshape(1, 4), dtype=self.C_DTYPE))
         tr_op = self._reshape(tr_op, (2, 1, 2))
 
         self._apply_channel(tr_op, traced_wires[0])
