@@ -28,6 +28,7 @@ from pennylane.templates.state_preparations import (BasisStatePreparation,
                                                     ArbitraryStatePreparation)
 from pennylane.templates.state_preparations.mottonen import gray_code
 from pennylane.templates.state_preparations.arbitrary_state_preparation import _state_preparation_pauli_words
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
 
@@ -301,6 +302,18 @@ class TestMottonenStatePreparation:
 
         with pytest.raises(ValueError, match="'state_vector' must be of shape"):
             MottonenStatePreparation(state_vector, wires)
+
+    @pytest.mark.parametrize("current_qubit, expected", [
+        (1, np.array([0, 0, 0, 1.23095942])),
+        (2, np.array([2.01370737, 3.14159265])),
+        (3, np.array([1.15927948])),
+    ])
+    def test_get_alpha_y(self, current_qubit, expected, tol):
+        """Test the _get_alpha_y helper function."""
+
+        state = np.array([np.sqrt(0.2), 0, np.sqrt(0.5), 0, 0, 0, np.sqrt(0.2), np.sqrt(0.1)])
+        res = _get_alpha_y(state, 3, current_qubit)
+        assert np.allclose(res, expected, atol=tol)
 
 
 class TestArbitraryStatePreparation:
