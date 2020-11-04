@@ -121,7 +121,7 @@ class tensor(_np.ndarray):
 
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
-        res = super(tensor, self).__array_ufunc__(ufunc, method, *args, **kwargs)
+        res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
         res = tensor(res)
 
         if res is NotImplemented:
