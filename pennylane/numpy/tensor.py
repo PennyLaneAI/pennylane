@@ -115,14 +115,18 @@ class tensor(_np.ndarray):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         # pylint: disable=no-member,attribute-defined-outside-init
-        outputs = [
-            i.view(onp.ndarray) if hasattr(i, "unwrap") else i for i in kwargs.get("out", ())
-        ]
+
+        # unwrap any outputs the ufunc might have
+        outputs = [i.view(onp.ndarray) for i in kwargs.get("out", ())]
 
         if outputs:
+            # Insert the unwrapped outputs into the keyword
+            # args dictionary, to be passed to ndarray.__array_ufunc__
             outputs = tuple(outputs)
             kwargs["out"] = outputs
         else:
+            # If the ufunc has no ouputs, we simply
+            # create a tuple containing None for all potential outputs.
             outputs = (None,) * ufunc.nout
 
         # unwrap the input arguments to the ufunc
@@ -135,7 +139,8 @@ class tensor(_np.ndarray):
         if ufunc.nout == 1:
             res = (res,)
 
-        res = [
+        # construct a list of ufunc outputs to return
+        ufunc_output = [
             (onp.asarray(result) if output is None else output)
             for result, output in zip(res, outputs)
         ]
@@ -145,10 +150,17 @@ class tensor(_np.ndarray):
             isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
         )
 
-        for i in range(len(res)):  # pylint: disable=consider-using-enumerate
-            res[i] = tensor(res[i], requires_grad=requires_grad)
+        # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
+        # We also correctly set the requires_grad attribute.
+        for i in range(len(ufunc_output)):  # pylint: disable=consider-using-enumerate
+            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad)
 
-        return res[0] if len(res) == 1 else tuple(res)
+        if len(ufunc_output) == 1:
+            # the ufunc has a single output so return a single tensor
+            return ufunc_output[0]
+
+        # otherwise we must return a tuple of tensors
+        return tuple(ufunc_output)
 
     def __getitem__(self, *args, **kwargs):
         item = super().__getitem__(*args, **kwargs)
