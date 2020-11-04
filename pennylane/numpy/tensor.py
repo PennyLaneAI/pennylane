@@ -113,6 +113,26 @@ class tensor(_np.ndarray):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
         return super().__array_wrap__(out_arr)
 
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        # unwrap the input arguments to the ufunc
+        args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
+
+        # call the ndarray.__array_ufunc__ method to compute the result
+        # of the vectorized ufunc
+        res = super(tensor, self).__array_ufunc__(ufunc, method, *args, **kwargs)
+        res = tensor(res)
+
+        if res is NotImplemented:
+            return NotImplemented
+
+        res.requires_grad = False
+
+        # if any of the inputs were trainable, the output is also trainable
+        if any(getattr(x, "requires_grad", True) for x in inputs):
+            res.requires_grad = True
+
+        return res
+
     def __getitem__(self, *args, **kwargs):
         item = super().__getitem__(*args, **kwargs)
 
