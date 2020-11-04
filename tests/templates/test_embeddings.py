@@ -230,6 +230,25 @@ class TestAngleEmbedding:
         assert np.allclose(res, target[:n_subsystems])
 
     @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
+    def test_angle_embedding_fewer_features(self, strategy):
+        """Verifies that AngleEmbedding() can be used correctly if there are
+        fewer features than rotation gates."""
+        features = [pi / 2, pi / 2, pi / 4, 0]
+        n_subsystems = 5
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features)
+        target = [-1, 1, 1, 1, 1]
+        assert np.allclose(res, target)
+
+    @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
     def test_angle_embedding_exception_fewer_rotations(self, strategy):
         """Verifies that AngleEmbedding() raises an exception if there are fewer
            rotation gates than features."""
