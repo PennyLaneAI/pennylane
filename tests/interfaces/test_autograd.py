@@ -534,9 +534,6 @@ class TestParameterHandlingIntegration:
         data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
         data2 = qml.numpy.array([1, 1], requires_grad=False)
 
-        print(weights.requires_grad)
-        print(data1.requires_grad)
-        print(data2.requires_grad)
         res = grad_fn(weights, data1, data2)
 
         # we do not check for correctness, just that the output
