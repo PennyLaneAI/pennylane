@@ -98,6 +98,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     new_tape = tape.__class__()
 
     if expand_measurements:
+        # Check for observables acting on the same wire. If present, observables must be
+        # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
+        # rotations and the observables updated to the computational basis. Note that this
+        # expansion acts on the original tape in place.
+
         obs = [m.obs for m in tape.measurements if m.obs is not None]
         m_idx = [i for i, m in enumerate(tape.measurements) if m.obs is not None]
         obs_wires = [wire for m in tape.measurements for wire in m.wires if m.obs is not None]
