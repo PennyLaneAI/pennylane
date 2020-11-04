@@ -39,7 +39,7 @@
       qml.Hadamard(wires=1)
       return qml.density_matrix(wires=[1])  # wire 0 is traced out
   ```
- 
+
 <h3>Improvements</h3>
 
 * The classical processing in the `MottonenStatePreparation` template has been largely 
