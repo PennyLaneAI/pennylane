@@ -111,8 +111,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             try:
                 rotations, diag_obs = diagonalize_qwc_pauli_words(obs)
             except ValueError as e:
-                raise qml.QuantumFunctionError("Only observables that are qubit-wise commuting "
-                                               "Pauli words can be returned on the same wire")
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire"
+                ) from e
 
             tape._ops.extend(rotations)
 
