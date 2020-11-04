@@ -28,6 +28,33 @@
 
 <h3>Improvements</h3>
 
+* QNodes in tape mode now support returning observables on the same wire if the observables are
+  qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
+  single device run because they are diagonal in the same basis, or can be equivalently
+  transformed to the computational basis using a shared set of single-qubit rotations. 
+  [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
+  
+  The following shows how to return the Pauli words ``XX`` and ``XI``:
+  
+  ```python
+  qml.enable_tape()
+
+  @qml.qnode(dev)
+  def f(x):
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      qml.CRot(0.1, 0.2, 0.3, wires=[1, 0])
+      qml.RZ(x, wires=1)
+      return qml.expval(qml.PauliX(0) @ qml.PauliX(1)), qml.expval(qml.PauliX(0))
+  ```
+  
+  This can now be correctly evaluated:
+  
+  ```pycon
+  >>> f(0.4)
+  tensor([0.89431013, 0.9510565 ], requires_grad=True)
+  ```
+  
 * The classical processing in the `MottonenStatePreparation` template has been largely 
   rewritten to use dense matrices and tensor manipulations where ever possible. 
   This is a preparation to support differentiation through the template in future.
