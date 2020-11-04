@@ -394,19 +394,23 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        stop_at = self.device.operations
+        if not isinstance(self.device, qml.QubitDevice):
+            # The following functionality now lives in QubitDevice. It can be removed once it is
+            # ported to Device.
 
-        # Hotfix that allows controlled rotations to return the correct gradients
-        # when using the parameter shift rule.
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+            stop_at = self.device.operations
 
-        # expand out the tape, if any operations are not supported on the device
-        if not {op.name for op in self.qtape.operations}.issubset(stop_at):
-            self.qtape = self.qtape.expand(
-                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
-            )
+            # Hotfix that allows controlled rotations to return the correct gradients
+            # when using the parameter shift rule.
+            if isinstance(self.qtape, QubitParamShiftTape):
+                # controlled rotations aren't supported by the parameter-shift rule
+                stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+
+            # expand out the tape, if any operations are not supported on the device
+            if not {op.name for op in self.qtape.operations}.issubset(stop_at):
+                self.qtape = self.qtape.expand(
+                    depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+                )
 
     def __call__(self, *args, **kwargs):
 

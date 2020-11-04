@@ -183,8 +183,6 @@ class QubitDevice(Device):
             if circuit_hash in self._cache_execute:
                 return self._cache_execute[circuit_hash]
 
-        self.check_validity(circuit.operations, circuit.observables)
-
         self._circuit_hash = circuit.hash
 
         obs = circuit.observables.copy()
@@ -211,6 +209,8 @@ class QubitDevice(Device):
                 circuit = circuit.expand(
                     depth=1, stop_at=lambda obj: obj.name in stop_at, expand_measurements=True
                 )
+
+        self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
