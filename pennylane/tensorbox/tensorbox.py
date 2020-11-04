@@ -172,7 +172,7 @@ class TensorBox(abc.ABC):
     @property
     @abc.abstractmethod
     def interface(self):
-        """str, None: The linear algebra package that the :class:`.TensorBox` class
+        """str, None: The package that the :class:`.TensorBox` class
         will dispatch to. The returned strings correspond to those used for PennyLane
         :doc:`interfaces </introduction/interfaces>`."""
 
