@@ -114,6 +114,8 @@ class tensor(_np.ndarray):
         return super().__array_wrap__(out_arr)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        # pylint: disable=no-member,attribute-defined-outside-init
+
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
 
