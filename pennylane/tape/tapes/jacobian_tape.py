@@ -61,12 +61,12 @@ class JacobianTape(QuantumTape):
 
         import pennylane.tape
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliZ(wires=[0]))
 
     The Jacobian is computed using finite difference:
 
