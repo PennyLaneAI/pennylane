@@ -28,6 +28,11 @@
 
 <h3>Improvements</h3>
 
+* The classical processing in the `MottonenStatePreparation` template has been largely 
+  rewritten to use dense matrices and tensor manipulations where ever possible. 
+  This is a preparation to support differentiation through the template in future.
+  [(#864)](https://github.com/PennyLaneAI/pennylane/pull/864)
+
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
   `cache` argument to the device.
   [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
