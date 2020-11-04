@@ -120,23 +120,34 @@ class tensor(_np.ndarray):
         ]
 
         if outputs:
-            kwargs["out"] = tuple(outputs)
+            outputs = tuple(outputs)
+        else:
+            outputs = (None,) * ufunc.nout
+
+        kwargs["out"] = outputs
 
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
 
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
-        res = super(tensor, self).__array_ufunc__(ufunc, method, *args, **kwargs)
-        res = tensor(res)
+        res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
 
-        res.requires_grad = False
+        if ufunc.nout == 1:
+            res = (res,)
+
+        res = [
+            (onp.asarray(result) if output is None else output)
+            for result, output in zip(res, outputs)
+        ]
 
         # if any of the inputs were trainable, the output is also trainable
-        if any(getattr(x, "requires_grad", True) for x in inputs):
-            res.requires_grad = True
+        requires_grad = any(getattr(x, "requires_grad", True) for x in inputs)
 
-        return res
+        for i in range(len(res)):
+            res[i] = tensor(res[i], requires_grad=requires_grad)
+
+        return res[0] if len(res) == 1 else tuple(res)
 
     def __getitem__(self, *args, **kwargs):
         item = super().__getitem__(*args, **kwargs)
