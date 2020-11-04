@@ -181,11 +181,7 @@ class PauliY(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [
-            PauliZ(wires=self.wires),
-            S(wires=self.wires),
-            Hadamard(wires=self.wires),
-        ]
+        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
     @staticmethod
     def decomposition(wires):
