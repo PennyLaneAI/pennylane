@@ -45,7 +45,7 @@ def u2_ex_gate(phi, wires=None):
         0 & 0 & 0 & 1 \\
         \end{array}\right).
 
-    The figure below shows the circuit use to decompose of :math:`U_{2, \mathrm{ex}}` in
+    The figure below shows the circuit used to decompose :math:`U_{2, \mathrm{ex}}` in
     elementary gates
 
     |
