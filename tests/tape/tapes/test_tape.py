@@ -562,33 +562,6 @@ class TestParameters:
 
         assert np.all(obs.data[0] == H2)
 
-    def test_multiple_expectations_same_wire(self, make_tape):
-        """Test if a QuantumFunctionError is raised if more than one expectation value is
-        evaluated on a given wire"""
-        tape, _ = make_tape
-
-        with pytest.raises(qml.QuantumFunctionError, match="Each wire in the quantum circuit"):
-            with tape:
-                qml.expval(qml.PauliZ("a"))
-
-    def test_multiple_expectations_and_vars_same_wire(self, make_tape):
-        """Test if a QuantumFunctionError is raised if a variance measurement follows an
-        expectation value measurement on the same wire"""
-        tape, _ = make_tape
-
-        with pytest.raises(qml.QuantumFunctionError, match="Each wire in the quantum circuit"):
-            with tape:
-                qml.var(qml.PauliZ("a"))
-
-    def test_multiple_expectations_and_sample_same_wire(self, make_tape):
-        """Test if a QuantumFunctionError is raised if a sampling measurement follows an
-        expectation value measurement on the same wire"""
-        tape, _ = make_tape
-
-        with pytest.raises(qml.QuantumFunctionError, match="Each wire in the quantum circuit"):
-            with tape:
-                qml.sample(qml.PauliZ("a"))
-
 
 class TestInverse:
     """Tests for tape inversion"""
@@ -879,6 +852,48 @@ class TestExpand:
         tape2_exp = tape2.expand(expand_measurements=True)
 
         assert tape1_exp.graph.hash == tape2_exp.graph.hash
+
+    def test_multiple_observables_same_wire_expval_non_commuting(self):
+        """Test if a QuantumFunctionError is raised if expectation values of non-commuting
+        observables are evaluated on the same wire"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.execute(dev)
+
+    def test_multiple_observables_same_wire_var_non_commuting(self):
+        """Test if a QuantumFunctionError is raised if variances and expectation values of
+        non-commuting observables are evaluated on the same wire"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.execute(dev)
+
+    def test_multiple_observables_same_wire_sample_non_commuting(self):
+        """Test if a QuantumFunctionError is raised if samples and expectation values of
+        non-commuting observables are evaluated on the same wire"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            qml.sample(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.execute(dev)
 
 
 class TestExecution:
