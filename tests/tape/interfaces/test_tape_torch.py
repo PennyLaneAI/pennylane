@@ -315,7 +315,8 @@ class TestTorchQuantumTape:
             U3(p[0], p[1], p[2], wires=0)
             qml.expval(qml.PauliX(0))
 
-        tape = TorchInterface.apply(tape.expand())
+        tape.expand()
+        tape = TorchInterface.apply(tape)
 
         assert tape.trainable_params == {1, 2, 3, 4}
         assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]

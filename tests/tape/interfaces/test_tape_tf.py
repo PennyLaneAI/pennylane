@@ -342,7 +342,8 @@ class TestTFQuantumTape:
                 U3(p[0], p[1], p[2], wires=0)
                 qml.expval(qml.PauliX(0))
 
-            qtape = TFInterface.apply(qtape.expand())
+            qtape.expand()
+            qtape = TFInterface.apply(qtape)
 
             assert qtape.trainable_params == {1, 2, 3, 4}
             assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
@@ -657,7 +658,7 @@ class TestTFPassthru:
                 U3(p[0], p[1], p[2], wires=0)
                 qml.expval(qml.PauliX(0))
 
-            qtape = qtape.expand()
+            qtape.expand()
 
             assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])

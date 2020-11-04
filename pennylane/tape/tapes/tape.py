@@ -45,7 +45,10 @@ STATE_PREP_OPS = (
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
+    This function expands the tape in place.
+
     Args:
+        tape (QuantumTape): the tape to be expanded
         depth (int): the depth the tape should be expanded
         stop_at (Callable): A function which accepts a queue object,
             and returns ``True`` if this object should *not* be expanded.
@@ -80,8 +83,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     Calling ``expand_tape`` will return a tape with all nested tapes
     expanded, resulting in a single tape of quantum operations:
 
-    >>> new_tape = expand_tape(tape)
-    >>> new_tape.operations
+    >>> expand_tape(tape)
+    >>> tape.operations
     [PauliX(wires=[0]),
      PauliX(wires=['a']),
      Rot(0.543, 0.1, 0.4, wires=[0]),
@@ -94,8 +97,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if stop_at is None:
         # by default expand all objects
         stop_at = lambda obj: False
-
-    new_tape = tape.__class__()
 
     if expand_measurements:
         # Check for observables acting on the same wire. If present, observables must be
@@ -120,8 +121,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
                 tape._measurements[i] = new_m
 
-    for queue in ("_prep", "_ops", "_measurements"):
-        for obj in getattr(tape, queue):
+    queues = (tape._prep, tape._ops, tape._measurements)
+    new_queues = [[], [], []]
+
+    for queue, new_queue in zip(queues, new_queues):
+        for obj in queue:
 
             stop = stop_at(obj)
 
@@ -133,7 +137,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if stop:
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
-                getattr(new_tape, queue).append(obj)
+                new_queue.append(obj)
                 continue
 
             if isinstance(obj, (qml.operation.Operation, qml.tape.measure.MeasurementProcess)):
@@ -143,17 +147,19 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 except NotImplementedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
-                    getattr(new_tape, queue).append(obj)
+                    new_queue.append(obj)
                     continue
 
             # recursively expand out the newly created tape
-            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+            expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_tape._prep += expanded_tape._prep
-            new_tape._ops += expanded_tape._ops
-            new_tape._measurements += expanded_tape._measurements
+            new_queues[0] += obj._prep
+            new_queues[1] += obj._ops
+            new_queues[2] += obj._measurements
 
-    return new_tape
+    tape._prep = new_queues[0]
+    tape._ops = new_queues[1]
+    tape._measurements = new_queues[2]
 
 
 # pylint: disable=too-many-public-methods
@@ -424,22 +430,21 @@ class QuantumTape(AnnotatedQueue):
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
-        Calling ``.expand`` will return a tape with all nested tapes
-        expanded, resulting in a single tape of quantum operations:
+        Calling ``.expand`` will expand all nested tapes, resulting in a single tape of quantum
+        operations:
 
-        >>> new_tape = tape.expand()
-        >>> new_tape.operations
+        >>> tape.expand()
+        >>> tape.operations
         [PauliX(wires=[0]),
          PauliX(wires=['a']),
          Rot(0.543, 0.1, 0.4, wires=[0]),
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        new_tape = expand_tape(
+        expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
-        new_tape._update()
-        return new_tape
+        self._update()
 
     def inv(self):
         """Inverts the processed operations.

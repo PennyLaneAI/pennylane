@@ -275,7 +275,8 @@ class TestAutogradQuantumTape:
                 U3(*p, wires=0)
                 qml.expval(qml.PauliX(0))
 
-            tape = AutogradInterface.apply(tape.expand())
+            tape.expand()
+            tape = AutogradInterface.apply(tape)
 
             assert tape.trainable_params == {1, 2, 3, 4}
             assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
@@ -586,7 +587,7 @@ class TestAutogradPassthru:
                 U3(*p, wires=0)
                 qml.expval(qml.PauliX(0))
 
-            tape = tape.expand()
+            tape.expand()
 
             assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(tape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])

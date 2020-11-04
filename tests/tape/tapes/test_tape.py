@@ -623,20 +623,20 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        new_tape = tape.expand()
+        tape.expand()
 
-        assert len(new_tape.operations) == 3
-        assert new_tape.get_parameters() == [0.1, 0.2, 0.3]
-        assert new_tape.trainable_params == {0, 1, 2}
+        assert len(tape.operations) == 3
+        assert tape.get_parameters() == [0.1, 0.2, 0.3]
+        assert tape.trainable_params == {0, 1, 2}
 
-        assert isinstance(new_tape.operations[0], qml.RZ)
-        assert isinstance(new_tape.operations[1], qml.RY)
-        assert isinstance(new_tape.operations[2], qml.RZ)
+        assert isinstance(tape.operations[0], qml.RZ)
+        assert isinstance(tape.operations[1], qml.RY)
+        assert isinstance(tape.operations[2], qml.RZ)
 
         # check that modifying the new tape does not affect the old tape
 
-        new_tape.trainable_params = {0}
-        new_tape.set_parameters([10])
+        tape.trainable_params = {0}
+        tape.set_parameters([10])
 
         assert tape.get_parameters() == [0.1, 0.2, 0.3]
         assert tape.trainable_params == {0, 1, 2}
@@ -647,15 +647,15 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        new_tape = tape.expand()
+        tape.expand()
 
-        assert len(new_tape.operations) == 1
-        assert new_tape.operations[0].name == "PauliX"
-        assert new_tape.operations[0].wires.tolist() == [0]
-        assert new_tape.num_params == 0
-        assert new_tape.get_parameters() == []
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "PauliX"
+        assert tape.operations[0].wires.tolist() == [0]
+        assert tape.num_params == 0
+        assert tape.get_parameters() == []
 
-        assert isinstance(new_tape.operations[0], qml.PauliX)
+        assert isinstance(tape.operations[0], qml.PauliX)
 
     def test_decomposition_adding_parameters(self):
         """Test that decompositions which increase the number of parameters
@@ -663,16 +663,16 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.PauliX(wires=0)
 
-        new_tape = tape.expand()
+        tape.expand()
 
-        assert len(new_tape.operations) == 3
+        assert len(tape.operations) == 3
 
-        assert new_tape.operations[0].name == "PhaseShift"
-        assert new_tape.operations[1].name == "RX"
-        assert new_tape.operations[2].name == "PhaseShift"
+        assert tape.operations[0].name == "PhaseShift"
+        assert tape.operations[1].name == "RX"
+        assert tape.operations[2].name == "PhaseShift"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
 
     def test_nested_tape(self):
         """Test that a nested tape properly expands"""
@@ -684,11 +684,11 @@ class TestExpand:
         assert tape1.num_params == 2
         assert tape1.operations == [tape2]
 
-        new_tape = tape1.expand()
-        assert new_tape.num_params == 2
-        assert len(new_tape.operations) == 2
-        assert isinstance(new_tape.operations[0], qml.RX)
-        assert isinstance(new_tape.operations[1], qml.RY)
+        tape1.expand()
+        assert tape1.num_params == 2
+        assert len(tape1.operations) == 2
+        assert isinstance(tape1.operations[0], qml.RX)
+        assert isinstance(tape1.operations[1], qml.RY)
 
     def test_nesting_and_decomposition(self):
         """Test an example that contains nested tapes and operation decompositions."""
@@ -703,8 +703,8 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand()
-        assert len(new_tape.operations) == 5
+        tape.expand()
+        assert len(tape.operations) == 5
 
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
@@ -714,10 +714,10 @@ class TestExpand:
             qml.Rot(3, 4, 5, wires=0)
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
-        assert len(new_tape.operations) == 4
-        assert "Rot" in [i.name for i in new_tape.operations]
-        assert not "U3" in [i.name for i in new_tape.operations]
+        tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
+        assert len(tape.operations) == 4
+        assert "Rot" in [i.name for i in tape.operations]
+        assert not "U3" in [i.name for i in tape.operations]
 
     def test_depth_expansion(self):
         """Test expanding with depth=2"""
@@ -734,8 +734,8 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
-        assert len(new_tape.operations) == 11
+        tape.expand(depth=2)
+        assert len(tape.operations) == 11
 
     def test_stopping_criterion_with_depth(self):
         """Test that gates specified in the stop_at
@@ -752,8 +752,8 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
-        assert len(new_tape.operations) == 7
+        tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
+        assert len(tape.operations) == 7
 
     def test_measurement_expansion(self):
         """Test that measurement expansion works as expected"""
@@ -768,18 +768,18 @@ class TestExpand:
             # expands into QubitUnitary on wire 0
             qml.var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
 
-        new_tape = tape.expand(expand_measurements=True)
+        tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 6
+        assert len(tape.operations) == 6
 
         expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
-        assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.return_type is r for m, r in zip(tape.measurements, expected)]
 
         expected = [None, None, None]
-        assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.obs is r for m, r in zip(tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.eigvals is r for m, r in zip(tape.measurements, expected)]
 
     def test_multiple_observables_same_wire_expval(self, mocker):
         """Test that the tape supports returning expectation values of observables that are on the
@@ -848,10 +848,10 @@ class TestExpand:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        tape1_exp = tape1.expand(expand_measurements=True)
-        tape2_exp = tape2.expand(expand_measurements=True)
+        tape1.expand(expand_measurements=True)
+        tape2.expand(expand_measurements=True)
 
-        assert tape1_exp.graph.hash == tape2_exp.graph.hash
+        assert tape1.graph.hash == tape2.graph.hash
 
     def test_multiple_observables_same_wire_expval_non_commuting(self):
         """Test if a QuantumFunctionError is raised if expectation values of non-commuting
@@ -1135,7 +1135,7 @@ class TestExecution:
             qml.U3(0.1, 0.2, 0.3, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
+        tape.expand(stop_at=lambda obj: obj.name in dev.operations)
         res = tape.execute(dev)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
 
