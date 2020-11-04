@@ -116,7 +116,7 @@ class tensor(_np.ndarray):
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         # pylint: disable=no-member,attribute-defined-outside-init
         outputs = [
-            onp.array(i.unwrap()) if hasattr(i, "unwrap") else i for i in kwargs.get("out", ())
+            i.view(onp.ndarray) if hasattr(i, "unwrap") else i for i in kwargs.get("out", ())
         ]
 
         if outputs:
