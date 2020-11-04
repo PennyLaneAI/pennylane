@@ -40,8 +40,8 @@ def u2_ex_gate(phi, wires=None):
 
         U_{2, \mathrm{ex}}(\phi) = \left(\begin{array}{cccc}
         1 & 0 & 0 & 0 \\
-        0 & \mathrm{cos}(2\phi) & -i\;\mathrm{sin}(2\phi) & 0 \\
-        0 & -i\;\mathrm{sin}(2\phi) & \mathrm{cos}(2\phi) & 0 \\
+        0 & \mathrm{cos}(\phi) & -i\;\mathrm{sin}(\phi) & 0 \\
+        0 & -i\;\mathrm{sin}(\phi) & \mathrm{cos}(\phi) & 0 \\
         0 & 0 & 0 & 1 \\
         \end{array}\right).
 
@@ -58,13 +58,13 @@ def u2_ex_gate(phi, wires=None):
     |
 
     Args:
-        phi (float): angle entering the controlled-RX operator :math:`CRX(\phi)`
+        phi (float): angle entering the controlled-RX operator :math:`CRX(2\phi)`
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
     """
 
     CNOT(wires=wires)
 
-    CRX(phi, wires=wires[::-1])
+    CRX(2 * phi, wires=wires[::-1])
 
     CNOT(wires=wires)
 

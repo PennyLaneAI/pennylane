@@ -692,6 +692,7 @@ class TestParticleConservingU2:
                     if rec.queue[i].parameters != []
                 ]
             )
+            weights[:, qubits:] = weights[:, qubits:] * 2
             assert np.allclose(params.flatten(), weights.flatten())
 
             # gate wires
@@ -787,7 +788,7 @@ class TestParticleConservingU2:
             (
                 np.array([[-2.712, -1.958, 1.875, 1.811, 0.296, -0.412, 1.723]]),
                 [0, 1, 2, 3],
-                [-1.0, 0.1516167, -0.1516167, 1.0],
+                [-1.0, 0.95402475, -0.95402475, 1.0],
             )
         ],
     )
