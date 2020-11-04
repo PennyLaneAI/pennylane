@@ -141,7 +141,9 @@ class tensor(_np.ndarray):
         ]
 
         # if any of the inputs were trainable, the output is also trainable
-        requires_grad = any(getattr(x, "requires_grad", True) for x in inputs)
+        requires_grad = any(
+            isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
+        )
 
         for i in range(len(res)):  # pylint: disable=consider-using-enumerate
             res[i] = tensor(res[i], requires_grad=requires_grad)
