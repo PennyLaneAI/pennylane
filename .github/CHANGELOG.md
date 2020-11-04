@@ -13,7 +13,7 @@
   `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
   number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
   [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
-  
+
 * Adds the square root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
@@ -27,7 +27,7 @@
 
 * Adds the `qml.density_matrix` QNode return with partial trace capabilities.
   [(#878)](https://github.com/PennyLaneAI/pennylane/pull/878)
-   The density matrix over the provided wires is returned, with all other subsystems traced out.
+  The density matrix over the provided wires is returned, with all other subsystems traced out.
   `qml.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
   
   ```python
