@@ -412,8 +412,8 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
-    def density_matrix(self, wires=None):
-        """Return the reduced density matrix of a given set of wires.
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix of a given set of wires.
 
         Args:
             wires (Sequence[int] or int): the wires of the subsytem.
@@ -425,7 +425,7 @@ class DefaultQubit(QubitDevice):
         dim = self.num_wires
         state = self._pre_rotated_state
 
-        # Return the reduced density matrix by using numpy tensor product
+        # Return the full density matrix by using numpy tensor product
         if wires == self.wires:
             density_matrix = self._tensordot(state, self._conj(state), 0)
             density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
@@ -434,6 +434,7 @@ class DefaultQubit(QubitDevice):
         complete_system = list(range(0, dim))
         traced_system = [x for x in complete_system if x not in wires.labels]
 
+        # Return the reduced density matrix by using numpy tensor product
         density_matrix = self._tensordot(
             state, self._conj(state), axes=(traced_system, traced_system)
         )

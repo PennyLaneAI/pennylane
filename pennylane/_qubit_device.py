@@ -94,7 +94,6 @@ class QubitDevice(Device):
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
-    _delete = staticmethod(np.delete)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -495,7 +494,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def density_matrix(self, wires=None):
+    def density_matrix(self, wires):
         """Returns the reduced density matrix prior to measurement.
 
         .. note::

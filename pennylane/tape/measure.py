@@ -424,7 +424,7 @@ def density_matrix(wires):
     array([[0.+0.j 0.+0.j]
         [0.+0.j 1.+0.j]])
 
-    The returned matrix is the reduced density matrix, where the system 1 is traced out.
+    The returned matrix is the reduced density matrix, where system 1 is traced out.
 
     Args:
         wires (Sequence[int] or int): the wires of the subsystem

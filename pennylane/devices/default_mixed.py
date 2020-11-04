@@ -134,7 +134,7 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return self._reshape(self._pre_rotated_state, (dim, dim))
 
-    def density_matrix(self, wires=None):
+    def density_matrix(self, wires):
         """Return the reduced density matrix over the given wires.
 
         Args:
@@ -154,7 +154,7 @@ class DefaultMixed(QubitDevice):
         traced_wires = Wires(traced_system)
 
         # Trace first subsystem by applying kraus operators of the partial trace
-        tr_op = self._cast(np.eye(2).reshape(1, 4), dtype=self.C_DTYPE)
+        tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
         tr_op = self._reshape(tr_op, (2, 1, 2))
 
         self._apply_channel(tr_op, traced_wires[0])
@@ -228,7 +228,7 @@ class DefaultMixed(QubitDevice):
         elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
             kraus_shape = [len(kraus)] + list(kraus[0].shape)
             kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1] * num_ch_wires
+            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
             kraus_dagger = self._cast(
                 self._reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
             )
