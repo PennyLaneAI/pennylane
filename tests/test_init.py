@@ -271,6 +271,7 @@ class TestInit:
          return an array with the correct shape."""
         s = {**sgntr, 'seed': seed}
         p = init(**s)
+        print(p)
         assert p.shape == shp
 
     @pytest.mark.parametrize("init, sgntr, shp", INITALL_KWARGS_SHAPES)
@@ -339,6 +340,7 @@ class TestInit:
 
         p = init(**s)
         p_mean = np.mean(p)
+        print(p_mean)
         assert np.isclose(p_mean, 1, atol=tol)
 
     @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)

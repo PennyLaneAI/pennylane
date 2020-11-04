@@ -115,17 +115,20 @@ class tensor(_np.ndarray):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         # pylint: disable=no-member,attribute-defined-outside-init
+        outputs = [
+            onp.array(i.unwrap()) if hasattr(i, "unwrap") else i for i in kwargs.get("out", ())
+        ]
+
+        if outputs:
+            kwargs["out"] = tuple(outputs)
 
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
 
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
-        res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
+        res = super(tensor, self).__array_ufunc__(ufunc, method, *args, **kwargs)
         res = tensor(res)
-
-        if res is NotImplemented:
-            return NotImplemented
 
         res.requires_grad = False
 
