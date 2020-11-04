@@ -121,10 +121,9 @@ class tensor(_np.ndarray):
 
         if outputs:
             outputs = tuple(outputs)
+            kwargs["out"] = outputs
         else:
             outputs = (None,) * ufunc.nout
-
-        kwargs["out"] = outputs
 
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
@@ -144,7 +143,7 @@ class tensor(_np.ndarray):
         # if any of the inputs were trainable, the output is also trainable
         requires_grad = any(getattr(x, "requires_grad", True) for x in inputs)
 
-        for i in range(len(res)):
+        for i in range(len(res)):  # pylint: disable=consider-using-enumerate
             res[i] = tensor(res[i], requires_grad=requires_grad)
 
         return res[0] if len(res) == 1 else tuple(res)
