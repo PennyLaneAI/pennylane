@@ -345,16 +345,6 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
-        m_wires = []  # The wires upon which an observable is measured
-        for m in self._measurements:
-            if m.obs is not None:
-                m_wires.extend(m.wires)
-
-        if len(m_wires) != len(set(m_wires)):
-            raise qml.QuantumFunctionError(
-                "Each wire in the quantum circuit can only be measured by a single observable"
-            )
-
         self._update()
 
     def _update_circuit_info(self):
