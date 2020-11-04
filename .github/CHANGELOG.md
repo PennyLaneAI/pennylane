@@ -159,8 +159,9 @@
 
 <h3>Bug fixes</h3>
 
-* The new tape mode now prevents multiple observables from being evaluated on the same wire.
-  [(#877)](https://github.com/PennyLaneAI/pennylane/pull/877)
+* The new tape mode now prevents multiple observables from being evaluated on the same wire
+  if the observables are not qubit-wise commuting Pauli words.
+  [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
 
 * Inverses of common gates can now be applied using array/tensor manipulation tricks. The
   following gates are affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
