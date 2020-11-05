@@ -206,7 +206,7 @@ class QubitDevice(Device):
             # expand out the tape, if any operations are not supported on the device or multiple
             # observables are measured on the same wire
             if ops_not_supported or obs_on_same_wire:
-                circuit = circuit.expand(
+                circuit.expand(
                     depth=1, stop_at=lambda obj: obj.name in stop_at, expand_measurements=True
                 )
 
