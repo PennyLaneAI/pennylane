@@ -403,8 +403,8 @@ class QNode:
             stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
         obs_wires = [wire for m in self.qtape.measurements for wire in m.wires if m.obs is not None]
-
         obs_on_same_wire = len(obs_wires) != len(set(obs_wires))
+
         ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
 
         # expand out the tape, if any operations are not supported on the device or multiple
@@ -412,8 +412,7 @@ class QNode:
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion,
-                stop_at=lambda obj: obj.name in stop_at,
-                expand_measurements=True,
+                stop_at=lambda obj: obj.name in stop_at
             )
 
     def __call__(self, *args, **kwargs):
