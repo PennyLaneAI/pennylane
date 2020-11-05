@@ -105,18 +105,16 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     if len(obs_wires) != len(set(obs_wires)):
         c = Counter(obs_wires)
-        repeated_wires = set([w for w in obs_wires if c[w] > 1])
+        repeated_wires = {w for w in obs_wires if c[w] > 1}
 
-        obs = [
-            m.obs
-            for m in tape.measurements
-            if m.obs is not None and len(set(m.wires) & repeated_wires) > 0
-        ]
-        m_idx = [
-            i
-            for i, m in enumerate(tape.measurements)
-            if m.obs is not None and len(set(m.wires) & repeated_wires) > 0
-        ]
+        obs = []
+        m_idx = []
+
+        for i, m in enumerate(tape.measurements):
+            if m.obs is not None:
+                if len(set(m.wires) & repeated_wires) > 0:
+                    obs.append(m.obs)
+                    m_idx.append(i)
 
         try:
             rotations, diag_obs = diagonalize_qwc_pauli_words(obs)
