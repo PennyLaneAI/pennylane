@@ -402,6 +402,7 @@ class QNode:
             # controlled rotations aren't supported by the parameter-shift rule
             stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
+        # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_wires) != len(set(self.qtape._obs_wires))
 
         ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
@@ -410,8 +411,7 @@ class QNode:
         # observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
-                depth=self.max_expansion,
-                stop_at=lambda obj: obj.name in stop_at
+                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
             )
 
     def __call__(self, *args, **kwargs):
