@@ -102,7 +102,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
         \vec{\theta}_D) \dots \hat{U}^{(2)}_\mathrm{ent}(\vec{\phi}_2, \vec{\theta}_2)
         \hat{U}^{(1)}_\mathrm{ent}(\vec{\phi}_1, \vec{\theta}_1) \vert \mathrm{HF}\rangle.
 
-    The circuit implementing the entangler blocks is shown in the figure below.
+    The circuit implementing the entangler blocks is shown in the figure below:
 
     |
 
@@ -118,7 +118,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
     :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest neighbors qubits.
     The unitary matrix representing :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
     acts on the Hilbert space of two qubits
-    (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
+    (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
 
     .. math::
 
@@ -148,7 +148,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
 
-    acting on the state of qubit ``m`` which is further decomposed in terms of the
+    acting controlledly on the state of qubit ``m`` which is further decomposed in terms of the
     `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
     supported by preparesnnyLane,
 
