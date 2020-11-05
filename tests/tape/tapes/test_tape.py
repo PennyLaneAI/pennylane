@@ -1071,11 +1071,10 @@ class TestExecution:
             qml.expval(qml.PauliX(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Multiple observables are being"):
-            tape.execute_device([], dev)
+            tape.execute(dev)
 
-        tape.expand(expand_measurements=True)
-
-        tape.execute_device([], dev)
+        new_tape = tape.expand()
+        new_tape.execute(dev)
 
 
 class TestCVExecution:
