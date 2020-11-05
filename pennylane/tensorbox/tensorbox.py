@@ -291,12 +291,9 @@ class TensorBox(abc.ABC):
         """
 
     @abc.abstractmethod
-    def ones_like(self, dtype=None):
+    def ones_like(self):
         """Returns a unified tensor of all ones, with the shape and dtype
         of the unified tensor.
-
-        Args:
-            dtype (np.dtype): the NumPy datatype to cast to
 
         Returns:
             TensorBox: all ones array

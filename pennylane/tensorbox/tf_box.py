@@ -42,7 +42,7 @@ class TensorFlowBox(qml.tensorbox.TensorBox):
         return tf.convert_to_tensor(tensor)
 
     def cast(self, dtype):
-        return TensorFlowBox(tf.cast(self.data, dtype=dtype))
+        return TensorFlowBox(tf.cast(self.data, dtype))
 
     @property
     def interface(self):

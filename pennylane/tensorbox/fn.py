@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Function wrappers for the TensorBox API"""
-from functools import wraps
+# pylint:disable=abstract-class-instantiated
 import warnings
 
 import numpy as np
@@ -392,7 +392,7 @@ def stack(values, axis=0):
            [1.00e-01, 2.00e-01, 3.00e-01],
            [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
     """
-    return _get_multi_tensorbox(values).stack(values, axis=0)
+    return _get_multi_tensorbox(values).stack(values, axis=axis).data
 
 
 def T(tensor):
