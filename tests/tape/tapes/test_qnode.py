@@ -401,6 +401,57 @@ class TestTapeConstruction:
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
+    def test_multiple_observables_same_wire_expval(self, mocker):
+        """Test that the QNode supports returning expectation values of observables that are on the
+        same wire (provided that they are Pauli words and qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
+        res_2 = qnodes(w)
+
+        assert np.allclose(res, res_2)
+
+    def test_multiple_observables_same_wire_mixed(self, mocker):
+        """Test that the QNode supports returning observables that are on the
+        same wire but with different return types (provided that the observables are Pauli words and
+        qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return qml.expval(qml.PauliX(0)), qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
+        q2 = qml.map(
+            qml.templates.StronglyEntanglingLayers,
+            [qml.PauliX(0) @ qml.PauliZ(1)],
+            dev,
+            measure="var",
+        )
+
+        res_2 = np.array([q1(w), q2(w)]).squeeze()
+
+        assert np.allclose(res, res_2)
+
 
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
