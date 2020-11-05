@@ -15,6 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter
 import copy
 import contextlib
 
@@ -104,8 +105,17 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     obs_wires = [wire for m in tape.measurements for wire in m.wires if m.obs is not None]
 
     if len(obs_wires) != len(set(obs_wires)):
-        obs = [m.obs for m in tape.measurements if m.obs is not None]
-        m_idx = [i for i, m in enumerate(tape.measurements) if m.obs is not None]
+        c = Counter(obs_wires)
+        repeated_wires = set([w for w in obs_wires if c[w] > 1])
+
+        obs = []
+        m_idx = []
+
+        for i, m in enumerate(tape.measurements):
+            if m.obs is not None:
+                if len(set(m.wires) & repeated_wires) > 0:
+                    obs.append(m.obs)
+                    m_idx.append(i)
 
         try:
             rotations, diag_obs = diagonalize_qwc_pauli_words(obs)
