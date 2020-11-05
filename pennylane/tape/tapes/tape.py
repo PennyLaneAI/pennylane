@@ -14,20 +14,18 @@
 """
 This module contains the base quantum tape.
 """
+import contextlib
+import copy
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 from collections import Counter
-import copy
-import contextlib
 
 import numpy as np
 
 import pennylane as qml
-
+from pennylane.grouping import diagonalize_qwc_pauli_words
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
-from pennylane.grouping import diagonalize_qwc_pauli_words
-
 
 STATE_PREP_OPS = (
     qml.BasisState,
