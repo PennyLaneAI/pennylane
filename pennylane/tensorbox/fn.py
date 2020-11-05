@@ -104,7 +104,7 @@ def allequal(tensor1, tensor2, **kwargs):
     return np.all(t1 == t2, **kwargs)
 
 
-def _allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
+def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
     t1 = TensorBox(a).numpy()
@@ -112,7 +112,7 @@ def _allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
 
-allclose = wraps(_allclose, np.allclose)
+allclose.__doc__ = np.allclose.__doc__
 
 
 def cast(tensor, dtype):
