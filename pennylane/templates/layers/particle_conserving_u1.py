@@ -135,7 +135,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/u1_decomposition.png
         :align: center
-        :width: 70%
+        :width: 60%
         :target: javascript:void(0);
 
     |
