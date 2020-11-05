@@ -113,7 +113,7 @@ neural network. Note arbitrary templates or operations can also be layered using
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.layers.ParticleConservingU1.html
     :description: ParticleConservingU1
-    :figure: ../_static/templates/layers/particle_conserving_u1.png
+    :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
 
 .. raw:: html
 

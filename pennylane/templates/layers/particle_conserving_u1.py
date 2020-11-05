@@ -108,17 +108,16 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/particle_conserving_u1.png
         :align: center
-        :width: 50%
+        :width: 40%
         :target: javascript:void(0);
 
     |
 
     The repeated units across several qubits are shown in dotted boxes. Each layer
-    contains :math:`N_\mathrm{qubits}-1` particle-conserving two-parameter exchange gates
+    contains :math:`N-1` particle-conserving two-parameter exchange gates
     :math:`U_{1,\mathrm{ex}}(\phi, \theta)` that act on pairs of nearest neighbors qubits.
     The unitary matrix representing :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
-    acts on the Hilbert space of two qubits
-    (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
+    is given by (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
 
     .. math::
 
@@ -130,8 +129,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
         \end{array}\right).
 
     The figure below shows the circuit decomposing :math:`U_{1, \mathrm{ex}}` in
-    elementary gates. :math:`\sigma_z` and :math:`R(0, 2 \theta, 0)` apply the Pauli Z operator
-    and an arbitrary rotation on the qubit ``n``,
+    elementary gates. The Pauli matrix :math:`\sigma_z` and :math:`R(0, 2 \theta, 0)`
+    apply the Pauli Z operator and an arbitrary rotation on the qubit ``n``,
 
     |
 
@@ -150,13 +149,13 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     acting controlledly on the state of qubit ``m`` which is further decomposed in terms of the
     `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
-    supported by preparesnnyLane,
+    supported by Pennylane,
 
     |
 
     .. figure:: ../../_static/templates/layers/ua_decomposition.png
         :align: center
-        :width: 70%
+        :width: 60%
         :target: javascript:void(0);
 
     |
@@ -172,13 +171,13 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     |
 
-    The quantum circuits above decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)` and
-    :math:`U_A(\phi)` are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua`
+    The quantum circuits above decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
+    and :math:`U_A(\phi)` are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua`
     functions, respectively.
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
-            ``D`` is the number of entangler block layers and ``M`` = :math:`N_\mathrm{qubits}-1`
+            ``D`` is the number of entangler block layers and ``M`` = :math:`N-1`
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
@@ -192,11 +191,11 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
         Notice that:
 
-        #. The number of wires has to be equal to the number of spin orbitals included in
-           the active space.
+        #. The number of wires :math:`N` has to be equal to the number of
+           spin orbitals included in the active space.
 
         #. The number of trainable parameters scales linearly with the number of layers as
-           :math:`2D(N_\mathrm{qubits}-1)`.
+           :math:`2D(N-1)`.
 
         An example of how to use this template is shown below:
 
@@ -245,18 +244,6 @@ def ParticleConservingU1(weights, wires, init_state=None):
         msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
     )
 
-    check_type(
-        init_state,
-        [np.ndarray],
-        msg="'init_state' must be a Numpy array; got {}".format(init_state),
-    )
-    for i in init_state:
-        check_type(
-            i,
-            [int, np.int64, np.ndarray],
-            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
-        )
-
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
 
@@ -264,4 +251,4 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     for l in range(layers):
         for i, wires_ in enumerate(nm_wires):
-            u1_ex_gate(*weights[l, i], wires=wires_)
+            u1_ex_gate(weights[l, i, 0], weights[l, i, 1], wires=wires_)
