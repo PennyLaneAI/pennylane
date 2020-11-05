@@ -781,57 +781,6 @@ class TestExpand:
         expected = [None, [1, -1, -1, 1], [0, 5]]
         assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
 
-    def test_multiple_observables_same_wire_expval(self, mocker):
-        """Test that the tape supports returning expectation values of observables that are on the
-        same wire (provided that they are Pauli words and qubit-wise commuting)"""
-        dev = qml.device("default.qubit", wires=3)
-
-        w = np.random.random((2, 3, 3))
-
-        with QuantumTape() as tape:
-            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
-            qml.expval(qml.PauliX(0))
-            qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
-
-        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
-        res = tape.execute(dev)
-        spy.assert_called_once()
-
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
-        res_2 = qnodes(w)
-
-        assert np.allclose(res, res_2)
-
-    def test_multiple_observables_same_wire_mixed(self, mocker):
-        """Test that the tape supports returning observables that are on the
-        same wire but with different return types (provided that the observables are Pauli words and
-        qubit-wise commuting)"""
-        dev = qml.device("default.qubit", wires=3)
-
-        w = np.random.random((2, 3, 3))
-
-        with QuantumTape() as tape:
-            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
-            qml.expval(qml.PauliX(0))
-            qml.var(qml.PauliX(0) @ qml.PauliZ(1))
-
-        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
-        res = tape.execute(dev)
-        spy.assert_called_once()
-
-        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
-        q2 = qml.map(
-            qml.templates.StronglyEntanglingLayers,
-            [qml.PauliX(0) @ qml.PauliZ(1)],
-            dev,
-            measure="var",
-        )
-
-        res_2 = np.array([q1(w), q2(w)]).squeeze()
-
-        assert np.allclose(res, res_2)
-
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
         wire are used"""
@@ -853,11 +802,9 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2_exp.graph.hash
 
-    def test_multiple_observables_same_wire_expval_non_commuting(self):
-        """Test if a QuantumFunctionError is raised if expectation values of non-commuting
-        observables are evaluated on the same wire"""
-        dev = qml.device("default.qubit", wires=3)
-
+    def test_expand_tape_multiple_wires_non_commuting(self):
+        """Test if a QuantumFunctionError is raised during tape expansion if expectation values of
+        non-commuting observables are on the same wire"""
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
@@ -865,12 +812,11 @@ class TestExpand:
             qml.expval(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.execute(dev)
+            tape.expand(expand_measurements=True)
 
-    def test_multiple_observables_same_wire_var_non_commuting(self):
-        """Test if a QuantumFunctionError is raised if variances and expectation values of
-        non-commuting observables are evaluated on the same wire"""
-        dev = qml.device("default.qubit", wires=3)
+    def test_expand_tape_multiple_wires_non_commuting_var(self):
+        """Test if a QuantumFunctionError is raised during tape expansion if variances and
+        expectation values of non-commuting observables are on the same wire"""
 
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
@@ -879,12 +825,11 @@ class TestExpand:
             qml.var(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.execute(dev)
+            tape.expand(expand_measurements=True)
 
-    def test_multiple_observables_same_wire_sample_non_commuting(self):
-        """Test if a QuantumFunctionError is raised if samples and expectation values of
-        non-commuting observables are evaluated on the same wire"""
-        dev = qml.device("default.qubit", wires=3)
+    def test_expand_tape_multiple_wires_non_commuting_sample(self):
+        """Test if a QuantumFunctionError is raised during tape expansion if samples and
+        expectation values of non-commuting observables are evaluated on the same wire"""
 
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
@@ -893,7 +838,7 @@ class TestExpand:
             qml.sample(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.execute(dev)
+            tape.expand(expand_measurements=True)
 
 
 class TestExecution:
@@ -1138,6 +1083,22 @@ class TestExecution:
         tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
         res = tape.execute(dev)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
+
+    def test_multiple_observables_same_wire(self):
+        """Test if an error is raised when multiple observables are evaluated on the same wire
+        without first running tape.expand()."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with QuantumTape() as tape:
+            qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliX(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Multiple observables are being"):
+            tape.execute_device([], dev)
+
+        tape.expand(expand_measurements=True)
+
+        tape.execute_device([], dev)
 
 
 class TestCVExecution:

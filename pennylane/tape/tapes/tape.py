@@ -1040,6 +1040,19 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+
+        if len(obs_wires) != len(set(obs_wires)):
+
+            obs = [m.obs for m in self.measurements if m.obs is not None]
+            if not all(len(o.diagonalizing_gates()) == 0 for o in obs):
+                raise qml.QuantumFunctionError(
+                    "Multiple observables are being evaluated on the "
+                    "same wire. Call "
+                    "tape.expand(expand_measurements=True) to support "
+                    "this."
+                )
+
         device.reset()
 
         # backup the current parameters
