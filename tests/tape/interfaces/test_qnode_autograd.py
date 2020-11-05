@@ -378,7 +378,7 @@ class TestQNode:
             # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
             assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
 
-        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
+        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift", "Hadamard"]
 
         if diff_method == "finite-diff":
             assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
