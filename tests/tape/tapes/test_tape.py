@@ -802,40 +802,15 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2_exp.graph.hash
 
-    def test_expand_tape_multiple_wires_non_commuting(self):
-        """Test if a QuantumFunctionError is raised during tape expansion if expectation values of
-        non-commuting observables are on the same wire"""
+    @pytest.mark.parametrize("ret", [qml.expval, qml.var, qml.sample])
+    def test_expand_tape_multiple_wires_non_commuting(self, ret):
+        """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
+        observables are on the same wire"""
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
-            qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.expand(expand_measurements=True)
-
-    def test_expand_tape_multiple_wires_non_commuting_var(self):
-        """Test if a QuantumFunctionError is raised during tape expansion if variances and
-        expectation values of non-commuting observables are on the same wire"""
-
-        with QuantumTape() as tape:
-            qml.RX(0.3, wires=0)
-            qml.RY(0.4, wires=1)
-            qml.expval(qml.PauliX(0))
-            qml.var(qml.PauliZ(0))
-
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.expand(expand_measurements=True)
-
-    def test_expand_tape_multiple_wires_non_commuting_sample(self):
-        """Test if a QuantumFunctionError is raised during tape expansion if samples and
-        expectation values of non-commuting observables are evaluated on the same wire"""
-
-        with QuantumTape() as tape:
-            qml.RX(0.3, wires=0)
-            qml.RY(0.4, wires=1)
-            qml.expval(qml.PauliX(0))
-            qml.sample(qml.PauliZ(0))
+            ret(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
