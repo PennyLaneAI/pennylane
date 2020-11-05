@@ -11,55 +11,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for TensorBox class"""
-import numpy as np
+"""Unit tests for AutogradBox subclass"""
 import pytest
 
+autograd = pytest.importorskip("autograd")
+
 import pennylane as qml
-from pennylane.tensorbox.numpy_box import NumpyBox
+from pennylane import numpy as np
+from pennylane.tensorbox.autograd_box import AutogradBox
 
 
-def test_creation_from_list():
-    """Test that a NumpyBox is automatically created from a list"""
-    x = [0.1, 0.2, 0.3]
+def test_creation():
+    """Test that a AutogradBox is automatically created from a PennyLane numpy tensor"""
+    x = np.array([0.1, 0.2, 0.3])
     res = qml.tensorbox.TensorBox(x)
-    assert isinstance(res, NumpyBox)
-    assert res.interface == "numpy"
+    assert isinstance(res, AutogradBox)
+    assert res.interface == "autograd"
     assert isinstance(res.unbox(), np.ndarray)
-    assert np.all(res.unbox() == x)
+    assert np.all(res == x)
 
 
-def test_creation_from_tuple():
-    """Test that a NumpyBox is automatically created from a tuple"""
-    x = (0.1, 0.2, 0.3)
-    res = qml.tensorbox.TensorBox(x)
-    assert isinstance(res, NumpyBox)
-    assert res.interface == "numpy"
-    assert isinstance(res.unbox(), np.ndarray)
-    assert np.all(res.unbox() == x)
-
-
-def test_creation_from_tensorbox():
-    """Test that a tensorbox input simply returns it"""
-    x = qml.tensorbox.TensorBox(np.array([0.1, 0.2, 0.3]))
-    res = qml.tensorbox.TensorBox(x)
-    assert x is res
-
-
-def test_unknown_input_type():
-    """Test that an exception is raised if the input type
-    is unknown"""
-    with pytest.raises(ValueError, match="Unknown tensor type"):
-        qml.tensorbox.TensorBox(True)
-
-
-def test_astensor():
-    """Test conversion of sequences to numpy arrays"""
+def test_astensor_list():
+    """Test conversion of a list to PennyLane tensors"""
     x = np.array([0.1, 0.2, 0.3])
     y = [0.4, 0.5, 0.6]
 
     res = qml.tensorbox.TensorBox(x).astensor(y)
-    assert isinstance(res, np.ndarray)
+    assert isinstance(res, np.tensor)
+    assert np.all(res == y)
+
+
+def test_astensor_array():
+    """Test conversion of numpy arrays to PennyLane tensors"""
+    x = np.array([0.1, 0.2, 0.3])
+    y = np.array([0.4, 0.5, 0.6])
+
+    res = qml.tensorbox.TensorBox(x).astensor(y)
+    assert isinstance(res, np.tensor)
     assert np.all(res == y)
 
 
@@ -71,17 +59,10 @@ def test_len():
 
 
 def test_ufunc_compatibility():
-    """Test that the NumpyBox class has ufunc compatibility"""
+    """Test that the AutogradBox class has ufunc compatibility"""
     x = np.array([0.1, 0.2, 0.3])
     res = np.sum(np.sin(qml.tensorbox.TensorBox(x)))
-    assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
-
-
-def test_inplace_addition():
-    """Test that in-place addition works correctly"""
-    x = qml.tensorbox.TensorBox(np.array([0.0, 0.0, 0.0]))
-    np.add.at(x, [0, 1, 1], 1)
-    assert np.all(x == np.array([1.0, 2.0, 0.0]))
+    assert res.unbox().item() == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
 
 
 def test_multiplication():
@@ -91,31 +72,14 @@ def test_multiplication():
 
     xT = qml.tensorbox.TensorBox(x)
     res = xT * y
-    assert np.all(res.unbox() == x * y)
+    assert np.all(res == x * y)
 
     yT = qml.tensorbox.TensorBox(y)
     res = x * yT
-    assert np.all(res.unbox() == x * y)
+    assert np.all(res == x * y)
 
     res = xT * yT
-    assert np.all(res.unbox() == x * y)
-
-
-def test_exponentiation():
-    """Test exponentiation between tensors and arrays"""
-    x = np.array([[1, 2], [3, 4]])
-    y = np.array([[1, 0], [0, 1]])
-
-    xT = qml.tensorbox.TensorBox(x)
-    res = xT ** 2
-    assert np.all(res.unbox() == x ** 2)
-
-    yT = qml.tensorbox.TensorBox(y)
-    res = 2 ** yT
-    assert np.all(res.unbox() == 2 ** y)
-
-    res = xT ** yT
-    assert np.all(res.unbox() == x ** y)
+    assert np.all(res == x * y)
 
 
 def test_unbox_list():
@@ -135,7 +99,8 @@ def test_numpy():
     x = np.array([[1, 2], [3, 4]])
     xT = qml.tensorbox.TensorBox(x)
     assert isinstance(xT.numpy(), np.ndarray)
-    assert np.all(xT.numpy() == x)
+    assert not isinstance(xT.numpy(), np.tensor)
+    assert np.all(xT == x)
 
 
 def test_shape():
@@ -153,7 +118,7 @@ def test_expand_dims():
 
     res = xT.expand_dims(axis=1)
     expected = np.expand_dims(x, axis=1)
-    assert isinstance(res, NumpyBox)
+    assert isinstance(res, AutogradBox)
     assert np.all(res == expected)
 
 
@@ -164,7 +129,7 @@ def test_ones_like():
 
     res = xT.ones_like()
     expected = np.ones_like(x)
-    assert isinstance(res, NumpyBox)
+    assert isinstance(res, AutogradBox)
     assert np.all(res == expected)
 
 
@@ -187,8 +152,25 @@ def test_transpose():
     assert np.all(xT.T == x.T)
 
 
+def test_autodifferentiation():
+    """Test that autodifferentiation is preserved when writing
+    a cost function that uses TensorBox method chaining"""
+    x = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+    cost_fn = lambda a: (qml.tensorbox.TensorBox(a).T ** 2).unbox()[0, 1]
+    grad_fn = qml.grad(cost_fn)
+
+    res = grad_fn(x)[0]
+    expected = np.array([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
+    assert np.all(res == expected)
+
+
 def test_requires_grad():
-    """Test that the requires grad attribute always returns False"""
-    x = np.array([[1, 2], [3, 4]])
+    """Test that the requires grad attribute matches the underlying tensor"""
+    x = np.array([[1, 2], [3, 4]], requires_grad=False)
     xT = qml.tensorbox.TensorBox(x)
     assert not xT.requires_grad
+
+    x = np.array([[1, 2], [3, 4]], requires_grad=True)
+    xT = qml.tensorbox.TensorBox(x)
+    assert xT.requires_grad

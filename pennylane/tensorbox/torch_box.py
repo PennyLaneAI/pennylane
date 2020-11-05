@@ -19,7 +19,7 @@ import torch
 import pennylane as qml
 
 
-class TorchBox(qml.TensorBox):
+class TorchBox(qml.tensorbox.TensorBox):
     """Implements the :class:`~.TensorBox` API for Torch tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

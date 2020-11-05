@@ -37,13 +37,6 @@ class TensorBox(abc.ABC):
     the need to import any external libraries manually. As a result, autodifferentiation is
     preserved where needed.
 
-    Currently, the following tensor/array manipulation frameworks are supported:
-
-    * NumPy
-    * Autograd
-    * TensorFlow
-    * Torch
-
     **Example**
 
     While this is an abstract base class, this class may be 'instantiated' directly;
@@ -242,22 +235,9 @@ class TensorBox(abc.ABC):
         """Unboxes the ``TensorBox`` container, returning the raw interface tensor."""
         return self.data
 
-    @property
-    @abc.abstractmethod
-    def interface(self):
-        """str, None: The package that the :class:`.TensorBox` class
-        will dispatch to. The returned strings correspond to those used for PennyLane
-        :doc:`interfaces </introduction/interfaces>`."""
-
-    @property
-    @abc.abstractmethod
-    def shape(self):
-        """Returns the shape of the tensor as a tuple of integers."""
-
-    @property
-    @abc.abstractmethod
-    def T(self):
-        """Returns the transpose of the tensor."""
+    ###############################################################################
+    # Abstract methods and properties
+    ###############################################################################
 
     @staticmethod
     @abc.abstractmethod
@@ -286,6 +266,13 @@ class TensorBox(abc.ABC):
             axis (int or tuple[int]): the axis or axes where the additional
                 dimensions should be inserted
         """
+
+    @property
+    @abc.abstractmethod
+    def interface(self):
+        """str, None: The package that the :class:`.TensorBox` class
+        will dispatch to. The returned strings correspond to those used for PennyLane
+        :doc:`interfaces </introduction/interfaces>`."""
 
     @abc.abstractmethod
     def numpy(self):
@@ -324,6 +311,24 @@ class TensorBox(abc.ABC):
          [1. 1.]], shape=(2, 2), dtype=float32)
         """
 
+    @property
+    @abc.abstractmethod
+    def requires_grad(self):
+        """bool: Returns if the TensorBox is considered trainable.
+
+        Note that the implemetation depends on the contained tensor type, and
+        may be context dependent.
+
+        For example, Torch tensors and PennyLane tensors track trainability
+        as a property of the tensor itself. TensorFlow, on the otherhand,
+        only tracks trainability if being watched by a gradient tape.
+        """
+
+    @property
+    @abc.abstractmethod
+    def shape(self):
+        """tuple[int]: returns the shape of the tensor as a tuple of integers"""
+
     @staticmethod
     @abc.abstractmethod
     def stack(values, axis=0):
@@ -349,13 +354,5 @@ class TensorBox(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def requires_grad(self):
-        """bool: Returns if the TensorBox is considered trainable.
-
-        Note that the implemetation depends on the contained tensor type, and
-        may be context dependent.
-
-        For example, Torch tensors and PennyLane tensors track trainability
-        as a property of the tensor itself. TensorFlow, on the otherhand,
-        only tracks trainability if being watched by a gradient tape.
-        """
+    def T(self):
+        """Returns the transpose of the tensor."""

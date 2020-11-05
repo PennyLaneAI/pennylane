@@ -52,11 +52,11 @@ def _get_multi_tensorbox(values):
     if "tf" in interfaces and "torch" in interfaces:
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
-    non_numpy_interfaces = set(interfaces) - numpy
+    non_numpy_interfaces = set(interfaces) - {"numpy"}
 
     if len(non_numpy_interfaces) == 2:
         warnings.warn(
-            f"Tensors contain types {non_numpy_interfaces}; dispatch will prioritize "
+            f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
@@ -104,11 +104,15 @@ def allequal(tensor1, tensor2, **kwargs):
     return np.all(t1 == t2, **kwargs)
 
 
-@wraps(np.allclose)
-def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
+def _allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
+    """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
+    to differ in type"""
     t1 = TensorBox(a).numpy()
     t2 = TensorBox(b).numpy()
     return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
+
+
+allclose = wraps(_allclose, np.allclose)
 
 
 def cast(tensor, dtype):
@@ -116,7 +120,7 @@ def cast(tensor, dtype):
 
     Args:
         tensor (tensor_like): tensor to cast
-        dtype (str, np.dtype): Any supported NumPy dtype specified; this can be
+        dtype (str, np.dtype): Any supported NumPy dtype representation; this can be
             a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
             a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
             **equivalent** dtype in the dispatched framework is used.
@@ -135,7 +139,8 @@ def cast(tensor, dtype):
 
     We can also use strings:
 
-    >>> x = tf.tensor(x, "float64")
+    >>> x = tf.Variable([1, 2])
+    >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
     return TensorBox(tensor).cast(dtype).data
@@ -149,7 +154,7 @@ def cast_like(tensor1, tensor2):
         tensor2 (tensor_like): tensor with corresponding dtype to cast to
 
     Returns:
-        tensor_like: a tensor with the same shape and values as ``tensor`` and the
+        tensor_like: a tensor with the same shape and values as ``tensor1`` and the
         same dtype as ``tensor2``.
 
     **Example**
@@ -164,36 +169,248 @@ def cast_like(tensor1, tensor2):
 
 
 def convert_like(tensor1, tensor2):
-    return TensorBox(tensor1).astensor(tensor2).data
+    """Convert a tensor to the same type as another.
+
+    Args:
+        tensor1 (tensor_like): tensor to convert
+        tensor2 (tensor_like): tensor with corresponding type to convert to
+
+    Returns:
+        tensor_like: a tensor with the same shape, values, and dtype as ``tensor1`` and the
+        same type as ``tensor2``.
+
+    **Example**
+
+    >>> x = np.array([1, 2])
+    >>> y = tf.Variable([3, 4])
+    >>> cast(x, y)
+    <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
+    """
+    return TensorBox(tensor2).astensor(tensor1)
 
 
 def expand_dims(tensor, axis):
-    return TensorBox(tensor, axis).data
+    """Expand the shape of an array by adding a new dimensions of size 1
+    at the specified axis location.
+
+    .. warning::
+
+        This function differs from ``np.expand_dims``
+
+    Args:
+        tensor (tensor_like): tensor to expand
+        axis (int): location in the axes to place the new dimension
+
+    Returns:
+        tensor_like: a tensor with the expanded shape
+
+    **Example**
+
+    >>> x = tf.Variable([3, 4])
+    >>> expand_dims(x, axis=1)
+    <tf.Tensor: shape=(2, 1), dtype=int32, numpy=
+    array([[3],
+           [4]], dtype=int32)>
+    """
+    return TensorBox(tensor).expand_dims(axis).data
 
 
 def get_interface(tensor):
+    """Returns the name of the package that any array/tensor manipulations
+    will dispatch to. The returned strings correspond to those used for PennyLane
+    :doc:`interfaces </introduction/interfaces>`.
+
+    Args:
+        tensor (tensor_like): tensor input
+
+    Returns:
+        str: name of the interface
+
+    **Example**
+
+    >>> x = torch.tensor([1., 2.])
+    >>> get_interface(x)
+    'torch'
+    >>> from pennylane import numpy as np
+    >>> x = np.array([4, 5], requires_grad=True)
+    >>> get_interface(x)
+    'autograd'
+    """
     return TensorBox(tensor).interface
 
 
 def toarray(tensor):
+    """Returns the tensor as a NumPy ``ndarray``. No copying
+    is performed; the tensor and the returned array share the
+    same storage.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        array: a ``ndarray`` view into the same data
+
+    **Example**
+
+    >>> x = torch.tensor([1., 2.])
+    >>> toarray(x)
+    array([1, 2])
+    """
     return TensorBox(tensor).numpy()
 
 
 def ones_like(tensor, dtype=None):
-    return TensorBox(tensor).ones_like(dtype=dtype).data
+    """Returns a tensor of all ones with the same shape and dtype
+    as the input tensor.
+
+    Args:
+        tensor (tensor_like): input tensor
+        dtype (str, np.dtype): The desired output datatype of the array. If not provided the dtype of
+            ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
+            a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
+            a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
+            **equivalent** dtype in the dispatched framework is used.
+
+    Returns:
+        tensor_like: an all-ones tensor with the same shape and
+        size as ``tensor``
+
+    **Example**
+
+    >>> x = torch.tensor([1., 2.])
+    >>> ones_like(x)
+    tensor([1, 1])
+    >>> y = tf.Variable([[0], [5]])
+    >>> ones_like(y, dtype=np.complex128)
+    <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
+    array([[1.+0.j],
+           [1.+0.j]])>
+    """
+    if dtype is not None:
+        return TensorBox(tensor).ones_like().cast(dtype).data
+
+    return TensorBox(tensor).ones_like().data
 
 
 def requires_grad(tensor):
+    """Returns True if the tensor is considered trainable.
+
+    .. warning::
+
+        The implemetation depends on the contained tensor type, and
+        may be context dependent.
+
+        For example, Torch tensors and PennyLane tensors track trainability
+        as a property of the tensor itself. TensorFlow, on the otherhand,
+        only tracks trainability if being watched by a gradient tape.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    **Example**
+
+    Calling this function on a PennyLane NumPy array:
+
+    >>> x = np.array([1., 5.], requires_grad=True)
+    >>> qml.tensorbox.requires_grad(x)
+    True
+    >>> x.requires_grad = False
+    >>> qml.tensorbox.requires_grad(x)
+    False
+
+    PyTorch has similar behaviour.
+
+    With TensorFlow, the output is dependent on whether the tensor
+    is currently being watched by a gradient tape:
+
+    >>> x = tf.Variable([0.6, 0.1])
+    >>> requires_grad(x)
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    True
+
+    While TensorFlow constants are by default not trainable, they can be
+    manually watched by the gradient tape:
+
+    >>> x = tf.constant([0.6, 0.1])
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     tape.watch([x])
+    ...     print(requires_grad(x))
+    True
+    """
     return TensorBox(tensor).requires_grad
 
 
 def shape(tensor):
+    """Returns the shape of the tensor.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tuple[int]: shape of the tensor
+
+    **Example**
+
+    >>> x = tf.constant([[0.6, 0.1, 0.6], [1., 2., 3.]])
+    >>> shape(x)
+    (2, 3)
+    """
     return TensorBox(tensor).shape
 
 
 def stack(values, axis=0):
+    """Stack a sequence of tensors along the specified axis.
+
+    .. warning::
+
+        Tensors that are incompatible (such as Torch and TensorFlow tensors)
+        cannot both be present.
+
+    Args:
+        values (Sequence[tensor_like]): Sequence of tensor-like objects to
+            stack. Each object in the sequence must have the same size in the given axis.
+        axis (int): The axis along which the input tensors are stacked. ``axis=0`` corresponds
+            to vertical stacking.
+
+    Returns:
+        tensor_like: The stacked array. The stacked array will have one additional dimension
+        compared to the unstacked tensors.
+
+    **Example**
+
+    >>> x = tf.constant([0.6, 0.1, 0.6])
+    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> z = np.array([5., 8., 101.])
+    >>> stack([x, y, z])
+    TensorBox: <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    array([[6.00e-01, 1.00e-01, 6.00e-01],
+           [1.00e-01, 2.00e-01, 3.00e-01],
+           [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
+    """
     return _get_multi_tensorbox(values).stack(values, axis=0)
 
 
 def T(tensor):
+    """Returns the transpose of the tensor by reversing the order
+    of the axes. For a 2D tensor, this corresponds to the matrix transpose.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like: input tensor with axes reversed
+
+    **Example**
+
+    >>> x = tf.Variable([[1, 2], [3, 4]])
+    >>> T(x)
+    <tf.Tensor: shape=(2, 2), dtype=int32, numpy=
+    array([[1, 3],
+           [2, 4]], dtype=int32)>
+    """
     return TensorBox(tensor).T.data
