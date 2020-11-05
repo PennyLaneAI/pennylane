@@ -24,12 +24,6 @@ class AutogradBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        outputs = kwargs.get("out", ())
-        items = self.unbox_list(inputs + outputs)
-        res = getattr(ufunc, method)(*items, **kwargs)
-        return AutogradBox(res)
-
     @property
     def interface(self):
         return "autograd"
@@ -54,3 +48,11 @@ class AutogradBox(qml.TensorBox):
     @property
     def T(self):
         return AutogradBox(self.unbox().T)
+
+    @property
+    def requires_grad(self):
+        return self.unbox().requires_grad
+
+    @staticmethod
+    def astensor(tensor):
+        return np.tensor(tensor)

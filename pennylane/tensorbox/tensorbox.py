@@ -15,6 +15,8 @@
 # pylint: disable=import-outside-toplevel
 import abc
 
+import numpy as np
+
 
 class TensorBox(abc.ABC):
     """A container for array-like objects that allows array manipulation to be performed in a
@@ -108,11 +110,54 @@ class TensorBox(abc.ABC):
 
         raise ValueError(f"Unknown tensor type {type(tensor)}")
 
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """By defining this special method, NumPy ufuncs can act directly
+        on the contained tensor, with broadcasting taken into account. For
+        more details, see https://numpy.org/devdocs/user/basics.subclassing.html#array-ufunc-for-ufuncs"""
+        outputs = [v.unbox() if isinstance(v, TensorBox) else v for v in kwargs.get("out", ())]
+
+        if outputs:
+            # Insert the unwrapped outputs into the keyword
+            # args dictionary, to be passed to ndarray.__array_ufunc__
+            outputs = tuple(outputs)
+            kwargs["out"] = outputs
+        else:
+            # If the ufunc has no ouputs, we simply
+            # create a tuple containing None for all potential outputs.
+            outputs = (None,) * ufunc.nout
+
+        args = [v.unbox() if isinstance(v, TensorBox) else v for v in inputs]
+        res = getattr(ufunc, method)(*args, **kwargs)
+
+        if ufunc.nout == 1:
+            res = (res,)
+
+        # construct a list of ufunc outputs to return
+        ufunc_output = []
+        for result, output in zip(res, outputs):
+            if output is not None:
+                ufunc_output.append(output)
+            else:
+                if isinstance(result, np.ndarray):
+                    if result.ndim == 0 and result.dtype == np.dtype("bool"):
+                        ufunc_output.append(result.item())
+                    else:
+                        ufunc_output.append(self.__class__(result))
+                else:
+                    ufunc_output.append(result)
+
+        if len(ufunc_output) == 1:
+            # the ufunc has a single output so return a single tensor
+            return ufunc_output[0]
+
+        # otherwise we must return a tuple of tensors
+        return tuple(ufunc_output)
+
     def __init__(self, tensor):
         self._data = tensor
 
     def __repr__(self):
-        return f"<TensorBox {self.unbox().__repr__()}>"
+        return f"TensorBox: {self.unbox().__repr__()}"
 
     def __len__(self):
         return len(self.unbox())
@@ -186,6 +231,15 @@ class TensorBox(abc.ABC):
     def T(self):
         """Returns the transpose of the tensor."""
 
+    @staticmethod
+    @abc.abstractmethod
+    def astensor(tensor):
+        """Converts the input to the native tensor type of the TensorBox.
+
+        Args:
+            tensor (array_like): array to convert
+        """
+
     @abc.abstractmethod
     def expand_dims(self, axis):
         """Expand the shape of the tensor.
@@ -250,4 +304,17 @@ class TensorBox(abc.ABC):
 
         Note that this is a static method, so we must pass the unified tensor itself
         if we would like it to be included.
+        """
+
+    @property
+    @abc.abstractmethod
+    def requires_grad(self):
+        """bool: Returns if the TensorBox is considered trainable.
+
+        Note that the implemetation depends on the contained tensor type, and
+        may be context dependent.
+
+        For example, Torch tensors and PennyLane tensors track trainability
+        as a property of the tensor itself. TensorFlow, on the otherhand,
+        only tracks trainability if being watched by a gradient tape.
         """

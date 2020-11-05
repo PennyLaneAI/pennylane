@@ -15,6 +15,13 @@
 """
 import tensorflow as tf
 
+
+try:
+    from tensorflow.python.eager.tape import should_record_backprop
+except ImportError:
+    from tensorflow.python.eager.tape import should_record as should_record_backprop
+
+
 import pennylane as qml
 
 
@@ -55,3 +62,11 @@ class TensorFlowBox(qml.TensorBox):
     @property
     def T(self):
         return TensorFlowBox(tf.transpose(self.unbox()))
+
+    @property
+    def requires_grad(self):
+        return should_record_backprop([self.astensor(self.unbox())])
+
+    @staticmethod
+    def astensor(tensor):
+        return tf.convert_to_tensor(tensor)

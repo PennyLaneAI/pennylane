@@ -29,16 +29,6 @@ class NumpyBox(qml.TensorBox):
 
         super().__init__(tensor)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        outputs = kwargs.get("out", ())
-        items = self.unbox_list(inputs + outputs)
-        res = getattr(ufunc, method)(*items, **kwargs)
-
-        if isinstance(res, np.ndarray):
-            return NumpyBox(res)
-
-        return res
-
     @property
     def interface(self):
         return "numpy"
@@ -63,3 +53,11 @@ class NumpyBox(qml.TensorBox):
     @property
     def T(self):
         return NumpyBox(self.unbox().T)
+
+    @property
+    def requires_grad(self):
+        return False
+
+    @staticmethod
+    def astensor(tensor):
+        return np.asarray(tensor)

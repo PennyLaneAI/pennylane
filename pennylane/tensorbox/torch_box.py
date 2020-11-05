@@ -49,3 +49,11 @@ class TorchBox(qml.TensorBox):
     @property
     def T(self):
         return TorchBox(self.unbox().T)
+
+    @property
+    def requires_grad(self):
+        return self.unbox().requires_grad
+
+    @staticmethod
+    def astensor(tensor):
+        return torch.as_tensor(tensor)

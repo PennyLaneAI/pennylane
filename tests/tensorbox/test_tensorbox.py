@@ -52,6 +52,15 @@ class TestNumpyBox:
         with pytest.raises(ValueError, match="Unknown tensor type"):
             qml.TensorBox(True)
 
+    def test_astensor(self):
+        """Test conversion of sequences to numpy arrays"""
+        x = np.array([0.1, 0.2, 0.3])
+        y = [0.4, 0.5, 0.6]
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, np.ndarray)
+        assert np.all(res == y)
+
     def test_len(self):
         """Test length"""
         x = np.array([[1, 2], [3, 4]])
@@ -63,6 +72,12 @@ class TestNumpyBox:
         x = np.array([0.1, 0.2, 0.3])
         res = np.sum(np.sin(qml.TensorBox(x)))
         assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
+
+    def test_inplace_addition(self):
+        """Test that in-place addition works correctly"""
+        x = qml.TensorBox(np.array([0., 0., 0.]))
+        np.add.at(x, [0, 1, 1], 1)
+        assert np.all(x == np.array([1., 2., 0.]))
 
     def test_multiplication(self):
         """Test multiplication between tensors and arrays"""
@@ -158,6 +173,12 @@ class TestNumpyBox:
 
         assert np.all(xT.T == x.T)
 
+    def test_requires_grad(self):
+        """Test that the requires grad attribute always returns False"""
+        x = np.array([[1, 2], [3, 4]])
+        xT = qml.TensorBox(x)
+        assert not xT.requires_grad
+
 
 class TestAutogradBox:
     """Tests for the AutogradBox class"""
@@ -176,7 +197,25 @@ class TestAutogradBox:
         assert isinstance(res, AutogradBox)
         assert res.interface == "autograd"
         assert isinstance(res.unbox(), np.ndarray)
-        assert np.all(res.unbox() == x)
+        assert np.all(res == x)
+
+    def test_astensor_list(self, autograd):
+        """Test conversion of a list to PennyLane tensors"""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = [0.4, 0.5, 0.6]
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, qml.numpy.tensor)
+        assert np.all(res == y)
+
+    def test_astensor_array(self, autograd):
+        """Test conversion of numpy arrays to PennyLane tensors"""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = np.array([0.4, 0.5, 0.6])
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, qml.numpy.tensor)
+        assert np.all(res == y)
 
     def test_len(self, autograd):
         """Test length"""
@@ -200,14 +239,14 @@ class TestAutogradBox:
 
         xT = qml.TensorBox(x)
         res = xT * y
-        assert np.all(res.unbox() == x * y)
+        assert np.all(res == x * y)
 
         yT = qml.TensorBox(y)
         res = x * yT
-        assert np.all(res.unbox() == x * y)
+        assert np.all(res == x * y)
 
         res = xT * yT
-        assert np.all(res.unbox() == x * y)
+        assert np.all(res == x * y)
 
     def test_unbox_list(self, autograd):
         """Test unboxing a mixed list works correctly"""
@@ -227,7 +266,7 @@ class TestAutogradBox:
         xT = qml.TensorBox(x)
         assert isinstance(xT.numpy(), np.ndarray)
         assert not isinstance(xT.numpy(), qml.numpy.tensor)
-        assert np.all(xT.numpy() == x)
+        assert np.all(xT == x)
 
     def test_shape(self, autograd):
         """Test that arrays return the right shape"""
@@ -248,7 +287,7 @@ class TestAutogradBox:
         res = xT.expand_dims(axis=1)
         expected = np.expand_dims(x, axis=1)
         assert isinstance(res, AutogradBox)
-        assert np.all(res.unbox() == expected)
+        assert np.all(res == expected)
 
     def test_ones_like(self, autograd):
         """Test that all ones arrays are correctly created"""
@@ -261,7 +300,7 @@ class TestAutogradBox:
         res = xT.ones_like()
         expected = np.ones_like(x)
         assert isinstance(res, AutogradBox)
-        assert np.all(res.unbox() == expected)
+        assert np.all(res == expected)
 
     def test_stack(self, autograd):
         """Test that arrays are correctly stacked together"""
@@ -272,7 +311,7 @@ class TestAutogradBox:
         xT = qml.TensorBox(x)
         res = xT.stack([y, xT, x])
 
-        assert np.all(res.unbox() == np.stack([y, x, x]))
+        assert np.all(res == np.stack([y, x, x]))
 
     def test_transpose(self, autograd):
         """Test that the transpose is correct"""
@@ -280,7 +319,7 @@ class TestAutogradBox:
         x = np.array([[1, 2], [3, 4]])
         xT = qml.TensorBox(x)
 
-        assert np.all(xT.T.unbox() == x.T)
+        assert np.all(xT.T == x.T)
 
     def test_autodifferentiation(self, autograd):
         """Test that autodifferentiation is preserved when writing
@@ -294,6 +333,17 @@ class TestAutogradBox:
         res = grad_fn(x)[0]
         expected = np.array([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
         assert np.all(res == expected)
+
+    def test_requires_grad(self, autograd):
+        """Test that the requires grad attribute matches the underlying tensor"""
+        np = qml.numpy
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        xT = qml.TensorBox(x)
+        assert not xT.requires_grad
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=True)
+        xT = qml.TensorBox(x)
+        assert xT.requires_grad
 
 
 class TestTorchBox:
@@ -310,10 +360,29 @@ class TestTorchBox:
 
         x = torch.tensor([0.1, 0.2, 0.3])
         res = qml.TensorBox(x)
+
         assert isinstance(res, TorchBox)
         assert res.interface == "torch"
         assert isinstance(res.unbox(), torch.Tensor)
         assert torch.allclose(res.unbox(), x)
+
+    def test_astensor_list(self, torch):
+        """Test conversion of numpy arrays to torch tensors"""
+        x = torch.tensor([0.1, 0.2, 0.3])
+        y = [0.4, 0.5, 0.6]
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, torch.Tensor)
+        assert np.all(res.numpy() == np.array(y, dtype=np.float32))
+
+    def test_astensor_array(self, torch):
+        """Test conversion of numpy arrays to torch tensors"""
+        x = torch.tensor([0.1, 0.2, 0.3])
+        y = np.array([0.4, 0.5, 0.6])
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, torch.Tensor)
+        assert np.all(res.numpy() == y)
 
     def test_len(self, torch):
         """Test length"""
@@ -415,6 +484,16 @@ class TestTorchBox:
         expected = torch.tensor([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
         assert torch.allclose(res, expected)
 
+    def test_requires_grad(self, torch):
+        """Test that the requires grad attribute matches the underlying tensor"""
+        x = torch.tensor([[1., 2], [3, 4]], requires_grad=False)
+        xT = qml.TensorBox(x)
+        assert not xT.requires_grad
+
+        x = torch.tensor([[1., 2], [3, 4]], requires_grad=True)
+        xT = qml.TensorBox(x)
+        assert xT.requires_grad
+
 
 class TestTensorFlowBox:
     """Tests for the TensorFlowBox class"""
@@ -423,6 +502,19 @@ class TestTensorFlowBox:
     def tf(self):
         tf = pytest.importorskip("tensorflow", minversion="2.0")
         return tf
+
+    def test_should_record_import(self, tf, mocker, monkeypatch):
+        """In TensorFlow 2.1, the should_record_backprop function was named
+        should_record. Test that the module correctly imports this function
+        if available."""
+        should_record = tf.python.eager.tape.should_record_backprop
+        mocker.patch("tensorflow.python.eager.tape.should_record", should_record, create=True)
+        monkeypatch.delattr(tf.python.eager.tape, "should_record_backprop")
+        from pennylane.tensorbox.tf_box import TensorFlowBox
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+        res = qml.TensorBox(x)
+        assert isinstance(res, TensorFlowBox)
 
     def test_creation(self, tf):
         """Test that a TensorFlowBox is automatically created from a tf tensor"""
@@ -434,6 +526,24 @@ class TestTensorFlowBox:
         assert res.interface == "tf"
         assert isinstance(res.unbox(), tf.Variable)
         assert np.all(res.unbox() == x)
+
+    def test_astensor_list(self, tf):
+        """Test conversion of numpy arrays to tf tensors"""
+        x = tf.Variable([0.1, 0.2, 0.3])
+        y = [0.4, 0.5, 0.6]
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, tf.Tensor)
+        assert np.all(res.numpy() == np.asarray(y, dtype=np.float32))
+
+    def test_astensor_array(self, tf):
+        """Test conversion of numpy arrays to tf tensors"""
+        x = tf.Variable([0.1, 0.2, 0.3])
+        y = np.array([0.4, 0.5, 0.6])
+
+        res = qml.TensorBox(x).astensor(y)
+        assert isinstance(res, tf.Tensor)
+        assert np.all(res.numpy() == y)
 
     def test_len(self, tf):
         """Test length"""
@@ -539,3 +649,28 @@ class TestTensorFlowBox:
         res = tape.gradient(y, x)
         expected = tf.constant([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
         assert np.allclose(res, expected)
+
+    def test_requires_grad(self, tf):
+        """Test that the requires grad attribute matches the underlying tensor"""
+        x = tf.Variable([[1., 2], [3, 4]])
+        xT = qml.TensorBox(x)
+
+        # without the gradient tape, TensorFlow treats all variables
+        # as non-differentiable
+        assert not xT.requires_grad
+
+        # within a gradient tape, it will be trainable
+        with tf.GradientTape() as tape:
+            assert xT.requires_grad
+
+        # constants are never trainable
+        y = tf.constant([[1., 2], [3, 4]])
+        yT = qml.TensorBox(y)
+
+        with tf.GradientTape() as tape:
+            assert not yT.requires_grad
+
+        # we can watch the constant tensor to make it trainable
+        with tf.GradientTape() as tape:
+            tape.watch([yT.unbox()])
+            assert yT.requires_grad
