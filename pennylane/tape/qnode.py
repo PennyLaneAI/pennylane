@@ -403,8 +403,7 @@ class QNode:
             stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
         # pylint: disable=protected-access
-        obs_on_same_wire = len(self.qtape._obs_wires) != len(set(self.qtape._obs_wires))
-
+        obs_on_same_wire = len(self.qtape._repeated_observables) > 0
         ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
 
         # expand out the tape, if any operations are not supported on the device or multiple

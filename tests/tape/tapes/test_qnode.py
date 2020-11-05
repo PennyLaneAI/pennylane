@@ -411,13 +411,14 @@ class TestTapeConstruction:
         @qnode(dev)
         def f(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(3))
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliZ(1)), \
+                   qml.expval(qml.PauliX(2))
 
         spy = mocker.spy(qml.devices.DefaultQubit, "apply")
         res = f(w)
         spy.assert_called_once()
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
         qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
         res_2 = qnodes(w)
 

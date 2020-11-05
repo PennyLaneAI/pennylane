@@ -101,23 +101,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
 
-    obs_wires = tape._obs_wires
-
-    if len(obs_wires) != len(set(obs_wires)):
-        c = Counter(obs_wires)
-        repeated_wires = {w for w in obs_wires if c[w] > 1}
-
-        obs = []
-        m_idx = []
-
-        for i, m in enumerate(tape.measurements):
-            if m.obs is not None:
-                if len(set(m.wires) & repeated_wires) > 0:
-                    obs.append(m.obs)
-                    m_idx.append(i)
-
+    if tape._repeated_observables:
         try:
-            rotations, diag_obs = diagonalize_qwc_pauli_words(obs)
+            rotations, diag_obs = diagonalize_qwc_pauli_words(tape._repeated_observables)
         except ValueError as e:
             raise qml.QuantumFunctionError(
                 "Only observables that are qubit-wise commuting "
@@ -126,7 +112,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         tape._ops.extend(rotations)
 
-        for o, i in zip(diag_obs, m_idx):
+        for o, i in zip(diag_obs, tape._repeated_observables_id):
             new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
             tape._measurements[i] = new_m
 
@@ -267,7 +253,9 @@ class QuantumTape(AnnotatedQueue):
         self.inverse = False
 
         self._stack = None
-        self._obs_wires = None
+
+        self._repeated_observables = []
+        self._repeated_observables_id = []
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -373,7 +361,23 @@ class QuantumTape(AnnotatedQueue):
             [op.wires for op in self.operations + self.observables]
         )
         self.num_wires = len(self.wires)
-        self._obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+
+    def _update_observables(self):
+        """Update information about observables, including the wires that are acted upon and
+        identifying any repeated observables"""
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        self._repeated_observables = []
+        self._repeated_observables_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None:
+                    if len(set(m.wires) & repeated_wires) > 0:
+                        self._repeated_observables.append(m.obs)
+                        self._repeated_observables_id.append(i)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -400,6 +404,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
+        self._update_observables()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -1050,14 +1055,11 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        if len(self._obs_wires) != len(set(self._obs_wires)):
-
-            obs = [m.obs for m in self.measurements if m.obs is not None]
-            if not all(len(o.diagonalizing_gates()) == 0 for o in obs):
-                raise qml.QuantumFunctionError(
-                    "Multiple observables are being evaluated on the same wire. Call "
-                    "tape.expand(expand_measurements=True) prior to execution to support this."
-                )
+        if not all(len(o.diagonalizing_gates()) == 0 for o in self._repeated_observables):
+            raise qml.QuantumFunctionError(
+                "Multiple observables are being evaluated on the same wire. Call "
+                "tape.expand(expand_measurements=True) prior to execution to support this."
+            )
 
         device.reset()
 
