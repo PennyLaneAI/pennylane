@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the TorchBox implementation of the TensorBox API.
 """
+import numpy as np
 import torch
 
 import pennylane as qml
@@ -24,9 +25,42 @@ class TorchBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @staticmethod
+    def astensor(tensor):
+        return torch.as_tensor(tensor)
+
+    def cast(self, dtype):
+        if isinstance(dtype, torch.dtype):
+            return TorchBox(self.data.to(dtype))
+
+        dtype_name = np.dtype(dtype).name
+        torch_dtype = getattr(torch, dtype_name, None)
+
+        if torch_dtype is None:
+            raise ValueError(f"Unable to convert {dtype} to a Torch dtype")
+
+        return TorchBox(self.data.to(torch_dtype))
+
+    def expand_dims(self, axis):
+        return TorchBox(torch.unsqueeze(self.data, dim=axis))
+
     @property
     def interface(self):
         return "torch"
+
+    def numpy(self):
+        return self.data.detach().cpu().numpy()
+
+    def ones_like(self):
+        return TorchBox(torch.ones_like(self.data))
+
+    @property
+    def requires_grad(self):
+        return self.data.requires_grad
+
+    @property
+    def shape(self):
+        return tuple(self.data.shape)
 
     @staticmethod
     def stack(values, axis=0):
@@ -34,26 +68,5 @@ class TorchBox(qml.TensorBox):
         return TorchBox(res)
 
     @property
-    def shape(self):
-        return tuple(self.unbox().shape)
-
-    def expand_dims(self, axis):
-        return TorchBox(torch.unsqueeze(self.unbox(), dim=axis))
-
-    def numpy(self):
-        return self.unbox().detach().cpu().numpy()
-
-    def ones_like(self):
-        return TorchBox(torch.ones_like(self.unbox()))
-
-    @property
     def T(self):
-        return TorchBox(self.unbox().T)
-
-    @property
-    def requires_grad(self):
-        return self.unbox().requires_grad
-
-    @staticmethod
-    def astensor(tensor):
-        return torch.as_tensor(tensor)
+        return TorchBox(self.data.T)

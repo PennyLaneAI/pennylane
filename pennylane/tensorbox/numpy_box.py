@@ -29,35 +29,38 @@ class NumpyBox(qml.TensorBox):
 
         super().__init__(tensor)
 
+    @staticmethod
+    def astensor(tensor):
+        return np.asarray(tensor)
+
+    def cast(self, dtype):
+        return NumpyBox(np.asarray(self.data, dtype=dtype))
+
+    def expand_dims(self, axis):
+        return NumpyBox(np.expand_dims(self.data, axis=axis))
+
     @property
     def interface(self):
         return "numpy"
 
-    def expand_dims(self, axis):
-        return NumpyBox(np.expand_dims(self.unbox(), axis=axis))
-
     def numpy(self):
-        return self.unbox()
+        return self.data
 
     def ones_like(self):
-        return NumpyBox(np.ones_like(self.unbox()))
+        return NumpyBox(np.ones_like(self.data))
+
+    @property
+    def requires_grad(self):
+        return False
+
+    @property
+    def shape(self):
+        return self.data.shape
 
     @staticmethod
     def stack(values, axis=0):
         return NumpyBox(np.stack(NumpyBox.unbox_list(values), axis=axis))
 
     @property
-    def shape(self):
-        return self.unbox().shape
-
-    @property
     def T(self):
-        return NumpyBox(self.unbox().T)
-
-    @property
-    def requires_grad(self):
-        return False
-
-    @staticmethod
-    def astensor(tensor):
-        return np.asarray(tensor)
+        return NumpyBox(self.data.T)

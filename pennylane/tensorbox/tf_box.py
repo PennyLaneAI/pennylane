@@ -31,15 +31,39 @@ class TensorFlowBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    def __len__(self):
+        if isinstance(self.data, tf.Variable):
+            return len(tf.convert_to_tensor(self.data))
+
+        return super().__len__()
+
+    @staticmethod
+    def astensor(tensor):
+        return tf.convert_to_tensor(tensor)
+
+    def cast(self, dtype):
+        return TensorFlowBox(tf.cast(self.data, dtype=dtype))
+
     @property
     def interface(self):
         return "tf"
 
-    def __len__(self):
-        if isinstance(self.unbox(), tf.Variable):
-            return len(tf.convert_to_tensor(self.unbox()))
+    def expand_dims(self, axis):
+        return TensorFlowBox(tf.expand_dims(self.data, axis=axis))
 
-        return super().__len__()
+    def numpy(self):
+        return self.data.numpy()
+
+    def ones_like(self):
+        return TensorFlowBox(tf.ones_like(self.data))
+
+    @property
+    def requires_grad(self):
+        return should_record_backprop([self.astensor(self.data)])
+
+    @property
+    def shape(self):
+        return tuple(self.data.shape)
 
     @staticmethod
     def stack(values, axis=0):
@@ -47,26 +71,5 @@ class TensorFlowBox(qml.TensorBox):
         return TensorFlowBox(res)
 
     @property
-    def shape(self):
-        return tuple(self.unbox().shape)
-
-    def expand_dims(self, axis):
-        return TensorFlowBox(tf.expand_dims(self.unbox(), axis=axis))
-
-    def numpy(self):
-        return self.unbox().numpy()
-
-    def ones_like(self):
-        return TensorFlowBox(tf.ones_like(self.unbox()))
-
-    @property
     def T(self):
-        return TensorFlowBox(tf.transpose(self.unbox()))
-
-    @property
-    def requires_grad(self):
-        return should_record_backprop([self.astensor(self.unbox())])
-
-    @staticmethod
-    def astensor(tensor):
-        return tf.convert_to_tensor(tensor)
+        return TensorFlowBox(tf.transpose(self.data))

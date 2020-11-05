@@ -29,7 +29,7 @@ class TestNumpyBox:
         assert isinstance(res, NumpyBox)
         assert res.interface == "numpy"
         assert isinstance(res.unbox(), np.ndarray)
-        assert np.all(res.unbox() == x)
+        assert qml.tensorbox.allequal(res, x)
 
     def test_creation_from_tuple(self):
         """Test that a NumpyBox is automatically created from a tuple"""
@@ -38,7 +38,7 @@ class TestNumpyBox:
         assert isinstance(res, NumpyBox)
         assert res.interface == "numpy"
         assert isinstance(res.unbox(), np.ndarray)
-        assert np.all(res.unbox() == x)
+        assert qml.tensorbox.allequal(res, x)
 
     def test_creation_from_tensorbox(self):
         """Test that a tensorbox input simply returns itself"""

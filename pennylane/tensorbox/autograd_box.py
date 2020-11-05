@@ -24,35 +24,38 @@ class AutogradBox(qml.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @staticmethod
+    def astensor(tensor):
+        return np.tensor(tensor)
+
+    def cast(self, dtype):
+        return AutogradBox(np.tensor(self.data, dtype=dtype))
+
+    def expand_dims(self, axis):
+        return AutogradBox(np.expand_dims(self.data, axis=axis))
+
     @property
     def interface(self):
         return "autograd"
 
-    def expand_dims(self, axis):
-        return AutogradBox(np.expand_dims(self.unbox(), axis=axis))
-
     def numpy(self):
-        return self.unbox().numpy()
+        return self.data.numpy()
 
     def ones_like(self):
-        return AutogradBox(np.ones_like(self.unbox()))
+        return AutogradBox(np.ones_like(self.data))
+
+    @property
+    def requires_grad(self):
+        return self.data.requires_grad
+
+    @property
+    def shape(self):
+        return self.data.shape
 
     @staticmethod
     def stack(values, axis=0):
         return AutogradBox(np.stack(AutogradBox.unbox_list(values), axis=axis))
 
     @property
-    def shape(self):
-        return self.unbox().shape
-
-    @property
     def T(self):
-        return AutogradBox(self.unbox().T)
-
-    @property
-    def requires_grad(self):
-        return self.unbox().requires_grad
-
-    @staticmethod
-    def astensor(tensor):
-        return np.tensor(tensor)
+        return AutogradBox(self.data.T)

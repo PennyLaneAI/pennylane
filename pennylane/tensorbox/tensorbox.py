@@ -20,10 +20,10 @@ import numpy as np
 
 class TensorBox(abc.ABC):
     """A container for array-like objects that allows array manipulation to be performed in a
-    unified manner for supported linear algebra packages.
+    unified manner for supported tensor/array manipulation frameworks.
 
     Args:
-        tensor (array_like): instantiate the ``TensorBox`` container with an array-like object
+        tensor (tensor_like): instantiate the ``TensorBox`` container with an array-like object
 
     .. warning::
 
@@ -31,17 +31,13 @@ class TensorBox(abc.ABC):
         PennyLane templates, cost functions, and optimizers retain differentiability
         across all supported interfaces.
 
-        For front-facing usage, consider using an established package such as
-        `EagerPy <https://github.com/jonasrauber/eagerpy>`_.
-
-
     By wrapping array-like objects in a ``TensorBox`` class, array manipulations are
     performed by simply chaining method calls. Under the hood, the method call is dispatched
-    to the corresponding linear algebra library based on the wrapped array type, without
+    to the corresponding tensor/array manipulation library based on the wrapped array type, without
     the need to import any external libraries manually. As a result, autodifferentiation is
     preserved where needed.
 
-    Currently, the following linear algebra packages are supported:
+    Currently, the following tensor/array manipulation frameworks are supported:
 
     * NumPy
     * Autograd
@@ -60,7 +56,7 @@ class TensorBox(abc.ABC):
     >>> type(y)
     <TensorBox <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>>
 
-    The original tensor is available via the :meth:`~.unbox()` method:
+    The original tensor is available via the :meth:`~.unbox` method:
 
     >>> y.unbox()
     <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>
@@ -78,6 +74,8 @@ class TensorBox(abc.ABC):
     >>> y.ones_like().expand_dims(0)
     tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
     """
+
+    _initialized = False
 
     def __new__(cls, tensor):
         if isinstance(tensor, TensorBox):
@@ -114,7 +112,7 @@ class TensorBox(abc.ABC):
         """By defining this special method, NumPy ufuncs can act directly
         on the contained tensor, with broadcasting taken into account. For
         more details, see https://numpy.org/devdocs/user/basics.subclassing.html#array-ufunc-for-ufuncs"""
-        outputs = [v.unbox() if isinstance(v, TensorBox) else v for v in kwargs.get("out", ())]
+        outputs = [v.data if isinstance(v, TensorBox) else v for v in kwargs.get("out", ())]
 
         if outputs:
             # Insert the unwrapped outputs into the keyword
@@ -126,7 +124,7 @@ class TensorBox(abc.ABC):
             # create a tuple containing None for all potential outputs.
             outputs = (None,) * ufunc.nout
 
-        args = [v.unbox() if isinstance(v, TensorBox) else v for v in inputs]
+        args = [v.data if isinstance(v, TensorBox) else v for v in inputs]
         res = getattr(ufunc, method)(*args, **kwargs)
 
         if ufunc.nout == 1:
@@ -154,41 +152,71 @@ class TensorBox(abc.ABC):
         return tuple(ufunc_output)
 
     def __init__(self, tensor):
-        self._data = tensor
+        if self._initialized:
+            return
+
+        self.data = tensor
+        self._initialized = True
 
     def __repr__(self):
-        return f"TensorBox: {self.unbox().__repr__()}"
+        return f"TensorBox: {self.data.__repr__()}"
 
     def __len__(self):
-        return len(self.unbox())
+        return len(self.data)
+
+    def __add__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(self.data + other)
+
+    def __sub__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(self.data - other)
 
     def __mul__(self, other):
         if isinstance(other, TensorBox):
-            other = other.unbox()
+            other = other.data
 
-        return self.__class__(self.unbox() * other)
+        return self.__class__(self.data * other)
+
+    def __div__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(self.data / other)
+
+    def __rdiv__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(other / self.data)
 
     def __pow__(self, other):
         if isinstance(other, TensorBox):
-            other = other.unbox()
+            other = other.data
 
-        return self.__class__(self.unbox() ** other)
+        return self.__class__(self.data ** other)
 
     def __rpow__(self, other):
-        return self.__class__(other ** self.unbox())
+        return self.__class__(other ** self.data)
 
+    __radd__ = __add__
+    __rsub__ = __sub__
     __rmul__ = __mul__
 
     @staticmethod
     def unbox_list(tensors):
-        """Unboxes or unwraps a list of array like objects, converting any :class:`TensorBox`
+        """Unboxes or unwraps a list of tensor like objects, converting any :class:`TensorBox`
         objects in the list into raw interface tensors.
 
         Args:
-            tensors (list[array_like]): list of arrays, tensors, or :class:`~.TensorBox` objects
+            tensors (list[tensor_like]): list of arrays, tensors, or :class:`~.TensorBox` objects
 
         Returns
-            list[array_like]: the input list with all :class:`TensorBox` objects
+            list[tensor_like]: the input list with all :class:`TensorBox` objects
             unwrapped.
 
         **Example**
@@ -208,11 +236,11 @@ class TensorBox(abc.ABC):
         [<class 'tensorflow.python.ops.resource_variable_ops.ResourceVariable'>,
          <class 'tensorflow.python.framework.ops.EagerTensor'>]
         """
-        return [v.unbox() if isinstance(v, TensorBox) else v for v in tensors]
+        return [v.data if isinstance(v, TensorBox) else v for v in tensors]
 
     def unbox(self):
         """Unboxes the ``TensorBox`` container, returning the raw interface tensor."""
-        return self._data
+        return self.data
 
     @property
     @abc.abstractmethod
@@ -237,7 +265,17 @@ class TensorBox(abc.ABC):
         """Converts the input to the native tensor type of the TensorBox.
 
         Args:
-            tensor (array_like): array to convert
+            tensor (tensor_like): array to convert
+        """
+
+    @abc.abstractmethod
+    def cast(self, dtype):
+        """Cast the dtype of the TensorBox.
+
+        Args:
+            dtype (np.dtype): The NumPy datatype to cast to.
+                If the boxed tensor is not a NumPy array, the equivalent
+                datastype in the target framework is chosen.
         """
 
     @abc.abstractmethod
@@ -266,9 +304,12 @@ class TensorBox(abc.ABC):
         """
 
     @abc.abstractmethod
-    def ones_like(self):
+    def ones_like(self, dtype=None):
         """Returns a unified tensor of all ones, with the shape and dtype
         of the unified tensor.
+
+        Args:
+            dtype (np.dtype): the NumPy datatype to cast to
 
         Returns:
             TensorBox: all ones array
@@ -289,7 +330,7 @@ class TensorBox(abc.ABC):
         """Stacks a list of tensors along the specified index.
 
         Args:
-            values (Sequence[array_like]): sequence of arrays/tensors to stack
+            values (Sequence[tensor_like]): sequence of arrays/tensors to stack
             axis (int): axis on which to stack
 
         **Example**
