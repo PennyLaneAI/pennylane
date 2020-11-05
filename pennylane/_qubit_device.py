@@ -28,7 +28,6 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.wires import Wires
-import pennylane as qml
 
 
 class QubitDevice(Device):
@@ -183,34 +182,9 @@ class QubitDevice(Device):
             if circuit_hash in self._cache_execute:
                 return self._cache_execute[circuit_hash]
 
-        self._circuit_hash = circuit.hash
-
-        obs = circuit.observables.copy()
-
-        if isinstance(circuit, qml.tape.QuantumTape):
-            stop_at = self.operations
-
-            # Hotfix that allows controlled rotations to return the correct gradients
-            # when using the parameter shift rule.
-            if isinstance(circuit, qml.tape.QubitParamShiftTape):
-                # controlled rotations aren't supported by the parameter-shift rule
-                stop_at = set(self.operations) - {"CRX", "CRZ", "CRY", "CRot"}
-
-            obs_wires = [
-                wire for m in circuit.measurements for wire in m.wires if m.obs is not None
-            ]
-
-            obs_on_same_wire = len(obs_wires) != len(set(obs_wires))
-            ops_not_supported = not {op.name for op in circuit.operations}.issubset(stop_at)
-
-            # expand out the tape, if any operations are not supported on the device or multiple
-            # observables are measured on the same wire
-            if ops_not_supported or obs_on_same_wire:
-                circuit.expand(
-                    depth=1, stop_at=lambda obj: obj.name in stop_at, expand_measurements=True
-                )
-
         self.check_validity(circuit.operations, circuit.observables)
+
+        self._circuit_hash = circuit.hash
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
@@ -220,11 +194,11 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        results = self.statistics(obs)
+        results = self.statistics(circuit.observables)
 
         # Ensures that a combination with sample does not put
         # expvals and vars in superfluous arrays
-        all_sampled = all(o.return_type is Sample for o in obs)
+        all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
         if circuit.is_sampled and not all_sampled:
             results = self._asarray(results, dtype="object")
         else:
