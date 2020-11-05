@@ -100,7 +100,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
-
     if tape._repeated_observables:
         try:
             rotations, diag_obs = diagonalize_qwc_pauli_words(tape._repeated_observables)
