@@ -14,9 +14,9 @@
 """
 This module contains the base quantum tape.
 """
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 import contextlib
 import copy
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 from collections import Counter
 
 import numpy as np
