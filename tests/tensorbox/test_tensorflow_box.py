@@ -21,19 +21,6 @@ import pennylane as qml
 from pennylane.tensorbox.tf_box import TensorFlowBox
 
 
-def test_should_record_import(mocker, monkeypatch):
-    """In TensorFlow 2.1, the should_record_backprop function was named
-    should_record. Test that the module correctly imports this function
-    if available."""
-    should_record = tf.python.eager.tape.should_record_backprop
-    mocker.patch("tensorflow.python.eager.tape.should_record", should_record, create=True)
-    monkeypatch.delattr(tf.python.eager.tape, "should_record_backprop")
-
-    x = tf.Variable([0.1, 0.2, 0.3])
-    res = qml.tensorbox.TensorBox(x)
-    assert isinstance(res, TensorFlowBox)
-
-
 def test_creation():
     """Test that a TensorFlowBox is automatically created from a tf tensor"""
 
@@ -63,6 +50,27 @@ def test_astensor_array():
     res = qml.tensorbox.TensorBox(x).astensor(y)
     assert isinstance(res, tf.Tensor)
     assert np.all(res.numpy() == y)
+
+
+def test_cast():
+    """Test that arrays can be cast to different dtypes"""
+    x = tf.Variable([1, 2, 3])
+
+    res = qml.tensorbox.TensorBox(x).cast(np.float64)
+    expected = tf.Variable([1.0, 2.0, 3.0])
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast(np.dtype("int8"))
+    expected = tf.Variable([1, 2, 3], dtype=tf.int8)
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast("complex128")
+    expected = tf.Variable([1, 2, 3], dtype=tf.complex128)
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast(tf.complex128)
+    expected = tf.Variable([1, 2, 3], dtype=tf.complex128)
+    assert np.all(res.numpy() == expected.numpy())
 
 
 def test_len():

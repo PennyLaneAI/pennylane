@@ -39,6 +39,8 @@ class TorchBox(qml.tensorbox.TensorBox):
         if torch_dtype is None:
             raise ValueError(f"Unable to convert {dtype} to a Torch dtype")
 
+        print(torch_dtype)
+
         return TorchBox(self.data.to(torch_dtype))
 
     def expand_dims(self, axis):

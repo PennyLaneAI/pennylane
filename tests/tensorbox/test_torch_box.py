@@ -52,6 +52,36 @@ def test_astensor_array():
     assert np.all(res.numpy() == y)
 
 
+def test_cast():
+    """Test that arrays can be cast to different dtypes"""
+    x = torch.tensor([1, 2, 3])
+
+    res = qml.tensorbox.TensorBox(x).cast(np.float64)
+    expected = torch.tensor([1.0, 2.0, 3.0])
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast(np.dtype("int8"))
+    expected = torch.tensor([1, 2, 3], dtype=torch.int8)
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast("float64")
+    expected = torch.tensor([1, 2, 3], dtype=torch.float64)
+    assert np.all(res.numpy() == expected.numpy())
+
+    res = qml.tensorbox.TensorBox(x).cast(torch.float64)
+    expected = torch.tensor([1, 2, 3], dtype=torch.float64)
+    assert np.all(res.numpy() == expected.numpy())
+
+
+def test_cast_execption():
+    """Test that an exception is raised if we are unable to deduce
+    the correct Torch dtype"""
+    x = torch.tensor([1, 2, 3])
+
+    with pytest.raises(ValueError, match="Unable to convert"):
+        qml.tensorbox.TensorBox(x).cast(np.bytes0)
+
+
 def test_len():
     """Test length"""
     x = torch.tensor([[1, 2], [3, 4]])

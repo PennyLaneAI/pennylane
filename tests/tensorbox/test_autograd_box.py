@@ -51,6 +51,23 @@ def test_astensor_array():
     assert np.all(res == y)
 
 
+def test_cast():
+    """Test that arrays can be cast to different dtypes"""
+    x = np.array([1, 2, 3])
+
+    res = qml.tensorbox.TensorBox(x).cast(np.float64)
+    expected = np.array([1.0, 2.0, 3.0])
+    assert np.all(res == expected)
+
+    res = qml.tensorbox.TensorBox(x).cast(np.dtype("int8"))
+    expected = np.array([1, 2, 3], dtype=np.int8)
+    assert np.all(res == expected)
+
+    res = qml.tensorbox.TensorBox(x).cast("complex128")
+    expected = np.array([1, 2, 3], dtype=np.complex128)
+    assert np.all(res == expected)
+
+
 def test_len():
     """Test length"""
     x = np.array([[1, 2], [3, 4]])

@@ -63,6 +63,23 @@ def test_astensor():
     assert np.all(res == y)
 
 
+def test_cast():
+    """Test that arrays can be cast to different dtypes"""
+    x = np.array([1, 2, 3])
+
+    res = qml.tensorbox.TensorBox(x).cast(np.float64)
+    expected = np.array([1.0, 2.0, 3.0])
+    assert np.all(res == expected)
+
+    res = qml.tensorbox.TensorBox(x).cast(np.dtype("int8"))
+    expected = np.array([1, 2, 3], dtype=np.int8)
+    assert np.all(res == expected)
+
+    res = qml.tensorbox.TensorBox(x).cast("complex128")
+    expected = np.array([1, 2, 3], dtype=np.complex128)
+    assert np.all(res == expected)
+
+
 def test_len():
     """Test length"""
     x = np.array([[1, 2], [3, 4]])
@@ -84,6 +101,40 @@ def test_inplace_addition():
     assert np.all(x == np.array([1.0, 2.0, 0.0]))
 
 
+def test_addition():
+    """Test addition between tensors and arrays"""
+    x = np.array([[1, 2], [3, 4]])
+    y = np.array([[1, 0], [0, 1]])
+
+    xT = qml.tensorbox.TensorBox(x)
+    res = xT + y
+    assert np.all(res.unbox() == x + y)
+
+    yT = qml.tensorbox.TensorBox(y)
+    res = x + yT
+    assert np.all(res.unbox() == x + y)
+
+    res = xT + yT
+    assert np.all(res.unbox() == x + y)
+
+
+def test_subtraction():
+    """Test addition between tensors and arrays"""
+    x = np.array([[1, 2], [3, 4]])
+    y = np.array([[1, 0], [0, 1]])
+
+    xT = qml.tensorbox.TensorBox(x)
+    res = xT - y
+    assert np.all(res.unbox() == x - y)
+
+    yT = qml.tensorbox.TensorBox(y)
+    res = x - yT
+    assert np.all(res.unbox() == x - y)
+
+    res = xT - yT
+    assert np.all(res.unbox() == x - y)
+
+
 def test_multiplication():
     """Test multiplication between tensors and arrays"""
     x = np.array([[1, 2], [3, 4]])
@@ -99,6 +150,26 @@ def test_multiplication():
 
     res = xT * yT
     assert np.all(res.unbox() == x * y)
+
+
+def test_division():
+    """Test addition between tensors and arrays"""
+    x = np.array([[1, 2], [3, 4]])
+    y = np.array([[1, 4], [0.25, 1]])
+
+    xT = qml.tensorbox.TensorBox(x)
+    res = xT / y
+    assert np.all(res.unbox() == x / y)
+
+    yT = qml.tensorbox.TensorBox(y)
+    res = x / yT
+    assert np.all(res.unbox() == x / y)
+
+    res = xT / yT
+    assert np.all(res.unbox() == x / y)
+
+    res = 5 / yT
+    assert np.all(res.unbox() == 5 / y)
 
 
 def test_exponentiation():

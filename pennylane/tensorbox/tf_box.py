@@ -18,7 +18,7 @@ import tensorflow as tf
 
 try:
     from tensorflow.python.eager.tape import should_record_backprop
-except ImportError:
+except ImportError:  # pragma: no cover
     from tensorflow.python.eager.tape import should_record as should_record_backprop
 
 

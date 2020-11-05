@@ -175,16 +175,13 @@ class TensorBox(abc.ABC):
 
         return self.__class__(self.data * other)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, TensorBox):
             other = other.data
 
         return self.__class__(self.data / other)
 
-    def __rdiv__(self, other):
-        if isinstance(other, TensorBox):
-            other = other.data
-
+    def __rtruediv__(self, other):
         return self.__class__(other / self.data)
 
     def __pow__(self, other):
