@@ -1047,10 +1047,8 @@ class QuantumTape(AnnotatedQueue):
             obs = [m.obs for m in self.measurements if m.obs is not None]
             if not all(len(o.diagonalizing_gates()) == 0 for o in obs):
                 raise qml.QuantumFunctionError(
-                    "Multiple observables are being evaluated on the "
-                    "same wire. Call "
-                    "tape.expand(expand_measurements=True) to support "
-                    "this."
+                    "Multiple observables are being evaluated on the same wire. Call "
+                    "tape.expand(expand_measurements=True) to support this."
                 )
 
         device.reset()
