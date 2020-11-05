@@ -23,7 +23,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, CRot, PhaseShift, CZ
 from pennylane.templates.utils import (
     check_shape,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires
