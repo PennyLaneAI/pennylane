@@ -100,7 +100,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
-    obs_wires = [wire for m in tape.measurements for wire in m.wires if m.obs is not None]
+
+    obs_wires = tape._obs_wires
 
     if len(obs_wires) != len(set(obs_wires)):
         c = Counter(obs_wires)
@@ -266,6 +267,7 @@ class QuantumTape(AnnotatedQueue):
         self.inverse = False
 
         self._stack = None
+        self._obs_wires = None
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -371,6 +373,7 @@ class QuantumTape(AnnotatedQueue):
             [op.wires for op in self.operations + self.observables]
         )
         self.num_wires = len(self.wires)
+        self._obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -1047,15 +1050,13 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
-
-        if len(obs_wires) != len(set(obs_wires)):
+        if len(self._obs_wires) != len(set(self._obs_wires)):
 
             obs = [m.obs for m in self.measurements if m.obs is not None]
             if not all(len(o.diagonalizing_gates()) == 0 for o in obs):
                 raise qml.QuantumFunctionError(
                     "Multiple observables are being evaluated on the same wire. Call "
-                    "tape.expand(expand_measurements=True) to support this."
+                    "tape.expand(expand_measurements=True) prior to execution to support this."
                 )
 
         device.reset()

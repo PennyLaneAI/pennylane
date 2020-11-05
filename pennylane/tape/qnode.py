@@ -402,8 +402,7 @@ class QNode:
             # controlled rotations aren't supported by the parameter-shift rule
             stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
-        obs_wires = [wire for m in self.qtape.measurements for wire in m.wires if m.obs is not None]
-        obs_on_same_wire = len(obs_wires) != len(set(obs_wires))
+        obs_on_same_wire = len(self.qtape._obs_wires) != len(set(self.qtape._obs_wires))
 
         ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
 
