@@ -27,6 +27,7 @@
 
 * Adds the `qml.density_matrix` QNode return with partial trace capabilities.
   [(#878)](https://github.com/PennyLaneAI/pennylane/pull/878)
+
   The density matrix over the provided wires is returned, with all other subsystems traced out.
   `qml.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
   
