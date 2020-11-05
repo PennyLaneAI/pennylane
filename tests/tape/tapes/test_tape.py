@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, TapeCircuitGraph
-from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape.measure import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -788,21 +788,23 @@ class TestExpand:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
-            qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+            qml.var(qml.PauliX(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
 
         with QuantumTape() as tape2:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.RY(-np.pi / 2, wires=0)
+            qml.RY(-np.pi / 2, wires=1)
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliX(2))
 
-        tape1_exp = tape1.expand(expand_measurements=True)
-        tape2_exp = tape2.expand(expand_measurements=True)
+        tape1_exp = tape1.expand()
 
-        assert tape1_exp.graph.hash == tape2_exp.graph.hash
+        assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [qml.expval, qml.var, qml.sample])
+    @pytest.mark.parametrize("ret", [expval, var, sample])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
