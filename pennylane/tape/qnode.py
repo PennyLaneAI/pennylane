@@ -394,23 +394,28 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        if not isinstance(self.device, qml.QubitDevice):
-            # The following functionality now lives in QubitDevice. It can be removed once it is
-            # ported to Device.
+        stop_at = self.device.operations
 
-            stop_at = self.device.operations
+        # Hotfix that allows controlled rotations to return the correct gradients
+        # when using the parameter shift rule.
+        if isinstance(self.qtape, QubitParamShiftTape):
+            # controlled rotations aren't supported by the parameter-shift rule
+            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
-            # Hotfix that allows controlled rotations to return the correct gradients
-            # when using the parameter shift rule.
-            if isinstance(self.qtape, QubitParamShiftTape):
-                # controlled rotations aren't supported by the parameter-shift rule
-                stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+        obs_wires = [
+            wire for m in self.qtape.measurements for wire in m.wires if m.obs is not None
+        ]
 
-            # expand out the tape, if any operations are not supported on the device
-            if not {op.name for op in self.qtape.operations}.issubset(stop_at):
-                self.qtape = self.qtape.expand(
-                    depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
-                )
+        obs_on_same_wire = len(obs_wires) != len(set(obs_wires))
+        ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
+
+        # expand out the tape, if any operations are not supported on the device or multiple
+        # observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
+            self.qtape = self.qtape.expand(
+                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at,
+                expand_measurements=True
+            )
 
     def __call__(self, *args, **kwargs):
 
