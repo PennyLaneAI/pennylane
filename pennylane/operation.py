@@ -429,10 +429,6 @@ class Operator(abc.ABC):
         if do_queue:
             self.queue()
 
-    def __str__(self):
-        """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires.tolist())
-
     def __repr__(self):
         """Constructor-call-like representation."""
         # FIXME using self.parameters here instead of self.data is dangerous, it assumes the data can be evaluated
@@ -1188,15 +1184,18 @@ class Tensor(Observable):
         copied_op._eigvals_cache = self._eigvals_cache
         return copied_op
 
-    def __str__(self):
-        """Print the tensor product and some information."""
-        return "Tensor product {}: {} params, wires {}".format(
-            [i.name for i in self.obs], len(self.data), self.wires.tolist()
-        )
-
     def __repr__(self):
         """Constructor-call-like representation."""
-        return "Tensor(" + ", ".join([repr(o) for o in self.obs]) + ")"
+
+        s = " @ ".join([repr(o) for o in self.obs])
+
+        if self.return_type is None:
+            return s
+
+        if self.return_type is Probability:
+            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+
+        return repr(self.return_type) + "(" + s + ")"
 
     @property
     def name(self):
