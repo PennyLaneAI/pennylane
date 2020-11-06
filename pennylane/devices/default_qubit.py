@@ -416,10 +416,10 @@ class DefaultQubit(QubitDevice):
         """Returns the reduced density matrix of a given set of wires.
 
         Args:
-            wires (Sequence[int] or int): the wires of the subsytem.
+            wires (Wires): wires of the reduced system.
 
         Returns:
-            tensor[complex]: complex tensor of shape ``2^(self.num_wires-len(wires))``
+            tensor[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
         dim = self.num_wires

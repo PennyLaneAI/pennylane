@@ -135,13 +135,13 @@ class DefaultMixed(QubitDevice):
         return self._reshape(self._pre_rotated_state, (dim, dim))
 
     def density_matrix(self, wires):
-        """Return the reduced density matrix over the given wires.
+        """Returns the reduced density matrix over the given wires.
 
         Args:
             wires (Wires): wires of the reduced system
 
         Returns:
-            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            tensor[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
         # Return the full density matrix if all the wires are given
@@ -225,6 +225,8 @@ class DefaultMixed(QubitDevice):
             kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
             kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
             kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+
+        # Add the possibility to give a (1,2) shape Kraus operator
         elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
             kraus_shape = [len(kraus)] + list(kraus[0].shape)
             kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)

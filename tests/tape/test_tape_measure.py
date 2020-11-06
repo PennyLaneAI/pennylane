@@ -201,11 +201,11 @@ class TestProperties:
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
-        m = MeasurementProcess(Expectation, obs=qml.PauliZ(wires='a') @ qml.PauliZ(wires='b'))
+        m = MeasurementProcess(Expectation, obs=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
         expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
         assert str(m) == expected
 
-        m = MeasurementProcess(Probability, obs=qml.PauliZ(wires='a'))
+        m = MeasurementProcess(Probability, obs=qml.PauliZ(wires="a"))
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
 
@@ -331,10 +331,10 @@ class TestState:
             return state(), expval(qml.PauliZ(1))
 
         with pytest.raises(
-                QuantumFunctionError,
-                match="The state or density matrix"
-                      " cannot be returned in combination"
-                      " with other return types",
+            QuantumFunctionError,
+            match="The state or density matrix"
+            " cannot be returned in combination"
+            " with other return types",
         ):
             func()
 
@@ -562,7 +562,7 @@ class TestDensityMatrix:
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_product_state_first(self, dev_name):
-        """Test that the correct density matrix  is returned when
+        """Test that the correct density matrix is returned when
         tracing out a product state"""
 
         dev = qml.device(dev_name, wires=2)
@@ -581,7 +581,7 @@ class TestDensityMatrix:
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_product_state_second(self, dev_name):
-        """Test that the correct density matrix  is returned when
+        """Test that the correct density matrix is returned when
         tracing out a product state"""
 
         dev = qml.device(dev_name, wires=2)
@@ -598,9 +598,8 @@ class TestDensityMatrix:
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_correct_density_matrix_all_wires(self, dev_name):
-        """Test that the correct density matrix  is returned when
-        all wires are given"""
+    def test_correct_density_matrix_three_wires_first(self, dev_name):
+        """Test that the correct density matrix for an example with three wires"""
 
         dev = qml.device(dev_name, wires=3)
 
@@ -624,7 +623,7 @@ class TestDensityMatrix:
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_correct_density_matrix_three_wires(self, dev_name):
+    def test_correct_density_matrix_three_wires_second(self, dev_name):
         """Test that the correct density matrix for an example with three wires"""
 
         dev = qml.device(dev_name, wires=3)
@@ -682,11 +681,17 @@ class TestDensityMatrix:
 
         density = func()
 
-        assert np.allclose(np.array([[0.5 + 0.j, 0. + 0.j, 0. + 0.j, 0.5 + 0.j],
-                                     [0. + 0.j, 0. + 0.j, 0. + 0.j, 0. + 0.j],
-                                     [0. + 0.j, 0. + 0.j, 0. + 0.j, 0. + 0.j],
-                                     [0.5 + 0.j, 0. + 0.j, 0. + 0.j, 0.5 + 0.j]]), density)
-
+        assert np.allclose(
+            np.array(
+                [
+                    [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
+                ]
+            ),
+            density,
+        )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_return_with_other_types(self, dev_name):
@@ -701,10 +706,10 @@ class TestDensityMatrix:
             return density_matrix(0), expval(qml.PauliZ(1))
 
         with pytest.raises(
-                QuantumFunctionError,
-                match="The state or density matrix"
-                      " cannot be returned in combination"
-                      " with other return types",
+            QuantumFunctionError,
+            match="The state or density matrix"
+            " cannot be returned in combination"
+            " with other return types",
         ):
             func()
 
@@ -722,8 +727,8 @@ class TestDensityMatrix:
         with monkeypatch.context() as m:
             m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
-                    QuantumFunctionError,
-                    match="The current device is not capable" " of returning the state",
+                QuantumFunctionError,
+                match="The current device is not capable" " of returning the state",
             ):
                 func()
 

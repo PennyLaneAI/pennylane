@@ -361,6 +361,9 @@ class QubitDevice(Device):
     def access_state(self, wires=None):
         """Check that the device has access to an internal state and return it if available.
 
+        Args:
+            wires (Wires): wires of the reduced system
+
         Raises:
             QuantumFunctionError: if the device is not capable of returning the state
 
