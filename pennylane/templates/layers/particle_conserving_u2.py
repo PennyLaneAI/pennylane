@@ -75,25 +75,18 @@ def ParticleConservingU2(weights, wires, init_state=None):
     rotation gate :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate
     :math:`U_{2,\mathrm{ex}}` proposed in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ .
 
-    This template prepares N-qubit trial states by applying :math:`D` layers of
-    :math:`R_\mathrm{z}(\vec{\theta})` and entangler block :math:`U_\mathrm{ent}(\vec{\phi})`
+    This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of
+    :math:`R_\mathrm{z}(\vec{\theta})` and entangler block :math:`U_{2,\mathrm{ex}}(\vec{\phi})`
     to the Hartree-Fock state
 
     .. math::
 
         \vert \Psi(\vec{\phi}, \vec{\theta}) \rangle = \hat{R}^{(D)}_\mathrm{z}(\vec{\theta}_D)
-        \hat{U}^{(D)}_\mathrm{ent}(\vec{\phi}_D) \dots \hat{R}^{(2)}_\mathrm{z}(\vec{\theta}_2)
-        \hat{U}^{(2)}_\mathrm{ent}(\vec{\phi}_2) \hat{R}^{(1)}_\mathrm{z}(\vec{\theta}_1)
-        \hat{U}^{(1)}_\mathrm{ent}(\vec{\phi}_1) \vert \mathrm{HF}\rangle.
+        \hat{U}^{(D)}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_D) \dots \hat{R}^{(2)}_\mathrm{z}(\vec{\theta}_2)
+        \hat{U}^{(2)}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_2) \hat{R}^{(1)}_\mathrm{z}(\vec{\theta}_1)
+        \hat{U}^{(1)}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_1) \vert \mathrm{HF}\rangle.
 
-    The circuit implementing the operation blocks is shown in the figure below. The repeated
-    units across several qubits are shown in dotted boxes. Each layer contains
-    :math:`N_\mathrm{qubits}` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
-    :math:`N_\mathrm{qubits}-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
-    that act on pairs of nearest-neighbors qubits. The unitary matrix representing
-    :math:`U_{2,\mathrm{ex}}(\phi)` (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
-    was decomposed into its elementary gates and implemented by the :func:`~.u2_ex_gate` function
-    using PennyLane quantum operations.
+    The circuit implementing the operation blocks is shown in the figure below:
 
     |
 
@@ -104,11 +97,28 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     |
 
+    The repeated units across several qubits are shown in dotted boxes. Each layer contains
+    :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
+    :math:`N-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
+    that act on pairs of nearest-neighbors qubits. The unitary matrix representing
+    :math:`U_{2,\mathrm{ex}}(\phi)` (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
+    is decomposed into its elementary gates as:
+
+    |
+
+    .. figure:: ../../_static/templates/layers/u2_decomposition.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    |
+
+    The :math:`U_{2,\mathrm{ex}}(\phi)` gate is implemented in the :func:`~.u2_ex_gate` function
+    using PennyLane quantum operations.
 
     Args:
-        weights (array[float]): Array of weights of shape ``(D, M)``.
-            ``D`` is the number of layers and ``M`` = :math:`2N_\mathrm{qubits}-1`
-            is the number of rotation and exchange gates per layer.
+        weights (array[float]): Array of weights of shape ``(D, M)`` where ``D`` is the number of
+            layers and ``M`` = :math:`2N-1` is the number of rotation and exchange gates per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
@@ -125,7 +135,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
            the active space.
 
         #. The number of trainable parameters scales with the number of layers :math:`D` as
-           :math:`D(2N_\mathrm{qubits}-1)`.
+           :math:`D(2N-1)`.
 
         An example of how to use this template is shown below:
 
@@ -175,19 +185,6 @@ def ParticleConservingU2(weights, wires, init_state=None):
         weights,
         expected_shape,
         msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-    )
-
-    for i in init_state:
-        check_type(
-            i,
-            [int, np.int64, np.ndarray],
-            msg="BasisState parameter must consist of 0 or 1 integers; got {}".format(init_state),
-        )
-
-    check_type(
-        init_state,
-        [np.ndarray],
-        msg="'init_state' must be a Numpy array; got {}".format(init_state),
     )
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]

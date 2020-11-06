@@ -739,29 +739,6 @@ class TestParticleConservingU2:
                 np.array([1, 1, 0, 0]),
                 "'weights' must be of shape",
             ),
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-                [0, 1, 2, 3],
-                np.array([1.5, 1, 0, 0]),
-                "BasisState parameter must consist of 0 or 1",
-            ),
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-                [0, 1, 2, 3],
-                [1, 1, 0, 0],
-                "'init_state' must be a Numpy array",
-            ),
-            (
-                np.array(
-                    [
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856],
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856],
-                    ]
-                ),
-                [0, 1, 2, 3],
-                (1, 1, 0, 0),
-                "'init_state' must be a Numpy array",
-            ),
         ],
     )
     def test_u2_exceptions(self, weights, wires, init_state, msg_match):
