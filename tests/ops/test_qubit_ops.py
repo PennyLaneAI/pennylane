@@ -203,7 +203,7 @@ class TestObservables:
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates_two_different_observables(self, obs1, obs2, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results
-           for two observables."""
+        for two observables."""
         if np.all(obs1[0] == obs2[0]):
             pytest.skip("Test only runs for pairs of differing observable")
 
@@ -238,9 +238,7 @@ class TestObservables:
             qml.Hermitian._eigs[key]["eigvec"], observable_2_eigvecs, atol=tol, rtol=0
         )
 
-        assert np.allclose(
-            qubit_unitary_2[0].data, observable_2_eigvecs.conj().T, atol=tol, rtol=0
-        )
+        assert np.allclose(qubit_unitary_2[0].data, observable_2_eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -507,33 +505,58 @@ class TestOperations:
         op = qml.CU3(theta, phi, lam, wires=[0, 1])
         res = op.decomposition(theta, phi, lam, wires=op.wires)
 
-        assert len(res) == 10
+        assert len(res) == 15
 
         assert res[0].name == "PhaseShift"
         assert res[1].name == "PhaseShift"
-        assert res[2].name == "CNOT"
-        assert res[3].name == "Rot"
-        assert res[4].name == "PhaseShift"
-        assert res[5].name == "PhaseShift"
-        assert res[6].name == "CNOT"
+        assert res[2].name == "PhaseShift"
+        assert res[3].name == "PhaseShift"
+        assert res[4].name == "CNOT"
+        assert res[5].name == "Rot"
+        assert res[6].name == "Rot"
         assert res[7].name == "Rot"
-        assert res[8].name == "PhaseShift"
-        assert res[9].name == "PhaseShift"
+        assert res[8].name == "Rot"
+        assert res[9].name == "Rot"
+        assert res[10].name == "PhaseShift"
+        assert res[11].name == "PhaseShift"
+        assert res[12].name == "CNOT"
+        assert res[13].name == "Rot"
+        assert res[14].name == "PhaseShift"
+
+        # Grouping gates that are on same wires and have same name
+        grouped_gates = [[res[0]]]
+        for i in range(1, len(res)):
+            if (
+                res[i].wires.tolist() == grouped_gates[-1][0].wires.tolist()
+                and res[i].name == grouped_gates[-1][0].name
+            ):
+                grouped_gates[-1].append(res[i])
+            else:
+                grouped_gates.append([res[i]])
+
+        # Multiplying grouped gates together to yield single gates
+        grouped_gate_mats = []
+        for subset in grouped_gates:
+            gate_mats = [k.matrix for k in subset]
+            if len(gate_mats) == 1:
+                grouped_gate_mats.append(gate_mats[0])
+            else:
+                grouped_gate_mats.append(multi_dot(gate_mats))
 
         mats = []
-        for i in reversed(res):
-            wire_list = i.wires.tolist()
+        for i in reversed(range(len(grouped_gate_mats))):
+            wire_list = grouped_gates[i][0].wires.tolist()
+            gate_mat = grouped_gate_mats[i]
             if len(wire_list) == 1:
-                if wire_list[0] == 0 :
-                    mats.append(np.kron(i.matrix, np.eye(2)))
-                else :
-                    mats.append(np.kron(np.eye(2), i.matrix))
+                if wire_list[0] == 0:
+                    mats.append(np.kron(gate_mat, np.eye(2)))
+                else:
+                    mats.append(np.kron(np.eye(2), gate_mat))
             else:
-                mats.append(i.matrix)
+                mats.append(gate_mat)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
+        decomposed_matrix = multi_dot(mats)
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
-
 
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
@@ -837,7 +860,8 @@ class TestPauliRot:
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
-        "pauli_word,expected_matrix", PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
+        "pauli_word,expected_matrix",
+        PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
         """Test parametrically that the PauliRot matrix is correct."""
@@ -848,7 +872,8 @@ class TestPauliRot:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "theta,pauli_word,expected_matrix", PAULI_ROT_MATRIX_TEST_DATA,
+        "theta,pauli_word,expected_matrix",
+        PAULI_ROT_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
         """Test non-parametrically that the PauliRot matrix is correct."""
@@ -954,7 +979,6 @@ class TestPauliRot:
         assert decomp_ops[2].wires == Wires([0, 1])
         assert decomp_ops[2].data[0] == theta
 
-
         assert decomp_ops[3].name == "Hadamard"
         assert decomp_ops[3].wires == Wires([0])
 
@@ -1052,7 +1076,13 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
-    @pytest.mark.parametrize("pauli_word,wires", [("XYZ", [0, 1]), ("XYZ", [0, 1, 2, 3]),])
+    @pytest.mark.parametrize(
+        "pauli_word,wires",
+        [
+            ("XYZ", [0, 1]),
+            ("XYZ", [0, 1, 2, 3]),
+        ],
+    )
     def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
         """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
 
@@ -1071,7 +1101,12 @@ class TestMultiRZ:
         "wires,expected_matrix",
         [
             ([0], qml.RZ._matrix),
-            ([0, 1], lambda theta: np.diag(np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),),),
+            (
+                [0, 1],
+                lambda theta: np.diag(
+                    np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),
+                ),
+            ),
             (
                 [0, 1, 2],
                 lambda theta: np.diag(

@@ -511,18 +511,35 @@ class CU3(Operation):
     # U3(theta / 2, phi, 0, wires=1)
     #
     # U1 and U3 are then further decomposed into Rot and PhaseShift gates.
+    #
+    # PhaseShift((lam + phi) / 2, wires=wires[0]),
+    # PhaseShift((lam - phi) / 2, wires=wires[1]),
+    # CNOT(wires=wires),
+    # Rot(-(phi + lam) / 2, -theta / 2, (phi + lam) / 2, wires=wires[1]),
+    # PhaseShift(-(phi + lam) / 2, wires=wires[1]),
+    # CNOT(wires=wires),
+    # Rot(0, theta / 2, 0, wires=wires[1]),
+    # PhaseShift(phi, wires=wires[1]),
+    #
+    # Further, to avoid addition of variables, gates are broken down
+    # into single variable PhaseShifts and Rots.
     @staticmethod
     def decomposition(theta, phi, lam, wires):
         decomp_ops = [
-            PhaseShift((lam + phi) / 2, wires=wires[0]),
-            PhaseShift((lam - phi) / 2, wires=wires[1]),
+            PhaseShift(lam / 2, wires=wires[0]),
+            PhaseShift(phi / 2, wires=wires[0]),
+            PhaseShift(lam / 2, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
             CNOT(wires=wires),
-            Rot(-(phi + lam) / 2, -theta / 2, (phi + lam) / 2, wires=wires[1]),
-            PhaseShift(-(phi + lam) / 2, wires=wires[1]),
-            PhaseShift(0, wires=wires[1]),
+            Rot(phi / 2, 0, 0, wires=wires[1]),
+            Rot(lam / 2, 0, 0, wires=wires[1]),
+            Rot(0, -theta / 2, 0, wires=wires[1]),
+            Rot(-phi / 2, 0, 0, wires=wires[1]),
+            Rot(-lam / 2, 0, 0, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
+            PhaseShift(-lam / 2, wires=wires[1]),
             CNOT(wires=wires),
             Rot(0, theta / 2, 0, wires=wires[1]),
-            PhaseShift(0, wires=wires[1]),
             PhaseShift(phi, wires=wires[1]),
         ]
         return decomp_ops
