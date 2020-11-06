@@ -62,11 +62,11 @@ class TensorBox(abc.ABC):
     >>> y.ones_like()
     tf.Tensor([1. 1. 1.], shape=(3,), dtype=float32)
 
-    Unless specified, the returned tensors are also unified tensors, allowing
+    Unless specified, the returned tensors are also ``TensorBox`` instances, allowing
     for method chaining:
 
     >>> y.ones_like().expand_dims(0)
-    tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
+    tf.Tensor([[1., 1., 1.]], shape=(1, 3), dtype=float32)
     """
 
     _initialized = False
@@ -208,7 +208,7 @@ class TensorBox(abc.ABC):
 
         Returns
             list[tensor_like]: the input list with all :class:`TensorBox` objects
-            unwrapped.
+            unwrapped
 
         **Example**
 
@@ -216,7 +216,7 @@ class TensorBox(abc.ABC):
         >>> y = TensorBox(x)
         >>> z = tf.constant([0.1, 0.2])
 
-        Note that this is a static method, so we must pass the unified tensors itself
+        Note that this is a static method, so we must pass the tensor represented by the ``TensorBox``
         if we would like it to be included.
 
         >>> res = y.unwrap([y, z])
@@ -278,7 +278,7 @@ class TensorBox(abc.ABC):
         the tensor is 0-dimensional.
 
         Returns:
-            array:
+            array, float, int: NumPy ndarray, or Python scalar if the input is 0-dimensional
 
         **Example**
 
