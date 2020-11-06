@@ -543,6 +543,7 @@ class TestOperations:
             else:
                 grouped_gate_mats.append(multi_dot(gate_mats))
 
+        # Comparing actual CU3 gate with product of decompositions
         mats = []
         for i in reversed(range(len(grouped_gate_mats))):
             wire_list = grouped_gates[i][0].wires.tolist()
