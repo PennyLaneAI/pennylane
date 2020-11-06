@@ -46,7 +46,6 @@ class TensorBox(abc.ABC):
     >>> x = tf.Variable([0.4, 0.1, 0.5])
     >>> y = TensorBox(x)
     >>> print(y)
-    >>> type(y)
     <TensorBox <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>>
 
     The original tensor is available via the :meth:`~.unbox` method:
