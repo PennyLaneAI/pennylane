@@ -167,6 +167,10 @@
 * The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
   [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
 
+* Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
+  attribute to the output tensor.
+  [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
