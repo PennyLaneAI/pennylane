@@ -93,6 +93,7 @@ def test_multiplication():
 
     yT = qml.tensorbox.TensorBox(y)
     res = x * yT
+    print(x * yT)
     assert np.all(res == x * y)
 
     res = xT * yT
