@@ -39,8 +39,6 @@ class TorchBox(qml.tensorbox.TensorBox):
         if torch_dtype is None:
             raise ValueError(f"Unable to convert {dtype} to a Torch dtype")
 
-        print(torch_dtype)
-
         return TorchBox(self.data.to(torch_dtype))
 
     def expand_dims(self, axis):
@@ -66,7 +64,8 @@ class TorchBox(qml.tensorbox.TensorBox):
 
     @staticmethod
     def stack(values, axis=0):
-        res = torch.stack(TorchBox.unbox_list(values), axis=axis)
+        tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
+        res = torch.stack(tensors, axis=axis)
         return TorchBox(res)
 
     @property
