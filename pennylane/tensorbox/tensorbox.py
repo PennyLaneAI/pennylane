@@ -31,6 +31,8 @@ class TensorBox(abc.ABC):
         PennyLane templates, cost functions, and optimizers retain differentiability
         across all supported interfaces.
 
+        Consider instead using the function wrappers provided in :mod:`~.tensorbox`.
+
     By wrapping array-like objects in a ``TensorBox`` class, array manipulations are
     performed by simply chaining method calls. Under the hood, the method call is dispatched
     to the corresponding tensor/array manipulation library based on the wrapped array type, without
@@ -46,8 +48,7 @@ class TensorBox(abc.ABC):
     >>> x = tf.Variable([0.4, 0.1, 0.5])
     >>> y = TensorBox(x)
     >>> print(y)
-    >>> type(y)
-    <TensorBox <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>>
+    TensorBox: <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>
 
     The original tensor is available via the :meth:`~.unbox` method:
 
