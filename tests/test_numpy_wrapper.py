@@ -350,6 +350,58 @@ class TestNumpyIntegration:
         assert isinstance(res, np.tensor)
         assert not res.requires_grad
 
+    def test_binary_operator_mixed_trainable_left(self):
+        """Test that binary operators on one trainable and one non-trainable
+        arrays result in trainable output."""
+        x = np.array([[1, 2], [3, 4]], requires_grad=True)
+        y = np.array([[5, 6], [7, 8]], requires_grad=False)
+
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+    def test_binary_operator_mixed_trainable_right(self):
+        """Test that binary operators on one non-trainable and one trainable
+        arrays result in trainable output."""
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        y = np.array([[5, 6], [7, 8]], requires_grad=True)
+
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
 
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
