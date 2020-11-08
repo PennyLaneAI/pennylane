@@ -9,7 +9,67 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
+* Adds the square root X gate `SX`.
+  [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.SX(wires=[0])
+      return qml.expval(qml.PauliZ(wires=[0]))
+  ```
+
+* The `QuantumTape` class now contains basic resource estimation functionality. The method
+  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
+  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
+  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+
 <h3>Improvements</h3>
+
+* The classical processing in the `MottonenStatePreparation` template has been largely 
+  rewritten to use dense matrices and tensor manipulations where ever possible. 
+  This is a preparation to support differentiation through the template in future.
+  [(#864)](https://github.com/PennyLaneAI/pennylane/pull/864)
+
+* Device-based caching has replaced QNode caching. Caching is now accessed by passing a
+  `cache` argument to the device.
+  [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
+  
+  The `cache` argument should be an integer specifying the size of the cache. For example, a
+  cache of size 10 is created using:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, cache=10)
+  ```
+
+* The `qnn.KerasLayer` class now supports differentiating the QNode through classical
+  backpropagation in tape mode.
+  [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
+
+  ```python
+  qml.enable_tape()
+
+  dev = qml.device("default.qubit.tf", wires=2)
+
+  @qml.qnode(dev, interface="tf", diff_method="backprop")
+  def f(inputs, weights):
+      qml.templates.AngleEmbedding(inputs, wires=range(2))
+      qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+      return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+  weight_shapes = {"weights": (3, 2, 3)}
+
+  qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+
+  inputs = tf.constant(np.random.random((4, 2)), dtype=tf.float32)
+
+  with tf.GradientTape() as tape:
+      out = qlayer(inputs)
+
+  tape.jacobian(out, qlayer.trainable_weights)
+  ```
 
 * The number of device executions over a QNode's lifetime can now be returned using `num_executions`.
   [(#853)](https://github.com/PennyLaneAI/pennylane/pull/853)
@@ -83,8 +143,6 @@
     without affecting the original tape's parameters. (Note: the two tapes will share parameter data
     *until* one of the tapes has their parameter list modified.)
 
-  - Copied tapes continue to share the *same* caching dictionary as the original tape.
-
   - Copied tapes can be cast to another `QuantumTape` subclass by passing the `tape_cls` keyword
     argument.
 
@@ -92,6 +150,8 @@
 
   - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
   - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
+  - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
 
 <h3>Breaking changes</h3>
 
@@ -99,14 +159,23 @@
 
 <h3>Bug fixes</h3>
 
+* Inverses of common gates can now be applied using array/tensor manipulation tricks. The
+  following gates are affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
+  `T`, `CNOT`, `CZ`.
+  [(#872)](https://github.com/PennyLaneAI/pennylane/pull/872)
+
 * The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
   [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
+
+* Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
+  attribute to the output tensor.
+  [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
 
 
 # Release 0.12.0 (current release)
