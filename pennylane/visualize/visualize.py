@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-import pennylane as qml
 from matplotlib import pyplot as plt
 
 class Visualize:
@@ -28,11 +26,12 @@ class Visualize:
 
     """
 
-    def __init__(self, steps, cost_fn=None):
+    def __init__(self, steps, step_size=1, cost_fn=None):
 
         self.steps = steps
-        self.step_size = step_size
         self.cost_fn = cost_fn
+
+        self.step_size = step_size
 
         self.step_log = 0
         self.x_log = []
@@ -52,23 +51,28 @@ class Visualize:
     def update(self, params=None):
 
         self.step_log += 1
-        self.x_log.append(self.step_log)
 
-        if params is not None:
-            self.param_log.append(params)
-            if self.cost_fn is not None:
-                val = self.cost_fn(params)
-                self.y_log.append(val)
+        if self.step_log % self.step_size == 0:
+
+            self.x_log.append(self.step_log)
+
+            if params is not None:
+                self.param_log.append(params)
+                if self.cost_fn is not None:
+                    val = self.cost_fn(params)
+                    self.y_log.append(val)
 
     def text(self, step=True, cost=False, params=False):
 
-        if step:
-            print("Optimization Step {} / {}".format(self.step_log, self.steps))
-        if cost:
-            print("Cost: {}".format(self.y_log[len(self.y_log)-1]))
-        if params:
-            print("Parameters: {}".format(self.param_log[len(self.param_log)-1]))
-        print("--------------------------")
+        if self.step_log % self.step_size == 0:
+
+            if step:
+                print("Optimization Step {} / {}".format(self.step_log, self.steps))
+            if cost:
+                print("Cost: {}".format(self.y_log[len(self.y_log)-1]))
+            if params:
+                print("Parameters: {}".format(self.param_log[len(self.param_log)-1]))
+            print("--------------------------")
 
     def graph(self):
 
