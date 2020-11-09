@@ -107,7 +107,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/particle_conserving_u1.png
         :align: center
-        :width: 40%
+        :width: 50%
         :target: javascript:void(0);
 
     |
@@ -135,7 +135,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/u1_decomposition.png
         :align: center
-        :width: 60%
+        :width: 70%
         :target: javascript:void(0);
 
     |
@@ -154,7 +154,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. figure:: ../../_static/templates/layers/ua_decomposition.png
         :align: center
-        :width: 60%
+        :width: 70%
         :target: javascript:void(0);
 
     |
