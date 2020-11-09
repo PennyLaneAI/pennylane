@@ -655,28 +655,24 @@ class TestParticleConservingU1:
         """Auxiliary function giving the wires that the elementary gates decomposing
         ``u1_ex_gate`` act on."""
 
-        exp_wires = []
-
-        exp_wires.append(wires)
-        exp_wires.append(wires)
-
-        exp_wires.append(wires[1])
-        exp_wires.append(wires)
-        exp_wires.append(wires[1])
-        exp_wires.append(wires)
-        exp_wires.append(wires[0])
-
-        exp_wires.append(wires[::-1])
-        exp_wires.append(wires[::-1])
-
-        exp_wires.append(wires)
-        exp_wires.append(wires)
-
-        exp_wires.append(wires[1])
-        exp_wires.append(wires)
-        exp_wires.append(wires[1])
-        exp_wires.append(wires)
-        exp_wires.append(wires[0])
+        exp_wires = [
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+            wires[::-1],
+            wires[::-1],
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+        ]
 
         return exp_wires
 

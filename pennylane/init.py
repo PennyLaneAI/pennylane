@@ -54,7 +54,7 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a normal
     distribution.
 
-    Each parameter is drawn from a normal distribution with ``mean`` and ``standard deviation``.
+    Each parameter is drawn from a normal distribution with ``mean`` and standard deviation ``std``.
     The parameters define the trainable angles entering the particle-conserving
     exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
     :func:`~.u1_ex_gate()`.
