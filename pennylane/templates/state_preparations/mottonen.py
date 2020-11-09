@@ -76,8 +76,8 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly-controlled rotation
-     to the rotation angles used in the gray-code implementation.
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
+     to the rotation angles used in the Gray code implementation.
 
     Args:
         alpha (array[float]): alpha parameters
@@ -85,19 +85,17 @@ def _compute_theta(alpha):
     Returns:
         (array[float]): rotation angles theta
     """
+    ln = alpha.shape[0]
     k = np.log2(alpha.shape[0])
-    factor = 2 ** (-k)
 
-    theta = np.zeros(alpha.shape, dtype=np.float64)
+    M_trans = np.zeros(shape=(ln, ln))
+    for i in range(len(M_trans)):
+        for j in range(len(M_trans[0])):
+            M_trans[i, j] = _matrix_M_entry(j, i)
 
-    for row in range(alpha.shape[0]):
-        # Use transpose of M:
-        entry = sum(_matrix_M_entry(col, row) * alpha[col] for col in range(len(alpha)))
-        entry *= factor
-        if abs(entry) > 1e-6:
-            theta[row] = entry
+    theta = M_trans @ alpha
 
-    return theta
+    return theta / 2 ** k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
@@ -110,13 +108,13 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
 
     To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
-    a decomposition based on gray codes is used. For this purpose, the multi-controlled rotation
+    a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
     angles alpha have to be converted into a set of non-controlled rotation angles theta.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
-        gate (~.Operation): gate to be applied, needs to have exactly one parameter
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
         alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
@@ -178,10 +176,10 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
     applied to the :math:`k`th qubit.
 
-    The :math:`j`th angle is related to the absolute values a of the desired amplitudes via:
+    The :math:`j`-th angle is related to the absolute values, a, of the desired amplitudes via:
 
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
@@ -200,9 +198,7 @@ def _get_alpha_y(a, n, k):
     numerator = np.take(a, indices=indices_numerator)
     numerator = np.sum(np.abs(numerator) ** 2, axis=1)
 
-    indices_denominator = [
-        [j * 2 ** k + l for l in range(0, int(2 ** k))] for j in range(2 ** (n - k))
-    ]
+    indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
     denominator = np.take(a, indices=indices_denominator)
     denominator = np.sum(np.abs(denominator) ** 2, axis=1)
 
@@ -224,7 +220,7 @@ def MottonenStatePreparation(state_vector, wires):
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
     composed from all possible controlled rotations on said qubit and can be used to address individual
-    elements of the state vector. In the work of Mottonen et al., the inverse of their state preparation
+    elements of the state vector. In the work of Möttönen et al., the inverse of their state preparation
     is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations
     and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via
     uniformly controlled Y rotations.
@@ -233,8 +229,7 @@ def MottonenStatePreparation(state_vector, wires):
 
     .. note::
 
-        Due to numerical errors stemming from finite precision, the final prepared state
-        is only an approximation of the input state vector. However, the fidelity with the desired state is
+        The final state is only equal to the input state vector up to a global phase.
 
     Args:
         state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
