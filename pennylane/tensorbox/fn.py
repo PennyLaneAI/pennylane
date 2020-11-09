@@ -168,6 +168,36 @@ def cast_like(tensor1, tensor2):
     return TensorBox(tensor1).cast(dtype).data
 
 
+def concatenate(values, axis=0):
+    """Concatenate a sequence of tensors along the specified axis.
+
+    .. warning::
+
+        Tensors that are incompatible (such as Torch and TensorFlow tensors)
+        cannot both be present.
+
+    Args:
+        values (Sequence[tensor_like]): Sequence of tensor-like objects to
+            concatenate. The objects must have the same shape, except in the dimension corresponding
+            to axis (the first, by default).
+        axis (int): The axis along which the input tensors are concatenated. If axis is None,
+            tensors are flattened before use. Default is 0.
+
+    Returns:
+        tensor_like: The concatenated tensor.
+
+    **Example**
+
+    >>> x = tf.constant([0.6, 0.1, 0.6])
+    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> z = np.array([5., 8., 101.])
+    >>> concatenate([x, y, z])
+    TensorBox: <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
+    """
+    return _get_multi_tensorbox(values).concatenate(values, axis=axis)
+
+
 def convert_like(tensor1, tensor2):
     """Convert a tensor to the same type as another.
 

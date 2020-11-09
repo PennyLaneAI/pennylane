@@ -16,11 +16,47 @@ Contains the ``BasisEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
-
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape, check_type
-import pennylane as qml
 from pennylane.wires import Wires
+
+
+def _preprocess(features, wires):
+    """Validate features to be a sequence of 0s and 1s with the same length as the wires."""
+
+    if qml.tape_mode_active():
+
+        features = qml.tensorbox.TensorBox(features)
+
+        if len(features.shape) != 1:
+            raise ValueError(f"Features must be one-dimensional; got shape {features.shape}.")
+
+        n_features = features.shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+
+        features = list(features.numpy())
+
+        if set(features) != {0, 1}:
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+
+    else:
+        check_type(
+            features, [Iterable], msg="Features must be iterable; got type {}".format(type(features))
+        )
+
+        expected_shape = (len(wires),)
+        check_shape(
+            features,
+            expected_shape,
+            msg="Features must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
+        )
+
+        if any([b not in [0, 1] for b in features]):
+            raise ValueError("Basis state must only consist of 0s and 1s; got {}".format(features))
+
+    return features
 
 
 @template
@@ -45,26 +81,9 @@ def BasisEmbedding(features, wires):
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
 
-    check_type(
-        features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))
-    )
-
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        msg="'features' must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
-    )
-
-    if any([b not in [0, 1] for b in features]):
-        raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))
-
-    ###############
+    features = _preprocess(features, wires)
 
     for wire, bit in zip(wires, features):
         if bit == 1:

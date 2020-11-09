@@ -44,6 +44,11 @@ class TensorFlowBox(qml.tensorbox.TensorBox):
     def cast(self, dtype):
         return TensorFlowBox(tf.cast(self.data, dtype))
 
+    @staticmethod
+    def concatenate(values, axis=0):
+        res = tf.concat(TensorFlowBox.unbox_list(values), axis=axis)
+        return TensorFlowBox(res)
+
     @property
     def interface(self):
         return "tf"

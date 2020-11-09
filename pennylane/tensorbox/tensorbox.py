@@ -257,6 +257,37 @@ class TensorBox(abc.ABC):
         """
 
     @abc.abstractmethod
+    def concatenate(self, values, axis=0):
+        """Join a sequence of tensors along an existing axis..
+
+        Args:
+            values (Sequence[tensor_like]): sequence of arrays/tensors to concatenate
+            axis (int): axis on which to concatenate
+
+        **Example**
+        >>> x = tf.Variable([[1, 2], [3, 4]])
+        >>> a = tf.constant([[5, 6]])
+        >>> y = TensorBox(x)
+        >>> y.concatenate([a, y], axis=0)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([[1, 2],
+               [3, 4],
+               [5, 6]]), dtype=float32)>
+
+        >>> y.concatenate([a, y], axis=1)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([[1, 2, 5],
+               [3, 4, 6]]), dtype=float32)>
+
+        >>> y.concatenate([a, y], axis=None)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([1, 2, 3, 4, 5, 6]), dtype=float32)>
+
+        Note that this is a static method, so we must pass the unified tensor itself
+        if we would like it to be included.
+        """
+
+    @abc.abstractmethod
     def expand_dims(self, axis):
         """Expand the shape of the tensor.
 

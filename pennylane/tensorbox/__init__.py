@@ -40,6 +40,7 @@ from .fn import (
     allequal,
     cast,
     cast_like,
+    concatenate,
     convert_like,
     expand_dims,
     get_interface,

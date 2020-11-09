@@ -232,6 +232,70 @@ def test_cast_like(t1, t2):
     assert onp.asarray(res).dtype.type is onp.asarray(t2).dtype.type
 
 
+class TestConcatenate:
+    """Tests for the concatenate function"""
+
+    def test_stack_array(self):
+        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
+        t1 = [0.6, 0.1, 0.6]
+        t2 = np.array([0.1, 0.2, 0.3])
+        t3 = onp.array([5.0, 8.0, 101.0])
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, np.ndarray)
+        assert np.all(res == np.concatenate([t1, t2, t3]))
+
+    def test_stack_tensorflow(self):
+        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
+        t1 = tf.constant([0.6, 0.1, 0.6])
+        t2 = tf.Variable([0.1, 0.2, 0.3])
+        t3 = onp.array([5.0, 8.0, 101.0])
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, tf.Tensor)
+        assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
+
+    def test_stack_torch(self):
+        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
+        t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
+        t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
+        t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, torch.Tensor)
+        assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
+
+    @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
+                                    torch.tensor([[1, 2], [3, 4]]),
+                                    tf.constant([[1, 2], [3, 4]])])
+    def test_stack_axis(self, t1):
+        """Test that passing the axis argument allows for concatenating along
+        a different axis"""
+        t2 = onp.array([[5], [6]])
+        res = fn.concatenate([t1, t2], axis=1)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([[1, 2, 5], [3, 4, 6]]))
+
+    @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
+                                    torch.tensor([[1, 2], [3, 4]]),
+                                    tf.constant([[1, 2], [3, 4]])])
+    def test_stack_axis_none(self, t1):
+        """Test that passing N asone axis argument allows for flattened concatenation"""
+
+        t2 = onp.array([[5], [6]])
+        res = fn.concatenate([t1, t2], axis=1)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([1, 2, 3, 4, 5, 6]))
+
+
 class TestConvertLike:
     """tests for the convert like function"""
 

@@ -17,7 +17,6 @@ Contains the ``DisplacementEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.ops import Displacement
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
 from pennylane.templates.utils import (
@@ -25,6 +24,57 @@ from pennylane.templates.utils import (
     check_is_in_options,
     get_shape,
 )
+
+
+def _preprocess(features, wires, method, c):
+    """Validate features and extract gate parameters."""
+
+    constants = [c] * len(features)
+
+    if qml.tape_mode_active():
+
+        features = qml.tensorbox.TensorBox(features)
+
+        if len(features.shape) != 1:
+            raise ValueError(f"Features must be one-dimensional; got shape {features.shape}.")
+
+        n_features = features.shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+
+        if method == "amplitude":
+            pars = features.stack([features, constants], axis=1).data
+
+        elif method == "phase":
+            pars = features.stack([constants, features], axis=1).data
+
+        else:
+            raise ValueError(f"did not recognize method {method}")
+
+    else:
+
+        expected_shape = (len(wires),)
+        check_shape(
+            features,
+            expected_shape,
+            bound="max",
+            msg="Features must be of shape {} or smaller; got {}."
+                "".format(expected_shape, get_shape(features)),
+        )
+
+        check_is_in_options(
+            method,
+            ["amplitude", "phase"],
+            msg="did not recognize option {} for 'method'" "".format(method),
+        )
+
+        if method == "amplitude":
+            pars = list(zip(features, constants))
+
+        elif method == "phase":
+            pars = list(zip(constants, features))
+
+    return pars
 
 
 @template
@@ -55,57 +105,12 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
+    pars = _preprocess(features, wires, method, c)
 
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        bound="max",
-        msg="'features' must be of shape {} or smaller; got {}."
-        "".format(expected_shape, get_shape(features)),
-    )
-
-    check_is_in_options(
-        method,
-        ["amplitude", "phase"],
-        msg="did not recognize option {} for 'method'" "".format(method),
-    )
-
-    #############
-
-    if qml.tape_mode_active():
-        constants = c * qml.tape.UnifiedTensor(features).ones_like()
-    else:
-        constants = [c] * len(features)
-
-    if method == "amplitude":
-
-        if qml.tape_mode_active():
-            pars = constants.stack([features, constants], axis=1).data
-        else:
-            pars = list(zip(features, constants))
-
-        broadcast(
-            unitary=Displacement,
+    broadcast(
+            unitary=qml.Displacement,
             pattern="single",
             wires=wires,
-            parameters=pars,
-        )
+            parameters=pars)
 
-    elif method == "phase":
-
-        if qml.tape_mode_active():
-            pars = constants.stack([constants, features], axis=1).data
-        else:
-            pars = list(zip(constants, features))
-
-        broadcast(
-            unitary=Displacement,
-            pattern="single",
-            wires=wires,
-            parameters=pars,
-        )

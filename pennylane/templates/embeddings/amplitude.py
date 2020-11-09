@@ -15,7 +15,7 @@ r"""
 Contains the ``AmplitudeEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import math
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -23,17 +23,123 @@ from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
 from pennylane.variable import Variable
 from pennylane.wires import Wires
-from pennylane.templates.utils import check_shape, get_shape
+from pennylane.templates.utils import check_shape, get_shape, check_type
 
 # tolerance for normalization
 TOLERANCE = 1e-10
 
 
+def _preprocess(features, wires, pad_with, normalize):
+    """Validate features, pad and normalize."""
+
+    if qml.tape_mode_active():
+
+        features = qml.tensorbox.TensorBox(features)
+
+        # check shape
+        if len(features.shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")
+
+        n_features = features.shape[0]
+        if pad_with is None and n_features != 2 ** len(wires):
+            raise ValueError(f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+                             f"Use the 'pad' argument for automated padding.")
+
+        if pad_with is not None and n_features > 2 ** len(wires):
+            raise ValueError(f"Features must be of length {2 ** len(wires)} or "
+                             f"smaller to be padded; got length {n_features}.")
+
+        # pad
+        if pad_with is not None and n_features < 2 ** len(wires):
+            padding = [pad_with] * (2 ** len(wires) - n_features)
+            features = qml.tensorbox.concatenate([features, padding], axis=0)
+
+        # normalize
+        norm = np.sum(np.abs(features) ** 2)
+
+        if not np.isclose(norm, 1.0, atol=TOLERANCE):
+            if normalize or pad_with:
+                features = features / np.sqrt(norm)
+            else:
+                raise ValueError(
+                    f"Features must be a vector of length 1.0; got length {norm}."
+                    "Use 'normalize=True' to automatically normalize."
+                )
+        features = features.unbox()
+
+    # todo: delete if tape is only core
+    else:
+        n_amplitudes = 2 ** len(wires)
+        expected_shape = (n_amplitudes,)
+
+        if len(get_shape(features)) > 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {get_shape(features)}.")
+
+        if pad_with is None:
+            shape = check_shape(
+                features,
+                expected_shape,
+                msg="Features must be of length {}; got {}. Use the 'pad' "
+                    "argument for automated padding."
+                    "".format(expected_shape, get_shape(features)),
+            )
+        else:
+            shape = check_shape(
+                features,
+                expected_shape,
+                bound="max",
+                msg="Features must be of length {} or smaller "
+                    "to be padded; got {}"
+                    "".format(expected_shape, get_shape(features)),
+            )
+
+        check_type(
+            pad_with,
+            [float, complex, type(None)],
+            msg="'pad' must be a float or complex; got {}".format(pad_with),
+        )
+        check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
+
+        ###############
+
+        #############
+        # Preprocessing
+
+        # pad
+        n_features = shape[0]
+        if pad_with is not None and n_amplitudes > n_features:
+            features = np.pad(
+                features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad_with
+            )
+
+        # normalize
+        if isinstance(features[0], Variable):
+            feature_values = [s.val for s in features]
+            norm = np.sum(np.abs(feature_values) ** 2)
+        else:
+            norm = np.sum(np.abs(features) ** 2)
+
+        if not np.isclose(norm, 1.0, atol=TOLERANCE):
+            if normalize or pad_with:
+                features = features / np.sqrt(norm)
+            else:
+                raise ValueError(
+                    "Features must be a vector of length 1.0; got length {}."
+                    "Use 'normalize=True' to automatically normalize.".format(norm)
+                )
+
+        ###############
+
+        features = np.array(features)
+
+    return features
+
+
 @template
-def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
+def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, pad=None):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    By setting ``pad`` to a real or complex number, ``features`` is automatically padded to dimension
+    By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
     :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
 
     To represent a valid quantum state vector, the L2-norm of ``features`` must be one.
@@ -43,26 +149,22 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     .. note::
 
-        On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum node.
-
+        On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum circuit.
 
     .. warning::
 
-        ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
-        features. The ``features`` argument is therefore **not differentiable** when using the template, and
+        At the moment, the ``features`` argument is **not differentiable** when using the template, and
         gradients with respect to the features cannot be computed by PennyLane.
 
     Args:
-        features (array): input array of shape ``(2^n,)``
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
-        pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
-        normalize (Boolean): controls the activation of automatic normalization
+        features (tensor-like): input vector of length ``2^n``, or less if `pad_with` is specified
+        wires (Iterable or :class:`.wires.Wires`): Wires that the template acts on.
+            Accepts an iterable of numbers or strings, or a Wires object.
+        pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
+        normalize (bool): whether to automatically normalize the features
+        pad (float or complex): same as `pad`, to be deprecated
 
-    Raises:
-        ValueError: if inputs do not have the correct format
-
-    .. UsageDetails::
+    Example:
 
         Amplitude embedding encodes a normalized :math:`2^n`-dimensional feature vector into the state
         of :math:`n` qubits:
@@ -81,28 +183,27 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
             circuit(f=[1/2, 1/2, 1/2, 1/2])
 
-        Checking the final state of the device, we find that it is equivalent to the input passed to the circuit:
+        The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
 
-        >>> dev._state
+        >>> dev.state
         [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
 
-        **Passing features as positional arguments to a quantum node**
+        **Differentiating with respect to the features**
 
-        The ``features`` argument of ``AmplitudeEmbedding`` can in principle also be passed to the quantum node
-        as a positional argument:
+        Due to non-trivial classical processing to construct the state preparation circuit,
+        the features argument is **not always differentiable**.
 
         .. code-block:: python
+            from pennylane import numpy as np
 
             @qml.qnode(dev)
             def circuit(f):
                 AmplitudeEmbedding(features=f, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
-        However, due to non-trivial classical processing to construct the state preparation circuit,
-        the features argument is **not differentiable**.
-
         >>> g = qml.grad(circuit, argnum=0)
-        >>> g([1,1,1,1])
+        >>> f = np.array([1, 1, 1, 1], requires_grad=True)
+        >>> g(f)
         ValueError: Cannot differentiate wrt parameter(s) {0, 1, 2, 3}.
 
 
@@ -120,15 +221,13 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
             circuit(f=[15, 15, 15, 15])
 
-        The re-normalized feature vector is encoded into the quantum state vector:
-
-        >>> dev._state
+        >>> dev.state
         [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
 
         **Padding**
 
         If the dimension of the feature vector is smaller than the number of amplitudes,
-        one can automatically pad it with a constant for the missing dimensions using the ``pad`` option:
+        one can automatically pad it with a constant for the missing dimensions using the ``pad_with`` option:
 
         .. code-block:: python
 
@@ -136,12 +235,12 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2), pad=0.)
+                AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
-        >>> dev._state
+        >>> dev.state
         [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
 
         **Operations before the embedding**
@@ -166,59 +265,17 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
 
-    n_amplitudes = 2 ** len(wires)
-    expected_shape = (n_amplitudes,)
-
-    if pad is None:
-        shape = check_shape(
-            features,
-            expected_shape,
-            msg="'features' must be of shape {}; got {}. Use the 'pad' "
-            "argument for automated padding."
-            "".format(expected_shape, get_shape(features)),
+    # pad is replaced with the more verbose pad_with
+    if pad is not None:
+        warnings.warn(
+            "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
+            PendingDeprecationWarning
         )
-    else:
-        shape = check_shape(
-            features,
-            expected_shape,
-            bound="max",
-            msg="'features' must be of shape {} or smaller "
-            "to be padded; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
+        if pad_with is None:
+            pad_with = pad
 
-    ###############
+    features = _preprocess(features, wires, pad_with, normalize)
 
-    #############
-    # Preprocessing
-
-    # pad
-    n_features = shape[0]
-    if pad is not None and n_amplitudes > n_features:
-        features = np.pad(
-            features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad
-        )
-
-    # normalize
-    if isinstance(features[0], Variable):
-        feature_values = [s.val for s in features]
-        norm = np.sum(np.abs(feature_values) ** 2)
-    else:
-        norm = np.sum(np.abs(qml.tape.UnifiedTensor(features).numpy()) ** 2)
-
-    if not np.isclose(norm, 1.0, atol=TOLERANCE):
-        if normalize or pad:
-            features = features / math.sqrt(norm)
-        else:
-            raise ValueError(
-                "'features' must be a vector of length 1.0; got length {}."
-                "Use 'normalize=True' to automatically normalize.".format(norm)
-            )
-
-    ###############
     QubitStateVector(features, wires=wires)

@@ -41,6 +41,12 @@ class TorchBox(qml.tensorbox.TensorBox):
 
         return TorchBox(self.data.to(torch_dtype))
 
+    @staticmethod
+    def concatenate(values, axis=0):
+        tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
+        res = torch.cat(tensors, dim=axis)
+        return TorchBox(res)
+
     def expand_dims(self, axis):
         return TorchBox(torch.unsqueeze(self.data, dim=axis))
 

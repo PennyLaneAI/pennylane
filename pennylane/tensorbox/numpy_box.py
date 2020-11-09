@@ -36,6 +36,10 @@ class NumpyBox(qml.tensorbox.TensorBox):
     def cast(self, dtype):
         return NumpyBox(np.asarray(self.data, dtype=dtype))
 
+    @staticmethod
+    def concatenate(values, axis=0):
+        return NumpyBox(np.concatenate(NumpyBox.unbox_list(values), axis=axis))
+
     def expand_dims(self, axis):
         return NumpyBox(np.expand_dims(self.data, axis=axis))
 

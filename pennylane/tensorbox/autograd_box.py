@@ -31,6 +31,10 @@ class AutogradBox(qml.tensorbox.TensorBox):
     def cast(self, dtype):
         return AutogradBox(np.tensor(self.data, dtype=dtype))
 
+    @staticmethod
+    def concatenate(values, axis=0):
+        return AutogradBox(np.concatenate(AutogradBox.unbox_list(values), axis=axis))
+
     def expand_dims(self, axis):
         return AutogradBox(np.expand_dims(self.data, axis=axis))
 
