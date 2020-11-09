@@ -16,6 +16,7 @@ Contains the ``RandomLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.templates.utils import (
@@ -25,6 +26,42 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weights, ratio_imprim, rotations, seed):
+    """Validate weights."""
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        repeat = weights.shape[0]
+
+    else:
+        repeat = check_number_of_layers([weights])
+        n_rots = get_shape(weights)[1]
+
+        expected_shape = (repeat, n_rots)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+        )
+
+        check_type(
+            ratio_imprim,
+            [float, type(None)],
+            msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
+        )
+        check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
+        # TODO: Check that 'rotations' contains operations
+        check_type(
+            rotations,
+            [list, type(None)],
+            msg="'rotations' must be a list of PennyLane operations; got {}" "".format(rotations),
+        )
+        check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
+
+    return repeat
 
 
 def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
@@ -211,36 +248,8 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     if rotations is None:
         rotations = [RX, RY, RZ]
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    repeat = check_number_of_layers([weights])
-    n_rots = get_shape(weights)[1]
-
-    expected_shape = (repeat, n_rots)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    check_type(
-        ratio_imprim,
-        [float, type(None)],
-        msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
-    )
-    check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
-    # TODO: Check that 'rotations' contains operations
-    check_type(
-        rotations,
-        [list, type(None)],
-        msg="'rotations' must be a list of PennyLane operations; got {}" "".format(rotations),
-    )
-    check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
-
-    ###############
+    repeat = _preprocess(weights, ratio_imprim, rotations, seed)
 
     for l in range(repeat):
         random_layer(

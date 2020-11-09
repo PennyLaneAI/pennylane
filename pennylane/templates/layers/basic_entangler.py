@@ -15,6 +15,7 @@ r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
@@ -24,6 +25,30 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weights, wires):
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        repeat = weights.shape[0]
+
+        if weights.shape[1] != len(wires):
+            raise ValueError(f"Second dimension of weights must be of size {len(wires)}; got {weights.shape[1]}")
+
+    else:
+
+        repeat = check_number_of_layers([weights])
+
+        expected_shape = (repeat, len(wires))
+        check_shape(
+            weights,
+            expected_shape,
+            msg=f"Second dimension of weights must be of size {len(wires)}; got {get_shape(weights)[1]}",
+        )
+
+    return repeat
 
 
 @template
@@ -134,24 +159,12 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         ``ValueError: Wrong number of parameters``.
     """
 
-    #############
-    # Input checks
-
     if rotation is None:
         rotation = RX
 
     wires = Wires(wires)
 
-    repeat = check_number_of_layers([weights])
-
-    expected_shape = (repeat, len(wires))
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    ###############
+    repeat = _preprocess(weights, wires)
 
     for layer in range(repeat):
 

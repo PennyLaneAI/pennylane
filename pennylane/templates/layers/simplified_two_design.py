@@ -15,6 +15,7 @@ r"""
 Contains the ``SimplifiedTwoDesign`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
@@ -24,6 +25,48 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weights, initial_layer_weights, wires):
+    """Verify inputs."""
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        repeat = weights.shape[0]
+
+        if len(wires) <= 1 and weights.shape != (repeat, ):
+            raise ValueError(f"Weights must be of shape {(repeat, )}; got {weights.shape}")
+        if len(wires) > 1 and weights.shape != (repeat, len(wires) - 1, 2):
+            raise ValueError(f"Weights must be of shape {(repeat, len(wires) - 1, 2)}; got {weights.shape}")
+
+        initial_layer_weights = qml.tensorbox.TensorBox(initial_layer_weights)
+        if initial_layer_weights.shape != (len(wires),):
+            raise ValueError(f"Initial layer weights must be of shape {(len(wires),)}; "
+                             f"got {initial_layer_weights.shape}")
+
+    else:
+        repeat = check_number_of_layers([weights])
+
+        expected_shape_initial = (len(wires),)
+        check_shape(
+            initial_layer_weights,
+            expected_shape_initial,
+            msg="Initial layer weights must be of shape {}; got {}"
+                "".format(expected_shape_initial, get_shape(initial_layer_weights)),
+        )
+
+        if len(wires) in [0, 1]:
+            expected_shape_weights = (0,)
+        else:
+            expected_shape_weights = (repeat, len(wires) - 1, 2)
+
+        check_shape(
+            weights,
+            expected_shape_weights,
+            msg="Weights must be of shape {}; got {}"
+                "".format(expected_shape_weights, get_shape(weights)),
+        )
+    return repeat
 
 
 @template
@@ -136,34 +179,9 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
 
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
+    repeat = _preprocess(weights, initial_layer_weights, wires)
 
-    repeat = check_number_of_layers([weights])
-
-    expected_shape_initial = (len(wires),)
-    check_shape(
-        initial_layer_weights,
-        expected_shape_initial,
-        msg="'initial_layer_weights' must be of shape {}; got {}"
-        "".format(expected_shape_initial, get_shape(initial_layer_weights)),
-    )
-
-    if len(wires) in [0, 1]:
-        expected_shape_weights = (0,)
-    else:
-        expected_shape_weights = (repeat, len(wires) - 1, 2)
-
-    check_shape(
-        weights,
-        expected_shape_weights,
-        msg="'weights' must be of shape {}; got {}"
-        "".format(expected_shape_weights, get_shape(weights)),
-    )
-
-    ###############
     # initial rotations
     broadcast(unitary=RY, pattern="single", wires=wires, parameters=initial_layer_weights)
 

@@ -180,7 +180,7 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="The first dimension of all parameters"):
             qnode(wrong_weights)
 
 
@@ -197,8 +197,8 @@ class TestStronglyEntangling:
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
         assert all([q._wires[0] == Wires(0) for q in rec.queue])
 
-    def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
+    def test_uses_correct_weights(self, n_subsystems):
+        """Test that correct weights are used in the circuit."""
         np.random.seed(12)
         n_layers = 2
         num_wires = n_subsystems
@@ -227,8 +227,8 @@ class TestStronglyEntangling:
                 exp_params = weights[l, n, :]
                 assert sum([r == e for r, e in zip(res_params, exp_params)])
 
-    def test_strong_ent_layers_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct number of imprimitives."""
+    def test_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
+        """Test that correct number of imprimitives are used in the circuit."""
         imprimitive = CZ
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
@@ -239,55 +239,6 @@ class TestStronglyEntangling:
 
         types = [type(q) for q in rec.queue]
         assert types.count(imprimitive) == n_subsystems * n_layers
-
-    @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]), (3, 1, [5])])
-    def test_strong_ent_layers_ranges_equals_wires_exception(self, n_layers, n_wires, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if a range is equal to or
-        larger than the number of wires."""
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="the range for all layers needs to be smaller than"):
-            qnode(weights)
-
-    def test_strong_ent_layers_illegal_ranges_exception(self):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter of illegal type."""
-        n_wires = 2
-        n_layers = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=["a", "a"])
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be a list of integers"):
-            qnode(weights)
-
-    @pytest.mark.parametrize("n_layers, ranges", [(2, [1, 2, 4]), (5, [2])])
-    def test_strong_ent_layers_wrong_size_ranges_exception(self, n_layers, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter
-        not of shape (len(wires),)."""
-        n_wires = 5
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be of shape"):
-            qnode(weights)
 
 
 class TestRandomLayers:

@@ -15,12 +15,67 @@ r"""
 Contains the ``CVNeuralNetLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
 from pennylane.templates.utils import check_number_of_layers, check_shapes
 from pennylane.wires import Wires
+
+
+def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
+    """Validate parameters"""
+    n_wires = len(wires)
+    n_if = n_wires * (n_wires - 1) // 2
+
+    if qml.tape_mode_active():
+
+        # check that first dimension is the same
+        shapes = [
+            qml.tensorbox.TensorBox(theta_1).shape,
+            qml.tensorbox.TensorBox(phi_1).shape,
+            qml.tensorbox.TensorBox(varphi_1).shape,
+            qml.tensorbox.TensorBox(r).shape,
+            qml.tensorbox.TensorBox(phi_r).shape,
+            qml.tensorbox.TensorBox(theta_2).shape,
+            qml.tensorbox.TensorBox(phi_2).shape,
+            qml.tensorbox.TensorBox(varphi_2).shape,
+            qml.tensorbox.TensorBox(a).shape,
+            qml.tensorbox.TensorBox(phi_a).shape,
+            qml.tensorbox.TensorBox(k).shape,
+        ]
+
+        first_dims = [s[0] for s in shapes]
+        if len(set(first_dims)) > 1:
+            raise ValueError(f"The first dimension of all parameters needs to be the same, got {first_dims}")
+        repeat = shapes[0][0]
+
+        second_dims = [s[1] for s in shapes]
+        expected = [n_if, n_if, n_wires, n_wires, n_wires, n_if, n_if, n_wires, n_wires, n_wires, n_wires]
+        if not all(e == d for e, d in zip(expected, second_dims)):
+            raise ValueError(f"Got unexpected shape for one or more parameters.")
+
+    else:
+        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+        repeat = check_number_of_layers(weights_list)
+
+        expected_shapes = [
+            (repeat, n_if),
+            (repeat, n_if),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_if),
+            (repeat, n_if),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+        ]
+        check_shapes(weights_list, expected_shapes, msg="Got unexpected shape for one or more parameters")
+
+    return repeat
 
 
 def cv_neural_net_layer(
@@ -113,26 +168,7 @@ def CVNeuralNetLayers(
     # Input checks
 
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-    weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-    repeat = check_number_of_layers(weights_list)
-
-    expected_shapes = [
-        (repeat, n_if),
-        (repeat, n_if),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_if),
-        (repeat, n_if),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-    ]
-    check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
+    repeat = _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires)
 
     ###############
 

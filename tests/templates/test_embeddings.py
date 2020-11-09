@@ -195,9 +195,8 @@ class TestAmplitudeEmbedding:
 class TestAngleEmbedding:
     """ Tests the AngleEmbedding method."""
 
-    def test_angle_embedding_state_rotx(self, qubit_device, n_subsystems):
-        """Checks the state produced by AngleEmbedding()
-           using the rotation='X' strategy."""
+    def test_state_rotx(self, qubit_device, n_subsystems):
+        """Checks the state produced using the rotation='X' strategy."""
 
         features = [pi / 2, pi / 2, pi / 4, 0]
 
@@ -213,9 +212,8 @@ class TestAngleEmbedding:
 
         assert np.allclose(res, target[:n_subsystems])
 
-    def test_angle_embedding_state_roty(self, qubit_device, n_subsystems):
-        """Checks the state produced by AngleEmbedding()
-           using the rotation='Y' strategy."""
+    def test_state_roty(self, qubit_device, n_subsystems):
+        """Checks the state produced using the rotation='Y' strategy."""
 
         features = [pi / 2, pi / 2, pi / 4, 0]
 
@@ -230,9 +228,8 @@ class TestAngleEmbedding:
         target = [-1, -1, 0, 1, 1]
         assert np.allclose(res, target[:n_subsystems])
 
-    def test_angle_embedding_state_rotz(self, qubit_device, n_subsystems):
-        """Checks the state produced by AngleEmbedding()
-           using the rotation='Z' strategy."""
+    def test_state_rotz(self, qubit_device, n_subsystems):
+        """Checks the state using the rotation='Z' strategy."""
 
         features = [pi / 2, pi / 2, pi / 4, 0]
 
@@ -249,8 +246,7 @@ class TestAngleEmbedding:
 
     @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
     def test_angle_embedding_fewer_features(self, strategy):
-        """Verifies that AngleEmbedding() can be used correctly if there are
-        fewer features than rotation gates."""
+        """Tests case with fewer features than rotation gates."""
         features = [pi / 2, pi / 2, pi / 4, 0]
         n_subsystems = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -267,8 +263,8 @@ class TestAngleEmbedding:
         assert np.allclose(res, target)
 
     @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
-    def test_angle_embedding_exception_fewer_rotations(self, strategy):
-        """Verifies that AngleEmbedding() raises an exception if there are fewer
+    def test_exception_fewer_rotations(self, strategy):
+        """Verifies that exception is raised if there are fewer
            rotation gates than features."""
 
         features = [0, 0, 0, 0]
@@ -285,8 +281,8 @@ class TestAngleEmbedding:
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=features)
 
-    def test_angle_embedding_exception_wrongrot(self):
-        """Verifies that AngleEmbedding() raises an exception if the
+    def test_exception_wrongrot(self):
+        """Verifies that exception is raised if the
         rotation strategy is unknown."""
 
         n_subsystems = 1
@@ -578,7 +574,7 @@ class TestQAOAEmbedding:
         assert np.allclose(res, target, atol=tol, rtol=0)
 
     def test_exception_fewer_wires_than_features(self, ):
-        """Verifies that QAOAEmbedding() raises an exception if there are fewer
+        """Verifies that exception raised if there are fewer
            wires than features."""
 
         features = [0, 0, 0, 0]
@@ -595,7 +591,7 @@ class TestQAOAEmbedding:
             circuit(x=features)
 
     def test_exception_wrongrot(self):
-        """Verifies that QAOAEmbedding() raises an exception if the
+        """Verifies exception raised if the
         rotation strategy is unknown."""
 
         n_wires = 1
@@ -614,9 +610,8 @@ class TestQAOAEmbedding:
 class TestDisplacementEmbedding:
     """ Tests the DisplacementEmbedding method."""
 
-    def test_displacement_embedding_state_execution_amplitude(self):
-        """Checks the state produced by DisplacementEmbedding()
-        using the amplitude execution method."""
+    def test_state_execution_amplitude(self):
+        """Checks the state using the amplitude execution method."""
 
         features = np.array([0.1, 1.2])
         n_wires = 2
@@ -629,9 +624,8 @@ class TestDisplacementEmbedding:
 
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
-    def test_displacement_embedding_state_execution_phase(self):
-        """Checks the state produced by DisplacementEmbedding()
-        using the phase execution method."""
+    def test_state_execution_phase(self):
+        """Checks the state using the phase execution method."""
 
         features = np.array([1.2, 0.3])
         n_wires = 2
@@ -646,9 +640,8 @@ class TestDisplacementEmbedding:
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 
-    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
-        """Verifies that DisplacementEmbedding() throws exception
-        if number of subsystems wrong."""
+    def test_exception_for_wrong_num_wires(self):
+        """Verifies that an exception is thrown if number of subsystems wrong."""
 
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)
@@ -661,9 +654,8 @@ class TestDisplacementEmbedding:
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=[0.2, 0.3, 0.4])
 
-    def test_displacement_embedding_strategy_not_recognized_exception(self):
-        """Verifies that DisplacementEmbedding() throws exception
-        if strategy unknown."""
+    def test_strategy_not_recognized_exception(self):
+        """Verifies that an exception is thrown if is strategy unknown."""
 
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)
@@ -680,9 +672,8 @@ class TestDisplacementEmbedding:
 class TestSqueezingEmbedding:
     """ Tests the SqueezingEmbedding method."""
 
-    def test_squeezing_embedding_state_execution_amplitude(self):
-        """Checks the state produced by SqueezingEmbedding()
-        using the amplitude execution method."""
+    def test_state_execution_amplitude(self):
+        """Checks the state using the amplitude execution method."""
 
         features = np.array([1.2, 0.3])
         n_wires = 2
@@ -695,9 +686,8 @@ class TestSqueezingEmbedding:
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
-    def test_squeezing_embedding_state_execution_phase(self):
-        """Checks the state produced by SqueezingEmbedding()
-        using the phase execution method."""
+    def test_state_execution_phase(self):
+        """Checks the state produced using the phase execution method."""
 
         features = np.array([1.2, 0.3])
         n_wires = 2
@@ -712,8 +702,8 @@ class TestSqueezingEmbedding:
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
-    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
-        """Verifies that SqueezingEmbedding() throws exception if number of modes is wrong."""
+    def test_exception_for_wrong_num_wires(self):
+        """Verifies that an exception is thrown if number of modes is wrong."""
 
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)
@@ -726,9 +716,8 @@ class TestSqueezingEmbedding:
         with pytest.raises(ValueError, match="Features must be of "):
             circuit(x=[0.2, 0.3, 0.4])
 
-    def test_squeezing_embedding_strategy_not_recognized_exception(self):
-        """Verifies that SqueezingEmbedding() throws exception
-        if strategy unknown."""
+    def test_strategy_not_recognized_exception(self):
+        """Verifies that an exception is thrown if strategy unknown."""
 
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)

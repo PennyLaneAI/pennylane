@@ -15,6 +15,7 @@ r"""
 Contains the ``StronglyEntanglingLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
 from pennylane.templates import broadcast
@@ -25,6 +26,64 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weights, wires, ranges):
+    """Validate and pre-process inputs"""
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        repeat = weights.shape[0]
+
+        if weights.shape != (repeat, len(wires), 3):
+            raise ValueError(f"Weights must be of shape {(repeat, len(wires), 3)}; got {weights.shape}")
+
+        if len(wires) > 1:
+            if ranges is None:
+                # tile ranges with iterations of range(1, n_wires)
+                ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+        else:
+            ranges = [0] * repeat
+
+    else:
+
+        repeat = check_number_of_layers([weights])
+
+        expected_shape = (repeat, len(wires), 3)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+        )
+
+        if len(wires) > 1:
+            if ranges is None:
+                # tile ranges with iterations of range(1, n_wires)
+                ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+
+            expected_shape = (repeat,)
+            check_shape(
+                ranges,
+                expected_shape,
+                msg="'ranges' must be of shape {}; got {}"
+                    "".format(expected_shape, get_shape(weights)),
+            )
+
+            check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
+            for r in ranges:
+                check_type(
+                    r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges)
+                )
+            if any((r >= len(wires) or r == 0) for r in ranges):
+                raise ValueError(
+                    "the range for all layers needs to be smaller than the number of "
+                    "qubits; got ranges {}.".format(ranges)
+                )
+        else:
+            ranges = [0] * repeat
+
+    return repeat, ranges
 
 
 def strongly_entangling_layer(weights, wires, r, imprimitive):
@@ -80,47 +139,8 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    repeat = check_number_of_layers([weights])
-
-    expected_shape = (repeat, len(wires), 3)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    if len(wires) > 1:
-        if ranges is None:
-            # tile ranges with iterations of range(1, n_wires)
-            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
-
-        expected_shape = (repeat,)
-        check_shape(
-            ranges,
-            expected_shape,
-            msg="'ranges' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(weights)),
-        )
-
-        check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
-        for r in ranges:
-            check_type(
-                r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges)
-            )
-        if any((r >= len(wires) or r == 0) for r in ranges):
-            raise ValueError(
-                "the range for all layers needs to be smaller than the number of "
-                "qubits; got ranges {}.".format(ranges)
-            )
-    else:
-        ranges = [0] * repeat
-
-    ###############
+    repeat, ranges = _preprocess(weights, wires, ranges)
 
     for l in range(repeat):
 
