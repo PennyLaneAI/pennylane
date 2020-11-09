@@ -73,7 +73,7 @@ def test_cast():
     assert np.all(res.numpy() == expected.numpy())
 
 
-def test_cast_execption():
+def test_cast_exception():
     """Test that an exception is raised if we are unable to deduce
     the correct Torch dtype"""
     x = torch.tensor([1, 2, 3])
