@@ -89,7 +89,7 @@ def u1_ex_gate(phi, theta, wires=None):
 def ParticleConservingU1(weights, wires, init_state=None):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
     particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed by Barkoutsos *et al.* in
-    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ .
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
     This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the
     entangler block :math:`U_\mathrm{ent}(\vec{\phi}, \vec{\theta})` to the Hartree-Fock
@@ -176,7 +176,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
-            ``D`` is the number of entangler block layers and ``M`` = :math:`N-1`
+            ``D`` is the number of entangler block layers and :math:`M=N-1`
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
