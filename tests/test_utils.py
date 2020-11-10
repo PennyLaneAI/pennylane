@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
-from pennylane.utils import ExecutionCounter
+from pennylane import ExecutionCounter
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
