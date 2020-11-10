@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
+from pennylane.utils import ExecutionCounter
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -824,3 +825,64 @@ class TestInv:
             ValueError, match="The given operation_list does not only contain Operations"
         ):
             pu.inv(arg)
+
+
+class TestExecutionCounter:
+    "Tests the ExecutionCounter."
+
+    @pytest.mark.parametrize("dev", [
+        qml.device('default.qubit', wires=1),
+        qml.device('default.qubit.tf', wires=1),
+        qml.device('default.qubit.autograd', wires=1),
+    ])
+    def test_single_output(self, dev):
+        """Tests a qnode with a 1-d output."""
+
+        @qml.qnode(dev)
+        def circuit(w):
+            qml.RX(w, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with ExecutionCounter() as counter:
+            # 2 executions
+            circuit(0.1)
+            circuit(0.5)
+
+            # 3 executions
+            g = qml.grad(circuit)
+            g(0.1)
+
+            # 1 execution
+            circuit.qtape.execute(dev)
+
+        assert counter.counts == 6
+
+    @pytest.mark.parametrize("dev", [
+        qml.device('default.qubit', wires=1),
+        qml.device('default.qubit.tf', wires=1),
+        qml.device('default.qubit.autograd', wires=1),
+    ])
+    def test_multi_output(self, dev):
+        """Tests a qnode with a 2-d output."""
+
+        @qml.qnode(dev)
+        def circuit(w):
+            qml.RX(w, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=0))
+
+        with ExecutionCounter() as counter:
+            # 2 executions
+            circuit(0.1)
+            circuit(0.5)
+
+            # 5 executions
+            g = qml.grad(circuit)
+            g(0.1)
+
+            # 1 execution
+            circuit.qtape.execute(dev)
+
+        assert counter.counts == 8
+

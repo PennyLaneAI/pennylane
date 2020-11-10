@@ -23,6 +23,7 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
+from unittest.mock import MagicMock
 
 import numpy as np
 
@@ -433,3 +434,68 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
 
     return expanded_tensor.reshape(2 ** M)
+
+
+class ExecutionCounter:
+    """Context in which calls to a QubitDevice's execute method are counted without performing the execution.
+
+    The class mocks the execute method, returning a dummy value of the correct dimensions.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.utils import ExecutionCounter
+        qml.enable_tape()
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(w):
+            qml.RX(w, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with ExecutionCounter() as counter:
+            circuit(0.1)
+            circuit(0.5)
+
+        print(counter.counts) # 2
+
+        with ExecutionCounter() as counter_grad:
+            g = qml.grad(circuit)
+            g(0.1)
+
+        # parameter-shift rule uses 2+1 executions
+        # to compute the gradient
+        print(counter_grad.counts) # 3
+
+    """
+
+    def __init__(self):
+        self.counts = None
+
+    def __enter__(self):
+        # Mock qubit device's execute function.
+        # The side effect will define the output of the mock.
+        qml._qubit_device.QubitDevice.execute = MagicMock(side_effect=self.side_effect)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.counts = qml._qubit_device.QubitDevice.execute.call_count
+
+    @staticmethod
+    def side_effect(circuit, **kwargs):
+        """Determine mock output. This function accepts the same inputs as the mocked function.
+
+        Args:
+            circuit (.tape.QuantumTape): tape representing the circuit
+
+        Returns:
+            np.array: dummy output
+        """
+
+        dim_output = len(circuit.measurements)
+        return np.zeros(shape=(dim_output,))
