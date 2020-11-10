@@ -483,10 +483,10 @@ class TestRandomLayers:
         then it is unwrapped successfully.
 
         The test involves using RandomLayers, which then calls random_layer
-        internally. Eventually each gates used by random_layer receives a
-        single scalar.
+        internally. Eventually each gate used by random_layer receives a single
+        scalar.
         """
-        dev = qml.device("qiskit.aer", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         lst = []
 
