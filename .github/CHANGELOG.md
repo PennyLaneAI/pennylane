@@ -28,6 +28,11 @@
 
 <h3>Improvements</h3>
 
+* The classical processing in the `MottonenStatePreparation` template has been largely 
+  rewritten to use dense matrices and tensor manipulations where ever possible. 
+  This is a preparation to support differentiation through the template in future.
+  [(#864)](https://github.com/PennyLaneAI/pennylane/pull/864)
+
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
   `cache` argument to the device.
   [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
@@ -154,8 +159,17 @@
 
 <h3>Bug fixes</h3>
 
+* Inverses of common gates can now be applied using array/tensor manipulation tricks. The
+  following gates are affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
+  `T`, `CNOT`, `CZ`.
+  [(#872)](https://github.com/PennyLaneAI/pennylane/pull/872)
+
 * The `PauliRot` operation now gracefully handles single-qubit Paulis, and all-identity Paulis
   [(#860)](https://github.com/PennyLaneAI/pennylane/pull/860).
+
+* Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
+  attribute to the output tensor.
+  [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
 
 <h3>Contributors</h3>
 
