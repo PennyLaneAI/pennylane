@@ -40,7 +40,7 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
     #broadcast(unitary=Rot, pattern="single", wires=wires, parameters=weights)
 
     for i, w in enumerate(wires):
-        Rot(weights[i,0], weights[i,1], weights[i,2], wires=w)
+        Rot(*weights[i], wires=w)
 
     n_wires = len(wires)
     if n_wires > 1:
