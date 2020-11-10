@@ -30,6 +30,7 @@ from pennylane.templates.layers import (
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
+from pennylane.numpy import tensor
 
 TOLERANCE = 1e-8
 
@@ -477,6 +478,43 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
+    def test_tensor_unwrapped_well(self, monkeypatch):
+        """Test that if random_layer() receives a one element PennyLane tensor,
+        then it is unwrapped successfully.
+
+        The test involves using RandomLayers, which then calls random_layer
+        internally. Eventually each gates used by random_layer receives a
+        single scalar.
+        """
+        dev = qml.device("qiskit.aer", wires=4)
+
+        lst = []
+
+        # Mock function that accumulates gate parameters
+        mock_func = lambda par, wires: lst.append(par)
+
+        with monkeypatch.context() as m:
+
+            # Mock the gates used in RandomLayers
+            m.setattr(pennylane.templates.layers.random, "RX", mock_func)
+            m.setattr(pennylane.templates.layers.random, "RY", mock_func)
+            m.setattr(pennylane.templates.layers.random, "RZ", mock_func)
+
+            @qml.qnode(dev)
+            def circuit(phi=None):
+
+                # Random quantum circuit
+                RandomLayers(phi, wires=list(range(4)))
+
+                return qml.expval(qml.PauliZ(0))
+
+            phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
+
+            # Call the QNode, accumulate parameters
+            circuit(phi=phi)
+
+            # Check parameters
+            assert all([isinstance(x, float) for x in lst])
 
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
