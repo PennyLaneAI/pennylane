@@ -830,13 +830,15 @@ class TestInv:
 class TestExecutionCounter:
     "Tests the ExecutionCounter."
 
-    @pytest.mark.parametrize("dev", [
-        qml.device('default.qubit', wires=1),
-        qml.device('default.qubit.tf', wires=1),
-        qml.device('default.qubit.autograd', wires=1),
+    @pytest.mark.parametrize("dev, expected", [
+        (qml.device('default.qubit', wires=1), 6),
+        (qml.device('default.qubit.tf', wires=1), 6),  # should this device not have the same num of evals as autograd?
+        (qml.device('default.qubit.autograd', wires=1), 4),
     ])
-    def test_single_output(self, dev):
+    def test_single_output(self, dev, expected):
         """Tests a qnode with a 1-d output."""
+
+        qml.enable_tape()
 
         @qml.qnode(dev)
         def circuit(w):
@@ -856,21 +858,24 @@ class TestExecutionCounter:
             # 1 execution
             circuit.qtape.execute(dev)
 
-        assert counter.counts == 6
+        assert counter.counts == expected
+        qml.disable_tape()
 
-    @pytest.mark.parametrize("dev", [
-        qml.device('default.qubit', wires=1),
-        qml.device('default.qubit.tf', wires=1),
-        qml.device('default.qubit.autograd', wires=1),
+    @pytest.mark.parametrize("dev, expected", [
+        (qml.device('default.qubit', wires=1), 8),
+        (qml.device('default.qubit.tf', wires=1), 8),  # should this device not have the same num of evals as autograd?
+        (qml.device('default.qubit.autograd', wires=1), 4),
     ])
-    def test_multi_output(self, dev):
+    def test_multi_output(self, dev, expected):
         """Tests a qnode with a 2-d output."""
+
+        qml.enable_tape()
 
         @qml.qnode(dev)
         def circuit(w):
             qml.RX(w, wires=0)
             qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         with ExecutionCounter() as counter:
             # 2 executions
@@ -878,11 +883,11 @@ class TestExecutionCounter:
             circuit(0.5)
 
             # 5 executions
-            g = qml.grad(circuit)
+            g = qml.jacobian(circuit)
             g(0.1)
 
             # 1 execution
             circuit.qtape.execute(dev)
 
-        assert counter.counts == 8
-
+        assert counter.counts == expected
+        qml.disable_tape()
