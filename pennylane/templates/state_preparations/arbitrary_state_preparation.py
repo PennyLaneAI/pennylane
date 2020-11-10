@@ -21,6 +21,25 @@ from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
+def _preprocess(weights, wires):
+    """Validate weights"""
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        if weights.shape != (2 ** (len(wires) + 1) - 2,):
+            raise ValueError(f"Weights must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {weights.shape}.")
+
+    else:
+
+        expected_shape = (2 ** (len(wires) + 1) - 2,)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights must be of shape {}; got {}.".format(expected_shape, get_shape(weights)),
+        )
+
+
 @functools.lru_cache()
 def _state_preparation_pauli_words(num_wires):
     """Pauli words necessary for a state preparation.
@@ -76,14 +95,7 @@ def ArbitraryStatePreparation(weights, wires):
     """
 
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    expected_shape = (2 ** (n_wires + 1) - 2,)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
-    )
+    _preprocess(weights, wires)
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)
