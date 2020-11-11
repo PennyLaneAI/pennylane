@@ -29,12 +29,12 @@ from pennylane.templates.utils import (
 from pennylane.wires import Wires
 
 
-def _preprocess(init_state, weights, wires, s_wires, d_wires):
+def _preprocess(init_state, weights, s_wires, d_wires):
     """Validate and pre-process inputs."""
 
     if (not s_wires) and (not d_wires):
         raise ValueError(
-            "'s_wires' and 'd_wires' lists can not be both empty; got ph={}, pphh={}".format(
+            "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
                 s_wires, d_wires
             )
         )
@@ -62,7 +62,7 @@ def _preprocess(init_state, weights, wires, s_wires, d_wires):
         check_type(
             init_state,
             [np.ndarray],
-            msg="'init_state' must be a Numpy array; got {}".format(init_state),
+            msg="Initial state must be a Numpy array; got {}".format(init_state),
         )
         for i in init_state:
             check_type(
@@ -76,15 +76,6 @@ def _preprocess(init_state, weights, wires, s_wires, d_wires):
             weights,
             expected_shape,
             msg="Weights must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-        )
-
-        expected_shape = (len(wires),)
-        check_shape(
-            init_state,
-            expected_shape,
-            msg="'init_state' must be of shape {}; got {}".format(
-                expected_shape, get_shape(init_state)
-            ),
         )
 
     return np.flip(init_state)
@@ -215,7 +206,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
     """
 
     wires = Wires(wires)
-    init_state_flipped = _preprocess(init_state, weights, wires, s_wires, d_wires)
+    init_state_flipped = _preprocess(init_state, weights, s_wires, d_wires)
 
     qml.BasisState(init_state_flipped, wires=wires)
 

@@ -116,28 +116,28 @@ class TestInterferometer:
 
     def test_invalid_mesh_exception(self):
         """Test that Interferometer() raises correct exception when mesh not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="Mesh option"):
+        with pytest.raises(ValueError, match="did not recognize mesh"):
             circuit(varphi, mesh="a")
 
-    def test_invalid_mesh_exception(self):
+    def test_invalid_beamsplitter_exception(self):
         """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="did not recognize option"):
+        with pytest.raises(ValueError, match="did not recognize beamsplitter"):
             circuit(varphi, bs="a")
 
     def test_clements_beamsplitter_convention(self, tol):
@@ -440,7 +440,7 @@ class TestSingleExcitationUnitary:
         [
             (0.2, [0], "expected at least two wires"),
             (0.2, [], "expected at least two wires"),
-            ([0.2, 1.1], [0, 1, 2], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 1, 2], "Weight must be a scalar"),
         ],
     )
     def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
@@ -731,7 +731,7 @@ class TestDoubleExcitationUnitary:
             (0.2, [0], [1, 2], "expected at least two wires representing the occupied"),
             (0.2, [0, 1], [2], "expected at least two wires representing the unoccupied"),
             (0.2, [0], [1], "expected at least two wires representing the occupied"),
-            ([0.2, 1.1], [0, 2], [4, 6], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 2], [4, 6], "Weight must be a scalar"),
         ],
     )
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
@@ -893,8 +893,6 @@ class TestUCCSDUnitary:
     @pytest.mark.parametrize(
         ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
         [
-            (np.array([-2.8]), [[0, 1, 2]], [], [1, 1, 0, 0], "'init_state' must be a Numpy array"),
-            (np.array([-2.8]), [[0, 1, 2]], [], (1, 1, 0, 0), "'init_state' must be a Numpy array"),
             (
                 np.array([-2.8]),
                 [[0, 1, 2]],
@@ -907,7 +905,7 @@ class TestUCCSDUnitary:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'s_wires' and 'd_wires' lists can not be both empty",
+                "s_wires and d_wires lists can not be both empty",
             ),
             (
                 np.array([-2.8]),
@@ -921,28 +919,28 @@ class TestUCCSDUnitary:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
-                "'init_state' must be of shape",
+                "BasisState parameter and wires",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights must be of",
             ),
         ],
     )

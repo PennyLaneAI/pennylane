@@ -54,7 +54,7 @@ def _preprocess(weights, wires, ranges):
         check_shape(
             weights,
             expected_shape,
-            msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+            msg="Weights must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
         )
 
         if len(wires) > 1:

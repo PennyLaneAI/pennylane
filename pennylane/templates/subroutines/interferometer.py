@@ -31,15 +31,15 @@ def _preprocess(theta, phi, varphi, wires):
     if qml.tape_mode_active():
 
         theta = qml.tensorbox.TensorBox(theta)
-        if theta.shape != ():
+        if theta.shape != (n_if,):
             raise ValueError(f"Theta must be of shape {(n_if,)}; got {theta.shape}.")
 
         phi = qml.tensorbox.TensorBox(phi)
-        if phi.shape != ():
+        if phi.shape != (n_if,):
             raise ValueError(f"Phi must be of shape {(n_if,)}; got {phi.shape}.")
 
         varphi = qml.tensorbox.TensorBox(varphi)
-        if varphi.shape != ():
+        if varphi.shape != (n_wires,):
             raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {varphi.shape}.")
 
         shape_varphi = varphi.shape
@@ -159,7 +159,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                     elif beamsplitter == "pennylane":
                         Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
                     else:
-                        raise ValueError("did not recognize option {} for 'beamsplitter'" "".format(beamsplitter))
+                        raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
                     n += 1
 
     elif mesh == "triangular":
@@ -173,10 +173,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 elif beamsplitter == "pennylane":
                     Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
                 else:
-                    raise ValueError("did not recognize option {} for 'beamsplitter'" "".format(beamsplitter))
+                    raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
                 n += 1
     else:
-        raise ValueError("did not recognize option {} for 'mesh'" "".format(mesh))
+        raise ValueError(f"did not recognize mesh {mesh}")
 
     # apply the final local phase shifts to all modes
     for i in range(shape_varphi[0]):

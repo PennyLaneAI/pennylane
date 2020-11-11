@@ -17,7 +17,6 @@ Contains the ``ApproxTimeEvolution`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.wires import Wires
 
 
 def _preprocess(hamiltonian, n):
@@ -120,7 +119,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         [-0.41614684 -0.41614684]
     """
 
-    _preprocess(hamiltonian)
+    _preprocess(hamiltonian, n)
 
     pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
