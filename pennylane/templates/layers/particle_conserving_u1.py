@@ -38,9 +38,9 @@ def decompose_ua(phi, wires=None):
 
     in terms of the quantum operations supported by PennyLane.
 
-    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_),
+    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
     to define two-qubit exchange gates required to build particle-conserving
-    VQE ansatze for Quantum Chemistry simulations. See :func:`~.ParticleConservingU1`.
+    VQE ansatze for quantum chemistry simulations. See :func:`~.ParticleConservingU1`.
 
     :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
     :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
@@ -66,7 +66,7 @@ def decompose_ua(phi, wires=None):
 def u1_ex_gate(phi, theta, wires=None):
     r"""Implement the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
-    a hardware-efficient particle-conserving VQE ansatz for Quantum Chemistry
+    a hardware-efficient particle-conserving VQE ansatz for quantum chemistry
     simulations.
 
     Args:
@@ -87,7 +87,7 @@ def u1_ex_gate(phi, theta, wires=None):
 
 @template
 def ParticleConservingU1(weights, wires, init_state=None):
-    r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
+    r"""Implements the heuristic VQE ansatz for quantum chemistry simulations using the
     particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed by Barkoutsos *et al.* in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
@@ -128,7 +128,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
         \end{array}\right).
 
     The figure below shows the circuit decomposing :math:`U_{1, \mathrm{ex}}` in
-    elementary gates. The Pauli matrix :math:`\sigma_z` and :math:`R(0, 2 \theta, 0)`
+    elementary gates. The Pauli matrix :math:`\sigma_z` and single-qubit rotation :math:`R(0, 2 \theta, 0)`
     apply the Pauli Z operator and an arbitrary rotation on the qubit ``n``,
 
     |
@@ -144,7 +144,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     .. math::
 
-        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
+        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right),
 
     acting controlledly on the state of qubit ``m`` which is further decomposed in terms of the
     `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
@@ -204,10 +204,10 @@ def ParticleConservingU1(weights, wires, init_state=None):
             from pennylane.templates import ParticleConservingU1
             from functools import partial
 
-            # Build the electronic Hamiltonian
+            # Build the electronic Hamiltonian from a local .xyz file
             h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
-            # Define the HF state
+            # Define the Hartree-Fock state
             ref_state = qml.qchem.hf_state(electrons=2, qubits)
 
             # Define the device
