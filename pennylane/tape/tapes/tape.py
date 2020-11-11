@@ -365,7 +365,7 @@ class QuantumTape(AnnotatedQueue):
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
-        identifying any repeated observables"""
+        identifying any observables that share wires"""
         obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
