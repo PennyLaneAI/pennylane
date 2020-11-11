@@ -60,17 +60,15 @@ def u2_ex_gate(phi, wires=None):
     """
 
     CNOT(wires=wires)
-
     CRX(2 * phi, wires=wires[::-1])
-
     CNOT(wires=wires)
 
 
 @template
 def ParticleConservingU2(weights, wires, init_state=None):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
-    rotation gate :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate
-    :math:`U_{2,\mathrm{ex}}` proposed in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ .
+particle-conserving gate
+    :math:`U_{2,\mathrm{ex}}` proposed in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
     This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of
     :math:`R_\mathrm{z}(\vec{\theta})` and entangler block :math:`U_{2,\mathrm{ex}}(\vec{\phi})`
@@ -94,12 +92,14 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     |
 
-    The repeated units across several qubits are shown in dotted boxes. Each layer contains
+Each layer contains
     :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
     :math:`N-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
-    that act on pairs of nearest-neighbors qubits. The unitary matrix representing
+    that act on pairs of nearest-neighbors qubits. The repeated units across several qubits are shown in dotted boxes. 
+    The unitary matrix representing
     :math:`U_{2,\mathrm{ex}}(\phi)` (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
-    is decomposed into its elementary gates as:
+    is decomposed into its elementary gates and implemented in the :func:`~.u2_ex_gate` function
+    using PennyLane quantum operations.
 
     |
 
@@ -110,8 +110,6 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     |
 
-    The :math:`U_{2,\mathrm{ex}}(\phi)` gate is implemented in the :func:`~.u2_ex_gate` function
-    using PennyLane quantum operations.
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M)`` where ``D`` is the number of
@@ -139,16 +137,15 @@ def ParticleConservingU2(weights, wires, init_state=None):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import qchem
             from pennylane.templates import ParticleConservingU2
 
             from functools import partial
 
             # Build the electronic Hamiltonian
-            h, qubits = qchem.molecular_hamiltonian("h2", "h2.xyz")
+            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
             # Define the HF state
-            ref_state = qchem.hf_state(electrons=2, qubits)
+            ref_state = qml.qchem.hf_state(electrons=2, qubits)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
@@ -161,7 +158,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
             # Compute the expectation value of 'h' for given set of parameters
             layers = 1
-            params = np.random.normal(0, 2*np.pi, (layers, 2*qubits-1))
+            params = qml.init.particle_conserving_u2_normal(layers, qubits)
             print(cost_fn(params))
 
     """
