@@ -26,19 +26,19 @@ def _preprocess(basis_state, wires):
 
     if qml.tape_mode_active():
 
-        features = qml.tensorbox.TensorBox(basis_state)
+        basis_state = qml.tensorbox.TensorBox(basis_state)
 
-        if len(features.shape) != 1:
-            raise ValueError(f"Basis state must be one-dimensional; got shape {features.shape}.")
+        if len(basis_state.shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {basis_state.shape}.")
 
-        n_features = features.shape[0]
-        if n_features != len(wires):
-            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_features}.")
+        n_bits = basis_state.shape[0]
+        if n_bits != len(wires):
+            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_bits}.")
 
-        basis_state = list(features.numpy())
+        basis_state = list(basis_state.numpy())
 
-        if set(basis_state) != {0, 1}:
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+        if not all(bit in [0, 1] for bit in basis_state):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
         # we return the input as a list of values, since
         # it is not differentiable
@@ -57,7 +57,7 @@ def _preprocess(basis_state, wires):
         # basis_state is guaranteed to be a list of binary values
         if any([b not in [0, 1] for b in basis_state]):
             raise ValueError(
-                "'basis_state' must only contain values of 0 and 1; got {}".format(basis_state)
+                "Basis state must only contain values of 0 and 1; got {}".format(basis_state)
             )
 
         return basis_state

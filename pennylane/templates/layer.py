@@ -15,10 +15,27 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template as temp
 
-###################
 
+def _preprocess(args, depth):
+    """Validate and pre-process inputs."""
+
+    if not isinstance(depth, int):
+        raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
+
+    for arg in args:
+
+        if qml.tape_mode_active():
+            arg = qml.tensorbox.TensorBox(arg)
+
+        if len(arg) != depth:
+            raise ValueError(
+                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
+                    depth, len(arg)
+                )
+            )
 
 @temp
 def layer(template, depth, *args, **kwargs):
@@ -192,21 +209,7 @@ def layer(template, depth, *args, **kwargs):
         2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
     """
 
-    ##############
-    # Input checks
-
-    if not isinstance(depth, int):
-        raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
-
-    for arg in args:
-        if len(arg) != depth:
-            raise ValueError(
-                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
-                    depth, len(arg)
-                )
-            )
-
-    ##############
+    _preprocess(args, depth)
 
     for i in range(0, depth):
         arg_params = [k[i] for k in args]

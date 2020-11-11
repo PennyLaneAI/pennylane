@@ -46,7 +46,15 @@ class TensorFlowBox(qml.tensorbox.TensorBox):
 
     @staticmethod
     def concatenate(values, axis=0):
-        res = tf.concat(TensorFlowBox.unbox_list(values), axis=axis)
+
+        if axis is None:
+            # flatten and then concatenate zero'th dimension
+            # to reproduce numpy's behaviour
+            tensors = [tf.reshape(TensorFlowBox.astensor(t), shape=[-1]) for t in TensorFlowBox.unbox_list(values)]
+            # TODO: error is raised when dtypes are not the same
+            res = tf.concat(tensors, axis=0)
+        else:
+            res = tf.concat(TensorFlowBox.unbox_list(values), axis=axis)
         return TensorFlowBox(res)
 
     @property

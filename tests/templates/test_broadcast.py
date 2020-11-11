@@ -230,7 +230,7 @@ class TestBuiltinPatterns:
             broadcast(unitary=RX, wires=range(n_wires), pattern="single", parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="'parameters' must contain entries for"):
+        with pytest.raises(ValueError, match="Parameters must contain entries for"):
             circuit()
 
     def test_throws_special_error_for_ring_pattern_2_wires(self):

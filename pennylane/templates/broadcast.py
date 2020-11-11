@@ -65,7 +65,7 @@ def wires_all_to_all(wires):
 
 ###################
 
-def _preprocess(parameters, wires, pattern):
+def _preprocess(parameters, pattern, wires):
     """Validate and pre-process inputs."""
 
     custom_pattern = None
@@ -115,7 +115,7 @@ def _preprocess(parameters, wires, pattern):
             # expand dimension so that parameter sets for each unitary can be unpacked
             if len(parameters.shape) == 1:
                 parameters = parameters.expand_dims(1)
-                parameters = parameters.unbox()
+            parameters = parameters.unbox()
 
         else:
             shape = get_shape(parameters)
@@ -124,18 +124,18 @@ def _preprocess(parameters, wires, pattern):
             if len(shape) == 1:
                 parameters = [[p] for p in parameters]
 
-    # specific error message for ring edge case of 2 wires
-    if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
-        raise ValueError(
-            "the ring pattern with 2 wires is an exception and only applies one unitary"
-        )
-
-    if shape[0] != pattern_to_num_params[pattern]:
-        raise ValueError(
-            "Parameters must contain entries for {} unitaries; got {} entries".format(
-                pattern_to_num_params[pattern], shape[0]
+        # specific error message for ring edge case of 2 wires
+        if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
+            raise ValueError(
+                "the ring pattern with 2 wires is an exception and only applies one unitary"
             )
-        )
+
+        if shape[0] != pattern_to_num_params[pattern]:
+            raise ValueError(
+                "Parameters must contain entries for {} unitaries; got {} entries".format(
+                    pattern_to_num_params[pattern], shape[0]
+                )
+            )
 
     wire_sequence = pattern_to_wires[pattern]
     return wire_sequence, parameters

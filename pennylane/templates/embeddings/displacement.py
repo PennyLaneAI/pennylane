@@ -29,11 +29,10 @@ from pennylane.templates.utils import (
 def _preprocess(features, wires, method, c):
     """Validate and pre-process inputs."""
 
-    constants = [c] * len(features)
-
     if qml.tape_mode_active():
 
         features = qml.tensorbox.TensorBox(features)
+        constants = [c] * len(features)
 
         if len(features.shape) != 1:
             raise ValueError(f"Features must be one-dimensional; got shape {features.shape}.")
@@ -67,6 +66,8 @@ def _preprocess(features, wires, method, c):
             ["amplitude", "phase"],
             msg="did not recognize option {} for 'method'" "".format(method),
         )
+
+        constants = [c] * len(features)
 
         if method == "amplitude":
             pars = list(zip(features, constants))

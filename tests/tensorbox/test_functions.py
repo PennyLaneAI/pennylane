@@ -235,40 +235,40 @@ def test_cast_like(t1, t2):
 class TestConcatenate:
     """Tests for the concatenate function"""
 
-    def test_stack_array(self):
-        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
+    def test_concatenate_numpy(self):
+        """Test that concatenate called without the axis arguments concatenates the zero'th dimension"""
         t1 = [0.6, 0.1, 0.6]
         t2 = np.array([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
 
         res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, qml.tensorbox.TensorBox)
         assert np.all(res == np.concatenate([t1, t2, t3]))
 
-    def test_stack_tensorflow(self):
-        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
+    def test_concatenate_tensorflow(self):
+        """Test that concatenate called without the axis arguments concatenates the zero'th dimension"""
         t1 = tf.constant([0.6, 0.1, 0.6])
         t2 = tf.Variable([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
 
         res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, tf.Tensor)
+        assert isinstance(res, qml.tensorbox.TensorBox)
         assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
 
-    def test_stack_torch(self):
+    def test_concatenate_torch(self):
         """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
         t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
         t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
         t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
 
         res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, torch.Tensor)
+        assert isinstance(res, qml.tensorbox.TensorBox)
         assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
 
     @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
                                     torch.tensor([[1, 2], [3, 4]]),
                                     tf.constant([[1, 2], [3, 4]])])
-    def test_stack_axis(self, t1):
+    def test_concatenate_axis(self, t1):
         """Test that passing the axis argument allows for concatenating along
         a different axis"""
         t2 = onp.array([[5], [6]])
@@ -283,11 +283,11 @@ class TestConcatenate:
     @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
                                     torch.tensor([[1, 2], [3, 4]]),
                                     tf.constant([[1, 2], [3, 4]])])
-    def test_stack_axis_none(self, t1):
-        """Test that passing N asone axis argument allows for flattened concatenation"""
+    def test_concatenate_axis_none(self, t1):
+        """Test that passing None as the axis argument allows for flattened concatenation"""
 
         t2 = onp.array([[5], [6]])
-        res = fn.concatenate([t1, t2], axis=1)
+        res = fn.concatenate([t1, t2], axis=None)
 
         # if tensorflow or pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
