@@ -100,9 +100,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
-    if tape._repeated_observables:
+    if tape._obs_sharing_wires:
         try:
-            rotations, diag_obs = diagonalize_qwc_pauli_words(tape._repeated_observables)
+            rotations, diag_obs = diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
         except ValueError as e:
             raise qml.QuantumFunctionError(
                 "Only observables that are qubit-wise commuting "
@@ -111,7 +111,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         tape._ops.extend(rotations)
 
-        for o, i in zip(diag_obs, tape._repeated_observables_id):
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
             new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
             tape._measurements[i] = new_m
 
@@ -253,8 +253,10 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._repeated_observables = []
-        self._repeated_observables_id = []
+        self._obs_sharing_wires = []
+        """list[.Observable]: subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires."""
+        self._obs_sharing_wires_id = []
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -365,8 +367,8 @@ class QuantumTape(AnnotatedQueue):
         """Update information about observables, including the wires that are acted upon and
         identifying any repeated observables"""
         obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
-        self._repeated_observables = []
-        self._repeated_observables_id = []
+        self._obs_sharing_wires = []
+        self._obs_sharing_wires_id = []
 
         if len(obs_wires) != len(set(obs_wires)):
             c = Counter(obs_wires)
@@ -375,8 +377,8 @@ class QuantumTape(AnnotatedQueue):
             for i, m in enumerate(self.measurements):
                 if m.obs is not None:
                     if len(set(m.wires) & repeated_wires) > 0:
-                        self._repeated_observables.append(m.obs)
-                        self._repeated_observables_id.append(i)
+                        self._obs_sharing_wires.append(m.obs)
+                        self._obs_sharing_wires_id.append(i)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -1054,7 +1056,7 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        if not all(len(o.diagonalizing_gates()) == 0 for o in self._repeated_observables):
+        if not all(len(o.diagonalizing_gates()) == 0 for o in self._obs_sharing_wires):
             raise qml.QuantumFunctionError(
                 "Multiple observables are being evaluated on the same wire. Call tape.expand() "
                 "prior to execution to support this."
