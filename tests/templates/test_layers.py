@@ -478,13 +478,15 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
-    def test_tensor_unwrapped_well(self, monkeypatch):
-        """Test that if random_layer() receives a one element PennyLane tensor,
-        then it is unwrapped successfully.
+    def test_tensor_unwrapped(self, monkeypatch):
+        """Test that the random_layer() function used by RandomLayers passes a
+        float value to its gate after successfully unwrapping a one element
+        PennyLane tensor.
 
         The test involves using RandomLayers, which then calls random_layer
         internally. Eventually each gate used by random_layer receives a single
-        scalar.
+        scalar. In this test case, this is done by indexing into a PennyLane
+        tensor two times.
         """
         dev = qml.device("default.qubit", wires=4)
 
@@ -515,6 +517,27 @@ class TestRandomLayers:
 
             # Check parameters
             assert all([isinstance(x, float) for x in lst])
+
+    def test_tensor_unwrapped_gradient_no_error(self, monkeypatch):
+        """Tests that gradient calculations of a circuit that contains
+        RandomLayers taking a differentiable PennyLane tensor execute
+        without error.
+
+        The main aim of the test is to check that unwrapping a single element
+        tensor does not cause errors.
+        """
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+
+            # Random quantum circuit
+            RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
+
+        qml.jacobian(circuit)(phi)
 
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
