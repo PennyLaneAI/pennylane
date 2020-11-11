@@ -20,6 +20,7 @@ import itertools
 import pytest
 
 import numpy as np
+from unittest.mock import Mock
 
 import pennylane as qml
 import pennylane._queuing
@@ -828,7 +829,7 @@ class TestInv:
 
 
 class TestExecutionCounter:
-    "Tests the ExecutionCounter."
+    """Tests the ExecutionCounter."""
 
     @pytest.mark.parametrize("dev, expected", [
         (qml.device('default.qubit', wires=1), 6),
@@ -859,6 +860,7 @@ class TestExecutionCounter:
             circuit.qtape.execute(dev)
 
         assert counter.counts == expected
+
         qml.disable_tape()
 
     @pytest.mark.parametrize("dev, expected", [
@@ -890,4 +892,26 @@ class TestExecutionCounter:
             circuit.qtape.execute(dev)
 
         assert counter.counts == expected
+
+        qml.disable_tape()
+
+    def test_exit_restores_function(self):
+        """Tests that the mock only applies in a context."""
+
+        qml.enable_tape()
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(w):
+            qml.RX(w, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        with ExecutionCounter():
+            circuit(0.1)
+            assert isinstance(qml._qubit_device.QubitDevice.execute, Mock)
+
+        assert not isinstance(qml._qubit_device.QubitDevice.execute, Mock)
+
         qml.disable_tape()

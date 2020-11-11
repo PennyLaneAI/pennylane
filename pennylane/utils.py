@@ -23,7 +23,7 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 
 import numpy as np
 
@@ -479,12 +479,20 @@ class ExecutionCounter:
     def __enter__(self):
         # Mock qubit device's execute function.
         # The side effect will define the output of the mock.
-        qml._qubit_device.QubitDevice.execute = MagicMock(side_effect=self.side_effect)
+        self.temp_original = qml._qubit_device.QubitDevice.execute
+
+        qml._qubit_device.QubitDevice.execute = Mock(side_effect=self.side_effect)
 
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb):
+
+        # record the number of calls to the mocked function
         self.counts = qml._qubit_device.QubitDevice.execute.call_count
+
+        # restore the original function
+        qml._qubit_device.QubitDevice.execute = self.temp_original
+
 
     @staticmethod
     def side_effect(circuit, **kwargs):  # pylint: disable=unused-argument
