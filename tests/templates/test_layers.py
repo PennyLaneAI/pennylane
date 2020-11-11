@@ -519,9 +519,9 @@ class TestRandomLayers:
             assert all([isinstance(x, float) for x in lst])
 
     def test_tensor_unwrapped_gradient_no_error(self, monkeypatch):
-        """Tests that gradient calculations of a circuit that contains
-        RandomLayers taking a differentiable PennyLane tensor execute
-        without error.
+        """Tests that the gradient calculation of a circuit that contains a
+        RandomLayers template taking a PennyLane tensor as differentiable
+        argument executes without error.
 
         The main aim of the test is to check that unwrapping a single element
         tensor does not cause errors.
