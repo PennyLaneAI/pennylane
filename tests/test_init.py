@@ -250,12 +250,6 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal,
                       (qml.init.basic_entangler_layers_uniform,
                        {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
                        (2, 2)),
-                      (qml.init.particle_conserving_u2_uniform,
-                       {"n_layers": 2, "n_wires": 4, "low": 0, "high": 1},
-                       (2, 7)),
-                      (qml.init.particle_conserving_u2_normal,
-                       {"n_layers": 2, "n_wires": 4, "mean": 0, "std": 1},
-                       (2, 7)),
                       ]
 # Functions returning a list of parameter arrays
 INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, {'n_layers': 2, 'n_wires': 3},
@@ -392,3 +386,18 @@ class TestInit:
         p1 = qml.init.particle_conserving_u2_normal(n_layers, n_wires, seed=seed)
         p2 = qml.init.particle_conserving_u2_normal(n_layers, n_wires, seed=seed+1)
         assert not np.allclose(p1, p2, atol=tol)
+
+    def test_particle_conserving_u2_init_exceptions(self):
+        """Test exceptions the functions 'particle_conserving_u2_uniform' and
+        'particle_conserving_u2_normal'."""
+
+        n_layers = 4
+        n_wires = 1
+
+        msg_match = "The number of qubits must be greater than one"
+
+        with pytest.raises(ValueError, match=msg_match):
+            qml.init.particle_conserving_u2_uniform(n_layers, n_wires)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qml.init.particle_conserving_u2_normal(n_layers, n_wires)

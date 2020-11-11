@@ -111,7 +111,8 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M)`` where ``D`` is the number of
-            layers and ``M`` = :math:`2N-1` is the number of rotation and exchange gates per layer.
+            layers and ``M`` = :math:`2N-1` is the total number of rotation ``(N)`` and exchange
+            ``(N-1)`` gates per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
