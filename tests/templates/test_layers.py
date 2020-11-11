@@ -761,7 +761,11 @@ class TestParticleConservingU1:
         [
             (np.ones((4, 2, 2)), 4, "'weights' must be of shape"),
             (np.ones((4, 3, 1)), 4, "'weights' must be of shape"),
-            (np.ones((4, 3, 1)), 1, "This template requires the number of qubits to be >= 2",),
+            (
+                np.ones((4, 3, 1)),
+                1,
+                "This template requires the number of qubits greater than one",
+            ),
         ],
     )
     def test_particle_conserving_u1_exceptions(self, weights, n_wires, msg_match):

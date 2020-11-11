@@ -395,7 +395,7 @@ class TestInit:
         n_layers = 4
         n_wires = 1
 
-        msg_match = "The number of qubits must be  >= 2"
+        msg_match = "The number of qubits must be greater than one"
 
         with pytest.raises(ValueError, match=msg_match):
             qml.init.particle_conserving_u1_uniform(n_layers, n_wires)

@@ -24,7 +24,7 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a uniform
     distribution.
 
-    Each parameter is drawn uniformly at random from between ``low`` and ``high``.
+    Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
     The parameters define the trainable angles entering the particle-conserving
     exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
     :func:`~.u1_ex_gate()`.
@@ -44,7 +44,9 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
         np.random.seed(seed)
 
     if n_wires < 2:
-        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires - 1, 2))
     return params
@@ -74,7 +76,9 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
         np.random.seed(seed)
 
     if n_wires < 2:
-        raise ValueError("The number of qubits must be  >= 2; got 'n_wires' = {}".format(n_wires))
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires - 1, 2))
     return params
