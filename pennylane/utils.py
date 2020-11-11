@@ -478,10 +478,11 @@ class ExecutionCounter:
         self.temp_original = None
 
     def __enter__(self):
-        # Mock qubit device's execute function.
-        # The side effect will define the output of the mock.
+        # remember the original method
         self.temp_original = qml._qubit_device.QubitDevice.execute
 
+        # Mock qubit device's execute method.
+        # The side effect will define the output of the mock.
         qml._qubit_device.QubitDevice.execute = Mock(side_effect=self.side_effect)
 
         return self
