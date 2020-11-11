@@ -716,7 +716,7 @@ class TestParticleConservingU2:
             (
                 np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
                 [0],
-                "This template requires the number of qubits to be >= 2",
+                "This template requires the number of qubits to be greater than one",
             ),
             (
                 np.array([[-0.080, 2.629, -0.710, 5.383]]),

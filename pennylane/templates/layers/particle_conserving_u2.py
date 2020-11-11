@@ -167,9 +167,8 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     if len(wires) < 2:
         raise ValueError(
-            "This template requires the number of qubits to be >= 2; got 'len(wires)' = {}".format(
-                len(wires)
-            )
+            "This template requires the number of qubits to be greater than one;"
+            " got 'len(wires)' = {}".format(len(wires))
         )
 
     expected_shape = (layers, 2 * len(wires) - 1)
