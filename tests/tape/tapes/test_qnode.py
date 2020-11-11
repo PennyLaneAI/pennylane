@@ -17,7 +17,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
-from pennylane.tape.measure import MeasurementProcess
 
 
 class TestValidation:
@@ -336,11 +335,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -364,11 +363,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -379,6 +378,7 @@ class TestTapeConstruction:
 """
 
         assert result == expected
+
     def test_drawing_exception(self):
         """Test that an error is raised if a QNode is drawn prior to
         construction."""
@@ -392,16 +392,71 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
-            
+    def test_multiple_observables_same_wire_expval(self, mocker):
+        """Test that the QNode supports returning expectation values of observables that are on the
+        same wire (provided that they are Pauli words and qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return (
+                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.PauliX(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(2)),
+            )
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
+        res_2 = qnodes(w)
+
+        assert np.allclose(res, res_2)
+
+    def test_multiple_observables_same_wire_mixed(self, mocker):
+        """Test that the QNode supports returning observables that are on the
+        same wire but with different return types (provided that the observables are Pauli words and
+        qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return qml.expval(qml.PauliX(0)), qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
+        q2 = qml.map(
+            qml.templates.StronglyEntanglingLayers,
+            [qml.PauliX(0) @ qml.PauliZ(1)],
+            dev,
+            measure="var",
+        )
+
+        res_2 = np.array([q1(w), q2(w)]).squeeze()
+
+        assert np.allclose(res, res_2)
+
+
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
@@ -438,11 +493,11 @@ class TestTFInterface:
 
         @qnode(dev, interface="tf")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.state()
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
 
         circuit(p1=x, p3=z)
 
@@ -491,11 +546,11 @@ class TestTorchInterface:
 
         @qnode(dev, interface="torch")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
