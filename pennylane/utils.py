@@ -487,7 +487,7 @@ class ExecutionCounter:
         self.counts = qml._qubit_device.QubitDevice.execute.call_count
 
     @staticmethod
-    def side_effect(circuit, **kwargs):
+    def side_effect(circuit, **kwargs):  # pylint: disable=unused-argument
         """Determine mock output. This function accepts the same inputs as the mocked function.
 
         Args:

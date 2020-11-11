@@ -2,6 +2,39 @@
 
 <h3>New features since last release</h3>
 
+* The number of device executions of an arbitrary computation can be pre-viewed 
+  without actually executing the device. For this purpose, the `ExecutionCounter()` 
+  context has been added, which mocks the device's execute method without actually 
+  running it.
+  
+  The feature currently only works with devices that inherit from 
+  `QubitDevice` and in tape mode. [(#896)](https://github.com/PennyLaneAI/pennylane/pull/896) 
+  
+  ```python
+
+    import pennylane as qml
+    from pennylane.utils import ExecutionCounter
+    qml.enable_tape()
+    
+    dev = qml.device("default.qubit", wires=1)
+    
+    @qml.qnode(dev)
+    def circuit(w):
+        qml.RX(w, wires=0)
+        qml.Hadamard(wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+       
+    with ExecutionCounter() as counter:
+        # 2 executions
+        circuit(0.1)
+        circuit(0.5)
+        # parameter-shift rule uses 2+1 executions
+        g = qml.grad(circuit)
+        g(0.1)
+    
+    print(counter.counts) # 5
+    ```
+
 * The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
   This method accepts a *list* of tapes, and returns a list of evaluated numerical values.
   This may be useful for devices that support performing numerous quantum evaluations
