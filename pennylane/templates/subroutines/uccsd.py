@@ -29,6 +29,67 @@ from pennylane.templates.utils import (
 from pennylane.wires import Wires
 
 
+def _preprocess(init_state, weights, wires, s_wires, d_wires):
+    """Validate and pre-process inputs."""
+
+    if (not s_wires) and (not d_wires):
+        raise ValueError(
+            "'s_wires' and 'd_wires' lists can not be both empty; got ph={}, pphh={}".format(
+                s_wires, d_wires
+            )
+        )
+
+    for d_wires_ in d_wires:
+        if len(d_wires_) != 2:
+            raise ValueError(
+                "expected entries of d_wires to be of size 2; got {} of length {}".format(
+                    d_wires_, len(d_wires_)
+                )
+            )
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        if weights.shape != (len(s_wires) + len(d_wires),):
+            raise ValueError(f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}.")
+
+        init_state = qml.tensorbox.TensorBox(init_state)
+        # we can extract the numpy representation here
+        # since init_state can never be differentiable
+        init_state = init_state.numpy()
+
+    else:
+        check_type(
+            init_state,
+            [np.ndarray],
+            msg="'init_state' must be a Numpy array; got {}".format(init_state),
+        )
+        for i in init_state:
+            check_type(
+                i,
+                [int, np.int64, np.ndarray],
+                msg="Elements of 'init_state' must be integers; got {}".format(init_state),
+            )
+
+        expected_shape = (len(s_wires) + len(d_wires),)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+        )
+
+        expected_shape = (len(wires),)
+        check_shape(
+            init_state,
+            expected_shape,
+            msg="'init_state' must be of shape {}; got {}".format(
+                expected_shape, get_shape(init_state)
+            ),
+        )
+
+    return np.flip(init_state)
+
+
 @template
 def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
     r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
@@ -153,57 +214,10 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
 
     """
 
-    ##############
-    # Input checks
-
     wires = Wires(wires)
+    init_state_flipped = _preprocess(init_state, weights, wires, s_wires, d_wires)
 
-    if (not s_wires) and (not d_wires):
-        raise ValueError(
-            "'s_wires' and 'd_wires' lists can not be both empty; got ph={}, pphh={}".format(
-                s_wires, d_wires
-            )
-        )
-
-    check_type(
-        init_state,
-        [np.ndarray],
-        msg="'init_state' must be a Numpy array; got {}".format(init_state),
-    )
-    for i in init_state:
-        check_type(
-            i,
-            [int, np.int64, np.ndarray],
-            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
-        )
-
-    expected_shape = (len(s_wires) + len(d_wires),)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-    )
-
-    expected_shape = (len(wires),)
-    check_shape(
-        init_state,
-        expected_shape,
-        msg="'init_state' must be of shape {}; got {}".format(
-            expected_shape, get_shape(init_state)
-        ),
-    )
-
-    for d_wires_ in d_wires:
-        if len(d_wires_) != 2:
-            raise ValueError(
-                "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                    d_wires_, len(d_wires_)
-                )
-            )
-
-    ###############
-
-    qml.BasisState(np.flip(init_state), wires=wires)
+    qml.BasisState(init_state_flipped, wires=wires)
 
     # turn wire arguments into Wires objects
     s_wires = [Wires(w) for w in s_wires]

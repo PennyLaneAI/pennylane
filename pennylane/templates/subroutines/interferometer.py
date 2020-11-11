@@ -14,12 +14,44 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.templates.utils import check_shapes, check_is_in_options, get_shape
+from pennylane.templates.utils import check_shapes, get_shape
 from pennylane.wires import Wires
 
+
+def _preprocess(theta, phi, varphi, wires):
+    """Validate and pre-process inputs."""
+
+    n_wires = len(wires)
+    n_if = n_wires * (n_wires - 1) // 2
+
+    if qml.tape_mode_active():
+
+        theta = qml.tensorbox.TensorBox(theta)
+        if theta.shape != ():
+            raise ValueError(f"Theta must be of shape {(n_if,)}; got {theta.shape}.")
+
+        phi = qml.tensorbox.TensorBox(phi)
+        if phi.shape != ():
+            raise ValueError(f"Phi must be of shape {(n_if,)}; got {phi.shape}.")
+
+        varphi = qml.tensorbox.TensorBox(varphi)
+        if varphi.shape != ():
+            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {varphi.shape}.")
+
+        shape_varphi = varphi.shape
+
+    else:
+        weights_list = [theta, phi, varphi]
+
+        expected_shapes = [(n_if,), (n_if,), (n_wires,)]
+        check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
+        shape_varphi = get_shape(varphi)
+
+    return shape_varphi
 
 @template
 def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane"):
@@ -102,30 +134,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    weights_list = [theta, phi, varphi]
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-    expected_shapes = [(n_if,), (n_if,), (n_wires,)]
-    check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
-
-    check_is_in_options(
-        beamsplitter,
-        ["clements", "pennylane"],
-        msg="did not recognize option {} for 'beamsplitter'" "".format(beamsplitter),
-    )
-    check_is_in_options(
-        mesh,
-        ["triangular", "rectangular"],
-        msg="did not recognize option {} for 'mesh'" "".format(mesh),
-    )
-    ###############
-
     M = len(wires)
+
+    shape_varphi = _preprocess(theta, phi, varphi, wires)
 
     if M == 1:
         # the interferometer is a single rotation
@@ -144,8 +156,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                     if beamsplitter == "clements":
                         Rotation(phi[n], wires=Wires(w1))
                         Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
-                    else:
+                    elif beamsplitter == "pennylane":
                         Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
+                    else:
+                        raise ValueError("did not recognize option {} for 'beamsplitter'" "".format(beamsplitter))
                     n += 1
 
     elif mesh == "triangular":
@@ -156,13 +170,15 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 if beamsplitter == "clements":
                     Rotation(phi[n], wires=wires[k])
                     Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
-                else:
+                elif beamsplitter == "pennylane":
                     Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                else:
+                    raise ValueError("did not recognize option {} for 'beamsplitter'" "".format(beamsplitter))
                 n += 1
+    else:
+        raise ValueError("did not recognize option {} for 'mesh'" "".format(mesh))
 
     # apply the final local phase shifts to all modes
-    shp = get_shape(varphi)
-
-    for i in range(shp[0]):
+    for i in range(shape_varphi[0]):
         act_on = wires[i]
         Rotation(varphi[i], wires=act_on)

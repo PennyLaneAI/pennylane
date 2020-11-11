@@ -22,6 +22,24 @@ from pennylane.wires import Wires
 _PAULIS = ["I", "X", "Y", "Z"]
 
 
+def _preprocess(weights, wires):
+    """Validate and pre-process inputs."""
+
+    if qml.tape_mode_active():
+
+        weights = qml.tensorbox.TensorBox(weights)
+        if weights.shape != (4 ** len(wires) - 1,):
+            raise ValueError(f"Weights must be of shape {(4 ** len(wires) - 1,)}; got {weights.shape}.")
+
+    else:
+        expected_shape = (4 ** len(wires) - 1,)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
+        )
+
+
 def _tuple_to_word(index_tuple):
     """Convert an integer tuple to the corresponding Pauli word.
 
@@ -95,14 +113,7 @@ def ArbitraryUnitary(weights, wires):
             a Wires object.
     """
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    expected_shape = (4 ** n_wires - 1,)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
-    )
+    _preprocess(weights, wires)
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

@@ -22,7 +22,7 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weights, wires):
-    """Validate weights"""
+    """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
 

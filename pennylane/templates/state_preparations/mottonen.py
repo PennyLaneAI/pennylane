@@ -24,6 +24,57 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
+def _preprocess(state_vector, wires):
+    """Validate and pre-process inputs."""
+
+    n_wires = len(wires)
+
+    if qml.tape_mode_active():
+
+        state_vector = qml.tensorbox.TensorBox(state_vector)
+
+        if len(state_vector.shape) != 1:
+            raise ValueError(f"State vector must be a one-dimensional vector; got shape {state_vector.shape}.")
+
+        n_amplitudes = state_vector.shape[0]
+        if n_amplitudes != 2 ** len(wires):
+            raise ValueError(f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}.")
+
+        #TODO: add those methods to tensorbox
+        # check if normalized
+        norm = np.sum(np.abs(state_vector) ** 2)
+        if not np.isclose(norm, 1.0, atol=1e-3):
+            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+        a = np.absolute(state_vector)
+        omega = np.angle(state_vector)
+
+    else:
+
+        expected_shape = (2 ** n_wires,)
+        check_shape(
+            state_vector,
+            expected_shape,
+            msg="State vector must be of shape {}; got {}."
+            "".format(expected_shape, get_shape(state_vector)),
+        )
+
+        if isinstance(state_vector[0], Variable):
+            state_vector = np.array([s.val for s in state_vector])
+
+        # check if normalized
+        norm = np.sum(np.abs(state_vector) ** 2)
+        if not np.isclose(norm, 1.0, atol=1e-3):
+            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+
+        a = np.absolute(state_vector)
+        omega = np.angle(state_vector)
+
+    # change ordering of wires, since original code was written for IBM machines
+    wires_reverse = wires[::-1]
+
+    return a, omega, wires_reverse
+
+
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
     """Generates the Gray code of given rank.
@@ -247,44 +298,18 @@ def MottonenStatePreparation(state_vector, wires):
 
     wires = Wires(wires)
 
-    n_wires = len(wires)
-    expected_shape = (2 ** n_wires,)
-    check_shape(
-        state_vector,
-        expected_shape,
-        msg="'state_vector' must be of shape {}; got {}."
-        "".format(expected_shape, get_shape(state_vector)),
-    )
-
-    # TODO: delete when tape is new core
-    if isinstance(state_vector[0], Variable):
-        state_vector = np.array([s.val for s in state_vector])
-    else:
-        state_vector = qml.tape.UnifiedTensor(state_vector).numpy()
-
-    # check if normalized
-    norm = np.sum(np.abs(state_vector) ** 2)
-    if not np.isclose(norm, 1.0, atol=1e-3):
-        raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
-
-    #######################
-
-    # change ordering of wires, since original code was written for IBM machines
-    wires_reverse = wires[::-1]
-
-    a = np.absolute(state_vector)
-    omega = np.angle(state_vector)
+    a, omega, wires_reverse = _preprocess(state_vector, wires)
 
     # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
-    for k in range(n_wires, 0, -1):
-        alpha_y_k = _get_alpha_y(a, n_wires, k)
+    for k in range(len(wires_reverse), 0, -1):
+        alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
         control = wires_reverse[k:]
         target = wires_reverse[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
     # Apply inverse z rotation cascade to prepare correct phases of amplitudes
-    for k in range(n_wires, 0, -1):
-        alpha_z_k = _get_alpha_z(omega, n_wires, k)
+    for k in range(len(wires_reverse), 0, -1):
+        alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
         control = wires_reverse[k:]
         target = wires_reverse[k - 1]
         if len(alpha_z_k) > 0:

@@ -27,7 +27,7 @@ from pennylane.templates.utils import (
 
 
 def _preprocess(features, wires, method, c):
-    """Validate features and extract gate parameters."""
+    """Validate and pre-process inputs."""
 
     constants = [c] * len(features)
 

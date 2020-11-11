@@ -17,6 +17,26 @@ Contains the ``ApproxTimeEvolution`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.templates.decorator import template
+from pennylane.wires import Wires
+
+
+def _preprocess(hamiltonian, n):
+    """Validate and pre-process inputs."""
+
+    if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
+        raise ValueError(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+                type(hamiltonian).__name__
+            )
+        )
+
+    if qml.tape_mode_active():
+        if not isinstance(n, int):
+            raise ValueError("n must be of type int, got {}".format(type(n).__name__))
+
+    else:
+        if not isinstance(n, (int, qml.variable.Variable)):
+            raise ValueError("n must be of type int, got {}".format(type(n).__name__))
 
 
 @template
@@ -100,19 +120,9 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         [-0.41614684 -0.41614684]
     """
 
+    _preprocess(hamiltonian)
+
     pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-    if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
-        raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
-        )
-
-    if not isinstance(n, (int, qml.variable.Variable)):
-        raise ValueError("n must be of type int, got {}".format(type(n).__name__))
-
-    ###############
 
     theta = []
     pauli_words = []

@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires):
-    """Validate features to be a sequence of 0s and 1s with the same length as the wires."""
+    """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
 

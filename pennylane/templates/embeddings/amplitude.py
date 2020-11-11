@@ -30,7 +30,7 @@ TOLERANCE = 1e-10
 
 
 def _preprocess(features, wires, pad_with, normalize):
-    """Validate features, pad and normalize."""
+    """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
 
@@ -53,6 +53,8 @@ def _preprocess(features, wires, pad_with, normalize):
         if pad_with is not None and n_features < 2 ** len(wires):
             padding = [pad_with] * (2 ** len(wires) - n_features)
             features = qml.tensorbox.concatenate([features, padding], axis=0)
+
+        #TODO: add those methods to tensorbox
 
         # normalize
         norm = np.sum(np.abs(features) ** 2)
@@ -99,11 +101,6 @@ def _preprocess(features, wires, pad_with, normalize):
             msg="'pad' must be a float or complex; got {}".format(pad_with),
         )
         check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
-
-        ###############
-
-        #############
-        # Preprocessing
 
         # pad
         n_features = shape[0]

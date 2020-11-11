@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires, pattern, n_repeats):
-    """Validate features."""
+    """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
 

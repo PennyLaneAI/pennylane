@@ -21,6 +21,48 @@ from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
+def _preprocess(basis_state, wires):
+    """Validate and pre-process inputs."""
+
+    if qml.tape_mode_active():
+
+        features = qml.tensorbox.TensorBox(basis_state)
+
+        if len(features.shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {features.shape}.")
+
+        n_features = features.shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_features}.")
+
+        basis_state = list(features.numpy())
+
+        if set(basis_state) != {0, 1}:
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+
+        # we return the input as a list of values, since
+        # it is not differentiable
+        return basis_state
+
+    else:
+
+        expected_shape = (len(wires),)
+        check_shape(
+            basis_state,
+            expected_shape,
+            msg="Basis state must be of shape {}; got {}."
+                "".format(expected_shape, get_shape(basis_state)),
+        )
+
+        # basis_state is guaranteed to be a list of binary values
+        if any([b not in [0, 1] for b in basis_state]):
+            raise ValueError(
+                "'basis_state' must only contain values of 0 and 1; got {}".format(basis_state)
+            )
+
+        return basis_state
+
+
 @template
 def BasisStatePreparation(basis_state, wires):
     r"""
@@ -42,27 +84,9 @@ def BasisStatePreparation(basis_state, wires):
     Raises:
         ValueError: if inputs do not have the correct format
     """
-
-    ######################
-    # Input checks
-
     wires = Wires(wires)
 
-    expected_shape = (len(wires),)
-    check_shape(
-        basis_state,
-        expected_shape,
-        msg=" 'basis_state' must be of shape {}; got {}."
-        "".format(expected_shape, get_shape(basis_state)),
-    )
-
-    # basis_state is guaranteed to be a list of binary values
-    if any([b not in [0, 1] for b in basis_state]):
-        raise ValueError(
-            "'basis_state' must only contain values of 0 and 1; got {}".format(basis_state)
-        )
-
-    ######################
+    basis_state = _preprocess(basis_state, wires)
 
     for wire, state in zip(wires, basis_state):
         if state == 1:
