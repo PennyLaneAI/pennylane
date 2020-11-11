@@ -144,7 +144,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
             h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
             # Define the HF state
-            ref_state = qml.qchem.hf_state(electrons=2, qubits)
+            ref_state = qml.qchem.hf_state(2, qubits)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
