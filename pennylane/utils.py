@@ -475,6 +475,7 @@ class ExecutionCounter:
 
     def __init__(self):
         self.counts = None
+        self.temp_original = None
 
     def __enter__(self):
         # Mock qubit device's execute function.
