@@ -27,9 +27,9 @@ from pennylane.wires import Wires
 
 
 def u2_ex_gate(phi, wires=None):
-    r"""Implement the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed
-    in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
-    particle-conserving VQE ansatze for Quantum Chemistry simulations.
+    r"""Implement the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build particle-conserving VQE ansatze
+    for Quantum Chemistry simulations.
 
     The unitary matrix :math:`U_{2, \mathrm{ex}}` acts on the Hilbert space of two qubits
 
@@ -67,8 +67,8 @@ def u2_ex_gate(phi, wires=None):
 @template
 def ParticleConservingU2(weights, wires, init_state=None):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
-particle-conserving gate
-    :math:`U_{2,\mathrm{ex}}` proposed in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
+    particle-conserving gate :math:`U_{2,\mathrm{ex}}` proposed in
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
     This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of
     :math:`R_\mathrm{z}(\vec{\theta})` and entangler block :math:`U_{2,\mathrm{ex}}(\vec{\phi})`
@@ -92,11 +92,10 @@ particle-conserving gate
 
     |
 
-Each layer contains
-    :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
+    Each layer contains :math:`N` rotation gates :math:`R_\mathrm{z}(\vec{\theta})` and
     :math:`N-1` particle-conserving exchange gates :math:`U_{2,\mathrm{ex}}(\phi)`
-    that act on pairs of nearest-neighbors qubits. The repeated units across several qubits are shown in dotted boxes. 
-    The unitary matrix representing
+    that act on pairs of nearest-neighbors qubits. The repeated units across several qubits are
+    shown in dotted boxes.  The unitary matrix representing
     :math:`U_{2,\mathrm{ex}}(\phi)` (`arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
     is decomposed into its elementary gates and implemented in the :func:`~.u2_ex_gate` function
     using PennyLane quantum operations.
@@ -160,7 +159,6 @@ Each layer contains
             layers = 1
             params = qml.init.particle_conserving_u2_normal(layers, qubits)
             print(cost_fn(params))
-
     """
 
     wires = Wires(wires)
