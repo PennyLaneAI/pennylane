@@ -915,3 +915,35 @@ class TestExecutionCounter:
         assert not isinstance(qml._qubit_device.QubitDevice.execute, Mock)
 
         qml.disable_tape()
+
+    def test_execute_not_run(self):
+        """Tests that in a mock context the execute function is never run."""
+
+        qml.enable_tape()
+
+        def exception_raiser(circuit, kwargs={}):
+            raise NotImplementedError
+
+        temp = qml._qubit_device.QubitDevice.execute
+        # replace the execute function with a function of same signature,
+        # but which always raises an exception
+        qml._qubit_device.QubitDevice.execute = exception_raiser
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(w):
+            qml.RX(w, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with ExecutionCounter():
+            res = circuit(0.1)
+            # assert that we get the counter's dummy output
+            assert res == np.array(0.)
+
+        with pytest.raises(NotImplementedError):
+            circuit(0.1)
+
+        qml._qubit_device.QubitDevice.execute = temp
+        qml.disable_tape()
