@@ -848,14 +848,13 @@ class TestParticleConservingU1:
         ],
     )
     def test_decomposition_u1ex(self, init_state, exp_state, tol):
-        """Test decomposition of the U_{1, ex}` exchange gate"""
+        """Test the decomposition of the U_{1, ex}` exchange gate by asserting the prepared
+        state"""
 
         N = 2
         wires = range(N)
         layers = 1
         weights = np.array([[[0.01045368, -0.03031732]]])
-
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=N)
 
@@ -863,10 +862,8 @@ class TestParticleConservingU1:
         def circuit(weights):
             ParticleConservingU1(weights, wires, init_state=init_state)
 
-        return qml.state()
+        return qml.expval(qml.PauliZ(0))
 
-        res_state = circuit(weights)
+        circuit(weights)
 
-        assert np.allclose(res_state, exp_state, atol=tol)
-
-        qml.disable_tape()
+        assert np.allclose(dev.state, exp_state, atol=tol)
