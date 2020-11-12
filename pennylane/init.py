@@ -32,8 +32,8 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
-        low (float): minimum value of uniform distribution
-        high (float): maximum value of uniform distribution
+        low (float): lower endpoint of the parameter interval
+        high (float): upper endpoint of the parameter interval
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:

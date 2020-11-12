@@ -764,7 +764,7 @@ class TestParticleConservingU1:
             (
                 np.ones((4, 3, 1)),
                 1,
-                "This template requires the number of qubits greater than one",
+                "This template requires the number of qubits to be greater than one",
             ),
         ],
     )
@@ -783,7 +783,7 @@ class TestParticleConservingU1:
             circuit(weights=weights, wires=wires, init_state=np.array([1, 1, 0, 0]))
 
     def test_integration(self, tol):
-        """Test integration with PennyLane"""
+        """Test integration with PennyLane to compute expectation values"""
 
         N = 4
         wires = range(N)
@@ -805,7 +805,7 @@ class TestParticleConservingU1:
         res = circuit(weights)
 
         exp = np.array([-0.99993177, -0.9853332, 0.98531251, 0.99995246])
-        assert np.allclose(res, np.array(expected), atol=tol)
+        assert np.allclose(res, np.array(exp), atol=tol)
 
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
@@ -816,9 +816,9 @@ class TestParticleConservingU1:
                 np.array(
                     [
                         0.00000000e00 + 0.00000000e00j,
-                        1.85571042e-18 - 3.88036599e-20j,
-                        1.22429852e-16 - 1.27988911e-18j,
-                        1.00000000e00 - 1.73472348e-18j,
+                        3.18686105e-17 - 1.38160066e-17j,
+                        1.09332080e-16 - 2.26795885e-17j,
+                        1.00000000e00 + 2.77555756e-17j,
                     ]
                 ),
             ),
@@ -827,9 +827,9 @@ class TestParticleConservingU1:
                 np.array(
                     [
                         0.00000000e00 + 0.00000000e00j,
-                        9.99540465e-01 + 0.00000000e00j,
-                        -3.03110196e-02 - 3.16873242e-04j,
-                        1.85571042e-18 + 3.88036599e-20j,
+                        8.23539739e-01 - 2.77555756e-17j,
+                        -5.55434174e-01 - 1.15217954e-01j,
+                        3.18686105e-17 + 1.38160066e-17j,
                     ]
                 ),
             ),
@@ -838,9 +838,9 @@ class TestParticleConservingU1:
                 np.array(
                     [
                         0.00000000e00 + 0.00000000e00j,
-                        -3.03110196e-02 + 3.16873242e-04j,
-                        -9.99540465e-01 + 0.00000000e00j,
-                        1.22429852e-16 + 1.27988911e-18j,
+                        -5.55434174e-01 + 1.15217954e-01j,
+                        -8.23539739e-01 - 5.55111512e-17j,
+                        1.09332080e-16 + 2.26795885e-17j,
                     ]
                 ),
             ),
@@ -853,15 +853,14 @@ class TestParticleConservingU1:
         N = 2
         wires = range(N)
         layers = 1
-        weights = np.array([[[0.01045368, -0.03031732]]])
+        weights = np.array([[[0.2045368, -0.6031732]]])
 
         dev = qml.device("default.qubit", wires=N)
 
         @qml.qnode(dev)
         def circuit(weights):
             ParticleConservingU1(weights, wires, init_state=init_state)
-
-        return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
         circuit(weights)
 

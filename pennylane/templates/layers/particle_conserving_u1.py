@@ -128,8 +128,9 @@ def ParticleConservingU1(weights, wires, init_state=None):
         \end{array}\right).
 
     The figure below shows the circuit decomposing :math:`U_{1, \mathrm{ex}}` in
-    elementary gates. The Pauli matrix :math:`\sigma_z` and single-qubit rotation :math:`R(0, 2 \theta, 0)`
-    apply the Pauli Z operator and an arbitrary rotation on the qubit ``n``,
+    elementary gates. The Pauli matrix :math:`\sigma_z` and single-qubit rotation
+    :math:`R(0, 2 \theta, 0)` apply the Pauli Z operator and an arbitrary rotation
+    on the qubit ``n`` with qubit ``m`` bein the control qubit,
 
     |
 
@@ -146,7 +147,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right),
 
-   which is applied controlled on the state of qubit ``m`` and can be further decomposed in terms of the
+    which is applied controlled on the state of qubit ``m`` and can be further decomposed in
+    terms of the
     `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
     supported by Pennylane,
 
@@ -171,8 +173,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
     |
 
     The quantum circuits above decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
-    and :math:`U_A(\phi)` are implemented by the :func:`~.u1_ex_gate` and :func:`~.decompose_ua`
-    functions, respectively.
+    and :math:`U_A(\phi)` are implemented by the ``u1_ex_gate`` and ``decompose_ua``
+    functions, respectively. :math:`R_\phi` refers to ``PhaseShift`` in the circuit diagram.
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
@@ -206,7 +208,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
             h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
             # Define the Hartree-Fock state
-            ref_state = qml.qchem.hf_state(electrons=2, qubits)
+            electrons = 2
+            ref_state = qml.qchem.hf_state(electrons, qubits)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
@@ -229,7 +232,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     if len(wires) < 2:
         raise ValueError(
-            "This template requires the number of qubits greater than one; got 'len(wires)' = {}".format(
+            "This template requires the number of qubits to be greater than one; a wire sequence with {} elements".format(
                 len(wires)
             )
         )
