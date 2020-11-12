@@ -731,7 +731,7 @@ class TestParticleConservingU1:
                     # check the wires the gates act on
                     assert rec.queue[idx]._wires == exp_wires[j]
 
-                    # check that parametrized gates takes the parameters \phi and \theta properly
+                    # check that parametrized gates take the parameters \phi and \theta properly
                     if exp_gate is qml.CRot:
 
                         if j < idx_CRot:
@@ -769,7 +769,7 @@ class TestParticleConservingU1:
         ],
     )
     def test_particle_conserving_u1_exceptions(self, weights, n_wires, msg_match):
-        """Test that ParticleConservingU1 throws an exception if the parameter array have illegal
+        """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
         shape."""
 
         wires = range(n_wires)
@@ -800,8 +800,7 @@ class TestParticleConservingU1:
         @qml.qnode(dev)
         def circuit(weights):
             ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
-
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weights)
 
@@ -849,7 +848,7 @@ class TestParticleConservingU1:
     )
     def test_decomposition_u1ex(self, init_state, exp_state, tol):
         """Test the decomposition of the U_{1, ex}` exchange gate by asserting the prepared
-        state"""
+        state."""
 
         N = 2
         wires = range(N)

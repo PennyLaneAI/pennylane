@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 
 def decompose_ua(phi, wires=None):
-    r"""Implement the circuit decomposing the controlled application of the unitary
+    r"""Implements the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
     .. math::
@@ -64,7 +64,7 @@ def decompose_ua(phi, wires=None):
 
 
 def u1_ex_gate(phi, theta, wires=None):
-    r"""Implement the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
+    r"""Implements the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
     a hardware-efficient particle-conserving VQE ansatz for quantum chemistry
     simulations.
@@ -146,7 +146,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right),
 
-    acting controlledly on the state of qubit ``m`` which is further decomposed in terms of the
+   which is applied controlled on the state of qubit ``m`` and can be further decomposed in terms of the
     `quantum operations <https://pennylane.readthedocs.io/en/stable/introduction/operations.html>`_
     supported by Pennylane,
 
