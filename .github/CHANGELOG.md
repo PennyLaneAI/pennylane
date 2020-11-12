@@ -13,7 +13,7 @@
   ```python
 
     import pennylane as qml
-    from pennylane.utils import ExecutionCounter
+    from pennylane.utils import SneakPeak
     qml.enable_tape()
     
     dev = qml.device("default.qubit", wires=1)
