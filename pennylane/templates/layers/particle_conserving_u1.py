@@ -183,8 +183,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
-        init_state (array[int]): Length ``len(wires)`` vector representing the Hartree-Fock state.
-            ``init_state`` is used to initialize the wires.
+        init_state (array[int]): length ``len(wires)`` vector representing the Hartree-Fock state
+            used to initialize the wires
 
     Raises:
         ValueError: if inputs do not have the correct format
