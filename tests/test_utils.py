@@ -25,7 +25,7 @@ from unittest.mock import Mock
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
-from pennylane import SneakPeak
+from pennylane import SneakPeek
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -829,7 +829,7 @@ class TestInv:
 
 
 class TestSneakPeak:
-    """Tests the SneakPeak context."""
+    """Tests the SneakPeek context."""
 
     def test_single_output(self, ):
         """Tests a qnode with a 1-d output."""
@@ -844,7 +844,7 @@ class TestSneakPeak:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with SneakPeak() as counter:
+        with SneakPeek() as counter:
             # 2 executions
             circuit(0.1)
             circuit(0.5)
@@ -873,7 +873,7 @@ class TestSneakPeak:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        with SneakPeak() as counter:
+        with SneakPeek() as counter:
             # 2 executions
             circuit(0.1)
             circuit(0.5)
@@ -902,7 +902,7 @@ class TestSneakPeak:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        with SneakPeak():
+        with SneakPeek():
             circuit(0.1)
             assert isinstance(qml._qubit_device.QubitDevice.execute, Mock)
 
@@ -931,7 +931,7 @@ class TestSneakPeak:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with SneakPeak():
+        with SneakPeek():
             res = circuit(0.1)
             # assert that we get the counter's dummy output
             assert res == np.array(0.)

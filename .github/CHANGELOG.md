@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The `SneakPeak()` context manager has been added, which mocks methods in PennyLane without 
+* The `SneakPeek()` context manager has been added, which mocks methods in PennyLane without 
   executing them, but instead registers statistics about the calls. 
   
   At the moment, the class only mocks the device's `execute` method and registers the number 
@@ -16,7 +16,7 @@
   ```python
 
     import pennylane as qml
-    from pennylane.utils import SneakPeak
+    from pennylane.utils import SneakPeek
     qml.enable_tape()
     
     dev = qml.device("default.qubit", wires=1)
@@ -27,7 +27,7 @@
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(wires=0))
        
-    with SneakPeak() as counter:
+    with SneakPeek() as counter:
         # 2 executions
         circuit(0.1)
         circuit(0.5)
