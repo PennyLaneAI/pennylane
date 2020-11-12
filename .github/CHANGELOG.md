@@ -2,13 +2,16 @@
 
 <h3>New features since last release</h3>
 
-* The number of device executions of an arbitrary computation can be pre-viewed 
-  without actually executing the device. For this purpose, the `ExecutionCounter()` 
-  context has been added, which mocks the device's execute method without actually 
-  running it.
+* The `SneakPeak()` context manager has been added, which mocks methods in PennyLane without 
+  executing them, but instead registers statistics about the calls. 
+  
+  At the moment, the class only mocks the device's `execute` method and registers the number 
+  of times it has been called. As opposed to a device's `num_executions` attribute, this 
+  allows a "sneak peak" of the circuits evaluated in an arbitrary computation.
   
   The feature currently only works with devices that inherit from 
-  `QubitDevice` and in tape mode. [(#896)](https://github.com/PennyLaneAI/pennylane/pull/896) 
+  `QubitDevice` and in tape mode. 
+  [(#896)](https://github.com/PennyLaneAI/pennylane/pull/896) 
   
   ```python
 
@@ -24,7 +27,7 @@
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(wires=0))
        
-    with ExecutionCounter() as counter:
+    with SneakPeak() as counter:
         # 2 executions
         circuit(0.1)
         circuit(0.5)
