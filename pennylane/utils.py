@@ -495,7 +495,6 @@ class SneakPeak:
         # restore the original function
         qml._qubit_device.QubitDevice.execute = self.temp_original
 
-
     @staticmethod
     def side_effect(circuit, **kwargs):  # pylint: disable=unused-argument
         """Determine mock output. This function accepts the same inputs as the mocked function.
