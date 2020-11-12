@@ -174,7 +174,8 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     The quantum circuits above decomposing the unitaries :math:`U_{1,\mathrm{ex}}(\phi, \theta)`
     and :math:`U_A(\phi)` are implemented by the ``u1_ex_gate`` and ``decompose_ua``
-    functions, respectively. :math:`R_\phi` refers to ``PhaseShift`` in the circuit diagram.
+    functions, respectively. :math:`R_\phi` refers to the ``PhaseShift`` gate in the
+    circuit diagram.
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M, 2)``.
