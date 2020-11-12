@@ -20,6 +20,8 @@ import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
+from pennylane.grouping import group_observables
+from pennylane.collections import QNodeCollection
 
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -370,6 +372,9 @@ class VQECost:
             Supports all interfaces supported by the :func:`~.qnode` decorator.
         diff_method (str, None): The method of differentiation to use with the created cost function.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
+        optimize (bool): Whether to optimize the observables composing the Hamiltonian by
+            separating them into qubit-wise commuting groups. Each group can then be executed
+            within a single QNode, resulting in fewer QNodes to evaluate.
 
     Returns:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
@@ -420,20 +425,47 @@ class VQECost:
     """
 
     def __init__(
-        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best",
+            optimize=False, **kwargs
     ):
         coeffs, observables = hamiltonian.terms
+
         self.hamiltonian = hamiltonian
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
-        self.qnodes = qml.map(
-            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
-        )
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
+        self.qnodes = None
+        """QNodeCollection or List[QNode]: The QNodes to be evaluated. Each QNode corresponds to the
         the expectation value of each observable term after applying the circuit ansatz.
         """
 
-        self.cost_fn = qml.dot(coeffs, self.qnodes)
+        if optimize:
+            obs_groupings, coeffs_groupings = group_observables(observables, coeffs)
+
+            wires = device.wires.tolist()
+            self.qnodes = []
+
+            for obs in obs_groupings:
+                def circuit(
+                        *args, _wires=wires, **circuit_kwargs
+                ):
+                    """Converting ansatz into a full circuit including measurements"""
+                    ansatz(*args, wires=_wires, **circuit_kwargs)
+                    return [qml.expval(o) for o in obs]
+
+                qnode = qml.QNode(circuit, device, interface=interface, diff_method=diff_method,
+                                  **kwargs)
+                self.qnodes.append(qnode)
+
+            # def cost_fn(*args, **kwargs):
+
+
+
+        else:
+            self.qnodes = qml.map(
+                ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
+            )
+
+            self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
