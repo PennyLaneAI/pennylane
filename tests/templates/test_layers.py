@@ -26,10 +26,12 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    ParticleConservingU1,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
+from pennylane.init import particle_conserving_u1_normal
 
 TOLERANCE = 1e-8
 
@@ -642,3 +644,224 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+
+class TestParticleConservingU1:
+    """Tests for the ParticleConservingU1 template from the
+    pennylane.templates.layers module."""
+
+    @staticmethod
+    def _wires_gates_u1(wires):
+        """Auxiliary function giving the wires that the elementary gates decomposing
+        ``u1_ex_gate`` act on."""
+
+        exp_wires = [
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+            wires[::-1],
+            wires[::-1],
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+        ]
+
+        return exp_wires
+
+    def test_particle_conserving_u1_operations(self):
+        """Test the correctness of the ParticleConservingU1 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+
+        qubits = 4
+        layers = 2
+        weights = particle_conserving_u1_normal(layers, qubits)
+
+        gates_per_u1 = 16
+        gates_per_layer = gates_per_u1 * (qubits - 1)
+        gate_count = layers * gates_per_layer + 1
+
+        gates_u1 = [
+            qml.CZ,
+            qml.CRot,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+        ]
+        gates_ent = gates_u1 + [qml.CZ, qml.CRot] + gates_u1
+
+        wires = Wires(range(qubits))
+
+        nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+
+        with pennylane._queuing.OperationRecorder() as rec:
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+
+        assert gate_count == len(rec.queue)
+
+        # check initialization of the qubit register
+        assert isinstance(rec.queue[0], qml.BasisState)
+
+        # check all quantum operations
+        idx_CRot = 8
+        for l in range(layers):
+            for i in range(qubits - 1):
+                exp_wires = self._wires_gates_u1(nm_wires[i])
+
+                phi = weights[l, i, 0]
+                theta = weights[l, i, 1]
+
+                for j, exp_gate in enumerate(gates_ent):
+                    idx = gates_per_layer * l + gates_per_u1 * i + j + 1
+
+                    # check that the gates are applied in the right order
+                    assert isinstance(rec.queue[idx], exp_gate)
+
+                    # check the wires the gates act on
+                    assert rec.queue[idx]._wires == exp_wires[j]
+
+                    # check that parametrized gates take the parameters \phi and \theta properly
+                    if exp_gate is qml.CRot:
+
+                        if j < idx_CRot:
+                            exp_params = [-phi, np.pi, phi]
+                        if j > idx_CRot:
+                            exp_params = [phi, np.pi, -phi]
+                        if j == idx_CRot:
+                            exp_params = [0, 2 * theta, 0]
+
+                        assert rec.queue[idx].parameters == exp_params
+
+                    elif exp_gate is qml.PhaseShift:
+
+                        if j < idx_CRot:
+                            exp_params = -phi
+                            if j == idx_CRot / 2:
+                                exp_params = phi
+                        if j > idx_CRot:
+                            exp_params = phi
+                            if j == (3 * idx_CRot + 2) / 2:
+                                exp_params = -phi
+
+                        assert rec.queue[idx].parameters == exp_params
+
+    @pytest.mark.parametrize(
+        ("weights", "n_wires", "msg_match"),
+        [
+            (np.ones((4, 2, 2)), 4, "'weights' must be of shape"),
+            (np.ones((4, 3, 1)), 4, "'weights' must be of shape"),
+            (
+                np.ones((4, 3, 1)),
+                1,
+                "This template requires the number of qubits to be greater than one",
+            ),
+        ],
+    )
+    def test_particle_conserving_u1_exceptions(self, weights, n_wires, msg_match):
+        """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
+        shape."""
+
+        wires = range(n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        def circuit(weights=weights, wires=None, init_state=None):
+            ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit(weights=weights, wires=wires, init_state=np.array([1, 1, 0, 0]))
+
+    def test_integration(self, tol):
+        """Test integration with PennyLane to compute expectation values"""
+
+        N = 4
+        wires = range(N)
+        layers = 2
+        weights = np.array(
+            [
+                [[-0.09009989, -0.00090317], [-0.16034551, -0.13278097], [-0.02926428, 0.05175079]],
+                [[-0.07988132, 0.11315495], [-0.16079166, 0.09439518], [-0.04321269, 0.13678911]],
+            ]
+        )
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(weights)
+
+        exp = np.array([-0.99993177, -0.9853332, 0.98531251, 0.99995246])
+        assert np.allclose(res, np.array(exp), atol=tol)
+
+    @pytest.mark.parametrize(
+        ("init_state", "exp_state"),
+        [
+            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
+            (
+                np.array([1, 1]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        3.18686105e-17 - 1.38160066e-17j,
+                        1.09332080e-16 - 2.26795885e-17j,
+                        1.00000000e00 + 2.77555756e-17j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        8.23539739e-01 - 2.77555756e-17j,
+                        -5.55434174e-01 - 1.15217954e-01j,
+                        3.18686105e-17 + 1.38160066e-17j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        -5.55434174e-01 + 1.15217954e-01j,
+                        -8.23539739e-01 - 5.55111512e-17j,
+                        1.09332080e-16 + 2.26795885e-17j,
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_decomposition_u1ex(self, init_state, exp_state, tol):
+        """Test the decomposition of the U_{1, ex}` exchange gate by asserting the prepared
+        state."""
+
+        N = 2
+        wires = range(N)
+        layers = 1
+        weights = np.array([[[0.2045368, -0.6031732]]])
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ParticleConservingU1(weights, wires, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(weights)
+
+        assert np.allclose(dev.state, exp_state, atol=tol)
