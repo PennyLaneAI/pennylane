@@ -438,7 +438,7 @@ class VQECost:
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = None
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the the 
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the the
         expectation value of each observable term after applying the circuit ansatz."""
 
         if optimize:
