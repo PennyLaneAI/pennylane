@@ -298,8 +298,8 @@ big_hamiltonian_grad = np.array([[[ 6.52084595e-18, -2.11464420e-02, -1.16576858
         [-2.73850768e-17,  1.14202988e-01, -5.45041403e-03],
         [-1.27514307e-17, -1.10465531e-01,  5.19489457e-02]],
 
-       [[-2.12870877e-02,  8.71478966e-02,  3.25574103e-03],
-        [-2.21085973e-02,  7.39332741e-04, -2.94450758e-17],
+       [[-2.45428288e-02,  8.38921555e-02, -2.00641818e-17],
+        [-2.21085973e-02,  7.39332741e-04, -1.25580654e-17],
         [ 9.62058625e-03, -1.51398765e-01,  2.02129847e-03],
         [ 1.10020832e-03, -3.49066271e-01,  2.13669117e-03]]]),
 
@@ -660,6 +660,8 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     def test_optimize_grad(self):
+        """Test that the gradient of VQECost is accessible and correct when using observable
+        optimization and the autograd interface."""
         if not qml.tape_mode_active():
             pytest.skip("This test works with tape mode enabled")
 
@@ -668,17 +670,66 @@ class TestVQE:
 
         cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
                            optimize=True)
+        cost2 = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                            optimize=False)
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
-        dcost = qml.grad(cost)
-        dc = dcost(w)
+        dc = qml.grad(cost)(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
 
-        # print(dc[0][1])
-        # print(big_hamiltonian_grad[0][1])
-        # assert np.allclose(dc, big_hamiltonian_grad)
+        dc2 = qml.grad(cost2)(w)
+        exec_no_opt = dev.num_executions
 
+        assert exec_no_opt > exec_opt
+        assert np.allclose(dc, big_hamiltonian_grad)
+        assert np.allclose(dc2, big_hamiltonian_grad)
 
+    def test_optimize_grad_torch(self, torch_support):
+        """Test that the gradient of VQECost is accessible and correct when using observable
+        optimization and the Torch interface."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test works with tape mode enabled")
+        if not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                           optimize=True, interface="torch")
+
+        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        res = cost(w)
+        res.backward()
+        dc = w.grad.detach().numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad)
+
+    def test_optimize_grad_tf(self, tf_support):
+        """Test that the gradient of VQECost is accessible and correct when using observable
+        optimization and the TensorFlow interface."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test works with tape mode enabled")
+        if not tf_support:
+            pytest.skip("This test requires TensorFlow")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                           optimize=True, interface="tf")
+
+        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+
+        with tf.GradientTape() as tape:
+            res = cost(w)
+
+        dc = tape.gradient(res, w).numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad)
 
 
 @pytest.mark.usefixtures("tape_mode")
