@@ -400,7 +400,7 @@ def density_matrix(wires):
         For more details on tape mode, see :mod:`pennylane.tape`.
 
     This function accepts no observables and instead instructs the QNode to return its density
-    matrix (respectively reduced density matrix). The ``wires`` argument gives the possibility
+    matrix or reduced density matrix. The ``wires`` argument gives the possibility
     to trace out a part of the system. It can result in obtaining a mixed state, which can be
     only represented by the reduced density matrix.
 
