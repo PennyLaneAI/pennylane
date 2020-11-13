@@ -423,8 +423,14 @@ class VQECost:
     """
 
     def __init__(
-        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best",
-            optimize=False, **kwargs
+        self,
+        ansatz,
+        hamiltonian,
+        device,
+        interface="autograd",
+        diff_method="best",
+        optimize=False,
+        **kwargs,
     ):
         coeffs, observables = hamiltonian.terms
 
@@ -437,18 +443,18 @@ class VQECost:
 
         if optimize:
             if not qml.tape_mode_active():
-                raise ValueError("Observable optimization is only supported in tape mode. Tape "
-                                 "mode can be enabled with the command:\n"
-                                 "qml.enable_tape()")
+                raise ValueError(
+                    "Observable optimization is only supported in tape mode. Tape "
+                    "mode can be enabled with the command:\n"
+                    "qml.enable_tape()"
+                )
 
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
 
             wires = device.wires.tolist()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
-            def circuit(
-                    *qnode_args, obs, **qnode_kwargs
-            ):
+            def circuit(*qnode_args, obs, **qnode_kwargs):
                 """Converting ansatz into a full circuit including measurements"""
                 ansatz(*qnode_args, wires=wires, **qnode_kwargs)
                 return [qml.expval(o) for o in obs]
