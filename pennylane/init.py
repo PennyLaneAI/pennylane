@@ -23,15 +23,15 @@ from pennylane import numpy as np
 def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.ParticleConservingU2`, drawn from a uniform
     distribution.
-    Each parameter is drawn uniformly at random from between ``low`` and ``high``.
+    Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
     The parameters define the trainable angles entering the Z rotation
     :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate :math:`U_{2,\mathrm{ex}}`
     implemented by the :func:`~.u2_ex_gate()`.
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
-        low (float): minimum value of uniform distribution
-        high (float): maximum value of uniform distribution
+        low (float): lower endpoint of the parameter interval
+        high (float): upper endpoint of the parameter interval
         seed (int): seed used in sampling the parameters, makes function call deterministic
     Returns:
         array: parameter array

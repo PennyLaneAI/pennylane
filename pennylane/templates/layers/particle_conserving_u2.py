@@ -27,7 +27,7 @@ from pennylane.wires import Wires
 
 
 def u2_ex_gate(phi, wires=None):
-    r"""Implement the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
+    r"""Implements the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build particle-conserving VQE ansatze
     for Quantum Chemistry simulations.
 
@@ -42,7 +42,7 @@ def u2_ex_gate(phi, wires=None):
         0 & 0 & 0 & 1 \\
         \end{array}\right).
 
-    The figure below shows the circuit used to decompose :math:`U_{2, \mathrm{ex}}` in
+    The figure below shows the circuit used to decompose :math:`U_{2, \mathrm{ex}}` into
     elementary gates
 
     |
@@ -70,7 +70,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
     particle-conserving gate :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
-    This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of entangler
+    This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the entangler
     block :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` to the Hartree-Fock state
 
     .. math::
@@ -123,8 +123,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     .. UsageDetails::
 
-        Notice that:
-
+        
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
@@ -140,7 +139,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
             from functools import partial
 
-            # Build the electronic Hamiltonian
+            # Build the electronic Hamiltonian from a local .xyz file
             h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
 
             # Define the HF state
@@ -155,7 +154,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
             # Define the cost function
             cost_fn = qml.VQECost(ansatz, h, dev)
 
-            # Compute the expectation value of 'h' for given set of parameters
+            # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
             params = qml.init.particle_conserving_u2_normal(layers, qubits)
             print(cost_fn(params))
