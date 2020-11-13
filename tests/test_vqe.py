@@ -293,6 +293,16 @@ big_hamiltonian_ops = [qml.Identity(wires=[0]),
 
 big_hamiltonian = qml.vqe.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
 
+big_hamiltonian_grad = np.array([[[ 6.52084595e-18, -2.11464420e-02, -1.16576858e-02],
+        [-8.22589330e-18, -5.20597922e-02, -1.85365365e-02],
+        [-2.73850768e-17,  1.14202988e-01, -5.45041403e-03],
+        [-1.27514307e-17, -1.10465531e-01,  5.19489457e-02]],
+
+       [[-2.12870877e-02,  8.71478966e-02,  3.25574103e-03],
+        [-2.21085973e-02,  7.39332741e-04, -2.94450758e-17],
+        [ 9.62058625e-03, -1.51398765e-01,  2.02129847e-03],
+        [ 1.10020832e-03, -3.49066271e-01,  2.13669117e-03]]]),
+
 #####################################################
 # Ansatz
 
@@ -635,7 +645,7 @@ class TestVQE:
         cost2 = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
                             optimize=False, interface=interface)
 
-        w = qml.init.strong_ent_layers_uniform(3, 4)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -648,6 +658,27 @@ class TestVQE:
         assert exec_no_opt == 15
 
         assert np.allclose(c1, c2)
+
+    def test_optimize_grad(self):
+        if not qml.tape_mode_active():
+            pytest.skip("This test works with tape mode enabled")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                           optimize=True)
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dcost = qml.grad(cost)
+        dc = dcost(w)
+
+        # print(dc[0][1])
+        # print(big_hamiltonian_grad[0][1])
+        # assert np.allclose(dc, big_hamiltonian_grad)
+
+
 
 
 @pytest.mark.usefixtures("tape_mode")
