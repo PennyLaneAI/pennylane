@@ -490,24 +490,28 @@ class JacobianTape(QuantumTape):
         all_tapes = []
         reshape_info = []
         processing_fns = []
+        nonzero_grad_idx = []
 
         for trainable_idx, param_method in enumerate(diff_methods):
+            if param_method != "0":
 
-            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
-                # numeric method
-                tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
+                nonzero_grad_idx.append(trainable_idx)
 
-            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
-                # analytic method
-                tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
+                if (method == "best" and param_method[0] == "F") or (method == "numeric"):
+                    # numeric method
+                    tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
 
-            processing_fns.append(processing_fn)
+                elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
+                    # analytic method
+                    tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
 
-            # we create a flat list here to feed at once to the device
-            all_tapes.extend(tapes)
+                processing_fns.append(processing_fn)
 
-            # to extract the correct result for this parameter later, remember the number of tapes
-            reshape_info.append(len(tapes))
+                # we create a flat list here to feed at once to the device
+                all_tapes.extend(tapes)
+
+                # to extract the correct result for this parameter later, remember the number of tapes
+                reshape_info.append(len(tapes))
 
         # execute all tapes at once
         results = device.batch_execute(all_tapes)
@@ -516,7 +520,7 @@ class JacobianTape(QuantumTape):
         jac = None
         start = 0
 
-        for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
+        for i, processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
 
             # extract the correct results from the flat list
             res = results[start : start + res_len]
