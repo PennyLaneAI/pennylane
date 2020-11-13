@@ -349,9 +349,10 @@ class TorchLayer(Module):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x},
-                  **{arg: weight.to(x) for arg,
-                     weight in self.qnode_weights.items()}}
+        kwargs = {
+            **{self.input_arg: x},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+        }
         return self.qnode(**kwargs).type(x.dtype)
 
     def __str__(self):
