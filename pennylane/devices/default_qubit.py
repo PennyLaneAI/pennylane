@@ -419,7 +419,7 @@ class DefaultQubit(QubitDevice):
             wires (Wires): wires of the reduced system.
 
         Returns:
-            tensor[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
+            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
         dim = self.num_wires
