@@ -25,6 +25,7 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+from pennylane.numpy import tensor
 
 
 def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
@@ -49,7 +50,12 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
             # Apply a random rotation gate to a random wire
             gate = np.random.choice(rotations)
             rnd_wire = wires.select_random(1)
-            gate(weights[i], wires=rnd_wire)
+
+            if isinstance(weights[i], tensor):
+                gate(weights[i].unwrap(), wires=rnd_wire)
+            else:
+                gate(weights[i], wires=rnd_wire)
+
             i += 1
         else:
             # Apply the imprimitive to two random wires
