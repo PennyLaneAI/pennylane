@@ -271,6 +271,28 @@ matmul_hamiltonians = [
     )
 ]
 
+big_hamiltonian_coeffs = np.array([-0.04207898,  0.17771287,  0.17771287, -0.24274281, -0.24274281,
+         0.17059738,  0.04475014, -0.04475014, -0.04475014,  0.04475014,
+         0.12293305,  0.16768319,  0.16768319,  0.12293305,  0.17627641])
+
+big_hamiltonian_ops = [qml.Identity(wires=[0]),
+  qml.PauliZ(wires=[0]),
+  qml.PauliZ(wires=[1]),
+  qml.PauliZ(wires=[2]),
+  qml.PauliZ(wires=[3]),
+  qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+  qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
+  qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
+  qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
+  qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]),
+  qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+  qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+  qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+  qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+  qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3])]
+
+big_hamiltonian = qml.vqe.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
+
 #####################################################
 # Ansatz
 
@@ -581,6 +603,51 @@ class TestVQE:
         for qnode in cost.qnodes:
             assert qnode.h == 123
             assert qnode.order == 2
+
+    def test_optimize_outside_tape_mode(self):
+        """Test that an error is raised if observable optimization is requested outside of tape
+        mode."""
+        if qml.tape_mode_active():
+            pytest.skip("This test works with tape mode disabled")
+
+        dev = qml.device("default.qubit", wires=2)
+        hamiltonian = qml.vqe.Hamiltonian([1], [qml.PauliZ(0)])
+
+        with pytest.raises(ValueError, match="Observable optimization is only supported in tape"):
+            qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, optimize=True)
+
+    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
+    def test_optimize(self, interface, tf_support, torch_support):
+        """Test that a VQECost with observable optimization gives the same result as another
+        VQECost without observable optimization."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test works with tape mode enabled")
+        if interface == "tf" and not tf_support:
+            pytest.skip("This test requires TensorFlow")
+        if interface == "torch" and not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                           optimize=True, interface=interface)
+        cost2 = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev,
+                            optimize=False, interface=interface)
+
+        w = qml.init.strong_ent_layers_uniform(3, 4)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 5
+        assert exec_no_opt == 15
+
+        assert np.allclose(c1, c2)
 
 
 @pytest.mark.usefixtures("tape_mode")
