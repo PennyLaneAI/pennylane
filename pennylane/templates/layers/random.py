@@ -25,7 +25,6 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
-from pennylane.numpy import tensor
 
 
 def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
