@@ -453,6 +453,10 @@ class BaseQNode(qml.QueuingContext):
                 Each positional argument is replaced with a :class:`~.variable.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
+        for k, v in kwargs.items():
+            if isinstance(v, qml.numpy.tensor):
+                kwargs[k] = v.unwrap()
+
         # Get the name of the qfunc's arguments
         full_argspec = inspect.getfullargspec(self.func)
 
