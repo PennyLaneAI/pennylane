@@ -141,7 +141,7 @@ class DefaultMixed(QubitDevice):
             wires (Wires): wires of the reduced system
 
         Returns:
-            tensor[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
         # Return the full density matrix if all the wires are given
