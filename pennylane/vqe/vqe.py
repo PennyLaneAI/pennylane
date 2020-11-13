@@ -17,11 +17,9 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import itertools
-import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
-from pennylane.grouping import group_observables
-from pennylane.collections import QNodeCollection
 
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -434,31 +432,36 @@ class VQECost:
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = None
-        """QNodeCollection or List[QNode]: The QNodes to be evaluated. Each QNode corresponds to the
-        the expectation value of each observable term after applying the circuit ansatz.
-        """
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the the 
+        expectation value of each observable term after applying the circuit ansatz."""
 
         if optimize:
-            obs_groupings, coeffs_groupings = group_observables(observables, coeffs)
+            if not qml.tape_mode_active():
+                raise ValueError("Observable optimization is only supported in tape mode. Tape "
+                                 "mode can be enabled with the command:\n"
+                                 "qml.enable_tape()")
+
+            obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
 
             wires = device.wires.tolist()
-            self.qnodes = []
 
-            for obs in obs_groupings:
-                def circuit(
-                        *args, _wires=wires, **circuit_kwargs
-                ):
-                    """Converting ansatz into a full circuit including measurements"""
-                    ansatz(*args, wires=_wires, **circuit_kwargs)
-                    return [qml.expval(o) for o in obs]
+            @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+            def circuit(
+                    *qnode_args, obs, **qnode_kwargs
+            ):
+                """Converting ansatz into a full circuit including measurements"""
+                ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                return [qml.expval(o) for o in obs]
 
-                qnode = qml.QNode(circuit, device, interface=interface, diff_method=diff_method,
-                                  **kwargs)
-                self.qnodes.append(qnode)
+            def cost_fn(*qnode_args, **qnode_kwargs):
+                """Combine results from grouped QNode executions with grouped coefficients"""
+                total = 0
+                for o, c in zip(obs_groupings, coeffs_groupings):
+                    res = circuit(*qnode_args, obs=o, **qnode_kwargs)
+                    total += sum([r * c_ for r, c_ in zip(res, c)])
+                return total
 
-            # def cost_fn(*args, **kwargs):
-
-
+            self.cost_fn = cost_fn
 
         else:
             self.qnodes = qml.map(
