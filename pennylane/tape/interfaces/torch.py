@@ -73,7 +73,7 @@ class _TorchInterface(torch.autograd.Function):
         jacobian = tape.jacobian(device, params=ctx.args, **tape.jacobian_options)
         tape.set_parameters(ctx.all_params, trainable_only=False)
 
-        jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
+        jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype).to(grad_output)
 
         vjp = grad_output.view(1, -1) @ jacobian
         grad_input_list = torch.unbind(vjp.flatten())
