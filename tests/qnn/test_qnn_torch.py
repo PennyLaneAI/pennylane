@@ -418,12 +418,13 @@ class TestTorchLayer:
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
-    @pytest.mark.parametrize("n_qubits", indices_up_to(1))
-    def test_cuda_backward(self, n_qubits):
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_cuda_backward(self):
         if not torch.cuda.is_available():
             pytest.skip("Cuda device not available")
         else:
             try:
+                n_qubits = 4
                 dev = qml.device("default.qubit", wires=n_qubits)
 
                 @qml.qnode(dev, interface="torch")
