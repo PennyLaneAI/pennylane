@@ -422,27 +422,28 @@ class TestTorchLayer:
     def test_cuda_backward(self, n_qubits):
         if not torch.cuda.is_available():
             pytest.skip("Cuda device not available")
-        try:
-            dev = qml.device("default.qubit", wires=n_qubits)
+        else:
+            try:
+                dev = qml.device("default.qubit", wires=n_qubits)
 
-            @qml.qnode(dev, interface="torch")
-            def circuit(inputs, weights):
-                qml.templates.AmplitudeEmbedding(inputs, wires=range(n_qubits), pad=0.0)
-                qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+                @qml.qnode(dev, interface="torch")
+                def circuit(inputs, weights):
+                    qml.templates.AmplitudeEmbedding(inputs, wires=range(n_qubits), pad=0.0)
+                    qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+                    return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
-            n_layers = 1
-            weight_shapes = {"weights": (n_layers, n_qubits)}
+                n_layers = 1
+                weight_shapes = {"weights": (n_layers, n_qubits)}
 
-            qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
+                qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
 
-            x = torch.rand((5, 10))
-            norm = x.norm(p=2, dim=1, keepdim=True)
-            x_normalized = x.div(norm).to(torch.device("cuda"))
-            loss = torch.sum(qlayer(x_normalized)).squeeze()
-            loss.backward()
-        except Exception:
-            pytest.fail("Exception raised in torch CUDA backward")
+                x = torch.rand((5, 10))
+                norm = x.norm(p=2, dim=1, keepdim=True)
+                x_normalized = x.div(norm).to(torch.device("cuda"))
+                loss = torch.sum(qlayer(x_normalized)).squeeze()
+                loss.backward()
+            except Exception:
+                pytest.fail("Exception raised in torch CUDA backward")
 
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
