@@ -193,8 +193,8 @@
 
 <h3>Bug fixes</h3>
 
-* PennyLane tensor objects are now unwrapped if passed as a keyword argument to
-  the quantum function of a QNode.
+* PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
+  keyword argument to the quantum function.
   [(#903)](https://github.com/PennyLaneAI/pennylane/pull/903)
   [(#893)](https://github.com/PennyLaneAI/pennylane/pull/893)
 
