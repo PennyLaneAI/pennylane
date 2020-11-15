@@ -71,7 +71,9 @@ def test_cast():
     assert res.numpy().dtype.type is np.complex128
 
 
-@pytest.mark.parametrize("x,expected", [[np.array([]), 0], [np.array([1]), 1], [np.array([[1, 2], [3, 4]]), 2]])
+@pytest.mark.parametrize(
+    "x,expected", [[np.array([]), 0], [np.array([1]), 1], [np.array([[1, 2], [3, 4]]), 2]]
+)
 def test_len(x, expected):
     """Test length"""
     res = qml.proc.TensorBox(x)

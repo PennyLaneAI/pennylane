@@ -93,6 +93,10 @@ def test_ufunc_compatibility():
     res = np.sum(np.sin(qml.proc.TensorBox(x)))
     assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
 
+    x = np.array([0.1, 0.2, 0.3])
+    res = np.sum(np.sin(qml.proc.TensorBox(x), out=np.empty([3])))
+    assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
+
 
 def test_inplace_addition():
     """Test that in-place addition works correctly"""

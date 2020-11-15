@@ -128,6 +128,7 @@ def test_shape():
     x = qml.proc.TensorBox(x)
     res = x.shape
     assert res == (1, 2, 2)
+    assert np.shape(x) == (1, 2, 2)
 
 
 def test_expand_dims():
