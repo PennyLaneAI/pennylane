@@ -252,7 +252,7 @@ class TensorBox(abc.ABC):
         """Cast the dtype of the TensorBox.
 
         Args:
-            dtype (np.dtype): The NumPy datatype to cast to.
+            dtype (np.dtype, str): the NumPy datatype to cast to
                 If the boxed tensor is not a NumPy array, the equivalent
                 datatype in the target framework is chosen.
         """
