@@ -25,7 +25,7 @@ except ImportError:  # pragma: no cover
 import pennylane as qml
 
 
-class TensorFlowBox(qml.tensorbox.TensorBox):
+class TensorFlowBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for TensorFlow tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

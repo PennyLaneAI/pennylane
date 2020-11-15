@@ -11,56 +11,63 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the NumpyBox implementation of the TensorBox API.
+"""This module contains the TorchBox implementation of the TensorBox API.
 """
 import numpy as np
+import torch
+
 import pennylane as qml
 
 
-class NumpyBox(qml.tensorbox.TensorBox):
-    """Implements the :class:`~.TensorBox` API for ``numpy.ndarray``.
+class TorchBox(qml.proc.TensorBox):
+    """Implements the :class:`~.TensorBox` API for Torch tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
-    def __init__(self, tensor):
-        if not isinstance(tensor, np.ndarray):
-            tensor = np.asarray(tensor)
-
-        super().__init__(tensor)
-
     @staticmethod
     def astensor(tensor):
-        return np.asarray(tensor)
+        return torch.as_tensor(tensor)
 
     def cast(self, dtype):
-        return NumpyBox(np.asarray(self.data, dtype=dtype))
+        if isinstance(dtype, torch.dtype):
+            return TorchBox(self.data.to(dtype))
+
+        dtype_name = np.dtype(dtype).name
+        torch_dtype = getattr(torch, dtype_name, None)
+
+        if torch_dtype is None:
+            raise ValueError(f"Unable to convert {dtype} to a Torch dtype")
+
+        return TorchBox(self.data.to(torch_dtype))
 
     def expand_dims(self, axis):
-        return NumpyBox(np.expand_dims(self.data, axis=axis))
+        return TorchBox(torch.unsqueeze(self.data, dim=axis))
 
     @property
     def interface(self):
-        return "numpy"
+        return "torch"
 
     def numpy(self):
-        return self.data
+        return self.data.detach().cpu().numpy()
 
     def ones_like(self):
-        return NumpyBox(np.ones_like(self.data))
+        return TorchBox(torch.ones_like(self.data))
 
     @property
     def requires_grad(self):
-        return False
+        return self.data.requires_grad
 
     @property
     def shape(self):
-        return self.data.shape
+        return tuple(self.data.shape)
 
     @staticmethod
     def stack(values, axis=0):
-        return NumpyBox(np.stack(NumpyBox.unbox_list(values), axis=axis))
+        tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
+        res = torch.stack(tensors, axis=axis)
+        return TorchBox(res)
 
     @property
     def T(self):
-        return NumpyBox(self.data.T)
+        return TorchBox(self.data.T)

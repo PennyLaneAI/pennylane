@@ -49,12 +49,14 @@ def _get_multi_tensorbox(values):
     """
     interfaces = [get_interface(v) for v in values]
 
-    if "tf" in interfaces and "torch" in interfaces:
+    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+        # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
     non_numpy_interfaces = set(interfaces) - {"numpy"}
 
-    if len(non_numpy_interfaces) == 2:
+    if len(non_numpy_interfaces) > 1:
+        # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
