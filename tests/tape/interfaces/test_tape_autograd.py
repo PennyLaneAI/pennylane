@@ -469,7 +469,7 @@ class TestAutogradPassthru:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliY(0))
+                qml.expval(qml.PauliY(1))
             return tape.execute(device)
 
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -482,7 +482,7 @@ class TestAutogradPassthru:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliY(0))
+            qml.expval(qml.PauliY(1))
 
         expected = tape.jacobian(dev)
         assert expected.shape == (2, 2)
