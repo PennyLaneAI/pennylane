@@ -69,6 +69,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
         m.setattr(QubitDevice, "state", 0)
+        m.setattr(QubitDevice, "density_matrix", lambda self, wires=None: 0)
         m.setattr(
             QubitDevice, "probability", lambda self, wires=None: 0
         )
