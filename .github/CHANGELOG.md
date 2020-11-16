@@ -16,22 +16,37 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
-* Adds the square root X gate `SX`.
-  [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
+* The `QuantumTape` class now contains basic resource estimation functionality. The method
+  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
+  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
+  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+
+* Adds the square root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
   dev = qml.device("default.qubit", wires=1)
-
+    
   @qml.qnode(dev)
   def circuit():
       qml.SX(wires=[0])
       return qml.expval(qml.PauliZ(wires=[0]))
   ```
 
-* The `QuantumTape` class now contains basic resource estimation functionality. The method
-  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
-  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
-  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+* Adds the `qml.density_matrix` QNode return with partial trace capabilities.
+  [(#878)](https://github.com/PennyLaneAI/pennylane/pull/878)
+
+  The density matrix over the provided wires is returned, with all other subsystems traced out.
+  `qml.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
+  
+  ```python
+  qml.enable_tape()
+  dev = qml.device("default.qubit", wires=2)
+
+  def circuit(x):
+      qml.PauliY(wires=0)
+      qml.Hadamard(wires=1)
+      return qml.density_matrix(wires=[1])  # wire 0 is traced out
+  ```
 
 <h3>Improvements</h3>
 
@@ -213,7 +228,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran,
+Romain Moyard, Maria Schuld
 
 
 # Release 0.12.0 (current release)
