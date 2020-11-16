@@ -44,13 +44,11 @@ def _preprocess(state_vector, wires):
                 f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
             )
 
-        # TODO: add those methods to tensorbox
-        # check if normalized
-        norm = np.sum(np.abs(state_vector) ** 2)
-        if not np.isclose(norm, 1.0, atol=1e-3):
+        norm = qml.proc.sum(qml.proc.abs(state_vector) ** 2)
+        if not qml.proc.allclose(norm, 1.0, atol=1e-3):
             raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
-        a = np.absolute(state_vector)
-        omega = np.angle(state_vector)
+        a = qml.proc.abs(state_vector)
+        omega = qml.proc.angle(state_vector)
 
     else:
 
@@ -148,6 +146,7 @@ def _compute_theta(alpha):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
+    alpha = qml.proc.TensorBox(alpha).numpy()
     theta = M_trans @ alpha
 
     return theta / 2 ** k
@@ -223,11 +222,11 @@ def _get_alpha_z(omega, n, k):
         for j in range(1, 2 ** (n - k) + 1)
     ]
 
-    term1 = np.take(omega, indices=indices1)
-    term2 = np.take(omega, indices=indices2)
+    term1 = qml.proc.take(omega, indices=indices1)
+    term2 = qml.proc.take(omega, indices=indices2)
     diff = (term1 - term2) / 2 ** (k - 1)
 
-    return np.sum(diff, axis=1)
+    return qml.proc.sum(diff, axis=1)
 
 
 def _get_alpha_y(a, n, k):
@@ -250,15 +249,18 @@ def _get_alpha_y(a, n, k):
         [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
         for j in range(2 ** (n - k))
     ]
-    numerator = np.take(a, indices=indices_numerator)
-    numerator = np.sum(np.abs(numerator) ** 2, axis=1)
+    numerator = qml.proc.take(a, indices=indices_numerator)
+    numerator = qml.proc.sum(qml.proc.abs(numerator) ** 2, axis=1)
 
     indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
-    denominator = np.take(a, indices=indices_denominator)
-    denominator = np.sum(np.abs(denominator) ** 2, axis=1)
+    denominator = qml.proc.take(a, indices=indices_denominator)
+    denominator = qml.proc.sum(qml.proc.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
+    denominator = qml.proc.TensorBox(denominator).numpy()
+    numerator = qml.proc.TensorBox(numerator).numpy()
+
     division = np.divide(
         numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
     )

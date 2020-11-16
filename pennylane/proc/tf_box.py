@@ -37,6 +37,12 @@ class TensorFlowBox(qml.proc.TensorBox):
 
         return super().__len__()
 
+    def abs(self):
+        return TensorFlowBox(tf.abs(self.data))
+
+    def angle(self):
+        return TensorFlowBox(tf.math.angle(self.data))
+
     @staticmethod
     def astensor(tensor):
         return tf.convert_to_tensor(tensor)
@@ -85,6 +91,12 @@ class TensorFlowBox(qml.proc.TensorBox):
     def stack(values, axis=0):
         res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
         return TensorFlowBox(res)
+
+    def sum(self, axis=None, keepdims=False):
+        return TensorFlowBox(tf.reduce_sum(self.data, axis=axis, keepdims=keepdims))
+
+    def take(self, indices, axis=None):
+        return TensorFlowBox(tf.gather(self.data, indices, axis=axis))
 
     @property
     def T(self):

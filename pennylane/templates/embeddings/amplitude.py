@@ -63,9 +63,9 @@ def _preprocess(features, wires, pad_with, normalize):
         # TODO: add those methods to tensorbox
 
         # normalize
-        norm = np.sum(np.abs(features) ** 2)
+        norm = qml.proc.sum(qml.proc.abs(features) ** 2)
 
-        if not np.isclose(norm, 1.0, atol=TOLERANCE):
+        if not qml.proc.allclose(norm, 1.0, atol=TOLERANCE):
             if normalize or pad_with:
                 features = features / np.sqrt(norm)
             else:

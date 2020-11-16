@@ -42,10 +42,10 @@ def _preprocess(features, wires, method, c):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if method == "amplitude":
-            pars = features.stack([features, constants], axis=1).data
+            pars = qml.proc.stack([features, constants], axis=1)
 
         elif method == "phase":
-            pars = features.stack([constants, features], axis=1).data
+            pars = qml.proc.stack([constants, features], axis=1)
 
         else:
             raise ValueError(f"did not recognize method {method}")

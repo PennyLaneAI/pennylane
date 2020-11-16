@@ -43,7 +43,7 @@ def _preprocess(weight, wires1, wires2):
 
     if qml.tape_mode_active():
 
-        weight = qml.proc.TensorBox(np.array(weight))  # Todo: make TensorBox accept scalars
+        weight = qml.proc.TensorBox(weight)
         if weight.shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {weight.shape}.")
 

@@ -229,7 +229,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     wires = Wires(wires)
 
-    layers = weights.shape[0]
+    layers = qml.proc.shape(weights)[0]
 
     if len(wires) < 2:
         raise ValueError(
@@ -252,4 +252,4 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     for l in range(layers):
         for i, wires_ in enumerate(nm_wires):
-            u1_ex_gate(weights[l, i, 0], weights[l, i, 1], wires=wires_)
+            u1_ex_gate(weights[l][i][0], weights[l][i][1], wires=wires_)

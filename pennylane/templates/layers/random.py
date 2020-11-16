@@ -34,8 +34,7 @@ def _preprocess(weights, ratio_imprim, rotations, seed):
 
     if qml.tape_mode_active():
 
-        weights = qml.proc.TensorBox(weights)
-        repeat = weights.shape[0]
+        repeat = qml.proc.shape(weights)[0]
 
     else:
         repeat = check_number_of_layers([weights])

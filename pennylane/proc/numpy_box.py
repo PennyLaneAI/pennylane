@@ -29,6 +29,12 @@ class NumpyBox(qml.proc.TensorBox):
 
         super().__init__(tensor)
 
+    def abs(self):
+        return NumpyBox(np.abs(self.data))
+
+    def angle(self):
+        return NumpyBox(np.angle(self.data))
+
     @staticmethod
     def astensor(tensor):
         return np.asarray(tensor)
@@ -64,6 +70,12 @@ class NumpyBox(qml.proc.TensorBox):
     @staticmethod
     def stack(values, axis=0):
         return NumpyBox(np.stack(NumpyBox.unbox_list(values), axis=axis))
+
+    def sum(self, axis=None, keepdims=False):
+        return NumpyBox(np.sum(self.data, axis=axis, keepdims=keepdims))
+
+    def take(self, indices, axis=None):
+        return NumpyBox(np.take(self.data, indices, axis=axis))
 
     @property
     def T(self):

@@ -30,7 +30,6 @@ def _preprocess(features, wires, method, c):
     """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
-
         features = qml.proc.TensorBox(features)
         constants = [c] * len(features)
 
@@ -42,10 +41,10 @@ def _preprocess(features, wires, method, c):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if method == "amplitude":
-            pars = features.stack([features, constants], axis=1).data
+            pars = qml.proc.stack([features, constants], axis=1)
 
         elif method == "phase":
-            pars = features.stack([constants, features], axis=1).data
+            pars = qml.proc.stack([constants, features], axis=1)
 
         else:
             raise ValueError(f"did not recognize method {method}")
@@ -109,4 +108,5 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     wires = Wires(wires)
     pars = _preprocess(features, wires, method, c)
 
+    print(pars)
     broadcast(unitary=qml.Displacement, pattern="single", wires=wires, parameters=pars)

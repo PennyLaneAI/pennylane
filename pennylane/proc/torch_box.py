@@ -25,6 +25,12 @@ class TorchBox(qml.proc.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    def abs(self):
+        return TorchBox(torch.abs(self.data))
+
+    def angle(self):
+        return TorchBox(torch.angle(self.data))
+
     @staticmethod
     def astensor(tensor):
         return torch.as_tensor(tensor)
@@ -81,6 +87,28 @@ class TorchBox(qml.proc.TensorBox):
         tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
         res = torch.stack(tensors, axis=axis)
         return TorchBox(res)
+
+    def sum(self, axis=None, keepdims=False):
+        if axis is None:
+            return TorchBox(torch.sum(self.data))
+
+        return TorchBox(torch.sum(self.data, dim=axis, keepdim=keepdims))
+
+    def take(self, indices, axis=None):
+        if isinstance(indices, qml.proc.TensorBox):
+            indices = indices.numpy()
+
+        if not isinstance(indices, torch.Tensor):
+            indices = self.astensor(indices)
+
+        if axis is None:
+            return TorchBox(self.data.flatten()[indices])
+
+        if indices.ndim == 1:
+            return TorchBox(torch.index_select(self.data, dim=axis, index=indices))
+
+        fancy_indices = [slice(None)] * axis + [indices]
+        return TorchBox(self.data[fancy_indices])
 
     @property
     def T(self):

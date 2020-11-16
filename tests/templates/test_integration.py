@@ -148,8 +148,8 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                 'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0], requires_grad=False)},
                                4),
                               (qml.templates.ParticleConservingU1,
-                               {'weights': np.array([[[ 0.17586701, -0.20382066]]])},
-                               {'wires': [0, 1], 'init_state':np.array([1, 0])},
+                               {'weights': [[[ 0.17586701, -0.20382066]]]},
+                               {'wires': [0, 1], 'init_state': np.array([1, 0], requires_grad=False)},
                                2),
                               ]
 
@@ -524,7 +524,7 @@ class TestIntegrationGradient:
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_integration_qubit_grad(self, template, diffable, nondiffable, n_wires, interface, to_var):
         """Tests that gradient calculations of qubit templates execute without error."""
-        if template.__name__ in ["MottonenStatePreparation"]:
+        if template.__name__ in ["MottonenStatePreparation", "AmplitudeEmbedding"]:
             pytest.skip("Template cannot be differentiated")
 
         # Extract keys and items

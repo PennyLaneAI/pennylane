@@ -24,6 +24,12 @@ class AutogradBox(qml.proc.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    def abs(self):
+        return AutogradBox(np.abs(self.data))
+
+    def angle(self):
+        return AutogradBox(np.angle(self.data))
+
     @staticmethod
     def astensor(tensor):
         return np.tensor(tensor)
@@ -59,6 +65,12 @@ class AutogradBox(qml.proc.TensorBox):
     @staticmethod
     def stack(values, axis=0):
         return AutogradBox(np.stack(AutogradBox.unbox_list(values), axis=axis))
+
+    def sum(self, axis=None, keepdims=False):
+        return AutogradBox(np.sum(self.data, axis=axis, keepdims=keepdims))
+
+    def take(self, indices, axis=None):
+        return AutogradBox(np.take(self.data, indices, axis=axis))
 
     @property
     def T(self):

@@ -36,8 +36,10 @@ The following frameworks are currently supported:
 """
 from .fn import (
     T,
+    abs_ as abs,
     allclose,
     allequal,
+    angle,
     cast,
     cast_like,
     concatenate,
@@ -48,6 +50,8 @@ from .fn import (
     requires_grad,
     shape,
     stack,
+    sum_ as sum,
+    take,
     toarray,
 )
 from .tensorbox import TensorBox

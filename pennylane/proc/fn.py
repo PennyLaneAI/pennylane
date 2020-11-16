@@ -75,6 +75,24 @@ def _get_multi_tensorbox(values):
     return TensorBox(values[interfaces.index("numpy")])
 
 
+def abs_(tensor):
+    """Returns the element-wise absolute value.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like:
+
+    **Example**
+
+    >>> a = torch.tensor([1., -2.], requires_grad=True)
+    >>> abs(a)
+    tensor([1., 2.], grad_fn=<AbsBackward>)
+    """
+    return TensorBox(tensor).abs().data
+
+
 def allequal(tensor1, tensor2, **kwargs):
     """Returns True if two tensors are element-wise equal along a given axis.
 
@@ -115,6 +133,24 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
 
 
 allclose.__doc__ = np.allclose.__doc__
+
+
+def angle(tensor):
+    """Returns the element-wise angle of a complex tensor.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like:
+
+    **Example**
+
+    >>> a = torch.tensor([1.0, 1.0j, 1+1j], requires_grad=True)
+    >>> angle(a)
+    tensor([0.0000, 1.5708, 0.7854], grad_fn=<AngleBackward>)
+    """
+    return TensorBox(tensor).angle().data
 
 
 def cast(tensor, dtype):
@@ -429,6 +465,43 @@ def stack(values, axis=0):
     return _get_multi_tensorbox(values).stack(values, axis=axis).data
 
 
+def sum_(tensor, axis=None, keepdims=False):
+    """TensorBox: Returns the sum of the tensor elements across the specified dimensions.
+
+    Args:
+        tensor (tensor_like): input tensor
+        axis (int or tuple[int]): The axis or axes along which to perform the sum.
+            If not specified, all elements of the tensor across all dimensions
+            will be summed, returning a tensor.
+        keepdims (bool): If True, retains all summed dimensions.
+
+    Returns:
+        tensor_like: The tensor with specified dimensions summed over. Note that
+        if all elements are summed, then a 0-dimensional tensor is returned, rather
+        than a Python scalar.
+
+    **Example**
+
+    Summing over all dimensions:
+
+    >>> x = tf.Variable([[1., 2.], [3., 4.]])
+    >>> sum(x)
+    <tf.Tensor: shape=(), dtype=float32, numpy=10.0>
+
+    Summing over specified dimensions:
+
+    >>> x = np.array([[[1, 1], [5, 3]], [[1, 4], [-6, -1]]])
+    >>> x.shape
+    (2, 2, 2)
+    >>> sum(x, axis=(0, 2))
+    tensor([7, 1], requires_grad=True)
+    >>> sum(x, axis=(0, 2), keepdims=True)
+    tensor([[[7],
+             [1]]], requires_grad=True)
+    """
+    return TensorBox(tensor).sum(axis=axis, keepdims=keepdims).data
+
+
 def T(tensor):
     """Returns the transpose of the tensor by reversing the order
     of the axes. For a 2D tensor, this corresponds to the matrix transpose.
@@ -448,3 +521,39 @@ def T(tensor):
            [2, 4]], dtype=int32)>
     """
     return TensorBox(tensor).T.data
+
+
+def take(tensor, indices, axis=None):
+    """Gather elements from a tensor.
+
+    Note that ``take(indices, axis=3)`` is equivalent
+    to ``tensor[:, :, :, indices, ...]`` for frameworks that support
+    NumPy-like fancy indexing.
+
+    This function is roughly equivalent to ``np.take`` and ``tf.gather``.
+    In the case of a 1-dimensional set of indices, it is roughly equivalent
+    to ``torch.index_select``, but deviates for multi-dimensional indices.
+
+    Args:
+        tensor (tensor_like): input tensor
+        indices (Sequence[int]): the indices of the values to extract
+        axis: The axis over which to select the values. If not provided,
+            the tensor is flattened before value extraction.
+
+    **Example**
+
+    >>> x = torch.tensor([[1, 2], [3, 4]])
+    >>> take(y, indices=[[0, 0], [1, 0]], axis=1)
+    tensor([[[1, 1],
+             [2, 1]],
+
+            [[3, 3],
+             [4, 3]]])
+    """
+    tensor = TensorBox(tensor)
+    idx_tb = TensorBox(indices)
+
+    if idx_tb.interface not in ("pennylane", "numpy") and idx_tb.interface != tensor.interface:
+        indices = convert_like(indices, tensor)
+
+    return tensor.take(indices, axis=axis)
