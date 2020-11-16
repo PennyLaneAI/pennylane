@@ -32,6 +32,8 @@ class TorchBox(qml.proc.TensorBox):
     def angle(self):
         return TorchBox(torch.angle(self.data))
 
+    arcsin = qml.proc.tensorbox.wrap_output(lambda self: torch.arcsin(self.data))
+
     @staticmethod
     def astensor(tensor):
         return torch.as_tensor(tensor)
@@ -112,6 +114,9 @@ class TorchBox(qml.proc.TensorBox):
     def shape(self):
         return tuple(self.data.shape)
 
+    def sqrt(self):
+        return TorchBox(torch.sqrt(self.data))
+
     @staticmethod
     def stack(values, axis=0):
         tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
@@ -143,3 +148,7 @@ class TorchBox(qml.proc.TensorBox):
     @property
     def T(self):
         return TorchBox(self.data.T)
+
+    @staticmethod
+    def where(condition, x, y):
+        return TorchBox(torch.where(TorchBox.astensor(condition), *TorchBox.unbox_list([x, y])))

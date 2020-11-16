@@ -27,7 +27,6 @@ def wrap_output(func):
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
         wrap = kwargs.pop("wrap_output", True)
-        print(wrap)
 
         if wrap:
             cls = vars(sys.modules[func.__module__])[func.__qualname__.split('.')[0]]
@@ -288,6 +287,10 @@ class TensorBox(abc.ABC):
     def angle(self):
         """TensorBox: Returns the elementwise complex angle."""
 
+    @abc.abstractmethod
+    def arcsin(self):
+        """Returns the element-wise inverse sine of the tensor"""
+
     @staticmethod
     @abc.abstractmethod
     def astensor(tensor):
@@ -431,6 +434,10 @@ class TensorBox(abc.ABC):
     def shape(self):
         """tuple[int]: returns the shape of the tensor as a tuple of integers"""
 
+    @abc.abstractmethod
+    def sqrt(self):
+        """Returns the square root of the tensor"""
+
     @staticmethod
     @abc.abstractmethod
     def stack(values, axis=0):
@@ -523,6 +530,12 @@ class TensorBox(abc.ABC):
                  [4, 3]]])
         """
 
+    @staticmethod
+    @abc.abstractmethod
+    def where(condition, x, y):
+        """Return a tensor of elements selected from ``x`` if the condition is True,
+        ``y`` otherwise."""
+
     numpy_dispatch_functions = {
         np.angle: "angle",
         np.concatenate: "concatenate",
@@ -532,4 +545,5 @@ class TensorBox(abc.ABC):
         np.stack: "stack",
         np.sum: "sum",
         np.take: "take",
+        np.where: "where"
     }

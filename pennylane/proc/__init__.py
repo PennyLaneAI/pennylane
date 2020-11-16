@@ -40,6 +40,7 @@ from .fn import (
     allclose,
     allequal,
     angle,
+    arcsin,
     cast,
     cast_like,
     concatenate,
@@ -50,9 +51,11 @@ from .fn import (
     ones_like,
     requires_grad,
     shape,
+    sqrt,
     stack,
     sum_ as sum,
     take,
     toarray,
+    where
 )
 from .tensorbox import TensorBox

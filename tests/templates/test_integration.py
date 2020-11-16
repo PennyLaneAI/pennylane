@@ -524,7 +524,7 @@ class TestIntegrationGradient:
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_integration_qubit_grad(self, template, diffable, nondiffable, n_wires, interface, to_var):
         """Tests that gradient calculations of qubit templates execute without error."""
-        if template.__name__ in ["MottonenStatePreparation", "AmplitudeEmbedding"]:
+        if template.__name__ in ["AmplitudeEmbedding"]:
             pytest.skip("Template cannot be differentiated")
 
         # Extract keys and items

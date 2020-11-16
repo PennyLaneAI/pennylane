@@ -257,14 +257,8 @@ def _get_alpha_y(a, n, k):
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
-    denominator = qml.proc.TensorBox(denominator).numpy()
-    numerator = qml.proc.TensorBox(numerator).numpy()
-
-    division = np.divide(
-        numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
-    )
-
-    return 2 * np.arcsin(np.sqrt(division))
+    division = qml.proc.where(denominator != 0.0, numerator / denominator, 0.)
+    return 2 * qml.proc.arcsin(qml.proc.sqrt(division))
 
 
 @template

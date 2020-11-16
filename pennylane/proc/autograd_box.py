@@ -30,6 +30,8 @@ class AutogradBox(qml.proc.TensorBox):
     def angle(self):
         return AutogradBox(np.angle(self.data))
 
+    arcsin = qml.proc.tensorbox.wrap_output(lambda self: np.arcsin(self.data))
+
     @staticmethod
     def astensor(tensor):
         return np.tensor(tensor)
@@ -58,6 +60,9 @@ class AutogradBox(qml.proc.TensorBox):
         return "autograd"
 
     def numpy(self):
+        if hasattr(self.data, "_value"):
+            return self.data._value
+
         return self.data.numpy()
 
     def ones_like(self):
@@ -71,6 +76,9 @@ class AutogradBox(qml.proc.TensorBox):
     def shape(self):
         return self.data.shape
 
+    def sqrt(self):
+        return AutogradBox(np.sqrt(self.data))
+
     @staticmethod
     def stack(values, axis=0):
         return AutogradBox(np.stack(AutogradBox.unbox_list(values), axis=axis))
@@ -79,8 +87,21 @@ class AutogradBox(qml.proc.TensorBox):
         return AutogradBox(np.sum(self.data, axis=axis, keepdims=keepdims))
 
     def take(self, indices, axis=None):
-        return AutogradBox(np.take(self.data, indices, axis=axis))
+        if isinstance(indices, qml.proc.TensorBox):
+            indices = indices.numpy()
+
+        indices = self.astensor(indices)
+
+        if axis is None:
+            return AutogradBox(self.data.flatten()[indices])
+
+        fancy_indices = [slice(None)] * axis + [indices]
+        return AutogradBox(self.data[fancy_indices])
 
     @property
     def T(self):
         return AutogradBox(self.data.T)
+
+    @staticmethod
+    def where(condition, x, y):
+        return AutogradBox(np.where(condition, *AutogradBox.unbox_list([x, y])))

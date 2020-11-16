@@ -35,6 +35,8 @@ class NumpyBox(qml.proc.TensorBox):
     def angle(self):
         return NumpyBox(np.angle(self.data))
 
+    arcsin = qml.proc.tensorbox.wrap_output(lambda self: np.arcsin(self.data))
+
     @staticmethod
     def astensor(tensor):
         return np.asarray(tensor)
@@ -76,6 +78,9 @@ class NumpyBox(qml.proc.TensorBox):
     def shape(self):
         return self.data.shape
 
+    def sqrt(self):
+        return NumpyBox(np.sqrt(self.data))
+
     @staticmethod
     def stack(values, axis=0):
         return NumpyBox(np.stack(NumpyBox.unbox_list(values), axis=axis))
@@ -89,3 +94,7 @@ class NumpyBox(qml.proc.TensorBox):
     @property
     def T(self):
         return NumpyBox(self.data.T)
+
+    @staticmethod
+    def where(condition, x, y):
+        return NumpyBox(np.where(condition, *NumpyBox.unbox_list([x, y])))

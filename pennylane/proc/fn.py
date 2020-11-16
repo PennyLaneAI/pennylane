@@ -153,6 +153,11 @@ def angle(tensor):
     return TensorBox(tensor).angle().data
 
 
+def arcsin(tensor):
+    """Returns the element-wise inverse sine of the tensor"""
+    return TensorBox(tensor).arcsin(wrap_output=False)
+
+
 def cast(tensor, dtype):
     """Casts the given tensor to a new type.
 
@@ -462,6 +467,10 @@ def shape(tensor):
     return TensorBox(tensor).shape
 
 
+def sqrt(tensor):
+    return TensorBox(tensor).sqrt().data
+
+
 def stack(values, axis=0):
     """Stack a sequence of tensors along the specified axis.
 
@@ -586,3 +595,7 @@ def take(tensor, indices, axis=None):
         indices = convert_like(indices, tensor)
 
     return tensor.take(indices, axis=axis)
+
+
+def where(condition, x, y):
+    return _get_multi_tensorbox([x, y]).where(condition, x, y).data

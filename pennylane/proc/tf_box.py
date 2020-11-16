@@ -43,6 +43,8 @@ class TensorFlowBox(qml.proc.TensorBox):
     def angle(self):
         return TensorFlowBox(tf.math.angle(self.data))
 
+    arcsin = qml.proc.tensorbox.wrap_output(lambda self: tf.math.asin(self.data))
+
     @staticmethod
     def astensor(tensor):
         return tf.convert_to_tensor(tensor)
@@ -112,6 +114,9 @@ class TensorFlowBox(qml.proc.TensorBox):
     def shape(self):
         return tuple(self.data.shape)
 
+    def sqrt(self):
+        return TensorFlowBox(tf.sqrt(self.data))
+
     @staticmethod
     def stack(values, axis=0):
         res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
@@ -126,3 +131,7 @@ class TensorFlowBox(qml.proc.TensorBox):
     @property
     def T(self):
         return TensorFlowBox(tf.transpose(self.data))
+
+    @staticmethod
+    def where(condition, x, y):
+        return TensorFlowBox(tf.where(TensorFlowBox.astensor(condition), *TensorFlowBox.unbox_list([x, y])))
