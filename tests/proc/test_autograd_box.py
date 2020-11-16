@@ -80,13 +80,6 @@ def test_len(x, expected):
     assert len(res) == len(x) == expected
 
 
-def test_ufunc_compatibility():
-    """Test that the AutogradBox class has ufunc compatibility"""
-    x = np.array([0.1, 0.2, 0.3])
-    res = np.sum(np.sin(qml.proc.TensorBox(x)))
-    assert res.unbox().item() == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
-
-
 def test_multiplication():
     """Test multiplication between tensors and arrays"""
     x = np.array([[1, 2], [3, 4]])
@@ -98,7 +91,6 @@ def test_multiplication():
 
     yT = qml.proc.TensorBox(y)
     res = x * yT
-    print(x * yT)
     assert np.all(res == x * y)
 
     res = xT * yT

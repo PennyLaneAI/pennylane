@@ -87,24 +87,6 @@ def test_len():
     assert len(res) == len(x) == 2
 
 
-def test_ufunc_compatibility():
-    """Test that the NumpyBox class has ufunc compatibility"""
-    x = np.array([0.1, 0.2, 0.3])
-    res = np.sum(np.sin(qml.proc.TensorBox(x)))
-    assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
-
-    x = np.array([0.1, 0.2, 0.3])
-    res = np.sum(np.sin(qml.proc.TensorBox(x), out=np.empty([3])))
-    assert res == np.sin(0.1) + np.sin(0.2) + np.sin(0.3)
-
-
-def test_inplace_addition():
-    """Test that in-place addition works correctly"""
-    x = qml.proc.TensorBox(np.array([0.0, 0.0, 0.0]))
-    np.add.at(x, [0, 1, 1], 1)
-    assert np.all(x == np.array([1.0, 2.0, 0.0]))
-
-
 def test_addition():
     """Test addition between tensors and arrays"""
     x = np.array([[1, 2], [3, 4]])
@@ -129,14 +111,14 @@ def test_subtraction():
 
     xT = qml.proc.TensorBox(x)
     res = xT - y
-    assert np.all(res.unbox() == x - y)
+    assert np.all(res == x - y)
 
     yT = qml.proc.TensorBox(y)
     res = x - yT
-    assert np.all(res.unbox() == x - y)
+    assert np.all(res == x - y)
 
     res = xT - yT
-    assert np.all(res.unbox() == x - y)
+    assert np.all(res == x - y)
 
 
 def test_multiplication():

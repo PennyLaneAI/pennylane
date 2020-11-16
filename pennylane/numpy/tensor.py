@@ -132,10 +132,6 @@ class tensor(_np.ndarray):
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
 
-        for i in args:
-            if hasattr(i, "unbox"):
-                return i.__array_ufunc__(ufunc, method, *args, **kwargs)
-
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
         res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
