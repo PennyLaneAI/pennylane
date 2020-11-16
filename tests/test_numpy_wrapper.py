@@ -499,8 +499,8 @@ class TestNumpyConversion:
         assert not isinstance(res, np.tensor)
 
     def test_single_gate_parameter(self, monkeypatch):
-        """Test that a QNode passes as unwrapped PennyLane tensor to a gate
-        taking a single parameter when supplied a tensor"""
+        """Test that when supplied a PennyLane tensor, a QNode passes an
+        unwrapped tensor as the argument to a gate taking a single parameter"""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
@@ -526,8 +526,8 @@ class TestNumpyConversion:
             assert isinstance(rec.queue[0].parameters[0], float)
 
     def test_multiple_gate_parameter(self):
-        """Test that a QNode passes as unwrapped PennyLane tensor to a gate
-        taking multiple parameters when supplied a tensor"""
+        """Test that when supplied a PennyLane tensor, a QNode passes arguments
+        as unwrapped tensors to a gate taking multiple parameters"""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
