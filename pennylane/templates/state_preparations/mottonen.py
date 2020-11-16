@@ -257,7 +257,12 @@ def _get_alpha_y(a, n, k):
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
-    division = qml.proc.where(denominator != 0.0, numerator / denominator, 0.)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        division = numerator / denominator
+
+    division = qml.proc.where(denominator != 0.0, division, 0.)
+
     return 2 * qml.proc.arcsin(qml.proc.sqrt(division))
 
 
