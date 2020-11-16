@@ -231,6 +231,11 @@
 
 <h3>Bug fixes</h3>
 
+* PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
+  keyword argument to the quantum function.
+  [(#903)](https://github.com/PennyLaneAI/pennylane/pull/903)
+  [(#893)](https://github.com/PennyLaneAI/pennylane/pull/893)
+
 * The new tape mode now prevents multiple observables from being evaluated on the same wire
   if the observables are not qubit-wise commuting Pauli words.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
@@ -252,7 +257,7 @@
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran,
-Romain Moyard, Maria Schuld
+Romain Moyard, Maria Schuld, Antal Száva
 
 
 # Release 0.12.0 (current release)
