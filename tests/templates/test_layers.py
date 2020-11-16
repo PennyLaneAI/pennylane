@@ -786,33 +786,36 @@ class TestParticleConservingU2:
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
         [
-            (np.array([0, 0]), np.array([0.283 - 0.95912j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
+            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
             (
                 np.array([0, 1]),
-                np.array([0.0 + 0.0j, -0.066805 + 0.721877j, -0.685858 - 0.063472j, 0.0 + 0.0j]),
+                np.array([0.0 + 0.0j, 0.862093 + 0.0j, 0.0 - 0.506749j, 0.0 + 0.0j]),
             ),
             (
                 np.array([1, 0]),
-                np.array([0.0 + 0.0j, 0.685858 - 0.063472j, -0.066805 - 0.721877j, 0.0 + 0.0j]),
+                np.array([0.0 + 0.0j, 0.0 - 0.506749j, 0.862093 + 0.0j, 0.0 + 0.0j]),
             ),
-            (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.283 + 0.95912j])),
+            (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j])),
         ],
     )
-    def test_decomposition_u1ex(self, init_state, exp_state, tol):
+    def test_decomposition_u2ex(self, init_state, exp_state, tol):
         """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
         state."""
 
         N = 2
         wires = range(N)
-        weights = np.array([[-9.80398, -0.19464, -3.90141]])
+        wires = Wires(wires)
+
+        weight = 0.53141
 
         dev = qml.device("default.qubit", wires=N)
 
         @qml.qnode(dev)
-        def circuit(weights):
-            ParticleConservingU2(weights, wires, init_state=init_state)
+        def circuit(weight):
+            qml.BasisState(init_state, wires=wires)
+            qml.templates.layers.particle_conserving_u2.u2_ex_gate(weight, wires)
             return qml.expval(qml.PauliZ(0))
 
-        circuit(weights)
+        circuit(weight)
 
         assert np.allclose(dev.state, exp_state, atol=tol)
