@@ -34,13 +34,17 @@ def _preprocess(state_vector, wires):
         state_vector = qml.proc.TensorBox(state_vector)
 
         if len(state_vector.shape) != 1:
-            raise ValueError(f"State vector must be a one-dimensional vector; got shape {state_vector.shape}.")
+            raise ValueError(
+                f"State vector must be a one-dimensional vector; got shape {state_vector.shape}."
+            )
 
         n_amplitudes = state_vector.shape[0]
         if n_amplitudes != 2 ** len(wires):
-            raise ValueError(f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}.")
+            raise ValueError(
+                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
+            )
 
-        #TODO: add those methods to tensorbox
+        # TODO: add those methods to tensorbox
         # check if normalized
         norm = np.sum(np.abs(state_vector) ** 2)
         if not np.isclose(norm, 1.0, atol=1e-3):

@@ -33,11 +33,15 @@ def _preprocess(features, wires):
         features = qml.proc.TensorBox(features)
 
         if len(features.shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")
+            raise ValueError(
+                f"Features must be a one-dimensional vector; got shape {features.shape}."
+            )
 
         n_features = features.shape[0]
         if n_features > len(wires):
-            raise ValueError(f"Features must be of length {len(wires)} or less; got length {n_features}.")
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
 
     else:
 
@@ -46,7 +50,7 @@ def _preprocess(features, wires):
             (len(wires),),
             bound="max",
             msg="Features must be of shape {} or smaller; "
-                "got {}.".format((len(wires),), get_shape(features)),
+            "got {}.".format((len(wires),), get_shape(features)),
         )
         n_features = shp[0]
 
@@ -81,7 +85,7 @@ def AngleEmbedding(features, wires, rotation="X"):
 
     wires = Wires(wires)
     n_features = _preprocess(features, wires)
-    wires = wires[: n_features]
+    wires = wires[:n_features]
 
     if rotation == "X":
         broadcast(unitary=qml.RX, pattern="single", wires=wires, parameters=features)

@@ -38,23 +38,29 @@ def _preprocess(features, wires, pad_with, normalize):
 
         # check shape
         if len(features.shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")
+            raise ValueError(
+                f"Features must be a one-dimensional vector; got shape {features.shape}."
+            )
 
         n_features = features.shape[0]
         if pad_with is None and n_features != 2 ** len(wires):
-            raise ValueError(f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
-                             f"Use the 'pad' argument for automated padding.")
+            raise ValueError(
+                f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+                f"Use the 'pad' argument for automated padding."
+            )
 
         if pad_with is not None and n_features > 2 ** len(wires):
-            raise ValueError(f"Features must be of length {2 ** len(wires)} or "
-                             f"smaller to be padded; got length {n_features}.")
+            raise ValueError(
+                f"Features must be of length {2 ** len(wires)} or "
+                f"smaller to be padded; got length {n_features}."
+            )
 
         # pad
         if pad_with is not None and n_features < 2 ** len(wires):
             padding = [pad_with] * (2 ** len(wires) - n_features)
             features = qml.proc.concatenate([features, padding], axis=0)
 
-        #TODO: add those methods to tensorbox
+        # TODO: add those methods to tensorbox
 
         # normalize
         norm = np.sum(np.abs(features) ** 2)
@@ -75,15 +81,17 @@ def _preprocess(features, wires, pad_with, normalize):
         expected_shape = (n_amplitudes,)
 
         if len(get_shape(features)) > 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {get_shape(features)}.")
+            raise ValueError(
+                f"Features must be a one-dimensional vector; got shape {get_shape(features)}."
+            )
 
         if pad_with is None:
             shape = check_shape(
                 features,
                 expected_shape,
                 msg="Features must be of length {}; got {}. Use the 'pad' "
-                    "argument for automated padding."
-                    "".format(expected_shape, get_shape(features)),
+                "argument for automated padding."
+                "".format(expected_shape, get_shape(features)),
             )
         else:
             shape = check_shape(
@@ -91,8 +99,8 @@ def _preprocess(features, wires, pad_with, normalize):
                 expected_shape,
                 bound="max",
                 msg="Features must be of length {} or smaller "
-                    "to be padded; got {}"
-                    "".format(expected_shape, get_shape(features)),
+                "to be padded; got {}"
+                "".format(expected_shape, get_shape(features)),
             )
 
         check_type(
@@ -191,6 +199,7 @@ def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, pad=None
         the features argument is **not always differentiable**.
 
         .. code-block:: python
+
             from pennylane import numpy as np
 
             @qml.qnode(dev)
@@ -202,7 +211,6 @@ def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, pad=None
         >>> f = np.array([1, 1, 1, 1], requires_grad=True)
         >>> g(f)
         ValueError: Cannot differentiate wrt parameter(s) {0, 1, 2, 3}.
-
 
         **Normalization**
 
@@ -268,7 +276,7 @@ def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, pad=None
     if pad is not None:
         warnings.warn(
             "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
-            PendingDeprecationWarning
+            PendingDeprecationWarning,
         )
         if pad_with is None:
             pad_with = pad

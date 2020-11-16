@@ -65,6 +65,7 @@ def wires_all_to_all(wires):
 
 ###################
 
+
 def _preprocess(parameters, pattern, wires):
     """Validate and pre-process inputs."""
 

@@ -45,7 +45,8 @@ def _preprocess(weights, ratio_imprim, rotations, seed):
         check_shape(
             weights,
             expected_shape,
-            msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+            msg="'weights' must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(weights)),
         )
 
         check_type(
@@ -53,7 +54,9 @@ def _preprocess(weights, ratio_imprim, rotations, seed):
             [float, type(None)],
             msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
         )
-        check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
+        check_type(
+            n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots)
+        )
         # TODO: Check that 'rotations' contains operations
         check_type(
             rotations,

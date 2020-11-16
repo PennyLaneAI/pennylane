@@ -51,7 +51,9 @@ def _preprocess(init_state, weights, s_wires, d_wires):
 
         weights = qml.proc.TensorBox(weights)
         if weights.shape != (len(s_wires) + len(d_wires),):
-            raise ValueError(f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}.")
+            raise ValueError(
+                f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}."
+            )
 
         init_state = qml.proc.TensorBox(init_state)
         # we can extract the numpy representation here

@@ -37,6 +37,7 @@ def _preprocess(args, depth):
                 )
             )
 
+
 @temp
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.

@@ -259,13 +259,14 @@ class TensorBox(abc.ABC):
 
     @abc.abstractmethod
     def concatenate(self, values, axis=0):
-        """Join a sequence of tensors along an existing axis..
+        """Join a sequence of tensors along an existing axis.
 
         Args:
             values (Sequence[tensor_like]): sequence of arrays/tensors to concatenate
             axis (int): axis on which to concatenate
 
         **Example**
+
         >>> x = tf.Variable([[1, 2], [3, 4]])
         >>> a = tf.constant([[5, 6]])
         >>> y = TensorBox(x)

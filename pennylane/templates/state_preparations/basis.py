@@ -51,7 +51,7 @@ def _preprocess(basis_state, wires):
             basis_state,
             expected_shape,
             msg="Basis state must be of shape {}; got {}."
-                "".format(expected_shape, get_shape(basis_state)),
+            "".format(expected_shape, get_shape(basis_state)),
         )
 
         # basis_state is guaranteed to be a list of binary values

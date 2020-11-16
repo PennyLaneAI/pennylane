@@ -29,7 +29,6 @@ from pennylane.wires import Wires
 def _preprocess(features, wires, method, c):
     """Validate and pre-process inputs."""
 
-
     if qml.tape_mode_active():
 
         features = qml.proc.TensorBox(features)
@@ -59,7 +58,7 @@ def _preprocess(features, wires, method, c):
             expected_shape,
             bound="max",
             msg="Features must be of shape {} or smaller; got {}."
-                "".format(expected_shape, get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
 
         check_is_in_options(
@@ -111,9 +110,4 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     wires = Wires(wires)
     pars = _preprocess(features, wires, method, c)
 
-    broadcast(
-        unitary=qml.Squeezing,
-        pattern="single",
-        wires=wires,
-        parameters=pars)
-
+    broadcast(unitary=qml.Squeezing, pattern="single", wires=wires, parameters=pars)

@@ -48,11 +48,25 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
 
         first_dims = [s[0] for s in shapes]
         if len(set(first_dims)) > 1:
-            raise ValueError(f"The first dimension of all parameters needs to be the same, got {first_dims}")
+            raise ValueError(
+                f"The first dimension of all parameters needs to be the same, got {first_dims}"
+            )
         repeat = shapes[0][0]
 
         second_dims = [s[1] for s in shapes]
-        expected = [n_if, n_if, n_wires, n_wires, n_wires, n_if, n_if, n_wires, n_wires, n_wires, n_wires]
+        expected = [
+            n_if,
+            n_if,
+            n_wires,
+            n_wires,
+            n_wires,
+            n_if,
+            n_if,
+            n_wires,
+            n_wires,
+            n_wires,
+            n_wires,
+        ]
         if not all(e == d for e, d in zip(expected, second_dims)):
             raise ValueError(f"Got unexpected shape for one or more parameters.")
 
@@ -73,7 +87,9 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
             (repeat, n_wires),
             (repeat, n_wires),
         ]
-        check_shapes(weights_list, expected_shapes, msg="Got unexpected shape for one or more parameters")
+        check_shapes(
+            weights_list, expected_shapes, msg="Got unexpected shape for one or more parameters"
+        )
 
     return repeat
 
@@ -168,7 +184,9 @@ def CVNeuralNetLayers(
     # Input checks
 
     wires = Wires(wires)
-    repeat = _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires)
+    repeat = _preprocess(
+        theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+    )
 
     ###############
 

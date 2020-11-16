@@ -37,7 +37,9 @@ def _preprocess(features, wires, pattern, n_repeats):
         features = qml.proc.TensorBox(features)
 
         if len(features.shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")
+            raise ValueError(
+                f"Features must be a one-dimensional vector; got shape {features.shape}."
+            )
 
         n_features = features.shape[0]
         if n_features != len(wires):
@@ -55,11 +57,14 @@ def _preprocess(features, wires, pattern, n_repeats):
         check_shape(
             features,
             expected_shape,
-            msg="Features must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
+            msg="Features must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(features)),
         )
 
         check_type(
-            n_repeats, [int], msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats))
+            n_repeats,
+            [int],
+            msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats)),
         )
 
         if pattern is None:
@@ -74,11 +79,12 @@ def _preprocess(features, wires, pattern, n_repeats):
             )
             shape = get_shape(pattern)
             if len(shape) != 2 or shape[1] != 2:
-                raise ValueError("'pattern' must be a list of pairs of wires; got {}".format(pattern))
+                raise ValueError(
+                    "'pattern' must be a list of pairs of wires; got {}".format(pattern)
+                )
 
             # convert wire pairs to Wires object
             pattern = [Wires(wire_pair) for wire_pair in pattern]
-
 
     return pattern
 

@@ -36,11 +36,15 @@ def _preprocess(features, wires, weights):
         weights = qml.proc.TensorBox(weights)
 
         if len(features.shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")
+            raise ValueError(
+                f"Features must be a one-dimensional vector; got shape {features.shape}."
+            )
 
         n_features = features.shape[0]
         if n_features > len(wires):
-            raise ValueError(f"Features must be of length {len(wires)} or less; got length {n_features}.")
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
 
         repeat = len(weights)
 
@@ -52,8 +56,10 @@ def _preprocess(features, wires, weights):
             if weights.shape != (repeat, 3):
                 raise ValueError(f"Weights must be of shape {(repeat, 3)}; got {weights.shape}")
         else:
-            if weights.shape != (repeat, 2*len(wires)):
-                raise ValueError(f"Weights must be of shape {(repeat, 2*len(wires))}; got {weights.shape}")
+            if weights.shape != (repeat, 2 * len(wires)):
+                raise ValueError(
+                    f"Weights must be of shape {(repeat, 2*len(wires))}; got {weights.shape}"
+                )
 
     else:
 
@@ -63,7 +69,7 @@ def _preprocess(features, wires, weights):
             expected_shape,
             bound="max",
             msg="Features must be of shape {} or smaller; got {}"
-                "".format((len(wires),), get_shape(features)),
+            "".format((len(wires),), get_shape(features)),
         )
 
         repeat = check_number_of_layers([weights])
@@ -74,7 +80,7 @@ def _preprocess(features, wires, weights):
                 weights,
                 expected_shape,
                 msg="Weights must be of shape {}; got {}"
-                    "".format(expected_shape, get_shape(features)),
+                "".format(expected_shape, get_shape(features)),
             )
         elif len(wires) == 2:
             expected_shape = (repeat, 3)
@@ -82,7 +88,7 @@ def _preprocess(features, wires, weights):
                 weights,
                 expected_shape,
                 msg="Weights must be of shape {}; got {}"
-                    "".format(expected_shape, get_shape(features)),
+                "".format(expected_shape, get_shape(features)),
             )
         else:
             expected_shape = (repeat, 2 * len(wires))
@@ -90,7 +96,7 @@ def _preprocess(features, wires, weights):
                 weights,
                 expected_shape,
                 msg="Weights must be of shape {}; got {}"
-                    "".format(expected_shape, get_shape(features)),
+                "".format(expected_shape, get_shape(features)),
             )
 
     return repeat
@@ -299,7 +305,6 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         local_fields = RY
     else:
         raise ValueError(f"did not recognize local field {local_field}")
-
 
     for l in range(repeat):
         # apply alternating Hamiltonians

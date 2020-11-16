@@ -43,14 +43,17 @@ def _preprocess(features, wires):
 
     else:
         check_type(
-            features, [Iterable], msg="Features must be iterable; got type {}".format(type(features))
+            features,
+            [Iterable],
+            msg="Features must be iterable; got type {}".format(type(features)),
         )
 
         expected_shape = (len(wires),)
         check_shape(
             features,
             expected_shape,
-            msg="Features must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
+            msg="Features must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(features)),
         )
 
         if any([b not in [0, 1] for b in features]):

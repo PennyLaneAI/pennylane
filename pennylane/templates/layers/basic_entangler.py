@@ -35,7 +35,9 @@ def _preprocess(weights, wires):
         repeat = weights.shape[0]
 
         if weights.shape[1] != len(wires):
-            raise ValueError(f"Second dimension of weights must be of size {len(wires)}; got {weights.shape[1]}")
+            raise ValueError(
+                f"Second dimension of weights must be of size {len(wires)}; got {weights.shape[1]}"
+            )
 
     else:
 

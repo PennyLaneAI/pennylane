@@ -37,7 +37,9 @@ def _preprocess(weights, wires, ranges):
         repeat = weights.shape[0]
 
         if weights.shape != (repeat, len(wires), 3):
-            raise ValueError(f"Weights must be of shape {(repeat, len(wires), 3)}; got {weights.shape}")
+            raise ValueError(
+                f"Weights must be of shape {(repeat, len(wires), 3)}; got {weights.shape}"
+            )
 
         if len(wires) > 1:
             if ranges is None:
@@ -67,7 +69,7 @@ def _preprocess(weights, wires, ranges):
                 ranges,
                 expected_shape,
                 msg="'ranges' must be of shape {}; got {}"
-                    "".format(expected_shape, get_shape(weights)),
+                "".format(expected_shape, get_shape(weights)),
             )
 
             check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
