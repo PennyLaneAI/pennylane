@@ -26,6 +26,7 @@ from string import ascii_letters as ABC
 import numpy as np
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
 from pennylane.operation import DiagonalOperation, Channel
+from pennylane.wires import Wires
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -118,12 +119,51 @@ class DefaultMixed(QubitDevice):
         rho = self._asarray(rho, dtype=self.C_DTYPE)
         return self._reshape(rho, [2] * (2 * self.num_wires))
 
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            returns_state=True,
+        )
+        return capabilities
+
     @property
     def state(self):
         """Returns the state density matrix of the circuit prior to measurement"""
         dim = 2 ** self.num_wires
         # User obtains state as a matrix
         return self._reshape(self._pre_rotated_state, (dim, dim))
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        # Return the full density matrix if all the wires are given
+        if wires == self.wires:
+            return self.state
+
+        wires = wires.labels
+
+        traced_system = [x for x in self.wires.labels if x not in wires]
+        traced_wires = Wires(traced_system)
+
+        # Trace first subsystem by applying kraus operators of the partial trace
+        tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
+        tr_op = self._reshape(tr_op, (2, 1, 2))
+
+        self._apply_channel(tr_op, traced_wires[0])
+
+        # Trace next subsystem by applying kraus operators of the partial trace
+        for traced_wire in traced_wires[1:]:
+            self._apply_channel(tr_op, traced_wire)
+
+        return self._reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
 
     def reset(self):
         """Resets the device"""
@@ -181,9 +221,19 @@ class DefaultMixed(QubitDevice):
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
         # Changes tensor shape
-        kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-        kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-        kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+        if kraus[0].shape[0] == kraus[0].shape[1]:
+            kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
+            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+
+        # Add the possibility to give a (1,2) shape Kraus operator
+        elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
+            kraus_shape = [len(kraus)] + list(kraus[0].shape)
+            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
+            kraus_dagger = self._cast(
+                self._reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
+            )
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[:rho_dim]
@@ -365,7 +415,6 @@ class DefaultMixed(QubitDevice):
                 )
 
         for operation in operations:
-
             self._apply_operation(operation)
 
         # store the pre-rotated state

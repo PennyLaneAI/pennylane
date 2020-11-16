@@ -49,11 +49,11 @@ def _preprocess(init_state, weights, s_wires, d_wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.tensorbox.TensorBox(weights)
+        weights = qml.proc.TensorBox(weights)
         if weights.shape != (len(s_wires) + len(d_wires),):
             raise ValueError(f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}.")
 
-        init_state = qml.tensorbox.TensorBox(init_state)
+        init_state = qml.proc.TensorBox(init_state)
         # we can extract the numpy representation here
         # since init_state can never be differentiable
         init_state = init_state.numpy()

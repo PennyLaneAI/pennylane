@@ -32,7 +32,7 @@ def _preprocess(features, wires, method, c):
 
     if qml.tape_mode_active():
 
-        features = qml.tensorbox.TensorBox(features)
+        features = qml.proc.TensorBox(features)
         constants = [c] * len(features)
 
         if len(features.shape) != 1:

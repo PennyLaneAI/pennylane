@@ -33,17 +33,17 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
 
         # check that first dimension is the same
         shapes = [
-            qml.tensorbox.TensorBox(theta_1).shape,
-            qml.tensorbox.TensorBox(phi_1).shape,
-            qml.tensorbox.TensorBox(varphi_1).shape,
-            qml.tensorbox.TensorBox(r).shape,
-            qml.tensorbox.TensorBox(phi_r).shape,
-            qml.tensorbox.TensorBox(theta_2).shape,
-            qml.tensorbox.TensorBox(phi_2).shape,
-            qml.tensorbox.TensorBox(varphi_2).shape,
-            qml.tensorbox.TensorBox(a).shape,
-            qml.tensorbox.TensorBox(phi_a).shape,
-            qml.tensorbox.TensorBox(k).shape,
+            qml.proc.TensorBox(theta_1).shape,
+            qml.proc.TensorBox(phi_1).shape,
+            qml.proc.TensorBox(varphi_1).shape,
+            qml.proc.TensorBox(r).shape,
+            qml.proc.TensorBox(phi_r).shape,
+            qml.proc.TensorBox(theta_2).shape,
+            qml.proc.TensorBox(phi_2).shape,
+            qml.proc.TensorBox(varphi_2).shape,
+            qml.proc.TensorBox(a).shape,
+            qml.proc.TensorBox(phi_a).shape,
+            qml.proc.TensorBox(k).shape,
         ]
 
         first_dims = [s[0] for s in shapes]

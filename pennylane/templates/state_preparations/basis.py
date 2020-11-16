@@ -26,7 +26,7 @@ def _preprocess(basis_state, wires):
 
     if qml.tape_mode_active():
 
-        basis_state = qml.tensorbox.TensorBox(basis_state)
+        basis_state = qml.proc.TensorBox(basis_state)
 
         if len(basis_state.shape) != 1:
             raise ValueError(f"Basis state must be one-dimensional; got shape {basis_state.shape}.")

@@ -50,7 +50,7 @@ class TensorBox(abc.ABC):
     >>> print(y)
     TensorBox: <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>
 
-    The original tensor is available via the :meth:`~.unbox` method:
+    The original tensor is available via the :meth:`~.unbox` method or the :attr:`data` attribute:
 
     >>> y.unbox()
     <tf.Variable 'Variable:0' shape=(3,) dtype=float32, numpy=array([0.4, 0.1, 0.5], dtype=float32)>
@@ -66,7 +66,7 @@ class TensorBox(abc.ABC):
     for method chaining:
 
     >>> y.ones_like().expand_dims(0)
-    tf.Tensor([[1., 1., 1.]], shape=(1, 3), dtype=float32)
+    tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
     """
 
     _initialized = False
@@ -114,7 +114,7 @@ class TensorBox(abc.ABC):
             outputs = tuple(outputs)
             kwargs["out"] = outputs
         else:
-            # If the ufunc has no ouputs, we simply
+            # If the ufunc has no outputs, we simply
             # create a tuple containing None for all potential outputs.
             outputs = (None,) * ufunc.nout
 
@@ -200,7 +200,8 @@ class TensorBox(abc.ABC):
 
     @staticmethod
     def unbox_list(tensors):
-        """Unboxes or unwraps a list of tensor like objects, converting any :class:`TensorBox`
+        """Unboxes or unwraps a list of tensor-like objects, converting any :class:`TensorBox`
+
         objects in the list into raw interface tensors.
 
         Args:
@@ -251,9 +252,9 @@ class TensorBox(abc.ABC):
         """Cast the dtype of the TensorBox.
 
         Args:
-            dtype (np.dtype): The NumPy datatype to cast to.
+            dtype (np.dtype, str): the NumPy datatype to cast to
                 If the boxed tensor is not a NumPy array, the equivalent
-                datastype in the target framework is chosen.
+                datatype in the target framework is chosen.
         """
 
     @abc.abstractmethod
@@ -305,7 +306,7 @@ class TensorBox(abc.ABC):
 
     @abc.abstractmethod
     def numpy(self):
-        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray, or to a Python scalar if
         the tensor is 0-dimensional.
 
         Returns:
@@ -340,13 +341,15 @@ class TensorBox(abc.ABC):
     @property
     @abc.abstractmethod
     def requires_grad(self):
-        """bool: Returns if the TensorBox is considered trainable.
+        """bool: Whether the TensorBox is considered trainable.
+
 
         Note that the implemetation depends on the contained tensor type, and
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
-        as a property of the tensor itself. TensorFlow, on the otherhand,
+        as a property of the tensor itself. TensorFlow, on the other hand,
+
         only tracks trainability if being watched by a gradient tape.
         """
 

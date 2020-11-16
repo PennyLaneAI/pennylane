@@ -30,7 +30,7 @@ def _preprocess(features, wires):
 
     if qml.tape_mode_active():
 
-        features = qml.tensorbox.TensorBox(features)
+        features = qml.proc.TensorBox(features)
 
         if len(features.shape) != 1:
             raise ValueError(f"Features must be a one-dimensional vector; got shape {features.shape}.")

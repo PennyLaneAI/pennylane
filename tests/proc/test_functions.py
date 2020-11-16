@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the TensorBox functional API in pennylane.tensorbox.fn
+"""Unit tests for the TensorBox functional API in pennylane.proc.fn
 """
 import itertools
 import numpy as onp
@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.tensorbox import fn
+from pennylane.proc import fn
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -58,7 +58,7 @@ class TestGetMultiTensorbox:
             fn._get_multi_tensorbox([x, y])
 
     def test_return_tensorflow_box(self):
-        """Test that TensorFlow is correctly identified as the dispatching library"""
+        """Test that TensorFlow is correctly identified as the dispatching library."""
         x = tf.Variable([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
@@ -66,7 +66,7 @@ class TestGetMultiTensorbox:
         assert res.interface == "tf"
 
     def test_return_torch_box(self):
-        """Test that Torch is correctly identified as the dispatching library"""
+        """Test that Torch is correctly identified as the dispatching library."""
         x = torch.tensor([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
@@ -74,7 +74,7 @@ class TestGetMultiTensorbox:
         assert res.interface == "torch"
 
     def test_return_autograd_box(self):
-        """Test that autograd is correctly identified as the dispatching library"""
+        """Test that autograd is correctly identified as the dispatching library."""
         x = np.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
@@ -82,7 +82,7 @@ class TestGetMultiTensorbox:
         assert res.interface == "autograd"
 
     def test_return_numpy_box(self):
-        """Test that NumPy is correctly identified as the dispatching library"""
+        """Test that NumPy is correctly identified as the dispatching library."""
         x = onp.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
@@ -103,8 +103,7 @@ test_data = [
 
 @pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
 def test_allequal(t1, t2):
-    """Test that the allequal function works for a variety
-    of input"""
+    """Test that the allequal function works for a variety of inputs."""
     res = fn.allequal(t1, t2)
 
     if isinstance(t1, tf.Variable):
@@ -119,8 +118,7 @@ def test_allequal(t1, t2):
 
 @pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
 def test_allclose(t1, t2):
-    """Test that the allclose function works for a variety
-    of input"""
+    """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
 
     if isinstance(t1, tf.Variable):
@@ -192,7 +190,7 @@ class TestCast:
     def test_cast_torch_dtype(self):
         """If the tensor is a Torch tensor, casting using a Torch dtype
         will also work"""
-        t = torch.tensor([1, 2, 3])
+        t = torch.tensor([1, 2, 3], dtype=torch.int64)
         res = fn.cast(t, torch.float64)
         assert isinstance(res, torch.Tensor)
         assert res.dtype is torch.float64
@@ -230,70 +228,6 @@ def test_cast_like(t1, t2):
 
     assert fn.allequal(res, t1)
     assert onp.asarray(res).dtype.type is onp.asarray(t2).dtype.type
-
-
-class TestConcatenate:
-    """Tests for the concatenate function"""
-
-    def test_concatenate_numpy(self):
-        """Test that concatenate called without the axis arguments concatenates the zero'th dimension"""
-        t1 = [0.6, 0.1, 0.6]
-        t2 = np.array([0.1, 0.2, 0.3])
-        t3 = onp.array([5.0, 8.0, 101.0])
-
-        res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, qml.tensorbox.TensorBox)
-        assert np.all(res == np.concatenate([t1, t2, t3]))
-
-    def test_concatenate_tensorflow(self):
-        """Test that concatenate called without the axis arguments concatenates the zero'th dimension"""
-        t1 = tf.constant([0.6, 0.1, 0.6])
-        t2 = tf.Variable([0.1, 0.2, 0.3])
-        t3 = onp.array([5.0, 8.0, 101.0])
-
-        res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, qml.tensorbox.TensorBox)
-        assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
-
-    def test_concatenate_torch(self):
-        """Test that concatenate, called without the axis arguments, concatenates the zero'th dimension"""
-        t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
-        t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
-        t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
-
-        res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, qml.tensorbox.TensorBox)
-        assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
-
-    @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
-                                    torch.tensor([[1, 2], [3, 4]]),
-                                    tf.constant([[1, 2], [3, 4]])])
-    def test_concatenate_axis(self, t1):
-        """Test that passing the axis argument allows for concatenating along
-        a different axis"""
-        t2 = onp.array([[5], [6]])
-        res = fn.concatenate([t1, t2], axis=1)
-
-        # if tensorflow or pytorch, extract view of underlying data
-        if hasattr(res, "numpy"):
-            res = res.numpy()
-
-        assert fn.allclose(res, np.array([[1, 2, 5], [3, 4, 6]]))
-
-    @pytest.mark.parametrize("t1", [onp.array([[1, 2], [3, 4]]),
-                                    torch.tensor([[1, 2], [3, 4]]),
-                                    tf.constant([[1, 2], [3, 4]])])
-    def test_concatenate_axis_none(self, t1):
-        """Test that passing None as the axis argument allows for flattened concatenation"""
-
-        t2 = onp.array([[5], [6]])
-        res = fn.concatenate([t1, t2], axis=None)
-
-        # if tensorflow or pytorch, extract view of underlying data
-        if hasattr(res, "numpy"):
-            res = res.numpy()
-
-        assert fn.allclose(res, np.array([1, 2, 3, 4, 5, 6]))
 
 
 class TestConvertLike:
@@ -340,7 +274,7 @@ class TestExpandDims:
     """Tests for the expand_dims function"""
 
     def test_expand_dims_sequence(self, shape, axis, new_shape):
-        """Test that the expand dimensions works correctly
+        """Test that expand_dimensions works correctly
         when given a sequence"""
         if not shape:
             pytest.skip("Cannot expand the dimensions of a Python scalar!")
@@ -350,7 +284,7 @@ class TestExpandDims:
         assert t2.shape == new_shape
 
     def test_expand_dims_array(self, shape, axis, new_shape):
-        """Test that the expand dimensions works correctly
+        """Test that expand_dimensions works correctly
         when given an array"""
         t1 = np.empty(shape)
         t2 = fn.expand_dims(t1, axis=axis)
@@ -387,7 +321,8 @@ interface_test_data = [
 
 @pytest.mark.parametrize("t,interface", interface_test_data)
 def test_get_interface(t, interface):
-    """Test that the interface of a tensor like object
+    """Test that the interface of a tensor-like object
+
     is correctly returned."""
     res = fn.get_interface(t)
     assert res == interface
@@ -563,6 +498,7 @@ class TestStack:
             res = res.numpy()
 
         assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
+        assert list(res.shape) == [2, 2]
 
 
 @pytest.mark.parametrize("t", test_data)

@@ -22,7 +22,7 @@ from .tensorbox import TensorBox
 
 def _get_multi_tensorbox(values):
     """Determines the correct framework to dispatch to given a
-    sequence of tensor like objects.
+    sequence of tensor-like objects.
 
     Args:
         values (Sequence[tensor_like]): a sequence of tensor like objects
@@ -30,11 +30,11 @@ def _get_multi_tensorbox(values):
     Returns:
         .TensorBox: A TensorBox that will dispatch to the correct framework
         given the rules of precedence. This TensorBox will contain the *first*
-        tensor like object in ``values`` that corresponds to the highest-priority
+        tensor-like object in ``values`` that corresponds to the highest-priority
         framework.
 
     To determine the framework to dispatch to, the following rules
-    are followed:
+    are applied:
 
     * Tensors that are incompatible (such as Torch and TensorFlow tensors)
       cannot both be present.
@@ -49,12 +49,14 @@ def _get_multi_tensorbox(values):
     """
     interfaces = [get_interface(v) for v in values]
 
-    if "tf" in interfaces and "torch" in interfaces:
+    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+        # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
     non_numpy_interfaces = set(interfaces) - {"numpy"}
 
-    if len(non_numpy_interfaces) == 2:
+    if len(non_numpy_interfaces) > 1:
+        # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
@@ -127,7 +129,7 @@ def cast(tensor, dtype):
 
     Returns:
         tensor_like: a tensor with the same shape and values as ``tensor`` and the
-        same dtype as ``dtype``.
+        same dtype as ``dtype``
 
     **Example**
 
@@ -155,7 +157,7 @@ def cast_like(tensor1, tensor2):
 
     Returns:
         tensor_like: a tensor with the same shape and values as ``tensor1`` and the
-        same dtype as ``tensor2``.
+        same dtype as ``tensor2``
 
     **Example**
 
@@ -220,12 +222,12 @@ def convert_like(tensor1, tensor2):
 
 
 def expand_dims(tensor, axis):
-    """Expand the shape of an array by adding a new dimensions of size 1
+    """Expand the shape of an array by adding a new dimension of size 1
     at the specified axis location.
 
     .. warning::
 
-        This function differs from ``np.expand_dims``
+        This function differs from ``np.expand_dims``.
 
     Args:
         tensor (tensor_like): tensor to expand
@@ -295,7 +297,8 @@ def ones_like(tensor, dtype=None):
 
     Args:
         tensor (tensor_like): input tensor
-        dtype (str, np.dtype): The desired output datatype of the array. If not provided the dtype of
+        dtype (str, np.dtype): The desired output datatype of the array. If not provided, the dtype of
+
             ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
             a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
             a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
@@ -331,7 +334,8 @@ def requires_grad(tensor):
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
-        as a property of the tensor itself. TensorFlow, on the otherhand,
+        as a property of the tensor itself. TensorFlow, on the other hand,
+
         only tracks trainability if being watched by a gradient tape.
 
     Args:
@@ -342,10 +346,10 @@ def requires_grad(tensor):
     Calling this function on a PennyLane NumPy array:
 
     >>> x = np.array([1., 5.], requires_grad=True)
-    >>> qml.tensorbox.requires_grad(x)
+    >>> requires_grad(x)
     True
     >>> x.requires_grad = False
-    >>> qml.tensorbox.requires_grad(x)
+    >>> requires_grad(x)
     False
 
     PyTorch has similar behaviour.
@@ -417,7 +421,7 @@ def stack(values, axis=0):
     >>> y = tf.Variable([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> stack([x, y, z])
-    TensorBox: <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([[6.00e-01, 1.00e-01, 6.00e-01],
            [1.00e-01, 2.00e-01, 3.00e-01],
            [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>

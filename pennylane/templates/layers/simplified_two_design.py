@@ -31,7 +31,7 @@ def _preprocess(weights, initial_layer_weights, wires):
     """Verify inputs."""
     if qml.tape_mode_active():
 
-        weights = qml.tensorbox.TensorBox(weights)
+        weights = qml.proc.TensorBox(weights)
         repeat = weights.shape[0]
 
         if len(wires) <= 1 and weights.shape != (repeat, ):
@@ -39,7 +39,7 @@ def _preprocess(weights, initial_layer_weights, wires):
         if len(wires) > 1 and weights.shape != (repeat, len(wires) - 1, 2):
             raise ValueError(f"Weights must be of shape {(repeat, len(wires) - 1, 2)}; got {weights.shape}")
 
-        initial_layer_weights = qml.tensorbox.TensorBox(initial_layer_weights)
+        initial_layer_weights = qml.proc.TensorBox(initial_layer_weights)
         if initial_layer_weights.shape != (len(wires),):
             raise ValueError(f"Initial layer weights must be of shape {(len(wires),)}; "
                              f"got {initial_layer_weights.shape}")

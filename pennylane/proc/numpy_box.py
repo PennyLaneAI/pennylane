@@ -17,7 +17,7 @@ import numpy as np
 import pennylane as qml
 
 
-class NumpyBox(qml.tensorbox.TensorBox):
+class NumpyBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for ``numpy.ndarray``.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

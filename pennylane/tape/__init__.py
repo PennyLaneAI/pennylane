@@ -26,7 +26,7 @@ from . import measure
 from .circuit_graph import TapeCircuitGraph
 from .functions import UnifiedTensor
 from .queuing import AnnotatedQueue, Queue, QueuingContext
-from .measure import MeasurementProcess, state
+from .measure import MeasurementProcess, state, density_matrix
 from .qnode import QNode, qnode
 from .tapes import (
     QuantumTape,

@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-class AutogradBox(qml.tensorbox.TensorBox):
+class AutogradBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for ``pennylane.numpy`` tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

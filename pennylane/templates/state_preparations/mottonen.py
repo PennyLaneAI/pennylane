@@ -31,7 +31,7 @@ def _preprocess(state_vector, wires):
 
     if qml.tape_mode_active():
 
-        state_vector = qml.tensorbox.TensorBox(state_vector)
+        state_vector = qml.proc.TensorBox(state_vector)
 
         if len(state_vector.shape) != 1:
             raise ValueError(f"State vector must be a one-dimensional vector; got shape {state_vector.shape}.")

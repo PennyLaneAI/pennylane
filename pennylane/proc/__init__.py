@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This package contains unified functions for framework agnostic tensor and array
-manipulation. Given the input tensor like object, the call is dispatched
+This package contains unified functions for framework-agnostic tensor and array
+manipulation. Given the input tensor-like object, the call is dispatched
 to the corresponding array manipulation framework, allowing for end-to-end
 differentiation to be preserved.
 
