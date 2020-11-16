@@ -493,25 +493,26 @@ class JacobianTape(QuantumTape):
         nonzero_grad_idx = []
 
         for trainable_idx, param_method in enumerate(diff_methods):
-            if param_method != "0":
+            if param_method == "0":
+                continue
 
-                nonzero_grad_idx.append(trainable_idx)
+            nonzero_grad_idx.append(trainable_idx)
 
-                if (method == "best" and param_method[0] == "F") or (method == "numeric"):
-                    # numeric method
-                    tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
+            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
+                # numeric method
+                tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
 
-                elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
-                    # analytic method
-                    tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
+            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
+                # analytic method
+                tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
 
-                processing_fns.append(processing_fn)
+            processing_fns.append(processing_fn)
 
-                # we create a flat list here to feed at once to the device
-                all_tapes.extend(tapes)
+            # we create a flat list here to feed at once to the device
+            all_tapes.extend(tapes)
 
-                # to extract the correct result for this parameter later, remember the number of tapes
-                reshape_info.append(len(tapes))
+            # to extract the correct result for this parameter later, remember the number of tapes
+            reshape_info.append(len(tapes))
 
         # execute all tapes at once
         results = device.batch_execute(all_tapes)
