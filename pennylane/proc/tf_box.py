@@ -42,7 +42,9 @@ class TensorFlowBox(qml.proc.TensorBox):
     ones_like = wrap_output(lambda self: tf.ones_like(self.data))
     sqrt = wrap_output(lambda self: tf.sqrt(self.data))
     sum = wrap_output(
-        lambda self, axis=None, keepdims=False: tf.reduce_sum(self.data, axis=axis, keepdims=keepdims)
+        lambda self, axis=None, keepdims=False: tf.reduce_sum(
+            self.data, axis=axis, keepdims=keepdims
+        )
     )
     T = wrap_output(lambda self: tf.transpose(self.data))
     take = wrap_output(lambda self, indices, axis=None: tf.gather(self.data, indices, axis=axis))

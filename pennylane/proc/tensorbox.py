@@ -95,6 +95,7 @@ class TensorBox(abc.ABC):
     >>> y.ones_like().expand_dims(0)
     tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
     """
+
     __array_priority__ = 100
     _initialized = False
 
