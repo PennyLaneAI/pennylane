@@ -173,14 +173,14 @@ def test_transpose():
     x = torch.tensor([[1, 2], [3, 4]])
     xT = qml.proc.TensorBox(x)
 
-    assert torch.allclose(xT.T.unbox(), x.T)
+    assert torch.allclose(xT.T().unbox(), x.T)
 
 
 def test_autodifferentiation():
     """Test that autodifferentiation is preserved when writing
     a cost function that uses TensorBox method chaining"""
     x = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], requires_grad=True)
-    y = (qml.proc.TensorBox(x).T ** 2).unbox()[0, 1]
+    y = (qml.proc.TensorBox(x).T() ** 2).unbox()[0, 1]
     y.backward()
 
     res = x.grad

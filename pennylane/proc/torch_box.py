@@ -19,19 +19,31 @@ import torch
 import pennylane as qml
 
 
+wrap_output = qml.proc.wrap_output
+
+
 class TorchBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for Torch tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    abs = wrap_output(lambda self: torch.abs(self.data))
+    angle = wrap_output(lambda self: torch.angle(self.data))
+    arcsin = wrap_output(lambda self: torch.arcsin(self.data))
+    expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
+    ones_like = wrap_output(lambda self: torch.ones_like(self.data))
+    sqrt = wrap_output(lambda self: torch.sqrt(self.data))
+    T = wrap_output(lambda self: self.data.T)
+
     @staticmethod
     def astensor(tensor):
         return torch.as_tensor(tensor)
 
+    @wrap_output
     def cast(self, dtype):
         if isinstance(dtype, torch.dtype):
-            return TorchBox(self.data.to(dtype))
+            return self.data.to(dtype)
 
         dtype_name = np.dtype(dtype).name
         torch_dtype = getattr(torch, dtype_name, None)
@@ -39,10 +51,49 @@ class TorchBox(qml.proc.TensorBox):
         if torch_dtype is None:
             raise ValueError(f"Unable to convert {dtype} to a Torch dtype")
 
-        return TorchBox(self.data.to(torch_dtype))
+        return self.data.to(torch_dtype)
 
-    def expand_dims(self, axis):
-        return TorchBox(torch.unsqueeze(self.data, dim=axis))
+    @staticmethod
+    def _coerce_types(tensors):
+        dtypes = {i.dtype for i in tensors}
+
+        if len(dtypes) == 1:
+            return tensors
+
+        complex_type = dtypes.intersection({torch.complex64, torch.complex128})
+        float_type = dtypes.intersection({torch.float16, torch.float32, torch.float64})
+        int_type = dtypes.intersection({torch.int8, torch.int16, torch.int32, torch.int64})
+
+        cast_type = complex_type or float_type or int_type
+        cast_type = list(cast_type)[-1]
+
+        return [t.to(cast_type) for t in tensors]
+
+    @wrap_output
+    @staticmethod
+    def concatenate(values, axis=0):
+        if axis is None:
+            # flatten and then concatenate zero'th dimension
+            # to reproduce numpy's behaviour
+            tensors = [TorchBox.astensor(t).flatten() for t in TorchBox.unbox_list(values)]
+            return torch.cat(tensors, dim=0)
+
+        tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
+        return torch.cat(tensors, dim=axis)
+
+    @staticmethod
+    @wrap_output
+    def dot(x, y):
+        x, y = [TorchBox.astensor(t) for t in TorchBox.unbox_list([x, y])]
+        x, y = TorchBox._coerce_types([x, y])
+
+        if x.ndim == 0 and y.ndim == 0:
+            return x * y
+
+        if x.ndim == 2 and y.ndim <= 2:
+            return x @ y
+
+        return torch.tensordot(x, y, dims=[[-1], [-2]])
 
     @property
     def interface(self):
@@ -50,9 +101,6 @@ class TorchBox(qml.proc.TensorBox):
 
     def numpy(self):
         return self.data.detach().cpu().numpy()
-
-    def ones_like(self):
-        return TorchBox(torch.ones_like(self.data))
 
     @property
     def requires_grad(self):
@@ -63,11 +111,37 @@ class TorchBox(qml.proc.TensorBox):
         return tuple(self.data.shape)
 
     @staticmethod
+    @wrap_output
     def stack(values, axis=0):
         tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
         res = torch.stack(tensors, axis=axis)
-        return TorchBox(res)
+        return res
 
-    @property
-    def T(self):
-        return TorchBox(self.data.T)
+    @wrap_output
+    def sum(self, axis=None, keepdims=False):
+        if axis is None:
+            return torch.sum(self.data)
+
+        return torch.sum(self.data, dim=axis, keepdim=keepdims)
+
+    @wrap_output
+    def take(self, indices, axis=None):
+        if isinstance(indices, qml.proc.TensorBox):
+            indices = indices.numpy()
+
+        if not isinstance(indices, torch.Tensor):
+            indices = self.astensor(indices)
+
+        if axis is None:
+            return self.data.flatten()[indices]
+
+        if indices.ndim == 1:
+            return torch.index_select(self.data, dim=axis, index=indices)
+
+        fancy_indices = [slice(None)] * axis + [indices]
+        return self.data[fancy_indices]
+
+    @staticmethod
+    @wrap_output
+    def where(condition, x, y):
+        return torch.where(TorchBox.astensor(condition), *TorchBox.unbox_list([x, y]))

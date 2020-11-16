@@ -50,7 +50,7 @@ def test_unknown_input_type():
     """Test that an exception is raised if the input type
     is unknown"""
     with pytest.raises(ValueError, match="Unknown tensor type"):
-        qml.proc.TensorBox(True)
+        qml.proc.TensorBox("hello")
 
 
 def test_astensor():
@@ -262,7 +262,7 @@ def test_transpose():
     x = np.array([[1, 2], [3, 4]])
     xT = qml.proc.TensorBox(x)
 
-    assert np.all(xT.T == x.T)
+    assert np.all(xT.T() == x.T)
 
 
 def test_requires_grad():

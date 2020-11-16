@@ -172,7 +172,7 @@ def test_transpose():
     x = np.array([[1, 2], [3, 4]])
     xT = qml.proc.TensorBox(x)
 
-    assert np.all(xT.T == x.T)
+    assert np.all(xT.T() == x.T)
 
 
 def test_autodifferentiation():
@@ -180,7 +180,7 @@ def test_autodifferentiation():
     a cost function that uses TensorBox method chaining"""
     x = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
-    cost_fn = lambda a: (qml.proc.TensorBox(a).T ** 2).unbox()[0, 1]
+    cost_fn = lambda a: (qml.proc.TensorBox(a).T() ** 2).unbox()[0, 1]
     grad_fn = qml.grad(cost_fn)
 
     res = grad_fn(x)[0]

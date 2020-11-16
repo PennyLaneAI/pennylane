@@ -18,31 +18,58 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+wrap_output = qml.proc.wrap_output
+
+
 class AutogradBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for ``pennylane.numpy`` tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    abs = wrap_output(lambda self: np.abs(self.data))
+    angle = wrap_output(lambda self: np.angle(self.data))
+    arcsin = wrap_output(lambda self: np.arcsin(self.data))
+    cast = wrap_output(lambda self, dtype: np.tensor(self.data, dtype=dtype))
+    expand_dims = wrap_output(lambda self, axis: np.expand_dims(self.data, axis=axis))
+    ones_like = wrap_output(lambda self: np.ones_like(self.data))
+    sqrt = wrap_output(lambda self: np.sqrt(self.data))
+    sum = wrap_output(
+        lambda self, axis=None, keepdims=False: np.sum(self.data, axis=axis, keepdims=keepdims)
+    )
+    T = wrap_output(lambda self: self.data.T)
+
     @staticmethod
     def astensor(tensor):
         return np.tensor(tensor)
 
-    def cast(self, dtype):
-        return AutogradBox(np.tensor(self.data, dtype=dtype))
+    @staticmethod
+    @wrap_output
+    def concatenate(values, axis=0):
+        return np.concatenate(AutogradBox.unbox_list(values), axis=axis)
 
-    def expand_dims(self, axis):
-        return AutogradBox(np.expand_dims(self.data, axis=axis))
+    @staticmethod
+    @wrap_output
+    def dot(x, y):
+        x, y = AutogradBox.unbox_list([x, y])
+
+        if x.ndim == 0 and self.data.ndim == 0:
+            return x * y
+
+        if x.ndim == 2 and y.ndim == 2:
+            return x @ y
+
+        return np.dot(x, y)
 
     @property
     def interface(self):
         return "autograd"
 
     def numpy(self):
-        return self.data.numpy()
+        if hasattr(self.data, "_value"):
+            return self.data._value
 
-    def ones_like(self):
-        return AutogradBox(np.ones_like(self.data))
+        return self.data.numpy()
 
     @property
     def requires_grad(self):
@@ -53,9 +80,24 @@ class AutogradBox(qml.proc.TensorBox):
         return self.data.shape
 
     @staticmethod
+    @wrap_output
     def stack(values, axis=0):
-        return AutogradBox(np.stack(AutogradBox.unbox_list(values), axis=axis))
+        return np.stack(AutogradBox.unbox_list(values), axis=axis)
 
-    @property
-    def T(self):
-        return AutogradBox(self.data.T)
+    @wrap_output
+    def take(self, indices, axis=None):
+        if isinstance(indices, qml.proc.TensorBox):
+            indices = indices.numpy()
+
+        indices = self.astensor(indices)
+
+        if axis is None:
+            return self.data.flatten()[indices]
+
+        fancy_indices = [slice(None)] * axis + [indices]
+        return self.data[fancy_indices]
+
+    @staticmethod
+    @wrap_output
+    def where(condition, x, y):
+        return np.where(condition, *AutogradBox.unbox_list([x, y]))

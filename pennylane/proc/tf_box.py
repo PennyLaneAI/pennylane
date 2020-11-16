@@ -25,11 +25,27 @@ except ImportError:  # pragma: no cover
 import pennylane as qml
 
 
+wrap_output = qml.proc.wrap_output
+
+
 class TensorFlowBox(qml.proc.TensorBox):
     """Implements the :class:`~.TensorBox` API for TensorFlow tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
+
+    abs = wrap_output(lambda self: tf.abs(self.data))
+    angle = wrap_output(lambda self: tf.math.angle(self.data))
+    arcsin = wrap_output(lambda self: tf.math.asin(self.data))
+    cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
+    expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
+    ones_like = wrap_output(lambda self: tf.ones_like(self.data))
+    sqrt = wrap_output(lambda self: tf.sqrt(self.data))
+    sum = wrap_output(
+        lambda self, axis, keepdims: tf.reduce_sum(self.data, axis=axis, keepdims=keepdims)
+    )
+    T = wrap_output(lambda self: tf.transpose(self.data))
+    take = wrap_output(lambda self, indices, axis=None: tf.gather(self.data, indices, axis=axis))
 
     def __len__(self):
         if isinstance(self.data, tf.Variable):
@@ -41,21 +57,60 @@ class TensorFlowBox(qml.proc.TensorBox):
     def astensor(tensor):
         return tf.convert_to_tensor(tensor)
 
-    def cast(self, dtype):
-        return TensorFlowBox(tf.cast(self.data, dtype))
+    @staticmethod
+    def _coerce_types(tensors):
+        dtypes = {i.dtype for i in tensors}
+
+        if len(dtypes) == 1:
+            return tensors
+
+        complex_type = dtypes.intersection({tf.complex64, tf.complex128})
+        float_type = dtypes.intersection({tf.float16, tf.float32, tf.float64})
+        int_type = dtypes.intersection({tf.int8, tf.int16, tf.int32, tf.int64})
+
+        cast_type = complex_type or float_type or int_type
+        cast_type = list(cast_type)[-1]
+
+        return [tf.cast(t, cast_type) for t in tensors]
+
+    @staticmethod
+    @wrap_output
+    def concatenate(values, axis=0):
+        if axis is None:
+            # flatten and then concatenate zero'th dimension
+            # to reproduce numpy's behaviour
+            tensors = [
+                tf.reshape(TensorFlowBox.astensor(t), [-1])
+                for t in TensorFlowBox.unbox_list(tensors)
+            ]
+            tensors = TensorFlowBox._coerce_types([x, y])
+            return tf.concat(tensors, axis=0)
+
+        return tf.concat(TensorFlowBox.unbox_list(values), axis=axis)
+
+    @staticmethod
+    @wrap_output
+    def dot(x, y):
+        x, y = [TensorFlowBox.astensor(t) for t in TensorFlowBox.unbox_list([x, y])]
+        x, y = TensorFlowBox._coerce_types([x, y])
+
+        if x.ndim == 0 and y.ndim == 0:
+            return x * y
+
+        if x.ndim == 2 and y.ndim == 1:
+            return tf.tensordot(x, y, axes=[[-1], [0]])
+
+        if x.ndim == 2 and y.ndim == 2:
+            return x @ y
+
+        return tf.tensordot(x, y, axes=[[-1], [-2]])
 
     @property
     def interface(self):
         return "tf"
 
-    def expand_dims(self, axis):
-        return TensorFlowBox(tf.expand_dims(self.data, axis=axis))
-
     def numpy(self):
         return self.data.numpy()
-
-    def ones_like(self):
-        return TensorFlowBox(tf.ones_like(self.data))
 
     @property
     def requires_grad(self):
@@ -66,10 +121,13 @@ class TensorFlowBox(qml.proc.TensorBox):
         return tuple(self.data.shape)
 
     @staticmethod
+    @wrap_output
     def stack(values, axis=0):
-        res = tf.stack(TensorFlowBox.unbox_list(values), axis=axis)
-        return TensorFlowBox(res)
+        values = TensorFlowBox._coerce_types(TensorFlowBox.unbox_list(values))
+        res = tf.stack(values, axis=axis)
+        return res
 
-    @property
-    def T(self):
-        return TensorFlowBox(tf.transpose(self.data))
+    @staticmethod
+    @wrap_output
+    def where(condition, x, y):
+        return tf.where(TensorFlowBox.astensor(condition), *TensorFlowBox.unbox_list([x, y]))

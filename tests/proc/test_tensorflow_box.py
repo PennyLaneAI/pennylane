@@ -173,7 +173,7 @@ def test_transpose():
     x = tf.Variable([[1, 2], [3, 4]])
     xT = qml.proc.TensorBox(x)
 
-    assert np.allclose(xT.T.unbox(), tf.transpose(x))
+    assert np.allclose(xT.T().unbox(), tf.transpose(x))
 
 
 def test_autodifferentiation():
@@ -182,7 +182,7 @@ def test_autodifferentiation():
     x = tf.Variable([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
     with tf.GradientTape() as tape:
-        y = (qml.proc.TensorBox(x).T ** 2).unbox()[0, 1]
+        y = (qml.proc.TensorBox(x).T() ** 2).unbox()[0, 1]
 
     res = tape.gradient(y, x)
     expected = tf.constant([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
