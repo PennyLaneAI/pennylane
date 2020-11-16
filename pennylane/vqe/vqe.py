@@ -380,46 +380,76 @@ class VQECost:
 
     .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
-    **Example:**
+    .. UsageDetails::
 
-    First, we create a device and design an ansatz:
+        First, we create a device and design an ansatz:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=4)
+            dev = qml.device('default.qubit', wires=4)
 
-        def ansatz(params, **kwargs):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-            for i in range(4):
-                qml.Rot(*params[i], wires=i)
-            qml.CNOT(wires=[2, 3])
-            qml.CNOT(wires=[2, 0])
-            qml.CNOT(wires=[3, 1])
+            def ansatz(params, **kwargs):
+                qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+                for i in range(4):
+                    qml.Rot(*params[i], wires=i)
+                qml.CNOT(wires=[2, 3])
+                qml.CNOT(wires=[2, 0])
+                qml.CNOT(wires=[3, 1])
 
-    Now we can create the Hamiltonian that defines the VQE problem:
+        Now we can create the Hamiltonian that defines the VQE problem:
 
-    .. code-block:: python3
+        .. code-block:: python3
 
-        coeffs = [0.2, -0.543]
-        obs = [
-            qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(3),
-            qml.PauliZ(0) @ qml.Hadamard(2)
-        ]
-        H = qml.vqe.Hamiltonian(coeffs, obs)
+            coeffs = [0.2, -0.543]
+            obs = [
+                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(3),
+                qml.PauliZ(0) @ qml.Hadamard(2)
+            ]
+            H = qml.vqe.Hamiltonian(coeffs, obs)
 
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
-    :doc:`/introduction/chemistry` module can be used to generate a molecular
-    Hamiltonian.
+        Alternatively, the :func:`~.generate_hamiltonian` function from the
+        :doc:`/introduction/chemistry` module can be used to generate a molecular
+        Hamiltonian.
 
-    Next, we can define the cost function:
+        Next, we can define the cost function:
 
-    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
-    >>> params = torch.rand([4, 3])
-    >>> cost(params)
-    tensor(0.0245, dtype=torch.float64)
+        >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
+        >>> params = torch.rand([4, 3])
+        >>> cost(params)
+        tensor(0.0245, dtype=torch.float64)
 
-    The cost function can be minimized using any gradient descent-based
-    :doc:`optimizer </introduction/optimizers>`.
+        The cost function can be minimized using any gradient descent-based
+        :doc:`optimizer </introduction/optimizers>`.
+
+        **Optimizing observables:**
+
+        Setting ``optimize=True`` can be used to decrease the number of device executions. The
+        observables composing the Hamiltonian can be separated into groups that are qubit-wise
+        commuting using the :mod:`~.grouping` module. These groups can be executed together on a
+        *single* qnode, resulting in a lower device overhead:
+
+        .. code-block:: python
+
+            qml.enable_tape()
+            commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+            H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+
+            dev = qml.device("default.qubit", wires=2)
+            ansatz = qml.templates.StronglyEntanglingLayers
+
+            cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
+            cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+
+            params = qml.init.strong_ent_layers_uniform(3, 2)
+
+        >>> cost_opt(params)
+        >>> ex_opt = dev.num_executions
+        >>> cost_no_opt(params)
+        >>> ex_no_opt = dev.num_executions - ex_opt
+        >>> print(ex_opt, ex_no_opt)
+        1 2
+
+        Note that this feature is only available in :doc:`tape mode <../../code/qml_tape>`.
     """
 
     def __init__(
