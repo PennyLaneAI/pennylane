@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Function wrappers for the TensorBox API"""
-# pylint:disable=abstract-class-instantiated
+# pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
 import warnings
 
 import numpy as np

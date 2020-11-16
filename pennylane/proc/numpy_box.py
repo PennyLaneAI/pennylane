@@ -59,7 +59,7 @@ class NumpyBox(qml.proc.TensorBox):
     def dot(x, y):
         x, y = NumpyBox.unbox_list([x, y])
 
-        if x.ndim == 0 and self.data.ndim == 0:
+        if x.ndim == 0 and y.ndim == 0:
             return x * y
 
         if x.ndim == 2 and y.ndim == 2:

@@ -83,9 +83,9 @@ class TensorFlowBox(qml.proc.TensorBox):
             # to reproduce numpy's behaviour
             tensors = [
                 tf.reshape(TensorFlowBox.astensor(t), [-1])
-                for t in TensorFlowBox.unbox_list(tensors)
+                for t in TensorFlowBox.unbox_list(values)
             ]
-            tensors = TensorFlowBox._coerce_types([x, y])
+            tensors = TensorFlowBox._coerce_types(tensors)
             return tf.concat(tensors, axis=0)
 
         return tf.concat(TensorFlowBox.unbox_list(values), axis=axis)

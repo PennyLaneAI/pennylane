@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the TensorBox abstract base class."""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-public-methods
 import abc
 import functools
 import numbers
 import sys
-from types import FunctionType
-
-import numpy as np
 
 
 def wrap_output(func):

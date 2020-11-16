@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains the AutogradBox implementation of the TensorBox API.
 """
-# pylint: disable=no-member
+# pylint: disable=no-member,protected-access
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -53,7 +53,7 @@ class AutogradBox(qml.proc.TensorBox):
     def dot(x, y):
         x, y = AutogradBox.unbox_list([x, y])
 
-        if x.ndim == 0 and self.data.ndim == 0:
+        if x.ndim == 0 and y.ndim == 0:
             return x * y
 
         if x.ndim == 2 and y.ndim == 2:
