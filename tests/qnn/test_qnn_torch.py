@@ -420,7 +420,7 @@ class TestTorchLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_cuda_backward(self):
-    """Test if TorchLayer can be run on GPU"""
+        """Test if TorchLayer can be run on GPU"""
         if not torch.cuda.is_available():
             pytest.skip("Cuda device not available")
         else:
