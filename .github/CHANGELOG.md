@@ -71,7 +71,7 @@
   params = qml.init.strong_ent_layers_uniform(3, 2)
   ```
   
-  Optimizing these commuting observables leads to fewer device executions:
+  Grouping these commuting observables leads to fewer device executions:
   
   ```pycon
   >>> cost_opt(params)

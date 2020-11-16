@@ -442,7 +442,7 @@ class VQECost:
 
             params = qml.init.strong_ent_layers_uniform(3, 2)
 
-        Optimizing these commuting observables leads to fewer device executions:
+        Grouping these commuting observables leads to fewer device executions:
 
         >>> cost_opt(params)
         >>> ex_opt = dev.num_executions
@@ -470,8 +470,8 @@ class VQECost:
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = None
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the the
-        expectation value of each observable term after applying the circuit ansatz."""
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
+        value of each observable term after applying the circuit ansatz."""
 
         if optimize:
             if not qml.tape_mode_active():
