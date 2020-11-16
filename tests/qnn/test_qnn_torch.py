@@ -430,7 +430,7 @@ class TestTorchLayer:
 
                 @qml.qnode(dev, interface="torch")
                 def circuit(inputs, weights):
-                    qml.templates.AmplitudeEmbedding(inputs, wires=range(n_qubits), pad=0.0)
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                     qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
                     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
