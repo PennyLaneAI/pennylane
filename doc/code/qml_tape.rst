@@ -143,8 +143,6 @@ Tape mode provides several advantages over the standard PennyLane QNode.
 
     * The ability to automatically extract the layer structure of variational circuits
 
-    * Tape-mode QNodes cannot be used with the ``qml.qnn`` module yet
-
 
 Quantum tapes
 -------------
