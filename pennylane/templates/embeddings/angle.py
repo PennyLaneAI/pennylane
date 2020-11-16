@@ -60,7 +60,7 @@ def AngleEmbedding(features, wires, rotation="X"):
 
     wires = Wires(wires)
 
-    check_shape(
+    shp = check_shape(
         features,
         (len(wires),),
         bound="max",
@@ -74,6 +74,8 @@ def AngleEmbedding(features, wires, rotation="X"):
         ["X", "Y", "Z"],
         msg="did not recognize option {} for 'rotation'.".format(rotation),
     )
+
+    wires = wires[: shp[0]]
 
     ###############
 

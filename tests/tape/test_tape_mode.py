@@ -35,6 +35,8 @@ def test_enable_tape_mode_decorator():
 
     qml.enable_tape()
 
+    assert "tape" in qml.expval.__module__
+
     @qml.qnode(dev)
     def circuit(x, y):
         qml.RX(x, wires=0)
@@ -103,6 +105,8 @@ def test_disable_tape():
 
     qml.disable_tape()
 
+    assert "tape" not in qml.expval.__module__
+
     qnode = qml.QNode(circuit, dev)
     qnode(0.5, 0.1)
 
@@ -116,3 +120,13 @@ def test_disable_tape_exception():
     if not currently in tape mode"""
     with pytest.warns(UserWarning, match="Tape mode is not currently enabled"):
         qml.disable_tape()
+
+
+def test_tape_mode_detection():
+    """Test that the function `tape_mode_active` returns True
+    only if tape mode is activated."""
+    assert not qml.tape_mode_active()
+    qml.enable_tape()
+    assert qml.tape_mode_active()
+    qml.disable_tape()
+    assert not qml.tape_mode_active()

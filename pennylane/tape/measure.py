@@ -78,6 +78,17 @@ class MeasurementProcess:
         # Queue the measurement process
         self.queue()
 
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            return "{}(wires={})".format(self.return_type.value, self.wires)
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if self.obs.return_type is None:
+            return "{}({})".format(self.return_type.value, self.obs)
+
+        return "{}".format(self.obs)
+
     def __copy__(self):
         cls = self.__class__
 
@@ -169,7 +180,12 @@ class MeasurementProcess:
     def queue(self):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            try:
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            except ValueError:
+                self.obs.queue()
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+
             qml.tape.QueuingContext.append(self, owns=self.obs)
         else:
             qml.tape.QueuingContext.append(self)
@@ -370,3 +386,54 @@ def state():
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)
+
+
+def density_matrix(wires):
+    r"""Quantum density matrix in the computational basis.
+
+    .. note::
+
+        The density matrix can only be returned in tape mode:
+
+        >>> qml.enable_tape()
+
+        For more details on tape mode, see :mod:`pennylane.tape`.
+
+    This function accepts no observables and instead instructs the QNode to return its density
+    matrix or reduced density matrix. The ``wires`` argument gives the possibility
+    to trace out a part of the system. It can result in obtaining a mixed state, which can be
+    only represented by the reduced density matrix.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        qml.enable_tape()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliY(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.density_matrix([0])
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([[0.+0.j 0.+0.j]
+        [0.+0.j 1.+0.j]])
+
+    The returned matrix is the reduced density matrix, where system 1 is traced out.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    .. note::
+
+        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State, wires=qml.wires.Wires(wires))

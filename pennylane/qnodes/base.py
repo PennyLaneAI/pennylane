@@ -123,10 +123,10 @@ def decompose_queue(ops, device):
     for op in ops:
         try:
             new_ops.extend(_decompose_queue([op], device))
-        except NotImplementedError:
+        except NotImplementedError as e:
             raise qml.DeviceError(
                 "Gate {} not supported on device {}".format(op.name, device.short_name)
-            )
+            ) from e
 
     return new_ops
 
@@ -453,6 +453,8 @@ class BaseQNode(qml.QueuingContext):
                 Each positional argument is replaced with a :class:`~.variable.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
+        kwargs = self.unwrap_tensor_kwargs(kwargs)
+
         # Get the name of the qfunc's arguments
         full_argspec = inspect.getfullargspec(self.func)
 
@@ -524,6 +526,25 @@ class BaseQNode(qml.QueuingContext):
             kwarg_vars[variable_name] = kwarg_variable
 
         return arg_vars, kwarg_vars
+
+    @staticmethod
+    def unwrap_tensor_kwargs(kwargs):
+        """Unwraps the pennylane.numpy.tensor objects that were passed as
+        keyword arguments so that they can be handled as gate parameters by
+        arbitrary devices.
+
+        Args:
+            kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
+
+        Returns:
+            dict[str, Any]: Auxiliary arguments passed to the quantum function
+            in an unwrapped form (if applicable).
+        """
+        for k, v in kwargs.items():
+            if isinstance(v, qml.numpy.tensor):
+                kwargs[k] = v.unwrap()
+
+        return kwargs
 
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
@@ -831,6 +852,7 @@ class BaseQNode(qml.QueuingContext):
                 self.variable_deps,
                 return_native_type=temp,
             )
+
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):

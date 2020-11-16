@@ -109,6 +109,9 @@ def check_shape(inpt, target_shape, msg, bound=None):
         msg (str): error message to display if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
 
+    Returns:
+        tuple: shape of ``inpt``
+
     Raises:
         ValueError
     """
@@ -138,6 +141,9 @@ def check_shapes(inpt_list, target_shapes, msg, bounds=None):
         msg (str): error message to display
         bounds (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
             shape
+
+    Returns:
+        list: list of shapes for ``inpt_list``
 
     Raises:
         ValueError

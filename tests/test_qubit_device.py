@@ -21,6 +21,7 @@ from random import random
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError
 from pennylane.qnodes import QuantumFunctionError
+from pennylane.qnodes.base import BaseQNode
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.variable import Variable
@@ -68,6 +69,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
         m.setattr(QubitDevice, "state", 0)
+        m.setattr(QubitDevice, "density_matrix", lambda self, wires=None: 0)
         m.setattr(
             QubitDevice, "probability", lambda self, wires=None: 0
         )
@@ -710,6 +712,57 @@ class TestCapabilities:
                         "returns_probs": True,
                         }
         assert capabilities == QubitDevice.capabilities()
+
+
+class TestExecution:
+    """Tests for the execute method"""
+
+    def test_device_executions(self):
+        """Test the number of times a qubit device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        dev_1 = qml.device("default.qubit", wires=2)
+
+        def circuit_1(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_1 = BaseQNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        for _ in range(num_evals_1):
+            node_1(0.432, 0.12)
+        assert dev_1.num_executions ==  num_evals_1
+
+        # test a second instance of a default qubit device
+        dev_2 = qml.device("default.qubit", wires=2)
+
+        def circuit_2(x, y):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_2 = BaseQNode(circuit_2, dev_2)
+        num_evals_2 = 5
+
+        for _ in range(num_evals_2):
+            node_2(0.432, 0.12)
+        assert dev_2.num_executions ==  num_evals_2
+
+        # test a new circuit on an existing instance of a qubit device
+        def circuit_3(x, y):
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_3 = BaseQNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        for _ in range(num_evals_3):
+            node_3(0.432, 0.12)
+        assert dev_1.num_executions == num_evals_1 + num_evals_3
 
 
 class TestBatchExecution:

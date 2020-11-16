@@ -79,6 +79,10 @@ class DefaultQubit(QubitDevice):
             of samples returned by ``sample``.
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
+        cache (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -99,6 +103,7 @@ class DefaultQubit(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
         "CSWAP",
@@ -118,9 +123,9 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
+    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic)
+        super().__init__(wires, shots, analytic, cache=cache)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -134,6 +139,7 @@ class DefaultQubit(QubitDevice):
             "Hadamard": self._apply_hadamard,
             "S": self._apply_s,
             "T": self._apply_t,
+            "SX": self._apply_sx,
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
@@ -176,9 +182,9 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
-        if operation.name in self._apply_ops:
+        if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            self._state = self._apply_ops[operation.name](
+            self._state = self._apply_ops[operation.base_name](
                 self._state, axes, inverse=operation.inverse
             )
             return
@@ -255,6 +261,21 @@ class DefaultQubit(QubitDevice):
 
     def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
+
+    def _apply_sx(self, state, axes, inverse=False):
+        """Apply the Square Root X gate.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        if inverse:
+            return 0.5 * ((1 - 1j) * state + (1 + 1j) * self._apply_x(state, axes))
+
+        return 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
 
     def _apply_cnot(self, state, axes, **kwargs):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
@@ -390,6 +411,36 @@ class DefaultQubit(QubitDevice):
     @property
     def state(self):
         return self._flatten(self._pre_rotated_state)
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix of a given set of wires.
+
+        Args:
+            wires (Wires): wires of the reduced system.
+
+        Returns:
+            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix.
+        """
+        dim = self.num_wires
+        state = self._pre_rotated_state
+
+        # Return the full density matrix by using numpy tensor product
+        if wires == self.wires:
+            density_matrix = self._tensordot(state, self._conj(state), 0)
+            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+            return density_matrix
+
+        complete_system = list(range(0, dim))
+        traced_system = [x for x in complete_system if x not in wires.labels]
+
+        # Return the reduced density matrix by using numpy tensor product
+        density_matrix = self._tensordot(
+            state, self._conj(state), axes=(traced_system, traced_system)
+        )
+        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+
+        return density_matrix
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.

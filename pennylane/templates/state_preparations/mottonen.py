@@ -14,9 +14,7 @@
 r"""
 Contains the ``MottonenStatePreparation`` template.
 """
-import math
 import numpy as np
-from scipy import sparse
 
 import pennylane as qml
 
@@ -26,7 +24,7 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
-# pylint: disable=len-as-condition,arguments-out-of-order
+# pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
     """Generates the Gray code of given rank.
 
@@ -56,6 +54,8 @@ def gray_code(rank):
 def _matrix_M_entry(row, col):
     """Returns one entry for the matrix that maps alpha to theta.
 
+    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+
     Args:
         row (int): one-based row number
         col (int): one-based column number
@@ -76,7 +76,8 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Calculates the rotation angles from the alpha vector.
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
+     to the rotation angles used in the Gray code implementation.
 
     Args:
         alpha (array[float]): alpha parameters
@@ -84,39 +85,48 @@ def _compute_theta(alpha):
     Returns:
         (array[float]): rotation angles theta
     """
+    ln = alpha.shape[0]
     k = np.log2(alpha.shape[0])
-    factor = 2 ** (-k)
 
-    theta = sparse.dok_matrix(alpha.shape, dtype=np.float64)  # type: sparse.dok_matrix
+    M_trans = np.zeros(shape=(ln, ln))
+    for i in range(len(M_trans)):
+        for j in range(len(M_trans[0])):
+            M_trans[i, j] = _matrix_M_entry(j, i)
 
-    for row in range(alpha.shape[0]):
-        # Use transpose of M:
-        entry = sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
-        entry *= factor
-        if abs(entry) > 1e-6:
-            theta[row, 0] = entry
+    theta = M_trans @ alpha
 
-    return theta
+    return theta / 2 ** k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a given inverse rotation to the target qubit
-    that is uniformly controlled by the control qubits.
+    """Applies a uniformly-controlled rotation to the target qubit.
+
+    A uniformly-controlled rotation is a sequence of multi-controlled
+    rotations, each of which is conditioned on the control qubits being in a different state.
+    For example, a uniformly-controlled rotation with two control qubits describes a sequence of
+    four multi-controlled rotations, each applying the rotation only if the control qubits
+    are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
+
+    To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
+    a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
+    angles alpha have to be converted into a set of non-controlled rotation angles theta.
+
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
 
     Args:
-        gate (~.Operation): gate to be applied, needs to have exactly
-            one parameter
-        alpha (array[float]): alpha parameters
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
     """
 
-    theta = _compute_theta(alpha)  # type: sparse.dok_matrix
+    theta = _compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        gate(theta[0, 0], wires=[target_wire])
+        if theta[0] != 0.0:
+            gate(theta[0], wires=[target_wire])
         return
 
     code = gray_code(gray_code_rank)
@@ -128,112 +138,98 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        gate(theta[i, 0], wires=[target_wire])
+        if theta[i] != 0.0:
+            gate(theta[i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
-def _uniform_rotation_z_dagger(alpha, control_wires, target_wire):
-    """Applies the inverse of a Z rotation to the target qubit
-    that is uniformly controlled by the control qubits.
-
-    Args:
-        alpha (array[float]): alpha parameters
-        control_wires (array[int]): wires that act as control
-        target_wire (int): wire that acts as target
-    """
-
-    _uniform_rotation_dagger(qml.RZ, alpha, control_wires, target_wire)
-
-
-def _uniform_rotation_y_dagger(alpha, control_wires, target_wire):
-    """Applies the inverse of a Y rotation to the target qubit
-    that is uniformly controlled by the control qubits.
-
-    Args:
-        alpha (array[float]): alpha parameters
-        control_wires (array[int]): wires that act as control
-        target_wire (int): wire that acts as target
-    """
-
-    _uniform_rotation_dagger(qml.RY, alpha, control_wires, target_wire)
-
-
 def _get_alpha_z(omega, n, k):
-    r"""Computes the rotation angles alpha for the Z rotations.
+    r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
+    applied to the :math:`k`th qubit.
+
+    The :math:`j`th angle is related to the phases omega of the desired amplitudes via:
+
+    .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
-        omega (float): phase of the input
-        n (int): total number of qubits
+        omega (array): phases of the state to prepare
+        n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
+        array representing :math:`\alpha^{z,k}`
     """
-    alpha_z_k = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
+    indices1 = [
+        [(2 * j - 1) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
+        for j in range(1, 2 ** (n - k) + 1)
+    ]
+    indices2 = [
+        [(2 * j - 2) * 2 ** (k - 1) + l - 1 for l in range(1, 2 ** (k - 1) + 1)]
+        for j in range(1, 2 ** (n - k) + 1)
+    ]
 
-    for (i, _), om in omega.items():
-        i += 1
-        j = int(np.ceil(i * 2 ** (-k)))
-        s_condition = 2 ** (k - 1) * (2 * j - 1)
-        s_i = 1.0 if i > s_condition else -1.0
-        alpha_z_k[j - 1, 0] = alpha_z_k[j - 1, 0] + s_i * om / 2 ** (k - 1)
+    term1 = np.take(omega, indices=indices1)
+    term2 = np.take(omega, indices=indices2)
+    diff = (term1 - term2) / 2 ** (k - 1)
 
-    return alpha_z_k
+    return np.sum(diff, axis=1)
 
 
 def _get_alpha_y(a, n, k):
-    r"""Computes the rotation angles alpha for the Y rotations.
+    r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
+    applied to the :math:`k`th qubit.
+
+    The :math:`j`-th angle is related to the absolute values, a, of the desired amplitudes via:
+
+    .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        omega (float): phase of the input
-        n (int): total number of qubits
+        a (array): absolute values of the state to prepare
+        n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
-        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
+        array representing :math:`\alpha^{y,k}`
     """
+    indices_numerator = [
+        [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
+        for j in range(2 ** (n - k))
+    ]
+    numerator = np.take(a, indices=indices_numerator)
+    numerator = np.sum(np.abs(numerator) ** 2, axis=1)
 
-    alpha = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
+    indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
+    denominator = np.take(a, indices=indices_denominator)
+    denominator = np.sum(np.abs(denominator) ** 2, axis=1)
 
-    numerator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
-    denominator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
+    # Divide only where denominator is zero, else leave initial value of zero.
+    # The equation guarantees that the numerator is also zero in the corresponding entries.
+    division = np.divide(
+        numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
+    )
 
-    for (i, _), e in a.items():
-        j = int(math.ceil((i + 1) / 2 ** k))
-        l = (i + 1) - (2 * j - 1) * 2 ** (k - 1)
-        is_part_numerator = 1 <= l <= 2 ** (k - 1)
-
-        if is_part_numerator:
-            numerator[j - 1, 0] += e * e
-        denominator[j - 1, 0] += e * e
-
-    for (j, _), e in numerator.items():
-        numerator[j, 0] = math.sqrt(e)
-    for (j, _), e in denominator.items():
-        denominator[j, 0] = 1 / math.sqrt(e)
-
-    pre_alpha = numerator.multiply(denominator)  # type: sparse.csr_matrix
-    for (j, _), e in pre_alpha.todok().items():
-        alpha[j, 0] = 2 * np.arcsin(e)
-
-    return alpha
+    return 2 * np.arcsin(np.sqrt(division))
 
 
 @template
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. (Quantum Info. Comput., 2005).
+    by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
 
     The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
     composed from all possible controlled rotations on said qubit and can be used to address individual
-    elements of the state vector. In the work of Mottonen et al., the inverse of their state preparation
+    elements of the state vector. In the work of Möttönen et al., the inverse of their state preparation
     is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations
     and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via
     uniformly controlled Y rotations.
 
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
+
+    .. note::
+
+        The final state is only equal to the input state vector up to a global phase.
 
     Args:
         state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
@@ -260,45 +256,34 @@ def MottonenStatePreparation(state_vector, wires):
         "".format(expected_shape, get_shape(state_vector)),
     )
 
-    # check if state_vector is normalized
+    # TODO: delete when tape is new core
     if isinstance(state_vector[0], Variable):
-        state_vector_values = [s.val for s in state_vector]
-        norm = np.sum(np.abs(state_vector_values) ** 2)
-    else:
-        norm = np.sum(np.abs(state_vector) ** 2)
+        state_vector = np.array([s.val for s in state_vector])
+
+    # check if normalized
+    norm = np.sum(np.abs(state_vector) ** 2)
     if not np.isclose(norm, 1.0, atol=1e-3):
         raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
     #######################
 
-    # Change ordering of indices, original code was for IBM machines
-    state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
-    state_vector = sparse.dok_matrix(state_vector)
+    # change ordering of wires, since original code was written for IBM machines
+    wires_reverse = wires[::-1]
 
-    a = sparse.dok_matrix(state_vector.shape)
-    omega = sparse.dok_matrix(state_vector.shape)
+    a = np.absolute(state_vector)
+    omega = np.angle(state_vector)
 
-    for (i, j), v in state_vector.items():
-        if isinstance(v, Variable):
-            a[i, j] = np.absolute(v.val)
-            omega[i, j] = np.angle(v.val)
-        else:
-            a[i, j] = np.absolute(v)
-            omega[i, j] = np.angle(v)
-    # This code is directly applying the inverse of Carsten Blank's
-    # code to avoid inverting at the end
-
-    # Apply y rotations
+    # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
     for k in range(n_wires, 0, -1):
-        alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
-        control = wires[k:]
-        target = wires[k - 1]
-        _uniform_rotation_y_dagger(alpha_y_k, control, target)
+        alpha_y_k = _get_alpha_y(a, n_wires, k)
+        control = wires_reverse[k:]
+        target = wires_reverse[k - 1]
+        _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply z rotations
+    # Apply inverse z rotation cascade to prepare correct phases of amplitudes
     for k in range(n_wires, 0, -1):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
-        control = wires[k:]
-        target = wires[k - 1]
+        control = wires_reverse[k:]
+        target = wires_reverse[k - 1]
         if len(alpha_z_k) > 0:
-            _uniform_rotation_z_dagger(alpha_z_k, control, target)
+            _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)

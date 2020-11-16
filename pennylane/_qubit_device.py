@@ -19,6 +19,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 import abc
+from collections import OrderedDict
 import itertools
 
 import numpy as np
@@ -66,6 +67,10 @@ class QubitDevice(Device):
         analytic (bool): If ``True``, the device calculates probability, expectation values,
             and variances analytically. If ``False``, a finite number of samples set by
             the argument ``shots`` are used to estimate these quantities.
+        cache (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     # pylint: disable=too-many-public-methods
@@ -98,7 +103,7 @@ class QubitDevice(Device):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires=1, shots=1000, analytic=True):
+    def __init__(self, wires=1, shots=1000, analytic=True, cache=0):
         super().__init__(wires=wires, shots=shots)
 
         self.analytic = analytic
@@ -113,6 +118,14 @@ class QubitDevice(Device):
         self._circuit_hash = None
         """None or int: stores the hash of the circuit from the last execution which
         can be used by devices in :meth:`apply` for parametric compilation."""
+
+        self._cache = cache
+        """int: Number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
+        device."""
 
     @classmethod
     def capabilities(cls):
@@ -161,6 +174,14 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if self._cache:
+            try:  # TODO: Remove try/except when circuit is always QuantumTape
+                circuit_hash = circuit.graph.hash
+            except AttributeError as e:
+                raise ValueError("Caching is only available when using tape mode") from e
+            if circuit_hash in self._cache_execute:
+                return self._cache_execute[circuit_hash]
+
         self.check_validity(circuit.operations, circuit.observables)
 
         self._circuit_hash = circuit.hash
@@ -179,9 +200,25 @@ class QubitDevice(Device):
         # expvals and vars in superfluous arrays
         all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
         if circuit.is_sampled and not all_sampled:
-            return self._asarray(results, dtype="object")
+            results = self._asarray(results, dtype="object")
+        else:
+            results = self._asarray(results)
 
-        return self._asarray(results)
+        if self._cache and circuit_hash not in self._cache_execute:
+            self._cache_execute[circuit_hash] = results
+            if len(self._cache_execute) > self._cache:
+                self._cache_execute.popitem(last=False)
+
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
+
+        return results
+
+    @property
+    def cache(self):
+        """int: Number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._cache
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
@@ -272,10 +309,11 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples, probabilities and states.
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
 
         Args:
-            observables (List[:class:`Observable`]): the observables to be measured
+            observables (List[.Observable]): the observables to be measured
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -302,15 +340,16 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(observables) > 1:
                     raise QuantumFunctionError(
-                        "The state cannot be returned in combination with other return types"
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
                     )
-
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise QuantumFunctionError(
                         "Returning the state is not supported when using custom wire labels"
                     )
-
-                results.append(self.access_state())
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.access_state(wires=obs.wires))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -319,14 +358,17 @@ class QubitDevice(Device):
 
         return results
 
-    def access_state(self):
+    def access_state(self, wires=None):
         """Check that the device has access to an internal state and return it if available.
+
+        Args:
+            wires (Wires): wires of the reduced system
 
         Raises:
             QuantumFunctionError: if the device is not capable of returning the state
 
         Returns:
-            array or tensor: the state of the device
+            array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
             raise QuantumFunctionError("The current device is not capable of returning the state")
@@ -335,6 +377,10 @@ class QubitDevice(Device):
 
         if state is None:
             raise QuantumFunctionError("The state is not available in the current device")
+
+        if wires:
+            density_matrix = self.density_matrix(wires)
+            return density_matrix
 
         return state
 
@@ -443,6 +489,16 @@ class QubitDevice(Device):
     @property
     def state(self):
         """Returns the state vector of the circuit prior to measurement.
+
+        .. note::
+
+            Only state vector simulators support this property. Please see the
+            plugin documentation for more details.
+        """
+        raise NotImplementedError
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix prior to measurement.
 
         .. note::
 

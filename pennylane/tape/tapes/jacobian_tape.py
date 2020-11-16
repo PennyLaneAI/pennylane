@@ -50,11 +50,6 @@ class JacobianTape(QuantumTape):
 
     Args:
         name (str): a name given to the quantum tape
-        caching (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date. The cache is not available for
-            gradient-based calculations.
 
     **Example**
 
@@ -66,12 +61,12 @@ class JacobianTape(QuantumTape):
 
         import pennylane.tape
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliZ(wires=[0]))
 
     The Jacobian is computed using finite difference:
 
@@ -89,8 +84,8 @@ class JacobianTape(QuantumTape):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None, caching=0):
-        super().__init__(name=name, caching=caching)
+    def __init__(self, name=None):
+        super().__init__(name=name)
         self.jacobian_options = {}
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
