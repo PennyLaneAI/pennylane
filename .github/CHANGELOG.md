@@ -6,7 +6,7 @@
   to perform VQE-based quantum chemistry simulations. The new template applies
   several layers of the particle-conserving entangler proposed in Fig. 2a
   of the article by Barkoutsos *et al*. in
-  `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ 
+  `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_
   [(#875)](https://github.com/PennyLaneAI/pennylane/pull/875)
 
 * The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
@@ -16,8 +16,12 @@
   in serial by calling the `execute()` method.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
-* Adds the square root X gate `SX`.
-  [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
+* The `QuantumTape` class now contains basic resource estimation functionality. The method
+  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
+  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
+  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+
+* Adds the square root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
   dev = qml.device("default.qubit", wires=1)
@@ -28,21 +32,32 @@
       return qml.expval(qml.PauliZ(wires=[0]))
   ```
 
-* The `QuantumTape` class now contains basic resource estimation functionality. The method
-  `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
-  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
-  [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
+* Adds the `qml.density_matrix` QNode return with partial trace capabilities.
+  [(#878)](https://github.com/PennyLaneAI/pennylane/pull/878)
+
+  The density matrix over the provided wires is returned, with all other subsystems traced out.
+  `qml.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
+
+  ```python
+  qml.enable_tape()
+  dev = qml.device("default.qubit", wires=2)
+
+  def circuit(x):
+      qml.PauliY(wires=0)
+      qml.Hadamard(wires=1)
+      return qml.density_matrix(wires=[1])  # wire 0 is traced out
+  ```
 
 <h3>Improvements</h3>
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
   single device run because they are diagonal in the same basis, or can be equivalently
-  transformed to the computational basis using a shared set of single-qubit rotations. 
+  transformed to the computational basis using a shared set of single-qubit rotations.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
-  
+
   The following shows how to return the Pauli words ``XX`` and ``XI``:
-  
+
   ```python
   qml.enable_tape()
 
@@ -54,26 +69,49 @@
       qml.RZ(x, wires=1)
       return qml.expval(qml.PauliX(0) @ qml.PauliX(1)), qml.expval(qml.PauliX(0))
   ```
-  
+
   This can now be correctly evaluated:
-  
+
   ```pycon
   >>> f(0.4)
   tensor([0.89431013, 0.9510565 ], requires_grad=True)
   ```
-  
-* The classical processing in the `MottonenStatePreparation` template has been largely 
-  rewritten to use dense matrices and tensor manipulations where ever possible. 
+
+* PennyLane provides a new, experimental module `qml.proc` which provides framework agnostic
+  functions for array and tensor manipulations.
+  [(#886)](https://github.com/PennyLaneAI/pennylane/pull/886)
+
+  Given the input tensor-like object, the call is
+  dispatched to the corresponding array manipulation framework, allowing for end-to-end
+  differentiation to be preserved.
+
+  ```pycon
+  >>> x = torch.tensor([1., 2.])
+  >>> qml.proc.ones_like(x)
+  tensor([1, 1])
+  >>> y = tf.Variable([[0], [5]])
+  >>> qml.proc.ones_like(y, dtype=np.complex128)
+  <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
+  array([[1.+0.j],
+         [1.+0.j]])>
+  ```
+
+  Note that these functions are experimental, and only a subset of common functionality is
+  supported. Furthermore, the names and behaviour of these functions may differ from similar
+  functions in common frameworks; please refer to the function docstrings for more details.
+
+* The classical processing in the `MottonenStatePreparation` template has been largely
+  rewritten to use dense matrices and tensor manipulations where ever possible.
   This is a preparation to support differentiation through the template in future.
   [(#864)](https://github.com/PennyLaneAI/pennylane/pull/864)
 
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
   `cache` argument to the device.
   [(#851)](https://github.com/PennyLaneAI/pennylane/pull/851)
-  
+
   The `cache` argument should be an integer specifying the size of the cache. For example, a
   cache of size 10 is created using:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, cache=10)
   ```
@@ -193,6 +231,11 @@
 
 <h3>Bug fixes</h3>
 
+* PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
+  keyword argument to the quantum function.
+  [(#903)](https://github.com/PennyLaneAI/pennylane/pull/903)
+  [(#893)](https://github.com/PennyLaneAI/pennylane/pull/893)
+
 * The new tape mode now prevents multiple observables from being evaluated on the same wire
   if the observables are not qubit-wise commuting Pauli words.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
@@ -208,13 +251,16 @@
 * Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
   attribute to the output tensor.
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
+  
+* Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
+  [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Maria Schuld
-
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
+Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 
