@@ -251,14 +251,16 @@
 * Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
   attribute to the output tensor.
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
+  
+* Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
+  [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran,
-Romain Moyard, Maria Schuld, Antal Száva
-
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
+Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 
