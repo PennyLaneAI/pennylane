@@ -50,6 +50,38 @@
 
 <h3>Improvements</h3>
 
+* The ``VQECost`` class now provides observable optimization using the ``optimize`` argument,
+  resulting in potentially fewer device executions.
+  [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
+  
+  This is achieved by separating the observables composing the Hamiltonian into qubit-wise
+  commuting groups and evaluating those groups on a single qnode: 
+  
+  ```python
+  qml.enable_tape()
+  commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+  H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+
+  dev = qml.device("default.qubit", wires=2)
+  ansatz = qml.templates.StronglyEntanglingLayers
+
+  cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+
+  params = qml.init.strong_ent_layers_uniform(3, 2)
+  ```
+  
+  Optimizing these commuting observables leads to fewer device executions:
+  
+  ```pycon
+  >>> cost_opt(params)
+  >>> ex_opt = dev.num_executions
+  >>> cost_no_opt(params)
+  >>> ex_no_opt = dev.num_executions - ex_opt
+  >>> print(ex_opt, ex_no_opt)
+  1 2
+  ```
+
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
   single device run because they are diagonal in the same basis, or can be equivalently
