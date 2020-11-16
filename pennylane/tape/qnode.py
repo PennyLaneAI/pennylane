@@ -402,8 +402,13 @@ class QNode:
             # controlled rotations aren't supported by the parameter-shift rule
             stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
-        # expand out the tape, if any operations are not supported on the device
-        if not {op.name for op in self.qtape.operations}.issubset(stop_at):
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
+        ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
+
+        # expand out the tape, if any operations are not supported on the device or multiple
+        # observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
             )

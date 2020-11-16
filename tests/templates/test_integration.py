@@ -152,6 +152,10 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                {'weights': np.array([[0.35172862, 0.60808317, 1.44397231]])},
                                {'wires': [0, 1], 'init_state': np.array([1, 0])},
                                2),
+                              (qml.templates.ParticleConservingU1,
+                               {'weights': np.array([[[ 0.17586701, -0.20382066]]])},
+                               {'wires': [0, 1], 'init_state':np.array([1, 0])},
+                               2),
                               ]
 
 CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
@@ -188,7 +192,7 @@ CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
 # before they are called in a quantum function.
 # These templates will be skipped in tests of that nature.
 
-NO_OP_BEFORE = ["AmplitudeEmbedding", "UCCSD",  "ParticleConservingU2"]
+NO_OP_BEFORE = ["AmplitudeEmbedding", "UCCSD",  "ParticleConservingU2", "ParticleConservingU1"]
 
 # Each entry to QUBIT_INIT and CV_INIT adds a template with specified inputs to the
 # integration tests ``TestIntegrationInitFunctions``
