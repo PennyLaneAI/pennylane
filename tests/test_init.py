@@ -353,38 +353,23 @@ class TestInit:
         assert p.flatten().shape == (0,)
 
 
-<<<<<<< HEAD
     def test_particle_conserving_u2_init(self, tol):
         """Test the functions 'particle_conserving_u2_uniform' and
         'particle_conserving_u2_normal'."""
-=======
-    def test_particle_conserving_u1_init(self, tol):
-        """Test the functions 'particle_conserving_u1_uniform' and
-        'particle_conserving_u1_normal'."""
->>>>>>> master
 
         n_layers = 2
         n_wires = 4
 
         # check the shape
-<<<<<<< HEAD
         exp_shape = (n_layers, 2 * n_wires - 1)
         params = qml.init.particle_conserving_u2_uniform(n_layers, n_wires)
         assert params.shape == exp_shape
 
         params = qml.init.particle_conserving_u2_normal(n_layers, n_wires)
-=======
-        exp_shape = (n_layers, n_wires - 1, 2)
-        params = qml.init.particle_conserving_u1_uniform(n_layers, n_wires)
-        assert params.shape == exp_shape
-
-        params = qml.init.particle_conserving_u1_normal(n_layers, n_wires)
->>>>>>> master
         assert params.shape == exp_shape
 
         # check deterministic output for a fixed seed
         seed = 1975
-<<<<<<< HEAD
         p1 = qml.init.particle_conserving_u2_uniform(n_layers, n_wires, seed=seed)
         p2 = qml.init.particle_conserving_u2_uniform(n_layers, n_wires, seed=seed)
         assert np.allclose(p1, p2, atol=tol)
@@ -402,47 +387,52 @@ class TestInit:
         p2 = qml.init.particle_conserving_u2_normal(n_layers, n_wires, seed=seed+1)
         assert not np.allclose(p1, p2, atol=tol)
 
-    def test_particle_conserving_u2_init_exceptions(self):
-        """Test exceptions the functions 'particle_conserving_u2_uniform' and
-        'particle_conserving_u2_normal'."""
-=======
-        p1 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
-        p2 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol)
+def test_particle_conserving_u1_init(self, tol):
+    """Test the functions 'particle_conserving_u1_uniform' and
+    'particle_conserving_u1_normal'."""
 
-        p1 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
-        p2 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol)
+    n_layers = 2
+    n_wires = 4
 
-        # check that the output is different for different seeds
-        p1 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
-        p2 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol)
+    # check the shape
+    exp_shape = (n_layers, n_wires - 1, 2)
+    params = qml.init.particle_conserving_u1_uniform(n_layers, n_wires)
+    assert params.shape == exp_shape
 
-        p1 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
-        p2 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol)
+    params = qml.init.particle_conserving_u1_normal(n_layers, n_wires)
+    assert params.shape == exp_shape
+
+    # check deterministic output for a fixed seed
+    seed = 1975
+    p1 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
+    p2 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
+    assert np.allclose(p1, p2, atol=tol)
+
+    p1 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
+    p2 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
+    assert np.allclose(p1, p2, atol=tol)
+
+    # check that the output is different for different seeds
+    p1 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed)
+    p2 = qml.init.particle_conserving_u1_uniform(n_layers, n_wires, seed=seed + 1)
+    assert not np.allclose(p1, p2, atol=tol)
+
+    p1 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed)
+    p2 = qml.init.particle_conserving_u1_normal(n_layers, n_wires, seed=seed + 1)
+    assert not np.allclose(p1, p2, atol=tol)
 
 
-    def test_particle_conserving_u1_init_exceptions(self):
-        """Test exceptions the functions 'particle_conserving_u1_uniform' and
-        'particle_conserving_u1_normal'."""
->>>>>>> master
+def test_particle_conserving_u1_init_exceptions(self):
+    """Test exceptions the functions 'particle_conserving_u1_uniform' and
+    'particle_conserving_u1_normal'."""
 
-        n_layers = 4
-        n_wires = 1
+    n_layers = 4
+    n_wires = 1
 
-        msg_match = "The number of qubits must be greater than one"
+    msg_match = "The number of qubits must be greater than one"
 
-        with pytest.raises(ValueError, match=msg_match):
-<<<<<<< HEAD
-            qml.init.particle_conserving_u2_uniform(n_layers, n_wires)
+    with pytest.raises(ValueError, match=msg_match):
+        qml.init.particle_conserving_u1_uniform(n_layers, n_wires)
 
-        with pytest.raises(ValueError, match=msg_match):
-            qml.init.particle_conserving_u2_normal(n_layers, n_wires)
-=======
-            qml.init.particle_conserving_u1_uniform(n_layers, n_wires)
-
-        with pytest.raises(ValueError, match=msg_match):
-            qml.init.particle_conserving_u1_normal(n_layers, n_wires)
->>>>>>> master
+    with pytest.raises(ValueError, match=msg_match):
+        qml.init.particle_conserving_u1_normal(n_layers, n_wires)
