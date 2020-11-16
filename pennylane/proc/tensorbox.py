@@ -14,6 +14,7 @@
 """This module contains the TensorBox abstract base class."""
 # pylint: disable=import-outside-toplevel
 import abc
+import numbers
 from types import FunctionType
 
 import numpy as np
@@ -81,7 +82,7 @@ class TensorBox(abc.ABC):
 
         namespace = tensor.__class__.__module__.split(".")[0]
 
-        if isinstance(tensor, (int, float, complex, list, tuple)) or namespace == "numpy":
+        if isinstance(tensor, (numbers.Number, list, tuple)) or namespace == "numpy":
             from .numpy_box import NumpyBox
 
             return NumpyBox.__new__(NumpyBox, tensor)
@@ -318,6 +319,28 @@ class TensorBox(abc.ABC):
 
         Note that this is a static method, so we must pass the unified tensor itself
         if we would like it to be included.
+        """
+
+    @abc.abstractmethod
+    def dot(self, other):
+        """Returns the matrix or dot product of two tensors.
+
+        * If both tensors are 0-dimensional, elementwise multiplication
+          is performed and a 0-dimensional scalar returned.
+
+        * If both tensors are 1-dimensional, the dot product is returned.
+
+        * If the first array is 2-dimensional and the second array 1-dimensional,
+          the matrix-vector product is returned.
+
+        * If both tensors are 2-dimensional, the matrix product is returned.
+
+        * Finally, if the the first array is N-dimensional and the second array
+          M-dimensional, a sum product over the last dimension of the first array,
+          and the second-to-last dimension of the second array is returned.
+
+        Args:
+            other (tensor_like): the tensor-like object to right-multiply the TensorBox by
         """
 
     @abc.abstractmethod

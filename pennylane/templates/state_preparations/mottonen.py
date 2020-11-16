@@ -146,14 +146,13 @@ def _compute_theta(alpha):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
-    alpha = qml.proc.TensorBox(alpha).numpy()
-    theta = M_trans @ alpha
+    theta = qml.proc.dot(M_trans, alpha)
 
     return theta / 2 ** k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a uniformly-controlled rotation to the target qubit.
+    r"""Applies a uniformly-controlled rotation to the target qubit.
 
     A uniformly-controlled rotation is a sequence of multi-controlled
     rotations, each of which is conditioned on the control qubits being in a different state.

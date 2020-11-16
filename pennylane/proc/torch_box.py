@@ -64,6 +64,35 @@ class TorchBox(qml.proc.TensorBox):
     def expand_dims(self, axis):
         return TorchBox(torch.unsqueeze(self.data, dim=axis))
 
+    def dot(self, other):
+        other = self.astensor(other)
+
+        dtype1 = self.data.dtype
+        dtype2 = other.dtype
+
+        if dtype1 is not dtype2:
+            complex_type = {dtype1, dtype2}.intersection({torch.complex64, torch.complex128})
+            float_type = {dtype1, dtype2}.intersection(
+                {torch.float16, torch.float32, torch.float64}
+            )
+            int_type = {dtype1, dtype2}.intersection(
+                {torch.int8, torch.int16, torch.int32, torch.int64}
+            )
+
+            cast_type = complex_type or float_type or int_type
+            cast_type = list(cast_type)[-1]
+
+            other = other.to(cast_type)
+            self.data = self.data.to(cast_type)
+
+        if other.ndim == 2 and self.data.ndim == 2:
+            return TorchBox(self.data @ other)
+
+        if other.ndim == 0 and self.data.ndim == 0:
+            return TorchBox(self.data * other)
+
+        return TorchBox(torch.tensordot(self.data, other, dims=[[-1], [-2]]))
+
     @property
     def interface(self):
         return "torch"

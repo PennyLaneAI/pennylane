@@ -46,6 +46,15 @@ class NumpyBox(qml.proc.TensorBox):
     def concatenate(values, axis=0):
         return NumpyBox(np.concatenate(NumpyBox.unbox_list(values), axis=axis))
 
+    def dot(self, other):
+        if other.ndim == 2 and self.data.ndim == 2:
+            return NumpyBox(self.data @ other)
+
+        if other.ndim == 0 and self.data.ndim == 0:
+            return NumpyBox(self.data * other)
+
+        return NumpyBox(np.dot(self.data, other))
+
     def expand_dims(self, axis):
         return NumpyBox(np.expand_dims(self.data, axis=axis))
 

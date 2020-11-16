@@ -66,6 +66,31 @@ class TensorFlowBox(qml.proc.TensorBox):
             res = tf.concat(TensorFlowBox.unbox_list(values), axis=axis)
         return TensorFlowBox(res)
 
+    def dot(self, other):
+        other = self.astensor(other)
+
+        dtype1 = self.data.dtype
+        dtype2 = other.dtype
+
+        if dtype1 is not dtype2:
+            complex_type = {dtype1, dtype2}.intersection({tf.complex64, tf.complex128})
+            float_type = {dtype1, dtype2}.intersection({tf.float16, tf.float32, tf.float64})
+            int_type = {dtype1, dtype2}.intersection({tf.int8, tf.int16, tf.int32, tf.int64})
+
+            cast_type = complex_type or float_type or int_type
+            cast_type = list(cast_type)[-1]
+
+            other = tf.cast(other, cast_type)
+            self.data = tf.cast(self.data, cast_type)
+
+        if other.ndim == 2 and self.data.ndim == 2:
+            return TensorFlowBox(self.data @ other)
+
+        if other.ndim == 0 and self.data.ndim == 0:
+            return TensorFlowBox(self.data * other)
+
+        return TensorFlowBox(tf.tensordot(self.data, other, axes=[[-1], [-2]]))
+
     @property
     def interface(self):
         return "tf"

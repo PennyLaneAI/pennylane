@@ -50,7 +50,7 @@ def test_unknown_input_type():
     """Test that an exception is raised if the input type
     is unknown"""
     with pytest.raises(ValueError, match="Unknown tensor type"):
-        qml.proc.TensorBox(True)
+        qml.proc.TensorBox("hello")
 
 
 def test_astensor():

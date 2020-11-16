@@ -44,6 +44,7 @@ from .fn import (
     cast_like,
     concatenate,
     convert_like,
+    dot,
     expand_dims,
     get_interface,
     ones_like,

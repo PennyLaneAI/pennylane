@@ -41,6 +41,15 @@ class AutogradBox(qml.proc.TensorBox):
     def concatenate(values, axis=0):
         return AutogradBox(np.concatenate(AutogradBox.unbox_list(values), axis=axis))
 
+    def dot(self, other):
+        if other.ndim == 2 and self.data.ndim == 2:
+            return AutogradBox(self.data @ other)
+
+        if other.ndim == 0 and self.data.ndim == 0:
+            return AutogradBox(self.data * other)
+
+        return AutogradBox(np.dot(self.data, other))
+
     def expand_dims(self, axis):
         return AutogradBox(np.expand_dims(self.data, axis=axis))
 

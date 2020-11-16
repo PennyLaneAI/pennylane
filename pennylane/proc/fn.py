@@ -257,6 +257,35 @@ def convert_like(tensor1, tensor2):
     return TensorBox(tensor2).astensor(tensor1)
 
 
+def dot(tensor1, tensor2):
+    """Returns the matrix or dot product of two tensors.
+
+    * If both tensors are 0-dimensional, elementwise multiplication
+      is performed and a 0-dimensional scalar returned.
+
+    * If both tensors are 1-dimensional, the dot product is returned.
+
+    * If the first array is 2-dimensional and the second array 1-dimensional,
+      the matrix-vector product is returned.
+
+    * If both tensors are 2-dimensional, the matrix product is returned.
+
+    * Finally, if the the first array is N-dimensional and the second array
+      M-dimensional, a sum product over the last dimension of the first array,
+      and the second-to-last dimension of the second array is returned.
+
+    Args:
+        tensor1 (tensor_like): input tensor
+        tensor2 (tensor_like): input tensor
+    """
+    tensorbox = _get_multi_tensorbox([tensor1, tensor2])
+
+    if tensorbox.data is tensor1:
+        return tensorbox.dot(tensor2).data
+
+    return tensorbox.dot(tensor1).data
+
+
 def expand_dims(tensor, axis):
     """Expand the shape of an array by adding a new dimension of size 1
     at the specified axis location.
