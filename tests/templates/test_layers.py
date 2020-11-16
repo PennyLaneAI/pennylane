@@ -799,7 +799,7 @@ class TestParticleConservingU2:
         ],
     )
     def test_decomposition_u1ex(self, init_state, exp_state, tol):
-        """Test the decomposition of the U_{1, ex}` exchange gate by asserting the prepared
+        """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
         state."""
 
         N = 2
