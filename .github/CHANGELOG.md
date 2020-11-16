@@ -248,6 +248,7 @@
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
   
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
+  [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
 
 <h3>Contributors</h3>
 
