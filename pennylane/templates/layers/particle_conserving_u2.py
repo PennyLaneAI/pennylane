@@ -123,7 +123,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     .. UsageDetails::
 
-        
+
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
