@@ -490,8 +490,13 @@ class JacobianTape(QuantumTape):
         all_tapes = []
         reshape_info = []
         processing_fns = []
+        nonzero_grad_idx = []
 
         for trainable_idx, param_method in enumerate(diff_methods):
+            if param_method == "0":
+                continue
+
+            nonzero_grad_idx.append(trainable_idx)
 
             if (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # numeric method
@@ -516,7 +521,7 @@ class JacobianTape(QuantumTape):
         jac = None
         start = 0
 
-        for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
+        for i, processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
 
             # extract the correct results from the flat list
             res = results[start : start + res_len]
