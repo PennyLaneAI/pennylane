@@ -14,10 +14,28 @@
 """This module contains the TensorBox abstract base class."""
 # pylint: disable=import-outside-toplevel
 import abc
+import functools
 import numbers
+import sys
 from types import FunctionType
 
 import numpy as np
+
+
+def wrap_output(func):
+
+    @functools.wraps(func)
+    def _wrapper(*args, **kwargs):
+        wrap = kwargs.pop("wrap_output", True)
+        print(wrap)
+
+        if wrap:
+            cls = vars(sys.modules[func.__module__])[func.__qualname__.split('.')[0]]
+            return cls(func(*args, **kwargs))
+
+        return func(*args, **kwargs)
+
+    return _wrapper
 
 
 class TensorBox(abc.ABC):

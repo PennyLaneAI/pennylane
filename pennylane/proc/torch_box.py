@@ -25,8 +25,9 @@ class TorchBox(qml.proc.TensorBox):
     For more details, please refer to the :class:`~.TensorBox` documentation.
     """
 
+    @qml.proc.tensorbox.wrap_output
     def abs(self):
-        return TorchBox(torch.abs(self.data))
+        return torch.abs(self.data)
 
     def angle(self):
         return TorchBox(torch.angle(self.data))
