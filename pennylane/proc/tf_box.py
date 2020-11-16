@@ -134,4 +134,6 @@ class TensorFlowBox(qml.proc.TensorBox):
 
     @staticmethod
     def where(condition, x, y):
-        return TensorFlowBox(tf.where(TensorFlowBox.astensor(condition), *TensorFlowBox.unbox_list([x, y])))
+        return TensorFlowBox(
+            tf.where(TensorFlowBox.astensor(condition), *TensorFlowBox.unbox_list([x, y]))
+        )

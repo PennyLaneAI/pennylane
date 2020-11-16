@@ -23,13 +23,12 @@ import numpy as np
 
 
 def wrap_output(func):
-
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
         wrap = kwargs.pop("wrap_output", True)
 
         if wrap:
-            cls = vars(sys.modules[func.__module__])[func.__qualname__.split('.')[0]]
+            cls = vars(sys.modules[func.__module__])[func.__qualname__.split(".")[0]]
             return cls(func(*args, **kwargs))
 
         return func(*args, **kwargs)
@@ -545,5 +544,5 @@ class TensorBox(abc.ABC):
         np.stack: "stack",
         np.sum: "sum",
         np.take: "take",
-        np.where: "where"
+        np.where: "where",
     }

@@ -56,6 +56,6 @@ from .fn import (
     sum_ as sum,
     take,
     toarray,
-    where
+    where,
 )
 from .tensorbox import TensorBox
