@@ -15,6 +15,9 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+from importlib import reload
+import pkg_resources
+
 import numpy as _np
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
@@ -50,16 +53,8 @@ import pennylane.proc  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
 from .tape import enable_tape, disable_tape, tape_mode_active
 
-import pkg_resources  # pylint: disable=wrong-import-order
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
-
-
-# get list of installed devices
-plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-}
 
 
 # get chemistry plugin
@@ -167,6 +162,13 @@ def device(name, *args, **kwargs):
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
+    reload(pkg_resources)
+
+    # get list of installed devices
+    plugin_devices = {
+        entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
+    }
+
     if name in plugin_devices:
         options = {}
 
