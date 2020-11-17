@@ -1263,6 +1263,16 @@ class CRot(Operation):
             ]
         )
 
+    @staticmethod
+    def decomposition(phi, theta, omega, wires):
+        decomp_ops = [
+            Rot(phi / 2, theta / 2, omega / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            Rot(phi / 2, theta / 2, omega / 2, wires=wires[1]).inv(),
+            CNOT(wires=wires),
+        ]
+        return decomp_ops
+
 
 class U1(Operation):
     r"""U1(phi)
