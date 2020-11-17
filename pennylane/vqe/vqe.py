@@ -17,10 +17,10 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import itertools
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
-
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -527,9 +527,11 @@ class VQECost:
             array[float]: metric tensor
         """
         if self._optimize:
-            raise ValueError("Evaluation of the metric tensor is not supported when using "
-                             "optimized observables. Set the argument optimize=False to obtain "
-                             "the metric tensor.")
+            raise ValueError(
+                "Evaluation of the metric tensor is not supported when using "
+                "optimized observables. Set the argument optimize=False to obtain "
+                "the metric tensor."
+            )
         # We know that for VQE, all the qnodes share the same ansatz so we select the first
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct

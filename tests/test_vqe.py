@@ -14,11 +14,11 @@
 """
 Unit tests for the :mod:`pennylane.vqe` submodule.
 """
-import pytest
-import pennylane as qml
 import numpy as np
-from pennylane.wires import Wires
+import pytest
 
+import pennylane as qml
+from pennylane.wires import Wires
 
 try:
     import torch
@@ -857,9 +857,7 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True
-        )
+        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
 
         with pytest.raises(ValueError, match="Evaluation of the metric tensor is not supported"):
             cost.metric_tensor(None)
