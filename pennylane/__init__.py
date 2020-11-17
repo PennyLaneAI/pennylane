@@ -57,6 +57,21 @@ from .tape import enable_tape, disable_tape, tape_mode_active
 default_config = Configuration("config.toml")
 
 
+# get list of installed devices
+plugin_devices = {
+    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
+}
+
+
+def refresh_devices():
+    """Scan installed PennyLane plugins to refresh the device list."""
+    global plugin_devices
+    reload(pkg_resources)
+    plugin_devices = {
+        entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
+    }
+
+
 # get chemistry plugin
 class NestedAttrError:
     """This class mocks out the qchem module in case
@@ -162,12 +177,11 @@ def device(name, *args, **kwargs):
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
-    reload(pkg_resources)
-
-    # get list of installed devices
-    plugin_devices = {
-        entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-    }
+    if name not in plugin_devices:
+        # Device does not exist in the loaded device list.
+        # Attempt to refresh the devices, in case the user
+        # installed the plugin during the current Python session.
+        refresh_devices()
 
     if name in plugin_devices:
         options = {}
