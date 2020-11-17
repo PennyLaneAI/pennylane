@@ -224,6 +224,7 @@
   - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
+  - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
 
 <h3>Breaking changes</h3>
 

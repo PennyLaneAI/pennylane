@@ -22,6 +22,9 @@ from networkx import Graph
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 #####################################################
 
 graph = Graph()
@@ -627,3 +630,38 @@ class TestLayers:
             target = [j.name, j.parameters, j.wires]
 
         assert prep == target
+
+
+class TestIntegration:
+    """Test integration of the QAOA module with PennyLane"""
+
+    def test_module_example(self, tol):
+        """Test the example in the QAOA module docstring"""
+
+        # Defines the wires and the graph on which MaxCut is being performed
+        wires = range(3)
+        graph = Graph([(0, 1), (1, 2), (2, 0)])
+
+        # Defines the QAOA cost and mixer Hamiltonians
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
+        def qaoa_layer(gamma, alpha):
+            qaoa.cost_layer(gamma, cost_h)
+            qaoa.mixer_layer(alpha, mixer_h)
+
+        # Repeatedly applies layers of the QAOA ansatz
+        def circuit(params, **kwargs):
+            for w in wires:
+                qml.Hadamard(wires=w)
+
+            qml.layer(qaoa_layer, 2, params[0], params[1])
+
+        # Defines the device and the QAOA cost function
+        dev = qml.device('default.qubit', wires=len(wires))
+        cost_function = qml.VQECost(circuit, cost_h, dev)
+
+        res = cost_function([[1, 1], [1, 1]])
+        expected = -1.8260274380964299
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
