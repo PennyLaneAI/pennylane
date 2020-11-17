@@ -4,6 +4,13 @@
 
 * A new hardware-efficient particle-conserving template has been implemented
   to perform VQE-based quantum chemistry simulations. The new template applies
+  several layers of the particle-conserving entangler proposed in Fig. 2b
+  of the article by Barkoutsos *et al*. in
+  `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_
+  [(#876)](https://github.com/PennyLaneAI/pennylane/pull/876)
+
+* A new hardware-efficient particle-conserving template has been implemented
+  to perform VQE-based quantum chemistry simulations. The new template applies
   several layers of the particle-conserving entangler proposed in Fig. 2a
   of the article by Barkoutsos *et al*. in
   `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_
