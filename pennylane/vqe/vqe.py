@@ -473,7 +473,9 @@ class VQECost:
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
         value of each observable term after applying the circuit ansatz."""
 
-        if optimize:
+        self._optimize = optimize
+
+        if self._optimize:
             if not qml.tape_mode_active():
                 raise ValueError(
                     "Observable optimization is only supported in tape mode. Tape "
@@ -524,6 +526,10 @@ class VQECost:
         Returns:
             array[float]: metric tensor
         """
+        if self._optimize:
+            raise ValueError("Evaluation of the metric tensor is not supported when using "
+                             "optimized observables. Set the argument optimize=False to obtain "
+                             "the metric tensor.")
         # We know that for VQE, all the qnodes share the same ansatz so we select the first
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
