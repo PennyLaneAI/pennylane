@@ -67,7 +67,7 @@ def u2_ex_gate(phi, wires=None):
 @template
 def ParticleConservingU2(weights, wires, init_state=None):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
-    particle-conserving gate :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
+    particle-conserving entangler :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
 
     This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the entangler
@@ -80,8 +80,8 @@ def ParticleConservingU2(weights, wires, init_state=None):
         \hat{U}^{(1)}_\mathrm{ent}(\vec{\theta}_1, \vec{\phi}_1) \vert \mathrm{HF}\rangle,
 
     where :math:`\hat{U}^{(i)}_\mathrm{ent}(\vec{\theta}_i, \vec{\phi}_i) =
-    \hat{R}^{(i)}_\mathrm{z}(\vec{\theta}_i) \hat{U}^{(i)}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`
-    as shown in the figure below::
+    \hat{R}_\mathrm{z}(\vec{\theta}_i) \hat{U}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`
+    as shown in the figure below:
 
     |
 
@@ -111,12 +111,11 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M)`` where ``D`` is the number of
-            layers and ``M`` = :math:`2N-1` is the total number of rotation ``(N)`` and exchange
+            layers and :math:`M = 2N-1` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
-        init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
-            HF state. ``init_state`` is used to initialize the wires.
+        init_state (array[int]): length ``len(wires)`` vector representing the Hartree-Fock state used to initialize the wires
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -167,7 +166,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
     if len(wires) < 2:
         raise ValueError(
             "This template requires the number of qubits to be greater than one;"
-            " got 'len(wires)' = {}".format(len(wires))
+            " got a wire sequence with {} elements".format(len(wires))
         )
 
     expected_shape = (layers, 2 * len(wires) - 1)
