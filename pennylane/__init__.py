@@ -57,19 +57,21 @@ from .tape import enable_tape, disable_tape, tape_mode_active
 default_config = Configuration("config.toml")
 
 
-# get list of installed devices
-plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-}
+def _get_device_entrypoints():
+    """Returns a dictionary mapping the device short name to the
+    loadable entrypoint"""
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
 
 
 def refresh_devices():
     """Scan installed PennyLane plugins to refresh the device list."""
     global plugin_devices
     reload(pkg_resources)
-    plugin_devices = {
-        entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-    }
+    plugin_devices = _get_device_entrypoints()
+
+
+# get list of installed devices
+plugin_devices = _get_device_entrypoints()
 
 
 # get chemistry plugin
