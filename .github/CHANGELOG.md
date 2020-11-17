@@ -55,7 +55,7 @@
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
   
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
-  commuting groups and evaluating those groups on a single qnode: 
+  commuting groups and evaluating those groups on a single QNode: 
   
   ```python
   qml.enable_tape()
