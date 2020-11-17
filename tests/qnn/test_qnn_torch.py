@@ -439,7 +439,7 @@ class TestTorchLayer:
 
                 qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
 
-                x = torch.rand((5, n_qubits), dtype=torch.float64)
+                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device('cuda'))
                 loss = torch.sum(qlayer(x)).squeeze()
                 loss.backward()
             except Exception:
