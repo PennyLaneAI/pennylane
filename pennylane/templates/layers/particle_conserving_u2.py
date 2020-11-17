@@ -42,18 +42,6 @@ def u2_ex_gate(phi, wires=None):
         0 & 0 & 0 & 1 \\
         \end{array}\right).
 
-    The figure below shows the circuit used to decompose :math:`U_{2, \mathrm{ex}}` into
-    elementary gates
-
-    |
-
-    .. figure:: ../../_static/templates/layers/u2_decomposition.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
-
-    |
-
     Args:
         phi (float): angle entering the controlled-RX operator :math:`CRX(2\phi)`
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
@@ -80,8 +68,8 @@ def ParticleConservingU2(weights, wires, init_state=None):
         \hat{U}^{(1)}_\mathrm{ent}(\vec{\theta}_1, \vec{\phi}_1) \vert \mathrm{HF}\rangle,
 
     where :math:`\hat{U}^{(i)}_\mathrm{ent}(\vec{\theta}_i, \vec{\phi}_i) =
-    \hat{R}_\mathrm{z}(\vec{\theta}_i) \hat{U}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`
-    as shown in the figure below:
+    \hat{R}_\mathrm{z}(\vec{\theta}_i) \hat{U}_\mathrm{2,\mathrm{ex}}(\vec{\phi}_i)`.
+    The circuit implementing the entangler blocks is shown in the figure below:
 
     |
 
@@ -111,11 +99,12 @@ def ParticleConservingU2(weights, wires, init_state=None):
 
     Args:
         weights (array[float]): Array of weights of shape ``(D, M)`` where ``D`` is the number of
-            layers and :math:`M = 2N-1` is the total number of rotation ``(N)`` and exchange
+            layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
-        init_state (array[int]): length ``len(wires)`` vector representing the Hartree-Fock state used to initialize the wires
+        init_state (array[int]): length ``len(wires)`` vector representing the Hartree-Fock state
+            used to initialize the wires.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -166,7 +155,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
     if len(wires) < 2:
         raise ValueError(
             "This template requires the number of qubits to be greater than one;"
-            " got a wire sequence with {} elements".format(len(wires))
+            "got a wire sequence with {} elements".format(len(wires))
         )
 
     expected_shape = (layers, 2 * len(wires) - 1)
