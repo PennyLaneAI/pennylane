@@ -231,6 +231,7 @@
   This will result in an improved experience if installing PennyLane and plugins within
   a running Python session (for example, on Google Colab), and avoid the need to
   restart the kernel/runtime.
+  [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
 
 <h3>Breaking changes</h3>
 
