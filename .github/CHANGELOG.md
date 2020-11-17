@@ -224,6 +224,7 @@
   - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
+  - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
 
 * A new function, ``qml.refresh_devices()``, has been added, allowing PennyLane to
   rescan installed PennyLane plugins and refresh the device list. In addition, the ``qml.device``
