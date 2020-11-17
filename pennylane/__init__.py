@@ -15,8 +15,6 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-import pkg_resources
-
 import numpy as _np
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
@@ -51,6 +49,8 @@ from .io import *
 import pennylane.proc  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
 from .tape import enable_tape, disable_tape, tape_mode_active
+
+import pkg_resources  # pylint: disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
