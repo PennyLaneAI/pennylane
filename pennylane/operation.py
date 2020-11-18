@@ -1609,7 +1609,7 @@ class CVOperation(CV, Operation):
         shift = np.pi / 2
 
         # We set the default recipe to as follows:
-        # ∂f(x) = 0.5*f(1*x+pi/2) - 0.5*f(1*x-pi/2)
+        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
 
