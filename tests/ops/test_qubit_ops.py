@@ -499,10 +499,14 @@ class TestOperations:
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
-    def test_CRot_decomposition(self, tol, phi, theta, omega):
+    @pytest.mark.parametrize("tapemode", [True, False])
+    def test_CRot_decomposition(self, tol, phi, theta, omega, tapemode, monkeypatch):
         """Tests that the decomposition of the CRot gate is correct"""
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
-        res = op.decomposition(phi, theta, omega, op.wires)
+
+        with monkeypatch.context() as m:
+            m.setattr(qml, "tape_mode_active", lambda: tapemode)
+            res = op.decomposition(phi, theta, omega, op.wires)
 
         mats = []
         for i in reversed(res):
