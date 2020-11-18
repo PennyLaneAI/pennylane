@@ -849,7 +849,7 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor(self):
+    def test_metric_tensor_tape_mode(self):
         """Test that an error is raised if the metric tensor is requested in optimize=True mode."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
@@ -859,8 +859,8 @@ class TestVQE:
 
         cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
 
-        with pytest.raises(ValueError, match="Evaluation of the metric tensor is not supported"):
-            cost.metric_tensor(None)
+        args = qml.init.strong_ent_layers_uniform(2, 4)
+        cost.metric_tensor(args)
 
 
 @pytest.mark.usefixtures("tape_mode")
