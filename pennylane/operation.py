@@ -642,8 +642,9 @@ class Operation(Operator):
         a = 1
         shift = np.pi / 2
 
-        # We set the default recipe to as follows:
-        # ∂f(x) = 0.5*f(1*x+pi/2) - 0.5*f(1*x-pi/2)
+        # We set the default recipe following:
+        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
+        # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
 
@@ -1601,16 +1602,33 @@ class CVOperation(CV, Operation):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
-        multiplier = 0.5 if recipe is None else recipe[0]
-        shift = np.pi / 2 if recipe is None else recipe[1]
+
+        # Default values
+        multiplier = 0.5
+        a = 1
+        shift = np.pi / 2
+
+        # We set the default recipe to as follows:
+        # ∂f(x) = 0.5*f(1*x+pi/2) - 0.5*f(1*x-pi/2)
+        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
+        param_shift = default_param_shift if recipe is None else recipe
+
+        pd = None # partial derivative of the transformation
 
         p = self.parameters
-        # evaluate the transform at the shifted parameter values
-        p[idx] += shift
-        U2 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        p[idx] -= 2 * shift
-        U1 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        return (U2 - U1) * multiplier  # partial derivative of the transformation
+
+        original_p_idx = p[idx]
+        for c, _a, s in param_shift:
+            # evaluate the transform at the shifted parameter values
+            p[idx] = _a * original_p_idx + s
+            U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+
+            if pd is None:
+                pd = c * U
+            else:
+                pd += c * U
+
+        return pd
 
     def heisenberg_tr(self, wires, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried

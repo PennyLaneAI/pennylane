@@ -239,22 +239,27 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         # Default values
         multiplier = 0.5
+        a = 1
         shift = np.pi / 2
-        pos_c, pos_s, neg_c, neg_s = (
-            (multiplier, shift, multiplier, shift) if recipe is None else recipe
-        )
+
+        # We set the default recipe to as follows:
+        # ∂f(x) = 0.5*f(1*x+pi/2) - 0.5*f(1*x-pi/2)
+        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
+        param_shift = default_param_shift if recipe is None else recipe
 
         shift = np.zeros_like(params)
-        shift[idx] = pos_s
 
-        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_forward.set_parameters(params + shift)
+        coeffs = []
+        tapes = []
+        for c, _a, s in param_shift:
 
-        shift[idx] = neg_s
-        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_backward.set_parameters(params - shift)
+            shift[idx] = s
 
-        tapes = [shifted_forward, shifted_backward]
+            # shifted parameter values
+            shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted_tape.set_parameters(params + shift)
+            coeffs.append(c)
+            tapes.append(shifted_tape)
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index idx via the
@@ -270,7 +275,14 @@ class CVParamShiftTape(QubitParamShiftTape):
             shifted_forward = np.array(results[0])
             shifted_backward = np.array(results[1])
 
-            return pos_c * shifted_forward - neg_c * shifted_backward
+            stat = np.zeros_like(results[0])
+
+            for c, res in zip(coeffs, results):
+                shifted = np.array(res)
+                # stat += c * shifted
+                np.add(stat, c * shifted, out=stat, casting="unsafe")
+
+            return stat
 
         return tapes, processing_fn
 
@@ -301,25 +313,32 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         # Default values
         multiplier = 0.5
+        a = 1
         shift = np.pi / 2
-        pos_c, pos_s, neg_c, neg_s = (
-            (multiplier, shift, multiplier, shift) if recipe is None else recipe
-        )
+
+        # We set the default recipe following:
+        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
+        # where we express a positive and a negative shift by default
+        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
+        param_shift = default_param_shift if recipe is None else recipe
+
+        c1, a1, s1 = param_shift[0]
+        c2, a2, s2 = param_shift[1]
 
         shift = np.zeros_like(params)
-        shift[idx] = pos_s
+        shift[idx] = s1
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z
-        self.set_parameters(params + shift)
+        self.set_parameters(a1 * params + shift)
         Z2 = op.heisenberg_tr(dev_wires)
 
-        shift[idx] = neg_s
-        self.set_parameters(params - shift)
+        shift[idx] = s2
+        self.set_parameters(a2 * params + shift)
         Z1 = op.heisenberg_tr(dev_wires)
 
         # derivative of the operation
-        Z = Z2 * pos_c - Z1 * neg_c
+        Z = Z2 * c1 + Z1 * c2
 
         self.set_parameters(params)
         Z0 = op.heisenberg_tr(dev_wires, inverse=True)

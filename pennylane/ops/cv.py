@@ -140,7 +140,7 @@ class Squeezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = [(multiplier, a, shift) * 2, None]
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -184,7 +184,7 @@ class Displacement(CVOperation):
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
-    grad_recipe = [(multiplier, a, shift) * 2, None]
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -286,7 +286,7 @@ class TwoModeSqueezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = [(multiplier, a, shift) * 2, None]
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -333,8 +333,11 @@ class QuadraticPhase(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift) * 2]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -378,8 +381,11 @@ class ControlledAddition(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift) * 2]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -424,8 +430,11 @@ class ControlledPhase(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift) * 2]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift],[-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
