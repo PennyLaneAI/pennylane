@@ -380,46 +380,39 @@ class VQECost:
 
     .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
+    **Example:**
+
+    To construct a ``VQECost`` cost function, we require a Hamiltonian to measure, and an ansatz
+    for our variational circuit.
+
+    We can construct a Hamiltonian manually,
+
+    .. code-block:: python
+
+        coeffs = [0.2, -0.543]
+        obs = [
+            qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(3),
+            qml.PauliZ(0) @ qml.Hadamard(2)
+        ]
+        H = qml.vqe.Hamiltonian(coeffs, obs)
+
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
+    :doc:`/introduction/chemistry` module can be used to generate a molecular Hamiltonian.
+
+    Once we have our Hamiltonian, we can select an ansatz and construct
+    the cost function.
+
+    >>> ansatz = qml.templates.StronglyEntanglingLayers
+    >>> dev = qml.device("default.qubit", wires=4)
+    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
+    >>> params = torch.rand([2, 2, 3])
+    >>> cost(params)
+    tensor(0.0245, dtype=torch.float64)
+
+    The cost function can then be minimized using any gradient descent-based
+    :doc:`optimizer </introduction/optimizers>`.
+
     .. UsageDetails::
-
-        First, we create a device and design an ansatz:
-
-        .. code-block:: python
-
-            dev = qml.device('default.qubit', wires=4)
-
-            def ansatz(params, **kwargs):
-                qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-                for i in range(4):
-                    qml.Rot(*params[i], wires=i)
-                qml.CNOT(wires=[2, 3])
-                qml.CNOT(wires=[2, 0])
-                qml.CNOT(wires=[3, 1])
-
-        Now we can create the Hamiltonian that defines the VQE problem:
-
-        .. code-block:: python3
-
-            coeffs = [0.2, -0.543]
-            obs = [
-                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(3),
-                qml.PauliZ(0) @ qml.Hadamard(2)
-            ]
-            H = qml.vqe.Hamiltonian(coeffs, obs)
-
-        Alternatively, the :func:`~.generate_hamiltonian` function from the
-        :doc:`/introduction/chemistry` module can be used to generate a molecular
-        Hamiltonian.
-
-        Next, we can define the cost function:
-
-        >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
-        >>> params = torch.rand([4, 3])
-        >>> cost(params)
-        tensor(0.0245, dtype=torch.float64)
-
-        The cost function can be minimized using any gradient descent-based
-        :doc:`optimizer </introduction/optimizers>`.
 
         **Optimizing observables:**
 
@@ -448,8 +441,10 @@ class VQECost:
         >>> ex_opt = dev.num_executions
         >>> cost_no_opt(params)
         >>> ex_no_opt = dev.num_executions - ex_opt
-        >>> print(ex_opt, ex_no_opt)
-        1 2
+        >>> print("Number of executions:", ex_no_opt)
+        Number of executions: 2
+        >>> print("Number of executions (optimized):", ex_opt)
+        Number of executions (optimized): 1
 
         Note that this feature is only available in :doc:`tape mode <../../code/qml_tape>`.
     """

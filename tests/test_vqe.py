@@ -733,7 +733,7 @@ class TestVQE:
         """Test that a VQECost with observable optimization gives the same result as another
         VQECost without observable optimization."""
         if not qml.tape_mode_active():
-            pytest.skip("This test works with tape mode enabled")
+            pytest.skip("This test is only intended for tape mode")
         if interface == "tf" and not tf_support:
             pytest.skip("This test requires TensorFlow")
         if interface == "torch" and not torch_support:
@@ -766,7 +766,7 @@ class TestVQE:
         c2 = cost2(w)
         exec_no_opt = dev.num_executions
 
-        assert exec_opt == 5
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
         assert np.allclose(c1, c2)
@@ -775,7 +775,7 @@ class TestVQE:
         """Test that the gradient of VQECost is accessible and correct when using observable
         optimization and the autograd interface."""
         if not qml.tape_mode_active():
-            pytest.skip("This test works with tape mode enabled")
+            pytest.skip("This test is only intended for tape mode")
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
@@ -802,7 +802,7 @@ class TestVQE:
         """Test that the gradient of VQECost is accessible and correct when using observable
         optimization and the Torch interface."""
         if not qml.tape_mode_active():
-            pytest.skip("This test works with tape mode enabled")
+            pytest.skip("This test is only intended for tape mode")
         if not torch_support:
             pytest.skip("This test requires Torch")
 
@@ -829,7 +829,7 @@ class TestVQE:
         """Test that the gradient of VQECost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
         if not qml.tape_mode_active():
-            pytest.skip("This test works with tape mode enabled")
+            pytest.skip("This test is only intended for tape mode")
         if not tf_support:
             pytest.skip("This test requires TensorFlow")
 
@@ -852,7 +852,7 @@ class TestVQE:
     def test_metric_tensor(self):
         """Test that an error is raised if the metric tensor is requested in optimize=True mode."""
         if not qml.tape_mode_active():
-            pytest.skip("This test works with tape mode enabled")
+            pytest.skip("This test is only intended for tape mode")
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
