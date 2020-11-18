@@ -636,16 +636,24 @@ class Operation(Operator):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
-        multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
+
+        # Default values
+        multiplier = 0.5
+        shift = np.pi / 2
+
+        print(recipe)
+        pos_multiplier, pos_shift, neg_multiplier, neg_shift = (multiplier, shift, multiplier, shift) if recipe is None else recipe
 
         # internal multiplier in the Variable
         var_mult = self.data[idx].mult
 
-        multiplier *= var_mult
+        pos_multiplier *= var_mult
+        neg_multiplier *= var_mult
         if var_mult != 0:
             # zero multiplier means the shift is unimportant
-            shift /= var_mult
-        return multiplier, shift
+            pos_shift /= var_mult
+            neg_shift /= var_mult
+        return pos_multiplier, pos_shift, neg_multiplier, neg_shift
 
     @property
     def generator(self):

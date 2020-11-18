@@ -236,14 +236,19 @@ class CVParamShiftTape(QubitParamShiftTape):
         p_idx = self._par_info[t_idx]["p_idx"]
 
         recipe = op.grad_recipe[p_idx]
-        c, s = (0.5, np.pi / 2) if recipe is None else recipe
+
+        # Default values
+        multiplier = 0.5
+        shift = np.pi / 2
+        pos_c, pos_s, neg_c, neg_s = (multiplier, shift, multiplier, shift) if recipe is None else recipe
 
         shift = np.zeros_like(params)
-        shift[idx] = s
+        shift[idx] = pos_s
 
         shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_forward.set_parameters(params + shift)
 
+        shift[idx] = neg_s
         shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
         shifted_backward.set_parameters(params - shift)
 
@@ -263,7 +268,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             shifted_forward = np.array(results[0])
             shifted_backward = np.array(results[1])
 
-            return c * (shifted_forward - shifted_backward)
+            return pos_c * shifted_forward - neg_c * shifted_backward
 
         return tapes, processing_fn
 
@@ -291,21 +296,26 @@ class CVParamShiftTape(QubitParamShiftTape):
         dev_wires = options["dev_wires"]
 
         recipe = op.grad_recipe[p_idx]
-        c, s = (0.5, np.pi / 2) if recipe is None else recipe
+
+        # Default values
+        multiplier = 0.5
+        shift = np.pi / 2
+        pos_c, pos_s, neg_c, neg_s = (multiplier, shift, multiplier, shift) if recipe is None else recipe
 
         shift = np.zeros_like(params)
-        shift[idx] = s
+        shift[idx] = pos_s
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z
         self.set_parameters(params + shift)
         Z2 = op.heisenberg_tr(dev_wires)
 
+        shift[idx] = neg_s
         self.set_parameters(params - shift)
         Z1 = op.heisenberg_tr(dev_wires)
 
         # derivative of the operation
-        Z = (Z2 - Z1) * c
+        Z = Z2 * pos_c - Z1 * neg_c
 
         self.set_parameters(params)
         Z0 = op.heisenberg_tr(dev_wires, inverse=True)

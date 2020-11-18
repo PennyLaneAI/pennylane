@@ -181,11 +181,11 @@ class CVQNode(JacobianQNode):
             temp_var.idx = n
             op.data[p_idx] = temp_var
 
-            multiplier, shift = op.get_parameter_shift(p_idx)
+            pos_multiplier, pos_shift, neg_multiplier, neg_shift = op.get_parameter_shift(p_idx)
 
             # shifted parameter values
-            shift_p1 = np.r_[args, args[idx] + shift]
-            shift_p2 = np.r_[args, args[idx] - shift]
+            shift_p1 = np.r_[args, args[idx] + pos_shift]
+            shift_p2 = np.r_[args, args[idx] - neg_shift]
 
             if not force_order2 and op.use_method != "B":
                 # basic parameter-shift method, for Gaussian CV gates
@@ -193,7 +193,7 @@ class CVQNode(JacobianQNode):
                 # evaluate the circuit at two points with shifted parameter values
                 y2 = np.asarray(self.evaluate(shift_p1, kwargs))
                 y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-                pd += (y2 - y1) * multiplier
+                pd += (pos_multiplier * y2 - neg_multiplier * y1)
             else:
                 # order-2 parameter-shift method, for gaussian CV gates
                 # succeeded by order-2 observables
@@ -203,7 +203,7 @@ class CVQNode(JacobianQNode):
                 Z2 = op.heisenberg_tr(self.device.wires)
                 self._set_variables(shift_p2, kwargs)
                 Z1 = op.heisenberg_tr(self.device.wires)
-                Z = (Z2 - Z1) * multiplier  # derivative of the operation
+                Z = (pos_multiplier * Z2 - neg_multiplier * Z1)  # derivative of the operation
 
                 unshifted_args = np.r_[args, args[idx]]
                 self._set_variables(unshifted_args, kwargs)
