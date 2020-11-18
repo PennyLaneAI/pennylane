@@ -1613,7 +1613,7 @@ class CVOperation(CV, Operation):
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
 
-        pd = None # partial derivative of the transformation
+        pd = None  # partial derivative of the transformation
 
         p = self.parameters
 
