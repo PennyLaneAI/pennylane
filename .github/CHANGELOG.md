@@ -226,6 +226,14 @@
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
   - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
 
+* A new function, ``qml.refresh_devices()``, has been added, allowing PennyLane to
+  rescan installed PennyLane plugins and refresh the device list. In addition, the ``qml.device``
+  loader will attempt to refresh devices if the required plugin device cannot be found.
+  This will result in an improved experience if installing PennyLane and plugins within
+  a running Python session (for example, on Google Colab), and avoid the need to
+  restart the kernel/runtime.
+  [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
