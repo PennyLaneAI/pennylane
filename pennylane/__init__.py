@@ -15,6 +15,7 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+from importlib import reload
 import pkg_resources
 
 import numpy as _np
@@ -56,10 +57,29 @@ from .tape import enable_tape, disable_tape, tape_mode_active
 default_config = Configuration("config.toml")
 
 
+def _get_device_entrypoints():
+    """Returns a dictionary mapping the device short name to the
+    loadable entrypoint"""
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
+
+
+def refresh_devices():
+    """Scan installed PennyLane plugins to refresh the device list."""
+
+    # This function does not return anything; instead, it has a side effect
+    # which is to update the global plugin_devices variable.
+
+    # We wish to retain the behaviour of a global plugin_devices dictionary,
+    # as re-importing pkg_resources can be a very slow operation on systems
+    # with a large number of installed packages.
+    global plugin_devices  # pylint:disable=global-statement
+
+    reload(pkg_resources)
+    plugin_devices = _get_device_entrypoints()
+
+
 # get list of installed devices
-plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-}
+plugin_devices = _get_device_entrypoints()
 
 
 # get chemistry plugin
@@ -167,6 +187,12 @@ def device(name, *args, **kwargs):
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
+    if name not in plugin_devices:
+        # Device does not exist in the loaded device list.
+        # Attempt to refresh the devices, in case the user
+        # installed the plugin during the current Python session.
+        refresh_devices()
+
     if name in plugin_devices:
         options = {}
 

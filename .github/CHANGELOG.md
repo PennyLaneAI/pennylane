@@ -50,6 +50,10 @@
 
 <h3>Improvements</h3>
 
+* The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
+  and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
+  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908) 
+
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
   single device run because they are diagonal in the same basis, or can be equivalently
@@ -225,6 +229,14 @@
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
   - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
+
+* A new function, ``qml.refresh_devices()``, has been added, allowing PennyLane to
+  rescan installed PennyLane plugins and refresh the device list. In addition, the ``qml.device``
+  loader will attempt to refresh devices if the required plugin device cannot be found.
+  This will result in an improved experience if installing PennyLane and plugins within
+  a running Python session (for example, on Google Colab), and avoid the need to
+  restart the kernel/runtime.
+  [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
 
 <h3>Breaking changes</h3>
 
