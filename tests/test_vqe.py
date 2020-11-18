@@ -720,7 +720,7 @@ class TestVQE:
         """Test that an error is raised if observable optimization is requested outside of tape
         mode."""
         if qml.tape_mode_active():
-            pytest.skip("This test works with tape mode disabled")
+            pytest.skip("This test is only intended for non-tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.vqe.Hamiltonian([1], [qml.PauliZ(0)])
