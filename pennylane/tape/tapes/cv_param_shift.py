@@ -240,7 +240,9 @@ class CVParamShiftTape(QubitParamShiftTape):
         # Default values
         multiplier = 0.5
         shift = np.pi / 2
-        pos_c, pos_s, neg_c, neg_s = (multiplier, shift, multiplier, shift) if recipe is None else recipe
+        pos_c, pos_s, neg_c, neg_s = (
+            (multiplier, shift, multiplier, shift) if recipe is None else recipe
+        )
 
         shift = np.zeros_like(params)
         shift[idx] = pos_s
@@ -300,7 +302,9 @@ class CVParamShiftTape(QubitParamShiftTape):
         # Default values
         multiplier = 0.5
         shift = np.pi / 2
-        pos_c, pos_s, neg_c, neg_s = (multiplier, shift, multiplier, shift) if recipe is None else recipe
+        pos_c, pos_s, neg_c, neg_s = (
+            (multiplier, shift, multiplier, shift) if recipe is None else recipe
+        )
 
         shift = np.zeros_like(params)
         shift[idx] = pos_s

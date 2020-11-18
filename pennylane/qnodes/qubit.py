@@ -137,7 +137,7 @@ class QubitQNode(JacobianQNode):
             # evaluate the circuit at two points with shifted parameter values
             y2 = np.asarray(self.evaluate(shift_p1, kwargs))
             y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-            pd += (pos_multiplier * y2 - neg_multiplier * y1)
+            pd += pos_multiplier * y2 - neg_multiplier * y1
 
             # restore the original parameter
             op.data[p_idx] = orig
