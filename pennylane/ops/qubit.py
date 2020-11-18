@@ -1276,7 +1276,7 @@ class CRot(Operation):
                 RY(theta / 2, wires=wires[1]),
                 RZ(omega, wires=wires[1]),
             ]
-        else:
+        else:  # We cannot add gate parameters in non-tape mode, resulting in greater depth
             decomp_ops = [
                 RZ(phi / 2, wires=wires[1]),
                 RZ(-omega / 2, wires=wires[1]),
