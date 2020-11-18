@@ -2,6 +2,41 @@
 
 <h3>New features since last release</h3>
 
+* The ``VQECost`` class now provides observable optimization using the ``optimize`` argument,
+  resulting in potentially fewer device executions.
+  [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
+  
+  This is achieved by separating the observables composing the Hamiltonian into qubit-wise
+  commuting groups and evaluating those groups on a single QNode using functionality from the
+  ``grouping`` module: 
+  
+  ```python
+  qml.enable_tape()
+  commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+  H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+
+  dev = qml.device("default.qubit", wires=2)
+  ansatz = qml.templates.StronglyEntanglingLayers
+
+  cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+
+  params = qml.init.strong_ent_layers_uniform(3, 2)
+  ```
+  
+  Grouping these commuting observables leads to fewer device executions:
+  
+  ```pycon
+  >>> cost_opt(params)
+  >>> ex_opt = dev.num_executions
+  >>> cost_no_opt(params)
+  >>> ex_no_opt = dev.num_executions - ex_opt
+  >>> print("Number of executions:", ex_no_opt)
+  Number of executions: 2
+  >>> print("Number of executions (optimized):", ex_opt)
+  Number of executions (optimized): 1
+  ```
+
 * Two new hardware-efficient particle-conserving templates have been implemented
   to perform VQE-based quantum chemistry simulations. The new templates apply
   several layers of the particle-conserving entanglers proposed in Figs. 2a and 2b
