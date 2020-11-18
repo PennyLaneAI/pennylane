@@ -639,22 +639,26 @@ class Operation(Operator):
 
         # Default values
         multiplier = 0.5
+        a = 1
         shift = np.pi / 2
 
-        pos_multiplier, pos_shift, neg_multiplier, neg_shift = (
-            (multiplier, shift, multiplier, shift) if recipe is None else recipe
-        )
+        # We set the default recipe to as follows:
+        # ∂f(x) = 0.5*f(1*x+pi/2) - 0.5*f(1*x-pi/2)
+        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
+        param_shift = default_param_shift if recipe is None else recipe
 
         # internal multiplier in the Variable
         var_mult = self.data[idx].mult
 
-        pos_multiplier *= var_mult
-        neg_multiplier *= var_mult
-        if var_mult != 0:
-            # zero multiplier means the shift is unimportant
-            pos_shift /= var_mult
-            neg_shift /= var_mult
-        return pos_multiplier, pos_shift, neg_multiplier, neg_shift
+        for elem in param_shift:
+
+            # Update the multiplier
+            elem[0] *= var_mult
+            if var_mult != 0:
+                # Update the shift
+                # zero multiplier means the shift is unimportant
+                elem[2] /= var_mult
+        return param_shift
 
     @property
     def generator(self):

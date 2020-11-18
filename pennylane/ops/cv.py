@@ -138,7 +138,9 @@ class Squeezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5 / math.sinh(shift), shift) * 2, None]
+    multiplier = 0.5 / math.sinh(shift)
+    a = 1
+    grad_recipe = [(multiplier, a, shift) * 2, None]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -180,7 +182,9 @@ class Displacement(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift) * 2, None]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = [(multiplier, a, shift) * 2, None]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -278,8 +282,11 @@ class TwoModeSqueezing(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / math.sinh(shift), shift) * 2, None]
+    multiplier = 0.5 / math.sinh(shift)
+    a = 1
+    grad_recipe = [(multiplier, a, shift) * 2, None]
 
     @staticmethod
     def _heisenberg_rep(p):
