@@ -70,7 +70,7 @@ def refresh_devices():
     # which is to update the global plugin_devices variable.
 
     # We wish to retain the behaviour of a global plugin_devices dictionary,
-    # as importing pkg_resources can be a very slow operation on systems
+    # as re-importing pkg_resources can be a very slow operation on systems
     # with a large number of installed packages.
     global plugin_devices  # pylint:disable=global-statement
 
