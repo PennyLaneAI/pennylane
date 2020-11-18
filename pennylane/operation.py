@@ -641,7 +641,6 @@ class Operation(Operator):
         multiplier = 0.5
         shift = np.pi / 2
 
-        print(recipe)
         pos_multiplier, pos_shift, neg_multiplier, neg_shift = (multiplier, shift, multiplier, shift) if recipe is None else recipe
 
         # internal multiplier in the Variable
