@@ -78,8 +78,10 @@
   >>> ex_opt = dev.num_executions
   >>> cost_no_opt(params)
   >>> ex_no_opt = dev.num_executions - ex_opt
-  >>> print(ex_opt, ex_no_opt)
-  1 2
+  >>> print("Number of executions:", ex_no_opt)
+  Number of executions: 2
+  >>> print("Number of executions (optimized):", ex_opt)
+  Number of executions (optimized): 1
   ```
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
