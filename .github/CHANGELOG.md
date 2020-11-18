@@ -2,7 +2,6 @@
 
 <h3>New features since last release</h3>
 
-
 * The ``VQECost`` class now provides observable optimization using the ``optimize`` argument,
   resulting in potentially fewer device executions.
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
