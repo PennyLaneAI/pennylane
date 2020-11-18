@@ -405,9 +405,9 @@ class VQECost:
     >>> ansatz = qml.templates.StronglyEntanglingLayers
     >>> dev = qml.device("default.qubit", wires=4)
     >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
-    >>> params = torch.rand([2, 2, 3])
+    >>> params = torch.rand([2, 4, 3])
     >>> cost(params)
-    tensor(0.0245, dtype=torch.float64)
+    tensor(-0.2316, dtype=torch.float64)
 
     The cost function can then be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
