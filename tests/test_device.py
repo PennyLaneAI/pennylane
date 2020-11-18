@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.qnodes import QuantumFunctionError 
+from pennylane.qnodes import QuantumFunctionError
 from pennylane.qnodes.base import BaseQNode
 from pennylane.wires import Wires
 from collections import OrderedDict
@@ -726,11 +726,13 @@ class TestDeviceInit:
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
+        assert qml.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
             m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
 
+            # reimporting PennyLane within the context sets qml.plugin_devices to {}
             importlib.reload(qml)
 
             # since there are no entry points, there will be no plugin devices
@@ -741,17 +743,22 @@ class TestDeviceInit:
         qml.refresh_devices()
         assert qml.plugin_devices
 
+        # Test teardown: re-import PennyLane to revert all changes and
+        # restore the plugin_device dictionary
         importlib.reload(qml)
 
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
+        assert qml.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
             m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
-            importlib.reload(qml)
-            m.setattr(qml, "refresh_devices", lambda: None)
 
+            # reimporting PennyLane within the context sets qml.plugin_devices to {}
+            importlib.reload(qml)
+
+            m.setattr(qml, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
@@ -764,6 +771,8 @@ class TestDeviceInit:
         assert qml.plugin_devices
         assert dev.short_name == "default.qubit"
 
+        # Test teardown: re-import PennyLane to revert all changes and
+        # restore the plugin_device dictionary
         importlib.reload(qml)
 
 
