@@ -331,6 +331,9 @@ class TestApply:
         (qml.CRot, [0, 0, 0, 1], [0, 0, 1 / math.sqrt(2), 1j / math.sqrt(2)], [math.pi / 2, -math.pi / 2, math.pi / 2]),
         (qml.CRot, [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), 0, -1 / 2 + 1j / 2],
          [-math.pi / 2, math.pi, math.pi]),
+        (qml.CU3, [0, 0, 1, 0], [0, 0, 0, 1], [np.pi, 0, 0]),
+        (qml.CU3, [0, 0, 1, 0], [0, 0, 1, 0], [0, np.pi, 0]),
+        (qml.CU3, [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, np.pi]),
         (qml.QubitUnitary, [1, 0, 0, 0], [1, 0, 0, 0], [np.array(
             [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
              [0, 0, 0, 1]])]),

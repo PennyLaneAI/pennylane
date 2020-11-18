@@ -23,7 +23,10 @@ import numpy as np
 
 from pennylane.templates import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import pauli_eigs, expand
 from pennylane._queuing import OperationRecorder
 
@@ -447,6 +450,101 @@ class CY(Operation):
         return decomp_ops
 
 
+class CU3(Operation):
+    r"""CU3(theta, phi, lambda, wires)
+    The controlled arbitrary single qubit unitary operator.
+
+    .. math::
+
+        CU3(\theta, \phi, \lambda)\ =
+        |0\rangle\langle 0| \otimes I +
+        |1\rangle\langle 1| \otimes U3(\theta,\phi,\lambda) =
+        \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2)\\
+            0 & 0 & \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 3
+
+    Args:
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        lambda (float): quantum phase :math:`\lambda`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+    """
+
+    num_params = 3
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta, phi, lam = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, c, -s * cmath.exp(1j * lam)],
+                [0, 0, s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
+            ]
+        )
+
+    # Decomposition of CU3 (theta, phi, lam) is as follows
+    # (with wire[0] as control):
+    #
+    # U1((lam + phi) / 2, wires=0)
+    # U1((lam - phi) / 2, wires=1)
+    # CNOT(wires=[0, 1])
+    # U3(-theta / 2, 0, -(phi + lam)/ 2, wires=1)
+    # CNOT(wires=[0, 1])
+    # U3(theta / 2, phi, 0, wires=1)
+    #
+    # U1 and U3 are then further decomposed into Rot and PhaseShift gates.
+    #
+    # PhaseShift((lam + phi) / 2, wires=wires[0]),
+    # PhaseShift((lam - phi) / 2, wires=wires[1]),
+    # CNOT(wires=wires),
+    # Rot(-(phi + lam) / 2, -theta / 2, (phi + lam) / 2, wires=wires[1]),
+    # PhaseShift(-(phi + lam) / 2, wires=wires[1]),
+    # CNOT(wires=wires),
+    # Rot(0, theta / 2, 0, wires=wires[1]),
+    # PhaseShift(phi, wires=wires[1]),
+    #
+    # Further, to avoid addition of variables, gates are broken down
+    # into single variable PhaseShifts and Rots.
+    @staticmethod
+    def decomposition(theta, phi, lam, wires):
+        decomp_ops = [
+            PhaseShift(lam / 2, wires=wires[0]),
+            PhaseShift(phi / 2, wires=wires[0]),
+            PhaseShift(lam / 2, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            Rot(phi / 2, 0, 0, wires=wires[1]),
+            Rot(lam / 2, 0, 0, wires=wires[1]),
+            Rot(0, -theta / 2, 0, wires=wires[1]),
+            Rot(-phi / 2, 0, 0, wires=wires[1]),
+            Rot(-lam / 2, 0, 0, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
+            PhaseShift(-lam / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            Rot(0, theta / 2, 0, wires=wires[1]),
+            PhaseShift(phi, wires=wires[1]),
+        ]
+        return decomp_ops
+
+
 class SWAP(Operation):
     r"""SWAP(wires)
     The swap operator
@@ -765,14 +863,24 @@ class Rot(Operation):
 
         return np.array(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires),
+        ]
         return decomp_ops
 
 
@@ -1047,7 +1155,10 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1114,7 +1225,10 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1179,7 +1293,10 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1258,8 +1375,18 @@ class CRot(Operation):
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
@@ -1347,7 +1474,10 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
         return INV_SQRT2 * np.array(
-            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+            [
+                [1, -cmath.exp(1j * lam)],
+                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
+            ]
         )
 
     @staticmethod
@@ -1684,6 +1814,7 @@ ops = {
     "CRY",
     "CRZ",
     "CRot",
+    "CU3",
     "U1",
     "U2",
     "U3",
