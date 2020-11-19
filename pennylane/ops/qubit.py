@@ -825,6 +825,10 @@ class MultiRZ(DiagonalOperation):
         return multi_Z_rot_matrix
 
     @property
+    def generator(self):
+        return [np.diag(pauli_eigs(len(self.wires))), -1/2]
+
+    @property
     def matrix(self):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
