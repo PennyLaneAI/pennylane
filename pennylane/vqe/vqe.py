@@ -22,8 +22,6 @@ import warnings
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
-from pennylane.qnodes import qnode as old_qnode
-from pennylane.measure import expval as old_expval
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -474,22 +472,27 @@ class ExpvalCost:
 
         wires = device.wires.tolist()
 
-        @old_qnode(device, interface=interface, diff_method=diff_method, **kwargs)
-        def qnode_for_metric_tensor_in_tape_mode(*qnode_args, _wires=wires, **qnode_kwargs):
-            """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
-            short-term fix for VQECost, we create a non-tape mode QNode just for calculation of the
-            metric tensor. In doing so, we reintroduce the same restrictions of the old QNode but
-            allow users to access new functionality such as measurement grouping and batch
-            execution of the gradient."""
-            ansatz(*qnode_args, wires=_wires, **qnode_kwargs)
-            return old_expval(qml.PauliZ(0))
-
-        self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
+        tape_mode = qml.tape_mode_active()
+        if tape_mode:
+            try:
+                qml.disable_tape()
+                @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, _wires=wires, **qnode_kwargs):
+                    """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
+                    short-term fix for VQECost, we create a non-tape mode QNode just for
+                    calculation of the metric tensor. In doing so, we reintroduce the same
+                    restrictions of the old QNode but allow users to access new functionality
+                    such as measurement grouping and batch execution of the gradient."""
+                    ansatz(*qnode_args, wires=_wires, **qnode_kwargs)
+                    return qml.expval(qml.PauliZ(0))
+                self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
+            finally:
+                qml.enable_tape()
 
         self._optimize = optimize
 
         if self._optimize:
-            if not qml.tape_mode_active():
+            if not tape_mode:
                 raise ValueError(
                     "Observable optimization is only supported in tape mode. Tape "
                     "mode can be enabled with the command:\n"
