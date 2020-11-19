@@ -68,7 +68,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     + (-0.5) [Z0 X1]
     + (-0.5) [Z0 Y1]
 
-    This Hamiltonian can then be used in defining VQE problems using :class:`~.VQECost`.
+    This Hamiltonian can then be used in defining VQE problems using :class:`~.ExpvalCost`.
     """
     n = int(np.log2(len(H)))
     N = 2 ** n

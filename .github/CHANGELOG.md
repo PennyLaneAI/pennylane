@@ -18,8 +18,8 @@
   dev = qml.device("default.qubit", wires=2)
   ansatz = qml.templates.StronglyEntanglingLayers
 
-  cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
-  cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+  cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
 
   params = qml.init.strong_ent_layers_uniform(3, 2)
   ```
@@ -749,7 +749,7 @@ Schuld, Antal Száva.
       qml.layer(qaoa_layer, 2, params[0], params[1])
 
   dev = qml.device('default.qubit', wires=len(wires))
-  cost_function = qml.VQECost(ansatz, cost_h, dev)
+  cost_function = qml.ExpvalCost(ansatz, cost_h, dev)
   ```
 
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
@@ -1547,7 +1547,7 @@ Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
     ```python
     >>> H = qml.vqe.Hamiltonian(coeffs, obs)
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> cost = qml.ExpvalCost(ansatz, hamiltonian, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)
