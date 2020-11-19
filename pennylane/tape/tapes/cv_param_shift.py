@@ -272,11 +272,11 @@ class CVParamShiftTape(QubitParamShiftTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            stat = np.zeros_like(results[0])
+            stat = np.zeros(results[0].shape, dtype=np.float)
 
             for c, res in zip(coeffs, results):
                 shifted = np.array(res)
-                np.add(stat, c * shifted, out=stat, casting="unsafe")
+                stat += c * np.asarray(shifted, dtype=np.float64)
 
             return stat
 
