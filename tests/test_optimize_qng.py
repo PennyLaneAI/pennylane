@@ -40,7 +40,7 @@ class TestExceptions:
         params = 0.5
 
         with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode or a ExpvalCost object"
+            ValueError, match="The objective function must either be encoded as a single QNode or an ExpvalCost object"
         ):
             opt.step(cost, params)
 

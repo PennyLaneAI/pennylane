@@ -91,7 +91,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         If the objective function is VQE/VQE-like, i.e., a function of a group
         of QNodes that share an ansatz, there are two ways to use the optimizer:
 
-        * Realize the objective function as a :class:`~.ExpvalCost` object, which has
+        * Realize the objective function as an :class:`~.ExpvalCost` object, which has
           a ``metric_tensor`` method.
 
         * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
@@ -174,7 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
-                "a ExpvalCost object for the natural gradient to be automatically computed. "
+                "an ExpvalCost object for the natural gradient to be automatically computed. "
                 "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
             )
 

@@ -730,7 +730,7 @@ class TestVQE:
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
-        """Test that a ExpvalCost with observable optimization gives the same result as another
+        """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
