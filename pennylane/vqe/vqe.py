@@ -562,6 +562,6 @@ class VQECost(ExpvalCost):
     def __init__(self, *args, **kwargs):
         warnings.warn(
             "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            DeprecationWarning,
+            DeprecationWarning, 2
         )
         super().__init__(*args, **kwargs)
