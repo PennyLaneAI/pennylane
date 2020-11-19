@@ -851,17 +851,56 @@ class TestVQE:
 
     def test_metric_tensor_tape_mode(self):
         """Test that an error is raised if the metric tensor is requested in optimize=True mode."""
-        if not qml.tape_mode_active():
+        # if not not qml.tape_mode_active():
+        #     pytest.skip("This test is only intended for tape mode")
+
+        # dev = qml.device("default.qubit", wires=4)
+        # hamiltonian = big_hamiltonian
+        #
+        # def ansatz(a, b, c, d):
+        #     qml.RX(a, wires=0)
+        #     qml.RX(b, wires=0)
+        #     qml.RX(c, wires=0)
+        #     qml.RX(d, wires=0)
+        #
+        # cost = qml.ExpvalCost(ansatz, hamiltonian, dev)
+        #
+        # args = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        # cost.metric_tensor([1, 2, 3, 4], only_construct=True)
+
+        if not not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
 
-        dev = qml.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian
+        def my_template(params, wires, **kwargs):
+            qml.RX(params[0], wires=wires[0])
+            qml.RX(params[1], wires=wires[1])
+            qml.CNOT(wires=wires)
 
-        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
 
-        args = qml.init.strong_ent_layers_uniform(2, 4)
-        cost.metric_tensor(args)
+        dev = qml.device("default.qubit", wires=2)
+        qnodes = qml.map(my_template, obs_list, dev, measure="expval")
 
+        params = [0.54, 0.12]
+        print(qnodes(params))
+        print(qnodes[0](params))
+        print(qnodes[0].metric_tensor(params))
+
+
+
+        # dev = qml.device("default.qubit", wires=2)
+        # assert not qml.tape_mode_active()
+        #
+        # def ansatz(a, b, wires):
+        #     qml.RX(a, wires=0)
+        #     qml.RX(b, wires=1)
+        #     qml.CNOT(wires=[0, 1])
+        #
+        # qnode = qml.map(ansatz, [qml.PauliZ(0) @ qml.PauliZ(1)], dev)
+        #
+        # # mt = qnode[0].metric_tensor([1, 2])
+        # # print(mt)
+        # print(qnode(0.1, 0.2))
 
 @pytest.mark.usefixtures("tape_mode")
 class TestAutogradInterface:
