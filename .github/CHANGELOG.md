@@ -2,8 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* The ``VQECost`` class now provides observable optimization using the ``optimize`` argument,
-  resulting in potentially fewer device executions.
+* The ``ExpvalCost`` class (previously ``VQECost``) now provides observable optimization using the
+  ``optimize`` argument, resulting in potentially fewer device executions.
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
   
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
@@ -753,7 +753,7 @@ Schuld, Antal Száva.
       qml.layer(qaoa_layer, 2, params[0], params[1])
 
   dev = qml.device('default.qubit', wires=len(wires))
-  cost_function = qml.ExpvalCost(ansatz, cost_h, dev)
+  cost_function = qml.VQECost(ansatz, cost_h, dev)
   ```
 
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
@@ -1551,7 +1551,7 @@ Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
     ```python
     >>> H = qml.vqe.Hamiltonian(coeffs, obs)
-    >>> cost = qml.ExpvalCost(ansatz, hamiltonian, dev, interface="torch")
+    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)
