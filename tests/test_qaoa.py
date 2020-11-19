@@ -659,7 +659,7 @@ class TestIntegration:
 
         # Defines the device and the QAOA cost function
         dev = qml.device('default.qubit', wires=len(wires))
-        cost_function = qml.VQECost(circuit, cost_h, dev)
+        cost_function = qml.ExpvalCost(circuit, cost_h, dev)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299

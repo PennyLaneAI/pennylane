@@ -2,8 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* The ``VQECost`` class now provides observable optimization using the ``optimize`` argument,
-  resulting in potentially fewer device executions.
+* The ``ExpvalCost`` class (previously ``VQECost``) now provides observable optimization using the
+  ``optimize`` argument, resulting in potentially fewer device executions.
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
   
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
@@ -18,8 +18,8 @@
   dev = qml.device("default.qubit", wires=2)
   ansatz = qml.templates.StronglyEntanglingLayers
 
-  cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
-  cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+  cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
 
   params = qml.init.strong_ent_layers_uniform(3, 2)
   ```
@@ -275,6 +275,10 @@
   [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
 
 <h3>Breaking changes</h3>
+
+- The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
+  beyond VQE. Use of ``VQECost`` is still possible but will result in a deprecation warning.
+  [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
 
 <h3>Documentation</h3>
 
