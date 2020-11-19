@@ -17,6 +17,7 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import itertools
+import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -532,3 +533,12 @@ class ExpvalCost:
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
         )
+
+
+class VQECost(ExpvalCost):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)
