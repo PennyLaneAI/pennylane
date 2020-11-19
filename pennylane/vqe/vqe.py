@@ -477,13 +477,13 @@ class ExpvalCost:
             try:
                 qml.disable_tape()
                 @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
-                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, _wires=wires, **qnode_kwargs):
+                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
                     """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
                     short-term fix for VQECost, we create a non-tape mode QNode just for
                     calculation of the metric tensor. In doing so, we reintroduce the same
                     restrictions of the old QNode but allow users to access new functionality
                     such as measurement grouping and batch execution of the gradient."""
-                    ansatz(*qnode_args, wires=_wires, **qnode_kwargs)
+                    ansatz(*qnode_args, wires=wires, **qnode_kwargs)
                     return qml.expval(qml.PauliZ(0))
                 self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
             finally:
