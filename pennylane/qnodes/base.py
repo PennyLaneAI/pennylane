@@ -581,7 +581,7 @@ class BaseQNode(qml.QueuingContext):
             qml.disable_tape()
 
         try:
-        # set up the context for Operator entry
+            # set up the context for Operator entry
             with self:
                 try:
                     # generate the program queue by executing the quantum circuit function

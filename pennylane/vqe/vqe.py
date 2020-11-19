@@ -476,6 +476,7 @@ class ExpvalCost:
         if tape_mode:
             try:
                 qml.disable_tape()
+
                 @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
                 def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
                     """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
@@ -485,6 +486,7 @@ class ExpvalCost:
                     such as measurement grouping and batch execution of the gradient."""
                     ansatz(*qnode_args, wires=wires, **qnode_kwargs)
                     return qml.expval(qml.PauliZ(0))
+
                 self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
             finally:
                 qml.enable_tape()
@@ -562,6 +564,7 @@ class VQECost(ExpvalCost):
     def __init__(self, *args, **kwargs):
         warnings.warn(
             "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            DeprecationWarning, 2
+            DeprecationWarning,
+            2,
         )
         super().__init__(*args, **kwargs)
