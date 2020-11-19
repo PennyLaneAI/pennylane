@@ -17,6 +17,7 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import itertools
+import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -40,7 +41,7 @@ class Hamiltonian:
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
-    .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
+    .. seealso:: :class:`~.ExpvalCost`, :func:`~.generate_hamiltonian`
 
     **Example:**
 
@@ -346,9 +347,10 @@ class Hamiltonian:
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
 
-class VQECost:
-    """Create a VQE cost function, i.e., a cost function returning the
-    expectation value of a Hamiltonian.
+class ExpvalCost:
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
+
+    This cost function is useful for a range of problems including VQE and QAOA.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -382,7 +384,7 @@ class VQECost:
 
     **Example:**
 
-    To construct a ``VQECost`` cost function, we require a Hamiltonian to measure, and an ansatz
+    To construct an ``ExpvalCost`` cost function, we require a Hamiltonian to measure, and an ansatz
     for our variational circuit.
 
     We can construct a Hamiltonian manually,
@@ -404,7 +406,7 @@ class VQECost:
 
     >>> ansatz = qml.templates.StronglyEntanglingLayers
     >>> dev = qml.device("default.qubit", wires=4)
-    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
+    >>> cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
     >>> params = torch.rand([2, 4, 3])
     >>> cost(params)
     tensor(-0.2316, dtype=torch.float64)
@@ -430,8 +432,8 @@ class VQECost:
             dev = qml.device("default.qubit", wires=2)
             ansatz = qml.templates.StronglyEntanglingLayers
 
-            cost_opt = qml.VQECost(ansatz, H, dev, optimize=True)
-            cost_no_opt = qml.VQECost(ansatz, H, dev, optimize=False)
+            cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+            cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
 
             params = qml.init.strong_ent_layers_uniform(3, 2)
 
@@ -462,7 +464,7 @@ class VQECost:
         coeffs, observables = hamiltonian.terms
 
         self.hamiltonian = hamiltonian
-        """Hamiltonian: the hamiltonian defining the VQE problem."""
+        """Hamiltonian: the input Hamiltonian."""
 
         self.qnodes = None
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
@@ -527,7 +529,23 @@ class VQECost:
                 "optimized observables. Set the argument optimize=False to obtain "
                 "the metric tensor."
             )
-        # We know that for VQE, all the qnodes share the same ansatz so we select the first
+        # all the qnodes share the same ansatz so we select the first
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
         )
+
+
+class VQECost(ExpvalCost):
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
+
+    .. warning::
+        Use of :class:`~.VQECost` is deprecated and should be replaced with
+        :class:`~.ExpvalCost`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)

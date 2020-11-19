@@ -140,7 +140,7 @@ def ParticleConservingU2(weights, wires, init_state=None):
             ansatz = partial(ParticleConservingU2, init_state=ref_state)
 
             # Define the cost function
-            cost_fn = qml.VQECost(ansatz, h, dev)
+            cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1

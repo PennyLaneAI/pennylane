@@ -683,7 +683,7 @@ class TestVQE:
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        expval = qml.VQECost(ansatz, hamiltonian, dev)
+        expval = qml.ExpvalCost(ansatz, hamiltonian, dev)
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
@@ -692,7 +692,7 @@ class TestVQE:
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev)
+        cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
@@ -700,7 +700,7 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = qml.VQECost(4, hamiltonian, mock_device())
+            cost = qml.ExpvalCost(4, hamiltonian, mock_device())
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_passing_kwargs(self, coeffs, observables, expected):
@@ -709,7 +709,7 @@ class TestVQE:
         keyword arguments."""
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
+        cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
@@ -726,12 +726,12 @@ class TestVQE:
         hamiltonian = qml.vqe.Hamiltonian([1], [qml.PauliZ(0)])
 
         with pytest.raises(ValueError, match="Observable optimization is only supported in tape"):
-            qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, optimize=True)
+            qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev, optimize=True)
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
-        """Test that a VQECost with observable optimization gives the same result as another
-        VQECost without observable optimization."""
+        """Test that an ExpvalCost with observable optimization gives the same result as another
+        ExpvalCost without observable optimization."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
         if interface == "tf" and not tf_support:
@@ -742,14 +742,14 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(
+        cost = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
             optimize=True,
             interface=interface,
         )
-        cost2 = qml.VQECost(
+        cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
@@ -772,7 +772,7 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     def test_optimize_grad(self):
-        """Test that the gradient of VQECost is accessible and correct when using observable
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
@@ -780,8 +780,8 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
-        cost2 = qml.VQECost(
+        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False
         )
 
@@ -799,7 +799,7 @@ class TestVQE:
         assert np.allclose(dc2, big_hamiltonian_grad)
 
     def test_optimize_grad_torch(self, torch_support):
-        """Test that the gradient of VQECost is accessible and correct when using observable
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the Torch interface."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
@@ -809,7 +809,7 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(
+        cost = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
@@ -826,7 +826,7 @@ class TestVQE:
         assert np.allclose(dc, big_hamiltonian_grad)
 
     def test_optimize_grad_tf(self, tf_support):
-        """Test that the gradient of VQECost is accessible and correct when using observable
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
@@ -836,7 +836,7 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(
+        cost = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
         )
 
@@ -857,7 +857,7 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.VQECost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
 
         with pytest.raises(ValueError, match="Evaluation of the metric tensor is not supported"):
             cost.metric_tensor(None)
@@ -896,7 +896,7 @@ class TestAutogradInterface:
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = qml.VQECost(ansatz, H, dev, interface=interface)
+        cost = qml.ExpvalCost(ansatz, H, dev, interface=interface)
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
@@ -939,7 +939,7 @@ class TestTorchInterface:
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
-        cost = qml.VQECost(ansatz, H, dev, interface="torch")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
 
@@ -986,7 +986,7 @@ class TestTFInterface:
         H = qml.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = Variable([a, b], dtype=tf.float64)
-        cost = qml.VQECost(ansatz, H, dev, interface="tf")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -1019,7 +1019,7 @@ class TestMultipleInterfaceIntegration:
         params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.VQECost(ansatz, H, dev, interface="tf")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -1030,7 +1030,7 @@ class TestMultipleInterfaceIntegration:
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.VQECost(ansatz, H, dev, interface="torch")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
         res_torch = params.grad.numpy()
@@ -1038,9 +1038,22 @@ class TestMultipleInterfaceIntegration:
         # NumPy interface
         params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.VQECost(ansatz, H, dev, interface="autograd")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
+
+
+def test_vqe_cost():
+    """Tests that VQECost raises a DeprecationWarning but otherwise behaves as ExpvalCost"""
+
+    h = qml.Hamiltonian([1], [qml.PauliZ(0)])
+    dev = qml.device("default.qubit", wires=1)
+    ansatz = qml.templates.StronglyEntanglingLayers
+
+    with pytest.warns(DeprecationWarning, match="Use of VQECost is deprecated"):
+        cost = qml.VQECost(ansatz, h, dev)
+
+    assert isinstance(cost, qml.ExpvalCost)
