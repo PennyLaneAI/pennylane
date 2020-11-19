@@ -278,7 +278,7 @@
 
 - The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
   beyond VQE. Use of ``VQECost`` is still possible but will result in a deprecation warning.
-  [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
+  [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
 
 <h3>Documentation</h3>
 
