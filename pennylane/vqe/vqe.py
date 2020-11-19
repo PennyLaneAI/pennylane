@@ -535,6 +535,8 @@ class ExpvalCost:
         )
 
 
+# This class is deprecated and does not appear in the documentation
+# pylint: disable=missing-class-docstring
 class VQECost(ExpvalCost):
     def __init__(self, *args, **kwargs):
         warnings.warn(
