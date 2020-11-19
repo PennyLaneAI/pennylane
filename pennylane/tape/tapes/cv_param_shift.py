@@ -276,7 +276,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
             for c, res in zip(coeffs, results):
                 shifted = np.array(res)
-                stat += c * np.asarray(shifted, dtype=np.float64)
+                stat += c * shifted
 
             return stat
 
