@@ -199,9 +199,9 @@ class CVQNode(JacobianQNode):
                 if len(param_shift) != 2:
                     # TODO: check if more than two terms is supported
                     raise NotImplementedError(
-                        f"Taking the analytic gradient for order-2 operators is\
-                        unsupported for {op} which contains a parameter with a\
-                        gradient recipe of more than two terms."
+                        f"Taking the analytic gradient for order-2 operators is "
+                        "unsupported for {op} which contains a parameter with a "
+                        "gradient recipe of more than two terms."
                     )
 
                 # Get the shifts and the multipliers
