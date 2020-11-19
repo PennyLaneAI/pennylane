@@ -34,7 +34,7 @@ import pennylane.qnn
 import pennylane.qaoa as qaoa
 from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
-from pennylane.vqe import Hamiltonian, VQECost
+from pennylane.vqe import Hamiltonian, ExpvalCost, VQECost
 
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
