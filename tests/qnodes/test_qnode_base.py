@@ -1519,7 +1519,10 @@ def test_old_qnode_in_tape_mode():
             return qml.expval(qml.PauliZ(0))
 
         qml.enable_tape()
-        f(0.4)
+        res = f(0.4)
+        exp = 0.9210609940028851
+
+        assert np.allclose(res, exp)
 
         # check that tape mode is turned on again after evaluating the old QNode
         assert qml.tape_mode_active()
