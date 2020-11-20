@@ -609,7 +609,7 @@ class TestQubitGradient:
             grad_fn(1.0)
 
 
-@pytest.mark.usefixture("tape_mode")
+@pytest.mark.usefixtures("tape_mode")
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
 
