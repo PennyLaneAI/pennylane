@@ -248,8 +248,6 @@ class grad:
     Args:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
-
-    Keyword Args:
         argnum (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
@@ -262,19 +260,17 @@ class grad:
         the arguments in ``argnum``.
     """
 
-    def __init__(self, fun, argnum=None, *args, **kwargs):
+    def __init__(self, fun, argnum=None):
         self._forward = None
         self._grad_fn = None
 
         self._fun = fun
         self._argnum = argnum
-        self._grad_args = args
-        self._grad_kwargs = kwargs
 
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization
-            self._grad_fn = self._grad_with_forward(fun, argnum=argnum, *args, **kwargs)
+            self._grad_fn = self._grad_with_forward(fun, argnum=argnum)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -298,8 +294,9 @@ class grad:
             if getattr(arg, "requires_grad", True):
                 argnum.append(idx)
 
-        return grad._grad_with_forward(
-            self._fun, argnum=argnum, *self._grad_args, **self._grad_kwargs
+        return self._grad_with_forward(
+            self._fun,
+            argnum=argnum,
         )
 
     def __call__(self, *args, **kwargs):

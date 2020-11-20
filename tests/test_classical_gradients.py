@@ -284,6 +284,30 @@ class TestGrad:
         expected = cost(params2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_no_argnum_grad(self, mocker, tol):
+        """Test the qml.grad function for inferred argnums"""
+        cost_fn = lambda x, y: np.sin(x) * np.cos(y) + x * y ** 2
+
+        x = np.array(0.5, requires_grad=True)
+        y = np.array(0.2, requires_grad=True)
+
+        grad_fn = qml.grad(cost_fn)
+        spy = mocker.spy(grad_fn, "_grad_with_forward")
+
+        res = grad_fn(x, y)
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2, -np.sin(x) * np.sin(y) + 2 * x * y])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert spy.call_args_list[0][1]["argnum"] == [0, 1]
+
+        x = np.array(0.5, requires_grad=True)
+        y = np.array(0.2, requires_grad=False)
+        spy.call_args_list = []
+
+        res = grad_fn(x, y)
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert spy.call_args_list[0][1]["argnum"] == [0]
+
 
 class TestJacobian:
     """Tests for the jacobian function"""
