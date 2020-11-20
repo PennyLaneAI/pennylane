@@ -114,10 +114,10 @@ class RotoselectOptimizer:
 
         try:
             assert len(x_flat) == len(generators)
-        except AssertionError:
+        except AssertionError as e:
             raise ValueError(
                 "Number of parameters {} must be equal to the number of generators.".format(x)
-            )
+            ) from e
 
         for d, _ in enumerate(x_flat):
             x_flat[d], generators[d] = self._find_optimal_generators(

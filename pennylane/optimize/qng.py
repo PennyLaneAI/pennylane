@@ -191,6 +191,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         x_out = self.apply_grad(g, x)
         return x_out, forward
 
+    # pylint: disable=arguments-differ
     def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
         """Update x with one step of the optimizer.
 

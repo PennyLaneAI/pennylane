@@ -1,7 +1,24 @@
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
+"""
 import numpy as _np
 
-from autograd.wrap_util import unary_to_nary
+# pylint: disable=unused-import
 from autograd.core import make_vjp as _make_vjp, make_jvp as _make_jvp
+from autograd.wrap_util import unary_to_nary
 from autograd.extend import vspace
 from autograd import jacobian as _jacobian
 

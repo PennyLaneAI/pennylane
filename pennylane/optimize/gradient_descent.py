@@ -13,7 +13,7 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
-from pennylane._grad import grad
+from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
 
 
@@ -110,7 +110,7 @@ class GradientDescentOptimizer:
                 forward = objective_fn(x)
         else:
             # default is autograd
-            g = grad(objective_fn)  # pylint: disable=no-value-for-parameter
+            g = get_gradient(objective_fn)  # pylint: disable=no-value-for-parameter
             forward = g.forward
         return g(x), forward
 
