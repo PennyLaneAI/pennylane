@@ -175,7 +175,7 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, method="numeric")
         assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-np.pi, np.pi, 7))
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, mocker, theta, tol):
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
@@ -200,7 +200,6 @@ class TestParameterShiftRule:
             0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
             0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
         ]])
-        print(grad/expected)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
         # compare to finite differences

@@ -151,7 +151,6 @@ class QubitParamShiftTape(JacobianTape):
 
         for c, a, s in param_shift:
             shift[idx] = s
-            print(c)
 
             shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_tape.set_parameters(a * params + shift)

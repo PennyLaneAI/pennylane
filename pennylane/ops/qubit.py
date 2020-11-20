@@ -1276,18 +1276,10 @@ class CRot(Operation):
     # gradient recipe
     c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
     c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
-    scaling = 2 * np.sqrt(2) * (c1 - c2)
-
-    c1 /= scaling*0.82519856
-    c2 /= scaling*0.82519856
     a = np.pi / 2
     b = 3 * np.pi / 4
 
-    grad_recipe = (
-        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
-        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
-        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
-    )
+    grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],) * 3
 
     @classmethod
     def _matrix(cls, *params):
