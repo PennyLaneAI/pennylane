@@ -1048,6 +1048,14 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
+    # gradient recipe
+    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - np.cos(np.pi / 8))
+    c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+    a = np.pi / 2
+    b = 3 * np.pi / 4
+
+    grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @classmethod
