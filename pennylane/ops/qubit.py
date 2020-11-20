@@ -1050,12 +1050,12 @@ class CRX(Operation):
     grad_method = "A"
 
     # gradient recipe
-    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - np.cos(np.pi / 8))
+    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
     c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
     a = np.pi / 2
     b = 3 * np.pi / 4
-
     grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @classmethod
@@ -1123,6 +1123,14 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
+    # gradient recipe
+    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
+    c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+    a = np.pi / 2
+    b = 3 * np.pi / 4
+    grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @classmethod
@@ -1188,6 +1196,14 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
+    # gradient recipe
+    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
+    c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+    a = np.pi / 2
+    b = 3 * np.pi / 4
+    grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
     @classmethod
@@ -1256,6 +1272,22 @@ class CRot(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
+    # gradient recipe
+    c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
+    c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+    scaling = 2 * np.sqrt(2) * (c1 - c2)
+
+    c1 /= scaling*0.82519856
+    c2 /= scaling*0.82519856
+    a = np.pi / 2
+    b = 3 * np.pi / 4
+
+    grad_recipe = (
+        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
+        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
+        [[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],
+    )
 
     @classmethod
     def _matrix(cls, *params):
