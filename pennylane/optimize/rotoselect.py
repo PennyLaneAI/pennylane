@@ -124,7 +124,7 @@ class RotoselectOptimizer:
                 objective_fn_flat, x_flat, generators, d
             )
         x = unflatten(x_flat, x)
-        return x, objective_fn(x), generators
+        return x, objective_fn(x, generators=generators), generators
 
     def step(self, objective_fn, x, generators):
         r"""Update x with one step of the optimizer.

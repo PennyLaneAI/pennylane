@@ -101,10 +101,18 @@ class GradientDescentOptimizer:
         """
         if grad_fn is not None:
             g = grad_fn  # just call the supplied grad function
+
+            try:
+                forward = g.forward
+            # if grad_fn is not an autograd gradient function, calculate the
+            # objective function output separately
+            except AttributeError:
+                forward = objective_fn(x)
         else:
             # default is autograd
             g = grad(objective_fn)  # pylint: disable=no-value-for-parameter
-        return g(x), g.forward
+            forward = g.forward
+        return g(x), forward
 
     def apply_grad(self, grad, x):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
