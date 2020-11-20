@@ -261,7 +261,7 @@
 * Support for tape mode has improved across PennyLane. The following features now work in tape mode:
 
   - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
-  - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `ExpvalCost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863) [(#911)](https://github.com/PennyLaneAI/pennylane/pull/911)
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
   - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
