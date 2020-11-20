@@ -233,7 +233,7 @@ def device(name, *args, **kwargs):
 make_vjp = unary_to_nary(_make_vjp)
 
 
-class _grad:
+class grad:
     """Returns the gradient as a callable function of (functions of) QNodes.
 
     Function arguments with the property ``requires_grad`` set to ``False``
@@ -274,7 +274,7 @@ class _grad:
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization
-            self._grad_fn = _grad._grad_with_forward(fun, argnum=argnum, *args, **kwargs)
+            self._grad_fn = grad._grad_with_forward(fun, argnum=argnum, *args, **kwargs)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -298,7 +298,7 @@ class _grad:
             if getattr(arg, "requires_grad", True):
                 argnum.append(idx)
 
-        return _grad._grad_with_forward(
+        return grad._grad_with_forward(
             self._fun, argnum=argnum, *self._grad_args, **self._grad_kwargs
         )
 
