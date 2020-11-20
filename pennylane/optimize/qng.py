@@ -207,7 +207,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_out, _ = self.step_and_cost(qnode, x, recompute_tensor=recompute_tensor, metric_tensor_fn=metric_tensor_fn)
+        x_out, _ = self.step_and_cost(
+            qnode, x, recompute_tensor=recompute_tensor, metric_tensor_fn=metric_tensor_fn
+        )
         return x_out
 
     def apply_grad(self, grad, x):
