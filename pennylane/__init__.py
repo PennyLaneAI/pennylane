@@ -305,9 +305,9 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        grad, ans = self._get_grad_fn(args)(*args, **kwargs)
+        grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
         self._forward = ans
-        return grad
+        return grad_value
 
     @property
     def forward(self):
@@ -330,8 +330,8 @@ class grad:
                 "Try jacobian, elementwise_grad or holomorphic_grad."
             )
 
-        grad = vjp(vspace(ans).ones())
-        return grad, ans
+        grad_value = vjp(vspace(ans).ones())
+        return grad_value, ans
 
 
 def jacobian(func, argnum=None):
