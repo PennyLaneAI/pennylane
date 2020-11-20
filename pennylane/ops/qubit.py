@@ -829,7 +829,7 @@ class MultiRZ(DiagonalOperation):
     @property
     def generator(self):
         if self._generator is None:
-            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1/2]
+            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
 
     @property
