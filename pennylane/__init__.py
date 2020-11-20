@@ -274,7 +274,7 @@ class grad:
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization
-            self._grad_fn = grad._grad_with_forward(fun, argnum=argnum, *args, **kwargs)
+            self._grad_fn = self._grad_with_forward(fun, argnum=argnum, *args, **kwargs)
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
