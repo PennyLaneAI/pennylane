@@ -576,22 +576,32 @@ class BaseQNode(qml.QueuingContext):
         self.queue = []  #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
 
-        # set up the context for Operator entry
-        with self:
-            try:
-                # generate the program queue by executing the quantum circuit function
-                if self.mutable:
-                    # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
-                    # (positional args must be replaced because parameter-shift differentiation requires Variables)
-                    res = self.func(*self.arg_vars, **kwargs)
-                else:
-                    # TODO: Maybe we should only convert the kwarg_vars that were actually given
-                    res = self.func(*self.arg_vars, **self.kwarg_vars)
-            except:
-                # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created Variables.
-                self.arg_vars = None
-                self.kwarg_vars = None
-                raise
+        tape_mode = qml.tape_mode_active()
+        if tape_mode:
+            qml.disable_tape()
+
+        try:
+            # set up the context for Operator entry
+            with self:
+                try:
+                    # generate the program queue by executing the quantum circuit function
+                    if self.mutable:
+                        # it's ok to directly pass auxiliary arguments since the circuit is
+                        # re-constructed each time (positional args must be replaced because
+                        # parameter-shift differentiation requires Variables)
+                        res = self.func(*self.arg_vars, **kwargs)
+                    else:
+                        # TODO: Maybe we should only convert the kwarg_vars that were actually given
+                        res = self.func(*self.arg_vars, **self.kwarg_vars)
+                except:
+                    # The qfunc call may have failed because the user supplied bad parameters,
+                    # which is why we must wipe the created Variables.
+                    self.arg_vars = None
+                    self.kwarg_vars = None
+                    raise
+        finally:
+            if tape_mode:
+                qml.enable_tape()
 
         # check the validity of the circuit
         self._check_circuit(res)

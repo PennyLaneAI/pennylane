@@ -14,7 +14,7 @@
 """
 Sanity checks for classical automatic gradient formulas (without QNodes).
 """
-
+import autograd
 import pytest
 
 import pennylane as qml
@@ -229,6 +229,84 @@ class TestGradientMultivarMultidim:
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+
+class TestGrad:
+    """Unit tests for the gradient function"""
+
+    def test_non_scalar_cost_gradient(self):
+        """Test gradient computation with a non-scalar cost function raises an error"""
+
+        def cost(x):
+            return np.sin(x)
+
+        grad_fn = qml.grad(cost, argnum=[0])
+        arr1 = np.array([0.0, 1.0, 2.0], requires_grad=True)
+
+        with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
+            grad_fn(arr1)
+
+    def test_agrees_with_autograd(self, tol):
+        """Test that the grad function agrees with autograd"""
+
+        def cost(x):
+            return np.sum(np.sin(x) * x[0] ** 3)
+
+        grad_fn = qml.grad(cost)
+        params = np.array([0.5, 1.0, 2.0], requires_grad=True)
+        res = grad_fn(params)
+        expected = autograd.grad(cost)(params)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_forward_pass_value_storing(self, tol):
+        """Test that the intermediate forward pass value is accessible and correct"""
+
+        def cost(x):
+            return np.sum(np.sin(x) * x[0] ** 3)
+
+        grad_fn = qml.grad(cost)
+        params = np.array([-0.654, 1.0, 2.0], requires_grad=True)
+
+        assert grad_fn.forward is None
+
+        grad = grad_fn(params)
+
+        res = grad_fn.forward
+        expected = cost(params)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # change the parameters
+        params2 = np.array([1.4, 1.0, 2.0], requires_grad=True)
+        grad = grad_fn(params2)
+
+        res = grad_fn.forward
+        expected = cost(params2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_no_argnum_grad(self, mocker, tol):
+        """Test the qml.grad function for inferred argnums"""
+        cost_fn = lambda x, y: np.sin(x) * np.cos(y) + x * y ** 2
+
+        x = np.array(0.5, requires_grad=True)
+        y = np.array(0.2, requires_grad=True)
+
+        grad_fn = qml.grad(cost_fn)
+        spy = mocker.spy(grad_fn, "_grad_with_forward")
+
+        res = grad_fn(x, y)
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2, -np.sin(x) * np.sin(y) + 2 * x * y])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert spy.call_args_list[0][1]["argnum"] == [0, 1]
+
+        x = np.array(0.5, requires_grad=True)
+        y = np.array(0.2, requires_grad=False)
+        spy.call_args_list = []
+
+        res = grad_fn(x, y)
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert spy.call_args_list[0][1]["argnum"] == [0]
 
 
 class TestJacobian:

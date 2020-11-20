@@ -261,7 +261,7 @@
 * Support for tape mode has improved across PennyLane. The following features now work in tape mode:
 
   - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
-  - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `ExpvalCost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863) [(#911)](https://github.com/PennyLaneAI/pennylane/pull/911)
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
   - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
@@ -273,6 +273,23 @@
   a running Python session (for example, on Google Colab), and avoid the need to
   restart the kernel/runtime.
   [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
+
+* When using `grad_fn = qml.grad(cost)` to compute the gradient of a cost function with the Autograd
+  interface, the value of the intermediate forward pass is now available via the `grad_fn.forward`
+  property:
+  [(#914)](https://github.com/PennyLaneAI/pennylane/pull/914)
+
+  ```python
+  def cost_fn(x, y):
+      return 2*np.sin(x[0])*np.exp(-x[1]) + x[0]**3 + np.cos(y)
+
+  params = np.array([0.1, 0.5], requires_grad=True)
+  data = np.array(0.65, requires_grad=False)
+  grad_fn = qml.grad(cost_fn)
+
+  grad_fn(params, data)  # perform backprop and evaluate the gradient
+  grad_fn.forward  # the cost function value
+  ```
 
 <h3>Breaking changes</h3>
 
