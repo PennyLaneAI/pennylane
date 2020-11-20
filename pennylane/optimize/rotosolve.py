@@ -76,6 +76,29 @@ class RotosolveOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
+    def step_and_cost(self, objective_fn, x):
+        r"""Update x with one step of the optimizer.
+
+        Args:
+            objective_fn (function): The objective function for optimization. It should take a
+                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+
+        Returns:
+            tuple: a tuple containing the new variable values :math:`x^{(t+1)}` and the objective
+                function output
+        """
+        x_flat = np.fromiter(_flatten(x), dtype=float)
+        objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
+
+        for d, _ in enumerate(x_flat):
+            x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
+
+        x = unflatten(x_flat, x)
+        return x, objective_fn(x)
+
     def step(self, objective_fn, x):
         r"""Update x with one step of the optimizer.
 
@@ -89,13 +112,8 @@ class RotosolveOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_flat = np.fromiter(_flatten(x), dtype=float)
-        objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
-
-        for d, _ in enumerate(x_flat):
-            x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
-
-        return unflatten(x_flat, x)
+        x_out, _ = self.step_and_cost(objective_fn, x)
+        return x_out
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):

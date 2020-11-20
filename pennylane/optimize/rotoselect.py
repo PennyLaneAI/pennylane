@@ -92,7 +92,7 @@ class RotoselectOptimizer:
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
-    def step(self, objective_fn, x, generators):
+    def step_and_cost(self, objective_fn, x, generators):
         r"""Update x with one step of the optimizer.
 
         Args:
@@ -105,7 +105,8 @@ class RotoselectOptimizer:
                 operators to be used in the circuit and optimized over
 
         Returns:
-            array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
+            tuple: a tuple containing the new variable values :math:`x^{(t+1)}`, the objective
+                function output, as well as the new generators.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
@@ -122,8 +123,27 @@ class RotoselectOptimizer:
             x_flat[d], generators[d] = self._find_optimal_generators(
                 objective_fn_flat, x_flat, generators, d
             )
+        x = unflatten(x_flat, x)
+        return x, objective_fn(x), generators
 
-        return unflatten(x_flat, x), generators
+    def step(self, objective_fn, x, generators):
+        r"""Update x with one step of the optimizer.
+
+        Args:
+            objective_fn (function): The objective function for optimization. It must have the
+                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
+                and a list of the gates ``generators`` as inputs, returning a single value.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over
+
+        Returns:
+            tuple: tuple containing the new variable values :math:`x^{(t+1)}` as well as the new
+                generators.
+        """
+        x_out, _, generators = self.step_and_cost(objective_fn, x, generators)
+        return x_out, generators
 
     def _find_optimal_generators(self, objective_fn, x, generators, d):
         r"""Optimizer for the generators.
