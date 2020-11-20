@@ -73,7 +73,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer supports single QNodes or :class:`~.VQECost` objects as objective functions.
+        The QNG optimizer supports single QNodes or :class:`~.ExpvalCost` objects as objective functions.
         Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
         using the ``metric_tensor_fn`` argument.
 
@@ -91,7 +91,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         If the objective function is VQE/VQE-like, i.e., a function of a group
         of QNodes that share an ansatz, there are two ways to use the optimizer:
 
-        * Realize the objective function as a :class:`~.VQECost` object, which has
+        * Realize the objective function as an :class:`~.ExpvalCost` object, which has
           a ``metric_tensor`` method.
 
         * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
@@ -100,7 +100,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as a VQECost object.
+    realized as an ExpvalCost object.
 
     >>> dev = qml.device("default.qubit", wires=1)
     >>> def circuit(params, wires=0):
@@ -109,7 +109,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> coeffs = [1, 1]
     >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> cost_fn = qml.VQECost(circuit, H, dev)
+    >>> cost_fn = qml.ExpvalCost(circuit, H, dev)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` function:
@@ -174,7 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
-                "a VQECost object for the natural gradient to be automatically computed. "
+                "an ExpvalCost object for the natural gradient to be automatically computed. "
                 "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
             )
 
