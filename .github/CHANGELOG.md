@@ -324,6 +324,8 @@
   
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
   [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
+  
+* Fixes a bug where multi-threaded execution of `QNodeCollection` sometimes fails because of simultaneous execution of `with` blocks. [(#910)](https://github.com/PennyLaneAI/pennylane/pull/918)
 
 <h3>Contributors</h3>
 
