@@ -222,7 +222,7 @@ class QuantumTape(AnnotatedQueue):
     """
 
     _lock = RLock()
-    """threading.RLock: Used to synchronize appending to/popping from global QueuingContext."""
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(self, name=None):
         super().__init__()
