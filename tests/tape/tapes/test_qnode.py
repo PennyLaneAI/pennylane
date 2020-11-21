@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import QNodeCollection
 from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
@@ -600,3 +601,31 @@ class TestDecorator:
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert func.qtape is not old_tape
+
+
+class TestQNodeCollection:
+    """Unittests for the QNodeCollection"""
+
+    def test_multi_thread(self):
+        n_qubits = 4
+        n_batches = 5
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        qml.enable_tape()
+
+        def circuit(inputs, weights):
+            qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+            qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+        n_layers = 1
+        weight_shapes = {"weights": (n_layers, n_qubits)}
+
+        qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
+        x = np.random.rand((n_qubits)).astype(np.float64)
+        p = np.random.rand(*weight_shapes["weights"]).astype(np.float64)
+        try:
+            for _ in range(10):
+                qnode(x, p, parallel=True)
+        except:
+            pytest.fail("Multi-threading on QuantumTape failed")

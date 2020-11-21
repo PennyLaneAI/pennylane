@@ -18,6 +18,7 @@ This module contains the base quantum tape.
 import contextlib
 import copy
 from collections import Counter
+from threading import RLock
 
 import numpy as np
 
@@ -220,6 +221,9 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
     """
 
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueuingContext."""
+
     def __init__(self, name=None):
         super().__init__()
         self.name = name
@@ -262,6 +266,7 @@ class QuantumTape(AnnotatedQueue):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
+        QuantumTape._lock.acquire()
         if not QueuingContext.recording():
             # if the tape is the first active queuing context
             # monkeypatch the operations to support the new queuing context
@@ -281,6 +286,7 @@ class QuantumTape(AnnotatedQueue):
             self._stack.__exit__(exception_type, exception_value, traceback)
 
         self._process_queue()
+        QuantumTape._lock.release()
 
     @property
     def interface(self):
