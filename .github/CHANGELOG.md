@@ -293,7 +293,7 @@
 
 <h3>Breaking changes</h3>
 
-* Updated the way how gradient recipes are stored for operations to accomodate
+* Updated how gradient recipes are stored for operations, allowing for
   gradient recipe definitions involving custom multipliers and with more than
   two terms.
   [(#909)](https://github.com/PennyLaneAI/pennylane/pull/909)
