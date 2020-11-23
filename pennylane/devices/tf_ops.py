@@ -105,10 +105,17 @@ def Rot(a, b, c):
 
 def MultiRZ(theta, n):
     r"""Arbitrary multi Z rotation.
+
+    Args:
+        theta (float): rotation angle
+        n (int): Number of wires the rotation acts on
+
+    Returns:
+        tf.Tensor[complex]: diagonal part of the MultiRZ matrix
     """
     theta = tf.cast(theta, dtype=C_DTYPE)
     multi_Z_rot_eigs = tf.exp(-1j * theta / 2 * pauli_eigs(n))
-    return tf.linalg.diag(multi_Z_rot_eigs)
+    return tf.convert_to_tensor(multi_Z_rot_eigs)
 
 def CRX(theta):
     r"""Two-qubit controlled rotation about the x axis.
