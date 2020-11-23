@@ -165,6 +165,11 @@ class DefaultQubitTF(DefaultQubit):
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
 
+        # TODO: add support for the CRot operation
+        # Remove CRot from the supported operations so that it will be
+        # decomposed by default
+        self.operations.remove("CRot")
+
         # Versions of TF before 2.3.0 do not support using the special apply methods as they
         # raise an error when calculating the gradient. For versions of TF after 2.3.0,
         # special apply methods are also not supported when using more than 8 wires due to
