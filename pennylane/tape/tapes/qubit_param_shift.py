@@ -138,12 +138,8 @@ class QubitParamShiftTape(JacobianTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        recipe = op.grad_recipe[p_idx]
         s = options.get("shift", np.pi / 2)
-        c = 1 / (2 * np.sin(s))
-
-        default_param_shift = [[c, 1, s], [-c, 1, -s]]
-        param_shift = default_param_shift if recipe is None else recipe
+        param_shift = op.get_parameter_shift(p_idx, shift=s)
 
         shift = np.zeros_like(params)
         coeffs = []
