@@ -126,26 +126,6 @@ class RotoselectOptimizer:
         x = unflatten(x_flat, x)
         return x, generators
 
-    def step_and_cost(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer.
-
-        Args:
-            objective_fn (function): The objective function for optimization. It must have the
-                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
-                and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[Sequence[float], float]): sequence containing the initial values of the
-                variables to be optimized over or a single float with the initial value
-            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
-                operators to be used in the circuit and optimized over
-
-        Returns:
-            tuple: tuple containing the new variable values :math:`x^{(t+1)}` as well as the new
-                generators.
-        """
-        raise NotImplementedError(
-            "Return of objective function output is not supported for gradient-free optimizers."
-        )
-
     def _find_optimal_generators(self, objective_fn, x, generators, d):
         r"""Optimizer for the generators.
 

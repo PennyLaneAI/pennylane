@@ -99,23 +99,6 @@ class RotosolveOptimizer:
         x = unflatten(x_flat, x)
         return x
 
-    def step_and_cost(self, objective_fn, x):
-        r"""Update x with one step of the optimizer.
-
-        Args:
-            objective_fn (function): The objective function for optimization. It should take a
-                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
-                return a single value.
-            x (Union[Sequence[float], float]): sequence containing the initial values of the
-                variables to be optimized over or a single float with the initial value
-
-        Returns:
-            array: the new variable values :math:`x^{(t+1)}`
-        """
-        raise NotImplementedError(
-            "Return of objective function output is not supported for gradient-free optimizers."
-        )
-
     @staticmethod
     def _rotosolve(objective_fn, x, d):
         r"""The rotosolve step for one parameter.
