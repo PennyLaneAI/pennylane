@@ -205,6 +205,23 @@ class TestOptimizer:
 
         assert array == pytest.approx(np.asarray(list), abs=tol)
 
+    @pytest.mark.parametrize(
+        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
+    )
+    def test_step_and_cost_autograd(self, bunch, circuit, var):
+        """Test that the correct cost is returned via the step_and_cost method"""
+        _, res = bunch.sgd_opt.step_and_cost(circuit, var)
+        expected = circuit(var)
+
+        assert np.all(res == expected)
+
+    @pytest.mark.parametrize("func, f_grad", list(zip(univariate_funcs, grad_uni_fns)))
+    def test_step_and_cost_supplied_grad(self, bunch, func, f_grad):
+        """Test that returned cost is None if gradient function is supplied"""
+        _, res = bunch.sgd_opt.step_and_cost(func, 0, grad_fn=f_grad)
+
+        assert res is None
+
     @pytest.mark.parametrize('x_start', x_vals)
     def test_gradient_descent_optimizer_univar(self, x_start, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
