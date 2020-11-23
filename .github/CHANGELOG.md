@@ -86,9 +86,12 @@
 
 <h3>Improvements</h3>
 
+* The MultiRZ gate now has a defined generator.
+  [(#912)](https://github.com/PennyLaneAI/pennylane/pull/912)
+
 * The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
   and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
-  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908) 
+  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
@@ -293,7 +296,7 @@
 
 <h3>Breaking changes</h3>
 
-* Updated the way how gradient recipes are stored for operations to accomodate
+* Updated how gradient recipes are stored for operations, allowing for
   gradient recipe definitions involving custom multipliers and more than two
   terms. User defined shift values passed to a QNode apply only to two-term
   parameter shift rules. Defined the gradient recipes for the `CRX`, `CRY`,
