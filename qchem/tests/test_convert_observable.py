@@ -352,7 +352,7 @@ def test_not_xyz_terms_to_qubit_operator():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `convert_observable()` in qchem integrates with `VQECost()` in pennylane"""
+    r"""Test if `convert_observable()` in qchem integrates with `ExpvalCost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
@@ -375,7 +375,7 @@ def test_integration_observable_to_vqe_cost(
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
-    dummy_cost = qml.VQECost(dummy_ansatz, vqe_observable, dev)
+    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -397,7 +397,7 @@ def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose()` works with `convert_observable()`
-    to generate `VQECost()`"""
+    to generate `ExpvalCost()`"""
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
@@ -424,7 +424,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = qml.VQECost(dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]

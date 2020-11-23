@@ -17,10 +17,11 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import itertools
-import numpy as np
-import pennylane as qml
-from pennylane.operation import Observable, Tensor
+import warnings
 
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.operation import Observable, Tensor
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -40,7 +41,7 @@ class Hamiltonian:
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
-    .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
+    .. seealso:: :class:`~.ExpvalCost`, :func:`~.generate_hamiltonian`
 
     **Example:**
 
@@ -346,9 +347,10 @@ class Hamiltonian:
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
 
-class VQECost:
-    """Create a VQE cost function, i.e., a cost function returning the
-    expectation value of a Hamiltonian.
+class ExpvalCost:
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
+
+    This cost function is useful for a range of problems including VQE and QAOA.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -370,6 +372,9 @@ class VQECost:
             Supports all interfaces supported by the :func:`~.qnode` decorator.
         diff_method (str, None): The method of differentiation to use with the created cost function.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
+        optimize (bool): Whether to optimize the observables composing the Hamiltonian by
+            separating them into qubit-wise commuting groups. Each group can then be executed
+            within a single QNode, resulting in fewer QNodes to evaluate.
 
     Returns:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
@@ -379,23 +384,12 @@ class VQECost:
 
     **Example:**
 
-    First, we create a device and design an ansatz:
+    To construct an ``ExpvalCost`` cost function, we require a Hamiltonian to measure, and an ansatz
+    for our variational circuit.
+
+    We can construct a Hamiltonian manually,
 
     .. code-block:: python
-
-        dev = qml.device('default.qubit', wires=4)
-
-        def ansatz(params, **kwargs):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-            for i in range(4):
-                qml.Rot(*params[i], wires=i)
-            qml.CNOT(wires=[2, 3])
-            qml.CNOT(wires=[2, 0])
-            qml.CNOT(wires=[3, 1])
-
-    Now we can create the Hamiltonian that defines the VQE problem:
-
-    .. code-block:: python3
 
         coeffs = [0.2, -0.543]
         obs = [
@@ -404,36 +398,133 @@ class VQECost:
         ]
         H = qml.vqe.Hamiltonian(coeffs, obs)
 
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
-    :doc:`/introduction/chemistry` module can be used to generate a molecular
-    Hamiltonian.
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
+    :doc:`/introduction/chemistry` module can be used to generate a molecular Hamiltonian.
 
-    Next, we can define the cost function:
+    Once we have our Hamiltonian, we can select an ansatz and construct
+    the cost function.
 
-    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
-    >>> params = torch.rand([4, 3])
+    >>> ansatz = qml.templates.StronglyEntanglingLayers
+    >>> dev = qml.device("default.qubit", wires=4)
+    >>> cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
+    >>> params = torch.rand([2, 4, 3])
     >>> cost(params)
-    tensor(0.0245, dtype=torch.float64)
+    tensor(-0.2316, dtype=torch.float64)
 
-    The cost function can be minimized using any gradient descent-based
+    The cost function can then be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
+
+    .. UsageDetails::
+
+        **Optimizing observables:**
+
+        Setting ``optimize=True`` can be used to decrease the number of device executions. The
+        observables composing the Hamiltonian can be separated into groups that are qubit-wise
+        commuting using the :mod:`~.grouping` module. These groups can be executed together on a
+        *single* qnode, resulting in a lower device overhead:
+
+        .. code-block:: python
+
+            qml.enable_tape()
+            commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+            H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+
+            dev = qml.device("default.qubit", wires=2)
+            ansatz = qml.templates.StronglyEntanglingLayers
+
+            cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+            cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
+
+            params = qml.init.strong_ent_layers_uniform(3, 2)
+
+        Grouping these commuting observables leads to fewer device executions:
+
+        >>> cost_opt(params)
+        >>> ex_opt = dev.num_executions
+        >>> cost_no_opt(params)
+        >>> ex_no_opt = dev.num_executions - ex_opt
+        >>> print("Number of executions:", ex_no_opt)
+        Number of executions: 2
+        >>> print("Number of executions (optimized):", ex_opt)
+        Number of executions (optimized): 1
+
+        Note that this feature is only available in :doc:`tape mode <../../code/qml_tape>`.
     """
 
     def __init__(
-        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+        self,
+        ansatz,
+        hamiltonian,
+        device,
+        interface="autograd",
+        diff_method="best",
+        optimize=False,
+        **kwargs,
     ):
         coeffs, observables = hamiltonian.terms
+
         self.hamiltonian = hamiltonian
-        """Hamiltonian: the hamiltonian defining the VQE problem."""
+        """Hamiltonian: the input Hamiltonian."""
 
-        self.qnodes = qml.map(
-            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
-        )
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
-        the expectation value of each observable term after applying the circuit ansatz.
-        """
+        self.qnodes = None
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
+        value of each observable term after applying the circuit ansatz."""
 
-        self.cost_fn = qml.dot(coeffs, self.qnodes)
+        wires = device.wires.tolist()
+
+        tape_mode = qml.tape_mode_active()
+        if tape_mode:
+            try:
+                qml.disable_tape()
+
+                @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
+                    """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
+                    short-term fix for ExpvalCost, we create a non-tape mode QNode just for
+                    calculation of the metric tensor. In doing so, we reintroduce the same
+                    restrictions of the old QNode but allow users to access new functionality
+                    such as measurement grouping and batch execution of the gradient."""
+                    ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                    return qml.expval(qml.PauliZ(0))
+
+                self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
+            finally:
+                qml.enable_tape()
+
+        self._optimize = optimize
+
+        if self._optimize:
+            if not tape_mode:
+                raise ValueError(
+                    "Observable optimization is only supported in tape mode. Tape "
+                    "mode can be enabled with the command:\n"
+                    "qml.enable_tape()"
+                )
+
+            obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
+
+            @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+            def circuit(*qnode_args, obs, **qnode_kwargs):
+                """Converting ansatz into a full circuit including measurements"""
+                ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                return [qml.expval(o) for o in obs]
+
+            def cost_fn(*qnode_args, **qnode_kwargs):
+                """Combine results from grouped QNode executions with grouped coefficients"""
+                total = 0
+                for o, c in zip(obs_groupings, coeffs_groupings):
+                    res = circuit(*qnode_args, obs=o, **qnode_kwargs)
+                    total += sum([r * c_ for r, c_ in zip(res, c)])
+                return total
+
+            self.cost_fn = cost_fn
+
+        else:
+            self.qnodes = qml.map(
+                ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
+            )
+
+            self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
@@ -451,7 +542,29 @@ class VQECost:
         Returns:
             array[float]: metric tensor
         """
-        # We know that for VQE, all the qnodes share the same ansatz so we select the first
+        if qml.tape_mode_active():
+            return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
+                args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
+            )
+
+        # all the qnodes share the same ansatz so we select the first
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
         )
+
+
+class VQECost(ExpvalCost):
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
+
+    .. warning::
+        Use of :class:`~.VQECost` is deprecated and should be replaced with
+        :class:`~.ExpvalCost`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
+            DeprecationWarning,
+            2,
+        )
+        super().__init__(*args, **kwargs)

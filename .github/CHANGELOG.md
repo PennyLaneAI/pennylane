@@ -2,12 +2,48 @@
 
 <h3>New features since last release</h3>
 
-* A new hardware-efficient particle-conserving template has been implemented
-  to perform VQE-based quantum chemistry simulations. The new template applies
-  several layers of the particle-conserving entangler proposed in Fig. 2a
+* The ``ExpvalCost`` class (previously ``VQECost``) now provides observable optimization using the
+  ``optimize`` argument, resulting in potentially fewer device executions.
+  [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
+  
+  This is achieved by separating the observables composing the Hamiltonian into qubit-wise
+  commuting groups and evaluating those groups on a single QNode using functionality from the
+  ``grouping`` module: 
+  
+  ```python
+  qml.enable_tape()
+  commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+  H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+
+  dev = qml.device("default.qubit", wires=2)
+  ansatz = qml.templates.StronglyEntanglingLayers
+
+  cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
+
+  params = qml.init.strong_ent_layers_uniform(3, 2)
+  ```
+  
+  Grouping these commuting observables leads to fewer device executions:
+  
+  ```pycon
+  >>> cost_opt(params)
+  >>> ex_opt = dev.num_executions
+  >>> cost_no_opt(params)
+  >>> ex_no_opt = dev.num_executions - ex_opt
+  >>> print("Number of executions:", ex_no_opt)
+  Number of executions: 2
+  >>> print("Number of executions (optimized):", ex_opt)
+  Number of executions (optimized): 1
+  ```
+
+* Two new hardware-efficient particle-conserving templates have been implemented
+  to perform VQE-based quantum chemistry simulations. The new templates apply
+  several layers of the particle-conserving entanglers proposed in Figs. 2a and 2b
   of the article by Barkoutsos *et al*. in
   `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_
   [(#875)](https://github.com/PennyLaneAI/pennylane/pull/875)
+  [(#876)](https://github.com/PennyLaneAI/pennylane/pull/876)
 
 * The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
   This method accepts a *list* of tapes, and returns a list of evaluated numerical values.
@@ -49,6 +85,10 @@
   ```
 
 <h3>Improvements</h3>
+
+* The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
+  and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
+  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908) 
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
@@ -221,15 +261,50 @@
 * Support for tape mode has improved across PennyLane. The following features now work in tape mode:
 
   - QNode collections [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
-  - `VQECost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
+  - `ExpvalCost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863) [(#911)](https://github.com/PennyLaneAI/pennylane/pull/911)
   - `qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
+  - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
+
+* A new function, ``qml.refresh_devices()``, has been added, allowing PennyLane to
+  rescan installed PennyLane plugins and refresh the device list. In addition, the ``qml.device``
+  loader will attempt to refresh devices if the required plugin device cannot be found.
+  This will result in an improved experience if installing PennyLane and plugins within
+  a running Python session (for example, on Google Colab), and avoid the need to
+  restart the kernel/runtime.
+  [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
+
+* When using `grad_fn = qml.grad(cost)` to compute the gradient of a cost function with the Autograd
+  interface, the value of the intermediate forward pass is now available via the `grad_fn.forward`
+  property:
+  [(#914)](https://github.com/PennyLaneAI/pennylane/pull/914)
+
+  ```python
+  def cost_fn(x, y):
+      return 2*np.sin(x[0])*np.exp(-x[1]) + x[0]**3 + np.cos(y)
+
+  params = np.array([0.1, 0.5], requires_grad=True)
+  data = np.array(0.65, requires_grad=False)
+  grad_fn = qml.grad(cost_fn)
+
+  grad_fn(params, data)  # perform backprop and evaluate the gradient
+  grad_fn.forward  # the cost function value
+  ```
 
 <h3>Breaking changes</h3>
+
+- The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
+  beyond VQE. Use of ``VQECost`` is still possible but will result in a deprecation warning.
+  [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
+  keyword argument to the quantum function.
+  [(#903)](https://github.com/PennyLaneAI/pennylane/pull/903)
+  [(#893)](https://github.com/PennyLaneAI/pennylane/pull/893)
 
 * The new tape mode now prevents multiple observables from being evaluated on the same wire
   if the observables are not qubit-wise commuting Pauli words.
@@ -246,14 +321,16 @@
 * Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
   attribute to the output tensor.
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
+  
+* Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
+  [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran,
-Romain Moyard, Maria Schuld
-
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
+Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 

@@ -15,10 +15,13 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+from importlib import reload
 import pkg_resources
 
 import numpy as _np
-from autograd import grad as _grad
+from autograd.wrap_util import unary_to_nary
+from autograd.core import make_vjp as _make_vjp, make_jvp as _make_jvp
+from autograd.extend import vspace
 from autograd import jacobian as _jacobian
 
 from semantic_version import Version, Spec
@@ -33,7 +36,7 @@ import pennylane.qnn
 import pennylane.qaoa as qaoa
 from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
-from pennylane.vqe import Hamiltonian, VQECost
+from pennylane.vqe import Hamiltonian, ExpvalCost, VQECost
 
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
@@ -56,10 +59,29 @@ from .tape import enable_tape, disable_tape, tape_mode_active
 default_config = Configuration("config.toml")
 
 
+def _get_device_entrypoints():
+    """Returns a dictionary mapping the device short name to the
+    loadable entrypoint"""
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
+
+
+def refresh_devices():
+    """Scan installed PennyLane plugins to refresh the device list."""
+
+    # This function does not return anything; instead, it has a side effect
+    # which is to update the global plugin_devices variable.
+
+    # We wish to retain the behaviour of a global plugin_devices dictionary,
+    # as re-importing pkg_resources can be a very slow operation on systems
+    # with a large number of installed packages.
+    global plugin_devices  # pylint:disable=global-statement
+
+    reload(pkg_resources)
+    plugin_devices = _get_device_entrypoints()
+
+
 # get list of installed devices
-plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-}
+plugin_devices = _get_device_entrypoints()
 
 
 # get chemistry plugin
@@ -167,6 +189,12 @@ def device(name, *args, **kwargs):
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
+    if name not in plugin_devices:
+        # Device does not exist in the loaded device list.
+        # Attempt to refresh the devices, in case the user
+        # installed the plugin during the current Python session.
+        refresh_devices()
+
     if name in plugin_devices:
         options = {}
 
@@ -201,18 +229,24 @@ def device(name, *args, **kwargs):
     raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
 
 
-def grad(func, argnum=None):
+make_vjp = unary_to_nary(_make_vjp)
+
+
+class grad:
     """Returns the gradient as a callable function of (functions of) QNodes.
 
     Function arguments with the property ``requires_grad`` set to ``False``
     will automatically be excluded from the gradient computation, unless
     the ``argnum`` keyword argument is passed.
 
+    When the output gradient function is executed, both the forward pass
+    *and* the backward pass will be performed in order to
+    compute the gradient. The value of the forward pass is available via the
+    :attr:`~.forward` property.
+
     Args:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
-
-    Keyword Args:
         argnum (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
@@ -224,31 +258,76 @@ def grad(func, argnum=None):
         function with respect to the differentiable arguments, or, if specified,
         the arguments in ``argnum``.
     """
-    # pylint: disable=no-value-for-parameter
-    if argnum is not None:
-        # for backwards compatibility with existing code
-        # that manually specifies argnum
-        return _grad(func, argnum)
 
-    def _gradient_function(*args, **kwargs):
-        """Inspect the arguments for differentiability, and
-        compute the autograd gradient function with required argnums
-        dynamically.
+    def __init__(self, fun, argnum=None):
+        self._forward = None
+        self._grad_fn = None
 
-        This wrapper function is returned to the user instead of autograd.grad,
-        so that we can take into account cases where the user computes the
-        gradient function once, but then calls it with arguments that change
-        in differentiability.
+        self._fun = fun
+        self._argnum = argnum
+
+        if self._argnum is not None:
+            # If the differentiable argnum is provided, we can construct
+            # the gradient function at once during initialization
+            self._grad_fn = self._grad_with_forward(fun, argnum=argnum)
+
+    def _get_grad_fn(self, args):
+        """Get the required gradient function.
+
+        * If the differentiable argnum was provided on initialization,
+          this has been pre-computed and is available via self._grad_fn
+
+        * Otherwise, we must dynamically construct the gradient function by
+          inspecting as to which of the parameter arguments are marked
+          as differentiable.
         """
+        if self._grad_fn is not None:
+            return self._grad_fn
+
+        # Inspect the arguments for differentiability, and
+        # compute the autograd gradient function with required argnums
+        # dynamically.
         argnum = []
 
         for idx, arg in enumerate(args):
             if getattr(arg, "requires_grad", True):
                 argnum.append(idx)
 
-        return _grad(func, argnum)(*args, **kwargs)
+        return self._grad_with_forward(
+            self._fun,
+            argnum=argnum,
+        )
 
-    return _gradient_function
+    def __call__(self, *args, **kwargs):
+        """Evaluates the gradient function, and saves the function value
+        calculated during the forward pass in :attr:`.forward`."""
+        grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
+        self._forward = ans
+        return grad_value
+
+    @property
+    def forward(self):
+        """float: The result of the forward pass calculated while performing
+        backpropagation. Will return ``None`` if the backpropagation has not yet
+        been performed."""
+        return self._forward
+
+    @staticmethod
+    @unary_to_nary
+    def _grad_with_forward(fun, x):
+        """This function is a replica of ``autograd.grad``, with the only
+        difference being that it returns both the gradient *and* the forward pass
+        value."""
+        vjp, ans = _make_vjp(fun, x)
+
+        if not vspace(ans).size == 1:
+            raise TypeError(
+                "Grad only applies to real scalar-output functions. "
+                "Try jacobian, elementwise_grad or holomorphic_grad."
+            )
+
+        grad_value = vjp(vspace(ans).ones())
+        return grad_value, ans
 
 
 def jacobian(func, argnum=None):

@@ -31,8 +31,8 @@ def _diagonal_terms(hamiltonian):
     val = True
 
     for i in hamiltonian.ops:
-        i = Tensor(i) if not isinstance(i, Tensor) else i
-        for j in i.obs:
+        obs = i.obs if isinstance(i, Tensor) else [i]
+        for j in obs:
             if j.name not in ("PauliZ", "Identity"):
                 val = False
                 break

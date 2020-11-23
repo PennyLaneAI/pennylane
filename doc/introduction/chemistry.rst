@@ -158,7 +158,7 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :class:`~.VQECost` to automatically create the required PennyLane QNodes and define 
+We can use :class:`~.ExpvalCost` to automatically create the required PennyLane QNodes and define
 the cost function:
 
 .. code-block:: python
@@ -175,7 +175,7 @@ the cost function:
         qml.CNOT(wires=[2, 0])
         qml.CNOT(wires=[3, 1])
 
-    cost = qml.VQECost(circuit, hamiltonian, dev, interface="torch")
+    cost = qml.ExpvalCost(circuit, hamiltonian, dev, interface="torch")
     params = torch.rand([4, 3])
     cost(params)
 
