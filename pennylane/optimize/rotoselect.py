@@ -92,7 +92,7 @@ class RotoselectOptimizer:
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
-    def step_and_cost(self, objective_fn, x, generators):
+    def step(self, objective_fn, x, generators):
         r"""Update x with one step of the optimizer and return the corresponding objective function value.
 
         Args:
@@ -124,9 +124,9 @@ class RotoselectOptimizer:
                 objective_fn_flat, x_flat, generators, d
             )
         x = unflatten(x_flat, x)
-        return x, objective_fn(x, generators=generators), generators
+        return x, generators
 
-    def step(self, objective_fn, x, generators):
+    def step_and_cost(self, objective_fn, x, generators):
         r"""Update x with one step of the optimizer.
 
         Args:
@@ -142,8 +142,9 @@ class RotoselectOptimizer:
             tuple: tuple containing the new variable values :math:`x^{(t+1)}` as well as the new
                 generators.
         """
-        x_out, _, generators = self.step_and_cost(objective_fn, x, generators)
-        return x_out, generators
+        raise NotImplementedError(
+            "Return of objective function output is not supported for gradient-free optimizers."
+        )
 
     def _find_optimal_generators(self, objective_fn, x, generators, d):
         r"""Optimizer for the generators.

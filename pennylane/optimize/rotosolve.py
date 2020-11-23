@@ -76,7 +76,7 @@ class RotosolveOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def step_and_cost(self, objective_fn, x):
+    def step(self, objective_fn, x):
         r"""Update x with one step of the optimizer.
 
         Args:
@@ -97,9 +97,9 @@ class RotosolveOptimizer:
             x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
 
         x = unflatten(x_flat, x)
-        return x, objective_fn(x)
+        return x
 
-    def step(self, objective_fn, x):
+    def step_and_cost(self, objective_fn, x):
         r"""Update x with one step of the optimizer.
 
         Args:
@@ -112,8 +112,9 @@ class RotosolveOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_out, _ = self.step_and_cost(objective_fn, x)
-        return x_out
+        raise NotImplementedError(
+            "Return of objective function output is not supported for gradient-free optimizers."
+        )
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):
