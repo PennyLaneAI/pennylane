@@ -200,7 +200,7 @@ class DefaultQubitTF(DefaultQubit):
             object will be returned.
         """
         if unitary.name in self.parametric_ops:
-            if unitary.name is "MultiRZ":
+            if unitary.name == "MultiRZ":
                 return self.parametric_ops[unitary.name](unitary.parameters, len(unitary.wires))
             return self.parametric_ops[unitary.name](*unitary.parameters)
 
