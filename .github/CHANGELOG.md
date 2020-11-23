@@ -5,11 +5,11 @@
 * The ``ExpvalCost`` class (previously ``VQECost``) now provides observable optimization using the
   ``optimize`` argument, resulting in potentially fewer device executions.
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
-  
+
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
   commuting groups and evaluating those groups on a single QNode using functionality from the
-  ``grouping`` module: 
-  
+  ``grouping`` module:
+
   ```python
   qml.enable_tape()
   commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
@@ -23,9 +23,9 @@
 
   params = qml.init.strong_ent_layers_uniform(3, 2)
   ```
-  
+
   Grouping these commuting observables leads to fewer device executions:
-  
+
   ```pycon
   >>> cost_opt(params)
   >>> ex_opt = dev.num_executions
@@ -88,7 +88,7 @@
 
 * The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
   and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
-  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908) 
+  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
@@ -291,6 +291,10 @@
   grad_fn.forward  # the cost function value
   ```
 
+* Gradient-based optimizers now have a `step_and_cost` method that returns
+  both the next step as well as the objective function (cost) output.
+  [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
+
 <h3>Breaking changes</h3>
 
 - The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
@@ -321,7 +325,7 @@
 * Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
   attribute to the output tensor.
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
-  
+
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
   [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
 
@@ -329,8 +333,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
-Romain Moyard, Maria Schuld, Antal Száva.
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Shumpei Kobayashi, Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 
