@@ -235,18 +235,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        recipe = op.grad_recipe[p_idx]
-
-        # Default values
-        multiplier = 0.5
-        a = 1
-        shift = np.pi / 2
-
-        # We set the default recipe to as follows:
-        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
-        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
-        param_shift = default_param_shift if recipe is None else recipe
-
+        param_shift = op.get_parameter_shift(p_idx)
         shift = np.zeros_like(params)
 
         coeffs = []
@@ -299,18 +288,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         dev_wires = options["dev_wires"]
 
-        recipe = op.grad_recipe[p_idx]
-
-        # Default values
-        multiplier = 0.5
-        a = 1
-        shift = np.pi / 2
-
-        # We set the default recipe following:
-        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
-        # where we express a positive and a negative shift by default
-        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
-        param_shift = default_param_shift if recipe is None else recipe
+        param_shift = op.get_parameter_shift(p_idx)
 
         if len(param_shift) != 2:
             # The 2nd order CV parameter-shift rule only accepts two-term shifts

@@ -635,7 +635,7 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
-    def get_parameter_shift(self, idx):
+    def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
@@ -648,9 +648,8 @@ class Operation(Operator):
         recipe = self.grad_recipe[idx]
 
         # Default values
-        multiplier = 0.5
+        multiplier = 0.5 / np.sin(shift)
         a = 1
-        shift = np.pi / 2
 
         # We set the default recipe following:
         # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
@@ -658,17 +657,20 @@ class Operation(Operator):
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
 
-        # internal multiplier in the Variable
-        var_mult = self.data[idx].mult
+        if hasattr(self.data[idx], "mult"):
+            # Parameter is a variable, we are in non-tape mode
+            # Need to use the internal multiplier in the Variable to update the
+            # multiplier and the shift
+            var_mult = self.data[idx].mult
 
-        for elem in param_shift:
+            for elem in param_shift:
 
-            # Update the multiplier
-            elem[0] *= var_mult
-            if var_mult != 0:
-                # Update the shift
-                # zero multiplier means the shift is unimportant
-                elem[2] /= var_mult
+                # Update the multiplier
+                elem[0] *= var_mult
+                if var_mult != 0:
+                    # Update the shift
+                    # zero multiplier means the shift is unimportant
+                    elem[2] /= var_mult
         return param_shift
 
     @property
