@@ -164,6 +164,7 @@ class DefaultQubitTF(DefaultQubit):
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
 
+        self.parametric_ops["MultiRZ"] = lambda args:  tf_ops.MultiRZ(args, len(self.wires))
         # Versions of TF before 2.3.0 do not support using the special apply methods as they
         # raise an error when calculating the gradient. For versions of TF after 2.3.0,
         # special apply methods are also not supported when using more than 8 wires due to
@@ -199,6 +200,7 @@ class DefaultQubitTF(DefaultQubit):
             object will be returned.
         """
         if unitary.name in self.parametric_ops:
+            print(self.parametric_ops[unitary.name](*unitary.parameters))
             return self.parametric_ops[unitary.name](*unitary.parameters)
 
         if isinstance(unitary, DiagonalOperation):

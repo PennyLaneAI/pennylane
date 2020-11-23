@@ -16,6 +16,7 @@ Utility functions and numerical implementations of quantum operations TensorFlow
 """
 import tensorflow as tf
 from numpy import kron
+from pennylane.utils import pauli_eigs
 
 C_DTYPE = tf.complex128
 R_DTYPE = tf.float64
@@ -101,6 +102,13 @@ def Rot(a, b, c):
     """
     return tf.linalg.diag(RZ(c)) @ RY(b) @ tf.linalg.diag(RZ(a))
 
+
+def MultiRZ(theta, n):
+    r"""Arbitrary multi Z rotation.
+    """
+    theta = tf.cast(theta, dtype=C_DTYPE)
+    multi_Z_rot_eigs = tf.exp(-1j * theta / 2 * pauli_eigs(n))
+    return tf.linalg.diag(multi_Z_rot_eigs)
 
 def CRX(theta):
     r"""Two-qubit controlled rotation about the x axis.
