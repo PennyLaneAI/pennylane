@@ -155,7 +155,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.lam = lam
 
     def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer.
+        """Update x with one step of the optimizer and return the corresponding objective function value.
 
         Args:
             qnode (QNode): the QNode for optimization

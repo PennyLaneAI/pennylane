@@ -93,7 +93,7 @@ class RotoselectOptimizer:
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
     def step_and_cost(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer.
+        r"""Update x with one step of the optimizer and return the corresponding objective function value.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the

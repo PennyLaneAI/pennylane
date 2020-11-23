@@ -16,8 +16,7 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import numpy as _np
 
-# pylint: disable=unused-import
-from autograd.core import make_vjp as _make_vjp, make_jvp as _make_jvp
+from autograd.core import make_vjp as _make_vjp
 from autograd.wrap_util import unary_to_nary
 from autograd.extend import vspace
 from autograd import jacobian as _jacobian

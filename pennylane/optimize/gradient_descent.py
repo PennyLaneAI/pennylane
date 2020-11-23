@@ -48,7 +48,7 @@ class GradientDescentOptimizer:
         self._stepsize = stepsize
 
     def step_and_cost(self, objective_fn, x, grad_fn=None):
-        """Update x with one step of the optimizer.
+        """Update x with one step of the optimizer and return the corresponding objective function value.
 
         Args:
             objective_fn (function): the objective function for optimization
