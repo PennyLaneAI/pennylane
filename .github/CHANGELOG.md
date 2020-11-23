@@ -327,9 +327,9 @@
 
 * Fixes a bug in `QuantumTape.set_parameters()`. The previous implementation assumed
   that the `self.trainable_parms` set would always be iterated over in increasing integer
-  order. However, this is not guarenteed behaviour, and can lead to the incorrect tape parameters
+  order. However, this is not guaranteed behaviour, and can lead to the incorrect tape parameters
   being set if this is not the case.
-  [(#)]()
+  [(#923)](https://github.com/PennyLaneAI/pennylane/pull/923)
 
 <h3>Contributors</h3>
 
