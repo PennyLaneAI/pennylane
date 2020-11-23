@@ -295,6 +295,11 @@
   both the next step as well as the objective function (cost) output.
   [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
 
+  ```pycon
+  >>> opt = qml.GradientDescentOptimizer()
+  >>> params, cost = opt.step_and_cost(cost_fn, params)
+  ```
+
 <h3>Breaking changes</h3>
 
 - The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
