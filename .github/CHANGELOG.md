@@ -294,8 +294,11 @@
 <h3>Breaking changes</h3>
 
 * Updated the way how gradient recipes are stored for operations to accomodate
-  gradient recipe definitions involving custom multipliers and with more than
-  two terms.
+  gradient recipe definitions involving custom multipliers and more than two
+  terms. User defined shift values passed to a QNode apply only to two-term
+  parameter shift rules. Defined the gradient recipes for the `CRX`, `CRY`,
+  `CRZ` and `CRot` operations.
+  [(#915)](https://github.com/PennyLaneAI/pennylane/pull/915)
   [(#909)](https://github.com/PennyLaneAI/pennylane/pull/909)
 
 - The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
