@@ -197,7 +197,7 @@ class CVQNode(JacobianQNode):
                     pd += term
             else:
                 if len(param_shift) != 2:
-                    # TODO: check if more than two terms is supported
+                    # The 2nd order CV parameter-shift rule only accepts two-term shifts
                     raise NotImplementedError(
                         "Taking the analytic gradient for order-2 operators is "
                         "unsupported for {op} which contains a parameter with a "

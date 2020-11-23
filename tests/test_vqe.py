@@ -849,18 +849,42 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor(self):
-        """Test that an error is raised if the metric tensor is requested in optimize=True mode."""
+    def test_metric_tensor_tape_mode(self):
+        """Test that the metric tensor can be calculated in tape mode, and that it is equal to a
+        metric tensor calculated in non-tape mode."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
 
-        dev = qml.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian
+        dev = qml.device("default.qubit", wires=2)
+        p = [1, 1, 1]
 
-        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        def ansatz(params, **kwargs):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(params[2], wires=1)
 
-        with pytest.raises(ValueError, match="Evaluation of the metric tensor is not supported"):
-            cost.metric_tensor(None)
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        qnodes = qml.ExpvalCost(ansatz, h, dev)
+
+        qn = qnodes._qnode_for_metric_tensor_in_tape_mode
+        mt = qnodes.metric_tensor([p])
+
+        assert isinstance(qn, qml.qnodes.BaseQNode)
+        assert qml.tape_mode_active()  # Check that tape mode is still active
+
+        qml.disable_tape()
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(params[2], wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        mt2 = circuit.metric_tensor([p])
+        assert np.allclose(mt, mt2)
 
 
 @pytest.mark.usefixtures("tape_mode")

@@ -470,10 +470,31 @@ class ExpvalCost:
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
         value of each observable term after applying the circuit ansatz."""
 
+        wires = device.wires.tolist()
+
+        tape_mode = qml.tape_mode_active()
+        if tape_mode:
+            try:
+                qml.disable_tape()
+
+                @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
+                    """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
+                    short-term fix for ExpvalCost, we create a non-tape mode QNode just for
+                    calculation of the metric tensor. In doing so, we reintroduce the same
+                    restrictions of the old QNode but allow users to access new functionality
+                    such as measurement grouping and batch execution of the gradient."""
+                    ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                    return qml.expval(qml.PauliZ(0))
+
+                self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
+            finally:
+                qml.enable_tape()
+
         self._optimize = optimize
 
         if self._optimize:
-            if not qml.tape_mode_active():
+            if not tape_mode:
                 raise ValueError(
                     "Observable optimization is only supported in tape mode. Tape "
                     "mode can be enabled with the command:\n"
@@ -481,8 +502,6 @@ class ExpvalCost:
                 )
 
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
-
-            wires = device.wires.tolist()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(*qnode_args, obs, **qnode_kwargs):
@@ -523,12 +542,11 @@ class ExpvalCost:
         Returns:
             array[float]: metric tensor
         """
-        if self._optimize:
-            raise ValueError(
-                "Evaluation of the metric tensor is not supported when using "
-                "optimized observables. Set the argument optimize=False to obtain "
-                "the metric tensor."
+        if qml.tape_mode_active():
+            return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
+                args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
             )
+
         # all the qnodes share the same ansatz so we select the first
         return self.qnodes.qnodes[0].metric_tensor(
             args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
@@ -547,5 +565,6 @@ class VQECost(ExpvalCost):
         warnings.warn(
             "Use of VQECost is deprecated and should be replaced with ExpvalCost",
             DeprecationWarning,
+            2,
         )
         super().__init__(*args, **kwargs)

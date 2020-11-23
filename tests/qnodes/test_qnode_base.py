@@ -1500,3 +1500,32 @@ class TestTrainableArgs:
         # the user will evaluate the QNode with.
         node.set_trainable_args({0, 1, 6})
         assert node.get_trainable_args() == {0, 1, 6}
+
+
+def test_old_qnode_in_tape_mode():
+    """Test that the old QNode can still be evaluated when running in tape mode"""
+
+    # tape mode should not be active so that we can use the old QNode
+    assert not qml.tape_mode_active()
+
+    try:
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def f(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        qml.enable_tape()
+        res = f(0.4)
+        exp = 0.9210609940028851
+
+        assert np.allclose(res, exp)
+
+        # check that tape mode is turned on again after evaluating the old QNode
+        assert qml.tape_mode_active()
+
+    finally:  # always make sure we turn off tape mode to prevent disrupting the other tests
+        qml.disable_tape()
