@@ -86,9 +86,12 @@
 
 <h3>Improvements</h3>
 
+* The MultiRZ gate now has a defined generator.
+  [(#912)](https://github.com/PennyLaneAI/pennylane/pull/912)
+
 * The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
   and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
-  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908) 
+  [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
