@@ -87,8 +87,7 @@ class RotosolveOptimizer:
                 variables to be optimized over or a single float with the initial value
 
         Returns:
-            tuple: a tuple containing the new variable values :math:`x^{(t+1)}` and the objective
-                function output
+            array: the new variable values :math:`x^{(t+1)}`
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
@@ -96,8 +95,7 @@ class RotosolveOptimizer:
         for d, _ in enumerate(x_flat):
             x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
 
-        x = unflatten(x_flat, x)
-        return x
+        return unflatten(x_flat, x)
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):

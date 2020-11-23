@@ -93,7 +93,7 @@ class RotoselectOptimizer:
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
     def step(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer and return the corresponding objective function value.
+        r"""Update x with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
@@ -105,8 +105,7 @@ class RotoselectOptimizer:
                 operators to be used in the circuit and optimized over
 
         Returns:
-            tuple: a tuple containing the new variable values :math:`x^{(t+1)}`, the objective
-                function output, as well as the new generators.
+            array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
@@ -123,8 +122,8 @@ class RotoselectOptimizer:
             x_flat[d], generators[d] = self._find_optimal_generators(
                 objective_fn_flat, x_flat, generators, d
             )
-        x = unflatten(x_flat, x)
-        return x, generators
+
+        return unflatten(x_flat, x), generators
 
     def _find_optimal_generators(self, objective_fn, x, generators, d):
         r"""Optimizer for the generators.
