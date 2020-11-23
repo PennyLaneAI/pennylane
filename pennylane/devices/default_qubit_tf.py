@@ -168,7 +168,8 @@ class DefaultQubitTF(DefaultQubit):
         # TODO: add support for the CRot operation
         # Remove CRot from the supported operations so that it will be
         # decomposed by default
-        self.operations.remove("CRot")
+        if "CRot" in self.operations:
+            self.operations.remove("CRot")
 
         # Versions of TF before 2.3.0 do not support using the special apply methods as they
         # raise an error when calculating the gradient. For versions of TF after 2.3.0,
