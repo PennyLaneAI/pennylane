@@ -617,7 +617,7 @@ class TestVarianceJacobian:
     def test_error_unsupported_grad_recipe(self, monkeypatch):
         """Test exception raised if attempting to use the second order rule for
         computing the gradient analytically of an expectation value that
-        contains an operation with an unsupported gradient recipe"""
+        contains an operation with an more than two terms in the gradient recipe"""
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
