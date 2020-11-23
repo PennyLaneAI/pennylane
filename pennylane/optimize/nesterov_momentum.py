@@ -59,16 +59,8 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         shifted_x = unflatten(shifted_x_flat, x)
 
-        if grad_fn is not None:
-            g = grad_fn  # just call the supplied grad function
-            try:
-                forward = g.forward
-            # if grad_fn is not an autograd gradient function, calculate the
-            # objective function output separately
-            except AttributeError:
-                forward = objective_fn(x)
-        else:
-            # default is autograd
-            g = get_gradient(objective_fn)  # pylint: disable=no-value-for-parameter
-            forward = g.forward
-        return g(shifted_x), forward
+        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
+        grad = g(shifted_x)
+        forward = getattr(g, "forward", None)
+
+        return grad, forward

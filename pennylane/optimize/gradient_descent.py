@@ -99,20 +99,11 @@ class GradientDescentOptimizer:
             tuple: tuple with NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
                 objective function output
         """
-        if grad_fn is not None:
-            g = grad_fn  # just call the supplied grad function
+        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
+        grad = g(x)
+        forward = getattr(g, "forward", None)
 
-            try:
-                forward = g.forward
-            # if grad_fn is not an autograd gradient function, calculate the
-            # objective function output separately
-            except AttributeError:
-                forward = objective_fn(x)
-        else:
-            # default is autograd
-            g = get_gradient(objective_fn)  # pylint: disable=no-value-for-parameter
-            forward = g.forward
-        return g(x), forward
+        return grad, forward
 
     def apply_grad(self, grad, x):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
