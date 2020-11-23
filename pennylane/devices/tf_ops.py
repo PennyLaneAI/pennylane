@@ -117,6 +117,7 @@ def MultiRZ(theta, n):
     multi_Z_rot_eigs = tf.exp(-1j * theta / 2 * pauli_eigs(n))
     return tf.convert_to_tensor(multi_Z_rot_eigs)
 
+
 def CRX(theta):
     r"""Two-qubit controlled rotation about the x axis.
 
