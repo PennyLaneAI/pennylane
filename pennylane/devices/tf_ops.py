@@ -108,7 +108,7 @@ def MultiRZ(theta, n):
 
     Args:
         theta (float): rotation angle
-        n (int): Number of wires the rotation acts on
+        n (int): number of wires the rotation acts on
 
     Returns:
         tf.Tensor[complex]: diagonal part of the MultiRZ matrix
