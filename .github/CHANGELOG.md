@@ -293,6 +293,11 @@
 
 <h3>Breaking changes</h3>
 
+* Updated the way how gradient recipes are stored for operations to accomodate
+  gradient recipe definitions involving custom multipliers and with more than
+  two terms.
+  [(#909)](https://github.com/PennyLaneAI/pennylane/pull/909)
+
 - The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
   beyond VQE. Use of ``VQECost`` is still possible but will result in a deprecation warning.
   [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
