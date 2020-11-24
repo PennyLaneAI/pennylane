@@ -278,7 +278,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("func, f_grad", list(zip(univariate_funcs, grad_uni_fns)))
     @pytest.mark.parametrize("var", [0, -3, 42])
     def test_step_and_cost_supplied_grad(self, bunch, func, var, f_grad):
-        """Test that returned cost is None if gradient function is supplied"""
+        """Test that returned cost is correct if gradient function is supplied"""
         _, res = bunch.sgd_opt.step_and_cost(func, var, grad_fn=f_grad)
         expected = func(var)
 
