@@ -178,7 +178,6 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, mocker, theta, tol):
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
-
         gate is correct."""
         spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
         dev = qml.device("default.qubit", wires=2)

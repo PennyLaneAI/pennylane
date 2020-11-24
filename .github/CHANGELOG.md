@@ -298,7 +298,7 @@
 
 * Updated how gradient recipes are stored for operations, allowing for
   gradient recipe definitions involving custom multipliers and more than two
-  terms. User defined shift values passed to a QNode apply only to two-term
+  terms. User-defined shift values passed to a QNode apply only to two-term
   parameter shift rules. Defined the gradient recipes for the `CRX`, `CRY`,
   `CRZ` and `CRot` operations.
   [(#915)](https://github.com/PennyLaneAI/pennylane/pull/915)
