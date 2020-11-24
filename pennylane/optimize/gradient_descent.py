@@ -58,8 +58,7 @@ class GradientDescentOptimizer:
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
-            tuple: tuple containing the new variable values :math:`x^{(t+1)}` and the objective
-                function output
+            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
         """
 
         g, forward = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
