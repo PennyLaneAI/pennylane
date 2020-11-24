@@ -629,7 +629,7 @@ class Operation(Operator):
         parameter-shift method.
 
         This is a tuple with one nested list per operation parameter. For
-        parameter :math:`k`, the nested list contains elements of the form
+        parameter :math:`\phi_k`, the nested list contains elements of the form
         :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
         term, resulting in a gradient recipe of
 
