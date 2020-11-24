@@ -89,14 +89,14 @@ class GradientDescentOptimizer:
 
     @staticmethod
     def compute_grad(objective_fn, x, grad_fn=None):
-        r"""Compute gradient of the objective_fn at the point x.
+        r"""Compute gradient of the objective_fn at the point x and return it along with the
+            objective function forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
             x (array): NumPy array containing the current values of the variables to be updated
-            grad_fn (function): Optional gradient function of the
-                objective function with respect to the variables ``x``.
-                If ``None``, the gradient function is computed automatically.
+            grad_fn (function): Optional gradient function of the objective function with respect to
+                the variables ``x``. If ``None``, the gradient function is computed automatically.
 
         Returns:
             tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the

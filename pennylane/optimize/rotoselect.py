@@ -93,7 +93,8 @@ class RotoselectOptimizer:
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
     def step_and_cost(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer and return the corresponding objective function value.
+        r"""Update x with one step of the optimizer and return the corresponding objective function
+        value.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
@@ -105,7 +106,8 @@ class RotoselectOptimizer:
                 operators to be used in the circuit and optimized over
 
         Returns:
-            tuple: the new variable values :math:`x^{(t+1)}`, the new generators, and the objective function output
+            tuple: the new variable values :math:`x^{(t+1)}`, the new generators, and the objective
+                function output
         """
         x_new, generators = self.step(objective_fn, x, generators)
 
