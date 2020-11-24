@@ -887,10 +887,8 @@ class TestVQE:
         mt2 = circuit.metric_tensor([p])
         assert np.allclose(mt, mt2)
 
-    def test_multiple_devices_tape_mode(self, mocker):
-        """Test that passing multiple devices to ExpvalCost works correctly in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
+    def test_multiple_devices(self, mocker):
+        """Test that passing multiple devices to ExpvalCost works correctly"""
 
         dev = [qml.device("default.qubit", wires=2), qml.device("default.mixed", wires=2)]
         spy = mocker.spy(DefaultQubit, "apply")
@@ -909,7 +907,7 @@ class TestVQE:
 
         assert np.allclose(res, exp)
 
-    def test_multiple_devices_tape_mode_opt_true(self):
+    def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are past when optimize=True."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
