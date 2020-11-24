@@ -130,7 +130,7 @@ class QubitParamShiftTape(JacobianTape):
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
-            shift=pi/2 (float): the size of the shift for two-term parameter shift rules
+            shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
@@ -181,7 +181,7 @@ class QubitParamShiftTape(JacobianTape):
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
-            shift=np.pi/2 (float): the size of the shift for two-term parameter shift rules
+            shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
