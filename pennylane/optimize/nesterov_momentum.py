@@ -47,7 +47,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
-            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
+            tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+                objective function output. If ``grad_fn`` is provided, the objective function
+                will not be evaluted and instead ``None`` will be returned.
         """
 
         x_flat = _flatten(x)
