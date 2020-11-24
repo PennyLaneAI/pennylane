@@ -67,7 +67,7 @@ analytic method of differentiation, it must satisfy an additional constraint:
 For gates that *are* supported via the analytic method, the gradient recipe
 works as follows:
 
-.. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i \in I_{k}} c_i * f(a_i * \phi_k+s_i).
+.. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i * f(a_i * \phi_k+s_i).
 
 where :math:`f` is the expectation value of an observable on a circuit that has
 been evolved by the operation being considered with parameter :math:`\phi_k`,
