@@ -2,14 +2,14 @@
 
 <h3>New features since last release</h3>
 
-* The ``ExpvalCost`` class (previously ``VQECost``) now provides observable optimization using the
-  ``optimize`` argument, resulting in potentially fewer device executions.
+* The `ExpvalCost` class (previously `VQECost`) now provides observable optimization using the
+  `optimize` argument, resulting in potentially fewer device executions.
   [(#902)](https://github.com/PennyLaneAI/pennylane/pull/902)
-  
+
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
   commuting groups and evaluating those groups on a single QNode using functionality from the
-  ``grouping`` module: 
-  
+  `grouping` module:
+
   ```python
   qml.enable_tape()
   commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
@@ -23,9 +23,9 @@
 
   params = qml.init.strong_ent_layers_uniform(3, 2)
   ```
-  
+
   Grouping these commuting observables leads to fewer device executions:
-  
+
   ```pycon
   >>> cost_opt(params)
   >>> ex_opt = dev.num_executions
@@ -89,8 +89,8 @@
 * The MultiRZ gate now has a defined generator.
   [(#912)](https://github.com/PennyLaneAI/pennylane/pull/912)
 
-* The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
-  and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
+* The CRot gate now has a `decomposition` method, which breaks the gate down into rotations
+  and CNOT gates. This allows `CRot` to be used on devices that do not natively support it.
   [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
 
 * QNodes in tape mode now support returning observables on the same wire if the observables are
@@ -99,7 +99,7 @@
   transformed to the computational basis using a shared set of single-qubit rotations.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
 
-  The following shows how to return the Pauli words ``XX`` and ``XI``:
+  The following shows how to return the Pauli words `XX` and `XI`:
 
   ```python
   qml.enable_tape()
@@ -269,8 +269,8 @@
   - `qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
   - `qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
 
-* A new function, ``qml.refresh_devices()``, has been added, allowing PennyLane to
-  rescan installed PennyLane plugins and refresh the device list. In addition, the ``qml.device``
+* A new function, `qml.refresh_devices()`, has been added, allowing PennyLane to
+  rescan installed PennyLane plugins and refresh the device list. In addition, the `qml.device`
   loader will attempt to refresh devices if the required plugin device cannot be found.
   This will result in an improved experience if installing PennyLane and plugins within
   a running Python session (for example, on Google Colab), and avoid the need to
@@ -296,8 +296,8 @@
 
 <h3>Breaking changes</h3>
 
-- The ``VQECost`` class has been renamed to ``ExpvalCost`` to reflect its general applicability
-  beyond VQE. Use of ``VQECost`` is still possible but will result in a deprecation warning.
+- The `VQECost` class has been renamed to `ExpvalCost` to reflect its general applicability
+  beyond VQE. Use of `VQECost` is still possible but will result in a deprecation warning.
   [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
 
 <h3>Documentation</h3>
@@ -329,9 +329,15 @@
 * Fixes a bug whereby binary Python operators were not properly propagating the `requires_grad`
   attribute to the output tensor.
   [(#889)](https://github.com/PennyLaneAI/pennylane/pull/889)
-  
+
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
   [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
+
+* Fixes a bug in `QuantumTape.set_parameters()`. The previous implementation assumed
+  that the `self.trainable_parms` set would always be iterated over in increasing integer
+  order. However, this is not guaranteed behaviour, and can lead to the incorrect tape parameters
+  being set if this is not the case.
+  [(#923)](https://github.com/PennyLaneAI/pennylane/pull/923)
 
 <h3>Contributors</h3>
 

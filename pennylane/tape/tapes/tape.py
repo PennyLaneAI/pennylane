@@ -704,7 +704,7 @@ class QuantumTape(AnnotatedQueue):
         [4, 1, 6]
         """
         if trainable_only:
-            iterator = zip(self.trainable_params, params)
+            iterator = zip(sorted(self.trainable_params), params)
             required_length = self.num_params
         else:
             iterator = enumerate(params)
