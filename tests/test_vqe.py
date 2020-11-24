@@ -908,7 +908,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
     def test_multiple_devices_opt_true(self):
-        """Test if a ValueError is raised when multiple devices are past when optimize=True."""
+        """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
 
