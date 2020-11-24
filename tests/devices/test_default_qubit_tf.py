@@ -47,6 +47,8 @@ from gate_data import (
     CRoty,
     CRotz,
     CRot3,
+    MultiRZ1,
+    MultiRZ2,
 )
 
 np.random.seed(42)
@@ -72,9 +74,9 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 #####################################################
 
 single_qubit = [(qml.S, S), (qml.T, T), (qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
-single_qubit_param = [(qml.PhaseShift, Rphi), (qml.RX, Rotx), (qml.RY, Roty), (qml.RZ, Rotz)]
+single_qubit_param = [(qml.PhaseShift, Rphi), (qml.RX, Rotx), (qml.RY, Roty), (qml.RZ, Rotz), (qml.MultiRZ, MultiRZ1)]
 two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP)]
-two_qubit_param = [(qml.CRX, CRotx), (qml.CRY, CRoty), (qml.CRZ, CRotz)]
+two_qubit_param = [(qml.CRX, CRotx), (qml.CRY, CRoty), (qml.CRZ, CRotz), (qml.MultiRZ, MultiRZ2)]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 
 
@@ -926,6 +928,69 @@ class TestQNodeIntegration:
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_one_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the one-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=1)
+        state = init_state(1)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0])
+            op(params[0], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, 4.213])
+    @pytest.mark.parametrize("op,func", two_qubit_param)
+    def test_two_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the two-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=2)
+        state = init_state(2)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0,1])
+            op(params[0], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_integration(self, init_state, tol):
+        """Test the integration of the two-qubit controlled rotation by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=2)
+        a = 1.7
+        b = 1.3432
+        c = -0.654
+        state = init_state(2)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0,1])
+            qml.CRot(params[0], params[1], params[2], wires=[0,1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([a,b,c]))
+        circuit(params)
+        res = dev.state
+        expected = CRot3(a, b, c) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""

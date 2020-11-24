@@ -304,6 +304,11 @@
 
 <h3>Bug fixes</h3>
 
+* The `default.qubit.tf` device is updated to handle TensorFlow objects (e.g.,
+  `tf.Variable`) as gate parameters correctly when using the `MultiRZ` and
+  `CRot` operations.
+  [(#921)](https://github.com/PennyLaneAI/pennylane/pull/921)
+
 * PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
   keyword argument to the quantum function.
   [(#903)](https://github.com/PennyLaneAI/pennylane/pull/903)

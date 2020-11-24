@@ -177,3 +177,33 @@ def CRot3(a, b, c):
             ],
         ]
     )
+
+def MultiRZ1(theta):
+    r"""Arbitrary multi Z rotation on one wire.
+
+    Args:
+        theta (float): rotation angle
+
+    Returns:
+        array: the one-wire MultiRZ matrix
+    """
+    return np.array([[np.exp(-1j * theta / 2), 0.0 + 0.0j], [0.0 + 0.0j, np.exp(1j * theta / 2)]])
+
+
+def MultiRZ2(theta):
+    r"""Arbitrary multi Z rotation on two wires.
+
+    Args:
+        theta (float): rotation angle
+
+    Returns:
+        array: the two-wire MultiRZ matrix
+    """
+    return np.array(
+        [
+            [np.exp(-1j * theta / 2), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, np.exp(1j * theta / 2), 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * theta / 2), 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * theta / 2)],
+        ]
+    )
