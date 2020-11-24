@@ -186,6 +186,8 @@ class QNGOptimizer(GradientDescentOptimizer):
                 self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
+        # since there's no way of passing a gradient function, autograd will always
+        # calculate the gradient and `forward` will never be `None`
         g, forward = self.compute_grad(qnode, x)
         x_out = self.apply_grad(g, x)
         return x_out, forward

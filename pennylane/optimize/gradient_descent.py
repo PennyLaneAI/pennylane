@@ -63,8 +63,10 @@ class GradientDescentOptimizer:
         """
 
         g, forward = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-
         x_out = self.apply_grad(g, x)
+
+        if forward is None:
+            forward = objective_fn(x)
 
         return x_out, forward
 
@@ -81,7 +83,9 @@ class GradientDescentOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_out, _ = self.step_and_cost(objective_fn, x, grad_fn=grad_fn)
+        g, _ = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
+        x_out = self.apply_grad(g, x)
+
         return x_out
 
     @staticmethod
