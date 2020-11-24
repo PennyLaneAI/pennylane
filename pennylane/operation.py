@@ -652,7 +652,7 @@ class Operation(Operator):
         a = 1
 
         # We set the default recipe following:
-        # ∂f(x) = c1*f(a1*x+s1) + c2*f(a2*x+s2)
+        # ∂f(x) = c*f(x+s) - c*f(x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
