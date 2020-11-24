@@ -471,10 +471,13 @@ class ExpvalCost:
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
         value of each observable term after applying the circuit ansatz."""
 
+        self._multiple_devices = isinstance(device, Sequence)
+        """Bool: Records if multiple devices are input"""
+
         tape_mode = qml.tape_mode_active()
         if tape_mode:
 
-            d = device[0] if isinstance(device, Sequence) else device
+            d = device[0] if self._multiple_devices else device
             w = d.wires.tolist()
 
             try:
@@ -504,7 +507,7 @@ class ExpvalCost:
                     "qml.enable_tape()"
                 )
 
-            if isinstance(device, Sequence):
+            if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
@@ -548,6 +551,10 @@ class ExpvalCost:
         Returns:
             array[float]: metric tensor
         """
+        if self._multiple_devices:
+            warnings.warn("ExpvalCost was instantiated with multiple devices. The first device "
+                          "will be used to evaluate the metric tensor.")
+
         if qml.tape_mode_active():
             return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
                 args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct

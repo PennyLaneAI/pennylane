@@ -894,18 +894,24 @@ class TestVQE:
         spy = mocker.spy(DefaultQubit, "apply")
         spy2 = mocker.spy(DefaultMixed, "apply")
 
-        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        obs = [qml.PauliZ(0), qml.PauliZ(1)]
+        h = qml.Hamiltonian([1, 1], obs)
 
-        qnodes = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev)
-        w = qml.init.strong_ent_layers_uniform(3, 2, seed=1967)
+        qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
+        w = qml.init.basic_entangler_layers_uniform(3, 2, seed=1967)
 
         res = qnodes(w)
-        exp = 0.3864767030806935
 
         spy.assert_called_once()
         spy2.assert_called_once()
 
+        mapped = qml.map(qml.templates.BasicEntanglerLayers, obs, dev)
+        exp = sum(mapped(w))
+
         assert np.allclose(res, exp)
+
+        with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
+            qnodes.metric_tensor([w])
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
