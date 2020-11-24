@@ -92,6 +92,25 @@ class RotoselectOptimizer:
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
+    def step_and_cost(self, objective_fn, x, generators):
+        r"""Update x with one step of the optimizer and return the corresponding objective function value.
+
+        Args:
+            objective_fn (function): The objective function for optimization. It must have the
+                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
+                and a list of the gates ``generators`` as inputs, returning a single value.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over
+
+        Returns:
+            tuple: the new variable values :math:`x^{(t+1)}`, the new generators, and the objective function output
+        """
+        x_new, generators = self.step(objective_fn, x, generators)
+
+        return x_new, generators, objective_fn(x, generators)
+
     def step(self, objective_fn, x, generators):
         r"""Update x with one step of the optimizer.
 
