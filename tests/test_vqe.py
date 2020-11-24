@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.devices import DefaultQubit, DefaultMixed
 
 try:
     import torch
@@ -885,6 +886,40 @@ class TestVQE:
 
         mt2 = circuit.metric_tensor([p])
         assert np.allclose(mt, mt2)
+
+    def test_multiple_devices_tape_mode(self, mocker):
+        """Test that passing multiple devices to ExpvalCost works correctly in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("This test is only intended for tape mode")
+
+        dev = [qml.device("default.qubit", wires=2), qml.device("default.mixed", wires=2)]
+        spy = mocker.spy(DefaultQubit, "apply")
+        spy2 = mocker.spy(DefaultMixed, "apply")
+
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+
+        qnodes = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev)
+        w = qml.init.strong_ent_layers_uniform(3, 2, seed=1967)
+
+        res = qnodes(w)
+        exp = 0.3864767030806935
+
+        spy.assert_called_once()
+        spy2.assert_called_once()
+
+        assert np.allclose(res, exp)
+
+    def test_multiple_devices_tape_mode_opt_true(self):
+        """Test if a ValueError is raised when multiple devices are past when optimize=True."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test is only intended for tape mode")
+
+        dev = [qml.device("default.qubit", wires=2)] * 2
+
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+
+        with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
+            qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
 
 
 @pytest.mark.usefixtures("tape_mode")
