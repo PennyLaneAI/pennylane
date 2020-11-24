@@ -96,7 +96,7 @@ class GradientDescentOptimizer:
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
-            tuple: tuple with NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+            tuple: the NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
                 objective function output
         """
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn

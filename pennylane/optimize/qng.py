@@ -168,8 +168,7 @@ class QNGOptimizer(GradientDescentOptimizer):
                 If ``None``, the metric tensor function is computed automatically.
 
         Returns:
-            tuple: tuple containing the new variable values :math:`x^{(t+1)}` and the objective
-                function output
+            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
         """
         # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
