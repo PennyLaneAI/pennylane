@@ -205,6 +205,85 @@ class TestOptimizer:
 
         assert array == pytest.approx(np.asarray(list), abs=tol)
 
+    @pytest.mark.parametrize(
+        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
+    )
+    def test_step_and_cost_autograd_sgd(self, bunch, circuit, var):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        gradient-descent optimizer"""
+        _, res = bunch.sgd_opt.step_and_cost(circuit, var)
+        expected = circuit(var)
+
+        assert np.all(res == expected)
+
+    @pytest.mark.parametrize(
+        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
+    )
+    def test_step_and_cost_autograd_nesterov(self, bunch, circuit, var):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        Nesterov momentum optimizer"""
+        _, res = bunch.nesmom_opt.step_and_cost(circuit, var)
+        expected = circuit(var)
+
+        assert np.all(res == expected)
+
+    @pytest.mark.parametrize(
+        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
+    )
+    def test_step_and_cost_autograd_rotosolve(self, bunch, circuit, var):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        Rotosolve optimizer"""
+        _, res = bunch.rotosolve_opt.step_and_cost(circuit, var)
+        expected = circuit(var)
+
+        assert np.all(res == expected)
+
+    @pytest.mark.parametrize('params', [[1.7, 2.2],
+                                         [-1.42, 0.1],
+                                         [0.05, -0.8]])
+    def test_step_and_cost_autograd_rotoselect(self, bunch, params):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        Rotoselect momentum optimizer"""
+        generators = [qml.RY, qml.RX]
+        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        bunch.rotoselect_opt.possible_generators = possible_generators
+
+        dev = qml.device("default.qubit", analytic=True, wires=2)
+
+        def ansatz(params, generators):
+            generators[0](params[0], wires=0)
+            generators[1](params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliX(0))
+
+        def cost_fn(params, generators):
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
+            return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
+
+        _, _, res = bunch.rotoselect_opt.step_and_cost(cost_fn, params, generators)
+        expected = cost_fn(params, generators)
+
+        assert np.all(res == expected)
+
+    @pytest.mark.parametrize("func, f_grad", list(zip(univariate_funcs, grad_uni_fns)))
+    @pytest.mark.parametrize("var", [0, -3, 42])
+    def test_step_and_cost_supplied_grad(self, bunch, func, var, f_grad):
+        """Test that returned cost is correct if gradient function is supplied"""
+        _, res = bunch.sgd_opt.step_and_cost(func, var, grad_fn=f_grad)
+        expected = func(var)
+
+        assert np.all(res == expected)
+
     @pytest.mark.parametrize('x_start', x_vals)
     def test_gradient_descent_optimizer_univar(self, x_start, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly

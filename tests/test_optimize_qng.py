@@ -48,6 +48,25 @@ class TestExceptions:
 class TestOptimize:
     """Test basic optimization integration"""
 
+    def test_step_and_cost_autograd(self, tol):
+        """Test that the correct cost is returned via the step_and_cost method for the QNG
+        optimizer"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        _, res = opt.step_and_cost(circuit, var)
+
+        expected = circuit(var)
+        assert np.all(res == expected)
+
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,
