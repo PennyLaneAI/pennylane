@@ -468,7 +468,7 @@ where
 
 * :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'``
   method. This is a tuple with one nested list per operation parameter. For
-  parameter :math:`k`, the nested list contains elements of the form
+  parameter :math:`\phi_k`, the nested list contains elements of the form
   :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
 
   .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i * f(a_i * \phi_k+s_i),
