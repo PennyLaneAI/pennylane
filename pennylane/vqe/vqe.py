@@ -552,8 +552,10 @@ class ExpvalCost:
             array[float]: metric tensor
         """
         if self._multiple_devices:
-            warnings.warn("ExpvalCost was instantiated with multiple devices. The first device "
-                          "will be used to evaluate the metric tensor.")
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. The first device "
+                "will be used to evaluate the metric tensor."
+            )
 
         if qml.tape_mode_active():
             return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
