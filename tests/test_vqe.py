@@ -918,7 +918,7 @@ class TestVQE:
         if not qml.tape_mode_active():
             pytest.skip("This test is only intended for tape mode")
 
-        dev = [qml.device("default.qubit", wires=2)] * 2
+        dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
