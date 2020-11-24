@@ -498,6 +498,29 @@ class TestParameters:
             params[4],
         ]
 
+    def test_setting_parameters_unordered(self, make_tape, monkeypatch):
+        """Test that an 'unordered' trainable_params set does not affect
+        the setting of parameter values"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        with monkeypatch.context() as m:
+            m.setattr(tape, "_trainable_params", {3, 1})
+            tape.set_parameters(new_params)
+
+            assert tape.get_parameters(trainable_only=True) == [
+                new_params[0],
+                new_params[1],
+            ]
+
+            assert tape.get_parameters(trainable_only=False) == [
+                params[0],
+                new_params[0],
+                params[2],
+                new_params[1],
+                params[4],
+            ]
+
     def test_setting_all_parameters(self, make_tape):
         """Test that all parameters are correctly modified after construction"""
         tape, params = make_tape
