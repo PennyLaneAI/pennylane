@@ -232,7 +232,7 @@ class TestOptimizer:
     )
     def test_step_and_cost_autograd_rotosolve(self, bunch, circuit, var):
         """Test that the correct cost is returned via the step_and_cost method for the
-        Nesterov momentum optimizer"""
+        Rotosolve optimizer"""
         _, res = bunch.rotosolve_opt.step_and_cost(circuit, var)
         expected = circuit(var)
 
@@ -243,7 +243,7 @@ class TestOptimizer:
                                          [0.05, -0.8]])
     def test_step_and_cost_autograd_rotoselect(self, bunch, params):
         """Test that the correct cost is returned via the step_and_cost method for the
-        Nesterov momentum optimizer"""
+        Rotoselect momentum optimizer"""
         generators = [qml.RY, qml.RX]
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         bunch.rotoselect_opt.possible_generators = possible_generators

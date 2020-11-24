@@ -295,7 +295,7 @@
   ```
 
 * Gradient-based optimizers now have a `step_and_cost` method that returns
-  both the next step as well as the objective function (cost) output.
+  both the next step as well as the objective (cost) function output.
   [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
 
   ```pycon
