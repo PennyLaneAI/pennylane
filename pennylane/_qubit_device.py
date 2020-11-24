@@ -95,6 +95,13 @@ class QubitDevice(Device):
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
 
+    # TODO new ops
+    _allclose = staticmethod(np.allclose)
+    _asnumpy = staticmethod(np.asarray)
+    _norm = staticmethod(np.linalg.norm)
+    _zeros = staticmethod(np.zeros)
+    _ravel_multi_index = staticmethod(np.ravel_multi_index)
+
     @staticmethod
     def _scatter(indices, array, new_dimensions):
         new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
@@ -401,7 +408,7 @@ class QubitDevice(Device):
         """
         number_of_states = 2 ** self.num_wires
 
-        rotated_prob = self.analytic_probability()
+        rotated_prob = self._asnumpy(self.analytic_probability())
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
         return QubitDevice.states_to_binary(samples, self.num_wires)
