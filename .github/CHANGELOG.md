@@ -86,6 +86,9 @@
 
 <h3>Improvements</h3>
 
+* The MultiRZ gate now has a defined generator.
+  [(#912)](https://github.com/PennyLaneAI/pennylane/pull/912)
+
 * The CRot gate now has a ``decomposition`` method, which breaks the gate down into rotations
   and CNOT gates. This allows ``CRot`` to be used on devices that do not natively support it.
   [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
@@ -309,6 +312,11 @@
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* The `default.qubit.tf` device is updated to handle TensorFlow objects (e.g.,
+  `tf.Variable`) as gate parameters correctly when using the `MultiRZ` and
+  `CRot` operations.
+  [(#921)](https://github.com/PennyLaneAI/pennylane/pull/921)
 
 * PennyLane tensor objects are now unwrapped in BaseQNode when passed as a
   keyword argument to the quantum function.
