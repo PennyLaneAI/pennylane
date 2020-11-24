@@ -303,7 +303,7 @@
   Previously, `Operation.grad_recipe` was restricted to two-term parameter-shift formulas.
   With this change, the gradient recipe now contains elements of the form
   <img src="https://render.githubusercontent.com/render/math?math=[c_i, a_i, s_i]">, resulting in a gradient recipe of
-  <img src="https://render.githubusercontent.com/render/math?math=\frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i * f(a_i * \phi_k+s_i)">.
+  <img src="https://render.githubusercontent.com/render/math?math=\frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i * f(a_i * \phi_k%2Bs_i )">.
 
   As this is a breaking change, all custom operations with defined gradient recipes must be
   updated to continue working with PennyLane 0.13. Note though that if `grad_recipe = None`, the
