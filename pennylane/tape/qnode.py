@@ -131,7 +131,7 @@ class QNode:
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {self.INTERFACE_MAP.values()}."
+                f"one of {list(self.INTERFACE_MAP.keys())}."
             )
 
         if not isinstance(device, Device):
