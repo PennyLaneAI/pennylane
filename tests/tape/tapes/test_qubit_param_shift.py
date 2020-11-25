@@ -151,31 +151,60 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="CR gates do not satisfy the parameter-shift rule")
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
-        """Test gradient of controlled RX gate"""
+        """Test gradient of controlled rotation gates"""
         dev = qml.device("default.qubit", wires=2)
         b = 0.123
 
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
-            qml.Hadamard(wires=0)
             G(b, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
-        tape.trainable_params = {2}
+        tape.trainable_params = {1}
 
         res = tape.execute(dev)
-        assert np.allclose(res, np.cos(b / 2), atol=tol, rtol=0)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
 
         grad = tape.jacobian(dev, method="analytic")
-        expected = -np.sin(-b / 2) / 2
+        expected = np.sin(b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
         # compare to finite differences
-        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
-        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+        numeric_val = tape.jacobian(dev, method="numeric")
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient(self, mocker, theta, tol):
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
+        dev = qml.device("default.qubit", wires=2)
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+        with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        res = tape.execute(dev)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = tape.jacobian(dev, method="analytic")
+        expected = np.array([[
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+            0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+        ]])
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+        # compare to finite differences
+        numeric_val = tape.jacobian(dev, method="numeric")
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, mocker, tol):
         """Tests that the parameter-shift rule agrees with the first and second

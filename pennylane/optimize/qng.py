@@ -154,8 +154,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer.
+    def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
+        """Update x with one step of the optimizer and return the corresponding objective function value.
 
         Args:
             qnode (QNode): the QNode for optimization
@@ -168,7 +168,7 @@ class QNGOptimizer(GradientDescentOptimizer):
                 If ``None``, the metric tensor function is computed automatically.
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}`
+            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
         """
         # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
@@ -186,8 +186,32 @@ class QNGOptimizer(GradientDescentOptimizer):
                 self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
-        g = self.compute_grad(qnode, x)
+        # The QNGOptimizer.step does not permit passing an external gradient function.
+        # Autograd will always calculate the gradient and `forward` will never be `None`.
+        g, forward = self.compute_grad(qnode, x)
         x_out = self.apply_grad(g, x)
+        return x_out, forward
+
+    # pylint: disable=arguments-differ
+    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
+        """Update x with one step of the optimizer.
+
+        Args:
+            qnode (QNode): the QNode for optimization
+            x (array): NumPy array containing the current values of the variables to be updated
+            recompute_tensor (bool): Whether or not the metric tensor should
+                be recomputed. If not, the metric tensor from the previous
+                optimization step is used.
+            metric_tensor_fn (function): Optional metric tensor function
+                with respect to the variables ``x``.
+                If ``None``, the metric tensor function is computed automatically.
+
+        Returns:
+            array: the new variable values :math:`x^{(t+1)}`
+        """
+        x_out, _ = self.step_and_cost(
+            qnode, x, recompute_tensor=recompute_tensor, metric_tensor_fn=metric_tensor_fn
+        )
         return x_out
 
     def apply_grad(self, grad, x):

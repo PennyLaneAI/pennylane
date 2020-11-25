@@ -824,6 +824,14 @@ class MultiRZ(DiagonalOperation):
 
         return multi_Z_rot_matrix
 
+    _generator = None
+
+    @property
+    def generator(self):
+        if self._generator is None:
+            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
+        return self._generator
+
     @property
     def matrix(self):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
@@ -1002,6 +1010,14 @@ class PauliRot(Operation):
                 RX(-np.pi / 2, wires=[wire])
 
 
+# Four term gradient recipe for controlled rotations
+c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
+c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+a = np.pi / 2
+b = 3 * np.pi / 4
+four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
+
+
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
@@ -1048,6 +1064,8 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @classmethod
@@ -1115,6 +1133,8 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @classmethod
@@ -1180,6 +1200,8 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
     @classmethod
@@ -1248,6 +1270,7 @@ class CRot(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe * 3
 
     @classmethod
     def _matrix(cls, *params):
