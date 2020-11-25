@@ -322,6 +322,43 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_identities_terms_to_qubit_operator():
+    """Test that tensor products that contain Identity instances are handled
+    correctly by the _terms_to_qubit_operator function.
+
+    A decomposition of the following observable was used:
+    [[1 0 0 0]
+     [0 2 0 0]
+     [0 0 3 0]
+     [0 0 0 4]]
+    """
+    coeffs = [2.5, -0.5, -1.0]
+    obs_list = [qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
+            qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])]
+
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
+
+
+def test_terms_to_qubit_operator_no_decomp():
+    """Test the _terms_to_qubit_operator function with custom wires."""
+    coeffs = np.array([0.1, 0.2])
+    ops = [
+        qml.operation.Tensor(qml.PauliX(wires=['w0'])),
+        qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2']))
+    ]
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(['w0', 'w1', 'w2'])))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    expected = '0.1 [X0] +0.2 [Y0 Z2]'
+    assert op_str == expected
+
+
 @pytest.mark.parametrize(
     ("mol_name", "terms_ref", "expected_cost"),
     [
