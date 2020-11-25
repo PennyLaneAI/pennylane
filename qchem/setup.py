@@ -22,7 +22,7 @@ requirements = [
     "openfermion",
     "openfermionpyscf; platform_system != 'Windows'",
     "openfermionpsi4",
-    "pyscf<1.7.4; platform_system != 'Windows'",
+    "pyscf==1.7.2; platform_system != 'Windows'",
 ]
 
 info = {
