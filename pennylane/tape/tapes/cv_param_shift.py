@@ -235,19 +235,20 @@ class CVParamShiftTape(QubitParamShiftTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        recipe = op.grad_recipe[p_idx]
-        c, s = (0.5, np.pi / 2) if recipe is None else recipe
-
+        param_shift = op.get_parameter_shift(p_idx)
         shift = np.zeros_like(params)
-        shift[idx] = s
 
-        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_forward.set_parameters(params + shift)
+        coeffs = []
+        tapes = []
+        for c, _a, s in param_shift:
 
-        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_backward.set_parameters(params - shift)
+            shift[idx] = s
 
-        tapes = [shifted_forward, shifted_backward]
+            # shifted parameter values
+            shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted_tape.set_parameters(params + shift)
+            coeffs.append(c)
+            tapes.append(shifted_tape)
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index idx via the
@@ -260,10 +261,7 @@ class CVParamShiftTape(QubitParamShiftTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            shifted_forward = np.array(results[0])
-            shifted_backward = np.array(results[1])
-
-            return c * (shifted_forward - shifted_backward)
+            return np.dot(coeffs, results)
 
         return tapes, processing_fn
 
@@ -290,22 +288,33 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         dev_wires = options["dev_wires"]
 
-        recipe = op.grad_recipe[p_idx]
-        c, s = (0.5, np.pi / 2) if recipe is None else recipe
+        param_shift = op.get_parameter_shift(p_idx)
+
+        if len(param_shift) != 2:
+            # The 2nd order CV parameter-shift rule only accepts two-term shifts
+            raise NotImplementedError(
+                "Taking the analytic gradient for order-2 operators is "
+                "unsupported for {op} which contains a parameter with a "
+                "gradient recipe of more than two terms."
+            )
+
+        c1, a1, s1 = param_shift[0]
+        c2, a2, s2 = param_shift[1]
 
         shift = np.zeros_like(params)
-        shift[idx] = s
+        shift[idx] = s1
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z
-        self.set_parameters(params + shift)
+        self.set_parameters(a1 * params + shift)
         Z2 = op.heisenberg_tr(dev_wires)
 
-        self.set_parameters(params - shift)
+        shift[idx] = s2
+        self.set_parameters(a2 * params + shift)
         Z1 = op.heisenberg_tr(dev_wires)
 
         # derivative of the operation
-        Z = (Z2 - Z1) * c
+        Z = Z2 * c1 + Z1 * c2
 
         self.set_parameters(params)
         Z0 = op.heisenberg_tr(dev_wires, inverse=True)

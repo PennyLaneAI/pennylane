@@ -84,6 +84,11 @@
       return qml.density_matrix(wires=[1])  # wire 0 is traced out
   ```
 
+* The controlled rotation operations `CRX`, `CRY`, `CRZ`, and `CRot`, now have
+  parameter-shift gradients defined, allowing for analytic gradients on hardware
+  without decomposition.
+  [(#915)](https://github.com/PennyLaneAI/pennylane/pull/915)
+  
 <h3>Improvements</h3>
 
 * The MultiRZ gate now has a defined generator.
@@ -305,6 +310,20 @@
 
 <h3>Breaking changes</h3>
 
+* Updated how parameter-shift gradient recipes are defined for operations, allowing for
+  gradient recipes that are specified as an arbitrary number of terms.
+  [(#909)](https://github.com/PennyLaneAI/pennylane/pull/909)
+
+  Previously, `Operation.grad_recipe` was restricted to two-term parameter-shift formulas.
+  With this change, the gradient recipe now contains elements of the form
+  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
+  :math:`\frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k + s_i )`.
+
+  As this is a breaking change, all custom operations with defined gradient recipes must be
+  updated to continue working with PennyLane 0.13. Note though that if `grad_recipe = None`, the
+  default gradient recipe remains unchanged, and corresponds to the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]`
+  and :math:`[c_1, a_1, s_1]=[-1/2, 1, -\pi/2]` for every parameter.
+
 - The `VQECost` class has been renamed to `ExpvalCost` to reflect its general applicability
   beyond VQE. Use of `VQECost` is still possible but will result in a deprecation warning.
   [(#913)](https://github.com/PennyLaneAI/pennylane/pull/913)
@@ -347,6 +366,9 @@
   order. However, this is not guaranteed behaviour, and can lead to the incorrect tape parameters
   being set if this is not the case.
   [(#923)](https://github.com/PennyLaneAI/pennylane/pull/923)
+
+* Fixes broken error message if a QNode is instantiated with an unknown exception.
+  [(#930)](https://github.com/PennyLaneAI/pennylane/pull/930)
 
 <h3>Contributors</h3>
 
