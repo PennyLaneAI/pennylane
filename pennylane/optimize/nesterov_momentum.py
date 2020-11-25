@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Nesterov momentum optimizer"""
-import autograd
+from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
 from .momentum import MomentumOptimizer
 
@@ -36,18 +36,20 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     """
 
     def compute_grad(self, objective_fn, x, grad_fn=None):
-        r"""Compute gradient of the objective_fn at at
-        the shifted point :math:`(x - m\times\text{accumulation})`.
+        r"""Compute gradient of the objective_fn at at the shifted point :math:`(x -
+        m\times\text{accumulation})` and return it along with the objective function
+        forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
             x (array): NumPy array containing the current values of the variables to be updated
-            grad_fn (function): Optional gradient function of the
-                objective function with respect to the variables ``x``.
-                If ``None``, the gradient function is computed automatically.
+            grad_fn (function): Optional gradient function of the objective function with respect to
+                the variables ``x``. If ``None``, the gradient function is computed automatically.
 
         Returns:
-            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
+            tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+                objective function output. If ``grad_fn`` is provided, the objective function
+                will not be evaluted and instead ``None`` will be returned.
         """
 
         x_flat = _flatten(x)
@@ -59,9 +61,8 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         shifted_x = unflatten(shifted_x_flat, x)
 
-        if grad_fn is not None:
-            g = grad_fn(shifted_x)  # just call the supplied grad function
-        else:
-            # default is autograd
-            g = autograd.grad(objective_fn)(shifted_x)  # pylint: disable=no-value-for-parameter
-        return g
+        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
+        grad = g(shifted_x)
+        forward = getattr(g, "forward", None)
+
+        return grad, forward

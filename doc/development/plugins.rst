@@ -468,18 +468,13 @@ where
 
 * :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'``
   method. This is a tuple with one nested list per operation parameter. For
-  parameter :math:`k`, the nested list contains elements of the form
-  :math:`[c_i, a_i, s_i]` where :math:`i \in I_{k}` is the index of the term,
-  resulting in a gradient recipe of
+  parameter :math:`\phi_k`, the nested list contains elements of the form
+  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
 
-  .. math:: \frac{\partial}{\partial\phi_k}O = \sum_{i \in I_{k}} c_i * O(a_i * \phi_k+s_i).
+  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k+s_i),
 
-  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
-
-  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
-
-  which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
-  :math:`O(\phi_k)`.
+  where :math:`f` is the expectation value of an observable on a circuit that has been evolved by
+  the operation being considered with parameter :math:`\phi_k`.
 
   Note that if ``grad_recipe = None``, the default gradient recipe containing
   the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
