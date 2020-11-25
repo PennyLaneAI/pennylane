@@ -607,3 +607,52 @@ class TestQubitGradient:
                            match="Circuits that include sampling can not be differentiated."):
             grad_fn = autograd.jacobian(circuit)
             grad_fn(1.0)
+
+
+@pytest.mark.usefixtures("tape_mode")
+class TestFourTermParameterShifts:
+    """Tests for quantum gradients that require a 4-term shift formula"""
+
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_gradient(self, G, tol):
+        """Test gradient of controlled RX gate"""
+        dev = qml.device("default.qubit", wires=2)
+        b = 0.123
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(b):
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            G(b, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(b)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
+
+        grad = qml.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient(self, theta, tol):
+        """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        dev = qml.device("default.qubit", wires=2)
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(a, b, c):
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(a, b, c)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = qml.grad(circuit)(a, b, c)
+        expected = np.array([[
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+            0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+        ]])
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
