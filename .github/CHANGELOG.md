@@ -4,12 +4,12 @@
 
 <h4>Automatically optimize the number of measurements</h4>
 
-* QNodes in tape mode now support returning observables on the same wire if the observables are
+* QNodes in tape mode now support returning observables on the same wire whenever the observables are
   qubit-wise commuting Pauli words. Qubit-wise commuting observables can be evaluated with a
   *single* device run as they are diagonal in the same basis, via a shared set of single-qubit rotations.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
 
-  The following example shows a singles QNode returning the expectation values of
+  The following example shows a single QNode returning the expectation values of
   the qubit-wise commuting Pauli words `XX` and `XI`:
 
   ```python
@@ -83,7 +83,7 @@
 
   With this change, gradient recipes can now be of the form
   :math:`\frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k + s_i )`,
-  and are no longer restricted to two-term shifts with identical (but negated) shift values.
+  and are no longer restricted to two-term shifts with identical (but opposite in sign) shift values.
 
   As a result, PennyLane now supports native analytic quantum gradients for the
   controlled rotation operations `CRX`, `CRY`, `CRZ`, and `CRot`. This allows for parameter-shift
@@ -137,7 +137,7 @@
       return qml.density_matrix(wires=[1])  # wire 0 is traced out
   ```
 
-* Adds the square root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
+* Adds the square-root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
   dev = qml.device("default.qubit", wires=1)
@@ -151,7 +151,7 @@
 * Two new hardware-efficient particle-conserving templates have been implemented
   to perform VQE-based quantum chemistry simulations. The new templates apply
   several layers of the particle-conserving entanglers proposed in Figs. 2a and 2b
-  of the article by Barkoutsos *et al*. in [arXiv:1805.04340](https://arxiv.org/abs/1805.04340)
+  of Barkoutsos *et al*., [arXiv:1805.04340](https://arxiv.org/abs/1805.04340)
   [(#875)](https://github.com/PennyLaneAI/pennylane/pull/875)
   [(#876)](https://github.com/PennyLaneAI/pennylane/pull/876)
 
@@ -159,7 +159,7 @@
 
 * The `QuantumTape` class now contains basic resource estimation functionality. The method
   `tape.get_resources()` returns a dictionary with a list of the constituent operations and the
-  number of times they were run. Similarly, `tape.get_depth()` computes the circuit depth.
+  number of times they appear in the circuit. Similarly, `tape.get_depth()` computes the circuit depth.
   [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
 
   ```pycon
@@ -219,12 +219,12 @@
 
 * When using `grad_fn = qml.grad(cost)` to compute the gradient of a cost function with the Autograd
   interface, the value of the intermediate forward pass is now available via the `grad_fn.forward`
-  property:
-  [(#914)](https://github.com/PennyLaneAI/pennylane/pull/914)
+  property
+  [(#914)](https://github.com/PennyLaneAI/pennylane/pull/914):
 
   ```python
   def cost_fn(x, y):
-      return 2*np.sin(x[0])*np.exp(-x[1]) + x[0]**3 + np.cos(y)
+      return 2 * np.sin(x[0]) * np.exp(-x[1]) + x[0] ** 3 + np.cos(y)
 
   params = np.array([0.1, 0.5], requires_grad=True)
   data = np.array(0.65, requires_grad=False)
@@ -243,7 +243,7 @@
   >>> params, cost = opt.step_and_cost(cost_fn, params)
   ```
 
-* PennyLane provides a new, experimental module `qml.proc` which provides framework agnostic
+* PennyLane provides a new experimental module `qml.proc` which provides framework-agnostic processing 
   functions for array and tensor manipulations.
   [(#886)](https://github.com/PennyLaneAI/pennylane/pull/886)
 
@@ -298,8 +298,8 @@
   [(#908)](https://github.com/PennyLaneAI/pennylane/pull/908)
 
 * The classical processing in the `MottonenStatePreparation` template has been largely
-  rewritten to use dense matrices and tensor manipulations where ever possible.
-  This is a preparation to support differentiation through the template in future.
+  rewritten to use dense matrices and tensor manipulations wherever possible.
+  This is in preparation to support differentiation through the template in the future.
   [(#864)](https://github.com/PennyLaneAI/pennylane/pull/864)
 
 * Device-based caching has replaced QNode caching. Caching is now accessed by passing a
@@ -313,7 +313,7 @@
   >>> dev = qml.device("default.qubit", wires=2, cache=10)
   ```
 
-* The `Operation`, `Tensor`, and `MeasurementProcess` classes now has the `__copy__` special method
+* The `Operation`, `Tensor`, and `MeasurementProcess` classes now have the `__copy__` special method
   defined. This allows us to ensure that, when a shallow copy is performed of an operation, the
   mutable list storing the operation parameters is *also* shallow copied. Both the old operation and
   the copied operation will continue to share the same parameter data,

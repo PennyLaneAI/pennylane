@@ -17,7 +17,7 @@
   - The methodology to build many-body observables in PL-QChem is more consistent.
 
   - There is no longer a need to keep track of the contribution due to core orbitals
-    when an active space is defined. This is now handle internally.
+    when an active space is defined. This is now handled internally.
 
 <h3>Contributors</h3>
 
