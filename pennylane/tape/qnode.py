@@ -397,12 +397,6 @@ class QNode:
 
         stop_at = self.device.operations
 
-        # Hotfix that allows controlled rotations to return the correct gradients
-        # when using the parameter shift rule.
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
-
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
