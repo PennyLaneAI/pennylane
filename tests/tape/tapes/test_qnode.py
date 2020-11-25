@@ -612,7 +612,7 @@ class TestQNodeCollection:
         yield
         qml.disable_tape()
 
-    def test_multi_thread(self):
+    def test_multi_thread(self, enable_tape_mode):
         n_qubits = 4
         n_batches = 5
         dev = qml.device("default.qubit", wires=n_qubits)
