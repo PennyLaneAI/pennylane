@@ -385,8 +385,9 @@
   if the observables are not qubit-wise commuting Pauli words.
   [(#882)](https://github.com/PennyLaneAI/pennylane/pull/882)
 
-* Inverses of common gates can now be applied using array/tensor manipulation tricks. The
-  following gates are affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
+* Fixes a bug in `default.qubit` whereby inverses of common gates were not being applied
+  via efficient gate-specific methods, instead falling back to matrix-vector multiplication.
+  The following gates were affected: `PauliX`, `PauliY`, `PauliZ`, `Hadamard`, `SWAP`, `S`,
   `T`, `CNOT`, `CZ`.
   [(#872)](https://github.com/PennyLaneAI/pennylane/pull/872)
 
