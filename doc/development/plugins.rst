@@ -471,7 +471,7 @@ where
   parameter :math:`\phi_k`, the nested list contains elements of the form
   :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
 
-  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i * f(a_i * \phi_k+s_i),
+  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k+s_i),
 
   where :math:`f` is the expectation value of an observable on a circuit that has been evolved by
   the operation being considered with parameter :math:`\phi_k`.
