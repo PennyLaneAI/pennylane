@@ -614,16 +614,19 @@ class TestQNodeCollection:
         qml.enable_tape()
 
         def circuit(inputs, weights):
-            qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-            qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+            for index, input in enumerate(inputs):
+                qml.RY(input, wires=index)
+            for index in range(n_qubits - 1):
+                qml.CNOT(wires=(index, index + 1))
+            for index, weight in enumerate(weights):
+                qml.RX(weight, wires=index)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
-        n_layers = 1
-        weight_shapes = {"weights": (n_layers, n_qubits)}
+        weight_shapes = {"weights": (n_qubits)}
 
         qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
-        x = np.random.rand((n_qubits)).astype(np.float64)
-        p = np.random.rand(*weight_shapes["weights"]).astype(np.float64)
+        x = np.random.rand(n_qubits).astype(np.float64)
+        p = np.random.rand(weight_shapes["weights"]).astype(np.float64)
         try:
             for _ in range(10):
                 qnode(x, p, parallel=True)
