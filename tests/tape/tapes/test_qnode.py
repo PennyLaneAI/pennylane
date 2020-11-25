@@ -623,7 +623,6 @@ class TestQNodeCollection:
         n_batches = 5
         dev = qml.device("default.qubit", wires=n_qubits)
 
-        qml.enable_tape()
 
         def circuit(inputs, weights):
             for index, input in enumerate(inputs):
