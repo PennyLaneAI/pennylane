@@ -367,6 +367,9 @@
   being set if this is not the case.
   [(#923)](https://github.com/PennyLaneAI/pennylane/pull/923)
 
+* Fixes broken error message if a QNode is instantiated with an unknown exception.
+  [(#930)](https://github.com/PennyLaneAI/pennylane/pull/930)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
