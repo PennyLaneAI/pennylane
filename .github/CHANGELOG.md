@@ -84,6 +84,11 @@
       return qml.density_matrix(wires=[1])  # wire 0 is traced out
   ```
 
+* The controlled rotation operations `CRX`, `CRY`, `CRZ`, and `CRot`, now have
+  parameter-shift gradients defined, allowing for analytic gradients on hardware
+  without decomposition.
+  [(#915)](https://github.com/PennyLaneAI/pennylane/pull/915)
+  
 <h3>Improvements</h3>
 
 * The MultiRZ gate now has a defined generator.
