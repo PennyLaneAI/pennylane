@@ -16,6 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+from collections import Sequence
 import itertools
 import warnings
 
@@ -470,21 +471,26 @@ class ExpvalCost:
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
         value of each observable term after applying the circuit ansatz."""
 
-        wires = device.wires.tolist()
+        self._multiple_devices = isinstance(device, Sequence)
+        """Bool: Records if multiple devices are input"""
 
         tape_mode = qml.tape_mode_active()
         if tape_mode:
+
+            d = device[0] if self._multiple_devices else device
+            w = d.wires.tolist()
+
             try:
                 qml.disable_tape()
 
-                @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+                @qml.qnode(d, interface=interface, diff_method=diff_method, **kwargs)
                 def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
                     """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
                     short-term fix for ExpvalCost, we create a non-tape mode QNode just for
                     calculation of the metric tensor. In doing so, we reintroduce the same
                     restrictions of the old QNode but allow users to access new functionality
                     such as measurement grouping and batch execution of the gradient."""
-                    ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                    ansatz(*qnode_args, wires=w, **qnode_kwargs)
                     return qml.expval(qml.PauliZ(0))
 
                 self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
@@ -501,12 +507,15 @@ class ExpvalCost:
                     "qml.enable_tape()"
                 )
 
+            if self._multiple_devices:
+                raise ValueError("Using multiple devices is not supported when optimize=True")
+
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(*qnode_args, obs, **qnode_kwargs):
                 """Converting ansatz into a full circuit including measurements"""
-                ansatz(*qnode_args, wires=wires, **qnode_kwargs)
+                ansatz(*qnode_args, wires=w, **qnode_kwargs)
                 return [qml.expval(o) for o in obs]
 
             def cost_fn(*qnode_args, **qnode_kwargs):
@@ -542,6 +551,12 @@ class ExpvalCost:
         Returns:
             array[float]: metric tensor
         """
+        if self._multiple_devices:
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
+                "will be used to evaluate the metric tensor."
+            )
+
         if qml.tape_mode_active():
             return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
                 args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
