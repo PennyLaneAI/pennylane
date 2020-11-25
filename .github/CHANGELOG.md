@@ -84,6 +84,11 @@
       return qml.density_matrix(wires=[1])  # wire 0 is traced out
   ```
 
+* The controlled rotation operations `CRX`, `CRY`, `CRZ`, and `CRot`, now have
+  parameter-shift gradients defined, allowing for analytic gradients on hardware
+  without decomposition.
+  [(#915)](https://github.com/PennyLaneAI/pennylane/pull/915)
+  
 <h3>Improvements</h3>
 
 * The MultiRZ gate now has a defined generator.
@@ -294,7 +299,30 @@
   grad_fn.forward  # the cost function value
   ```
 
+* Gradient-based optimizers now have a `step_and_cost` method that returns
+  both the next step as well as the objective (cost) function output.
+  [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
+
+  ```pycon
+  >>> opt = qml.GradientDescentOptimizer()
+  >>> params, cost = opt.step_and_cost(cost_fn, params)
+  ```
+
 <h3>Breaking changes</h3>
+
+* Updated how parameter-shift gradient recipes are defined for operations, allowing for
+  gradient recipes that are specified as an arbitrary number of terms.
+  [(#909)](https://github.com/PennyLaneAI/pennylane/pull/909)
+
+  Previously, `Operation.grad_recipe` was restricted to two-term parameter-shift formulas.
+  With this change, the gradient recipe now contains elements of the form
+  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
+  :math:`\frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k + s_i )`.
+
+  As this is a breaking change, all custom operations with defined gradient recipes must be
+  updated to continue working with PennyLane 0.13. Note though that if `grad_recipe = None`, the
+  default gradient recipe remains unchanged, and corresponds to the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]`
+  and :math:`[c_1, a_1, s_1]=[-1/2, 1, -\pi/2]` for every parameter.
 
 - The `VQECost` class has been renamed to `ExpvalCost` to reflect its general applicability
   beyond VQE. Use of `VQECost` is still possible but will result in a deprecation warning.
@@ -343,8 +371,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
-Romain Moyard, Maria Schuld, Antal Száva.
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Shumpei Kobayashi, Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 
