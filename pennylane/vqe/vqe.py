@@ -553,7 +553,7 @@ class ExpvalCost:
         """
         if self._multiple_devices:
             warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. The first device "
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
                 "will be used to evaluate the metric tensor."
             )
 
