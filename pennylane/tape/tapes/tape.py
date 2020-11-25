@@ -278,7 +278,7 @@ class QuantumTape(AnnotatedQueue):
 
             QueuingContext.append(self)
             return super().__enter__()
-        except Exception as e:
+        except Exception as _:
             QuantumTape._lock.release()
             raise
 
