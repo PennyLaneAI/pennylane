@@ -606,6 +606,12 @@ class TestDecorator:
 class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 
+    @pytest.fixture
+    def enable_tape_mode(self):
+        qml.enable_tape()
+        yield
+        qml.disable_tape()
+
     def test_multi_thread(self):
         n_qubits = 4
         n_batches = 5
