@@ -631,7 +631,10 @@ class TestQNodeCollection:
 
         weight_shapes = {"weights": (n_qubits)}
 
-        qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
+        try:
+            qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
+        except Exception as e:
+            pytest.fail("QNodeCollection cannot be instantiated")
         x = np.random.rand(n_qubits).astype(np.float64)
         p = np.random.rand(weight_shapes["weights"]).astype(np.float64)
         try:
