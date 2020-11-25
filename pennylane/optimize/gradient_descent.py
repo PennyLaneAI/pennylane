@@ -13,7 +13,7 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
-import autograd
+from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
 
 
@@ -47,6 +47,28 @@ class GradientDescentOptimizer:
         """
         self._stepsize = stepsize
 
+    def step_and_cost(self, objective_fn, x, grad_fn=None):
+        """Update x with one step of the optimizer and return the corresponding objective function value.
+
+        Args:
+            objective_fn (function): the objective function for optimization
+            x (array): NumPy array containing the current values of the variables to be updated
+            grad_fn (function): Optional gradient function of the
+                objective function with respect to the variables ``x``.
+                If ``None``, the gradient function is computed automatically.
+
+        Returns:
+            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+        """
+
+        g, forward = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
+        x_out = self.apply_grad(g, x)
+
+        if forward is None:
+            forward = objective_fn(x)
+
+        return x_out, forward
+
     def step(self, objective_fn, x, grad_fn=None):
         """Update x with one step of the optimizer.
 
@@ -60,33 +82,32 @@ class GradientDescentOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-
-        g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-
+        g, _ = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
         x_out = self.apply_grad(g, x)
 
         return x_out
 
     @staticmethod
     def compute_grad(objective_fn, x, grad_fn=None):
-        r"""Compute gradient of the objective_fn at the point x.
+        r"""Compute gradient of the objective_fn at the point x and return it along with the
+            objective function forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
             x (array): NumPy array containing the current values of the variables to be updated
-            grad_fn (function): Optional gradient function of the
-                objective function with respect to the variables ``x``.
-                If ``None``, the gradient function is computed automatically.
+            grad_fn (function): Optional gradient function of the objective function with respect to
+                the variables ``x``. If ``None``, the gradient function is computed automatically.
 
         Returns:
-            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
+            tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+                objective function output. If ``grad_fn`` is provided, the objective function
+                will not be evaluted and instead ``None`` will be returned.
         """
-        if grad_fn is not None:
-            g = grad_fn(x)  # just call the supplied grad function
-        else:
-            # default is autograd
-            g = autograd.grad(objective_fn)(x)  # pylint: disable=no-value-for-parameter
-        return g
+        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
+        grad = g(x)
+        forward = getattr(g, "forward", None)
+
+        return grad, forward
 
     def apply_grad(self, grad, x):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
