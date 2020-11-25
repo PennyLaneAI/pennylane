@@ -337,8 +337,8 @@
   This allows the parameters of the copied operation to be modified, without mutating
   the parameters of the original operation.
 
-* The `QuantumTape.copy` method has been tweaked so that:
-  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
+* The `QuantumTape.copy` method has been tweaked so that
+  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840):
 
   - Optionally, the tape's operations are shallow copied in addition to the tape by passing the
     `copy_operations=True` boolean flag. This allows the copied tape's parameters to be mutated
