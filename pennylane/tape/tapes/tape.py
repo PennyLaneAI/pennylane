@@ -267,26 +267,32 @@ class QuantumTape(AnnotatedQueue):
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        if not QueuingContext.recording():
-            # if the tape is the first active queuing context
-            # monkeypatch the operations to support the new queuing context
-            with contextlib.ExitStack() as stack:
-                for mock in mock_operations():
-                    stack.enter_context(mock)
-                self._stack = stack.pop_all()
+        try:
+            if not QueuingContext.recording():
+                # if the tape is the first active queuing context
+                # monkeypatch the operations to support the new queuing context
+                with contextlib.ExitStack() as stack:
+                    for mock in mock_operations():
+                        stack.enter_context(mock)
+                    self._stack = stack.pop_all()
 
-        QueuingContext.append(self)
-        return super().__enter__()
+            QueuingContext.append(self)
+            return super().__enter__()
+        except Exception as e:
+            QuantumTape._lock.release()
+            raise
 
     def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
+        try:
+            super().__exit__(exception_type, exception_value, traceback)
 
-        if not QueuingContext.recording():
-            # remove the monkeypatching
-            self._stack.__exit__(exception_type, exception_value, traceback)
+            if not QueuingContext.recording():
+                # remove the monkeypatching
+                self._stack.__exit__(exception_type, exception_value, traceback)
 
-        self._process_queue()
-        QuantumTape._lock.release()
+            self._process_queue()
+        finally:
+            QuantumTape._lock.release()
 
     @property
     def interface(self):
