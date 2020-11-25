@@ -294,6 +294,15 @@
   grad_fn.forward  # the cost function value
   ```
 
+* Gradient-based optimizers now have a `step_and_cost` method that returns
+  both the next step as well as the objective (cost) function output.
+  [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
+
+  ```pycon
+  >>> opt = qml.GradientDescentOptimizer()
+  >>> params, cost = opt.step_and_cost(cost_fn, params)
+  ```
+
 <h3>Breaking changes</h3>
 
 - The `VQECost` class has been renamed to `ExpvalCost` to reflect its general applicability
@@ -343,8 +352,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Nathan Killoran, Shumpei Kobayashi,
-Romain Moyard, Maria Schuld, Antal Száva.
+Thomas Bromley, Christina Lee, Olivia Di Matteo, Anthony Hayes, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Shumpei Kobayashi, Romain Moyard, Maria Schuld, Antal Száva.
 
 # Release 0.12.0 (current release)
 
