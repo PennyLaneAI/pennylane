@@ -584,7 +584,9 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
-        qubit_indexed_wires = _process_wires(wires,)
+        qubit_indexed_wires = _process_wires(
+            wires,
+        )
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
@@ -593,9 +595,6 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     q_op = QubitOperator()
     for coeff, op in zip(coeffs, ops):
 
-        # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
-        pauli_names = [s[-1] for s in op.name]
-
         extra_obsvbs = set(op.name) - {"PauliX", "PauliY", "PauliZ", "Identity"}
         if extra_obsvbs != set():
             raise ValueError(
@@ -603,13 +602,18 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
                 + "but also got {}.".format(extra_obsvbs)
             )
 
-        if op.name == ["Identity"] and len(op.wires) == 1:
+        # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
+        pauli_names = [s[-1] if s != "Identity" else s for s in op.name]
+
+        all_identity = all(obs.name == "Identity" for obs in op.obs)
+        if (op.name == ["Identity"] and len(op.wires) == 1) or all_identity:
             term_str = ""
         else:
             term_str = " ".join(
                 [
                     "{}{}".format(pauli, qubit_indexed_wires.index(wire))
                     for pauli, wire in zip(pauli_names, op.wires)
+                    if pauli != "Identity"
                 ]
             )
 
