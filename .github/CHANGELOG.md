@@ -314,11 +314,12 @@
   ```
 
 * The `Operation`, `Tensor`, and `MeasurementProcess` classes now have the `__copy__` special method
-  defined. This allows us to ensure that, when a shallow copy is performed of an operation, the
-  mutable list storing the operation parameters is *also* shallow copied. Both the old operation and
-  the copied operation will continue to share the same parameter data,
+  defined.
   [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
 
+  This allows us to ensure that, when a shallow copy is performed of an operation, the
+  mutable list storing the operation parameters is *also* shallow copied. Both the old operation and
+  the copied operation will continue to share the same parameter data,
   ```pycon
   >>> import copy
   >>> op = qml.RX(0.2, wires=0)
