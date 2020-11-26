@@ -37,11 +37,13 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/code.png" width="800px">
 </p>
+
+
 
 ## Key Features
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
 - *Device independent*. Access quantum hardware and simulators from **Xanadu Strawberry Fields**,
   **IBM Q**, **Google Cirq**, **Rigetti Forest**, and **Microsoft QDK**. [See the full list of
