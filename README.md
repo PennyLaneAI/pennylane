@@ -103,7 +103,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 
 ## Contributing to PennyLane
 
-We welcome contributions — simply fork the PennyLane repository, and then make a [pull
+We welcome contributions—simply fork the PennyLane repository, and then make a [pull
 request](https://help.github.com/articles/about-pull-requests/) containing your contribution. All
 contributers to PennyLane will be listed as authors on the releases. All users who contribute
 significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane
