@@ -38,11 +38,11 @@
 </p>
 
 <p align="center">
-<a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
-href="https://en.wikipedia.org/wiki/Differentiable_programming)">differentiable
-programming</a> of quantum computers.
+  <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
+  href="https://en.wikipedia.org/wiki/Differentiable_programming)">differentiable
+  programming</a> of quantum computers.
 
-**Train a quantum computer the same way as a neural network.**
+  <strong>Train a quantum computer the same way as a neural network.</strong>
 </p>
 
 
