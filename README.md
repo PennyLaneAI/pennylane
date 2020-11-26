@@ -40,8 +40,6 @@
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/code.png" width="800px">
 </p>
 
-
-
 ## Key Features
 
 
@@ -67,6 +65,8 @@ python -m pip install pennylane
 ```
 
 ## Getting started
+
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
 For an introduction to quantum machine learning, we have several guides and resources available on
 PennyLane's [quantum machine learning page](https://pennylane.ai/qml/):
