@@ -643,7 +643,7 @@ class TestTorchGradients:
 
         div(a, b).backward()
         assert a.grad == 1 / b
-        assert b.grad == -a / b ** 2
+        assert torch.isclose(b.grad, -a / b ** 2)
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
     def test_composition_qnodes_gradient(self, qnodes, x, y):

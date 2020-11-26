@@ -400,6 +400,10 @@
 
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
   [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
+  
+* Fixes a bug where multi-threaded execution of `QNodeCollection` sometimes fails
+  because of simultaneous queuing. This is fixed by adding thread locking during queuing.
+  [(#910)](https://github.com/PennyLaneAI/pennylane/pull/918)
 
 * Fixes a bug in `QuantumTape.set_parameters()`. The previous implementation assumed
   that the `self.trainable_parms` set would always be iterated over in increasing integer
