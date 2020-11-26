@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import QNodeCollection
 from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
@@ -605,3 +606,43 @@ class TestDecorator:
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert func.qtape is not old_tape
+
+
+class TestQNodeCollection:
+    """Unittests for the QNodeCollection"""
+
+    @pytest.fixture
+    def enable_tape_mode(self):
+        qml.enable_tape()
+        yield
+        qml.disable_tape()
+
+    def test_multi_thread(self, enable_tape_mode):
+        """Test that multi-threaded queuing in tape mode works correctly"""
+        n_qubits = 4
+        n_batches = 5
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+
+        def circuit(inputs, weights):
+            for index, input in enumerate(inputs):
+                qml.RY(input, wires=index)
+            for index in range(n_qubits - 1):
+                qml.CNOT(wires=(index, index + 1))
+            for index, weight in enumerate(weights):
+                qml.RX(weight, wires=index)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+        weight_shapes = {"weights": (n_qubits)}
+
+        try:
+            qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
+        except Exception as e:
+            pytest.fail("QNodeCollection cannot be instantiated")
+        x = np.random.rand(n_qubits).astype(np.float64)
+        p = np.random.rand(weight_shapes["weights"]).astype(np.float64)
+        try:
+            for _ in range(10):
+                qnode(x, p, parallel=True)
+        except:
+            pytest.fail("Multi-threading on QuantumTape failed")

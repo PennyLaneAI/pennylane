@@ -18,6 +18,7 @@ This module contains the base quantum tape.
 import contextlib
 import copy
 from collections import Counter
+from threading import RLock
 
 import numpy as np
 
@@ -220,6 +221,9 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
     """
 
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
+
     def __init__(self, name=None):
         super().__init__()
         self.name = name
@@ -262,25 +266,33 @@ class QuantumTape(AnnotatedQueue):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
-        if not QueuingContext.recording():
-            # if the tape is the first active queuing context
-            # monkeypatch the operations to support the new queuing context
-            with contextlib.ExitStack() as stack:
-                for mock in mock_operations():
-                    stack.enter_context(mock)
-                self._stack = stack.pop_all()
+        QuantumTape._lock.acquire()
+        try:
+            if not QueuingContext.recording():
+                # if the tape is the first active queuing context
+                # monkeypatch the operations to support the new queuing context
+                with contextlib.ExitStack() as stack:
+                    for mock in mock_operations():
+                        stack.enter_context(mock)
+                    self._stack = stack.pop_all()
 
-        QueuingContext.append(self)
-        return super().__enter__()
+            QueuingContext.append(self)
+            return super().__enter__()
+        except Exception as _:
+            QuantumTape._lock.release()
+            raise
 
     def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
+        try:
+            super().__exit__(exception_type, exception_value, traceback)
 
-        if not QueuingContext.recording():
-            # remove the monkeypatching
-            self._stack.__exit__(exception_type, exception_value, traceback)
+            if not QueuingContext.recording():
+                # remove the monkeypatching
+                self._stack.__exit__(exception_type, exception_value, traceback)
 
-        self._process_queue()
+            self._process_queue()
+        finally:
+            QuantumTape._lock.release()
 
     @property
     def interface(self):
