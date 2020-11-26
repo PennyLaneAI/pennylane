@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/banner.png" width="100%">
+
 <p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
@@ -147,3 +149,5 @@ If you are doing research using PennyLane, please cite [our paper](https://arxiv
 ## License
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
+
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/banner2.png" width="100%">
