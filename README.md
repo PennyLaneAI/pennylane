@@ -25,7 +25,7 @@
   </a>
   <!-- PyPI -->
   <a href="https://pypi.org/project/PennyLane">
-    <img src="https://img.shields.io/pypi/pyversions/PennyLane.svg?style=flat-square" />
+    <img src="https://img.shields.io/pypi/v/PennyLane.svg?style=flat-square" />
   </a>
   <!-- Forum -->
   <a href="https://discuss.pennylane.ai">
@@ -38,8 +38,9 @@
 </p>
 
 <p align="center">
-[PennyLane](https://pennylane.ai) is a cross-platform Python library for [differentiable
-programming](https://en.wikipedia.org/wiki/Differentiable_programming) of quantum computers.
+<a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
+href="https://en.wikipedia.org/wiki/Differentiable_programming)">differentiable
+programming</a> of quantum computers.
 
 **Train a quantum computer the same way as a neural network.**
 </p>
