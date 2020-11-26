@@ -44,13 +44,16 @@
 
 ## Key Features
 
-
 - *Device independent*. Access quantum hardware and simulators from **Xanadu Strawberry Fields**,
-  **IBM Q**, **Google Cirq**, **Rigetti Forest**, and **Microsoft QDK**. [See the full list of
-  PennyLane plugins](https://pennylane.ai/plugins.html).
+  **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
+  Plus, rapidly prototype with an array of built-in quantum simulators. [See the full list of
+  PennyLane devices and plugins](https://pennylane.ai/plugins.html).
 
-- *Bring quantum hardware to PyTorch and TensorFlow*. Build hybrid models by connecting quantum
+- *Brings quantum hardware to machine learning*. Build hybrid models by connecting quantum
   hardware to **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
+
+- *Flexibility*. Swap quantum devices with a single line, and combine quantum hardware from multiple
+  vendors in the same model.
 
 - *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 
