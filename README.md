@@ -39,13 +39,15 @@
   <strong>Train a quantum computer the same way as a neural network.</strong>
 </p>
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="500px" align="center">
+<p align="center">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="500px">
+</p>
 
 ## Key Features
 
 - *Device independent*. Access quantum hardware and simulators from **Xanadu Strawberry Fields**,
-  **IBM Q**, **Google Cirq**, **Rigetti Forest**, and **Microsoft QDK**. For a full list of
-  PennyLane plugins, see [the PennyLane website](https://pennylane.ai/plugins.html).
+  **IBM Q**, **Google Cirq**, **Rigetti Forest**, and **Microsoft QDK**. [See the full list of
+  PennyLane plugins](https://pennylane.ai/plugins.html).
 
 - *Bring quantum hardware to PyTorch and TensorFlow*. Build hybrid models by connecting quantum
   hardware to **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
@@ -67,22 +69,13 @@ python -m pip install pennylane
 ## Getting started
 
 For an introduction to quantum machine learning, we have several guides and resources available on
-PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
+PennyLane's [quantum machine learning page](https://pennylane.ai/qml/):
 
-* [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html) Understand what
-  quantum computing means for machine learning.
-
-* [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html). Take a dive into quantum
-  machine learning with fully-coded implementations of major works.
-
-* [Frequently asked questions](https://pennylane.ai/faq.html). Get answers to your burning
-  questions.
-
-* [Key concepts of QML](https://pennylane.ai/qml/glossary.html). A glossary of key ideas for quantum
-  machine learning and optimization.
-
-* [QML videos](https://pennylane.ai/qml/videos.html). A selection of curated expert videos
-  discussing various aspects of quantum machine learning.
+* [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html)
+* [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html)
+* [Frequently asked questions](https://pennylane.ai/faq.html)
+* [Key concepts of QML](https://pennylane.ai/qml/glossary.html)
+* [QML videos](https://pennylane.ai/qml/videos.html)
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
 guides](https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html) to using PennyLane,
@@ -90,7 +83,7 @@ and detailed developer guides on [how to write your
 own](https://pennylane.readthedocs.io/en/stable/development/plugins.html) PennyLane-compatible
 quantum device.
 
-## Tutorials and demonstration
+## Tutorials and demonstrations
 
 Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms using
 PennyLane and near-term quantum hardware on our [demonstrations
