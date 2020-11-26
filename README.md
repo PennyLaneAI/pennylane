@@ -71,7 +71,7 @@ python -m pip install pennylane
 
 ## Getting started
 
-For an introduction to quantum machine learning, we have several guides and resources available on
+For an introduction to quantum machine learning, guides and resources are available on
 PennyLane's [quantum machine learning page](https://pennylane.ai/qml/):
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
@@ -95,7 +95,7 @@ PennyLane and near-term quantum hardware on our [demonstrations
 page](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstations.html">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/qml/master/_static/readme_panel3.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/demos.png" width="900px">
 </a>
 
 All demonstrations are fully executable, and can be downloaded as Jupyter notebooks and Python
@@ -130,7 +130,7 @@ If you are having issues, please let us know by posting the issue on our GitHub 
 We also have a [PennyLane discussion forum](https://discuss.pennylane.ai)—come join the community
 and chat with the PennyLane team.
 
-We are committed to providing a friendly, safe, and welcoming environment for all.
+Note that we are committed to providing a friendly, safe, and welcoming environment for all.
 Please read and respect the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ## Authors
