@@ -39,7 +39,7 @@
   <strong>Train a quantum computer the same way as a neural network.</strong>
 </p>
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="500px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="500px" align="center">
 
 ## Key Features
 
