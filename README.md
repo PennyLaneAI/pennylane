@@ -57,8 +57,8 @@
 - *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 
 - *Batteries included*. Built-in tools for **quantum machine learning**, **optimization**, and
-  **quantum chemistry**. Rapidly prototype with built-in quantum simulators with backpropagation
-  support.
+  **quantum chemistry**. Rapidly prototype using the built-in quantum simulators with
+  backpropagation support.
 
 ## Installation
 
