@@ -45,20 +45,17 @@
 
 ## Key Features
 
-- *Brings quantum hardware to machine learning*. Support for hybrid quantum and classical models;
-  connect quantum hardware with **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
+- *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
-- *Device independent*. The same quantum circuit can be run on different quantum backends. Install
-  [plugins](https://pennylane.ai/plugins.html) to access even more devices, including Strawberry
-  Fields, IBM Q, Google Cirq, Rigetti Forest, Qulacs, Pasqal, Honeywell, and more.
 
-- *Flexibility*. Swap quantum devices with a single line, and combine quantum hardware from multiple
-  vendors in the same model.
+- *Device independent*. Run the same quantum circuit on different quantum backends. Install
+  [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
+  Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
 
 - *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 
 - *Batteries included*. Built-in tools for **quantum machine learning**, **optimization**, and
-  **quantum chemistry**. Rapidly prototype using the built-in quantum simulators with
+  **quantum chemistry**. Rapidly prototype using built-in quantum simulators with
   backpropagation support.
 
 ## Installation
@@ -73,7 +70,7 @@ python -m pip install pennylane
 ## Getting started
 
 For an introduction to quantum machine learning, guides and resources are available on
-PennyLane's [quantum machine learning page](https://pennylane.ai/qml/):
+PennyLane's [quantum machine learning hub](https://pennylane.ai/qml/):
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
@@ -91,8 +88,7 @@ quantum device.
 
 ## Tutorials and demonstrations
 
-Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms using
-PennyLane and near-term quantum hardware on our [demonstrations
+Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms on our [demonstrations
 page](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstations.html">
