@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/dilution.png" width="100px" align="left">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/dilution.png" width="100px" align="right">
 
 <p align="center">
   <a href="https://pennylane.ai">
@@ -35,13 +35,15 @@
   <a href="https://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
   </a>
+</p>
 
+<p align="center">
 [PennyLane](https://pennylane.ai) is a cross-platform Python library for [differentiable
 programming](https://en.wikipedia.org/wiki/Differentiable_programming) of quantum computers.
 
 **Train a quantum computer the same way as a neural network.**
-
 </p>
+
 
 
 
