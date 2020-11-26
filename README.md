@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://pennylane.ai">
-    <img width=60% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/doc/_static/pennylane_thin.png">
+    <img width=60% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
   </a>
 </p>
 
@@ -35,6 +35,8 @@
   </a>
 </p>
 
+
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/dilution.png" width="200px" align="left">
 
 [PennyLane](https://pennylane.ai) is a cross-platform Python library for [differentiable
 programming](https://en.wikipedia.org/wiki/Differentiable_programming) of quantum computers.
