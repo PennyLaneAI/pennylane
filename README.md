@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://pennylane.ai">
-    <img width=70% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
+    <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
   </a>
 </p>
 
@@ -14,10 +14,6 @@
   <!-- CodeCov -->
   <a href="https://codecov.io/gh/PennyLaneAI/pennylane">
     <img src="https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square" />
-  </a>
-  <!-- Codefactor -->
-  <a href="https://www.codefactor.io/repository/github/pennylaneai/pennylane">
-    <img src="https://img.shields.io/codefactor/grade/github/PennyLaneAI/pennylane/master?logo=codefactor&style=flat-square" />
   </a>
   <!-- ReadTheDocs -->
   <a href="https://pennylane.readthedocs.io">
@@ -31,27 +27,21 @@
   <a href="https://discuss.pennylane.ai">
     <img src="https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?logo=discourse&style=flat-square" />
   </a>
-  <!-- License -->
-  <a href="https://www.apache.org/licenses/LICENSE-2.0">
-    <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
-  </a>
 </p>
 
 <p align="center">
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
   href="https://en.wikipedia.org/wiki/Differentiable_programming)">differentiable
   programming</a> of quantum computers.
+</p>
 
+<p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
 </p>
 
-
-
-
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="500px">
 
 ## Key Features
-
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="300px" align="right">
 
 - *Device independent*.
   Access quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
