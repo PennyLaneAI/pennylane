@@ -1,5 +1,3 @@
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/dilution.png" width="100px" align="right">
-
 <p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
@@ -26,6 +24,10 @@
   <!-- Forum -->
   <a href="https://discuss.pennylane.ai">
     <img src="https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?logo=discourse&style=flat-square" />
+  </a>
+  <!-- License -->
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">
+    <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
   </a>
 </p>
 
@@ -66,10 +68,10 @@ python -m pip install pennylane
 
 ## Getting started
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
-
 For an introduction to quantum machine learning, we have several guides and resources available on
 PennyLane's [quantum machine learning page](https://pennylane.ai/qml/):
+
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
 * [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html)
 * [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html)
