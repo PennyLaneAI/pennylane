@@ -1,8 +1,4 @@
-<p align="center">
-
 ![PennyLane](https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png)
-
-</p>
 
 <p align="center">
   <!-- Tests (GitHub actions) -->
@@ -32,10 +28,12 @@
 </p>
 
 <p align="center">
-
 [PennyLane](https://pennylane.ai) is a cross-platform Python library for [differentiable programming](https://en.wikipedia.org/wiki/Differentiable_programming) of quantum computers.
+</p>
 
+<p align="center">
 **Train a quantum computer the same way as a neural network.**
+</p>
 
 </p>
 
