@@ -90,7 +90,7 @@ quantum device.
 Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms on our [demonstrations
 page](https://pennylane.ai/qml/demonstrations.html).
 
-<a href="https://pennylane.ai/qml/demonstations.html">
+<a href="https://pennylane.ai/qml/demonstrations.html">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/demos.png" width="900px">
 </a>
 
@@ -104,7 +104,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull
 request](https://help.github.com/articles/about-pull-requests/) containing your contribution. All
-contributers to PennyLane will be listed as authors on the releases. All users who contribute
+contributors to PennyLane will be listed as authors on the releases. All users who contribute
 significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane
 arXiv paper.
 
@@ -113,7 +113,7 @@ projects or applications built on PennyLane.
 
 See our [contributions
 page](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CONTRIBUTING.md) and our
-[developers hub](https://pennylane.readthedocs.io/en/stable/development/guide.html) for more
+[developer hub](https://pennylane.readthedocs.io/en/stable/development/guide.html) for more
 details.
 
 ## Support
