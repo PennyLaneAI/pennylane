@@ -39,13 +39,13 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/jigsaw.png" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/jigsaw.png" width="700px">
 </p>
 
 
 ## Key Features
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/code.png" width="400px" align="right">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
 - *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
@@ -73,7 +73,7 @@ python -m pip install pennylane
 For an introduction to quantum machine learning, guides and resources are available on
 PennyLane's [quantum machine learning hub](https://pennylane.ai/qml/):
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
 * [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html)
 * [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html)
@@ -93,7 +93,7 @@ Take a deeper dive into quantum machine learning by exploring cutting-edge algor
 page](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstrations.html">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/demos.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
 All demonstrations are fully executable, and can be downloaded as Jupyter notebooks and Python
