@@ -39,11 +39,13 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/readme/code.gif" width="100%">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/jigsaw.png" width="700px">
 </p>
 
 
 ## Key Features
+
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/update-readme/doc/_static/code.png" width="400px" align="right">
 
 - *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
