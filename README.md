@@ -33,7 +33,7 @@
 
 <p align="center">
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
-  href="https://en.wikipedia.org/wiki/Differentiable_programming)">differentiable
+  href="https://en.wikipedia.org/wiki/Differentiable_programming">differentiable
   programming</a> of quantum computers.
 </p>
 
