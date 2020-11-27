@@ -48,7 +48,8 @@ class GradientDescentOptimizer:
         self._stepsize = stepsize
 
     def step_and_cost(self, objective_fn, x, grad_fn=None):
-        """Update x with one step of the optimizer and return the corresponding objective function value.
+        """Update x with one step of the optimizer and return the corresponding objective
+        function value prior to the step.
 
         Args:
             objective_fn (function): the objective function for optimization
@@ -59,6 +60,7 @@ class GradientDescentOptimizer:
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+                prior to the step
         """
 
         g, forward = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
