@@ -77,8 +77,8 @@ class RotosolveOptimizer:
     # pylint: disable=too-few-public-methods
 
     def step_and_cost(self, objective_fn, x):
-        r"""Update x with one step of the optimizer and return the corresponding objective function
-        value.
+        r"""Update x with one step of the optimizer and return the corresponding objective
+        function value prior to the step.
 
         Args:
             objective_fn (function): The objective function for optimization. It should take a
@@ -89,6 +89,7 @@ class RotosolveOptimizer:
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+                prior to the step
         """
         x_new = self.step(objective_fn, x)
 

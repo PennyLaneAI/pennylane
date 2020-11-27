@@ -155,7 +155,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.lam = lam
 
     def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer and return the corresponding objective function value.
+        """Update x with one step of the optimizer and return the corresponding objective
+        function value prior to the step.
 
         Args:
             qnode (QNode): the QNode for optimization
@@ -169,6 +170,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+                prior to the step
         """
         # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
