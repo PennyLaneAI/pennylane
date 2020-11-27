@@ -1,4 +1,4 @@
-# Release 0.13.0-dev (development release)
+# Release 0.13.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -243,7 +243,7 @@
   >>> params, cost = opt.step_and_cost(cost_fn, params)
   ```
 
-* PennyLane provides a new experimental module `qml.proc` which provides framework-agnostic processing 
+* PennyLane provides a new experimental module `qml.proc` which provides framework-agnostic processing
   functions for array and tensor manipulations.
   [(#886)](https://github.com/PennyLaneAI/pennylane/pull/886)
 
@@ -400,7 +400,7 @@
 
 * Fixes a bug which prevents `TorchLayer` from doing `backward` when CUDA is enabled.
   [(#899)](https://github.com/PennyLaneAI/pennylane/pull/899)
-  
+
 * Fixes a bug where multi-threaded execution of `QNodeCollection` sometimes fails
   because of simultaneous queuing. This is fixed by adding thread locking during queuing.
   [(#910)](https://github.com/PennyLaneAI/pennylane/pull/918)
@@ -422,7 +422,7 @@ Juan Miguel Arrazola, Thomas Bromley, Christina Lee, Alain Delgado Gran, Olivia 
 Hayes, Theodor Isacsson, Josh Izaac, Soran Jahangiri, Nathan Killoran, Shumpei Kobayashi, Romain
 Moyard, Zeyue Niu, Maria Schuld, Antal Száva.
 
-# Release 0.12.0 (current release)
+# Release 0.12.0
 
 <h3>New features since last release</h3>
 

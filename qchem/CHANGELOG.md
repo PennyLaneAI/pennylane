@@ -19,6 +19,12 @@
   - There is no longer a need to keep track of the contribution due to core orbitals
     when an active space is defined. This is now handled internally.
 
+<h3>Bug fixes</h3>
+
+* The `qchem._terms_to_qubit_operator` function is now updated to handle tensor products with
+  `Identity` observables.
+  [(#928)](https://github.com/PennyLaneAI/pennylane/pull/928)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
