@@ -592,6 +592,16 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     else:
         qubit_indexed_wires = all_wires
 
+    def get_wire_ind(wire):
+        """Auxiliary function that keeps the qubit number if the wire has an
+        integer label. Otherwise gets the index of the wire from the wire
+        labels."""
+        wire = wire.tolist()[0]
+        if isinstance(wire, int):
+            return wire
+
+        return qubit_indexed_wires.index(wire)
+
     q_op = QubitOperator()
     for coeff, op in zip(coeffs, ops):
 
@@ -611,7 +621,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
         else:
             term_str = " ".join(
                 [
-                    "{}{}".format(pauli, qubit_indexed_wires.index(wire))
+                    "{}{}".format(pauli, get_wire_ind(wire))
                     for pauli, wire in zip(pauli_names, op.wires)
                     if pauli != "Identity"
                 ]

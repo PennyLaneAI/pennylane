@@ -343,6 +343,27 @@ def test_identities_terms_to_qubit_operator():
     op_str = op_str.replace('\n','')
     assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
 
+def test_higher_qubit_number():
+    """Test that for an integer wire we use the integer itself."""
+    coeffs = [1.0]
+    obs_list = [qml.operation.Tensor(qml.PauliZ(4))]
+
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    assert op_str == "1.0 [Z4]"
+
+def test_higher_qubit_number():
+    """Test that for a custom wire we use the index of the wire."""
+    coeffs = [1.0]
+    obs_list = [qml.operation.Tensor(qml.PauliZ('a'))]
+
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    assert op_str == "1.0 [Z0]"
 
 def test_terms_to_qubit_operator_no_decomp():
     """Test the _terms_to_qubit_operator function with custom wires."""
