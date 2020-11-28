@@ -86,18 +86,8 @@ class AutogradInterface(AnnotatedQueue):
 
         Unlike in :class:`~.JacobianTape`, we also set the private attribute
         ``self._all_parameter_values``.
-
-        Since :meth:`~.get_parameters` **always** calls ``_update_trainable_params``, we access this
-        private attribute there. This allows the :meth:`~.get_parameters` method to avoid performing
-        a redundant parameter extraction.
         """
-        params = []
-
-        for p_idx in self._par_info:
-            op = self._par_info[p_idx]["op"]
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
-
+        params = self.get_parameters(trainable_only=False, return_arraybox=True)
         trainable_params = set()
 
         for idx, p in enumerate(params):
@@ -107,16 +97,17 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         self._all_parameter_values = params
 
-    def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
-        self._update_trainable_params()
-        params = self._all_parameter_values
+    def get_parameters(self, trainable_only=True, return_arraybox=False):  # pylint: disable=missing-function-docstring
+        params = []
+        iterator = self.trainable_params if trainable_only else self._par_info
 
-        if trainable_only:
-            params = [
-                p
-                for idx, p in enumerate(self._all_parameter_values)
-                if idx in self.trainable_params
-            ]
+        for p_idx in iterator:
+            op = self._par_info[p_idx]["op"]
+            op_idx = self._par_info[p_idx]["p_idx"]
+            params.append(op.data[op_idx])
+
+        if return_arraybox:
+            return params
 
         return autograd.builtins.list(params)
 
@@ -126,7 +117,13 @@ class AutogradInterface(AnnotatedQueue):
         params = [p.item() if p.shape == tuple() else p for p in params]
         params = autograd.builtins.tuple(params)
 
+        # unwrap constant parameters
+        all_params_unwrapped = [p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values]
+
+        # evaluate the tape
+        self.set_parameters(all_params_unwrapped, trainable_only=False)
         res = self.execute_device(params, device=device)
+        self.set_parameters(self._all_parameter_values, trainable_only=False)
 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
