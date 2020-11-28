@@ -18,6 +18,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+Josh Izaac
+
 # Release 0.13.0 (current release)
 
 <h3>New features since last release</h3>
