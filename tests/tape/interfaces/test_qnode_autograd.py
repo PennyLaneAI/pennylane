@@ -28,7 +28,7 @@ class TestQNode:
 
     def test_nondiff_param_unwrapping(self, dev_name, diff_method, mocker):
         """Test that non-differentiable parameters are correctly unwrapped
-        to NumPy ndarrays"""
+        to NumPy ndarrays or floats (if 0-dimensional)"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
