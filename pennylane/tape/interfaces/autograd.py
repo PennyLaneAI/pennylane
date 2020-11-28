@@ -108,7 +108,7 @@ class AutogradInterface(AnnotatedQueue):
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
 
-return params if return_arraybox else autograd.builtins.list(params)
+        return params if return_arraybox else autograd.builtins.list(params)
 
     @autograd.extend.primitive
     def _execute(self, params, device):
