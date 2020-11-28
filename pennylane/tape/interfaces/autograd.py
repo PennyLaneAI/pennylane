@@ -97,7 +97,9 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         self._all_parameter_values = params
 
-    def get_parameters(self, trainable_only=True, return_arraybox=False):  # pylint: disable=missing-function-docstring
+    def get_parameters(
+        self, trainable_only=True, return_arraybox=False
+    ):  # pylint: disable=missing-function-docstring
         params = []
         iterator = self.trainable_params if trainable_only else self._par_info
 
@@ -118,7 +120,9 @@ class AutogradInterface(AnnotatedQueue):
         params = autograd.builtins.tuple(params)
 
         # unwrap constant parameters
-        all_params_unwrapped = [p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values]
+        all_params_unwrapped = [
+            p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
+        ]
 
         # evaluate the tape
         self.set_parameters(all_params_unwrapped, trainable_only=False)
