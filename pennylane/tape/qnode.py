@@ -112,6 +112,7 @@ class QNode:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
+        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
     **Example**
 
@@ -130,7 +131,7 @@ class QNode:
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {self.INTERFACE_MAP.values()}."
+                f"one of {list(self.INTERFACE_MAP.keys())}."
             )
 
         if not isinstance(device, Device):
@@ -395,12 +396,6 @@ class QNode:
         self.qtape.jacobian_options = self.diff_options
 
         stop_at = self.device.operations
-
-        # Hotfix that allows controlled rotations to return the correct gradients
-        # when using the parameter shift rule.
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0

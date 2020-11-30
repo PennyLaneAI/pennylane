@@ -322,6 +322,43 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_identities_terms_to_qubit_operator():
+    """Test that tensor products that contain Identity instances are handled
+    correctly by the _terms_to_qubit_operator function.
+
+    A decomposition of the following observable was used:
+    [[1 0 0 0]
+     [0 2 0 0]
+     [0 0 3 0]
+     [0 0 0 4]]
+    """
+    coeffs = [2.5, -0.5, -1.0]
+    obs_list = [qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
+            qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])]
+
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
+
+
+def test_terms_to_qubit_operator_no_decomp():
+    """Test the _terms_to_qubit_operator function with custom wires."""
+    coeffs = np.array([0.1, 0.2])
+    ops = [
+        qml.operation.Tensor(qml.PauliX(wires=['w0'])),
+        qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2']))
+    ]
+    op_str = str(qchem._terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(['w0', 'w1', 'w2'])))
+
+    # Remove new line characters
+    op_str = op_str.replace('\n','')
+    expected = '0.1 [X0] +0.2 [Y0 Z2]'
+    assert op_str == expected
+
+
 @pytest.mark.parametrize(
     ("mol_name", "terms_ref", "expected_cost"),
     [
@@ -352,7 +389,7 @@ def test_not_xyz_terms_to_qubit_operator():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `convert_observable()` in qchem integrates with `VQECost()` in pennylane"""
+    r"""Test if `convert_observable()` in qchem integrates with `ExpvalCost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
@@ -375,7 +412,7 @@ def test_integration_observable_to_vqe_cost(
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
-    dummy_cost = qml.VQECost(dummy_ansatz, vqe_observable, dev)
+    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -397,7 +434,7 @@ def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose()` works with `convert_observable()`
-    to generate `VQECost()`"""
+    to generate `ExpvalCost()`"""
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
@@ -424,7 +461,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = qml.VQECost(dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
