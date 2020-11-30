@@ -102,12 +102,12 @@ class AutogradInterface(AnnotatedQueue):
 
         The returned parameters are provided in order of appearance
         on the tape. By default, the returned parameters are wrapped in
-        a ``autograd.builtin.list`` container.
+        an ``autograd.builtins.list`` container.
 
         Args:
             trainable_only (bool): if True, returns only trainable parameters
             return_arraybox (bool): if True, the returned parameters are not
-                wrapped in a ``autograd.builtin.list`` container
+                wrapped in an ``autograd.builtins.list`` container
         Returns:
             autograd.builtins.list or list: the corresponding parameter values
 
