@@ -11,7 +11,7 @@
   allows a sneak peek of the circuits evaluated in an arbitrary computation.
   
   The feature currently only works in tape mode with devices that inherit from 
-  `QubitDevice` and in tape mode. 
+  `QubitDevice`. 
   [(#896)](https://github.com/PennyLaneAI/pennylane/pull/896) 
   
   ```python
