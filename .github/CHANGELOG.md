@@ -8,7 +8,7 @@
   
   At the moment, the class only mocks the device's `execute` method and registers the number 
   of times it has been called. As opposed to a device's `num_executions` attribute, this 
-  allows a sneak peak of the circuits evaluated in an arbitrary computation.
+  allows a sneak peek of the circuits evaluated in an arbitrary computation.
   
   The feature currently only works with devices that inherit from 
   `QubitDevice` and in tape mode. 
