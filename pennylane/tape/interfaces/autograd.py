@@ -97,9 +97,7 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         self._all_parameter_values = params
 
-    def get_parameters(
-        self, trainable_only=True, return_arraybox=False
-    ):  
+    def get_parameters(self, trainable_only=True, return_arraybox=False):  
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
