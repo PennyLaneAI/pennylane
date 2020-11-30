@@ -436,7 +436,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     return expanded_tensor.reshape(2 ** M)
 
 
-class SneakPeek:
+class Spy:
     """Context in which calls to a QubitDevice's execute method are counted without performing the execution.
 
     The class mocks the execute method, returning a dummy value of the correct dimensions.
@@ -446,7 +446,7 @@ class SneakPeek:
     .. code-block:: python
 
         import pennylane as qml
-        from pennylane.utils import SneakPeek
+        from pennylane.utils import Spy
         qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=1)
@@ -457,13 +457,13 @@ class SneakPeek:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with SneakPeek() as counter:
+        with Spy() as counter:
             circuit(0.1)
             circuit(0.5)
 
         print(counter.counts) # 2
 
-        with SneakPeek() as counter_grad:
+        with Spy() as counter_grad:
             g = qml.grad(circuit)
             g(0.1)
 

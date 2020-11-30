@@ -2,12 +2,13 @@
 
 <h3>New features since last release</h3>
 
-* The `SneakPeek()` context manager has been added, which mocks methods in PennyLane without 
-  executing them, but instead registers statistics about the calls. 
+* The `Spy()` context manager has been added, which mocks selected methods 
+  in PennyLane without executing them, but instead registers statistics 
+  about the calls. 
   
   At the moment, the class only mocks the device's `execute` method and registers the number 
   of times it has been called. As opposed to a device's `num_executions` attribute, this 
-  allows a "sneak peak" of the circuits evaluated in an arbitrary computation.
+  allows a sneak peak of the circuits evaluated in an arbitrary computation.
   
   The feature currently only works with devices that inherit from 
   `QubitDevice` and in tape mode. 
@@ -16,7 +17,7 @@
   ```python
 
     import pennylane as qml
-    from pennylane.utils import SneakPeek
+    from pennylane.utils import Spy
     qml.enable_tape()
     
     dev = qml.device("default.qubit", wires=1)
@@ -27,15 +28,17 @@
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(wires=0))
        
-    with SneakPeek() as counter:
+    with Spy() as spy:
+  
         # 2 executions
         circuit(0.1)
         circuit(0.5)
+  
         # parameter-shift rule uses 2+1 executions
         g = qml.grad(circuit)
         g(0.1)
     
-    print(counter.counts) # 5
+    print(spy.counts) # 5
     ```
 
 * The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
