@@ -108,7 +108,6 @@ class AutogradInterface(AnnotatedQueue):
             trainable_only (bool): if True, returns only trainable parameters
             return_arraybox (bool): if True, the returned parameters are not
                 wrapped in a ``autograd.builtin.list`` container
-            
         Returns:
             autograd.builtins.list or list: the corresponding parameter values
 
