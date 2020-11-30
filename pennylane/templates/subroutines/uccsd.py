@@ -145,7 +145,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
 
             # Define the cost function
-            cost_fn = qml.VQECost(ansatz, h, dev)
+            cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))

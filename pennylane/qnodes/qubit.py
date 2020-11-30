@@ -128,16 +128,18 @@ class QubitQNode(JacobianQNode):
             temp_var.idx = n
             op.data[p_idx] = temp_var
 
-            multiplier, shift = op.get_parameter_shift(p_idx)
+            param_shift = op.get_parameter_shift(p_idx)
 
-            # shifted parameter values
-            shift_p1 = np.r_[args, args[idx] + shift]
-            shift_p2 = np.r_[args, args[idx] - shift]
+            for multiplier, a, shift in param_shift:
 
-            # evaluate the circuit at two points with shifted parameter values
-            y2 = np.asarray(self.evaluate(shift_p1, kwargs))
-            y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-            pd += (y2 - y1) * multiplier
+                # shifted parameter values
+                shift_p = np.r_[args, a * args[idx] + shift]
+
+                # evaluate the circuit at point with shifted parameter values
+                y = np.asarray(self.evaluate(shift_p, kwargs))
+
+                # add the contribution to the partial derivative
+                pd += multiplier * y
 
             # restore the original parameter
             op.data[p_idx] = orig

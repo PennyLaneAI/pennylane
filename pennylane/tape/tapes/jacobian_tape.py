@@ -391,6 +391,7 @@ class JacobianTape(QuantumTape):
             h=1e-7 (float): finite difference method step size
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
+        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
@@ -490,8 +491,13 @@ class JacobianTape(QuantumTape):
         all_tapes = []
         reshape_info = []
         processing_fns = []
+        nonzero_grad_idx = []
 
         for trainable_idx, param_method in enumerate(diff_methods):
+            if param_method == "0":
+                continue
+
+            nonzero_grad_idx.append(trainable_idx)
 
             if (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # numeric method
@@ -516,7 +522,7 @@ class JacobianTape(QuantumTape):
         jac = None
         start = 0
 
-        for i, (processing_fn, res_len) in enumerate(zip(processing_fns, reshape_info)):
+        for i, processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
 
             # extract the correct results from the flat list
             res = results[start : start + res_len]
