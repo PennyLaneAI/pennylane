@@ -10,7 +10,7 @@
   of times it has been called. As opposed to a device's `num_executions` attribute, this 
   allows a sneak peek of the circuits evaluated in an arbitrary computation.
   
-  The feature currently only works with devices that inherit from 
+  The feature currently only works in tape mode with devices that inherit from 
   `QubitDevice` and in tape mode. 
   [(#896)](https://github.com/PennyLaneAI/pennylane/pull/896) 
   
