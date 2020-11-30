@@ -99,7 +99,50 @@ class AutogradInterface(AnnotatedQueue):
 
     def get_parameters(
         self, trainable_only=True, return_arraybox=False
-    ):  # pylint: disable=missing-function-docstring
+    ):  
+        """Return the parameters incident on the tape operations.
+
+        The returned parameters are provided in order of appearance
+        on the tape. By default, the returned parameters are wrapped in
+        a ``autograd.builtin.list`` container.
+
+        Args:
+            trainable_only (bool): if True, returns only trainable parameters
+            return_arraybox (bool): if True, the returned parameters are not
+                wrapped in a ``autograd.builtin.list`` container
+            
+        Returns:
+            autograd.builtins.list or list: the corresponding parameter values
+
+        **Example**
+
+        .. code-block:: python
+
+            with JacobianTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and will be returned:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being returned:
+
+        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.get_parameters()
+        [0.543]
+
+        The ``trainable_only`` argument can be set to ``False`` to instead return
+        all parameters:
+
+        >>> tape.get_parameters(trainable_only=False)
+        [0.432, 0.543, 0.133]
+        """
         params = []
         iterator = self.trainable_params if trainable_only else self._par_info
 
