@@ -91,7 +91,7 @@ def get_shape(inpt):
 
         try:
             shape = inpt.shape
-        except AttributeError:
+        except AttributeError as e:
             raise ValueError(
                 "could not extract shape of object of type {}".format(type(inpt))
             ) from e
