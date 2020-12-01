@@ -699,6 +699,65 @@ class TestStack:
         assert list(res.shape) == [2, 2]
 
 
+class TestSum:
+    """Tests for the summation function"""
+
+    def test_array(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, 2.1)
+
+    def test_tensorflow(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = tf.Variable([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, tf.Tensor)
+        assert fn.allclose(res, 2.1)
+
+    def test_torch(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, torch.Tensor)
+        assert fn.allclose(res, 2.1)
+
+    @pytest.mark.parametrize("t1", [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+    ])
+    def test_sum_axis(self, t1):
+        """Test that passing the axis argument allows for summing along
+        a specific axis"""
+        res = fn.sum_(t1, axis=(0, 2))
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([14,  6,  3]))
+        assert res.shape == (3,)
+
+    @pytest.mark.parametrize("t1", [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+    ])
+    def test_sum_axis_keepdims(self, t1):
+        """Test that passing the axis argument allows for summing along
+        a specific axis, while keepdims avoids the summed dimensions from being removed"""
+        res = fn.sum_(t1, axis=(0, 2), keepdims=True)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([[[14],  [6],  [3]]]))
+        assert res.shape == (1, 3, 1)
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_T(t):
     """Test the simple transpose (T) function"""
