@@ -474,7 +474,7 @@ class TensorBox(abc.ABC):
         **Example**
 
         >>> x = torch.tensor([[1, 2], [3, 4]])
-        >>> y = qml.proc.TensorBox(x)
+        >>> y = qml.math.TensorBox(x)
         >>> y.take([[0, 0], [1, 0]], axis=1)
         TensorBox: tensor([[[1, 1],
                  [2, 1]],

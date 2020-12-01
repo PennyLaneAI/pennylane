@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the TensorBox functional API in pennylane.proc.fn
+"""Unit tests for the TensorBox functional API in pennylane.math.fn
 """
 import itertools
 import numpy as onp
@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.proc import fn
+from pennylane.math import fn
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")

@@ -25,10 +25,10 @@ except ImportError:  # pragma: no cover
 import pennylane as qml
 
 
-wrap_output = qml.proc.wrap_output
+wrap_output = qml.math.wrap_output
 
 
-class TensorFlowBox(qml.proc.TensorBox):
+class TensorFlowBox(qml.math.TensorBox):
     """Implements the :class:`~.TensorBox` API for TensorFlow tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

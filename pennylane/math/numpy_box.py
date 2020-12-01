@@ -17,10 +17,10 @@ import numpy as np
 import pennylane as qml
 
 
-wrap_output = qml.proc.wrap_output
+wrap_output = qml.math.wrap_output
 
 
-class NumpyBox(qml.proc.TensorBox):
+class NumpyBox(qml.math.TensorBox):
     """Implements the :class:`~.TensorBox` API for ``numpy.ndarray``.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.

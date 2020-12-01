@@ -19,10 +19,10 @@ import torch
 import pennylane as qml
 
 
-wrap_output = qml.proc.wrap_output
+wrap_output = qml.math.wrap_output
 
 
-class TorchBox(qml.proc.TensorBox):
+class TorchBox(qml.math.TensorBox):
     """Implements the :class:`~.TensorBox` API for Torch tensors.
 
     For more details, please refer to the :class:`~.TensorBox` documentation.
@@ -126,7 +126,7 @@ class TorchBox(qml.proc.TensorBox):
 
     @wrap_output
     def take(self, indices, axis=None):
-        if isinstance(indices, qml.proc.TensorBox):
+        if isinstance(indices, qml.math.TensorBox):
             indices = indices.numpy()
 
         if not isinstance(indices, torch.Tensor):
