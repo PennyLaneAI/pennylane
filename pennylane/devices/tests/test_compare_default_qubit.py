@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the same output of the default device."""
-# pylint: disable=no-self-use
-from pennylane import numpy as np
-import pytest
-from flaky import flaky
-from pennylane.templates.layers import RandomLayers
 import random
 
+import pytest
+from flaky import flaky
+
 import pennylane as qml
+# pylint: disable=no-self-use
+from pennylane import numpy as np
+from pennylane.templates.layers import RandomLayers
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -39,9 +40,7 @@ class TestQubit:
             pytest.skip("Device is in non-analytical mode.")
 
         if "Hermitian" not in dev.observables:
-            pytest.skip(
-                "Skipped because device does not support the Hermitian observable."
-            )
+            pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
@@ -69,12 +68,8 @@ class TestQubit:
         grad_def = qml.grad(qnode_def, argnum=[0, 1])
         grad = qml.grad(qnode, argnum=[0, 1])
 
-        assert np.allclose(
-            qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.analytic)
-        )
-        assert np.allclose(
-            grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic)
-        )
+        assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.analytic))
+        assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic))
 
     def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the PauliZ expectation value is correct"""
@@ -111,12 +106,8 @@ class TestQubit:
         grad_def = qml.grad(qnode_def, argnum=[0, 1])
         grad = qml.grad(qnode, argnum=[0, 1])
 
-        assert np.allclose(
-            qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.analytic)
-        )
-        assert np.allclose(
-            grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic)
-        )
+        assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.analytic))
+        assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("ret", [qml.expval, qml.var])
     def test_random_circuit(self, device, tol, ret):
@@ -202,17 +193,16 @@ class TestQubit:
         seed = random.randint(0, deep)
 
         def circuit():
-            """A combination of two and three qubit gates with the one_qubit_block and a simple
-            PauliZ measurement, all acting on a four qubit input basis state"""
+            """4 qubits circuit with 20 random gates and random connections for
+            multi-qubit gates. The measurement is an arbitrary tensor product
+            over the qubits."""
             random.seed(seed)
             np.random.seed(seed)
             for i in np.random.randint(0, len(gates), deep):
                 gate = gates[i]
                 params = list(np.pi * np.random.rand(gate.num_params))
                 gate(*params, wires=random.sample(range(n_wires), gate.num_wires))
-            return qml.expval(
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliZ(3)
-            )
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliZ(3))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
