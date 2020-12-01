@@ -41,13 +41,6 @@
     print(spy.counts) # 5
     ```
 
-* The `Device` and `QubitDevice` classes have a new API method, `batch_execute()`.
-  This method accepts a *list* of tapes, and returns a list of evaluated numerical values.
-  This may be useful for devices that support performing numerous quantum evaluations
-  simultaneously. If not overridden, by default the list of tapes will be executed
-  in serial by calling the `execute()` method.
-  [(#840)](https://github.com/PennyLaneAI/pennylane/pull/840)
-
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
