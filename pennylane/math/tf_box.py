@@ -40,7 +40,13 @@ class TensorFlowBox(qml.math.TensorBox):
     cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
     expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
     ones_like = wrap_output(lambda self: tf.ones_like(self.data))
-    sqrt = wrap_output(lambda self: tf.sqrt(self.data))
+    sqrt = wrap_output(
+        lambda self: tf.sqrt(
+            tf.cast(self.data, dtype=tf.float64)
+            if self.data.dtype in (tf.dtypes.int64, tf.dtypes.int32)
+            else self.data
+        )
+    )
     sum = wrap_output(
         lambda self, axis=None, keepdims=False: tf.reduce_sum(
             self.data, axis=axis, keepdims=keepdims

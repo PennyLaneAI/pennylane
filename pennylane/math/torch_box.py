@@ -33,7 +33,13 @@ class TorchBox(qml.math.TensorBox):
     arcsin = wrap_output(lambda self: torch.arcsin(self.data))
     expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
     ones_like = wrap_output(lambda self: torch.ones_like(self.data))
-    sqrt = wrap_output(lambda self: torch.sqrt(self.data))
+    sqrt = wrap_output(
+        lambda self: torch.sqrt(
+            self.data.to(torch.float64)
+            if self.data.dtype in (torch.int64, torch.int32)
+            else self.data
+        )
+    )
     T = wrap_output(lambda self: self.data.T)
 
     @staticmethod
