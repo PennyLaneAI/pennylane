@@ -470,7 +470,6 @@ class Spy:
         # parameter-shift rule uses 2+1 executions
         # to compute the gradient
         print(spy_grad.counts) # 3
-
     """
 
     def __init__(self):
