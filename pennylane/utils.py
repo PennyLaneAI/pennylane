@@ -437,9 +437,11 @@ def expand_vector(vector, original_wires, expanded_wires):
 
 
 class Spy:
-    """Context in which calls to a QubitDevice's execute method are counted without performing the execution.
+    """Context in which calls to quantum devices are simply counted without performing the execution.
 
     The class mocks the execute method, returning a dummy value of the correct dimensions.
+    
+    .. note:: Currently, only qubit devices are supported.
 
     **Example**
 
