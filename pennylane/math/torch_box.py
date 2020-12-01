@@ -69,8 +69,8 @@ class TorchBox(qml.math.TensorBox):
 
         return [t.to(cast_type) for t in tensors]
 
-    @wrap_output
     @staticmethod
+    @wrap_output
     def concatenate(values, axis=0):
         if axis is None:
             # flatten and then concatenate zero'th dimension
@@ -90,7 +90,7 @@ class TorchBox(qml.math.TensorBox):
         if x.ndim == 0 and y.ndim == 0:
             return x * y
 
-        if x.ndim == 2 and y.ndim <= 2:
+        if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
         return torch.tensordot(x, y, dims=[[-1], [-2]])

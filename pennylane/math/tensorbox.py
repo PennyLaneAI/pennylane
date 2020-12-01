@@ -263,8 +263,9 @@ class TensorBox(abc.ABC):
                 datatype in the target framework is chosen.
         """
 
+    @staticmethod
     @abc.abstractmethod
-    def concatenate(self, values, axis=0):
+    def concatenate(values, axis=0):
         """Join a sequence of tensors along an existing axis.
 
         Args:

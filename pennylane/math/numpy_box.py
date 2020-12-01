@@ -58,6 +58,8 @@ class NumpyBox(qml.math.TensorBox):
     @wrap_output
     def dot(x, y):
         x, y = NumpyBox.unbox_list([x, y])
+        x = np.asarray(x)
+        y = np.asarray(y)
 
         if x.ndim == 0 and y.ndim == 0:
             return x * y
