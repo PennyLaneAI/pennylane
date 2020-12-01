@@ -157,12 +157,12 @@ class AutogradInterface(AnnotatedQueue):
         params = autograd.builtins.tuple(params)
 
         # unwrap constant parameters
-        all_params_unwrapped = [
+        self._all_params_unwrapped = [
             p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
         ]
 
         # evaluate the tape
-        self.set_parameters(all_params_unwrapped, trainable_only=False)
+        self.set_parameters(self._all_params_unwrapped, trainable_only=False)
         res = self.execute_device(params, device=device)
         self.set_parameters(self._all_parameter_values, trainable_only=False)
 
@@ -192,9 +192,11 @@ class AutogradInterface(AnnotatedQueue):
             function: this function accepts the backpropagation
             gradient output vector, and computes the vector-Jacobian product
         """
-
+        # unwrap constant parameters
         def gradient_product(g):
+            self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
+            self.set_parameters(self._all_parameter_values, trainable_only=False)
             vjp = g.flatten() @ jac
             return vjp
 

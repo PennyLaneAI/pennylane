@@ -54,6 +54,12 @@ class TestQNode:
         assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5]
         assert not any(isinstance(p, np.tensor) for p in param_data)
 
+        # test the jacobian works correctly
+        param_data = []
+        qml.grad(circuit)(x, y)
+        assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5 + np.pi/2, 0.1, 0.2, 0.3, 0.4, 0.5 - np.pi/2]
+        assert not any(isinstance(p, np.tensor) for p in param_data)
+
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface"""
         if diff_method == "backprop":
