@@ -18,6 +18,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
+
 # pylint: disable=no-self-use
 from pennylane import numpy as np
 from pennylane.templates.layers import RandomLayers
