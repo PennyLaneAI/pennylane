@@ -192,7 +192,6 @@ class AutogradInterface(AnnotatedQueue):
             function: this function accepts the backpropagation
             gradient output vector, and computes the vector-Jacobian product
         """
-        # unwrap constant parameters
         def gradient_product(g):
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
