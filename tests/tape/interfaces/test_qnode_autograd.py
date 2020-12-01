@@ -49,7 +49,7 @@ class TestQNode:
             for op in args[0]:
                 param_data.extend(op.data.copy())
 
-        spy = mocker.patch.object(dev, "apply", side_effect=mock_apply)
+        mocker.patch.object(dev, "apply", side_effect=mock_apply)
         circuit(x, y)
         assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5]
         assert not any(isinstance(p, np.tensor) for p in param_data)
