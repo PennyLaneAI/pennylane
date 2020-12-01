@@ -643,6 +643,14 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
+@pytest.mark.parametrize("t", test_data)
+def test_sqrt(t):
+    """Test that the square root function works for a variety
+    of input"""
+    res = fn.sqrt(t)
+    assert fn.allequal(res, [1, np.sqrt(2), np.sqrt(3)])
+
+
 class TestStack:
     """Tests for the stack function"""
 

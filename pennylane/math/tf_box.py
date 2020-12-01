@@ -100,7 +100,6 @@ class TensorFlowBox(qml.math.TensorBox):
             return x * y
 
         if y.ndim == 1:
-            print("here")
             return tf.tensordot(x, y, axes=[[-1], [0]])
 
         if x.ndim == 2 and y.ndim == 2:
