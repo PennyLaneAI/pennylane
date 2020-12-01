@@ -461,7 +461,7 @@ class Spy:
             circuit(0.1)
             circuit(0.5)
 
-        print(counter.counts) # 2
+        print(spy.counts) # 2
 
         with Spy() as counter_grad:
             g = qml.grad(circuit)
