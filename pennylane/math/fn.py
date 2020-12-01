@@ -463,6 +463,20 @@ def shape(tensor):
 
 
 def sqrt(tensor):
+    """Returns the element-wise square root.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like:
+
+    **Example**
+
+    >>> a = torch.tensor([4., 9.], requires_grad=True)
+    >>> sqrt(a)
+    tensor([2., 3.], grad_fn=<SqrtBackward>)
+    """
     return TensorBox(tensor).sqrt(wrap_output=False)
 
 
@@ -587,4 +601,25 @@ def take(tensor, indices, axis=None):
 
 
 def where(condition, x, y):
+    """Returns elements chosen from x or y depending on a boolean tensor condition.
+
+    The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
+
+    Args:
+        condition (tensor_like[bool]): A boolean tensor. Where True, elements from
+            ``x`` will be chosen, otherwise ``y``.
+        x (tensor_like): values from which to choose if the condition evaluates to True
+        y (tensor_like): values from which to choose if the condition evaluates to False
+
+    Returns:
+        tensor_like: A tensor with elements from ``x`` where the condition is True, and
+        ``y`` otherwise. The output tensor has the same shape as the input tensors.
+
+    **Example**
+
+    >>> a = torch.tensor([0.6, 0.23, 0.7, 1.5, 1.7], requires_grad=True)
+    >>> b = torch.tensor([-1., -2., -3., -4., -5.], requires_grad=True)
+    >>> math.where(a < 1, a, b)
+    tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
+    """
     return _get_multi_tensorbox([x, y]).where(condition, x, y, wrap_output=False)
