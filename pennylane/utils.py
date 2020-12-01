@@ -457,7 +457,7 @@ class Spy:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with Spy() as counter:
+        with Spy() as spy:
             circuit(0.1)
             circuit(0.5)
 
