@@ -13,32 +13,78 @@
 # limitations under the License.
 
 from matplotlib import pyplot as plt
+from IPython import display
+import time
+
+def _j_nb():
+    try:
+        from IPython import get_ipython
+        if 'IPKernelApp' not in get_ipython().config:
+            return False
+    except ImportError:
+        return False
+    except AttributeError:
+        return False
+    return True
 
 class Visualize:
 
     """
     A context manager for storing data relating to visualizations and post-processing of
-    quantum circuit optimization.
+    variational quantum circuit optimization.
 
-    The main idea behind this method is that we will wrap the optimization loop inside of some
-    context manager, which will recored things like the number of optimization steps, the parameters,
-    and the value of the cost function for each step.
+    When a PennyLane optimization loop is wrapped in the Visualize context manager, data from each optimization step
+    is recorded and outputted as text or a graph.
+
+    Args:
+        steps (int): The number of steps for which the circuit is being optimized.
+
+    Keyword Args:
+        step_size (int): The number of steps taken between each data recording instance.
+        cost_fn (func): The cost function that is being optimized.
 
     """
 
     def __init__(self, steps, step_size=1, cost_fn=None):
 
+        if not isinstance(steps, int):
+            raise ValueError("'steps' must be of type int, got {}".format(type(steps)))
+
+        if not isinstance(step_size, int):
+            raise ValueError("'step_size' must be of type int, got {}".format(type(step_size)))
+
         self.steps = steps
+        self.step_size = step_size
         self.cost_fn = cost_fn
 
-        self.step_size = step_size
+        self._step_log = 0
+        self._x_log = []
+        self._y_log = []
+        self._param_log = []
 
-        self.step_log = 0
-        self.x_log = []
-        self.y_log = []
-        self.param_log = []
+        self._complete = False
 
-        self.complete = False
+    @property
+    def cost_data(self):
+        """
+        Returns a tuple of the recorded optimization steps, and the corresponding values of the cost function.
+
+        Returns:
+            tuple: a tuple containing lists of optimization steps and cost function values
+        """
+
+        return (self._x_log, self._y_log)
+
+    @property
+    def param_data(self):
+        """
+        Returns a tuple of the recorded optimization steps, and the corresponding variational parameters.
+
+        Returns:
+            tuple: a tuple containing lists of optimization steps and parameters values
+        """
+
+        return (self.x_log, self._param_log)
 
     def __enter__(self):
         print("Beginning Optimization")
@@ -49,34 +95,74 @@ class Visualize:
         print("Optimization Complete")
 
     def update(self, params=None):
+        """
+        Updates the data in the Visualize context manager instance.
+        """
 
-        self.step_log += 1
+        self._step_log += 1
 
-        if self.step_log % self.step_size == 0:
+        if self._step_log % self.step_size == 0:
 
-            self.x_log.append(self.step_log)
+            self._x_log.append(self._step_log)
 
             if params is not None:
-                self.param_log.append(params)
+                self._param_log.append(params)
                 if self.cost_fn is not None:
                     val = self.cost_fn(params)
-                    self.y_log.append(val)
+                    self._y_log.append(val)
 
     def text(self, step=True, cost=False, params=False):
+        """
+        Returns the data in the Visualize context manager instance, a text-based output.
+        """
 
-        if self.step_log % self.step_size == 0:
+        if not isinstance(step, bool):
+            raise ValueError("'step' must be of type bool, got {}".format(type(step)))
+
+        if not isinstance(cost, int):
+            raise ValueError("'cost' must be of type bool, got {}".format(type(cost)))
+
+        if not isinstance(params, int):
+            raise ValueError("'params' must be of type bool, got {}".format(type(params)))
+
+        if self._step_log % self.step_size == 0:
 
             if step:
-                print("Optimization Step {} / {}".format(self.step_log, self.steps))
+                print("Optimization Step {} / {}".format(self._step_log, self.steps))
             if cost:
-                print("Cost: {}".format(self.y_log[len(self.y_log)-1]))
+                print("Cost: {}".format(self._y_log[len(self._y_log)-1]))
             if params:
-                print("Parameters: {}".format(self.param_log[len(self.param_log)-1]))
+                print("Parameters: {}".format(self._param_log[len(self._param_log)-1]))
             print("--------------------------")
 
     def graph(self):
+        """
+        Returns a graph of the value of the cost function for each optimization step.
+        """
 
-        plt.scatter(self.x_log, self.y_log)
-        plt.pause(0.05)
-        if self.steps == self.step_log:
-            plt.show()
+        if _j_nb():
+
+            plt.clf()
+
+            plt.ylabel("Cost")
+            plt.xlabel("Steps")
+
+            plt.plot(self._x_log, self._y_log, color="#1D9598")
+            plt.scatter(self._x_log, self._y_log, color="#1D9598")
+
+            display.display(plt.gcf())
+            display.clear_output(wait=True)
+            time.sleep(0.05)
+            if self.steps == self._step_log:
+                plt.show()
+
+        else:
+
+            plt.ylabel("Cost")
+            plt.xlabel("Steps")
+
+            plt.plot(self._x_log, self._y_log, color="#1D9598")
+            plt.scatter(self._x_log, self._y_log, color="#1D9598")
+            plt.pause(0.025)
+            if self.steps == self._step_log:
+                plt.show()
