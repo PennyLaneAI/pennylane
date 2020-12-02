@@ -17,7 +17,7 @@ Utility functions and numerical implementations of quantum operations for Autogr
 import jax.numpy as jnp
 from pennylane.utils import pauli_eigs
 
-C_DTYPE = jnp.complex64 # Use lower precision for better speed on JAX.
+C_DTYPE = jnp.complex64  # Use lower precision for better speed on JAX.
 R_DTYPE = jnp.float32
 
 I = jnp.array([[1, 0], [0, 1]], dtype=C_DTYPE)

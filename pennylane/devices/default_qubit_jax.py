@@ -16,7 +16,6 @@ reference plugin.
 """
 
 
-
 from pennylane.operation import DiagonalOperation
 
 from pennylane.devices import DefaultQubit
@@ -27,6 +26,7 @@ try:
 
 except ImportError as e:
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
+
 
 class DefaultQubitJax(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using jax.
@@ -158,7 +158,9 @@ class DefaultQubitJax(DefaultQubit):
         op_name = unitary.name
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
-                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
+                return self.parametric_ops[unitary.name](
+                    *unitary.parameters, len(unitary.wires)
+                )
             return self.parametric_ops[unitary.name](*unitary.parameters)
 
         if isinstance(unitary, DiagonalOperation):
