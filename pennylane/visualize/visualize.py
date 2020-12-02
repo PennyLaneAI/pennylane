@@ -12,20 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from matplotlib import pyplot as plt
 from IPython import display
-import time
+
 
 def _j_nb():
     try:
         from IPython import get_ipython
-        if 'IPKernelApp' not in get_ipython().config:
+
+        if "IPKernelApp" not in get_ipython().config:
             return False
     except ImportError:
         return False
     except AttributeError:
         return False
     return True
+
 
 class Visualize:
 
@@ -84,7 +87,7 @@ class Visualize:
             tuple: a tuple containing lists of optimization steps and parameters values
         """
 
-        return (self.x_log, self._param_log)
+        return (self._x_log, self._param_log)
 
     def __enter__(self):
         print("Beginning Optimization")
@@ -130,9 +133,9 @@ class Visualize:
             if step:
                 print("Optimization Step {} / {}".format(self._step_log, self.steps))
             if cost:
-                print("Cost: {}".format(self._y_log[len(self._y_log)-1]))
+                print("Cost: {}".format(self._y_log[len(self._y_log) - 1]))
             if params:
-                print("Parameters: {}".format(self._param_log[len(self._param_log)-1]))
+                print("Parameters: {}".format(self._param_log[len(self._param_log) - 1]))
             print("--------------------------")
 
     def graph(self):
