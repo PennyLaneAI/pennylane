@@ -24,6 +24,10 @@ python:
     - requirements: doc/requirements.txt
     - requirements: qchem/requirements.txt
     - method: pip
+      path: pyscf
+    - method: pip
+      path: openfermionpyscf
+    - method: pip
       path: .
     - method: pip
       path: qchem
