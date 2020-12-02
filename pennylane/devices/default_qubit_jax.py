@@ -21,6 +21,7 @@ from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
 import numpy as np
+
 try:
     import jax.numpy as jnp
     import jax
@@ -115,8 +116,11 @@ class DefaultQubitJax(DefaultQubit):
     _einsum = staticmethod(jnp.einsum)
     _cast = staticmethod(jnp.array)
     _transpose = staticmethod(jnp.transpose)
-    _tensordot = staticmethod(lambda a, b, axes: 
-        jnp.tensordot(a, b, axes if isinstance(axes, int) else list(map(tuple, axes))))
+    _tensordot = staticmethod(
+        lambda a, b, axes: jnp.tensordot(
+            a, b, axes if isinstance(axes, int) else list(map(tuple, axes))
+        )
+    )
     _conj = staticmethod(jnp.conj)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
@@ -183,8 +187,7 @@ class DefaultQubitJax(DefaultQubit):
         """
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
-            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+            key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
         else:
             key = self._prng_key
-        return jax.random.choice(
-            key, number_of_states, shape=(self.shots,), p=state_probability)
+        return jax.random.choice(key, number_of_states, shape=(self.shots,), p=state_probability)

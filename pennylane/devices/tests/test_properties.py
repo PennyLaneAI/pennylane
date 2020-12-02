@@ -26,6 +26,14 @@ try:
 except ImportError:
     TF_SUPPORT = False
 
+try:
+    import jax
+
+    JAX_SUPPORT = True
+
+except ImportError:
+    JAX_SUPPORT = False
+
 # Shared test data =====
 
 
@@ -146,9 +154,12 @@ class TestCapabilities:
             g(x)
 
         if interface == "jax":
-            x = pnp.array(0.1, requires_grad=True)
-            g = jax.grad(lambda a: qnode(a).reshape(()))
-            g(x)
+            if JAX_SUPPORT:
+                x = pnp.array(0.1, requires_grad=True)
+                g = jax.grad(lambda a: qnode(a).reshape(()))
+                g(x)
+            else:
+                pytest.skip("Cannot import jax")
 
     def test_provides_jacobian(self, device_kwargs):
         """Test that the device computes the jacobian."""
