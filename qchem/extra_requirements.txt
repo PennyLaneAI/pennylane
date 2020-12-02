@@ -1,0 +1,2 @@
+pyscf==1.7.2
+openfermionpyscf==0.4

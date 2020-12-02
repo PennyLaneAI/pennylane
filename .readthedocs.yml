@@ -23,10 +23,7 @@ python:
   install:
     - requirements: doc/requirements.txt
     - requirements: qchem/requirements.txt
-    - method: pip
-      path: pyscf
-    - method: pip
-      path: openfermionpyscf
+    - requirements: qchem/extra_requirements.txt
     - method: pip
       path: .
     - method: pip
