@@ -1,6 +1,6 @@
 import pytest
-import jax
-import jax.numpy as jnp
+jax = pytest.importorskip("jax", minversion="0.2")
+jnp = jax.numpy
 
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax

@@ -158,9 +158,7 @@ class DefaultQubitJax(DefaultQubit):
         op_name = unitary.name
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
-                return self.parametric_ops[unitary.name](
-                    *unitary.parameters, len(unitary.wires)
-                )
+                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
             return self.parametric_ops[unitary.name](*unitary.parameters)
 
         if isinstance(unitary, DiagonalOperation):
