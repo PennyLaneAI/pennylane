@@ -20,9 +20,10 @@ from pennylane.operation import DiagonalOperation
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
-
+import numpy as np
 try:
     import jax.numpy as jnp
+    import jax
 
 except ImportError as e:
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -102,8 +103,8 @@ class DefaultQubitJax(DefaultQubit):
         "MultiRZ": jax_ops.MultiRZ,
     }
 
-    C_DTYPE = jnp.complex128
-    R_DTYPE = jnp.float64
+    C_DTYPE = jnp.complex64
+    R_DTYPE = jnp.float32
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -114,13 +115,14 @@ class DefaultQubitJax(DefaultQubit):
     _einsum = staticmethod(jnp.einsum)
     _cast = staticmethod(jnp.array)
     _transpose = staticmethod(jnp.transpose)
-    _tensordot = staticmethod(jnp.tensordot)
+    _tensordot = staticmethod(lambda a, b, axes: 
+        jnp.tensordot(a, b, axes if isinstance(axes, int) else list(map(tuple, axes))))
     _conj = staticmethod(jnp.conj)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
+    def __init__(self, wires, *, shots=1000, analytic=True, prng_key=None):
         super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 
         # prevent using special apply methods for these gates due to slowdown in jax
@@ -128,6 +130,7 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
+        self._prng_key = prng_key
 
     @classmethod
     def capabilities(cls):
@@ -165,3 +168,23 @@ class DefaultQubitJax(DefaultQubit):
             return unitary.eigvals
 
         return unitary.matrix
+
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+
+        Returns:
+            List[int]: the sampled basis states
+        """
+        if self._prng_key is None:
+            # Assuming op-by-op, so we'll just make one.
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+        else:
+            key = self._prng_key
+        return jax.random.choice(
+            key, number_of_states, shape=(self.shots,), p=state_probability)
