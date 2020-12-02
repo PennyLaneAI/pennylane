@@ -1,6 +1,7 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+Added new Jax device.
 
 <h3>Improvements</h3>
 
