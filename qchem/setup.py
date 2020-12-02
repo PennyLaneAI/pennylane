@@ -20,9 +20,7 @@ requirements = [
     "pennylane>=0.13",
     "scipy",
     "openfermion",
-    "openfermionpyscf; platform_system != 'Windows'",
     "openfermionpsi4",
-    "pyscf==1.7.2; platform_system != 'Windows'",
 ]
 
 info = {

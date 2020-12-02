@@ -22,7 +22,16 @@ from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
 from openfermionpsi4 import run_psi4
-from openfermionpyscf import run_pyscf
+try:
+    from openfermionpyscf import run_pyscf
+except ImportError as e:
+    raise ImportError(
+        "PennyLane-QChem requires PySCF as well as the OpenFermion-PySCF plugin "
+        "You can install them via pip:"
+        "\n\npip install pyscf openfermionpyscf"
+        "\n\nFor more details, see the OpenFermion-PySCF plugin page:"
+        "\nhttps://github.com/quantumlib/OpenFermion-PySCF"
+        ) from e
 
 import pennylane as qml
 from pennylane import Hamiltonian
