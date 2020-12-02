@@ -14,14 +14,20 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-import jax.numpy as jnp
-import jax
+
+
 
 from pennylane.operation import DiagonalOperation
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
 
+try:
+    import jax.numpy as jnp
+    import jax
+
+except ImportError as e:
+    raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
 
 class DefaultQubitJax(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using jax.
