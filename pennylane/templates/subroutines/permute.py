@@ -14,7 +14,6 @@
 r"""
 Contains the ``permute`` template.
 """
-import numpy as np
 
 import pennylane as qml
 
@@ -122,7 +121,7 @@ def Permute(permutation, wires):
     wires = Wires(wires)
 
     if len(wires) <= 1:
-        raise ValueError(f"Permutations must involve at least 2 qubits.")
+        raise ValueError("Permutations must involve at least 2 qubits.")
 
     # Make sure the length of the things are the same
     if len(permutation) != len(wires):
