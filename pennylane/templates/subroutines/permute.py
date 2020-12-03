@@ -138,6 +138,10 @@ def Permute(permutation, wires):
     if len(permutation) != len(wires):
         raise ValueError("Permutation must specify outcome of all wires.")
 
+    # Permutation order must contain all unique values
+    if len(set(permutation)) != len(permutation):
+        raise ValueError("Values in a permutation must all be unique.")
+
     # Make sure everything in the permutation has an associated label in wires
     for label in permutation:
         if label not in wires.labels:
