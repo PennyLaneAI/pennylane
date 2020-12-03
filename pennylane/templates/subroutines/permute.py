@@ -39,8 +39,8 @@ def Permute(permutation, wires):
     .. UsageDetails::
 
         As a simple example, suppose we have a 5-qubit tape with wires labeled
-        by the integers `[0, 1, 2, 3, 4]`. We apply a permutation to shuffle the
-        order to `[4, 2, 0, 1, 3]` (i.e., the qubit state that was previously on
+        by the integers ``[0, 1, 2, 3, 4]``. We apply a permutation to shuffle the
+        order to ``[4, 2, 0, 1, 3]`` (i.e., the qubit state that was previously on
         wire 4 is now on wire 0, the one from 2 is on wire 1, etc.).
 
 
@@ -67,7 +67,7 @@ def Permute(permutation, wires):
            4: ──RZ(0)─────────╰SWAP──╰SWAP──╰SWAP──┤
 
 
-        `Permute` can also be applied to wires with arbitrary labels, like so:
+        ``Permute`` can also be applied to wires with arbitrary labels, like so:
 
         .. code-block:: python
 
@@ -89,7 +89,7 @@ def Permute(permutation, wires):
             0: ──RZ(0)──│──────│──────╭SWAP──┤
             c: ──RZ(0)──╰SWAP──╰SWAP──╰SWAP──┤
 
-        Finally, it is also possible to permute a subset of wires by
+        It is also possible to permute a subset of wires by
         specifying a subset of labels. For example,
 
         .. code-block:: python
@@ -114,7 +114,18 @@ def Permute(permutation, wires):
             0: ──RZ(0)──│──────╭SWAP──┤
             c: ──RZ(0)──╰SWAP──╰SWAP──┤
 
+        Finally, ``Permute`` can also be used with QNodes:
 
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=4)
+
+            @qml.qnode(dev)
+            def apply_perm():
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=2)
+                qml.templates.Permute([3, 1, 2, 0], dev.wires)
+                return qml.expval(qml.PauliZ(0))
 
     """
 
