@@ -3,6 +3,7 @@
 <h3>New features since last release</h3>
 
 * Apply permutations to wires using the `Permute` subroutine.
+  [#952](https://github.com/PennyLaneAI/pennylane/pull/952)
 
   ```python
   import qml
