@@ -51,7 +51,7 @@
 
 - *Device independent*. Run the same quantum circuit on different quantum backends. Install
   [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
-  Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
+  Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
 
 - *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 
