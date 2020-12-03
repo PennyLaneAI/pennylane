@@ -29,6 +29,7 @@ from pennylane.templates.subroutines import (
     DoubleExcitationUnitary,
     UCCSD,
     ApproxTimeEvolution,
+    Permute,
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -1207,3 +1208,154 @@ class TestApproxTimeEvolution:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         assert np.allclose(circuit(), expectation)
+
+
+class TestPermute:
+    """Tests for the Permute template from the pennylane.templates.subroutine module."""
+
+    def test_invalid_inputs_qnodes(self):
+        """Tests if errors are thrown for invalid permutations with QNodes."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        with pytest.raises(ValueError):
+
+            @qml.qnode(dev)
+            def permute_qubits():
+                qml.templates.Permute([0], wires=[0])
+                return qml.expval(qml.PauliZ(0))
+
+            permute_qubits()
+
+        with pytest.raises(ValueError):
+
+            @qml.qnode(dev)
+            def permute_qubits():
+                qml.templates.Permute([0, 1, 2], wires=[0, 1, 2, 3])
+                return qml.expval(qml.PauliZ(0))
+
+            permute_qubits()
+
+        with pytest.raises(ValueError):
+
+            @qml.qnode(dev)
+            def permute_qubits():
+                qml.templates.Permute([0, 1, 1, 3], wires=[0, 1, 2, 3])
+                return qml.expval(qml.PauliZ(0))
+
+            permute_qubits()
+
+        with pytest.raises(ValueError):
+
+            @qml.qnode(dev)
+            def permute_qubits():
+                qml.templates.Permute([4, 3, 2, 1], wires=[0, 1, 2, 3])
+                return qml.expval(qml.PauliZ(0))
+
+            permute_qubits()
+
+    def test_invalid_inputs_tape(self):
+        """Tests if errors are thrown for invalid permutations with tapes.."""
+
+        wire_labels = [0, 2, "a", "c", 1]
+
+        with pytest.raises(ValueError):
+            with qml.tape.QuantumTape() as tape:
+                qml.templates.Permute([0], wires=[0])
+
+        with pytest.raises(ValueError):
+            with qml.tape.QuantumTape() as tape:
+                qml.templates.Permute([2, "c", "a", 0], wires=wire_labels)
+
+        with pytest.raises(ValueError):
+            with qml.tape.QuantumTape() as tape:
+                qml.templates.Permute([2, "a", "c", "c", 1], wires=wire_labels)
+
+        with pytest.raises(ValueError):
+            with qml.tape.QuantumTape() as tape:
+                qml.templates.Permute([2, "a", "d", "c", 1], wires=wire_labels)
+
+    def test_identity_permutations(self):
+        """ Test if identity permutations have no effect on the registers. """
+
+        # QNode version
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def identity_permutation():
+            qml.templates.Permute([0, 1, 2, 3], wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        identity_permutation()
+
+        assert len(identity_permutation.ops) == 1
+
+        # Tape version
+        with qml.tape.QuantumTape() as tape:
+            qml.templates.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
+
+        assert len(tape.operations) == 0
+
+    # @pytest.mark.parametrize(
+    #     "permutation_order,expected_ops",
+    #     [
+    #         ([1, 0], [qml.SWAP(wires=[0, 1])]),
+    #         ([1, 0, 2], [qml.SWAP(wires=[0, 1])]),
+    #         ([1, 0, 2, 3], [qml.SWAP(wires=[0, 1])]),
+    #         ([0, 2, 1, 3], [qml.SWAP(wires=[1, 2])]),
+    #         ([2, 3, 0, 1], [qml.SWAP(wires=[0, 2]), qml.SWAP(wires=[1, 3])]),
+    #     ],
+    # )
+    # def test_two_cycle_permutations_qnode(self, permutation_order, expected_ops):
+    #     """ Test some two-cycles to ensure permutation occurs. """
+
+    #     dev = qml.device("default.qubit", wires=len(permutation_order))
+
+    #     @qml.qnode(dev)
+    #     def two_cycle():
+    #         qml.templates.Permute(permutation_order, wires=dev.wires)
+    #         return qml.expval(qml.PauliZ(0))
+
+    #     two_cycle()
+
+    #     assert two_cycle.ops[:-1] == expected_ops
+
+    # @pytest.mark.parametrize(
+    #     "permutation_order,wire_order,expected_ops",
+    #     [
+    #         ([1, 0], [0, 1], [qml.SWAP(wires=[0, 1])]),
+    #         ([1, 0, 2], [0, 1, 2], [qml.SWAP(wires=[0, 1])]),
+    #         ([1, 0, 2, 3], [0, 1, 2, 3], [qml.SWAP(wires=[0, 1])]),
+    #         ([0, 2, 1, 3], [0, 1, 2, 3], [qml.SWAP(wires=[1, 2])]),
+    #         ([2, 3, 0, 1], [0, 1, 2, 3], [qml.SWAP(wires=[0, 2]), qml.SWAP(wires=[1, 3])]),
+    #         (
+    #             ["a", "b", 0, 1],
+    #             [0, 1, "a", "b"],
+    #             [qml.SWAP(wires=[0, "a"]), qml.SWAP(wires=[1, "b"])],
+    #         ),
+    #     ],
+    # )
+    # def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_ops):
+    #     """ Test some two-cycles to ensure permutation occurs. """
+
+    #     with qml.tape.QuantumTape() as tape:
+    #         qml.templates.Permute(permutation_order, wire_order)
+
+    #     assert tape.operations == expected_ops
+
+    # @pytest.mark.parametrize(
+    #     "permutation_order,wire_order,expected_ops",
+    #     [
+    #         ([1, 2, 0], [0, 1, 2], [qml.SWAP(wires=[0, 1]), qml.SWAP(wires=[1, 2])]),
+    #         ([2, 3, 4, 1], [1, 2, 3, 4], [qml.SWAP(wires=[1, 2]),
+    #                                       qml.SWAP(wires=[2, 3]),
+    #                                       qml.SWAP(wires=[1, 4])])
+    #     ],
+    # )
+    # def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_ops):
+    #     """ Test some two-cycles to ensure permutation occurs. """
+
+    #     with qml.tape.QuantumTape() as tape:
+    #         qml.templates.Permute(permutation_order, wire_order)
+
+    #     assert tape.operations == expected_ops
