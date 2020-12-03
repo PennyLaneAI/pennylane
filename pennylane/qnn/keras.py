@@ -378,8 +378,6 @@ class KerasLayer(Layer):
             'weight_shapes': self.weight_shapes,
             'output_dim': self.output_dim,
             'weight_specs': self.weight_specs,
-            'trainable': self.trainable,
-            'dtype': self.dtype,
-            'name': self.name
+            **{k: v for k, v in super().get_config().items() if k != 'dynamic'}
         }
 
