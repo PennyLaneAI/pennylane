@@ -2,6 +2,16 @@
 
 <h3>New features since last release</h3>
 
+* Apply permutations to wires using the `Permute` subroutine.
+
+  ```python
+  import qml
+  from qml.templates import Permute
+
+  with qml.tape.QuantumTape() as tape:
+    Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+  ```
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -13,6 +23,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Olivia Di Matteo.
 
 # Release 0.13.0 (current release)
 
