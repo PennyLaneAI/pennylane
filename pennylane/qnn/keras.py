@@ -370,3 +370,16 @@ class KerasLayer(Layer):
         `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Set to
         ``"inputs"``."""
         return self._input_arg
+
+
+    def get_config(self):
+        return {
+            'qnode': self.qnode,
+            'weight_shapes': self.weight_shapes,
+            'output_dim': self.output_dim,
+            'weight_specs': self.weight_specs,
+            'trainable': self.trainable,
+            'dtype': self.dtype,
+            'name': self.name
+        }
+
