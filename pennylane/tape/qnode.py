@@ -560,7 +560,7 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": lambda x: x}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):
