@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Utility functions and numerical implementations of quantum operations for Autograd-based devices.
+Utility functions and numerical implementations of quantum operations for JAX-based devices.
+
 """
 import jax.numpy as jnp
 from pennylane.utils import pauli_eigs

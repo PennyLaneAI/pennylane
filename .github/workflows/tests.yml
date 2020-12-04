@@ -116,7 +116,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install tensorflow==$TF_VERSION
+        run: pip3 install jax jaxlib
 
       - name: Install PennyLane
         run: |

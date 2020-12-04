@@ -5,6 +5,7 @@ jnp = jax.numpy
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
 
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
