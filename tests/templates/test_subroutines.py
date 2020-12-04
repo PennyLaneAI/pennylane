@@ -1276,7 +1276,7 @@ class TestPermute:
                 qml.templates.Permute([2, "a", "d", "c", 1], wires=wire_labels)
 
     def test_identity_permutations(self):
-        """ Test if identity permutations have no effect on the registers. """
+        """ Test if identity permutations have no effect. """
 
         # QNode version
         dev = qml.device("default.qubit", wires=4)
@@ -1296,66 +1296,196 @@ class TestPermute:
 
         assert len(tape.operations) == 0
 
-    # @pytest.mark.parametrize(
-    #     "permutation_order,expected_ops",
-    #     [
-    #         ([1, 0], [qml.SWAP(wires=[0, 1])]),
-    #         ([1, 0, 2], [qml.SWAP(wires=[0, 1])]),
-    #         ([1, 0, 2, 3], [qml.SWAP(wires=[0, 1])]),
-    #         ([0, 2, 1, 3], [qml.SWAP(wires=[1, 2])]),
-    #         ([2, 3, 0, 1], [qml.SWAP(wires=[0, 2]), qml.SWAP(wires=[1, 3])]),
-    #     ],
-    # )
-    # def test_two_cycle_permutations_qnode(self, permutation_order, expected_ops):
-    #     """ Test some two-cycles to ensure permutation occurs. """
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([1, 0], [(0, 1)]),
+            ([1, 0, 2], [(0, 1)]),
+            ([1, 0, 2, 3], [(0, 1)]),
+            ([0, 2, 1, 3], [(1, 2)]),
+            ([2, 3, 0, 1], [(0, 2), (1, 3)]),
+        ],
+    )
+    def test_two_cycle_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test some two-cycles on QNodes. """
 
-    #     dev = qml.device("default.qubit", wires=len(permutation_order))
+        dev = qml.device("default.qubit", wires=len(permutation_order))
 
-    #     @qml.qnode(dev)
-    #     def two_cycle():
-    #         qml.templates.Permute(permutation_order, wires=dev.wires)
-    #         return qml.expval(qml.PauliZ(0))
+        @qml.qnode(dev)
+        def two_cycle():
+            qml.templates.Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
 
-    #     two_cycle()
+        two_cycle()
 
-    #     assert two_cycle.ops[:-1] == expected_ops
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in two_cycle.ops[:-1])
+        assert [op.wires.labels for op in two_cycle.ops[:-1]] == expected_wires
 
-    # @pytest.mark.parametrize(
-    #     "permutation_order,wire_order,expected_ops",
-    #     [
-    #         ([1, 0], [0, 1], [qml.SWAP(wires=[0, 1])]),
-    #         ([1, 0, 2], [0, 1, 2], [qml.SWAP(wires=[0, 1])]),
-    #         ([1, 0, 2, 3], [0, 1, 2, 3], [qml.SWAP(wires=[0, 1])]),
-    #         ([0, 2, 1, 3], [0, 1, 2, 3], [qml.SWAP(wires=[1, 2])]),
-    #         ([2, 3, 0, 1], [0, 1, 2, 3], [qml.SWAP(wires=[0, 2]), qml.SWAP(wires=[1, 3])]),
-    #         (
-    #             ["a", "b", 0, 1],
-    #             [0, 1, "a", "b"],
-    #             [qml.SWAP(wires=[0, "a"]), qml.SWAP(wires=[1, "b"])],
-    #         ),
-    #     ],
-    # )
-    # def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_ops):
-    #     """ Test some two-cycles to ensure permutation occurs. """
+    @pytest.mark.parametrize(
+        # For tape need to specify the wire labels
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 0], [0, 1], [(0, 1)]),
+            ([1, 0, 2], [0, 1, 2], [(0, 1)]),
+            ([1, 0, 2, 3], [0, 1, 2, 3], [(0, 1)]),
+            ([0, 2, 1, 3], [0, 1, 2, 3], [(1, 2)]),
+            ([2, 3, 0, 1], [0, 1, 2, 3], [(0, 2), (1, 3)]),
+            (["a", "b", 0, 1], [0, 1, "a", "b"], [(0, "a"), (1, "b")]),
+        ],
+    )
+    def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test some two-cycles on tapes. """
 
-    #     with qml.tape.QuantumTape() as tape:
-    #         qml.templates.Permute(permutation_order, wire_order)
+        with qml.tape.QuantumTape() as tape:
+            qml.templates.Permute(permutation_order, wire_order)
 
-    #     assert tape.operations == expected_ops
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
 
-    # @pytest.mark.parametrize(
-    #     "permutation_order,wire_order,expected_ops",
-    #     [
-    #         ([1, 2, 0], [0, 1, 2], [qml.SWAP(wires=[0, 1]), qml.SWAP(wires=[1, 2])]),
-    #         ([2, 3, 4, 1], [1, 2, 3, 4], [qml.SWAP(wires=[1, 2]),
-    #                                       qml.SWAP(wires=[2, 3]),
-    #                                       qml.SWAP(wires=[1, 4])])
-    #     ],
-    # )
-    # def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_ops):
-    #     """ Test some two-cycles to ensure permutation occurs. """
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([1, 2, 0], [(0, 1), (1, 2)]),
+            ([3, 0, 1, 2], [(0, 3), (1, 3), (2, 3)]),
+            ([1, 2, 3, 0], [(0, 1), (1, 2), (2, 3)]),
+        ],
+    )
+    def test_cyclic_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test more general cycles on QNodes. """
 
-    #     with qml.tape.QuantumTape() as tape:
-    #         qml.templates.Permute(permutation_order, wire_order)
+        dev = qml.device("default.qubit", wires=len(permutation_order))
 
-    #     assert tape.operations == expected_ops
+        @qml.qnode(dev)
+        def cycle():
+            qml.templates.Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        cycle()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in cycle.ops[:-1])
+        assert [op.wires.labels for op in cycle.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 2, 0], [0, 1, 2], [(0, 1), (1, 2)]),
+            (["d", "a", "b", "c"], ["a", "b", "c", "d"], [("a", "d"), ("b", "d"), ("c", "d")]),
+            (["b", 0, "d", "a"], ["a", "b", 0, "d"], [("a", "b"), ("b", 0), (0, "d")]),
+        ],
+    )
+    def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test more general cycles on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.templates.Permute(permutation_order, wire_order)
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([3, 0, 2, 1], [(0, 3), (1, 3)]),
+            ([1, 3, 0, 4, 2], [(0, 1), (1, 3), (2, 3), (3, 4)]),
+            ([5, 1, 4, 2, 3, 0], [(0, 5), (2, 4), (3, 4)]),
+        ],
+    )
+    def test_arbitrary_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test arbitrarily generated permutations on QNodes. """
+
+        dev = qml.device("default.qubit", wires=len(permutation_order))
+
+        @qml.qnode(dev)
+        def arbitrary_perm():
+            qml.templates.Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        arbitrary_perm()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in arbitrary_perm.ops[:-1])
+        assert [op.wires.labels for op in arbitrary_perm.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 3, 0, 2], [0, 1, 2, 3], [(0, 1), (1, 3), (2, 3)]),
+            (
+                ["d", "a", "e", "b", "c"],
+                ["a", "b", "c", "d", "e"],
+                [("a", "d"), ("b", "d"), ("c", "e")],
+            ),
+            (
+                ["p", "f", 4, "q", "z", 0, "c", "d"],
+                ["z", 0, "d", "c", 4, "f", "q", "p"],
+                [("z", "p"), (0, "f"), ("d", 4), ("c", "q"), (4, "p")],
+            ),
+        ],
+    )
+    def test_arbitrary_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test arbitrarily generated permutations on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.templates.Permute(permutation_order, wire_order)
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
+
+    @pytest.mark.parametrize(
+        "num_wires,permutation_order,wire_subset,expected_wires",
+        [
+            (3, [1, 0], [0, 1], [(0, 1)]),
+            (4, [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
+            (6, [4, 2, 1, 3], [1, 2, 3, 4], [(1, 4), (3, 4)]),
+        ],
+    )
+    def test_subset_permutations_qnode(
+        self, num_wires, permutation_order, wire_subset, expected_wires
+    ):
+        """ Test permutation of wire subsets on QNodes. """
+
+        dev = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def subset_perm():
+            qml.templates.Permute(permutation_order, wires=wire_subset)
+            return qml.expval(qml.PauliZ(0))
+
+        subset_perm()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in subset_perm.ops[:-1])
+        assert [op.wires.labels for op in subset_perm.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "wire_labels,permutation_order,wire_subset,expected_wires",
+        [
+            ([0, 1, 2], [1, 0], [0, 1], [(0, 1)]),
+            ([0, 1, 2, 3], [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
+            (
+                [0, 2, "a", "c", 1, 4],
+                [4, "c", 2, "a"],
+                [2, "a", "c", 4],
+                [(2, 4), ("a", "c"), ("c", 4)],
+            ),
+        ],
+    )
+    def test_subset_permutations_tape(
+        self, wire_labels, permutation_order, wire_subset, expected_wires
+    ):
+        """ Test permutation of wire subsets on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            # Make sure all the wires are actually there
+            for wire in wire_labels:
+                qml.RZ(0, wires=wire)
+            qml.templates.Permute(permutation_order, wire_subset)
+
+        # Make sure to start comparison after the set of RZs have been applied
+        assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
+        assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
