@@ -60,6 +60,7 @@ def Permute(permutation, wires):
 
         .. code-block:: python
 
+           >>> print(tape.draw())
            0: ──RZ(0)─────────╭SWAP────────────────┤
            1: ──RZ(0)──╭SWAP──│────────────────────┤
            2: ──RZ(0)──╰SWAP──│──────╭SWAP─────────┤
@@ -81,13 +82,12 @@ def Permute(permutation, wires):
 
         The permuted circuit is:
 
-        .. code-block:: python
-
-            3: ──RZ(0)──╭SWAP────────────────┤
-            2: ──RZ(0)──│──────╭SWAP─────────┤
-            a: ──RZ(0)──│──────│─────────────┤
-            0: ──RZ(0)──│──────│──────╭SWAP──┤
-            c: ──RZ(0)──╰SWAP──╰SWAP──╰SWAP──┤
+        >>> print(tape.draw())
+        3: ──RZ(0)──╭SWAP────────────────┤
+        2: ──RZ(0)──│──────╭SWAP─────────┤
+        a: ──RZ(0)──│──────│─────────────┤
+        0: ──RZ(0)──│──────│──────╭SWAP──┤
+        c: ──RZ(0)──╰SWAP──╰SWAP──╰SWAP──┤
 
         It is also possible to permute a subset of wires by
         specifying a subset of labels. For example,
@@ -106,13 +106,12 @@ def Permute(permutation, wires):
 
         will permute only the second, third, and fifth wires as follows:
 
-        .. code-block:: python
-
-            3: ──RZ(0)────────────────┤
-            2: ──RZ(0)──╭SWAP─────────┤
-            a: ──RZ(0)──│─────────────┤
-            0: ──RZ(0)──│──────╭SWAP──┤
-            c: ──RZ(0)──╰SWAP──╰SWAP──┤
+        >>> print(tape.draw())
+        3: ──RZ(0)────────────────┤
+        2: ──RZ(0)──╭SWAP─────────┤
+        a: ──RZ(0)──│─────────────┤
+        0: ──RZ(0)──│──────╭SWAP──┤
+        c: ──RZ(0)──╰SWAP──╰SWAP──┤
 
         Finally, ``Permute`` can also be used with QNodes:
 
@@ -124,9 +123,15 @@ def Permute(permutation, wires):
             def apply_perm():
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=2)
-                qml.templates.Permute([3, 1, 2, 0], dev.wires)
+                qml.templates.Permute([3, 2, 0, 1], dev.wires)
                 return qml.expval(qml.PauliZ(0))
 
+        >>> apply_perm()
+        >>> print(apply_perm.draw())
+        0: ──H─────────╭SWAP─────────┤ ⟨Z⟩
+        1: ─────╭SWAP──│─────────────┤
+        2: ──H──╰SWAP──│──────╭SWAP──┤
+        3: ────────────╰SWAP──╰SWAP──┤
     """
 
     wires = Wires(wires)
