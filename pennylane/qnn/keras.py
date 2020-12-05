@@ -371,13 +371,11 @@ class KerasLayer(Layer):
         ``"inputs"``."""
         return self._input_arg
 
-
     def get_config(self):
         return {
-            'qnode': self.qnode,
-            'weight_shapes': self.weight_shapes,
-            'output_dim': self.output_dim,
-            'weight_specs': self.weight_specs,
-            **{k: v for k, v in super().get_config().items() if k != 'dynamic'}
+            "qnode": self.qnode,
+            "weight_shapes": self.weight_shapes,
+            "output_dim": self.output_dim,
+            "weight_specs": self.weight_specs,
+            **{k: v for k, v in super().get_config().items() if k != "dynamic"},
         }
-

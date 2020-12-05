@@ -4,6 +4,25 @@
 
 <h3>Improvements</h3>
 
+* `qnn.KerasLayer` now supports serialization when used in Keras "Functional"
+  API. [(#953)](https://github.com/PennyLaneAI/pennylane/pull/953)
+  
+  This unlocks additional functionality from `tf.keras`, e.g. cloning 
+  models:
+
+  ```python
+  from tensorflow import keras
+  from pennylane.qnn import KerasLayer
+
+  inputs = keras.layers.Input(shape=(num_qubits,))
+  circuit = KerasLayer(my_qnode, weight_shapes=my_weight_shapes, output_dim=num_qubits)(inputs)
+
+  model = keras.Model(inputs=inputs, outputs=circuit)
+
+  # This works now!
+  model_copy = keras.models.clone_model(model)
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -13,6 +32,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Lucas Wolf
 
 # Release 0.13.0 (current release)
 
