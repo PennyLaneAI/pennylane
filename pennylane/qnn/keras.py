@@ -372,6 +372,9 @@ class KerasLayer(Layer):
         return self._input_arg
 
     def get_config(self):
+        """Returns `__init__` args used to construct this instance, allowing
+        serialization of models contianing `KerasLayer`.
+        """
         return {
             "qnode": self.qnode,
             "weight_shapes": self.weight_shapes,
