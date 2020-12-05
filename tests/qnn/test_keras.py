@@ -542,3 +542,35 @@ class TestKerasLayerIntegration:
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_model_serialization(self, get_circuit, output_dim):
+        """Test if serializing and deserializing `KerasLayer` as part of a 
+        Keras model reconstructs the layer correctly, i.e. that the right
+        arguments are passed to __init__ when instantiating the layer during
+        deserialization."""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        inputs = tf.keras.layers.Input((1,))
+        outputs = layer(inputs)
+
+        keras_model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        model_clone = tf.keras.models.clone_model(keras_model)
+
+        layer_clone = model_clone.layers[-1]
+
+        # Assert that the KerasLayer in the deserialized model has been 
+        # instantiated with the correct __init__ args.
+
+        # Test for identity (versus equality) here to make sure that the cloned
+        # model is evaluated on the same device
+        assert layer.qnode is layer_clone.qnode
+
+        assert layer.weight_shapes == layer_clone.weight_shapes
+        assert layer.output_dim == layer_clone.output_dim
+        assert layer.weight_specs == layer_clone.weight_specs
+        assert layer.trainable == layer_clone.trainable
+        assert layer.name == layer_clone.name
+        assert layer.dtype == layer_clone.dtype
+        assert layer_clone.dynamic == layer_clone.dynamic
