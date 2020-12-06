@@ -346,7 +346,7 @@ class TestHighLevelIntegration:
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
         if qml.tape_mode_active():
-            pass # TODO(chase): Figure out why map doesn't set the interface in tape mode.
+            pass  # TODO(chase): Figure out why map doesn't set the interface in tape mode.
         else:
             assert qnodes.interface == "jax", f"Tape mode: {qml.tape_mode_active()}"
 
