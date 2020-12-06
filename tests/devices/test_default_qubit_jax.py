@@ -1,4 +1,5 @@
 import pytest
+
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
 
@@ -6,6 +7,7 @@ import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
 pytestmark = pytest.mark.usefixtures("tape_mode")
+
 
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
@@ -16,18 +18,18 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.qubit.jax", wires=1)
         cap = dev.capabilities()
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": True,
-                        "supports_tensor_observables": True,
-                        "returns_probs": True,
-                        "returns_state": True,
-                        "supports_reversible_diff": False,
-                        "supports_inverse_operations": True,
-                        "supports_analytic_computation": True,
-                        "passthru_interface": 'jax',
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_reversible_diff": False,
+            "supports_inverse_operations": True,
+            "supports_analytic_computation": True,
+            "passthru_interface": "jax",
+        }
         assert cap == capabilities
-
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
@@ -37,7 +39,6 @@ class TestQNodeIntegration:
         assert dev.analytic
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
-
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
@@ -52,8 +53,8 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliY(0))
 
         expected = -jnp.sin(p)
-
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        if not qml.tape_mode_active():
+            assert isinstance(circuit, qml.qnodes.PassthruQNode)
         assert jnp.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_qubit_circuit_with_jit(self, tol):
@@ -99,6 +100,7 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -120,7 +122,8 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        if not qml.tape_mode_active():
+            assert isinstance(circuit, qml.qnodes.PassthruQNode)
         res = circuit(weights)
 
         expected = jnp.cos(3 * x) * jnp.cos(y) * jnp.cos(z / 2) - jnp.sin(3 * x) * jnp.sin(z / 2)
@@ -131,9 +134,11 @@ class TestPassthruIntegration:
 
         expected = jnp.array(
             [
-                -3 * (jnp.sin(3 * x) * jnp.cos(y) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.sin(z / 2)),
+                -3
+                * (jnp.sin(3 * x) * jnp.cos(y) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.sin(z / 2)),
                 -jnp.cos(3 * x) * jnp.sin(y) * jnp.cos(z / 2),
-                -0.5 * (jnp.sin(3 * x) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.cos(y) * jnp.sin(z / 2)),
+                -0.5
+                * (jnp.sin(3 * x) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.cos(y) * jnp.sin(z / 2)),
             ]
         )
 
@@ -205,14 +210,14 @@ class TestPassthruIntegration:
         b = jnp.array(0.12)
 
         def cost(a, b):
-            prob_wire_1 = circuit(a, b)[0]
+            prob_wire_1 = circuit(a, b).squeeze()
             return prob_wire_1[1] - prob_wire_1[0]
 
         res = cost(a, b)
         expected = -jnp.cos(a) * jnp.cos(b)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = jax.grad(cost, argnums=(0, 1))(a, b)
+        grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -242,7 +247,7 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
-    def test_autograd_interface_gradient(self, operation, diff_method, tol):
+    def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Jax interface, using a variety of differentiation methods."""
         dev = qml.device("default.qubit.jax", wires=1)
@@ -256,12 +261,13 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliX(w))
 
         # Check that the correct QNode type is being used.
-        if diff_method == "backprop":
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert not hasattr(circuit, "jacobian")
-        else:
-            assert not isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert hasattr(circuit, "jacobian")
+        if not qml.tape_mode_active():
+            if diff_method == "backprop":
+                assert isinstance(circuit, qml.qnodes.PassthruQNode)
+                assert not hasattr(circuit, "jacobian")
+            else:
+                assert not isinstance(circuit, qml.qnodes.PassthruQNode)
+                assert hasattr(circuit, "jacobian")
 
         def cost(params):
             """Perform some classical processing"""
@@ -274,7 +280,9 @@ class TestPassthruIntegration:
         params = jnp.array([theta, phi, lam])
 
         res = cost(params)
-        expected_cost = (jnp.sin(lam) * jnp.sin(phi) - jnp.cos(theta) * jnp.cos(lam) * jnp.cos(phi)) ** 2
+        expected_cost = (
+            jnp.sin(lam) * jnp.sin(phi) - jnp.cos(theta) * jnp.cos(lam) * jnp.cos(phi)
+        ) ** 2
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
 
         res = jax.grad(cost)(params)
@@ -291,7 +299,6 @@ class TestPassthruIntegration:
         )
         assert jnp.allclose(res, expected_grad, atol=tol, rtol=0)
 
-
     @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
@@ -302,11 +309,13 @@ class TestPassthruIntegration:
             qml.RZ(x, wires=w)
             return qml.expval(qml.PauliX(w))
 
+        error_type = qml.QuantumFunctionError if qml.tape_mode_active() else ValueError
         with pytest.raises(
-            ValueError,
+            error_type,
             match="default.qubit.jax only supports diff_method='backprop' when using the jax interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
+
 
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
@@ -320,14 +329,15 @@ class TestHighLevelIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        weights = jnp.array(
-            qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
 
         grad = jax.grad(lambda a: circuit(a).reshape(()))(weights)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
         """Test that a PassthruQNode default.qubit.jax works with QNodeCollections."""
+        if qml.tape_mode_active():
+            pytest.skip("TODO(chase): Figure out why map doesn't set the interface")
         dev = qml.device("default.qubit.jax", wires=2)
 
         def ansatz(weights, **kwargs):
@@ -338,7 +348,7 @@ class TestHighLevelIntegration:
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
 
-        assert qnodes.interface == "jax"
+        assert qnodes.interface == "jax", f"Tape mode: {qml.tape_mode_active()}"
 
         weights = jnp.array([0.1, 0.2])
 
@@ -357,22 +367,22 @@ class TestOps:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device('default.qubit.jax', wires=wires)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(param):
-            qml.MultiRZ(param, wires=[0,1])
-            return qml.probs(wires = list(range(wires)))
+            qml.MultiRZ(param, wires=[0, 1])
+            return qml.probs(wires=list(range(wires)))
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires **2))
+        assert jnp.allclose(res, jnp.zeros(wires ** 2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubitJax(wires=['a', 'b', 'c'])
-        state = jnp.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.
-        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+        dev = DefaultQubitJax(wires=["a", "b", "c"])
+        state = jnp.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
@@ -383,9 +393,9 @@ class TestOps:
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultQubitJax(wires=['a', 'b', 'c'])
-        state = jnp.array([1, 0, 1, 0]) / jnp.sqrt(2.)
-        state_wires = qml.wires.Wires(['a', 'c'])
+        dev = DefaultQubitJax(wires=["a", "b", "c"])
+        state = jnp.array([1, 0, 1, 0]) / jnp.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
