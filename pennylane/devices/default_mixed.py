@@ -89,6 +89,8 @@ class DefaultMixed(QubitDevice):
         "GeneralizedAmplitudeDamping",
         "PhaseDamping",
         "DepolarizingChannel",
+        "BitFlipChannel",
+        "PhaseFlipChannel",
         "QubitChannel",
     }
 
