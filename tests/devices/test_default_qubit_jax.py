@@ -2,7 +2,7 @@ import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
-
+import numpy as np
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
@@ -99,6 +99,28 @@ class TestQNodeIntegration:
 
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
+    def test_sampling_with_jit(self):
+        """Test that sampling works with a jax.jit"""
+
+
+
+        @jax.jit
+        def circuit(key):
+            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+            @qml.qnode(dev, interface="jax", diff_method="backprop")
+            def inner_circuit():
+                qml.Hadamard(0)
+                return qml.sample(qml.PauliZ(wires=0))
+            return inner_circuit()
+
+        a = circuit(jax.random.PRNGKey(0))
+        b = circuit(jax.random.PRNGKey(0))
+        c = circuit(jax.random.PRNGKey(1))
+        np.testing.assert_array_equal(a, b)
+        print(a)
+        print(c)
+        assert not np.all(a == c)
 
 
 class TestPassthruIntegration:

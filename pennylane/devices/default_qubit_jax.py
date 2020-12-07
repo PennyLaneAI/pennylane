@@ -16,7 +16,8 @@ reference plugin.
 """
 
 
-from pennylane.operation import DiagonalOperation
+from pennylane.operation import DiagonalOperation, Sample, Variance, Expectation, Probability, State
+from pennylane.qnodes import QuantumFunctionError
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
@@ -26,7 +27,7 @@ try:
     import jax.numpy as jnp
     import jax
 
-except ImportError as e:
+except ImportError as e:  #pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
 
 
@@ -62,7 +63,8 @@ class DefaultQubitJax(DefaultQubit):
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
     >>> weights = jnp.array([0.2, 0.5, 0.1])
-    >>> grad_fn = jax.grad(circuit)
+    >>> # Squeeze is needed since JAX requires scalar outputs for grad.
+    >>> grad_fn = jax.grad(lambda x: circuit(x).squeeze())
     >>> print(grad_fn(weights))
     array([-2.2526717e-01 -1.0086454e+00  1.3877788e-17])
 
@@ -72,12 +74,52 @@ class DefaultQubitJax(DefaultQubit):
     * You must use the ``"jax"`` interface for classical backpropagation, as jax is
       used as the device backend.
 
-    * Only exact expectation values, variances, and probabilities are differentiable.
-      When instantiating the device with ``analytic=False``, differentiating QNode
-      outputs will result in an error.
+    .. UsageDetails::
+
+        Jax does randomness is a special way when compared to numpy, in that all PRNGs need to
+        be seeded. While we handle this for you automatically in op-by-op mode, when in a ``jax.jit``
+        function, each call will return the exact same samples if done incorrectly.
+
+        Example:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+
+            @jax.jit
+            @qml.qnode(dev, interface="jax", diff_method="backprop")
+            def circuit():
+                qml.Hadamard(0)
+                return qml.sample(qml.PauliZ(wires=0))
+
+            a = circuit()
+            b = circuit() # Wrong! b will be the exact same samples as a.
+
+
+        To fix this, you should wrap your qnode in another function that takes a PRNGKey, and pass
+        that in to your device construction.
+
+        .. code-block:: python
+
+            @jax.jit
+            def keyed_circuit(key):
+                dev = qml.device("default.qubit.jax", interface="jax", prng_key=key)
+                @qml.qnode(dev, interface="jax", diff_method="backprop")
+                def circuit():
+                    qml.Hadamard(0)
+                    return qml.sample(qml.PauliZ(wires=0))
+                return circuit()
+
+            key1 = jax.random.PRNGKey(0)
+            key2 = jax.random.PRNGKey(1)
+            a = keyed_circuit(key1)
+            b = keyed_circuit(key2) # b will be different samples now.
+        
+        Checkout out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_ 
+        for more information.  
 
     Args:
-        wires (int): the number of wires to initialize the device with
+        wires (int): The number of wires to initialize the device with.
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored
@@ -87,6 +129,7 @@ class DefaultQubitJax(DefaultQubit):
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
+        prng_key (jax.random.PRNGKey): The pseudo
     """
 
     name = "Default qubit (jax) PennyLane plugin"
@@ -191,3 +234,55 @@ class DefaultQubitJax(DefaultQubit):
         else:
             key = self._prng_key
         return jax.random.choice(key, number_of_states, shape=(self.shots,), p=state_probability)
+
+    def statistics(self, observables):
+        """Process measurement results from circuit execution and return statistics.
+
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
+
+        Args:
+            observables (List[.Observable]): the observables to be measured
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+        """
+        results = []
+
+        for obs in observables:
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                results.append(self.expval(obs))
+
+            elif obs.return_type is Variance:
+                results.append(self.var(obs))
+
+            elif obs.return_type is Sample:
+                results.append(jnp.array(self.sample(obs)))
+
+            elif obs.return_type is Probability:
+                results.append(self.probability(wires=obs.wires))
+
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.access_state(wires=obs.wires))
+
+            elif obs.return_type is not None:
+                raise QuantumFunctionError(
+                    "Unsupported return type specified for observable {}".format(obs.name)
+                )
+
+        return results
