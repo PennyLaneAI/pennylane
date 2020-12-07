@@ -27,7 +27,7 @@ try:
     import jax.numpy as jnp
     import jax
 
-except ImportError as e:  #pragma: no cover
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
 
 
@@ -114,9 +114,9 @@ class DefaultQubitJax(DefaultQubit):
             key2 = jax.random.PRNGKey(1)
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
-        
-        Checkout out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_ 
-        for more information.  
+
+        Checkout out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_
+        for more information.
 
     Args:
         wires (int): The number of wires to initialize the device with.
