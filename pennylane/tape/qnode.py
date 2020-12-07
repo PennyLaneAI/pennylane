@@ -562,11 +562,7 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    def to_jax(self):
-        """Apply the Autograd interface to the internal quantum tape."""
-        self.interface = "jax"
-
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": lambda x: x}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):
