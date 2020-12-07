@@ -332,7 +332,7 @@ class QubitDevice(Device):
                 results.append(self.var(obs))
 
             elif obs.return_type is Sample:
-                results.append(np.array(self.sample(obs)))
+                results.append(self.sample(obs))
 
             elif obs.return_type is Probability:
                 results.append(self.probability(wires=obs.wires))

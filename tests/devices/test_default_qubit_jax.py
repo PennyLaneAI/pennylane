@@ -102,9 +102,6 @@ class TestQNodeIntegration:
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
-
-
-
         @jax.jit
         def circuit(key):
             dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
@@ -118,9 +115,19 @@ class TestQNodeIntegration:
         b = circuit(jax.random.PRNGKey(0))
         c = circuit(jax.random.PRNGKey(1))
         np.testing.assert_array_equal(a, b)
-        print(a)
-        print(c)
         assert not np.all(a == c)
+
+    def test_sampling_op_by_op(self):
+        """Test that sampling works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=1)
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        a = circuit()
+        b = circuit()
+        assert not np.all(a == b)
 
 
 class TestPassthruIntegration:
