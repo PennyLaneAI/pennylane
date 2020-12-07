@@ -148,7 +148,7 @@ def Permute(permutation, wires):
 
     wires = Wires(wires)
 
-    if len(wires) <= 1:
+    if len(permutation) <= 1 or len(wires) <= 1:
         raise ValueError("Permutations must involve at least 2 qubits.")
 
     # Make sure the length of the things are the same
