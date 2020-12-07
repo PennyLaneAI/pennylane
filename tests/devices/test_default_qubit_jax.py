@@ -31,6 +31,14 @@ class TestQNodeIntegration:
         }
         assert cap == capabilities
 
+    def test_defines_correct_capabilities_directly_from_class(self):
+        """Test that the device defines the right capabilities"""
+
+        dev = DefaultQubitJax(wires=1)
+        cap = dev.capabilities()
+        assert cap["supports_reversible_diff"] == False
+        assert cap["passthru_interface"] == "jax"
+
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.jax", wires=2)
@@ -139,6 +147,16 @@ class TestQNodeIntegration:
             qml.CRY(0.0, wires=[0, 1])
             return qml.sample(qml.PauliZ(wires=0))
         circuit() # Just don't crash.
+
+    def test_diagonal_doesnt_crash(self):
+        """Add test case for uncovered gates."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+        circuit() # Just don't crash.
+       
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
