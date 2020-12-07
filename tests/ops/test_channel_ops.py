@@ -137,7 +137,7 @@ class TestBitFlipChannel:
         p = 0.1
         op = channel.BitFlipChannel
 
-        expected_K0 = np.sqrt(1-p) * np.eye(2)
+        expected_K0 = np.sqrt(1 - p) * np.eye(2)
         assert np.allclose(op(0.1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * X
@@ -158,7 +158,7 @@ class TestPhaseFlipChannel:
         p = 0.1
         op = channel.PhaseFlipChannel
 
-        expected_K0 = np.sqrt(1-p) * np.eye(2)
+        expected_K0 = np.sqrt(1 - p) * np.eye(2)
         assert np.allclose(op(0.1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * Z
