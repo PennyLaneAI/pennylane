@@ -118,7 +118,7 @@ class TestQNodeIntegration:
         assert not np.all(a == c)
 
     def test_sampling_op_by_op(self):
-        """Test that sampling works with a jax.jit"""
+        """Test that op-by-op sampling works as a new user would expect"""
         dev = qml.device("default.qubit.jax", wires=1)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
@@ -129,6 +129,16 @@ class TestQNodeIntegration:
         b = circuit()
         assert not np.all(a == b)
 
+    def test_gates_dont_crash(self):
+        """Add test case for uncovered gates."""
+        dev = qml.device("default.qubit.jax", wires=2)
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.CRZ(0.0, wires=[0, 1])
+            qml.CRot(1.0, 0.0, 0.0, wires=[0, 1])
+            qml.CRY(0.0, wires=[0, 1])
+            return qml.sample(qml.PauliZ(wires=0))
+        circuit() # Just don't crash.
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
