@@ -24,14 +24,26 @@ from pennylane.wires import Wires
 
 @template
 def Permute(permutation, wires):
-    r"""Permutes a set of wires into a new order.
+    r"""Applies a permutation to a set of wires.
+
+    Example usage:
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        with qml.tape.QuantumTape() as tape:
+            # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+            qml.templates.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+
+    See "Usage Details" below for further examples.
 
     Args:
         permutation (list): A list of wire labels that represents the new ordering of wires
             after the permutation. The list may consist of integers or strings, so long as
-            they match the labels of the wires.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
-            or strings, or a Wires object.
+            they match the labels of ``wires``.
+        wires (Iterable or Wires): Wires that the permutation acts on. Accepts an iterable
+            of numbers or strings, or a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format
