@@ -16,9 +16,7 @@ reference plugin.
 """
 
 
-from pennylane.operation import DiagonalOperation, Sample, Variance, Expectation, Probability, State
-from pennylane.qnodes import QuantumFunctionError
-
+from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
 import numpy as np
