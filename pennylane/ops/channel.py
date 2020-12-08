@@ -249,7 +249,7 @@ class BitFlipChannel(Channel):
     * Number of parameters: 1
 
     Args:
-        p (float): The probability for which a bit flip error occurs.
+        p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_params = 1
@@ -291,7 +291,7 @@ class PhaseFlipChannel(Channel):
     * Number of parameters: 1
 
     Args:
-        p (float): The probability for which a phase flip error occurs.
+        p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_params = 1
