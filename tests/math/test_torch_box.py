@@ -82,6 +82,27 @@ def test_cast_exception():
         qml.math.TensorBox(x).cast(np.bytes0)
 
 
+def test_coerce_types():
+    """Test that tensors are correctly coerced to the same type."""
+    tensors = [
+        torch.tensor([1, 2], dtype=torch.int8),
+        torch.tensor([3, 4], dtype=torch.int64),
+    ]
+
+    res = qml.math.TensorBox(tensors[0])._coerce_types(tensors)
+
+    assert all(t.dtype is torch.int64 for t in res)
+
+    tensors = [
+        torch.tensor([1, 2], dtype=torch.float64),
+        torch.tensor([3, 4], dtype=torch.complex128),
+    ]
+
+    res = qml.math.TensorBox(tensors[0])._coerce_types(tensors)
+
+    assert all(t.dtype is torch.complex128 for t in res)
+
+
 def test_len():
     """Test length"""
     x = torch.tensor([[1, 2], [3, 4]])

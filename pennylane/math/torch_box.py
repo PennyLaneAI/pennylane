@@ -66,9 +66,13 @@ class TorchBox(qml.math.TensorBox):
         if len(dtypes) == 1:
             return tensors
 
-        complex_type = dtypes.intersection({torch.complex64, torch.complex128})
-        float_type = dtypes.intersection({torch.float16, torch.float32, torch.float64})
-        int_type = dtypes.intersection({torch.int8, torch.int16, torch.int32, torch.int64})
+        complex_priority = [torch.complex64, torch.complex128]
+        float_priority = [torch.float16, torch.float32, torch.float64]
+        int_priority = [torch.int8, torch.int16, torch.int32, torch.int64]
+
+        complex_type = [i for i in complex_priority if i in dtypes]
+        float_type = [i for i in float_priority if i in dtypes]
+        int_type = [i for i in int_priority if i in dtypes]
 
         cast_type = complex_type or float_type or int_type
         cast_type = list(cast_type)[-1]
@@ -132,9 +136,6 @@ class TorchBox(qml.math.TensorBox):
 
     @wrap_output
     def take(self, indices, axis=None):
-        if isinstance(indices, qml.math.TensorBox):
-            indices = indices.numpy()
-
         if not isinstance(indices, torch.Tensor):
             indices = self.astensor(indices)
 
@@ -142,6 +143,12 @@ class TorchBox(qml.math.TensorBox):
             return self.data.flatten()[indices]
 
         if indices.ndim == 1:
+            if (indices < 0).any():
+                # index_select doesn't allow negative indices
+                dim_length = self.data.size()[0] if axis is None else self.shape[axis]
+
+                indices = qml.math.where(indices >= 0, indices, indices + dim_length)
+
             return torch.index_select(self.data, dim=axis, index=indices)
 
         fancy_indices = [slice(None)] * axis + [indices]

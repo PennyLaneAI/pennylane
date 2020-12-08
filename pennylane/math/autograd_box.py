@@ -86,16 +86,13 @@ class AutogradBox(qml.math.TensorBox):
 
     @wrap_output
     def take(self, indices, axis=None):
-        if isinstance(indices, qml.math.TensorBox):
-            indices = indices.numpy()
-
         indices = self.astensor(indices)
 
         if axis is None:
             return self.data.flatten()[indices]
 
         fancy_indices = [slice(None)] * axis + [indices]
-        return self.data[fancy_indices]
+        return self.data[tuple(fancy_indices)]
 
     @staticmethod
     @wrap_output

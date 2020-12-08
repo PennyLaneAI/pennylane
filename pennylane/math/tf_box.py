@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the TensorFlowBox implementation of the TensorBox API.
 """
+import numbers
 import tensorflow as tf
 
 
@@ -53,7 +54,6 @@ class TensorFlowBox(qml.math.TensorBox):
         )
     )
     T = wrap_output(lambda self: tf.transpose(self.data))
-    take = wrap_output(lambda self, indices, axis=None: tf.gather(self.data, indices, axis=axis))
 
     def __len__(self):
         if isinstance(self.data, tf.Variable):
@@ -134,6 +134,27 @@ class TensorFlowBox(qml.math.TensorBox):
         values = TensorFlowBox._coerce_types(TensorFlowBox.unbox_list(values))
         res = tf.stack(values, axis=axis)
         return res
+
+    @wrap_output
+    def take(self, indices, axis=None):
+        if isinstance(indices, numbers.Number):
+            indices = [indices]
+
+        indices = self.astensor(indices)
+
+        if qml.numpy.any(indices < 0):
+            # Unlike NumPy, TensorFlow doesn't support negative indices.
+            dim_length = tf.size(self.data).numpy() if axis is None else self.shape[axis]
+
+            indices = qml.math.where(indices >= 0, indices, indices + dim_length)
+
+        if axis is None:
+            # Unlike NumPy, if axis=None TensorFlow defaults to the first
+            # dimension rather than flattening the array.
+            data = tf.reshape(self.data, [-1])
+            return tf.gather(data, indices)
+
+        return tf.gather(self.data, indices, axis=axis)
 
     @staticmethod
     @wrap_output

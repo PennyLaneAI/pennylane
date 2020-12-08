@@ -336,6 +336,19 @@ class TestConcatenate:
         assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
         assert list(res.shape) == [2, 2]
 
+    @pytest.mark.parametrize("t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])])
+    def test_concatenate_flattened_arrays(self, t1):
+        """Concatenating arrays with axis=None will result in all arrays being pre-flattened"""
+        t2 = onp.array([5])
+        res = fn.concatenate([t1, t2], axis=None)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([1, 2, 5]))
+        assert list(res.shape) == [3]
+
 
 class TestConvertLike:
     """tests for the convert like function"""
@@ -366,6 +379,21 @@ class TestConvertLike:
 
 class TestDot:
     """Tests for the dot product function"""
+    scalar_product_data = [
+        [2, 6],
+        [np.array(2), np.array(6)],
+        [torch.tensor(2), onp.array(6)],
+        [torch.tensor(2), torch.tensor(6)],
+        [tf.Variable(2), onp.array(6)],
+        [tf.constant(2), onp.array(6)],
+        [tf.Variable(2), tf.Variable(6)],
+    ]
+
+    @pytest.mark.parametrize("t1, t2", scalar_product_data)
+    def test_scalar_product(self, t1, t2):
+        """Test that the dot product of two scalars results in a scalar"""
+        res = fn.dot(t1, t2)
+        assert fn.allequal(res, 12)
 
     vector_product_data = [
         [[1, 2, 3], [1, 2, 3]],
@@ -774,3 +802,96 @@ def test_T(t):
         t = t.numpy()
 
     assert np.all(res.T == t.T)
+
+
+class TestTake:
+    """Tests for the qml.take function"""
+
+    take_data = [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    ]
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_flattened_indexing(self, t):
+        """Test that indexing without the axis argument
+        will flatten the tensor first"""
+        indices = 5
+        res = fn.take(t, indices)
+        assert fn.allclose(res, 1)
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_array_indexing(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the flattened tensor"""
+        indices = [0, 2, 3, 6, -2]
+        res = fn.take(t, indices)
+        assert fn.allclose(res, [1, 3, 4, 5, 2])
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_multidimensional_indexing(self, t):
+        """Test that indexing with a multi-dimensional sequence properly extracts
+        the elements from the flattened tensor"""
+        indices = [[0, 1], [3, 2]]
+        res = fn.take(t, indices)
+        assert fn.allclose(res, [[1, 2], [4, 3]])
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_array_indexing_along_axis(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the specified tensor axis"""
+        indices = [0, 1, -2]
+        res = fn.take(t, indices, axis=2)
+        expected = np.array([
+            [[ 1,  2,  1],
+              [ 3,  4,  3],
+              [-1,  1, -1]],
+             [[ 5,  6,  5],
+              [ 0, -1,  0],
+              [ 2,  1,  2]]
+        ])
+        assert fn.allclose(res, expected)
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_multidimensional_indexing_along_axis(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the specified tensor axis"""
+        indices = np.array([[0, 0], [1, 0]])
+        res = fn.take(t, indices, axis=1)
+        expected = np.array(
+            [
+                [
+                    [[ 1,  2],
+                     [ 1,  2]],
+                    [[ 3,  4],
+                     [ 1,  2]]
+                ],
+                [
+                    [[ 5,  6],
+                     [ 5,  6]],
+                    [[ 0, -1],
+                     [ 5,  6]]
+                ]
+            ]
+        )
+        assert fn.allclose(res, expected)
+
+
+where_data = [
+    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+]
+
+
+@pytest.mark.parametrize("t", where_data)
+def test_where(t):
+    """Test that the where function works as expected"""
+    res = fn.where(t < 0, 100 * fn.ones_like(t), t)
+    expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
+    assert fn.allclose(res, expected)
