@@ -76,7 +76,7 @@ class DefaultQubitJax(DefaultQubit):
     .. UsageDetails::
 
         JAX does randomness in a special way when compared to NumPy, in that all randomness needs to
-        be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit`,
+        be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit``,
         the automatically generated seed gets constantant compiled.
 
         Example:
