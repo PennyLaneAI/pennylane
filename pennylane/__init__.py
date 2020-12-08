@@ -31,6 +31,7 @@ import pennylane.init
 import pennylane.templates
 import pennylane.qnn
 import pennylane.qaoa as qaoa
+import pennylane.visualize as visualize
 from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost
