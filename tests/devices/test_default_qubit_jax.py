@@ -67,7 +67,7 @@ class TestQNodeIntegration:
 
     def test_qubit_circuit_with_jit(self, tol):
         """Test that the device provides the correct
-        result for a simple circuit."""
+        result for a simple circuit under a jax.jit."""
         p = jnp.array(0.543)
 
         dev = qml.device("default.qubit.jax", wires=1)
@@ -108,6 +108,26 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+    def test_correct_state_returned(self, tol):
+        """Test that the device state is correct after applying a
+        quantum function on the device"""
+        if not qml.tape_mode_active():
+            pytest.skip("Only supported in tape mode")
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.RZ(jnp.pi / 4, wires=0)
+            return qml.state()
+
+        state = circuit()
+
+        amplitude = jnp.exp(-1j * jnp.pi / 8) / jnp.sqrt(2)
+
+        expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
+        assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
         @jax.jit
@@ -138,7 +158,7 @@ class TestQNodeIntegration:
         assert not np.all(a == b)
 
     def test_gates_dont_crash(self):
-        """Add test case for uncovered gates."""
+        """Test for gates that weren't covered by other tests. """
         dev = qml.device("default.qubit.jax", wires=2)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
@@ -149,7 +169,7 @@ class TestQNodeIntegration:
         circuit() # Just don't crash.
 
     def test_diagonal_doesnt_crash(self):
-        """Add test case for uncovered gates."""
+        """Test that diagonal gates can be used."""
         dev = qml.device("default.qubit.jax", wires=1)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
@@ -294,8 +314,6 @@ class TestPassthruIntegration:
         res = circuit(a, b)
         expected_cost = 0.5 * (jnp.cos(a) * jnp.cos(b) + jnp.cos(a) - jnp.cos(b) + 1)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
-        # TODO(chase): Get grad to work without needing the wrapping.
-        # (This likely can be fixed JAX side.)
         res = jax.grad(lambda x, y: circuit(x, y).reshape(()), argnums=(0, 1))(a, b)
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
@@ -402,10 +420,8 @@ class TestHighLevelIntegration:
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-        if qml.tape_mode_active():
-            pass  # TODO(chase): Figure out why map doesn't set the interface in tape mode.
-        else:
-            assert qnodes.interface == "jax", f"Tape mode: {qml.tape_mode_active()}"
+        if not qml.tape_mode_active():
+            assert qnodes.interface == "jax"
 
         weights = jnp.array([0.1, 0.2])
 

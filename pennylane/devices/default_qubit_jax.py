@@ -49,12 +49,13 @@ class DefaultQubitJax(DefaultQubit):
 
     The ``default.qubit.jax`` device is designed to be used with end-to-end classical backpropagation
 
-    (``diff_method="backprop"``) with the jax interface. This is the default method of
+    (``diff_method="backprop"``) with the JAX interface. This is the default method of
     differentiation when creating a QNode with this device.
 
     Using this method, the created QNode is a 'white-box', and is
-    tightly integrated with your jax computation:
+    tightly integrated with your JAX computation:
 
+    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit.jax", wires=1)
     >>> @qml.qnode(dev, interface="jax", diff_method="backprop")
     ... def circuit(x):
@@ -62,28 +63,27 @@ class DefaultQubitJax(DefaultQubit):
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
     >>> weights = jnp.array([0.2, 0.5, 0.1])
-    >>> # Squeeze is needed since JAX requires scalar outputs for grad.
-    >>> grad_fn = jax.grad(lambda x: circuit(x).squeeze())
+    >>> grad_fn = jax.grad(circuit)
     >>> print(grad_fn(weights))
     array([-2.2526717e-01 -1.0086454e+00  1.3877788e-17])
 
     There are a couple of things to keep in mind when using the ``"backprop"``
     differentiation method for QNodes:
 
-    * You must use the ``"jax"`` interface for classical backpropagation, as jax is
+    * You must use the ``"jax"`` interface for classical backpropagation, as JAX is
       used as the device backend.
 
     .. UsageDetails::
 
-        Jax does randomness is a special way when compared to NumPy, in that all PRNGs need to
+        JAX does randomness in a special way when compared to NumPy, in that all randomness needs to
         be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit`,
-        each call will return the exact same samples if done incorrectly.
+        the automatically generated seed gets constantant compiled.
 
         Example:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+            dev = qml.device("default.qubit.jax", wires=1)
 
             @jax.jit
             @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -92,7 +92,7 @@ class DefaultQubitJax(DefaultQubit):
                 return qml.sample(qml.PauliZ(wires=0))
 
             a = circuit()
-            b = circuit() # Wrong! b will be the exact same samples as a.
+            b = circuit() # Bad! b will be the exact same samples as a.
 
 
         To fix this, you should wrap your qnode in another function that takes a PRNGKey, and pass
@@ -114,7 +114,7 @@ class DefaultQubitJax(DefaultQubit):
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
 
-        Check out out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_
+        Check out out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
         for more information.
 
     Args:
@@ -128,7 +128,9 @@ class DefaultQubitJax(DefaultQubit):
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        prng_key (jax.random.PRNGKey): The pseudo
+        prng_key (Optional[jax.random.PRNGKey]): An optional jax.random.PRNGKey. This is the key to the
+            pseudo random number generator. If None, a random key will be generated. Default is None.
+
     """
 
     name = "Default qubit (jax) PennyLane plugin"
