@@ -11,25 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests that a device gives the same output of the default device."""
+"""Tests that a device gives the same output as the default device."""
 import random
 
+# pylint: disable=no-self-use
+import numpy as np
 import pytest
 from flaky import flaky
 
 import pennylane as qml
-
-# pylint: disable=no-self-use
-from pennylane import numpy as np
 from pennylane.templates.layers import RandomLayers
 
 pytestmark = pytest.mark.skip_unsupported
 
 
 @flaky(max_runs=10)
-class TestQubit:
-    """Test that a device different to the default device gives the same result
-    of the default device"""
+class TestComparison:
+    """Test that a device different to default.qubit gives the same result"""
 
     def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
@@ -73,7 +71,7 @@ class TestQubit:
         assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic))
 
     def test_pauliz_expectation_analytic(self, device, tol):
-        """Test that the PauliZ expectation value is correct"""
+        """Test that the tensor product of PauliZ expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
         dev_def = qml.device("default.qubit", wires=n_wires)
@@ -112,7 +110,7 @@ class TestQubit:
 
     @pytest.mark.parametrize("ret", [qml.expval, qml.var])
     def test_random_circuit(self, device, tol, ret):
-        """Test that the random expectation value is correct"""
+        """Test that the expectation value of a random circuit is correct"""
         n_wires = 2
         dev = device(n_wires)
         dev_def = qml.device("default.qubit", wires=n_wires)
@@ -156,14 +154,6 @@ class TestQubit:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = (
-            "supports_tensor_observables" in dev.capabilities()
-            and dev.capabilities()["supports_tensor_observables"]
-        )
-
-        if not supports_tensor:
-            pytest.skip("Device does not support tensor observables.")
-
         if not dev.analytic:
             pytest.skip("Device is in non-analytical mode.")
 
@@ -190,20 +180,22 @@ class TestQubit:
             qml.CRZ,
         ]
 
-        deep = 20
-        seed = random.randint(0, deep)
+        layers = 3
+        np.random.seed(1967)
+        gates_per_layers = [np.random.permutation(gates) for _ in range(layers)]
 
         def circuit():
-            """4 qubits circuit with 20 random gates and random connections for
-            multi-qubit gates. The measurement is an arbitrary tensor product
-            over the qubits."""
-            random.seed(seed)
-            np.random.seed(seed)
-            for i in np.random.randint(0, len(gates), deep):
-                gate = gates[i]
-                params = list(np.pi * np.random.rand(gate.num_params))
-                gate(*params, wires=random.sample(range(n_wires), gate.num_wires))
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliZ(3))
+            """4-qubit circuit with layers of randomly selected gates and random connections for
+            multi-qubit gates."""
+            np.random.seed(1967)
+            for gates in gates_per_layers:
+                for gate in gates:
+                    params = list(np.pi * np.random.rand(gate.num_params))
+                    gate(
+                        *params,
+                        wires=np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
+                    )
+            return qml.expval(qml.PauliZ(0))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
