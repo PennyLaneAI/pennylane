@@ -126,43 +126,31 @@ class TestPhaseDamping:
 class TestBitFlipChannel:
     """Tests for the quantum channel BitFlipChannel"""
 
-    def test_p_zero(self, tol):
-        """Test p=0 gives correct Kraus matrices"""
-        op = channel.BitFlipChannel
-        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
-
-    def test_p_arbitrary(self, tol):
-        """Test p=0.1 gives correct Kraus matrices"""
-        p = 0.1
+    @pytest.mark.parametrize("p", [0, 0.1, 0.5, 1])
+    def test_p_arbitrary(self, p, tol):
+        """Test that various values of p give correct Kraus matrices"""
         op = channel.BitFlipChannel
 
         expected_K0 = np.sqrt(1 - p) * np.eye(2)
-        assert np.allclose(op(0.1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * X
-        assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
 
 class TestPhaseFlipChannel:
-    """Tests for the quantum channel PhaseFlipChannel"""
+    """Test that various values of p give correct Kraus matrices"""
 
-    def test_p_zero(self, tol):
-        """Test p=0 gives correct Kraus matrices"""
-        op = channel.PhaseFlipChannel
-        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
-
-    def test_p_arbitrary(self, tol):
+    @pytest.mark.parametrize("p", [0, 0.1, 0.5, 1])
+    def test_p_arbitrary(self, p, tol):
         """Test p=0.1 gives correct Kraus matrices"""
-        p = 0.1
         op = channel.PhaseFlipChannel
 
         expected_K0 = np.sqrt(1 - p) * np.eye(2)
-        assert np.allclose(op(0.1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * Z
-        assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
 
 class TestDepolarizingChannel:
