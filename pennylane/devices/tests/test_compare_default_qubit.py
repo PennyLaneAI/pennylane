@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the same output as the default device."""
-# pylint: disable=no-self-use
-import numpy as np
+# pylint: disable=no-self-use,no-member
 import pytest
 from flaky import flaky
 
 import pennylane as qml
+from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 
 pytestmark = pytest.mark.skip_unsupported
@@ -180,7 +180,7 @@ class TestComparison:
 
         layers = 3
         np.random.seed(1967)
-        gates_per_layers = [np.random.permutation(gates) for _ in range(layers)]
+        gates_per_layers = [np.random.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():
             """4-qubit circuit with layers of randomly selected gates and random connections for
