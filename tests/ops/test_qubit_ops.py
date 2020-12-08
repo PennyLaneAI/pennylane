@@ -405,6 +405,21 @@ class TestOperations:
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_s_inverse_decomposition(self, tol):
+        """Tests that the decomposition of the inverse S gate is correct"""
+        op = qml.S(wires=0).inv()
+        res = op.decomposition(0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "PhaseShift"
+
+        assert res[0].wires == Wires([0])
+        assert res[0].data[0] == -np.pi / 2
+
+        decomposed_matrix = res[0].matrix
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
         op = qml.T(wires=0)
@@ -416,6 +431,21 @@ class TestOperations:
 
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 4
+
+        decomposed_matrix = res[0].matrix
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_t_inverse_decomposition(self, tol):
+        """Tests that the decomposition of the inverse T gate is correct"""
+        op = qml.T(wires=0).inv()
+        res = op.decomposition(0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "PhaseShift"
+
+        assert res[0].wires == Wires([0])
+        assert res[0].data[0] == -np.pi / 4
 
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)

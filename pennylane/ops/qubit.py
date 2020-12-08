@@ -257,10 +257,10 @@ class S(DiagonalOperation):
     def _eigvals(cls, *params):
         return np.array([1, 1j])
 
-    @staticmethod
-    def decomposition(wires):
-        decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
-        return decomp_ops
+    def decomposition(self, wires):
+        if self.inverse:
+            return [PhaseShift(-np.pi / 2, wires=wires)]
+        return [PhaseShift(np.pi / 2, wires=wires)]
 
 
 class T(DiagonalOperation):
@@ -292,10 +292,10 @@ class T(DiagonalOperation):
     def _eigvals(cls, *params):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
-    @staticmethod
-    def decomposition(wires):
-        decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
-        return decomp_ops
+    def decomposition(self, wires):
+        if self.inverse:
+            return [PhaseShift(-np.pi / 4, wires=wires)]
+        return [PhaseShift(np.pi / 4, wires=wires)]
 
 
 class SX(Operation):
