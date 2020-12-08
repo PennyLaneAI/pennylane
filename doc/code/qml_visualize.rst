@@ -3,6 +3,6 @@ qml.visualize
 
 .. currentmodule:: pennylane.visualize
 
-.. automodapi:: pennylane.module_name
+.. automodapi:: pennylane.visualize
     :no-heading:
     :include-all-objects:
