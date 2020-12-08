@@ -257,7 +257,6 @@ class DefaultQubit(QubitDevice):
         return SQRT2INV * (state_x + state_z)
 
     def _apply_s(self, state, axes, inverse=False):
-        print(inverse)
         return self._apply_phase(state, axes, 1j, inverse)
 
     def _apply_t(self, state, axes, inverse=False):
