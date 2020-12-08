@@ -30,7 +30,7 @@ class TorchBox(qml.math.TensorBox):
 
     abs = wrap_output(lambda self: torch.abs(self.data))
     angle = wrap_output(lambda self: torch.angle(self.data))
-    arcsin = wrap_output(lambda self: torch.arcsin(self.data))
+    arcsin = wrap_output(lambda self: torch.asin(self.data))
     expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
     ones_like = wrap_output(lambda self: torch.ones_like(self.data))
     sqrt = wrap_output(
