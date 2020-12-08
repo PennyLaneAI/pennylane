@@ -378,7 +378,7 @@ class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with templates."""
+        """Test that a PassthruQNode using default.qubit.jax works with templates."""
         dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
@@ -392,7 +392,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.jax works with QNodeCollections."""
+        """Test that a PassthruQNode using default.qubit.jax works with QNodeCollections."""
         dev = qml.device("default.qubit.jax", wires=2)
 
         def ansatz(weights, **kwargs):

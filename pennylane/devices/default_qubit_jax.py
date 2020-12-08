@@ -47,7 +47,8 @@ class DefaultQubitJax(DefaultQubit):
 
     **Example**
 
-    The ``default.qubit.jax`` is designed to be used with end-to-end classical backpropagation
+    The ``default.qubit.jax`` device is designed to be used with end-to-end classical backpropagation
+
     (``diff_method="backprop"``) with the jax interface. This is the default method of
     differentiation when creating a QNode with this device.
 
@@ -74,9 +75,9 @@ class DefaultQubitJax(DefaultQubit):
 
     .. UsageDetails::
 
-        Jax does randomness is a special way when compared to numpy, in that all PRNGs need to
-        be seeded. While we handle this for you automatically in op-by-op mode, when in a ``jax.jit``
-        function, each call will return the exact same samples if done incorrectly.
+        Jax does randomness is a special way when compared to NumPy, in that all PRNGs need to
+        be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit`,
+        each call will return the exact same samples if done incorrectly.
 
         Example:
 
@@ -95,7 +96,7 @@ class DefaultQubitJax(DefaultQubit):
 
 
         To fix this, you should wrap your qnode in another function that takes a PRNGKey, and pass
-        that in to your device construction.
+        that in during your device construction.
 
         .. code-block:: python
 
@@ -113,7 +114,7 @@ class DefaultQubitJax(DefaultQubit):
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
 
-        Checkout out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_
+        Check out out the `Jax random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`_
         for more information.
 
     Args:
