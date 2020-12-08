@@ -99,7 +99,56 @@ class Visualize:
 
     def update(self, params=None):
         """
-        Updates the data in the Visualize context manager instance.
+        Updates the data in the Visualize context manager instance. This data can then be called by the user, or
+        utilized by the active context manager to create text or graphical outputs.
+
+        Keyword Args:
+            params: Variational parameters to be fed into the cost function.
+
+        .. UsageDetails::
+
+            Consider the simple variational quantum circuit and the cost function:
+
+            .. code-block:: python3
+
+                import pennylane as qml
+                from pennylane.visualize import Visualize
+
+                dev = qml.device('default.qubit', wires=3)
+
+                @qml.qnode(dev)
+                def circuit(gamma):
+
+                    qml.RX(gamma, wires=0)
+                    qml.RY(gamma, wires=1)
+                    qml.RX(gamma, wires=2)
+                    qml.CNOT(wires=[0, 2])
+                    qml.RY(gamma, wires=1)
+
+                    return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+                def cost(gamma):
+                    return sum(circuit(gamma[0]))
+
+            To utilize the PennyLane visualizations functionality, we wrap the optimization loop
+            in the context manager, and call the ``update()`` method with each optimization step:
+
+            .. code-block:: python3
+
+                optimizer = qml.GradientDescentOptimizer()
+                steps = 5
+                params = np.array([1.])
+
+                with Visualize(steps, cost_fn=cost) as viz:
+                    for i in range(steps):
+                        params = optimizer.step(cost, params)
+                        viz.update(params=params)
+
+            We can then call the values of the cost function for each step:
+
+            >>> steps, cost = viz.cost_data
+            >>> print(cost)
+            [0.29001330299410394, 0.16958978666464564, 0.0554891459073546, -0.05179578982297689, -0.151952780085496]
         """
 
         self._step_log += 1
@@ -116,16 +165,88 @@ class Visualize:
 
     def text(self, step=True, cost=False, params=False):
         """
-        Returns the data in the Visualize context manager instance, a text-based output.
+        Returns a text-based output of the data in the Visualize context manager instance.
+
+        Keyword args:
+            step (bool): Choice of whether the number of steps are outputted or not.
+            cost (bool): Choice of whether the cost function values are outputted or not.
+            params (bool): Choice of whether the parameter values are outputted or not.
+
+        .. UsageDetails::
+
+            Usage of the ``text()`` method is similar to usage of the ``update()`` method. For instance, consider the
+            following variational circuit and cost function:
+
+            .. code-block:: python3
+
+               import pennylane as qml
+                from pennylane.visualize import Visualize
+
+                dev = qml.device('default.qubit', wires=3)
+
+                @qml.qnode(dev)
+                def circuit(gamma):
+
+                    qml.RX(gamma, wires=0)
+                    qml.RY(gamma, wires=1)
+                    qml.RX(gamma, wires=2)
+                    qml.CNOT(wires=[0, 2])
+                    qml.RY(gamma, wires=1)
+
+                    return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+                def cost(gamma):
+                    return sum(circuit(gamma[0]))
+
+            We then call the ``text()`` and ``update()`` methods inside the optimization loop:
+
+            .. code-block:: python3
+
+                optimizer = qml.GradientDescentOptimizer()
+                steps = 5
+                params = np.array([1.])
+
+                with Visualize(steps, cost_fn=cost) as viz:
+                    for i in range(steps):
+                        params = optimizer.step(cost, params)
+                        viz.update(params=params)
+                        viz.text(cost=True, params=True)
+
+            .. code-block:: none
+
+                Beginning Optimization
+                --------------------------
+                Optimization Step 1 / 5
+                Cost: 0.29001330299410394
+                Parameters: [1.03569363]
+                --------------------------
+                Optimization Step 2 / 5
+                Cost: 0.16958978666464564
+                Parameters: [1.07061477]
+                --------------------------
+                Optimization Step 3 / 5
+                Cost: 0.0554891459073546
+                Parameters: [1.10463974]
+                --------------------------
+                Optimization Step 4 / 5
+                Cost: -0.05179578982297689
+                Parameters: [1.13766278]
+                --------------------------
+                Optimization Step 5 / 5
+                Cost: -0.151952780085496
+                Parameters: [1.16959683]
+                --------------------------
+                Optimization Complete
+
         """
 
         if not isinstance(step, bool):
             raise ValueError("'step' must be of type bool, got {}".format(type(step)))
 
-        if not isinstance(cost, int):
+        if not isinstance(cost, bool):
             raise ValueError("'cost' must be of type bool, got {}".format(type(cost)))
 
-        if not isinstance(params, int):
+        if not isinstance(params, bool):
             raise ValueError("'params' must be of type bool, got {}".format(type(params)))
 
         if self._step_log % self.step_size == 0:
@@ -140,7 +261,66 @@ class Visualize:
 
     def graph(self):
         """
-        Returns a graph of the value of the cost function for each optimization step.
+        Returns a graph of the value of the cost function after each optimization step.
+
+        .. UsageDetails::
+
+            Usage of the ``graph()`` method is similar to usage of the ``update()`` method. For instance, consider the
+            following variational circuit and cost function:
+
+            .. code-block:: python3
+
+               import pennylane as qml
+                from pennylane.visualize import Visualize
+
+                dev = qml.device('default.qubit', wires=3)
+
+                @qml.qnode(dev)
+                def circuit(gamma):
+
+                    qml.RX(gamma, wires=0)
+                    qml.RY(gamma, wires=1)
+                    qml.RX(gamma, wires=2)
+                    qml.CNOT(wires=[0, 2])
+                    qml.RY(gamma, wires=1)
+
+                    return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+                def cost(gamma):
+                    return sum(circuit(gamma[0]))
+
+            We then call the ``graph()`` and ``update()`` methods inside the optimization loop:
+
+            .. code-block:: python3
+
+                optimizer = qml.GradientDescentOptimizer()
+                steps = 5
+                params = np.array([1.])
+
+                with Visualize(steps, cost_fn=cost) as viz:
+                    for i in range(steps):
+                        params = optimizer.step(cost, params)
+                        viz.update(params=params)
+                        viz.graph()
+
+                Execution of this code block will result an a graph window, which will dynamically plot the value
+                of the cost function after each optimization step.
+
+                In addition, the ``graph()`` method can also be called outside the optimization loop (after the
+                optimization has finished), to produce a static graph showing the values of the cost function for
+                each optimization step:
+
+                .. code-block:: python3
+
+                optimizer = qml.GradientDescentOptimizer()
+                steps = 5
+                params = np.array([1.])
+
+                with Visualize(steps, cost_fn=cost) as viz:
+                    for i in range(steps):
+                        params = optimizer.step(cost, params)
+                        viz.update(params=params)
+                    viz.graph()
         """
 
         if _j_nb():
