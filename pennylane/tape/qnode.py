@@ -395,17 +395,18 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        stop_at = self.device.operations
-
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
-        ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
+        ops_not_supported = any(
+            not self.device.supports_operation(op.name) for op in self.qtape.operations
+        )
 
         # expand out the tape, if any operations are not supported on the device or multiple
         # observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
-                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+                depth=self.max_expansion,
+                stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):
