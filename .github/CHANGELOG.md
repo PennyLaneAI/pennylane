@@ -1,7 +1,6 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
-<h4>Added new Jax device.</h4>
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
 

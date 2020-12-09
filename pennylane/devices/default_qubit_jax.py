@@ -48,7 +48,6 @@ class DefaultQubitJax(DefaultQubit):
     **Example**
 
     The ``default.qubit.jax`` device is designed to be used with end-to-end classical backpropagation
-
     (``diff_method="backprop"``) with the JAX interface. This is the default method of
     differentiation when creating a QNode with this device.
 
@@ -128,8 +127,8 @@ class DefaultQubitJax(DefaultQubit):
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        prng_key (Optional[jax.random.PRNGKey]): An optional jax.random.PRNGKey. This is the key to the
-            pseudo random number generator. If None, a random key will be generated. Default is None.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the
+            pseudo random number generator. If None, a random key will be generated.
 
     """
 
