@@ -17,13 +17,14 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access
 from collections.abc import Iterable
+import contextlib
 import copy
 import functools
 import inspect
 import itertools
 import numbers
 from operator import matmul
-from unittest.mock import Mock
+from unittest import mock
 
 import numpy as np
 
@@ -440,7 +441,7 @@ class Spy:
     """Context in which calls to quantum devices are simply counted without performing the execution.
 
     The class mocks the execute method, returning a dummy value of the correct dimensions.
-    
+
     .. note:: Currently, only qubit devices are supported.
 
     **Example**
@@ -475,26 +476,32 @@ class Spy:
     """
 
     def __init__(self):
-        self.counts = None
-        self.temp_original = None
+        self._counts = None
+        self._stack = None
+        self._mock_execute = None
 
     def __enter__(self):
-        # remember the original method
-        self.temp_original = qml._qubit_device.QubitDevice.execute
-
         # Mock qubit device's execute method.
         # The side effect will define the output of the mock.
-        qml._qubit_device.QubitDevice.execute = Mock(side_effect=self.side_effect)
+        patch = mock.patch("pennylane.QubitDevice.execute", side_effect=self.side_effect)
+
+        with contextlib.ExitStack() as stack:
+            # activate the mock context
+            self._mock_execute = stack.enter_context(patch)
+            self._stack = stack.pop_all()
 
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb):
+        self._counts = self._mock_execute.call_count
+        self._mock_execute = None
+        self._stack.__exit__(exc_type, exc_value, exc_tb)
 
-        # record the number of calls to the mocked function
-        self.counts = qml._qubit_device.QubitDevice.execute.call_count
-
-        # restore the original function
-        qml._qubit_device.QubitDevice.execute = self.temp_original
+    @property
+    def counts(self):
+        if self._mock_execute is not None:
+            return self._mock_execute.call_count
+        return self._counts
 
     @staticmethod
     def side_effect(circuit, **kwargs):  # pylint: disable=unused-argument
@@ -506,6 +513,17 @@ class Spy:
         Returns:
             np.array: dummy output
         """
+        output_shape = 0
 
-        dim_output = len(circuit.measurements)
-        return np.zeros(shape=(dim_output,))
+        for m in circuit.measurements:
+            if m.return_type in (qml.operation.Expectation, qml.operation.Variance):
+                output_shape += 1
+
+            elif m.return_type in (qml.operation.Probability, qml.operation.State):
+                output_shape += 2 ** len(m.wires)
+
+            # elif m.return_type in (qml.operation.Sample,):
+            # how do we get the number of shots?
+            # output_shape += num_shots
+
+        return np.zeros(shape=output_shape)

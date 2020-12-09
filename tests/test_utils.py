@@ -831,11 +831,14 @@ class TestInv:
 class TestSpy:
     """Tests the Spy context."""
 
-    def test_single_output(self, ):
-        """Tests a qnode with a 1-d output."""
-
+    @pytest.fixture
+    def activate_tape(self):
         qml.enable_tape()
+        yield
+        qml.disable_tape()
 
+    def test_single_output(self, activate_tape):
+        """Tests a qnode with a 1-d output."""
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
@@ -858,13 +861,8 @@ class TestSpy:
 
         assert counter.counts == 6
 
-        qml.disable_tape()
-
-    def test_multi_output(self):
+    def test_multi_output(self, activate_tape):
         """Tests a qnode with a 2-d output."""
-
-        qml.enable_tape()
-
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
@@ -877,24 +875,22 @@ class TestSpy:
             # 2 executions
             circuit(0.1)
             circuit(0.5)
+            assert counter.counts == 2
 
             # 5 executions
             g = qml.jacobian(circuit)
             g(0.1)
+            assert counter.counts == 7
 
             # 1 execution
             circuit.qtape.execute(dev)
+            assert counter.counts == 8
 
         assert counter.counts == 8
 
-        qml.disable_tape()
-
-    def test_exit_restores_function(self):
+    def test_exit_restores_function(self, activate_tape):
         """Tests that the mock only applies in a context."""
-
-        qml.enable_tape()
-
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit(w):
@@ -908,13 +904,8 @@ class TestSpy:
 
         assert not isinstance(qml._qubit_device.QubitDevice.execute, Mock)
 
-        qml.disable_tape()
-
-    def test_execute_not_run(self):
+    def test_execute_not_run(self, activate_tape):
         """Tests that in a mock context the execute function is never run."""
-
-        qml.enable_tape()
-
         def exception_raiser(circuit, kwargs={}):
             raise NotImplementedError
 
@@ -940,4 +931,3 @@ class TestSpy:
             circuit(0.1)
 
         qml._qubit_device.QubitDevice.execute = temp
-        qml.disable_tape()
