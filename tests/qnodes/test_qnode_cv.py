@@ -613,3 +613,30 @@ class TestVarianceJacobian:
 
         with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{'a'\}"):
             circuit.jacobian([1.0], method="A")
+
+    def test_error_unsupported_grad_recipe(self, monkeypatch):
+        """Test exception raised if attempting to use the second order rule for
+        computing the gradient analytically of an expectation value that
+        contains an operation with an more than two terms in the gradient recipe"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+            grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        dev._operation_map["DummyOp"] = None
+
+        def circuit(a):
+            DummyOp(a, wires=[0])
+            return qml.expval(qml.NumberOperator(0))
+
+        with monkeypatch.context() as m:
+            circuit = CVQNode(circuit, dev, force_order2=True)
+
+            m.setattr(circuit, "_best_method", lambda arg: "A")
+            with pytest.raises(NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"):
+                grad_A = circuit.jacobian(0, method="A", options={'force_order2': True})
