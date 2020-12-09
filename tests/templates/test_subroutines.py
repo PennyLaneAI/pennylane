@@ -1219,7 +1219,7 @@ class TestPermute:
             ([0], "Permutations must involve at least 2 qubits."),
             ([0, 1, 2], "Permutation must specify outcome of all wires."),
             ([0, 1, 1, 3], "Values in a permutation must all be unique"),
-            ([4, 3, 2, 1], r"not present in wire set"),
+            ([4, 3, 2, 1], "not present in wire set"),
         ],
     )
     def test_invalid_inputs_qnodes(self, permutation_order, expected_error_message):
