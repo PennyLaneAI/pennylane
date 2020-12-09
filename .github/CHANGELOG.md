@@ -10,13 +10,9 @@
 
 <h3>Bug fixes</h3>
 
-* The `qml.S` and `qml.T` operations now properly return the correct decomposition if the gate has
-  been inverted.
-  [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
-
 * In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
-  causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic has been
-  modified to fix this.
+  causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
+  as the `Operation.expand()` method, has been modified to fix this.
   [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
 
 <h3>Contributors</h3>

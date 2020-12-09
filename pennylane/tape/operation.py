@@ -72,6 +72,9 @@ def operation_expand(self):
         # original operation has no trainable parameters
         tape.trainable_params = {}
 
+    if self.inverse:
+        tape.inv()
+
     return tape
 
 
