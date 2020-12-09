@@ -10,9 +10,15 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes an issue where the Autograd interface was not unwrapping non-differentiable
+  PennyLane tensors, which can cause issues on some devices.
+  [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Josh Izaac
 
 # Release 0.13.0 (current release)
 
