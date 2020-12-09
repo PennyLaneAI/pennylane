@@ -24,7 +24,7 @@
   Currently, the only the `diff_method="backprop"` is supported, with plans to add reverse mode support in the future.
 
 * Apply permutations to wires using the `Permute` subroutine.
-  [#952](https://github.com/PennyLaneAI/pennylane/pull/952)
+  [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
 
   ```python
   import pennylane as qml

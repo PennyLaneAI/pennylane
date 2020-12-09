@@ -1254,7 +1254,7 @@ class TestPermute:
                 Permute(permutation_order, wires=wire_labels)
 
     def test_identity_permutation_qnode(self):
-        """ Test if identity permutations have no effect on QNodes. """
+        """ Test that identity permutations have no effect on QNodes. """
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1268,7 +1268,7 @@ class TestPermute:
         assert len(identity_permutation.ops) == 1
 
     def test_identity_permutation_tape(self):
-        """ Test if identity permutations have no effect on tapes. """
+        """ Test that identity permutations have no effect on tapes. """
 
         with qml.tape.QuantumTape() as tape:
             Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
