@@ -4,6 +4,11 @@
 
 <h3>Improvements</h3>
 
+* A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
+  a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
+  `test_pauliz_expectation_analytic`, and `test_random_circuit`.
+  [(#848)](https://github.com/PennyLaneAI/pennylane/pull/848)
+  
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -18,7 +23,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac
+Josh Izaac, Alejandro Montanez
 
 # Release 0.13.0 (current release)
 
