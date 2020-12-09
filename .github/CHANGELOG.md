@@ -15,6 +15,10 @@
   as the `Operation.expand()` method, has been modified to fix this.
   [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
 
+* Fixes an issue where the Autograd interface was not unwrapping non-differentiable
+  PennyLane tensors, which can cause issues on some devices.
+  [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
