@@ -1245,7 +1245,7 @@ class TestPermute:
         ],
     )
     def test_invalid_inputs_tape(self, permutation_order, expected_error_message):
-        """Tests if errors are thrown for invalid permutations with tapes.."""
+        """Tests if errors are thrown for invalid permutations with tapes."""
 
         wire_labels = [0, 2, "a", "c", 1]
 

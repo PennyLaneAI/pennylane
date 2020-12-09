@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``permute`` template.
+Contains the ``Permute`` template.
 """
 
 import pennylane as qml
@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 def Permute(permutation, wires):
     r"""Applies a permutation to a set of wires.
 
-    Example usage:
+    **Example**
 
     .. code-block:: python
 
