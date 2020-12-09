@@ -6,11 +6,14 @@
   [#952](https://github.com/PennyLaneAI/pennylane/pull/952)
 
   ```python
-  import qml
-  from qml.templates import Permute
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
 
-  with qml.tape.QuantumTape() as tape:
-    Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+  @qml.qnode(dev)
+  def apply_perm():
+      # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+      qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+      return qml.expval(qml.PauliZ(0))
   ```
 
 <h3>Improvements</h3>
@@ -19,7 +22,7 @@
   a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
   `test_pauliz_expectation_analytic`, and `test_random_circuit`.
   [(#848)](https://github.com/PennyLaneAI/pennylane/pull/848)
-  
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>

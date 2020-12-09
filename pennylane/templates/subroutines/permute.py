@@ -17,7 +17,6 @@ Contains the ``Permute`` template.
 
 import pennylane as qml
 
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.wires import Wires
 
@@ -25,18 +24,6 @@ from pennylane.wires import Wires
 @template
 def Permute(permutation, wires):
     r"""Applies a permutation to a set of wires.
-
-    **Example**
-
-    .. code-block:: python
-
-        import pennylane as qml
-
-        with qml.tape.QuantumTape() as tape:
-            # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
-            qml.templates.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
-
-    See "Usage Details" below for further examples.
 
     Args:
         permutation (list): A list of wire labels that represents the new ordering of wires
@@ -48,13 +35,51 @@ def Permute(permutation, wires):
     Raises:
         ValueError: if inputs do not have the correct format
 
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device('default.qubit', wires=5)
+
+        @qml.qnode(dev)
+        def apply_perm():
+            # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+            qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+    See "Usage Details" for further examples.
+
     .. UsageDetails::
 
-        As a simple example, suppose we have a 5-qubit tape with wires labeled
-        by the integers ``[0, 1, 2, 3, 4]``. We apply a permutation to shuffle the
-        order to ``[4, 2, 0, 1, 3]`` (i.e., the qubit state that was previously on
-        wire 4 is now on wire 0, the one from 2 is on wire 1, etc.).
+        As a simple example, suppose we have a 4-qubit device with wires labeled
+        by the integers ``[0, 1, 2, 3]``. We apply a permutation to shuffle the
+        order to ``[3, 2, 0, 1]`` (i.e., the qubit state that was previously on
+        wire 3 is now on wire 0, the one from 2 is on wire 1, etc.).
 
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=4)
+
+            @qml.qnode(dev)
+            def apply_perm():
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=2)
+                qml.templates.Permute([3, 2, 0, 1], dev.wires)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> apply_perm()
+        >>> print(apply_perm.draw())
+        0: ──H─────────╭SWAP─────────┤ ⟨Z⟩
+        1: ─────╭SWAP──│─────────────┤
+        2: ──H──╰SWAP──│──────╭SWAP──┤
+        3: ────────────╰SWAP──╰SWAP──┤
+
+        ``Permute`` can also be used with quantum tapes. For example, suppose we
+        have a tape with 5 wires ``[0, 1, 2, 3, 4]``, and we'd like to reorder them
+        so that wire 4 is moved to the location of wire 0, wire 2 is moved to the
+        original location of wire 1, and so on.
 
         .. code-block:: python
 
@@ -68,17 +93,12 @@ def Permute(permutation, wires):
                 Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
 
 
-        produces the following circuit:
-
-        .. code-block:: python
-
-           >>> print(tape.draw())
-           0: ──RZ(0)─────────╭SWAP────────────────┤
-           1: ──RZ(0)──╭SWAP──│────────────────────┤
-           2: ──RZ(0)──╰SWAP──│──────╭SWAP─────────┤
-           3: ──RZ(0)─────────│──────│──────╭SWAP──┤
-           4: ──RZ(0)─────────╰SWAP──╰SWAP──╰SWAP──┤
-
+        >>> print(tape.draw())
+        0: ──RZ(0)─────────╭SWAP────────────────┤
+        1: ──RZ(0)──╭SWAP──│────────────────────┤
+        2: ──RZ(0)──╰SWAP──│──────╭SWAP─────────┤
+        3: ──RZ(0)─────────│──────│──────╭SWAP──┤
+        4: ──RZ(0)─────────╰SWAP──╰SWAP──╰SWAP──┤
 
         ``Permute`` can also be applied to wires with arbitrary labels, like so:
 
@@ -125,25 +145,6 @@ def Permute(permutation, wires):
         0: ──RZ(0)──│──────╭SWAP──┤
         c: ──RZ(0)──╰SWAP──╰SWAP──┤
 
-        Finally, ``Permute`` can also be used with QNodes:
-
-        .. code-block:: python
-
-            dev = qml.device('default.qubit', wires=4)
-
-            @qml.qnode(dev)
-            def apply_perm():
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=2)
-                qml.templates.Permute([3, 2, 0, 1], dev.wires)
-                return qml.expval(qml.PauliZ(0))
-
-        >>> apply_perm()
-        >>> print(apply_perm.draw())
-        0: ──H─────────╭SWAP─────────┤ ⟨Z⟩
-        1: ─────╭SWAP──│─────────────┤
-        2: ──H──╰SWAP──│──────╭SWAP──┤
-        3: ────────────╰SWAP──╰SWAP──┤
     """
 
     wires = Wires(wires)
