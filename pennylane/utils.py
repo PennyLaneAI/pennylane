@@ -499,6 +499,7 @@ class Spy:
 
     @property
     def counts(self):
+        """Returns the number of execution counts within the Spy context."""
         if self._mock_execute is not None:
             return self._mock_execute.call_count
         return self._counts
