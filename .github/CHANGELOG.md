@@ -1,6 +1,27 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+* A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
+
+
+  Here is an example of how to use the new device:
+
+  ```python
+  qml.enable_tape()
+
+  dev = qml.device("default.qubit.jax", wires=1)
+  @qml.qnode(dev, interface="jax", diff_method="backprop")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  weights = jnp.array([0.2, 0.5, 0.1])
+  grad_fn = jax.grad(circuit)
+  print(grad_fn(weights))
+  ```
+  
+  Currently, the only the `diff_method="backprop"` is supported, with plans to add reverse mode support in the future.
 
 <h3>Improvements</h3>
 
