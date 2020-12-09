@@ -194,6 +194,8 @@ class AutogradInterface(AnnotatedQueue):
         """
 
         def gradient_product(g):
+            # In autograd, the forward pass is always performed prior to the backwards
+            # pass, so we do not need to re-unwrap the parameters.
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
