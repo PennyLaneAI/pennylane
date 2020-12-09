@@ -431,6 +431,23 @@ class TestHighLevelIntegration:
         grad = jax.grad(cost)(weights)
         assert grad.shape == weights.shape
 
+    def test_non_backprop_error(self):
+        """Test that an error is raised in tape mode if the diff method is not backprop"""
+        if not qml.tape_mode_active():
+            pytest.skip("Test only applies in tape mode")
+
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev, interface="jax", diff_method="parameter-shift")
+        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The JAX interface can only be used with"):
+            qnode(weights)
+
 
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""
