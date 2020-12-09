@@ -1880,3 +1880,77 @@ class TestStateVector:
 
         assert np.all(res == state)
         spy.assert_called()
+
+
+@pytest.mark.usefixtures("tape_mode")
+class TestInverseDecomposition:
+    """Integration tests for decompositions of inverse gates"""
+
+    def test_inverse_S(self, tol):
+        """Test that applying the inverse of the S gate
+        works without decomposition"""
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def test_s():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0)
+            return qml.probs(wires=0)
+
+        test_s()
+        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        assert "S" in [i.name for i in operations]
+
+        expected = np.array([1., 1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def test_s_inverse():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0).inv()
+            return qml.probs(wires=0)
+
+        test_s_inverse()
+        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        assert "S.inv" in [i.name for i in operations]
+
+        expected = np.array([1., -1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+    def test_inverse_S_decomposition(self, tol, monkeypatch):
+        """Test that applying the inverse of the S gate
+        works when the inverse S gate is decomposed"""
+        dev = qml.device('default.qubit', wires=1)
+
+        patched_operations = dev.operations.copy()
+        patched_operations.remove("S")
+        monkeypatch.setattr(dev, "operations", patched_operations)
+
+        @qml.qnode(dev)
+        def test_s():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0)
+            return qml.probs(wires=0)
+
+        test_s()
+        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        assert "S" not in [i.name for i in operations]
+        assert "PhaseShift" in [i.name for i in operations]
+
+        expected = np.array([1., 1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def test_s_inverse():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0).inv()
+            return qml.probs(wires=0)
+
+        test_s_inverse()
+        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        assert "S.inv" not in [i.name for i in operations]
+        assert "PhaseShift.inv" in [i.name for i in operations]
+
+        expected = np.array([1., -1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
