@@ -2,8 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Two new error channels, `BitFlipError` and `PhaseFlipError` have been
-  added. [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
+* Two new error channels, `BitFlip` and `PhaseFlip` have been added.
+  [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
 
   They can be used in the same manner as existing error channels:
 
@@ -14,8 +14,8 @@
   def circuit():
       qml.RX(0.3, wires=0)
       qml.RY(0.5, wires=1)
-      qml.BitFlipChannel(0.01, wires=0)
-      qml.PhaseFlipChannel(0.01, wires=1)
+      qml.BitFlip(0.01, wires=0)
+      qml.PhaseFlip(0.01, wires=1)
       return qml.expval(qml.PauliZ(0))
   ```
 

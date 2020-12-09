@@ -223,8 +223,8 @@ class DepolarizingChannel(Channel):
         return [K0, K1, K2, K3]
 
 
-class BitFlipChannel(Channel):
-    r"""BitFlipChannel(p, wires)
+class BitFlip(Channel):
+    r"""BitFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`X`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -265,8 +265,8 @@ class BitFlipChannel(Channel):
         return [K0, K1]
 
 
-class PhaseFlipChannel(Channel):
-    r"""PhaseFlipChannel(p, wires)
+class PhaseFlip(Channel):
+    r"""PhaseFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -366,8 +366,8 @@ __qubit_channels__ = {
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
     "DepolarizingChannel",
-    "BitFlipChannel",
-    "PhaseFlipChannel",
+    "BitFlip",
+    "PhaseFlip",
     "QubitChannel",
 }
 
