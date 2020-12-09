@@ -439,7 +439,9 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
+        # Same for JAX
+        if res_type_namespace == "jax":
+            return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
     def draw(self, charset="unicode"):
@@ -560,7 +562,16 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
+    def to_jax(self):
+        """Validation checks when a user expects to use the JAX interface."""
+        if self.diff_method != "backprop":
+            raise qml.QuantumFunctionError(
+                "The JAX interface can only be used with "
+                "diff_method='backprop' on supported devices"
+            )
+        self.interface = "jax"
+
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):

@@ -29,7 +29,7 @@ class TestValidation:
         test_interface = "something"
         expected_error = (
             fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \['autograd', 'torch', 'tf'\]\."
+            r"one of \['autograd', 'torch', 'tf', 'jax'\]\."
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
