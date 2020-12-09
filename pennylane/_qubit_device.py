@@ -332,7 +332,7 @@ class QubitDevice(Device):
                 results.append(self.var(obs))
 
             elif obs.return_type is Sample:
-                results.append(np.array(self.sample(obs)))
+                results.append(self.sample(obs))
 
             elif obs.return_type is Probability:
                 results.append(self.probability(wires=obs.wires))
@@ -679,7 +679,7 @@ class QubitDevice(Device):
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[:, device_wires]
+        samples = self._samples[:, np.array(device_wires)]  # Add np.array here for Jax support.
         unraveled_indices = [2] * len(device_wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
