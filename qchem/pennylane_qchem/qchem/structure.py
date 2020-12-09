@@ -211,7 +211,7 @@ def read_structure(filepath, outpath="."):
             raise RuntimeError(
                 "Open Babel error. See the following Open Babel "
                 "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
-            )
+            ) from e
     else:
         copyfile(file_in, file_out)
 

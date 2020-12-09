@@ -39,7 +39,7 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/jigsaw.png" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
 </p>
 
 
@@ -51,7 +51,7 @@
 
 - *Device independent*. Run the same quantum circuit on different quantum backends. Install
   [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
-  Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
+  Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
 
 - *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 

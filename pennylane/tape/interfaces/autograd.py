@@ -86,18 +86,8 @@ class AutogradInterface(AnnotatedQueue):
 
         Unlike in :class:`~.JacobianTape`, we also set the private attribute
         ``self._all_parameter_values``.
-
-        Since :meth:`~.get_parameters` **always** calls ``_update_trainable_params``, we access this
-        private attribute there. This allows the :meth:`~.get_parameters` method to avoid performing
-        a redundant parameter extraction.
         """
-        params = []
-
-        for p_idx in self._par_info:
-            op = self._par_info[p_idx]["op"]
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
-
+        params = self.get_parameters(trainable_only=False, return_arraybox=True)
         trainable_params = set()
 
         for idx, p in enumerate(params):
@@ -107,18 +97,58 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         self._all_parameter_values = params
 
-    def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
-        self._update_trainable_params()
-        params = self._all_parameter_values
+    def get_parameters(self, trainable_only=True, return_arraybox=False):
+        """Return the parameters incident on the tape operations.
 
-        if trainable_only:
-            params = [
-                p
-                for idx, p in enumerate(self._all_parameter_values)
-                if idx in self.trainable_params
-            ]
+        The returned parameters are provided in order of appearance
+        on the tape. By default, the returned parameters are wrapped in
+        an ``autograd.builtins.list`` container.
 
-        return autograd.builtins.list(params)
+        Args:
+            trainable_only (bool): if True, returns only trainable parameters
+            return_arraybox (bool): if True, the returned parameters are not
+                wrapped in an ``autograd.builtins.list`` container
+        Returns:
+            autograd.builtins.list or list: the corresponding parameter values
+
+        **Example**
+
+        .. code-block:: python
+
+            with JacobianTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and will be returned:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being returned:
+
+        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.get_parameters()
+        [0.543]
+
+        The ``trainable_only`` argument can be set to ``False`` to instead return
+        all parameters:
+
+        >>> tape.get_parameters(trainable_only=False)
+        [0.432, 0.543, 0.133]
+        """
+        params = []
+        iterator = self.trainable_params if trainable_only else self._par_info
+
+        for p_idx in iterator:
+            op = self._par_info[p_idx]["op"]
+            op_idx = self._par_info[p_idx]["p_idx"]
+            params.append(op.data[op_idx])
+
+        return params if return_arraybox else autograd.builtins.list(params)
 
     @autograd.extend.primitive
     def _execute(self, params, device):
@@ -126,7 +156,15 @@ class AutogradInterface(AnnotatedQueue):
         params = [p.item() if p.shape == tuple() else p for p in params]
         params = autograd.builtins.tuple(params)
 
+        # unwrap constant parameters
+        self._all_params_unwrapped = [
+            p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
+        ]
+
+        # evaluate the tape
+        self.set_parameters(self._all_params_unwrapped, trainable_only=False)
         res = self.execute_device(params, device=device)
+        self.set_parameters(self._all_parameter_values, trainable_only=False)
 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
@@ -156,7 +194,11 @@ class AutogradInterface(AnnotatedQueue):
         """
 
         def gradient_product(g):
+            # In autograd, the forward pass is always performed prior to the backwards
+            # pass, so we do not need to re-unwrap the parameters.
+            self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
+            self.set_parameters(self._all_parameter_values, trainable_only=False)
             vjp = g.flatten() @ jac
             return vjp
 
