@@ -259,7 +259,8 @@ class S(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        return [PhaseShift(np.pi / 2, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
+        return decomp_ops
 
 
 class T(DiagonalOperation):
@@ -293,7 +294,8 @@ class T(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        return [PhaseShift(np.pi / 4, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
+        return decomp_ops
 
 
 class SX(Operation):
