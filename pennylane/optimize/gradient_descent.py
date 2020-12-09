@@ -47,13 +47,14 @@ class GradientDescentOptimizer:
         """
         self._stepsize = stepsize
 
-    def step_and_cost(self, objective_fn, x, grad_fn=None):
+    def step_and_cost(self, objective_fn, *args, grad_fn=None):
         """Update x with one step of the optimizer and return the corresponding objective
         function value prior to the step.
 
         Args:
             objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            *args: any number of NumPy arrays needed to evaluate the objective function.
+                Any array with `requires_gradient=False` will be treated as a constant
             grad_fn (function): Optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
@@ -63,15 +64,15 @@ class GradientDescentOptimizer:
                 prior to the step
         """
 
-        g, forward = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-        x_out = self.apply_grad(g, x)
+        g, forward = self.compute_grad(objective_fn, *args, grad_fn=grad_fn)
+        x_out = self.apply_grad(g, args)
 
         if forward is None:
-            forward = objective_fn(x)
+            forward = objective_fn(*args)
 
-        return x_out, forward
+        return x_out + [forward]
 
-    def step(self, objective_fn, x, grad_fn=None):
+    def step(self, objective_fn, *args, grad_fn=None):
         """Update x with one step of the optimizer.
 
         Args:
@@ -84,13 +85,22 @@ class GradientDescentOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        g, _ = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-        x_out = self.apply_grad(g, x)
+        updating_indexes = []
+        for index, value in enumerate(args):
+            if value.requires_grad:
+                updating_indexes.append(index)
 
-        return x_out
+        g, _ = self.compute_grad(objective_fn, *args, grad_fn=grad_fn)
+        x_changed = self.apply_grad(g, args, updating_indexes)
+
+        args_out = list(args)
+        for index_changed, index_args in enumerate(updating_indexes):
+            args_out[index_args] = x_changed[index_changed]
+
+        return args_out
 
     @staticmethod
-    def compute_grad(objective_fn, x, grad_fn=None):
+    def compute_grad(objective_fn, *args, grad_fn=None):
         r"""Compute gradient of the objective_fn at the point x and return it along with the
             objective function forward pass (if available).
 
@@ -106,12 +116,12 @@ class GradientDescentOptimizer:
                 will not be evaluted and instead ``None`` will be returned.
         """
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
-        grad = g(x)
+        grad = g(*args)
         forward = getattr(g, "forward", None)
 
         return grad, forward
 
-    def apply_grad(self, grad, x):
+    def apply_grad(self, grad, args, updating_indexes):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -123,10 +133,11 @@ class GradientDescentOptimizer:
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
+        changing_values_old = [args[index] for index in updating_indexes]
 
-        x_flat = _flatten(x)
+        x_flat = _flatten(changing_values_old)
         grad_flat = _flatten(grad)
 
         x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
 
-        return unflatten(x_new_flat, x)
+        return unflatten(x_new_flat, changing_values_old)
