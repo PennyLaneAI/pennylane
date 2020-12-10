@@ -26,6 +26,40 @@ from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
 
+    def test_nondiff_param_unwrapping(self, dev_name, diff_method, mocker):
+        """Test that non-differentiable parameters are correctly unwrapped
+        to NumPy ndarrays or floats (if 0-dimensional)"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qnode(dev, interface="autograd")
+        def circuit(x, y):
+            qml.RX(x[0], wires=0)
+            qml.Rot(*x[1:], wires=0)
+            qml.RY(y[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=False)
+        y = np.array([0.5], requires_grad=True)
+
+        param_data = []
+        def mock_apply(*args, **kwargs):
+            for op in args[0]:
+                param_data.extend(op.data.copy())
+
+        mocker.patch.object(dev, "apply", side_effect=mock_apply)
+        circuit(x, y)
+        assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5]
+        assert not any(isinstance(p, np.tensor) for p in param_data)
+
+        # test the jacobian works correctly
+        param_data = []
+        qml.grad(circuit)(x, y)
+        assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5 + np.pi/2, 0.1, 0.2, 0.3, 0.4, 0.5 - np.pi/2]
+        assert not any(isinstance(p, np.tensor) for p in param_data)
+
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface"""
         if diff_method == "backprop":

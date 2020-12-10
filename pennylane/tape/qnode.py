@@ -395,17 +395,18 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        stop_at = self.device.operations
-
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
-        ops_not_supported = not {op.name for op in self.qtape.operations}.issubset(stop_at)
+        ops_not_supported = any(
+            not self.device.supports_operation(op.name) for op in self.qtape.operations
+        )
 
         # expand out the tape, if any operations are not supported on the device or multiple
         # observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
-                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+                depth=self.max_expansion,
+                stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):
@@ -439,7 +440,9 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
+        # Same for JAX
+        if res_type_namespace == "jax":
+            return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
     def draw(self, charset="unicode"):
@@ -560,7 +563,16 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
+    def to_jax(self):
+        """Validation checks when a user expects to use the JAX interface."""
+        if self.diff_method != "backprop":
+            raise qml.QuantumFunctionError(
+                "The JAX interface can only be used with "
+                "diff_method='backprop' on supported devices"
+            )
+        self.interface = "jax"
+
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):
