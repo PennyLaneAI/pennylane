@@ -128,7 +128,7 @@ class DefaultQubitTorch(DefaultQubit):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            passthru_intergace="torch",
+            passthru_interface="torch",
             supports_reversible_diff=False
         )
         return capabilities
