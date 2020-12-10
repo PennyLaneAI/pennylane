@@ -1,6 +1,27 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+* A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
+
+
+  Here is an example of how to use the new device:
+
+  ```python
+  qml.enable_tape()
+
+  dev = qml.device("default.qubit.jax", wires=1)
+  @qml.qnode(dev, interface="jax", diff_method="backprop")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  weights = jnp.array([0.2, 0.5, 0.1])
+  grad_fn = jax.grad(circuit)
+  print(grad_fn(weights))
+  ```
+  
+  Currently, the only the `diff_method="backprop"` is supported, with plans to add reverse mode support in the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
   [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
@@ -24,13 +45,18 @@
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
   a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
   `test_pauliz_expectation_analytic`, and `test_random_circuit`.
-  [(#848)](https://github.com/PennyLaneAI/pennylane/pull/848)
+  [(#897)](https://github.com/PennyLaneAI/pennylane/pull/897)
   
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
+  causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
+  as the `Operation.expand()` method, has been modified to fix this.
+  [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
 
 * Fixes an issue where the Autograd interface was not unwrapping non-differentiable
   PennyLane tensors, which can cause issues on some devices.
