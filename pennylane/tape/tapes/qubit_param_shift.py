@@ -103,6 +103,8 @@ class QubitParamShiftTape(JacobianTape):
             # measurement queue.
             self.var_idx = np.where(self.var_mask)[0]
 
+        self.hessian_pd = self.parameter_shift_hessian
+
     def _grad_method(self, idx, use_graph=True, default_method="A"):
         op = self._par_info[idx]["op"]
 
@@ -269,5 +271,66 @@ class QubitParamShiftTape(JacobianTape):
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
             # d<A>/dp for plain expectations
             return np.where(self.var_mask, pdA2 - 2 * self._evA_result * pdA, pdA)
+
+        return tapes, processing_fn
+
+    def parameter_shift_hessian(self, i, j, params, **options):
+        """Generate the tapes and postprocessing methods required to compute the Hessian of a
+        parameter using the parameter-shift method.
+
+        Args:
+            i (int): trainable parameter index to differentiate with respect to
+            j (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            s1=pi/2 (float): the size of the shift for index i in the four-term parameter-shift Hessian computations
+            s2=pi/2 (float): the size of the shift for index j in the four-term parameter-shift Hessian computations
+
+        Returns:
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
+        """
+        idxs = (i, j)
+        idx_shift_kwargs = {i: "s1", j: "s2"}
+
+        param_shifts = []
+
+        for idx in idxs:
+            t_idx = list(self.trainable_params)[idx]
+            op = self._par_info[t_idx]["op"]
+            p_idx = self._par_info[t_idx]["p_idx"]
+
+            shift_kwarg = idx_shift_kwargs[idx]
+            s = options.get(shift_kwarg, np.pi / 2)
+            param_shift = op.get_parameter_shift(p_idx, shift=s)
+            param_shifts.append(param_shift)
+
+        coeffs = []
+        tapes = []
+        shift = np.eye(len(params))
+
+        for (_, _, s1) in param_shifts[0]:
+            for (_, _, s2) in param_shifts[1]:
+                c = 0.25 / np.sin(s1) / np.sin(s2)
+                shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+                shifted_tape.set_parameters(params + s1*shift[i] + s2*shift[j])
+
+                coeffs.append(c)
+                tapes.append(shifted_tape)
+
+        def processing_fn(results):
+            """Computes the Hessian of the parameter at index idx via the
+            parameter-shift method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
+            """
+            return np.dot(coeffs, results)
 
         return tapes, processing_fn

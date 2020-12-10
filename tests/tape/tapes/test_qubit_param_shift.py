@@ -541,3 +541,38 @@ class TestJacobianIntegration:
         ).T
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+class TestHessian:
+    """Tests for parameter Hessian method"""
+
+    def test_hessian_calculation(self, tol):
+        # example data taken from https://arxiv.org/pdf/2008.06517.pdf
+        n_wires = 5
+        dev = qml.device("default.qubit", wires=n_wires)
+        weights = [2.73943676, 0.16289932, 3.4536312 , 2.73521126, 2.6412488]
+
+        with QubitParamShiftTape() as tape:
+            for i in range(n_wires):
+                qml.RX(weights[i], wires=i)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[2, 1])
+            qml.CNOT(wires=[3, 1])
+            qml.CNOT(wires=[4, 3])
+
+            qml.expval(qml.PauliZ(1))
+
+        res = tape.execute(dev)
+        expected = -0.7938055593697134
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        hessian = tape.hessian(dev, method="analytic")
+        expected = np.array([
+            [ 0.794,  0.055,  0.109, -0.145,  0.   ],
+            [ 0.055,  0.794, -0.042,  0.056, -0.   ],
+            [ 0.109, -0.042,  0.794,  0.11 ,  0.   ],
+            [-0.145,  0.056,  0.11 ,  0.794,  0.   ],
+            [ 0.   , -0.   ,  0.   ,  0.   , -0.   ]
+        ])
+        assert hessian.shape == (5, 5)
+        assert np.allclose(hessian, expected, atol=tol, rtol=0)

@@ -344,6 +344,9 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
+    def hessian_pd(self, i, j, params, **options):
+        raise NotImplementedError
+
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
@@ -546,3 +549,84 @@ class JacobianTape(QuantumTape):
             jac[:, i] = g
 
         return jac
+
+    def hessian(self, device, params=None, **options):
+        if any([m.return_type is State for m in self.measurements]):
+            raise ValueError("The Hessian method does not support circuits that return the state")
+
+        method = options.get("method", "analytic")
+
+        if method != "analytic":
+            raise ValueError(f"Unknown Hessian method '{method}'")
+
+        if params is None:
+            params = self.get_parameters()
+
+        params = np.array(params)
+
+        # perform gradient method validation
+        diff_methods = self._grad_method_validation(method)
+
+        if not params.size or all(g == "0" for g in diff_methods):
+            # Either all parameters have grad method 0, or there are no trainable
+            # parameters. Simply return an empty Jacobian.
+            return np.zeros((self.output_dim, len(params)), dtype=float)
+
+        # some gradient methods need the device or the device wires
+        options["device"] = device
+        options["dev_wires"] = device.wires
+
+        # collect all circuits (tapes) and postprocessing functions required
+        # to compute the Hessian
+        all_tapes = []
+        reshape_info = []
+        processing_fns = []
+        nonzero_grad_idx = []
+
+        for trainable_i, param_method_i in enumerate(diff_methods):
+            for trainable_j, param_method_j in enumerate(diff_methods):
+                if param_method_i == "0" or param_method_j == "0":
+                    continue
+
+                nonzero_grad_idx.append((trainable_i, trainable_j))
+
+                tapes, processing_fn = self.hessian_pd(trainable_i, trainable_j, params=params, **options)
+
+                processing_fns.append(processing_fn)
+
+                # we create a flat list here to feed at once to the device
+                all_tapes.extend(tapes)
+
+                # to extract the correct result for this parameter later, remember the number of tapes
+                reshape_info.append(len(tapes))
+
+        # execute all tapes at once
+        results = device.batch_execute(all_tapes)
+
+        hessian = None
+        start = 0
+
+        for (i, j), processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
+
+            # extract the correct results from the flat list
+            res = results[start : start + res_len]
+            start += res_len
+
+            # postprocess results to compute the gradient
+            g = processing_fn(res)
+
+            if g.dtype is np.dtype("object"):
+                # object arrays cannot be flattened; must hstack them
+                g = np.hstack(g)
+
+            g = g.flatten()
+
+            if hessian is None:
+                # update the tape's output dimension
+                self._output_dim = len(params)
+                # create the Hessian matrix
+                hessian = np.zeros((len(params), len(params)), dtype=float)
+
+            hessian[i, j] = g
+
+        return hessian
