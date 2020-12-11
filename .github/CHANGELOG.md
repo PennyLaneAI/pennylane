@@ -1,8 +1,9 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
-* A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
+* A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
+  supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
   Here is an example of how to use the new device:
 
@@ -20,8 +21,9 @@
   grad_fn = jax.grad(circuit)
   print(grad_fn(weights))
   ```
-  
-  Currently, the only the `diff_method="backprop"` is supported, with plans to add reverse mode support in the future.
+
+  Currently, only `diff_method="backprop"` is supported, with plans to add reverse mode support in
+  the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
   [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
@@ -46,7 +48,12 @@
   a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
   `test_pauliz_expectation_analytic`, and `test_random_circuit`.
   [(#897)](https://github.com/PennyLaneAI/pennylane/pull/897)
-  
+
+* Adds the following agnostic tensor manipulation functions to the `qml.math` module: `abs`,
+  `angle`, `arcsin`, `concatenate`, `dot`, `sqrt`, `sum`, `take`, `where`. These functions are
+  required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
+  [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -66,7 +73,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts.
 
 # Release 0.13.0 (current release)
 
