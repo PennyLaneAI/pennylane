@@ -384,6 +384,33 @@ class TestJacobian:
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             tape.jacobian(dev, order=3)
 
+    def test_independent_parameters(self):
+        """Test the case where expectation values are independent of some parameters. For those
+        parameters, the gradient should be evaluated to zero without executing the device."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with JacobianTape() as tape1:
+            qml.RX(1, wires=[0])
+            qml.RX(1, wires=[1])
+            qml.expval(qml.PauliZ(0))
+
+        with JacobianTape() as tape2:
+            qml.RX(1, wires=[0])
+            qml.RX(1, wires=[1])
+            qml.expval(qml.PauliZ(1))
+
+        j1 = tape1.jacobian(dev)
+
+        # We should only be executing the device to differentiate 1 parameter (2 executions)
+        assert dev.num_executions == 2
+
+        j2 = tape2.jacobian(dev)
+
+        exp = - np.sin(1)
+
+        assert np.allclose(j1, [exp, 0])
+        assert np.allclose(j2, [0, exp])
+
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
@@ -541,14 +568,14 @@ class TestJacobianCVIntegration:
         with JacobianTape() as tape:
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
-            qml.expval(qml.NumberOperator(0))
+            qml.expval(qml.NumberOperator(1))
             qml.var(qml.NumberOperator(0))
 
         tape.trainable_params = {0, 1}
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
 
-        expected = np.array([[1, 2 * a], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[0, 0], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_trainable_measurement(self, tol):

@@ -17,12 +17,12 @@ with open("pennylane_qchem/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "pennylane>=0.12",
-    "scipy<1.5",
+    "pennylane>=0.13",
+    "scipy",
     "openfermion",
     "openfermionpyscf; platform_system != 'Windows'",
     "openfermionpsi4",
-    "pyscf; platform_system != 'Windows'",
+    "pyscf==1.7.2; platform_system != 'Windows'",
 ]
 
 info = {

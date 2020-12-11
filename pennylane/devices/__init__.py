@@ -23,6 +23,7 @@ to verify and test quantum gradient computations.
     :toctree: api
 
     default_qubit
+    default_qubit_jax
     default_qubit_tf
     default_qubit_autograd
     default_gaussian

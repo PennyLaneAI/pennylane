@@ -15,11 +15,10 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+from importlib import reload
 import pkg_resources
 
 import numpy as _np
-from autograd import grad as _grad
-from autograd import jacobian as _jacobian
 
 from semantic_version import Version, Spec
 
@@ -33,7 +32,7 @@ import pennylane.qnn
 import pennylane.qaoa as qaoa
 from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
-from pennylane.vqe import Hamiltonian, VQECost
+from pennylane.vqe import Hamiltonian, ExpvalCost, VQECost
 
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
@@ -47,7 +46,9 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
+from ._grad import jacobian, grad
 
+import pennylane.proc  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
 from .tape import enable_tape, disable_tape, tape_mode_active
 
@@ -55,10 +56,29 @@ from .tape import enable_tape, disable_tape, tape_mode_active
 default_config = Configuration("config.toml")
 
 
+def _get_device_entrypoints():
+    """Returns a dictionary mapping the device short name to the
+    loadable entrypoint"""
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
+
+
+def refresh_devices():
+    """Scan installed PennyLane plugins to refresh the device list."""
+
+    # This function does not return anything; instead, it has a side effect
+    # which is to update the global plugin_devices variable.
+
+    # We wish to retain the behaviour of a global plugin_devices dictionary,
+    # as re-importing pkg_resources can be a very slow operation on systems
+    # with a large number of installed packages.
+    global plugin_devices  # pylint:disable=global-statement
+
+    reload(pkg_resources)
+    plugin_devices = _get_device_entrypoints()
+
+
 # get list of installed devices
-plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
-}
+plugin_devices = _get_device_entrypoints()
 
 
 # get chemistry plugin
@@ -166,6 +186,12 @@ def device(name, *args, **kwargs):
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
+    if name not in plugin_devices:
+        # Device does not exist in the loaded device list.
+        # Attempt to refresh the devices, in case the user
+        # installed the plugin during the current Python session.
+        refresh_devices()
+
     if name in plugin_devices:
         options = {}
 
@@ -198,114 +224,6 @@ def device(name, *args, **kwargs):
         return plugin_device_class(*args, **options)
 
     raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
-
-
-def grad(func, argnum=None):
-    """Returns the gradient as a callable function of (functions of) QNodes.
-
-    Function arguments with the property ``requires_grad`` set to ``False``
-    will automatically be excluded from the gradient computation, unless
-    the ``argnum`` keyword argument is passed.
-
-    Args:
-        func (function): a plain QNode, or a Python function that contains
-            a combination of quantum and classical nodes
-
-    Keyword Args:
-        argnum (int, list(int), None): Which argument(s) to take the gradient
-            with respect to. By default, the arguments themselves are used
-            to determine differentiability, by examining the ``requires_grad``
-            property. Providing this keyword argument overrides this behaviour,
-            allowing argument differentiability to be defined manually for the returned gradient function.
-
-    Returns:
-        function: The function that returns the gradient of the input
-        function with respect to the differentiable arguments, or, if specified,
-        the arguments in ``argnum``.
-    """
-    # pylint: disable=no-value-for-parameter
-    if argnum is not None:
-        # for backwards compatibility with existing code
-        # that manually specifies argnum
-        return _grad(func, argnum)
-
-    def _gradient_function(*args, **kwargs):
-        """Inspect the arguments for differentiability, and
-        compute the autograd gradient function with required argnums
-        dynamically.
-
-        This wrapper function is returned to the user instead of autograd.grad,
-        so that we can take into account cases where the user computes the
-        gradient function once, but then calls it with arguments that change
-        in differentiability.
-        """
-        argnum = []
-
-        for idx, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
-                argnum.append(idx)
-
-        return _grad(func, argnum)(*args, **kwargs)
-
-    return _gradient_function
-
-
-def jacobian(func, argnum=None):
-    """Returns the Jacobian as a callable function of vector-valued
-    (functions of) QNodes.
-
-    This is a wrapper around the :mod:`autograd.jacobian` function.
-
-    Args:
-        func (function): A vector-valued Python function or QNode that contains
-            a combination of quantum and classical nodes. The output of the computation
-            must consist of a single NumPy array (if classical) or a tuple of
-            expectation values (if a quantum node)
-        argnum (int or Sequence[int]): Which argument to take the gradient
-            with respect to. If a sequence is given, the Jacobian matrix
-            corresponding to all input elements and all output elements is returned.
-
-    Returns:
-        function: the function that returns the Jacobian of the input
-        function with respect to the arguments in argnum
-    """
-    # pylint: disable=no-value-for-parameter
-
-    if argnum is not None:
-        # for backwards compatibility with existing code
-        # that manually specifies argnum
-        if isinstance(argnum, int):
-            return _jacobian(func, argnum)
-
-        return lambda *args, **kwargs: _np.stack(
-            [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
-        ).T
-
-    def _jacobian_function(*args, **kwargs):
-        """Inspect the arguments for differentiability, and
-        compute the autograd gradient function with required argnums
-        dynamically.
-
-        This wrapper function is returned to the user instead of autograd.jacobian,
-        so that we can take into account cases where the user computes the
-        jacobian function once, but then calls it with arguments that change
-        in differentiability.
-        """
-        argnum = []
-
-        for idx, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
-                argnum.append(idx)
-
-        if not argnum:
-            return tuple()
-
-        if len(argnum) == 1:
-            return _jacobian(func, argnum[0])(*args, **kwargs)
-
-        return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
-
-    return _jacobian_function
 
 
 def version():

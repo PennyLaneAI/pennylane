@@ -51,7 +51,7 @@ computational basis states, and then repeatedly apply QAOA layers with the
 
         qml.layer(qaoa_layer, 2, params[0], params[1])
 
-With the circuit defined, we call the device on which QAOA will be executed, as well as the ``qml.VQECost``, which
+With the circuit defined, we call the device on which QAOA will be executed, as well as the ``qml.ExpvalCost``, which
 creates the QAOA cost function: the expected value of the cost Hamiltonian with respect to the parametrized output
 of the QAOA circuit.
 
@@ -59,7 +59,7 @@ of the QAOA circuit.
 
     # Defines the device and the QAOA cost function
     dev = qml.device('default.qubit', wires=len(wires))
-    cost_function = qml.VQECost(circuit, cost_h, dev)
+    cost_function = qml.ExpvalCost(circuit, cost_h, dev)
 
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299

@@ -115,6 +115,8 @@ Noisy channels
     ~pennylane.GeneralizedAmplitudeDamping
     ~pennylane.PhaseDamping
     ~pennylane.DepolarizingChannel
+    ~pennylane.BitFlip
+    ~pennylane.PhaseFlip
     ~pennylane.QubitChannel
 
 :html:`</div>`

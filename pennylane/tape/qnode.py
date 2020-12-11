@@ -112,6 +112,7 @@ class QNode:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
+        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
     **Example**
 
@@ -130,7 +131,7 @@ class QNode:
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {self.INTERFACE_MAP.values()}."
+                f"one of {list(self.INTERFACE_MAP.keys())}."
             )
 
         if not isinstance(device, Device):
@@ -394,18 +395,18 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        stop_at = self.device.operations
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
+        ops_not_supported = any(
+            not self.device.supports_operation(op.name) for op in self.qtape.operations
+        )
 
-        # Hotfix that allows controlled rotations to return the correct gradients
-        # when using the parameter shift rule.
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
-
-        # expand out the tape, if any operations are not supported on the device
-        if not {op.name for op in self.qtape.operations}.issubset(stop_at):
+        # expand out the tape, if any operations are not supported on the device or multiple
+        # observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
-                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+                depth=self.max_expansion,
+                stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):
@@ -439,7 +440,9 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
+        # Same for JAX
+        if res_type_namespace == "jax":
+            return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
     def draw(self, charset="unicode"):
@@ -560,7 +563,16 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
+    def to_jax(self):
+        """Validation checks when a user expects to use the JAX interface."""
+        if self.diff_method != "backprop":
+            raise qml.QuantumFunctionError(
+                "The JAX interface can only be used with "
+                "diff_method='backprop' on supported devices"
+            )
+        self.interface = "jax"
+
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):

@@ -110,6 +110,16 @@ neural network. Note arbitrary templates or operations can also be layered using
     :description: BasicEntanglerLayers
     :figure: ../_static/templates/layers/basic_entangler.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.ParticleConservingU2.html
+    :description: ParticleConservingU2
+    :figure: ../_static/templates/layers/particle_conserving_u2.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.ParticleConservingU1.html
+    :description: ParticleConservingU1
+    :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
