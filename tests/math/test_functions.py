@@ -91,13 +91,13 @@ class TestGetMultiTensorbox:
 
 
 test_abs_data = [
-    (1, -2, 3),
-    [1, -2, 3],
-    onp.array([1, -2, 3]),
-    np.array([1, -2, 3]),
-    torch.tensor([1, -2, 3]),
-    tf.Variable([1, -2, 3]),
-    tf.constant([1, -2, 3]),
+    (1, -2, 3 + 4j),
+    [1, -2, 3 + 4j],
+    onp.array([1, -2, 3 + 4j]),
+    np.array([1, -2, 3 + 4j]),
+    torch.tensor([1, -2, 3 + 4j], dtype=torch.complex128),
+    tf.Variable([1, -2, 3 + 4j], dtype=tf.complex128),
+    tf.constant([1, -2, 3 + 4j], dtype=tf.complex128),
 ]
 
 
@@ -107,7 +107,7 @@ def test_abs(t):
     """Test that the absolute function works for a variety
     of input"""
     res = fn.abs_(t)
-    assert fn.allequal(res, [1, 2, 3])
+    assert fn.allequal(res, [1, 2, 5])
 
 
 test_data = [
@@ -676,7 +676,7 @@ def test_sqrt(t):
     """Test that the square root function works for a variety
     of input"""
     res = fn.sqrt(t)
-    assert fn.allequal(res, [1, np.sqrt(2), np.sqrt(3)])
+    assert fn.allclose(res, [1, np.sqrt(2), np.sqrt(3)])
 
 
 class TestStack:
