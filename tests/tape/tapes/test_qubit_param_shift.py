@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the qubit parameter-shift QubitParamShiftTape"""
+import itertools
 import pytest
 import numpy as np
 
@@ -545,34 +546,51 @@ class TestJacobianIntegration:
 class TestHessian:
     """Tests for parameter Hessian method"""
 
-    def test_hessian_calculation(self, tol):
-        # example data taken from https://arxiv.org/pdf/2008.06517.pdf
-        n_wires = 5
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = [2.73943676, 0.16289932, 3.4536312 , 2.73521126, 2.6412488]
+    @pytest.mark.parametrize("s1", [np.pi / 2, np.pi / 4, 2])
+    @pytest.mark.parametrize("s2", [np.pi / 2, np.pi / 4, 3])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
+    def test_pauli_rotation_hessian(self, s1, s2, G, tol):
+        """Tests that the automatic Hessian of Pauli rotations are correct."""
+        theta = np.array([0.234, 2.443])
+        dev = qml.device("default.qubit", wires=2)
 
         with QubitParamShiftTape() as tape:
-            for i in range(n_wires):
-                qml.RX(weights[i], wires=i)
-
+            qml.QubitStateVector(np.array([1., -1., 1., -1.]) / np.sqrt(4), wires=[0, 1])
+            G(theta[0], wires=[0])
+            G(theta[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[2, 1])
-            qml.CNOT(wires=[3, 1])
-            qml.CNOT(wires=[4, 3])
+            qml.expval(qml.PauliZ(0))
 
-            qml.expval(qml.PauliZ(1))
+        tape.trainable_params = {1, 2}
 
-        res = tape.execute(dev)
-        expected = -0.7938055593697134
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        autograd_val = tape.hessian(dev, s1=s1, s2=s2)
 
-        hessian = tape.hessian(dev, method="analytic")
-        expected = np.array([
-            [ 0.794,  0.055,  0.109, -0.145,  0.   ],
-            [ 0.055,  0.794, -0.042,  0.056, -0.   ],
-            [ 0.109, -0.042,  0.794,  0.11 ,  0.   ],
-            [-0.145,  0.056,  0.11 ,  0.794,  0.   ],
-            [ 0.   , -0.   ,  0.   ,  0.   , -0.   ]
-        ])
-        assert hessian.shape == (5, 5)
-        assert np.allclose(hessian, expected, atol=tol, rtol=0)
+        assert autograd_val.shape == (len(theta), len(theta))
+
+        shift = np.eye(len(theta))
+        manualgrad_val = np.zeros((len(theta), len(theta)))
+        for i in range(len(theta)):
+            for j in range(len(theta)):
+                manualgrad_val[i, j] = (
+                    tape.execute(dev, params=theta + s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta - s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta + s1 * shift[i] - s2 * shift[j])
+                    + tape.execute(dev, params=theta - s1 * shift[i] - s2 * shift[j])
+                ) / (4 * np.sin(s1) * np.sin(s2))
+
+        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+
+    def test_no_trainable_params_hessian(self):
+        """Test that an empty Hessian is returned when there are no trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with QubitParamShiftTape() as tape:
+            qml.RX(0.224, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {}
+
+        hessian = tape.hessian(dev)
+
+        assert hessian.shape == (1, 0)

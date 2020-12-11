@@ -152,7 +152,6 @@ class QubitParamShiftTape(JacobianTape):
 
         for c, a, s in param_shift:
             shift[idx] = s
-
             shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_tape.set_parameters(a * params + shift)
 
@@ -284,8 +283,8 @@ class QubitParamShiftTape(JacobianTape):
             params (list[Any]): the quantum tape operation parameters
 
         Keyword Args:
-            s1=pi/2 (float): the size of the shift for index i in the four-term parameter-shift Hessian computations
-            s2=pi/2 (float): the size of the shift for index j in the four-term parameter-shift Hessian computations
+            s1=pi/2 (float): the size of the shift for index i in the parameter-shift Hessian computations
+            s2=pi/2 (float): the size of the shift for index j in the parameter-shift Hessian computations
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
@@ -293,32 +292,52 @@ class QubitParamShiftTape(JacobianTape):
             tapes.
         """
         idxs = (i, j)
-        idx_shift_kwargs = {i: "s1", j: "s2"}
+        idx_shifts = {i: options.get("s1", np.pi / 2), j: options.get("s2", np.pi / 2)}
 
         param_shifts = []
 
-        for idx in idxs:
-            t_idx = list(self.trainable_params)[idx]
-            op = self._par_info[t_idx]["op"]
-            p_idx = self._par_info[t_idx]["p_idx"]
-
-            shift_kwarg = idx_shift_kwargs[idx]
-            s = options.get(shift_kwarg, np.pi / 2)
-            param_shift = op.get_parameter_shift(p_idx, shift=s)
-            param_shifts.append(param_shift)
+        if i == j and idx_shifts[i] == idx_shifts[j]:
+            if idx_shifts[i] == np.pi / 2:
+                # when i = j and s1 = s2 = pi/2, the Hessian parameter shift rule
+                # can be simplified to two device executions
+                param_shifts = [(0.5, 1, np.pi), (-0.5, 1, 0)]
+            elif idx_shifts[i] == np.pi / 4:
+                # when i = j and s1 = s2 = pi/4, the Hessian parameter shift rule
+                # can be simplified to three device executions
+                param_shifts = [(0.5, 1, np.pi / 2), (-1, 1, 0), (0.5, 1, -np.pi / 2)]
 
         coeffs = []
         tapes = []
         shift = np.eye(len(params))
 
-        for (_, _, s1) in param_shifts[0]:
-            for (_, _, s2) in param_shifts[1]:
-                c = 0.25 / np.sin(s1) / np.sin(s2)
+        if param_shifts:
+            # optimizations can be made to reduce amount of tape executions
+            for c, a, s in param_shifts:
                 shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
-                shifted_tape.set_parameters(params + s1*shift[i] + s2*shift[j])
+                shifted_tape.set_parameters(a * params + s * shift[i])
 
                 coeffs.append(c)
                 tapes.append(shifted_tape)
+        else:
+            # no optimizations can be made, generate all 4 tapes
+            for idx in idxs:
+                t_idx = list(self.trainable_params)[idx]
+                op = self._par_info[t_idx]["op"]
+                p_idx = self._par_info[t_idx]["p_idx"]
+                s = idx_shifts[idx]
+
+                param_shift = op.get_parameter_shift(p_idx, shift=s)
+                param_shifts.append(param_shift)
+
+            for c1, a, s1 in param_shifts[0]:
+                for c2, _, s2 in param_shifts[1]:
+                    c = c1 * c2
+                    s = s1 * shift[i] + s2 * shift[j]
+                    shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+                    shifted_tape.set_parameters(a * params + s)
+
+                    coeffs.append(c)
+                    tapes.append(shifted_tape)
 
         def processing_fn(results):
             """Computes the Hessian of the parameter at index idx via the

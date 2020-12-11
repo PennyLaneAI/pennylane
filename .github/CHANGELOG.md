@@ -2,6 +2,33 @@
 
 <h3>New features since last release</h3>
 
+* Support added for calculating the Hessian of quantum tapes using the second-order
+  parameter shift formula.
+  [#961](https://github.com/PennyLaneAI/pennylane/pull/961)
+
+  The following example shows the calculation of the Hessian of a quantum tape:
+
+  ```python
+  qml.enable_tape()
+  n_wires = 5
+  weights = [2.73943676, 0.16289932, 3.4536312, 2.73521126, 2.6412488]
+
+  dev = qml.device("default.qubit", wires=n_wires)
+
+  with qml.tape.QubitParamShiftTape() as tape:
+      for i in range(n_wires):
+          qml.RX(weights[i], wires=i)
+
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[2, 1])
+      qml.CNOT(wires=[3, 1])
+      qml.CNOT(wires=[4, 3])
+
+      qml.expval(qml.PauliZ(1))
+
+  print(tape.hessian(dev))
+  ```
+
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
@@ -73,7 +100,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Steven Oud, Chase Roberts.
 
 # Release 0.13.0 (current release)
 
