@@ -683,3 +683,40 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
         return update_wrapper(qn, func)
 
     return qfunc_decorator
+
+
+def make_drawing(qnode, charset="unicode"):
+    """Make a function that draws the given qnode.
+
+    Example: Given this definition of a Qnode.
+
+    .. code-block:: python3
+
+        qml.enable_tape()
+
+        @qml.qnode(dev)
+        def circuit(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(*w, wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    We can draw the it like such:
+
+    >>> qml.make_drawing(circuit)(a=2.3, w=[1.2, 3.2, 0.7])
+    0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+    1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+
+    Args:
+        qnode: A ``pennylane.qnode``.
+    Returns:
+        A function that has the same arguement signature as ``qnode``. When called,
+        the function will draw the qnode.
+    """
+
+    def wrapper(*args, **kwargs):
+        qnode.construct(args, kwargs)
+        return qnode.qtape.draw(charset)
+
+    return wrapper
