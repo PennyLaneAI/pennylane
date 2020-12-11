@@ -685,8 +685,8 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def make_drawing(qnode, charset="unicode"):
-    """Make a function that draws the given qnode.
+def make_drawing(_qnode, charset="unicode"):
+    """Make a function that draws the given _qnode.
 
     Example: Given this definition of a Qnode.
 
@@ -709,14 +709,14 @@ def make_drawing(qnode, charset="unicode"):
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
 
     Args:
-        qnode: A ``pennylane.qnode``.
+        _qnode: A ``pennylane.qnode``.
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
         the function will draw the qnode.
     """
 
     def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
-        return qnode.qtape.draw(charset)
+        _qnode.construct(args, kwargs)
+        return _qnode.qtape.draw(charset)
 
     return wrapper
