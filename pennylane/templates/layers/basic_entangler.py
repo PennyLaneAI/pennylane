@@ -31,7 +31,7 @@ def _preprocess(weights, wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.proc.TensorBox(weights)
+        weights = qml.math.TensorBox(weights)
         repeat = weights.shape[0]
 
         if weights.shape[1] != len(wires):

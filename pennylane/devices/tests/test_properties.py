@@ -26,6 +26,14 @@ try:
 except ImportError:
     TF_SUPPORT = False
 
+try:
+    import jax
+
+    JAX_SUPPORT = True
+
+except ImportError:
+    JAX_SUPPORT = False
+
 # Shared test data =====
 
 
@@ -122,7 +130,7 @@ class TestCapabilities:
             pytest.skip("No passthru_interface capability specified by device.")
 
         interface = cap["passthru_interface"]
-        assert interface in ["tf", "autograd"]  # for new interface, add test case
+        assert interface in ["tf", "autograd", "jax"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
         qnode = qml.qnodes.passthru.PassthruQNode(qfunc, dev)
@@ -144,6 +152,14 @@ class TestCapabilities:
             x = pnp.array(0.1, requires_grad=True)
             g = qml.grad(qnode)
             g(x)
+
+        if interface == "jax":
+            if JAX_SUPPORT:
+                x = pnp.array(0.1, requires_grad=True)
+                g = jax.grad(lambda a: qnode(a).reshape(()))
+                g(x)
+            else:
+                pytest.skip("Cannot import jax")
 
     def test_provides_jacobian(self, device_kwargs):
         """Test that the device computes the jacobian."""

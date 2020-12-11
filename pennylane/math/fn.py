@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Function wrappers for the TensorBox API"""
-# pylint:disable=abstract-class-instantiated
+# pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
 import warnings
 
 import numpy as np
@@ -90,7 +90,7 @@ def abs_(tensor):
     >>> abs(a)
     tensor([1., 2.], grad_fn=<AbsBackward>)
     """
-    return TensorBox(tensor).abs().data
+    return TensorBox(tensor).abs(wrap_output=False)
 
 
 def allequal(tensor1, tensor2, **kwargs):
@@ -119,16 +119,16 @@ def allequal(tensor1, tensor2, **kwargs):
     >>> allequal(a, b)
     True
     """
-    t1 = TensorBox(tensor1).numpy()
-    t2 = TensorBox(tensor2).numpy()
+    t1 = toarray(tensor1)
+    t2 = toarray(tensor2)
     return np.all(t1 == t2, **kwargs)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
-    t1 = TensorBox(a).numpy()
-    t2 = TensorBox(b).numpy()
+    t1 = toarray(a)
+    t2 = toarray(b)
     return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
 
@@ -150,7 +150,7 @@ def angle(tensor):
     >>> angle(a)
     tensor([0.0000, 1.5708, 0.7854], grad_fn=<AngleBackward>)
     """
-    return TensorBox(tensor).angle().data
+    return TensorBox(tensor).angle(wrap_output=False)
 
 
 def arcsin(tensor):
@@ -186,7 +186,7 @@ def cast(tensor, dtype):
     >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
-    return TensorBox(tensor).cast(dtype).data
+    return TensorBox(tensor).cast(dtype, wrap_output=False)
 
 
 def cast_like(tensor1, tensor2):
@@ -207,8 +207,8 @@ def cast_like(tensor1, tensor2):
     >>> cast(x, y)
     tensor([1., 2.])
     """
-    dtype = TensorBox(tensor2).numpy().dtype.type
-    return TensorBox(tensor1).cast(dtype).data
+    dtype = toarray(tensor2).dtype.type
+    return cast(tensor1, dtype)
 
 
 def concatenate(values, axis=0):
@@ -238,7 +238,7 @@ def concatenate(values, axis=0):
     TensorBox: <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
-    return _get_multi_tensorbox(values).concatenate(values, axis=axis)
+    return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
 def convert_like(tensor1, tensor2):
@@ -283,12 +283,7 @@ def dot(tensor1, tensor2):
         tensor1 (tensor_like): input tensor
         tensor2 (tensor_like): input tensor
     """
-    tensorbox = _get_multi_tensorbox([tensor1, tensor2])
-
-    if tensorbox.data is tensor1:
-        return tensorbox.dot(tensor2).data
-
-    return tensorbox.dot(tensor1).data
+    return _get_multi_tensorbox([tensor1, tensor2]).dot(tensor1, tensor2, wrap_output=False)
 
 
 def expand_dims(tensor, axis):
@@ -314,7 +309,7 @@ def expand_dims(tensor, axis):
     array([[3],
            [4]], dtype=int32)>
     """
-    return TensorBox(tensor).expand_dims(axis).data
+    return TensorBox(tensor).expand_dims(axis, wrap_output=False)
 
 
 def get_interface(tensor):
@@ -390,9 +385,9 @@ def ones_like(tensor, dtype=None):
            [1.+0.j]])>
     """
     if dtype is not None:
-        return TensorBox(tensor).ones_like().cast(dtype).data
+        return TensorBox(tensor).ones_like().cast(dtype, wrap_output=False)
 
-    return TensorBox(tensor).ones_like().data
+    return TensorBox(tensor).ones_like(wrap_output=False)
 
 
 def requires_grad(tensor):
@@ -468,7 +463,21 @@ def shape(tensor):
 
 
 def sqrt(tensor):
-    return TensorBox(tensor).sqrt().data
+    """Returns the element-wise square root.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like:
+
+    **Example**
+
+    >>> a = torch.tensor([4., 9.], requires_grad=True)
+    >>> sqrt(a)
+    tensor([2., 3.], grad_fn=<SqrtBackward>)
+    """
+    return TensorBox(tensor).sqrt(wrap_output=False)
 
 
 def stack(values, axis=0):
@@ -500,7 +509,7 @@ def stack(values, axis=0):
            [1.00e-01, 2.00e-01, 3.00e-01],
            [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
     """
-    return _get_multi_tensorbox(values).stack(values, axis=axis).data
+    return _get_multi_tensorbox(values).stack(values, axis=axis, wrap_output=False)
 
 
 def sum_(tensor, axis=None, keepdims=False):
@@ -537,7 +546,7 @@ def sum_(tensor, axis=None, keepdims=False):
     tensor([[[7],
              [1]]], requires_grad=True)
     """
-    return TensorBox(tensor).sum(axis=axis, keepdims=keepdims).data
+    return TensorBox(tensor).sum(axis=axis, keepdims=keepdims, wrap_output=False)
 
 
 def T(tensor):
@@ -558,7 +567,7 @@ def T(tensor):
     array([[1, 3],
            [2, 4]], dtype=int32)>
     """
-    return TensorBox(tensor).T.data
+    return TensorBox(tensor).T(wrap_output=False)
 
 
 def take(tensor, indices, axis=None):
@@ -588,14 +597,29 @@ def take(tensor, indices, axis=None):
             [[3, 3],
              [4, 3]]])
     """
-    tensor = TensorBox(tensor)
-    idx_tb = TensorBox(indices)
-
-    if idx_tb.interface not in ("pennylane", "numpy") and idx_tb.interface != tensor.interface:
-        indices = convert_like(indices, tensor)
-
-    return tensor.take(indices, axis=axis)
+    return TensorBox(tensor).take(indices, axis=axis, wrap_output=False)
 
 
 def where(condition, x, y):
-    return _get_multi_tensorbox([x, y]).where(condition, x, y).data
+    """Returns elements chosen from x or y depending on a boolean tensor condition.
+
+    The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
+
+    Args:
+        condition (tensor_like[bool]): A boolean tensor. Where True, elements from
+            ``x`` will be chosen, otherwise ``y``.
+        x (tensor_like): values from which to choose if the condition evaluates to True
+        y (tensor_like): values from which to choose if the condition evaluates to False
+
+    Returns:
+        tensor_like: A tensor with elements from ``x`` where the condition is True, and
+        ``y`` otherwise. The output tensor has the same shape as the input tensors.
+
+    **Example**
+
+    >>> a = torch.tensor([0.6, 0.23, 0.7, 1.5, 1.7], requires_grad=True)
+    >>> b = torch.tensor([-1., -2., -3., -4., -5.], requires_grad=True)
+    >>> math.where(a < 1, a, b)
+    tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
+    """
+    return _get_multi_tensorbox([x, y]).where(condition, x, y, wrap_output=False)

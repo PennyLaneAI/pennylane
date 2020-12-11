@@ -32,8 +32,8 @@ def _preprocess(features, wires, weights):
 
     if qml.tape_mode_active():
 
-        features = qml.proc.TensorBox(features)
-        weights = qml.proc.TensorBox(weights)
+        features = qml.math.TensorBox(features)
+        weights = qml.math.TensorBox(weights)
 
         if len(features.shape) != 1:
             raise ValueError(

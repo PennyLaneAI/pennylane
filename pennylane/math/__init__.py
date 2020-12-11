@@ -58,4 +58,4 @@ from .fn import (
     toarray,
     where,
 )
-from .tensorbox import TensorBox
+from .tensorbox import TensorBox, wrap_output

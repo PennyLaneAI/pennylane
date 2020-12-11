@@ -49,13 +49,13 @@ def _preprocess(init_state, weights, s_wires, d_wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.proc.TensorBox(weights)
+        weights = qml.math.TensorBox(weights)
         if weights.shape != (len(s_wires) + len(d_wires),):
             raise ValueError(
                 f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}."
             )
 
-        init_state = qml.proc.TensorBox(init_state)
+        init_state = qml.math.TensorBox(init_state)
         # we can extract the numpy representation here
         # since init_state can never be differentiable
         init_state = init_state.numpy()
@@ -199,7 +199,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
 
             # Define the cost function
-            cost_fn = qml.VQECost(ansatz, h, dev)
+            cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))

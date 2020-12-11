@@ -30,7 +30,7 @@ def _preprocess(features, wires):
 
     if qml.tape_mode_active():
 
-        features = qml.proc.TensorBox(features)
+        features = qml.math.TensorBox(features)
 
         if len(features.shape) != 1:
             raise ValueError(

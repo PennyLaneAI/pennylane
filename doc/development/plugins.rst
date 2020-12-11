@@ -466,21 +466,19 @@ where
 * :attr:`~.Operation.grad_method`: the gradient computation method; ``'A'`` for the analytic
   method, ``'F'`` for finite differences, and ``None`` if the operation may not be differentiated
 
-* :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'`` method.
-  This is a list with one tuple per operation parameter. For parameter :math:`k`, the tuple is of
-  the form :math:`(c_k, s_k)`, resulting in a gradient recipe of
+* :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'``
+  method. This is a tuple with one nested list per operation parameter. For
+  parameter :math:`\phi_k`, the nested list contains elements of the form
+  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
 
-  .. math:: \frac{d}{d\phi_k}f(O(\phi_k)) = c_k\left[f(O(\phi_k+s_k))-f(O(\phi_k-s_k))\right].
+  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k+s_i),
 
-  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
+  where :math:`f` is the expectation value of an observable on a circuit that has been evolved by
+  the operation being considered with parameter :math:`\phi_k`.
 
-  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
-
-  which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
-  :math:`O(\phi_k)`.
-
-  Note that if ``grad_recipe = None``, the default gradient recipe is
-  :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
+  Note that if ``grad_recipe = None``, the default gradient recipe containing
+  the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+  s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
 
 The user can then import this operation directly from your plugin, and use it when defining a QNode:
 

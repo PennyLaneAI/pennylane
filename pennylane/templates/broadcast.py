@@ -110,7 +110,7 @@ def _preprocess(parameters, pattern, wires):
 
         if qml.tape_mode_active():
 
-            parameters = qml.proc.TensorBox(parameters)
+            parameters = qml.math.TensorBox(parameters)
             shape = parameters.shape
 
             # expand dimension so that parameter sets for each unitary can be unpacked

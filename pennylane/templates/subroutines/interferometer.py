@@ -31,15 +31,15 @@ def _preprocess(theta, phi, varphi, wires):
 
     if qml.tape_mode_active():
 
-        theta = qml.proc.TensorBox(theta)
+        theta = qml.math.TensorBox(theta)
         if theta.shape != (n_if,):
             raise ValueError(f"Theta must be of shape {(n_if,)}; got {theta.shape}.")
 
-        phi = qml.proc.TensorBox(phi)
+        phi = qml.math.TensorBox(phi)
         if phi.shape != (n_if,):
             raise ValueError(f"Phi must be of shape {(n_if,)}; got {phi.shape}.")
 
-        varphi = qml.proc.TensorBox(varphi)
+        varphi = qml.math.TensorBox(varphi)
         if varphi.shape != (n_wires,):
             raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {varphi.shape}.")
 

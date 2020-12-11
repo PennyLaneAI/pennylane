@@ -12,17 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the TensorBox abstract base class."""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-public-methods
 import abc
 import functools
 import numbers
 import sys
-from types import FunctionType
-
-import numpy as np
 
 
 def wrap_output(func):
+    """Decorator to automate the wrapping of TensorBox method outputs.
+
+    When applied to a TensorBox method, it inserts an additional argument
+    into the signature, ``wrap_output``. By default, this is True, causing
+    the output of the method to be wrapped as a TensorBox; specifying
+    ``wrap_output=False`` when calling the method results in the
+    underlying tensor itself being returned.
+    """
+
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
         wrap = kwargs.pop("wrap_output", True)
@@ -87,6 +93,7 @@ class TensorBox(abc.ABC):
     tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
     """
 
+    __array_priority__ = 100
     _initialized = False
 
     def __new__(cls, tensor):
@@ -120,71 +127,6 @@ class TensorBox(abc.ABC):
 
         raise ValueError(f"Unknown tensor type {type(tensor)}")
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        """By defining this special method, NumPy ufuncs can act directly
-        on the contained tensor, with broadcasting taken into account. For
-        more details, see https://numpy.org/devdocs/user/basics.subclassing.html#array-ufunc-for-ufuncs"""
-        outputs = [v.data if isinstance(v, TensorBox) else v for v in kwargs.get("out", ())]
-
-        if outputs:
-            # Insert the unwrapped outputs into the keyword
-            # args dictionary, to be passed to ndarray.__array_ufunc__
-            outputs = tuple(outputs)
-            kwargs["out"] = outputs
-        else:
-            # If the ufunc has no outputs, we simply
-            # create a tuple containing None for all potential outputs.
-            outputs = (None,) * ufunc.nout
-
-        args = [v.data if isinstance(v, TensorBox) else v for v in inputs]
-        res = getattr(ufunc, method)(*args, **kwargs)
-
-        if ufunc.nout == 1:
-            res = (res,)
-
-        # construct a list of ufunc outputs to return
-        ufunc_output = []
-        for result, output in zip(res, outputs):
-            if output is not None:
-                ufunc_output.append(output)
-            else:
-                if isinstance(result, np.ndarray):
-                    if result.ndim == 0 and result.dtype == np.dtype("bool"):
-                        ufunc_output.append(result.item())
-                    else:
-                        ufunc_output.append(self.__class__(result))
-                else:
-                    ufunc_output.append(result)
-
-        if len(ufunc_output) == 1:
-            # the ufunc has a single output so return a single tensor
-            return ufunc_output[0]
-
-        # otherwise we must return a tuple of tensors
-        return tuple(ufunc_output)
-
-    def __array_function__(self, func, types, args, kwargs):
-        if func not in self.numpy_dispatch_functions:
-            return func._implementation(*args, **kwargs)
-
-        dispatch_fn = self.numpy_dispatch_functions[func]
-
-        if callable(dispatch_fn):
-            return dispatch_fn(*args, **kwargs)
-
-        dispatch_fn = getattr(self, dispatch_fn)
-
-        if callable(dispatch_fn):
-            if isinstance(dispatch_fn, FunctionType):
-                # static method
-                return dispatch_fn(*args, **kwargs)
-
-            # instance method
-            return dispatch_fn(*args[1:], **kwargs)
-
-        # property
-        return dispatch_fn
-
     def __init__(self, tensor):
         if self._initialized:
             return
@@ -198,6 +140,13 @@ class TensorBox(abc.ABC):
     def __len__(self):
         return len(self.data)
 
+    def __eq__(self, other):
+        if other is NotImplemented:
+            return NotImplemented
+
+        other = TensorBox(other).numpy()
+        return self.numpy() == other
+
     def __add__(self, other):
         if isinstance(other, TensorBox):
             other = other.data
@@ -209,6 +158,12 @@ class TensorBox(abc.ABC):
             other = other.data
 
         return self.__class__(self.data - other)
+
+    def __rsub__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(other - self.data)
 
     def __mul__(self, other):
         if isinstance(other, TensorBox):
@@ -235,7 +190,6 @@ class TensorBox(abc.ABC):
         return self.__class__(other ** self.data)
 
     __radd__ = __add__
-    __rsub__ = __sub__
     __rmul__ = __mul__
 
     @staticmethod
@@ -309,8 +263,9 @@ class TensorBox(abc.ABC):
                 datatype in the target framework is chosen.
         """
 
+    @staticmethod
     @abc.abstractmethod
-    def concatenate(self, values, axis=0):
+    def concatenate(values, axis=0):
         """Join a sequence of tensors along an existing axis.
 
         Args:
@@ -341,8 +296,9 @@ class TensorBox(abc.ABC):
         if we would like it to be included.
         """
 
+    @staticmethod
     @abc.abstractmethod
-    def dot(self, other):
+    def dot(x, y):
         """Returns the matrix or dot product of two tensors.
 
         * If both tensors are 0-dimensional, elementwise multiplication
@@ -495,7 +451,6 @@ class TensorBox(abc.ABC):
                             [1]]], requires_grad=True)
         """
 
-    @property
     @abc.abstractmethod
     def T(self):
         """Returns the transpose of the tensor."""
@@ -520,7 +475,7 @@ class TensorBox(abc.ABC):
         **Example**
 
         >>> x = torch.tensor([[1, 2], [3, 4]])
-        >>> y = qml.proc.TensorBox(x)
+        >>> y = qml.math.TensorBox(x)
         >>> y.take([[0, 0], [1, 0]], axis=1)
         TensorBox: tensor([[[1, 1],
                  [2, 1]],
@@ -534,15 +489,3 @@ class TensorBox(abc.ABC):
     def where(condition, x, y):
         """Return a tensor of elements selected from ``x`` if the condition is True,
         ``y`` otherwise."""
-
-    numpy_dispatch_functions = {
-        np.angle: "angle",
-        np.concatenate: "concatenate",
-        np.expand_dims: "expand_dims",
-        np.ones_like: "ones_like",
-        np.shape: "shape",
-        np.stack: "stack",
-        np.sum: "sum",
-        np.take: "take",
-        np.where: "where",
-    }

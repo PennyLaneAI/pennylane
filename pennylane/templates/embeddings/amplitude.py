@@ -34,7 +34,7 @@ def _preprocess(features, wires, pad_with, normalize):
 
     if qml.tape_mode_active():
 
-        features = qml.proc.TensorBox(features)
+        features = qml.math.TensorBox(features)
 
         # check shape
         if len(features.shape) != 1:
@@ -58,14 +58,14 @@ def _preprocess(features, wires, pad_with, normalize):
         # pad
         if pad_with is not None and n_features < 2 ** len(wires):
             padding = [pad_with] * (2 ** len(wires) - n_features)
-            features = qml.proc.concatenate([features, padding], axis=0)
+            features = qml.math.concatenate([features, padding], axis=0)
 
         # TODO: add those methods to tensorbox
 
         # normalize
-        norm = qml.proc.sum(qml.proc.abs(features) ** 2)
+        norm = qml.math.sum(qml.math.abs(features) ** 2)
 
-        if not qml.proc.allclose(norm, 1.0, atol=TOLERANCE):
+        if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
             if normalize or pad_with:
                 features = features / np.sqrt(norm)
             else:

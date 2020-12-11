@@ -219,7 +219,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
             ansatz = partial(ParticleConservingU1, init_state=ref_state)
 
             # Define the cost function
-            cost_fn = qml.VQECost(ansatz, h, dev)
+            cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
@@ -229,7 +229,7 @@ def ParticleConservingU1(weights, wires, init_state=None):
 
     wires = Wires(wires)
 
-    layers = qml.proc.shape(weights)[0]
+    layers = qml.math.shape(weights)[0]
 
     if len(wires) < 2:
         raise ValueError(

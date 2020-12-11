@@ -30,7 +30,7 @@ def _preprocess(features, wires, method, c):
     """Validate and pre-process inputs."""
 
     if qml.tape_mode_active():
-        features = qml.proc.TensorBox(features)
+        features = qml.math.TensorBox(features)
         constants = [c] * len(features)
 
         if len(features.shape) != 1:
@@ -41,10 +41,10 @@ def _preprocess(features, wires, method, c):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if method == "amplitude":
-            pars = qml.proc.stack([features, constants], axis=1)
+            pars = qml.math.stack([features, constants], axis=1)
 
         elif method == "phase":
-            pars = qml.proc.stack([constants, features], axis=1)
+            pars = qml.math.stack([constants, features], axis=1)
 
         else:
             raise ValueError(f"did not recognize method {method}")

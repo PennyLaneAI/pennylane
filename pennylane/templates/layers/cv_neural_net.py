@@ -33,7 +33,7 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
 
         # check that first dimension is the same
         weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        shapes = [qml.proc.shape(w) for w in weights_list]
+        shapes = [qml.math.shape(w) for w in weights_list]
 
         first_dims = [s[0] for s in shapes]
         if len(set(first_dims)) > 1:

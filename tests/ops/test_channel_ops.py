@@ -23,11 +23,14 @@ from pennylane.wires import Wires
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
+Z = np.array([[1, 0], [0, -1]])
 
 ch_list = [
     channel.AmplitudeDamping,
     channel.GeneralizedAmplitudeDamping,
     channel.PhaseDamping,
+    channel.BitFlip,
+    channel.PhaseFlip,
     channel.DepolarizingChannel,
 ]
 
@@ -118,6 +121,36 @@ class TestPhaseDamping:
             np.array([[0.0, 0.0], [0.0, 0.31622777]]),
         ]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+
+
+class TestBitFlip:
+    """Tests for the quantum channel BitFlipChannel"""
+
+    @pytest.mark.parametrize("p", [0, 0.1, 0.5, 1])
+    def test_p_arbitrary(self, p, tol):
+        """Test that various values of p give correct Kraus matrices"""
+        op = channel.BitFlip
+
+        expected_K0 = np.sqrt(1 - p) * np.eye(2)
+        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+
+        expected_K1 = np.sqrt(p) * X
+        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+
+
+class TestPhaseFlip:
+    """Test that various values of p give correct Kraus matrices"""
+
+    @pytest.mark.parametrize("p", [0, 0.1, 0.5, 1])
+    def test_p_arbitrary(self, p, tol):
+        """Test p=0.1 gives correct Kraus matrices"""
+        op = channel.PhaseFlip
+
+        expected_K0 = np.sqrt(1 - p) * np.eye(2)
+        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+
+        expected_K1 = np.sqrt(p) * Z
+        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
 
 class TestDepolarizingChannel:

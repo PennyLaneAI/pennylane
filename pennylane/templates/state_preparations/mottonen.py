@@ -31,7 +31,7 @@ def _preprocess(state_vector, wires):
 
     if qml.tape_mode_active():
 
-        state_vector = qml.proc.TensorBox(state_vector)
+        state_vector = qml.math.TensorBox(state_vector)
 
         if len(state_vector.shape) != 1:
             raise ValueError(
@@ -44,11 +44,11 @@ def _preprocess(state_vector, wires):
                 f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
             )
 
-        norm = qml.proc.sum(qml.proc.abs(state_vector) ** 2)
-        if not qml.proc.allclose(norm, 1.0, atol=1e-3):
+        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+        if not qml.math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
-        a = qml.proc.abs(state_vector)
-        omega = qml.proc.angle(state_vector)
+        a = qml.math.abs(state_vector)
+        omega = qml.math.angle(state_vector)
 
     else:
 
@@ -146,7 +146,7 @@ def _compute_theta(alpha):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
-    theta = qml.proc.dot(M_trans, alpha)
+    theta = qml.math.dot(M_trans, alpha)
 
     return theta / 2 ** k
 
@@ -221,11 +221,11 @@ def _get_alpha_z(omega, n, k):
         for j in range(1, 2 ** (n - k) + 1)
     ]
 
-    term1 = qml.proc.take(omega, indices=indices1)
-    term2 = qml.proc.take(omega, indices=indices2)
+    term1 = qml.math.take(omega, indices=indices1)
+    term2 = qml.math.take(omega, indices=indices2)
     diff = (term1 - term2) / 2 ** (k - 1)
 
-    return qml.proc.sum(diff, axis=1)
+    return qml.math.sum(diff, axis=1)
 
 
 def _get_alpha_y(a, n, k):
@@ -248,12 +248,12 @@ def _get_alpha_y(a, n, k):
         [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
         for j in range(2 ** (n - k))
     ]
-    numerator = qml.proc.take(a, indices=indices_numerator)
-    numerator = qml.proc.sum(qml.proc.abs(numerator) ** 2, axis=1)
+    numerator = qml.math.take(a, indices=indices_numerator)
+    numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=1)
 
     indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
-    denominator = qml.proc.take(a, indices=indices_denominator)
-    denominator = qml.proc.sum(qml.proc.abs(denominator) ** 2, axis=1)
+    denominator = qml.math.take(a, indices=indices_denominator)
+    denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
@@ -261,9 +261,9 @@ def _get_alpha_y(a, n, k):
     with np.errstate(divide="ignore", invalid="ignore"):
         division = numerator / denominator
 
-    division = qml.proc.where(denominator != 0.0, division, 0.0)
+    division = qml.math.where(denominator != 0.0, division, 0.0)
 
-    return 2 * qml.proc.arcsin(qml.proc.sqrt(division))
+    return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
 @template
