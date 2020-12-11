@@ -36,17 +36,26 @@ The following frameworks are currently supported:
 """
 from .fn import (
     T,
+    abs_ as abs,
     allclose,
     allequal,
+    angle,
+    arcsin,
     cast,
     cast_like,
+    concatenate,
     convert_like,
+    dot,
     expand_dims,
     get_interface,
     ones_like,
     requires_grad,
     shape,
+    sqrt,
     stack,
+    sum_ as sum,
+    take,
     toarray,
+    where,
 )
-from .tensorbox import TensorBox
+from .tensorbox import TensorBox, wrap_output

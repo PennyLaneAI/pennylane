@@ -18,13 +18,13 @@ import pytest
 torch = pytest.importorskip("torch")
 
 import pennylane as qml
-from pennylane.proc.torch_box import TorchBox
+from pennylane.math.torch_box import TorchBox
 
 
 def test_creation():
     """Test that a TorchBox is automatically created from a torch tensor"""
     x = torch.tensor([0.1, 0.2, 0.3])
-    res = qml.proc.TensorBox(x)
+    res = qml.math.TensorBox(x)
 
     assert isinstance(res, TorchBox)
     assert res.interface == "torch"
@@ -37,7 +37,7 @@ def test_astensor_list():
     x = torch.tensor([0.1, 0.2, 0.3])
     y = [0.4, 0.5, 0.6]
 
-    res = qml.proc.TensorBox(x).astensor(y)
+    res = qml.math.TensorBox(x).astensor(y)
     assert isinstance(res, torch.Tensor)
     assert np.all(res.numpy() == np.array(y, dtype=np.float32))
 
@@ -47,7 +47,7 @@ def test_astensor_array():
     x = torch.tensor([0.1, 0.2, 0.3])
     y = np.array([0.4, 0.5, 0.6])
 
-    res = qml.proc.TensorBox(x).astensor(y)
+    res = qml.math.TensorBox(x).astensor(y)
     assert isinstance(res, torch.Tensor)
     assert np.all(res.numpy() == y)
 
@@ -56,19 +56,19 @@ def test_cast():
     """Test that arrays can be cast to different dtypes"""
     x = torch.tensor([1, 2, 3])
 
-    res = qml.proc.TensorBox(x).cast(np.float64)
+    res = qml.math.TensorBox(x).cast(np.float64)
     expected = torch.tensor([1.0, 2.0, 3.0])
     assert np.all(res.numpy() == expected.numpy())
 
-    res = qml.proc.TensorBox(x).cast(np.dtype("int8"))
+    res = qml.math.TensorBox(x).cast(np.dtype("int8"))
     expected = torch.tensor([1, 2, 3], dtype=torch.int8)
     assert np.all(res.numpy() == expected.numpy())
 
-    res = qml.proc.TensorBox(x).cast("float64")
+    res = qml.math.TensorBox(x).cast("float64")
     expected = torch.tensor([1, 2, 3], dtype=torch.float64)
     assert np.all(res.numpy() == expected.numpy())
 
-    res = qml.proc.TensorBox(x).cast(torch.float64)
+    res = qml.math.TensorBox(x).cast(torch.float64)
     expected = torch.tensor([1, 2, 3], dtype=torch.float64)
     assert np.all(res.numpy() == expected.numpy())
 
@@ -79,13 +79,34 @@ def test_cast_exception():
     x = torch.tensor([1, 2, 3])
 
     with pytest.raises(ValueError, match="Unable to convert"):
-        qml.proc.TensorBox(x).cast(np.bytes0)
+        qml.math.TensorBox(x).cast(np.bytes0)
+
+
+def test_coerce_types():
+    """Test that tensors are correctly coerced to the same type."""
+    tensors = [
+        torch.tensor([1, 2], dtype=torch.int8),
+        torch.tensor([3, 4], dtype=torch.int64),
+    ]
+
+    res = qml.math.TensorBox(tensors[0])._coerce_types(tensors)
+
+    assert all(t.dtype is torch.int64 for t in res)
+
+    tensors = [
+        torch.tensor([1, 2], dtype=torch.float64),
+        torch.tensor([3, 4], dtype=torch.complex128),
+    ]
+
+    res = qml.math.TensorBox(tensors[0])._coerce_types(tensors)
+
+    assert all(t.dtype is torch.complex128 for t in res)
 
 
 def test_len():
     """Test length"""
     x = torch.tensor([[1, 2], [3, 4]])
-    res = qml.proc.TensorBox(x)
+    res = qml.math.TensorBox(x)
     assert len(res) == len(x) == 2
 
 
@@ -94,11 +115,11 @@ def test_multiplication():
     x = torch.tensor([[1, 2], [3, 4]])
     y = torch.tensor([[1, 0], [0, 1]])
 
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     res = xT * y
     assert torch.allclose(res.unbox(), x * y)
 
-    yT = qml.proc.TensorBox(y)
+    yT = qml.math.TensorBox(y)
     res = x * yT
     assert torch.allclose(res.unbox(), x * y)
 
@@ -111,7 +132,7 @@ def test_unbox_list():
     x = torch.tensor([[1, 2], [3, 4]])
     y = torch.tensor([[1, 0], [0, 1]])
 
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     res = xT.unbox_list([y, xT, x])
 
     assert np.all(res == [y, x, x])
@@ -121,7 +142,7 @@ def test_numpy():
     """Test that calling numpy() returns a NumPy array representation
     of the TensorBox"""
     x = torch.tensor([[1, 2], [3, 4]])
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     assert isinstance(xT.numpy(), np.ndarray)
     assert not isinstance(xT.numpy(), torch.Tensor)
     assert np.all(xT.numpy() == x.numpy())
@@ -130,7 +151,7 @@ def test_numpy():
 def test_shape():
     """Test that arrays return the right shape"""
     x = torch.tensor([[[1, 2], [3, 4]]])
-    x = qml.proc.TensorBox(x)
+    x = qml.math.TensorBox(x)
     res = x.shape
     assert res == (1, 2, 2)
 
@@ -138,7 +159,7 @@ def test_shape():
 def test_expand_dims():
     """Test that dimension expansion works"""
     x = torch.tensor([1, 2, 3])
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
 
     res = xT.expand_dims(axis=1)
     expected = torch.unsqueeze(x, dim=1)
@@ -149,7 +170,7 @@ def test_expand_dims():
 def test_ones_like():
     """Test that all ones arrays are correctly created"""
     x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
 
     res = xT.ones_like()
     expected = torch.ones_like(x)
@@ -162,7 +183,7 @@ def test_stack():
     x = torch.tensor([[1, 2], [3, 4]])
     y = torch.tensor([[1, 0], [0, 1]])
 
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     res = xT.stack([y, xT, x])
 
     assert torch.allclose(res.unbox(), torch.stack([y, x, x]))
@@ -171,16 +192,16 @@ def test_stack():
 def test_transpose():
     """Test that the transpose is correct"""
     x = torch.tensor([[1, 2], [3, 4]])
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
 
-    assert torch.allclose(xT.T.unbox(), x.T)
+    assert torch.allclose(xT.T().unbox(), x.T)
 
 
 def test_autodifferentiation():
     """Test that autodifferentiation is preserved when writing
     a cost function that uses TensorBox method chaining"""
     x = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], requires_grad=True)
-    y = (qml.proc.TensorBox(x).T ** 2).unbox()[0, 1]
+    y = (qml.math.TensorBox(x).T() ** 2).unbox()[0, 1]
     y.backward()
 
     res = x.grad
@@ -191,9 +212,9 @@ def test_autodifferentiation():
 def test_requires_grad():
     """Test that the requires grad attribute matches the underlying tensor"""
     x = torch.tensor([[1.0, 2], [3, 4]], requires_grad=False)
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     assert not xT.requires_grad
 
     x = torch.tensor([[1.0, 2], [3, 4]], requires_grad=True)
-    xT = qml.proc.TensorBox(x)
+    xT = qml.math.TensorBox(x)
     assert xT.requires_grad

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the TensorBox functional API in pennylane.proc.fn
+"""Unit tests for the TensorBox functional API in pennylane.math.fn
 """
 import itertools
 import numpy as onp
@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.proc import fn
+from pennylane.math import fn
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -90,6 +90,26 @@ class TestGetMultiTensorbox:
         assert res.interface == "numpy"
 
 
+test_abs_data = [
+    (1, -2, 3 + 4j),
+    [1, -2, 3 + 4j],
+    onp.array([1, -2, 3 + 4j]),
+    np.array([1, -2, 3 + 4j]),
+    torch.tensor([1, -2, 3 + 4j], dtype=torch.complex128),
+    tf.Variable([1, -2, 3 + 4j], dtype=tf.complex128),
+    tf.constant([1, -2, 3 + 4j], dtype=tf.complex128),
+]
+
+
+
+@pytest.mark.parametrize("t", test_abs_data)
+def test_abs(t):
+    """Test that the absolute function works for a variety
+    of input"""
+    res = fn.abs_(t)
+    assert fn.allequal(res, [1, 2, 5])
+
+
 test_data = [
     (1, 2, 3),
     [1, 2, 3],
@@ -129,6 +149,45 @@ def test_allclose(t1, t2):
 
     expected = all(float(x) == float(y) for x, y in zip(t1, t2))
     assert res == expected
+
+
+test_angle_data = [
+    [1.0, 1.0j, 1+1j],
+    [1.0, 1.0j, 1+1j],
+    onp.array([1.0, 1.0j, 1+1j]),
+    np.array([1.0, 1.0j, 1+1j]),
+    torch.tensor([1.0, 1.0j, 1+1j], dtype=torch.complex128),
+    tf.Variable([1.0, 1.0j, 1+1j], dtype=tf.complex128),
+    tf.constant([1.0, 1.0j, 1+1j], dtype=tf.complex128),
+]
+
+
+
+@pytest.mark.parametrize("t", test_angle_data)
+def test_angle(t):
+    """Test that the angle function works for a variety
+    of input"""
+    res = fn.angle(t)
+    assert fn.allequal(res, [0, np.pi / 2, np.pi / 4])
+
+
+test_arcsin_data = [
+    (1, 0.2, -0.5),
+    [1, 0.2, -0.5],
+    onp.array([1, 0.2, -0.5]),
+    np.array([1, 0.2, -0.5]),
+    torch.tensor([1, 0.2, -0.5], dtype=torch.float64),
+    tf.Variable([1, 0.2, -0.5], dtype=tf.float64),
+    tf.constant([1, 0.2, -0.5], dtype=tf.float64),
+]
+
+
+@pytest.mark.parametrize("t", test_arcsin_data)
+def test_arcsin(t):
+    """Test that the arcsin function works for a variety
+    of input"""
+    res = fn.arcsin(t)
+    assert fn.allequal(res, np.arcsin([1, 0.2, -0.5]))
 
 
 class TestCast:
@@ -230,6 +289,67 @@ def test_cast_like(t1, t2):
     assert onp.asarray(res).dtype.type is onp.asarray(t2).dtype.type
 
 
+class TestConcatenate:
+    """Tests for the concatenate function"""
+
+    def test_concatenate_array(self):
+        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        t1 = [0.6, 0.1, 0.6]
+        t2 = np.array([0.1, 0.2, 0.3])
+        t3 = onp.array([5.0, 8.0, 101.0])
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, np.ndarray)
+        assert np.all(res == np.concatenate([t1, t2, t3]))
+
+    def test_stack_tensorflow(self):
+        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        t1 = tf.constant([0.6, 0.1, 0.6])
+        t2 = tf.Variable([0.1, 0.2, 0.3])
+        t3 = onp.array([5.0, 8.0, 101.0])
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, tf.Tensor)
+        assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
+
+    def test_stack_torch(self):
+        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
+        t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
+        t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
+
+        res = fn.concatenate([t1, t2, t3])
+        assert isinstance(res, torch.Tensor)
+        assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
+
+    @pytest.mark.parametrize("t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])])
+    def test_stack_axis(self, t1):
+        """Test that passing the axis argument allows for concatenating along
+        a different axis"""
+        t2 = onp.array([[3], [4]])
+        res = fn.concatenate([t1, t2], axis=1)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
+        assert list(res.shape) == [2, 2]
+
+    @pytest.mark.parametrize("t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])])
+    def test_concatenate_flattened_arrays(self, t1):
+        """Concatenating arrays with axis=None will result in all arrays being pre-flattened"""
+        t2 = onp.array([5])
+        res = fn.concatenate([t1, t2], axis=None)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([1, 2, 5]))
+        assert list(res.shape) == [3]
+
+
 class TestConvertLike:
     """tests for the convert like function"""
 
@@ -255,6 +375,104 @@ class TestConvertLike:
         assert isinstance(res, t_like.__class__)
         assert res.ndim == 0
         assert fn.allequal(res, [5])
+
+
+class TestDot:
+    """Tests for the dot product function"""
+    scalar_product_data = [
+        [2, 6],
+        [np.array(2), np.array(6)],
+        [torch.tensor(2), onp.array(6)],
+        [torch.tensor(2), torch.tensor(6)],
+        [tf.Variable(2), onp.array(6)],
+        [tf.constant(2), onp.array(6)],
+        [tf.Variable(2), tf.Variable(6)],
+    ]
+
+    @pytest.mark.parametrize("t1, t2", scalar_product_data)
+    def test_scalar_product(self, t1, t2):
+        """Test that the dot product of two scalars results in a scalar"""
+        res = fn.dot(t1, t2)
+        assert fn.allequal(res, 12)
+
+    vector_product_data = [
+        [[1, 2, 3], [1, 2, 3]],
+        [np.array([1, 2, 3]), np.array([1, 2, 3])],
+        [torch.tensor([1, 2, 3]), onp.array([1, 2, 3])],
+        [torch.tensor([1, 2, 3]), torch.tensor([1, 2, 3])],
+        [tf.Variable([1, 2, 3]), onp.array([1, 2, 3])],
+        [tf.constant([1, 2, 3]), onp.array([1, 2, 3])],
+        [tf.Variable([1, 2, 3]), tf.Variable([1, 2, 3])],
+    ]
+
+    @pytest.mark.parametrize("t1, t2", vector_product_data)
+    def test_vector_product(self, t1, t2):
+        """Test that the dot product of two vectors results in a scalar"""
+        res = fn.dot(t1, t2)
+        assert fn.allequal(res, 14)
+
+    matrix_vector_product_data = [
+        [[[1, 2], [3, 4]], [6, 7]],
+        [np.array([[1, 2], [3, 4]]), np.array([6, 7])],
+        [torch.tensor([[1, 2], [3, 4]]), onp.array([6, 7])],
+        [torch.tensor([[1, 2], [3, 4]]), torch.tensor([6, 7])],
+        [tf.Variable([[1, 2], [3, 4]]), onp.array([6, 7])],
+        [tf.constant([[1, 2], [3, 4]]), onp.array([6, 7])],
+        [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
+    ]
+
+    @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
+    def test_matrix_vector_product(self, t1, t2):
+        """Test that the matrix-vector dot product of two vectors results in a vector"""
+        res = fn.dot(t1, t2)
+        assert fn.allequal(res, [20, 46])
+
+    @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
+    def test_vector_matrix_product(self, t1, t2):
+        """Test that the vector-matrix dot product of two vectors results in a vector"""
+        res = fn.dot(t2, t1)
+        assert fn.allequal(res, [27, 40])
+
+    @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
+    def test_matrix_matrix_product(self, t1, t2):
+        """Test that the matrix-matrix dot product of two vectors results in a matrix"""
+        res = fn.dot(t1, t1)
+        assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
+
+    multidim_product_data = [
+        [np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), np.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), onp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), torch.tensor([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), tf.Variable([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), onp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), tf.constant([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+    ]
+
+    @pytest.mark.parametrize("t1, t2", multidim_product_data)
+    def test_multidimensional_product(self, t1, t2):
+        """Test that the multi-dimensional dot product reduces across the last dimension of the first
+        tensor, and the second-to-last dimension of the second tensor."""
+        res = fn.dot(t1, t2)
+        expected = np.array([[[[ 7,  7],
+              [ 9,  5]],
+
+             [[15, 15],
+              [21, 11]],
+
+             [[ 2,  2],
+              [ 0,  1]]],
+
+
+            [[[23, 23],
+              [33, 17]],
+
+             [[-3, -3],
+              [-3, -2]],
+
+             [[ 5,  5],
+              [ 9,  4]]]]
+        )
+        assert fn.allequal(res, expected)
 
 
 # the following test data is of the form
@@ -453,6 +671,14 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
+@pytest.mark.parametrize("t", test_data)
+def test_sqrt(t):
+    """Test that the square root function works for a variety
+    of input"""
+    res = fn.sqrt(t)
+    assert fn.allclose(res, [1, np.sqrt(2), np.sqrt(3)])
+
+
 class TestStack:
     """Tests for the stack function"""
 
@@ -501,6 +727,65 @@ class TestStack:
         assert list(res.shape) == [2, 2]
 
 
+class TestSum:
+    """Tests for the summation function"""
+
+    def test_array(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, 2.1)
+
+    def test_tensorflow(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = tf.Variable([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, tf.Tensor)
+        assert fn.allclose(res, 2.1)
+
+    def test_torch(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert isinstance(res, torch.Tensor)
+        assert fn.allclose(res, 2.1)
+
+    @pytest.mark.parametrize("t1", [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+    ])
+    def test_sum_axis(self, t1):
+        """Test that passing the axis argument allows for summing along
+        a specific axis"""
+        res = fn.sum_(t1, axis=(0, 2))
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([14,  6,  3]))
+        assert res.shape == (3,)
+
+    @pytest.mark.parametrize("t1", [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+    ])
+    def test_sum_axis_keepdims(self, t1):
+        """Test that passing the axis argument allows for summing along
+        a specific axis, while keepdims avoids the summed dimensions from being removed"""
+        res = fn.sum_(t1, axis=(0, 2), keepdims=True)
+
+        # if tensorflow or pytorch, extract view of underlying data
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
+        assert fn.allclose(res, np.array([[[14],  [6],  [3]]]))
+        assert res.shape == (1, 3, 1)
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_T(t):
     """Test the simple transpose (T) function"""
@@ -517,3 +802,96 @@ def test_T(t):
         t = t.numpy()
 
     assert np.all(res.T == t.T)
+
+
+class TestTake:
+    """Tests for the qml.take function"""
+
+    take_data = [
+        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    ]
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_flattened_indexing(self, t):
+        """Test that indexing without the axis argument
+        will flatten the tensor first"""
+        indices = 5
+        res = fn.take(t, indices)
+        assert fn.allclose(res, 1)
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_array_indexing(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the flattened tensor"""
+        indices = [0, 2, 3, 6, -2]
+        res = fn.take(t, indices)
+        assert fn.allclose(res, [1, 3, 4, 5, 2])
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_multidimensional_indexing(self, t):
+        """Test that indexing with a multi-dimensional sequence properly extracts
+        the elements from the flattened tensor"""
+        indices = [[0, 1], [3, 2]]
+        res = fn.take(t, indices)
+        assert fn.allclose(res, [[1, 2], [4, 3]])
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_array_indexing_along_axis(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the specified tensor axis"""
+        indices = [0, 1, -2]
+        res = fn.take(t, indices, axis=2)
+        expected = np.array([
+            [[ 1,  2,  1],
+              [ 3,  4,  3],
+              [-1,  1, -1]],
+             [[ 5,  6,  5],
+              [ 0, -1,  0],
+              [ 2,  1,  2]]
+        ])
+        assert fn.allclose(res, expected)
+
+    @pytest.mark.parametrize("t", take_data)
+    def test_multidimensional_indexing_along_axis(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the specified tensor axis"""
+        indices = np.array([[0, 0], [1, 0]])
+        res = fn.take(t, indices, axis=1)
+        expected = np.array(
+            [
+                [
+                    [[ 1,  2],
+                     [ 1,  2]],
+                    [[ 3,  4],
+                     [ 1,  2]]
+                ],
+                [
+                    [[ 5,  6],
+                     [ 5,  6]],
+                    [[ 0, -1],
+                     [ 5,  6]]
+                ]
+            ]
+        )
+        assert fn.allclose(res, expected)
+
+
+where_data = [
+    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+]
+
+
+@pytest.mark.parametrize("t", where_data)
+def test_where(t):
+    """Test that the where function works as expected"""
+    res = fn.where(t < 0, 100 * fn.ones_like(t), t)
+    expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
+    assert fn.allclose(res, expected)
