@@ -67,6 +67,8 @@ class AutogradBox(qml.math.TensorBox):
 
     def numpy(self):
         if hasattr(self.data, "_value"):
+            # Catches the edge case where the data is an Autograd arraybox,
+            # which only occurs during backpropagation.
             return self.data._value
 
         return self.data.numpy()
