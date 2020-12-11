@@ -35,14 +35,16 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         momentum (float): user-defined hyperparameter :math:`m`
     """
 
-    def compute_grad(self, objective_fn, x, grad_fn=None):
+    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
         r"""Compute gradient of the objective_fn at at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function
         forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            args (tuple(array)): Tuple of NumPy arrays containing the current values for the
+                objection function
+            kwargs (dict): Keywords for the cost function
             grad_fn (function): Optional gradient function of the objective function with respect to
                 the variables ``x``. If ``None``, the gradient function is computed automatically.
 
@@ -52,17 +54,18 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                 will not be evaluted and instead ``None`` will be returned.
         """
 
-        x_flat = _flatten(x)
+        x_flat = _flatten(args)
+        acc = _flatten(self.accumulation)
 
         if self.accumulation is None:
             shifted_x_flat = list(x_flat)
         else:
-            shifted_x_flat = [e - self.momentum * a for a, e in zip(self.accumulation, x_flat)]
+            shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
 
-        shifted_x = unflatten(shifted_x_flat, x)
+        shifted_args = unflatten(shifted_x_flat, args)
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
-        grad = g(shifted_x)
+        grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
         return grad, forward

@@ -48,7 +48,7 @@ class RMSPropOptimizer(AdagradOptimizer):
         self.decay = decay
         self.eps = eps
 
-    def apply_grad(self, grad, x):
+    def apply_grad(self, grad, args, trainable_indexes):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -60,21 +60,28 @@ class RMSPropOptimizer(AdagradOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-
-        grad_flat = list(_flatten(grad))
-        x_flat = _flatten(x)
+        args = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [(1 - self.decay) * g * g for g in grad_flat]
-        else:
-            self.accumulation = [
-                self.decay * a + (1 - self.decay) * g * g
-                for a, g in zip(self.accumulation, grad_flat)
+            self.accumulation = [None] * len(trainable_indexes)
+
+        for index_train, index_args in enumerate(trainable_indexes):
+            grad_flat = list(_flatten(grad[index_train]))
+            x_flat = _flatten(args[index_args])
+
+            if self.accumulation[index_train] is None:
+                self.accumulation[index_train] = [(1 - self.decay) * g * g for g in grad_flat]
+            else:
+                self.accumulation[index_train] = [
+                    self.decay * a + (1 - self.decay) * g * g
+                    for a, g in zip(self.accumulation[index_train], grad_flat)
+                ]
+
+            x_new_flat = [
+                e - (self._stepsize / math.sqrt(a + self.eps)) * g
+                for a, g, e in zip(self.accumulation[index_train], grad_flat, x_flat)
             ]
 
-        x_new_flat = [
-            e - (self._stepsize / math.sqrt(a + self.eps)) * g
-            for a, g, e in zip(self.accumulation, grad_flat, x_flat)
-        ]
+            args[index_args] = unflatten(x_new_flat, args[index_args])
 
-        return unflatten(x_new_flat, x)
+        return args

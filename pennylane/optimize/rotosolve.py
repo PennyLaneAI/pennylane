@@ -76,7 +76,7 @@ class RotosolveOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def step_and_cost(self, objective_fn, x):
+    def step_and_cost(self, objective_fn, *args, **kwargs):
         r"""Update x with one step of the optimizer and return the corresponding objective
         function value prior to the step.
 
@@ -84,37 +84,49 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): sequence containing the initial values of the
+            *args (Union[Sequence[float], float]): sequence containing the initial values of the
                 variables to be optimized over or a single float with the initial value
+            **kwargs : Variable length dictionary of keywords for the cost function
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
                 prior to the step
         """
-        x_new = self.step(objective_fn, x)
+        x_new = self.step(objective_fn, *args, **kwargs)
 
-        return x_new, objective_fn(x)
+        return x_new, objective_fn(*args)
 
-    def step(self, objective_fn, x):
-        r"""Update x with one step of the optimizer.
+
+    def step(self, objective_fn, *args, **kwargs):
+        r"""Update args with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): sequence containing the initial values of the
+            *args (Union[Sequence[float], float]): variable length sequence containing the initial values of the
                 variables to be optimized over or a single float with the initial value
+            **kwargs : Variable length dictionary of keywords for the cost function
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_flat = np.fromiter(_flatten(x), dtype=float)
-        objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
+        before_args = []
+        after_args = list(args[1:])
+        args_new = list(args)
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = np.fromiter(_flatten(arg), dtype=float)
 
-        for d, _ in enumerate(x_flat):
-            x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
+                objective_fn_flat = lambda x_flat: objective_fn(*before_args,
+                    unflatten(x_flat, arg), *after_args, **kwargs)
 
-        return unflatten(x_flat, x)
+                for d, _ in enumerate(x_flat):
+                    x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
+
+                args_new[index] = unflatten(x_flat, arg)
+
+        return args_new
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):

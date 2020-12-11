@@ -61,7 +61,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.sm = None
         self.t = 0
 
-    def apply_grad(self, grad, x):
+    def apply_grad(self, grad, args, trainable_indexes):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -73,37 +73,56 @@ class AdamOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-
+        args = list(args)
         self.t += 1
-
-        grad_flat = list(_flatten(grad))
-        x_flat = _flatten(x)
-
-        # Update first moment
-        if self.fm is None:
-            self.fm = grad_flat
-        else:
-            self.fm = [self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm, grad_flat)]
-
-        # Update second moment
-        if self.sm is None:
-            self.sm = [g * g for g in grad_flat]
-        else:
-            self.sm = [
-                self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm, grad_flat)
-            ]
-
+        
         # Update step size (instead of correcting for bias)
         new_stepsize = (
             self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         )
 
-        x_new_flat = [
-            e - new_stepsize * f / (math.sqrt(s) + self.eps)
-            for f, s, e in zip(self.fm, self.sm, x_flat)
-        ]
+        if self.fm is None:
+            self.fm = [None] * len(trainable_indexes)
 
-        return unflatten(x_new_flat, x)
+        if self.sm is None:
+            self.sm = [None] * len(trainable_indexes)
+
+        for index_train, index_args in enumerate(trainable_indexes):
+            x_flat = _flatten(args[index_args])
+            grad_flat = list(_flatten(grad[index_train]))
+
+            self._update_moments(index_train, grad_flat)
+
+            x_new_flat = [
+                e - new_stepsize * f / (math.sqrt(s) + self.eps)
+                for f, s, e in zip(self.fm[index_train], self.sm[index_train], x_flat)
+            ]
+            args[index_args] = unflatten(x_new_flat, args[index_args])
+
+        return args
+
+    def _update_moments(self, index, grad_flat):
+        r""" Update the moments
+
+        Args:
+            index (Int): the index of the trainable argument to update out of trainable params
+            grad_flat (list): the flattened gradient for that trainable param
+        """
+        #update first moment
+        if self.fm[index] is None:
+            self.fm[index] = grad_flat
+        else:
+            self.fm[index] = [self.beta1 * f + (1 - self.beta1) * g 
+                for f, g in zip(self.fm[index], grad_flat)]
+
+        #update second moment
+        if self.sm[index] is None:
+            self.sm[index] = [g * g for g in grad_flat]
+        else:
+            self.sm[index] = [
+                self.beta2 * f + (1 - self.beta2) * g * g 
+                for f, g in zip(self.sm[index], grad_flat)
+            ]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

@@ -51,7 +51,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         self.eps = eps
         self.accumulation = None
 
-    def apply_grad(self, grad, x):
+    def apply_grad(self, grad, args, trainable_indexes):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -63,21 +63,29 @@ class AdagradOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-
-        x_flat = _flatten(x)
-        grad_flat = list(_flatten(grad))
+        args = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [g * g for g in grad_flat]
-        else:
-            self.accumulation = [a + g * g for a, g in zip(self.accumulation, grad_flat)]
+            self.accumulation = [None]*len(trainable_indexes)
 
-        x_new_flat = [
-            e - (self._stepsize / math.sqrt(a + self.eps)) * g
-            for a, g, e in zip(self.accumulation, grad_flat, x_flat)
-        ]
+        for index_train, index_args in enumerate(trainable_indexes):
+            x_flat = _flatten(args[index_args])
+            grad_flat = list(_flatten(grad[index_train]))
 
-        return unflatten(x_new_flat, x)
+            if self.accumulation[index_train] is None:
+                self.accumulation[index_train] = [g * g for g in grad_flat]
+            else:
+                self.accumulation[index_train] = [a + g * g for a,g in
+                    zip(self.accumulation[index_train], grad_flat)]
+           
+            x_new_flat = [
+                e - (self._stepsize / math.sqrt(a + self.eps)) * g
+                for a, g, e in zip(self.accumulation[index_train], grad_flat, x_flat)
+            ]
+
+            args[index_args] = unflatten(x_new_flat, args[index_args])
+      
+        return args
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
