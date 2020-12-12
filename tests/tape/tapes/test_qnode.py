@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QNodeCollection
-from pennylane.tape import JacobianTape, QNode, qnode, make_drawing, QubitParamShiftTape, CVParamShiftTape
+from pennylane.tape import JacobianTape, QNode, qnode, drawer, QubitParamShiftTape, CVParamShiftTape
 
 
 class TestValidation:
@@ -330,7 +330,7 @@ class TestTapeConstruction:
         assert qn.qtape.measurements == [m1, m2]
 
 
-    def test_make_drawing(self):
+    def test_drawer(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
 
@@ -348,7 +348,7 @@ class TestTapeConstruction:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        result = make_drawing(circuit)(p1=x, p3=z)
+        result = drawer(circuit)(p1=x, p3=z)
         expected = """\
  0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
  1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
@@ -356,7 +356,7 @@ class TestTapeConstruction:
 
         assert result == expected
 
-    def test_make_drawing_ascii(self):
+    def test_drawer_ascii(self):
         """Test circuit drawing when using ASCII characters"""
         from pennylane import numpy as anp
 
@@ -374,7 +374,7 @@ class TestTapeConstruction:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        result = make_drawing(circuit, charset="ascii")(p1=x, p3=z)
+        result = drawer(circuit, charset="ascii")(p1=x, p3=z)
         expected = """\
  0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
  1: --RY(0.06)-----------+X--+| <Z @ X> 
