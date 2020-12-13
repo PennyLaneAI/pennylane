@@ -685,11 +685,15 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def drawer(_qnode, charset="unicode"):
-    """Create a function that draws the given _qnode.
+def draw(_qnode, charset="unicode"):
+    """draw(qnode, charset="unicode"):
+    Create a function that draws the given _qnode.
 
     Args:
-        _qnode (.QNode): the input QNode that is to be drawn
+        qnode (.QNode): the input QNode that is to be drawn.
+        charset (str, optional): The charset that should be used. Currently, "unicode" and
+            "ascii" are supported.
+
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
         the function will draw the QNode.
@@ -712,19 +716,21 @@ def drawer(_qnode, charset="unicode"):
 
     We can draw the it like such:
 
-    >>> qml.drawer(circuit)(a=2.3, w=[1.2, 3.2, 0.7])
+    >>> drawer = qml.draw(circuit)
+    >>> drawer(a=2.3, w=[1.2, 3.2, 0.7])
     0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
     """
+    print(_qnode)
+    if not hasattr(_qnode, "qtape"):
+        raise ValueError(
+            "qml.draw only works when tape mode is enabled. "
+            "You can enable tape mode with qml.enable_tape()."
+        )
 
     @wraps(_qnode)
     def wrapper(*args, **kwargs):
         _qnode.construct(args, kwargs)
-        if not hasattr(_qnode, "qtape"):
-            raise ValueError(
-                "qml.drawer only works when tape mode is enabled. "
-                "You can enable tape mode with qml.enable_tape()."
-            )
         return _qnode.qtape.draw(charset)
 
     return wrapper
