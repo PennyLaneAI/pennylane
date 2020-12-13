@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new  `qml.make_drawing` function is available. This allows for QNodes to easily be drawn by simply giving example input.
+* A new  `qml.draw` function is available. This allows for QNodes to easily be drawn by simply giving example input.
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
 
   ```python
@@ -17,13 +17,14 @@
       qml.CRX(-a, wires=[0, 1])
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-  result = qml.make_drawing(circuit)(a=2.3, w=[1.2, 3.2, 0.7])
+  drawer = qml.draw(circuit)
+  result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
   print(result)
   #  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
   #  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
   ```
 
-`make_drawing` is only avaliable in tape mode.
+`qml.draw` is only avaliable in tape mode.
 
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
