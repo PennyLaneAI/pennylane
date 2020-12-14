@@ -32,34 +32,30 @@ def _preprocess(features, wires, weights):
 
     if qml.tape_mode_active():
 
-        features = qml.math.TensorBox(features)
-        weights = qml.math.TensorBox(weights)
+        shape = qml.math.shape(features)
 
-        if len(features.shape) != 1:
-            raise ValueError(
-                f"Features must be a one-dimensional vector; got shape {features.shape}."
-            )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
 
-        n_features = features.shape[0]
+        n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
-        repeat = len(weights)
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
 
         if len(wires) == 1:
-            if weights.shape != (repeat, 1):
-                raise ValueError(f"Weights must be of shape {(repeat, 1)}; got {weights.shape}")
+            if shape != (repeat, 1):
+                raise ValueError(f"Weights must be of shape {(repeat, 1)}; got {shape}")
 
         elif len(wires) == 2:
-            if weights.shape != (repeat, 3):
-                raise ValueError(f"Weights must be of shape {(repeat, 3)}; got {weights.shape}")
+            if shape != (repeat, 3):
+                raise ValueError(f"Weights must be of shape {(repeat, 3)}; got {shape}")
         else:
-            if weights.shape != (repeat, 2 * len(wires)):
-                raise ValueError(
-                    f"Weights must be of shape {(repeat, 2*len(wires))}; got {weights.shape}"
-                )
+            if shape != (repeat, 2 * len(wires)):
+                raise ValueError(f"Weights must be of shape {(repeat, 2*len(wires))}; got {shape}")
 
     else:
 

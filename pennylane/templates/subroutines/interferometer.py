@@ -31,19 +31,17 @@ def _preprocess(theta, phi, varphi, wires):
 
     if qml.tape_mode_active():
 
-        theta = qml.math.TensorBox(theta)
-        if theta.shape != (n_if,):
-            raise ValueError(f"Theta must be of shape {(n_if,)}; got {theta.shape}.")
+        shape = qml.math.shape(theta)
+        if shape != (n_if,):
+            raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
 
-        phi = qml.math.TensorBox(phi)
-        if phi.shape != (n_if,):
-            raise ValueError(f"Phi must be of shape {(n_if,)}; got {phi.shape}.")
+        shape = qml.math.shape(phi)
+        if shape != (n_if,):
+            raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
 
-        varphi = qml.math.TensorBox(varphi)
-        if varphi.shape != (n_wires,):
-            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {varphi.shape}.")
-
-        shape_varphi = varphi.shape
+        shape_varphi = qml.math.shape(varphi)
+        if shape_varphi != (n_wires,):
+            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
 
     else:
         weights_list = [theta, phi, varphi]

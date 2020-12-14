@@ -26,16 +26,16 @@ def _preprocess(basis_state, wires):
 
     if qml.tape_mode_active():
 
-        basis_state = qml.math.TensorBox(basis_state)
+        shape = qml.math.shape(basis_state)
 
-        if len(basis_state.shape) != 1:
-            raise ValueError(f"Basis state must be one-dimensional; got shape {basis_state.shape}.")
+        if len(shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
 
-        n_bits = basis_state.shape[0]
+        n_bits = shape[0]
         if n_bits != len(wires):
             raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_bits}.")
 
-        basis_state = list(basis_state.numpy())
+        basis_state = list(qml.math.toarray(basis_state))
 
         if not all(bit in [0, 1] for bit in basis_state):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")

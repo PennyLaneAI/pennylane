@@ -141,7 +141,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         except KeyError as error:
             raise ValueError(
                 "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
-            )
+            ) from error
 
         # Skips terms composed solely of identities
         if word.count("I") != len(word):

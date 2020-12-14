@@ -27,11 +27,9 @@ def _preprocess(weights, wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.math.TensorBox(weights)
-        if weights.shape != (4 ** len(wires) - 1,):
-            raise ValueError(
-                f"Weights must be of shape {(4 ** len(wires) - 1,)}; got {weights.shape}."
-            )
+        shape = qml.math.shape(weights)
+        if shape != (4 ** len(wires) - 1,):
+            raise ValueError(f"Weights must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
 
     else:
         expected_shape = (4 ** len(wires) - 1,)

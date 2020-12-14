@@ -33,13 +33,11 @@ def _preprocess(weights, wires, ranges):
 
     if qml.tape_mode_active():
 
-        weights = qml.math.TensorBox(weights)
-        repeat = weights.shape[0]
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
 
-        if weights.shape != (repeat, len(wires), 3):
-            raise ValueError(
-                f"Weights must be of shape {(repeat, len(wires), 3)}; got {weights.shape}"
-            )
+        if shape != (repeat, len(wires), 3):
+            raise ValueError(f"Weights must be of shape {(repeat, len(wires), 3)}; got {shape}")
 
         if len(wires) > 1:
             if ranges is None:

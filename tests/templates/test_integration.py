@@ -351,6 +351,7 @@ class TestIntegrationQnode:
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
+        print(diffable)
         circuit(*diffable, keys_diffable=keys_diffable, nondiffable=nondiffable)
 
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", CV_DIFFABLE_NONDIFFABLE)

@@ -15,9 +15,10 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
 from collections.abc import Iterable
 from itertools import combinations
+
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
@@ -34,14 +35,12 @@ def _preprocess(features, wires, pattern, n_repeats):
 
     if qml.tape_mode_active():
 
-        features = qml.math.TensorBox(features)
+        shape = qml.math.shape(features)
 
-        if len(features.shape) != 1:
-            raise ValueError(
-                f"Features must be a one-dimensional vector; got shape {features.shape}."
-            )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
 
-        n_features = features.shape[0]
+        n_features = shape[0]
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 

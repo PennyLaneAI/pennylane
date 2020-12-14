@@ -26,10 +26,10 @@ def _preprocess(weights, wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.math.TensorBox(weights)
-        if weights.shape != (2 ** (len(wires) + 1) - 2,):
+        shape = qml.math.shape(weights)
+        if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(
-                f"Weights must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {weights.shape}."
+                f"Weights must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
             )
 
     else:

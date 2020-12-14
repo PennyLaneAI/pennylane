@@ -57,7 +57,7 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
             n_wires,
         ]
         if not all(e == d for e, d in zip(expected, second_dims)):
-            raise ValueError(f"Got unexpected shape for one or more parameters.")
+            raise ValueError("Got unexpected shape for one or more parameters.")
 
     else:
         weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]

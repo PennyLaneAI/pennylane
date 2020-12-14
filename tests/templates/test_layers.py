@@ -437,53 +437,10 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
-    def test_tensor_unwrapped(self, monkeypatch):
-        """Test that the random_layer() function used by RandomLayers passes a
-        float value to its gate after successfully unwrapping a one element
-        PennyLane tensor.
-
-        The test involves using RandomLayers, which then calls random_layer
-        internally. Eventually each gate used by random_layer receives a single
-        scalar. In this test case, this is done by indexing into a PennyLane
-        tensor two times.
-        """
-        dev = qml.device("default.qubit", wires=4)
-
-        lst = []
-
-        # Mock function that accumulates gate parameters
-        mock_func = lambda par, wires: lst.append(par)
-
-        with monkeypatch.context() as m:
-
-            # Mock the gates used in RandomLayers
-            m.setattr(pennylane.templates.layers.random, "RX", mock_func)
-            m.setattr(pennylane.templates.layers.random, "RY", mock_func)
-            m.setattr(pennylane.templates.layers.random, "RZ", mock_func)
-
-            @qml.qnode(dev)
-            def circuit(phi=None):
-
-                # Random quantum circuit
-                RandomLayers(phi, wires=list(range(4)))
-
-                return qml.expval(qml.PauliZ(0))
-
-            phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
-
-            # Call the QNode, accumulate parameters
-            circuit(phi=phi)
-
-            # Check parameters
-            assert all([isinstance(x, float) for x in lst])
-
-    def test_tensor_unwrapped_gradient_no_error(self, monkeypatch):
+    def test_tensor_gradient_no_error(self, monkeypatch):
         """Tests that the gradient calculation of a circuit that contains a
         RandomLayers template taking a PennyLane tensor as differentiable
         argument executes without error.
-
-        The main aim of the test is to check that unwrapping a single element
-        tensor does not cause errors.
         """
         dev = qml.device("default.qubit", wires=4)
 

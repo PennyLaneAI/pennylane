@@ -31,12 +31,12 @@ def _preprocess(weights, wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.math.TensorBox(weights)
-        repeat = weights.shape[0]
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
 
-        if weights.shape[1] != len(wires):
+        if shape[1] != len(wires):
             raise ValueError(
-                f"Second dimension of weights must be of size {len(wires)}; got {weights.shape[1]}"
+                f"Second dimension of weights must be of size {len(wires)}; got {shape[1]}"
             )
 
     else:

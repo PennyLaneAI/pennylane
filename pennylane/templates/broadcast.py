@@ -22,7 +22,7 @@ To add a new pattern:
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import get_shape, check_is_in_options
+from pennylane.templates.utils import get_shape
 from pennylane.wires import Wires
 
 OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
@@ -109,14 +109,11 @@ def _preprocess(parameters, pattern, wires):
     if parameters is not None:
 
         if qml.tape_mode_active():
-
-            parameters = qml.math.TensorBox(parameters)
-            shape = parameters.shape
+            shape = qml.math.shape(parameters)
 
             # expand dimension so that parameter sets for each unitary can be unpacked
-            if len(parameters.shape) == 1:
-                parameters = parameters.expand_dims(1)
-            parameters = parameters.unbox()
+            if len(shape) == 1:
+                parameters = qml.math.expand_dims(parameters, 1)
 
         else:
             shape = get_shape(parameters)
@@ -564,7 +561,9 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
                 circuit(pars)
     """
-
+    # We deliberately disable iterating using enumerate here, since
+    # it causes a slowdown when iterating over TensorFlow variables.
+    # pylint: disable=consider-using-enumerate
     wires = Wires(wires)
     if kwargs is None:
         kwargs = {}

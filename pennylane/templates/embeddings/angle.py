@@ -30,14 +30,12 @@ def _preprocess(features, wires):
 
     if qml.tape_mode_active():
 
-        features = qml.math.TensorBox(features)
+        shape = qml.math.shape(features)
 
-        if len(features.shape) != 1:
-            raise ValueError(
-                f"Features must be a one-dimensional vector; got shape {features.shape}."
-            )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
 
-        n_features = features.shape[0]
+        n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
                 f"Features must be of length {len(wires)} or less; got length {n_features}."

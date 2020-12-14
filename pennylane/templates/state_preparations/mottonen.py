@@ -31,14 +31,12 @@ def _preprocess(state_vector, wires):
 
     if qml.tape_mode_active():
 
-        state_vector = qml.math.TensorBox(state_vector)
+        shape = qml.math.shape(state_vector)
 
-        if len(state_vector.shape) != 1:
-            raise ValueError(
-                f"State vector must be a one-dimensional vector; got shape {state_vector.shape}."
-            )
+        if len(shape) != 1:
+            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
 
-        n_amplitudes = state_vector.shape[0]
+        n_amplitudes = shape[0]
         if n_amplitudes != 2 ** len(wires):
             raise ValueError(
                 f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."

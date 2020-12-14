@@ -248,6 +248,9 @@ def ParticleConservingU1(weights, wires, init_state=None):
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
 
+    # we can extract the numpy representation here
+    # since init_state can never be differentiable
+    init_state = qml.math.toarray(init_state)
     qml.BasisState(init_state, wires=wires)
 
     for l in range(layers):

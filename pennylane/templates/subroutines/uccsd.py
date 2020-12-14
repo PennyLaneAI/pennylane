@@ -49,36 +49,26 @@ def _preprocess(init_state, weights, s_wires, d_wires):
 
     if qml.tape_mode_active():
 
-        weights = qml.math.TensorBox(weights)
-        if weights.shape != (len(s_wires) + len(d_wires),):
+        shape = qml.math.shape(weights)
+        if shape != (len(s_wires) + len(d_wires),):
             raise ValueError(
-                f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {weights.shape}."
+                f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
             )
-
-        init_state = qml.math.TensorBox(init_state)
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        init_state = init_state.numpy()
 
     else:
-        check_type(
-            init_state,
-            [np.ndarray],
-            msg="Initial state must be a Numpy array; got {}".format(init_state),
-        )
-        for i in init_state:
-            check_type(
-                i,
-                [int, np.int64, np.ndarray],
-                msg="Elements of 'init_state' must be integers; got {}".format(init_state),
-            )
-
         expected_shape = (len(s_wires) + len(d_wires),)
         check_shape(
             weights,
             expected_shape,
             msg="Weights must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
         )
+
+    # we can extract the numpy representation here
+    # since init_state can never be differentiable
+    init_state = qml.math.toarray(init_state)
+
+    if init_state.dtype != np.dtype("int"):
+        raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
     return np.flip(init_state)
 

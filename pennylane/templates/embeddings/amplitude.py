@@ -34,15 +34,13 @@ def _preprocess(features, wires, pad_with, normalize):
 
     if qml.tape_mode_active():
 
-        features = qml.math.TensorBox(features)
+        shape = qml.math.shape(features)
 
         # check shape
-        if len(features.shape) != 1:
-            raise ValueError(
-                f"Features must be a one-dimensional vector; got shape {features.shape}."
-            )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
 
-        n_features = features.shape[0]
+        n_features = shape[0]
         if pad_with is None and n_features != 2 ** len(wires):
             raise ValueError(
                 f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
@@ -60,8 +58,6 @@ def _preprocess(features, wires, pad_with, normalize):
             padding = [pad_with] * (2 ** len(wires) - n_features)
             features = qml.math.concatenate([features, padding], axis=0)
 
-        # TODO: add those methods to tensorbox
-
         # normalize
         norm = qml.math.sum(qml.math.abs(features) ** 2)
 
@@ -73,7 +69,6 @@ def _preprocess(features, wires, pad_with, normalize):
                     f"Features must be a vector of length 1.0; got length {norm}."
                     "Use 'normalize=True' to automatically normalize."
                 )
-        features = features.unbox()
 
     # todo: delete if tape is only core
     else:
