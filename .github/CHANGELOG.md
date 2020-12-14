@@ -2,6 +2,43 @@
 
 <h3>New features since last release</h3>
 
+<h4>Optimizers allow more permissive cost functions</h4>
+
+The cost function passed to most optimizers may take in any combination
+of trainable arguments, non-trainable arguments, and keywords.
+
+The full changes apply to:
+* `AdagradOptimizer`
+* `AdamOptimizer`
+* `GradientDescentOptimizer`
+* `MomentumOptimizer`
+* `NesterovMomentumOptimizer`
+* `RMSPropOptimizer`
+* `RotosolveOptimizer`
+
+These optimizers allow a single trainable argument plus keywords:
+* `QNGOptimizer`
+* `RotoselectOptimizer`: Needs generators as well
+
+Any non-trainable constant parameter must be marked through the property
+`requires_grad=False`.
+
+```python
+def cost(x, y, data, scale=1.0):
+  return scale * (x[0]-data)**2 + scale * (y-data)**2
+
+x = np.array([1.], requires_grad=True)
+y = np.array([1.0])
+data = np.array([2.], requires_grad=False)
+
+opt = qml.GradientDescentOptimizer()
+x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
+
+(x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
+```
+I
+
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
