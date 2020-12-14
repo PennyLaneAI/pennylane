@@ -14,7 +14,7 @@ jobs:
         changelog_regex: '.github/CHANGELOG.md'
         customPrMessage: |
           Beep! Boop! I see you're missing a changelog! 
-          Please edit [/PennyLaneAI/pennylane/blob/master/.github/CHANGELOG.md](/.github/CHANGELOG.md) with:
+          Please edit [.github/CHANGELOG.md](/PennyLaneAI/pennylane/blob/master/.github/CHANGELOG.md) with:
           * Description of the change
           * Link back to this PR
           * Your name in the contributors section
