@@ -23,7 +23,6 @@ from pennylane.templates.decorator import template
 from pennylane.templates.subroutines import DoubleExcitationUnitary, SingleExcitationUnitary
 from pennylane.templates.utils import (
     check_shape,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires

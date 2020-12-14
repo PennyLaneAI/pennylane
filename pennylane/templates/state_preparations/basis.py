@@ -44,23 +44,21 @@ def _preprocess(basis_state, wires):
         # it is not differentiable
         return basis_state
 
-    else:
+    expected_shape = (len(wires),)
+    check_shape(
+        basis_state,
+        expected_shape,
+        msg="Basis state must be of shape {}; got {}."
+        "".format(expected_shape, get_shape(basis_state)),
+    )
 
-        expected_shape = (len(wires),)
-        check_shape(
-            basis_state,
-            expected_shape,
-            msg="Basis state must be of shape {}; got {}."
-            "".format(expected_shape, get_shape(basis_state)),
+    # basis_state is guaranteed to be a list of binary values
+    if any([b not in [0, 1] for b in basis_state]):
+        raise ValueError(
+            "Basis state must only contain values of 0 and 1; got {}".format(basis_state)
         )
 
-        # basis_state is guaranteed to be a list of binary values
-        if any([b not in [0, 1] for b in basis_state]):
-            raise ValueError(
-                "Basis state must only contain values of 0 and 1; got {}".format(basis_state)
-            )
-
-        return basis_state
+    return basis_state
 
 
 @template
