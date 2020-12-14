@@ -13,10 +13,11 @@ jobs:
       with:
         changelog_regex: '.github/CHANGELOG.md'
         customPrMessage: |
-          "Missing a changelog! Please edit [/.github/CHANGELOG.md](/.github/CHANGELOG.md) with
-          * Description of the Change
+          Beep! Boop! I see you're missing a changelog! 
+          Please edit [/PennyLaneAI/pennylane/blob/master/.github/CHANGELOG.md](/.github/CHANGELOG.md) with:
+          * Description of the change
           * Link back to this PR
-          * Your name in contributors section"
+          * Your name in the contributors section
                             
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
