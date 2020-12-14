@@ -1046,6 +1046,42 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
+    @pytest.mark.parametrize(
+        "pauli_word",
+        [
+            ("XIZ"),
+            ("XIYIZI"),
+            ("IXI"),
+            ("IIIIIZI"),
+            ("XYZIII"),
+            ("IIIXYZ"),
+        ],
+    )
+    def test_multirz_generator(self, pauli_word):
+        """Test that the generator of the MultiRZ gate is correct."""
+        op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
+        gen = op.generator
+
+        if pauli_word[0] == 'I':
+            # this is the identity
+            expected_gen = qml.PauliZ(wires=0) @ qml.PauliZ(wires=0)
+        else:
+            expected_gen = getattr(
+                qml, 'Pauli{}'.format(pauli_word[0]))(wires=0)
+
+        for i, pauli in enumerate(pauli_word[1:]):
+            i += 1
+            if pauli == 'I':
+                expected_gen = expected_gen @  qml.PauliZ(
+                    wires=i) @  qml.PauliZ(wires=i)
+            else:
+                expected_gen = expected_gen @ getattr(
+                    qml, 'Pauli{}'.format(pauli))(wires=i)
+
+        expected_gen_mat = expected_gen.matrix
+
+        assert np.allclose(gen[0], expected_gen_mat)
+        assert gen[1] == -0.5
 
 class TestMultiRZ:
     """Test the MultiRZ operation."""
@@ -1158,7 +1194,7 @@ class TestMultiRZ:
         )
 
     @pytest.mark.parametrize("qubits", range(3, 6))
-    def test_multirz_generator(self, qubits, mocker):
+    def test_multirz_generator(self, qubits):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator
@@ -1171,12 +1207,6 @@ class TestMultiRZ:
 
         assert np.allclose(gen[0], expected_gen_mat)
         assert gen[1] == -0.5
-
-        spy = mocker.spy(qml.utils, "pauli_eigs")
-
-        op.generator
-        spy.assert_not_called()
-
 
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
