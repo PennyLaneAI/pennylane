@@ -206,11 +206,13 @@ class JacobianTape(QuantumTape):
 
         return tuple(diff_methods.values())
 
-    def _has_trainable_params(self, params, diff_methods):
+    @staticmethod
+    def _has_trainable_params(params, diff_methods):
         """Determines if there are any trainable parameters."""
         return params.size and not all(g == "0" for g in diff_methods)
 
-    def _flatten_processing_result(self, g):
+    @staticmethod
+    def _flatten_processing_result(g):
         """Flattens the output from processing_fn in parameter shift methods."""
         if g.dtype is np.dtype("object"):
             # object arrays cannot be flattened; must hstack them

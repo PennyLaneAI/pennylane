@@ -274,8 +274,9 @@ class QubitParamShiftTape(JacobianTape):
         return tapes, processing_fn
 
     def parameter_shift_hessian(self, i, j, params, **options):
-        """Generate the tapes and postprocessing methods required to compute the Hessian of a
-        parameter using the parameter-shift method.
+        """Generate the tapes and postprocessing methods required to compute the
+        second derivative with respect to tape parameter :math:`i` and :math:`j`
+        using the second-order parameter-shift method.
 
         Args:
             i (int): trainable parameter index to differentiate with respect to
@@ -340,8 +341,8 @@ class QubitParamShiftTape(JacobianTape):
                     tapes.append(shifted_tape)
 
         def processing_fn(results):
-            """Computes the Hessian of the parameter at index idx via the
-            parameter-shift method.
+            """Computes the second derivative with respect to tape parameters i
+            and j using the second-order parameter-shift method.
 
             Args:
                 results (list[real]): evaluated quantum tapes
