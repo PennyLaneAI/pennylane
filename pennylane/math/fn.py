@@ -353,7 +353,6 @@ def toarray(tensor):
     >>> toarray(x)
     array([1, 2])
     """
-    print(tensor, TensorBox(tensor))
     return TensorBox(tensor).numpy()
 
 
