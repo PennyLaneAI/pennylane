@@ -28,7 +28,7 @@ def _preprocess(args, depth):
     for arg in args:
 
         if qml.tape_mode_active():
-            arg = qml.math.arg(arg)
+            arg = qml.math.angle(arg)
 
         if len(arg) != depth:
             raise ValueError(
