@@ -63,16 +63,16 @@ class GradientDescentOptimizer:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
                 prior to the step
         """
-        trainable_indexes = self._process_args(args)
 
         g, forward = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args, trainable_indexes)
+        new_args = self.apply_grad(g, args)
 
         if forward is None:
             forward = objective_fn(*args, **kwargs)
 
-        new_args.append(forward)
-        return new_args
+        if len(new_args)==1:
+            return new_args[0], forward
+        return new_args, forward
 
     def step(self, objective_fn, *args, grad_fn=None, **kwargs):
         """Update x with one step of the optimizer.
@@ -88,29 +88,14 @@ class GradientDescentOptimizer:
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        trainable_indexes = self._process_args(args)
 
         g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args, trainable_indexes)
+        new_args = self.apply_grad(g, args)
 
+        if len(new_args)==1:
+            return new_args[0]
+        
         return new_args
-
-    @staticmethod
-    def _process_args(args):
-        r"""Determine which arguments are optimized and which are constant
-
-        Args:
-            args (tuple(array)): Variables for the objective function
-
-        Returns:
-            List: Indices of args for parameters that will be updated
-            List: Parameters that will be updated
-        """
-        indexes = []
-        for index, value in enumerate(args):
-            if getattr(value, "requires_grad", True):
-                indexes.append(index)
-        return indexes
 
     @staticmethod
     def compute_grad(objective_fn, args, kwargs, grad_fn=None):
@@ -136,7 +121,7 @@ class GradientDescentOptimizer:
 
         return grad, forward
 
-    def apply_grad(self, grad_array, args, trainable_indexes):
+    def apply_grad(self, grad, args):
         r"""Update the variables to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -149,12 +134,16 @@ class GradientDescentOptimizer:
             array: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
-        for index_args, grad in zip(trainable_indexes, grad_array):
-            x_flat = _flatten(args[index_args])
-            grad_flat = _flatten(grad)
 
-            x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = _flatten(grad[trained_index])
+                trained_index += 1
 
-            args_new[index_args] = unflatten(x_new_flat, args[index_args])
+                x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
+
+                args_new[index] = unflatten(x_new_flat, args[index])               
 
         return args_new

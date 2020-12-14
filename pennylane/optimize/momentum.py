@@ -43,7 +43,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
         self.momentum = momentum
         self.accumulation = None
 
-    def apply_grad(self, grad, args, trainable_indexes):
+    def apply_grad(self, grad, args):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -55,28 +55,41 @@ class MomentumOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        args = list(args)
+        args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [None] * len(trainable_indexes)
+            self.accumulation = [None] * len(args)
 
-        for index_train, index_args in enumerate(trainable_indexes):
-            grad_flat = _flatten(grad[index_train])
-            x_flat = _flatten(args[index_args])
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = _flatten(grad[trained_index])
+                trained_index +=1
 
-            if self.accumulation[index_train] is None:
-                self.accumulation[index_train] = [self._stepsize * g for g in grad_flat]
-            else:
-                self.accumulation[index_train] = [
-                    self.momentum * a + self._stepsize * g for a, g in
-                    zip(self.accumulation[index_train], grad_flat)
-                ]
+                self._update_momentum(index, grad_flat)
 
-            x_new_flat = [e - a for a, e in zip(self.accumulation[index_train], x_flat)]
+                x_new_flat = [e - a for a, e in zip(self.accumulation[index], x_flat)]
 
-            args[index_args] = unflatten(x_new_flat, args[index_args])
+                args_new[index] = unflatten(x_new_flat, arg)
 
-        return args
+        return args_new
+
+    def _update_momentum(self, index, grad_flat):
+        r""" Update the momentum
+
+        Args:
+            index (Int): location of arg to update
+            grad_flat (list): flattened list form of gradient
+        """
+        if self.accumulation[index] is None:
+            self.accumulation[index] = [self._stepsize * g for g in grad_flat]
+        else:
+            self.accumulation[index] = [
+                self.momentum * a + self._stepsize * g for a, g in
+                zip(self.accumulation[index], grad_flat)
+            ]
+    
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

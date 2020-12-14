@@ -94,7 +94,7 @@ class RotosolveOptimizer:
         """
         x_new = self.step(objective_fn, *args, **kwargs)
 
-        return x_new, objective_fn(*args)
+        return x_new, objective_fn(*args, **kwargs)
 
 
     def step(self, objective_fn, *args, **kwargs):
@@ -126,6 +126,8 @@ class RotosolveOptimizer:
 
                 args_new[index] = unflatten(x_flat, arg)
 
+        if len(args_new) == 1:
+            return args_new[0]
         return args_new
 
     @staticmethod

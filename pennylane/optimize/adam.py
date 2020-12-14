@@ -61,7 +61,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.sm = None
         self.t = 0
 
-    def apply_grad(self, grad, args, trainable_indexes):
+    def apply_grad(self, grad, args):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -73,7 +73,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        args = list(args)
+        args_new = list(args)
         self.t += 1
         
         # Update step size (instead of correcting for bias)
@@ -82,24 +82,27 @@ class AdamOptimizer(GradientDescentOptimizer):
         )
 
         if self.fm is None:
-            self.fm = [None] * len(trainable_indexes)
+            self.fm = [None] * len(args)
 
         if self.sm is None:
-            self.sm = [None] * len(trainable_indexes)
+            self.sm = [None] * len(args)
 
-        for index_train, index_args in enumerate(trainable_indexes):
-            x_flat = _flatten(args[index_args])
-            grad_flat = list(_flatten(grad[index_train]))
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = list(_flatten(grad[trained_index]))
+                trained_index += 1
 
-            self._update_moments(index_train, grad_flat)
+                self._update_moments(index, grad_flat)
 
-            x_new_flat = [
-                e - new_stepsize * f / (math.sqrt(s) + self.eps)
-                for f, s, e in zip(self.fm[index_train], self.sm[index_train], x_flat)
-            ]
-            args[index_args] = unflatten(x_new_flat, args[index_args])
+                x_new_flat = [
+                    e - new_stepsize * f / (math.sqrt(s) + self.eps)
+                    for f, s, e in zip(self.fm[index], self.sm[index], x_flat)
+                ]
+                args_new[index] = unflatten(x_new_flat, arg)
 
-        return args
+        return args_new
 
     def _update_moments(self, index, grad_flat):
         r""" Update the moments

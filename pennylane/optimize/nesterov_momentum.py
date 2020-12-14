@@ -53,16 +53,17 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                 objective function output. If ``grad_fn`` is provided, the objective function
                 will not be evaluted and instead ``None`` will be returned.
         """
+        shifted_args = list(args)
 
-        x_flat = _flatten(args)
-        acc = _flatten(self.accumulation)
+        if self.accumulation:
+            for index, arg in enumerate(args):
+                if self.accumulation[index]:
+                    x_flat = _flatten(arg)
+                    acc = _flatten(self.accumulation[index])
 
-        if self.accumulation is None:
-            shifted_x_flat = list(x_flat)
-        else:
-            shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
+                    shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
 
-        shifted_args = unflatten(shifted_x_flat, args)
+                    shifted_args[index] = unflatten(shifted_x_flat, arg)
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*shifted_args, **kwargs)
