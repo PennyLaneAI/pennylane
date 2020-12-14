@@ -10,6 +10,11 @@ jobs:
       uses: peterjgrainger/action-changelog-reminder@v1.3.0
       with:
         changelog_regex: '.github/CHANGELOG.md'
-        customPrMessage: 'Missing a changelog! Please edit /.github/CHANGELOG.md'
+        customPrMessage: > |
+          Missing a changelog! Please edit [/.github/CHANGELOG.md](/.github/CHANGELOG.md) with
+          * Description of the Change
+          * Link back to this PR
+          * Your name in contributors section
+                            
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
