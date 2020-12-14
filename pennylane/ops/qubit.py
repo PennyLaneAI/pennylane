@@ -996,17 +996,12 @@ class PauliRot(Operation):
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
                 np.kron,
-                [
-                    PauliRot._PAULI_CONJUGATION_MATRICES[gate]
-                    for gate in non_identity_gates
-                ],
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj()
-                    @ multi_Z_rot_generator
-                    @ conjugation_matrix,
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
