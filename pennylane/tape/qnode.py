@@ -686,9 +686,11 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
 
 def make_drawing(_qnode, charset="unicode"):
-    """Make a function that draws the given _qnode.
+    """Create a function that draws the given _qnode.
 
-    Example: Given this definition of a Qnode.
+    **Example**
+    
+    Given the following definition of a QNode,
 
     .. code-block:: python3
 
@@ -709,10 +711,10 @@ def make_drawing(_qnode, charset="unicode"):
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
 
     Args:
-        _qnode: A ``pennylane.qnode``.
+        _qnode (.QNode): the input QNode that is to be drawn
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
-        the function will draw the qnode.
+        the function will draw the QNode.
     """
 
     def wrapper(*args, **kwargs):
