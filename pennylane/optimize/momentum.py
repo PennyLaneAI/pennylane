@@ -14,6 +14,7 @@
 """Momentum optimizer"""
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
+from pennylane.numpy import ndarray, tensor
 
 
 class MomentumOptimizer(GradientDescentOptimizer):
@@ -72,6 +73,10 @@ class MomentumOptimizer(GradientDescentOptimizer):
                 x_new_flat = [e - a for a, e in zip(self.accumulation[index], x_flat)]
 
                 args_new[index] = unflatten(x_new_flat, arg)
+
+                if isinstance(arg, ndarray):
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
 
         return args_new
 

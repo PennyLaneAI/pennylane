@@ -16,6 +16,7 @@ import math
 
 from pennylane.utils import _flatten, unflatten
 from .adagrad import AdagradOptimizer
+from pennylane.numpy import ndarray, tensor
 
 
 class RMSPropOptimizer(AdagradOptimizer):
@@ -80,6 +81,10 @@ class RMSPropOptimizer(AdagradOptimizer):
                 ]
 
                 args_new[index] = unflatten(x_new_flat, arg)
+
+                if isinstance(arg, ndarray):
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
 
         return args_new
 

@@ -15,6 +15,7 @@
 
 from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 
 
 class GradientDescentOptimizer:
@@ -57,7 +58,7 @@ class GradientDescentOptimizer:
             grad_fn (function): Optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
-            **kwargs : Variable length dictionary of keywords for the cost function
+            **kwargs : Variable length of keywords for the cost function
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
@@ -83,7 +84,7 @@ class GradientDescentOptimizer:
             grad_fn (function): Optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
-            **kwargs : Variable length dictionary of keywords for the cost function
+            **kwargs : Variable length of keywords for the cost function
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
@@ -144,6 +145,11 @@ class GradientDescentOptimizer:
 
                 x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
 
-                args_new[index] = unflatten(x_new_flat, args[index])               
+                args_new[index] = unflatten(x_new_flat, args[index])
+
+                if isinstance(arg, ndarray):
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
+
 
         return args_new
