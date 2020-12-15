@@ -1,6 +1,6 @@
 on:
   pull_request:
-    types: [opened, edited, ready_for_review, review_requested]
+    types: [opened, ready_for_review]
 name: Changelog Reminder
 jobs:
   remind:
