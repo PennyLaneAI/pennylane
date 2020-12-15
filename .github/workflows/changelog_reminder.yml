@@ -15,9 +15,10 @@ jobs:
         customPrMessage: |
           Beep! Boop! I see you're missing a changelog! 
           Please edit [.github/CHANGELOG.md](/PennyLaneAI/pennylane/blob/master/.github/CHANGELOG.md) with:
-          * Description of the change
-          * Link back to this PR
-          * Your name in the contributors section
+          * A one-to-two sentence description of the change. You may include a
+            small working example for new features.
+          * A link back to this PR.
+          * Your name (or GitHub username) in the contributors section.
                             
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
