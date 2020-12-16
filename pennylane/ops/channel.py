@@ -223,6 +223,90 @@ class DepolarizingChannel(Channel):
         return [K0, K1, K2, K3]
 
 
+class BitFlip(Channel):
+    r"""BitFlip(p, wires)
+    Single-qubit bit flip (Pauli :math:`X`) error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p}\begin{bmatrix}
+                0 & 1  \\
+                1 & 0
+                \end{bmatrix}
+
+    where :math:`p \in [0, 1]` is the probability of a bit flip (Pauli :math:`X` error).
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+
+    Args:
+        p (float): The probability that a bit flip error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p = params[0]
+        K0 = np.sqrt(1 - p) * np.eye(2)
+        K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
+        return [K0, K1]
+
+
+class PhaseFlip(Channel):
+    r"""PhaseFlip(p, wires)
+    Single-qubit bit flip (Pauli :math:`Z`) error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p}\begin{bmatrix}
+                1 & 0  \\
+                0 & -1
+                \end{bmatrix}
+
+    where :math:`p \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+
+    Args:
+        p (float): The probability that a phase flip error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p = params[0]
+        K0 = np.sqrt(1 - p) * np.eye(2)
+        K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
+        return [K0, K1]
+
+
 class QubitChannel(Channel):
     r"""QubitChannel(K_list, wires)
     Apply an arbitrary fixed quantum channel.
@@ -282,6 +366,8 @@ __qubit_channels__ = {
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
     "DepolarizingChannel",
+    "BitFlip",
+    "PhaseFlip",
     "QubitChannel",
 }
 

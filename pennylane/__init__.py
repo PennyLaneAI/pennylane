@@ -48,7 +48,7 @@ from ._version import __version__
 from .io import *
 from ._grad import jacobian, grad
 
-import pennylane.proc  # pylint: disable=wrong-import-order
+import pennylane.math  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
 from .tape import enable_tape, disable_tape, tape_mode_active
 

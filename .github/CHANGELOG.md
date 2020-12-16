@@ -2,12 +2,12 @@
 
 <h3>New features since last release</h3>
 
-<h4>Optimizers allow more flexible cost functions</h4>
 
+* Optimizers allow more flexible cost functions. The cost function passed to most optimizers 
+may accept any combination of trainable arguments, non-trainable arguments, and keywords. 
+The `requires_grad=False` property must mark any non-trainable constant argument. 
+The `RotoselectOptimizer` allows only keywords.
 See pull request [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
-
-The cost function passed to most optimizers may accept any combination
-of trainable arguments, non-trainable arguments, and keywords.
 
 The full changes apply to:
 * `AdagradOptimizer`
@@ -18,9 +18,7 @@ The full changes apply to:
 * `RMSPropOptimizer`
 * `RotosolveOptimizer`
 
-The `RotoselectOptimizer` now allows keywords.
-
-The `requires_grad=False` property must mark any non-trainable constant argument.
+Example use:
 
 ```python
 def cost(x, y, data, scale=1.0):
@@ -34,21 +32,112 @@ opt = qml.GradientDescentOptimizer()
 x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
 
 (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
-```
-Multiple arguments can still be combined through:
 
-```python
 params = (x, y, data)
 params = opt.step(cost, *params)
 ```
 
+* A new  `qml.draw` function is available. This allows for QNodes to easily be drawn by simply giving example input.
+  [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
+
+  ```python
+
+  qml.enable_tape()
+
+  @qml.qnode(dev)
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  drawer = qml.draw(circuit)
+  result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
+  print(result)
+  #  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+  #  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+`qml.draw` is only avaliable in tape mode.
+
+* A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
+  supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
+
+  Here is an example of how to use the new device:
+
+  ```python
+  qml.enable_tape()
+
+  dev = qml.device("default.qubit.jax", wires=1)
+  @qml.qnode(dev, interface="jax", diff_method="backprop")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  weights = jnp.array([0.2, 0.5, 0.1])
+  grad_fn = jax.grad(circuit)
+  print(grad_fn(weights))
+  ```
+
+  Currently, only `diff_method="backprop"` is supported, with plans to add reverse mode support in
+  the future.
+
+* Two new error channels, `BitFlip` and `PhaseFlip` have been added.
+  [(#954)](https://github.com/PennyLaneAI/pennylane/pull/954)
+
+  They can be used in the same manner as existing error channels:
+
+  ```python
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.RX(0.3, wires=0)
+      qml.RY(0.5, wires=1)
+      qml.BitFlip(0.01, wires=0)
+      qml.PhaseFlip(0.01, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+* Apply permutations to wires using the `Permute` subroutine.
+  [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
+
+  ```python
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
+
+  @qml.qnode(dev)
+  def apply_perm():
+      # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+      qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+
 <h3>Improvements</h3>
+
+* A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
+  a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
+  `test_pauliz_expectation_analytic`, and `test_random_circuit`.
+  [(#897)](https://github.com/PennyLaneAI/pennylane/pull/897)
+
+* Adds the following agnostic tensor manipulation functions to the `qml.math` module: `abs`,
+  `angle`, `arcsin`, `concatenate`, `dot`, `sqrt`, `sum`, `take`, `where`. These functions are
+  required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
+  [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
+  causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
+  as the `Operation.expand()` method, has been modified to fix this.
+  [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
 
 * Fixes an issue where the Autograd interface was not unwrapping non-differentiable
   PennyLane tensors, which can cause issues on some devices.
@@ -58,7 +147,7 @@ params = opt.step(cost, *params)
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts.
 
 # Release 0.13.0 (current release)
 

@@ -1,9 +1,9 @@
-qml.proc
+qml.math
 ========
 
-.. currentmodule:: pennylane.proc
+.. currentmodule:: pennylane.math
 
-.. automodapi:: pennylane.proc
+.. automodapi:: pennylane.math
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
