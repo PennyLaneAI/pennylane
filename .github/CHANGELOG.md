@@ -2,9 +2,11 @@
 
 <h3>New features since last release</h3>
 
-<h4>Optimizers allow more permissive cost functions</h4>
+<h4>Optimizers allow more flexible cost functions</h4>
 
-The cost function passed to most optimizers may take in any combination
+See pull request [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
+
+The cost function passed to most optimizers may accept any combination
 of trainable arguments, non-trainable arguments, and keywords.
 
 The full changes apply to:
@@ -16,12 +18,9 @@ The full changes apply to:
 * `RMSPropOptimizer`
 * `RotosolveOptimizer`
 
-These optimizers allow a single trainable argument plus keywords:
-* `QNGOptimizer`
-* `RotoselectOptimizer`: Needs generators as well
+The `RotoselectOptimizer` now allows keywords.
 
-Any non-trainable constant parameter must be marked through the property
-`requires_grad=False`.
+The `requires_grad=False` property must mark any non-trainable constant argument.
 
 ```python
 def cost(x, y, data, scale=1.0):
@@ -36,8 +35,12 @@ x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
 
 (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
 ```
-I
+Multiple arguments can still be combined through:
 
+```python
+params = (x, y, data)
+params = opt.step(cost, *params)
+```
 
 <h3>Improvements</h3>
 
