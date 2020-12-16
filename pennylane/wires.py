@@ -38,7 +38,7 @@ def _process(wires):
         # Scalar NumPy array
         return (wires.item(),)
 
-    if isinstance(wires, Iterable):
+    while isinstance(wires, Iterable):
         # wires is an iterable, presumably of Wires, Number or scalar NumPy array instances
         if all(isinstance(w, Wires) for w in wires):
             # if the elements are themselves Wires objects, merge them to a new one
@@ -48,6 +48,8 @@ def _process(wires):
         ):
             # if the elements are strings or numbers, turn iterable into tuple
             merged = tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
+        else:
+            break
         # check that all wires are unique
         if len(set(merged)) != len(merged):
             raise WireError("Wires must be unique; got {}.".format(merged))
