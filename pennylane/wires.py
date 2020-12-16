@@ -38,15 +38,18 @@ def _process(wires):
         # Scalar NumPy array
         return (wires.item(),)
 
-    elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
-        # if the elements are themselves Wires objects, merge them to a new one
-        return tuple(w for wires_ in wires for w in wires_.tolist())
-
-    elif isinstance(wires, Iterable) and all(
-        isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
-    ):
-        # if the elements are strings or numbers, turn iterable into tuple
-        return tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
+    elif isinstance(wires, Iterable):
+        # wires is an iterable, presumably of Wires, Number or scalar NumPy array instances
+        if all(isinstance(w, Wires) for w in wires):
+            # if the elements are themselves Wires objects, merge them to a new one
+            merged = tuple(w for wires_ in wires for w in wires_.tolist())
+        elif all(isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires):
+            # if the elements are strings or numbers, turn iterable into tuple
+            merged = tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
+        # check that all wires are unique
+        if len(set(merged)) != len(merged):
+            raise WireError("Wires must be unique; got {}.".format(merged))
+        return merged
 
     else:
         raise WireError(
@@ -73,12 +76,7 @@ class Wires(Sequence):
     """
 
     def __init__(self, wires):
-
         self._labels = _process(wires)
-
-        # check that all wires are unique
-        if len(set(self.labels)) != len(self.labels):
-            raise WireError("Wires must be unique; got {}.".format(wires))
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object representing a single wire."""
