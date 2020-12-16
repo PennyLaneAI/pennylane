@@ -44,12 +44,13 @@ class RotoselectOptimizer:
     with their respective parameters :math:`\theta` for the circuit and its gates. Note that the
     number of generators should match the number of parameters.
 
-    The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
+    The algorithm is described in further detail in
+    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
     Args:
-        possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit``
-            operators that are allowed in the circuit. Default is the set of Pauli rotations
-            :math:`\{R_x, R_y, R_z\}`.
+        possible_generators (list[~.Operation]): List containing the possible
+            ``pennylane.ops.qubit`` operators that are allowed in the circuit.
+            Default is the set of Pauli rotations :math:`\{R_x, R_y, R_z\}`.
 
     **Example:**
 

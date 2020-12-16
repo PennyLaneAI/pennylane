@@ -13,8 +13,8 @@
 # limitations under the License.
 """Momentum optimizer"""
 from pennylane.utils import _flatten, unflatten
-from .gradient_descent import GradientDescentOptimizer
 from pennylane.numpy import ndarray, tensor
+from .gradient_descent import GradientDescentOptimizer
 
 
 class MomentumOptimizer(GradientDescentOptimizer):
@@ -94,7 +94,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
                 self.momentum * a + self._stepsize * g for a, g in
                 zip(self.accumulation[index], grad_flat)
             ]
-    
+
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

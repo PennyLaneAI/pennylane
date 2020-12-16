@@ -15,8 +15,8 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
-from .adagrad import AdagradOptimizer
 from pennylane.numpy import ndarray, tensor
+from .adagrad import AdagradOptimizer
 
 
 class RMSPropOptimizer(AdagradOptimizer):
@@ -40,7 +40,8 @@ class RMSPropOptimizer(AdagradOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta`
             used in the Adagrad optmization
         decay (float): the learning rate decay :math:`\gamma`
-        eps (float): offset :math:`\epsilon` added for numerical stability (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
+        eps (float): offset :math:`\epsilon` added for numerical stability
+            (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
 
     """
 
@@ -72,7 +73,7 @@ class RMSPropOptimizer(AdagradOptimizer):
                 x_flat = _flatten(arg)
                 grad_flat = list(_flatten(grad[trained_index]))
                 trained_index += 1
-               
+
                 self._update_accumulation(index, grad_flat)
 
                 x_new_flat = [
@@ -104,4 +105,3 @@ class RMSPropOptimizer(AdagradOptimizer):
                 self.decay * a + (1 - self.decay) * g * g
                 for a, g in zip(self.accumulation[index], grad_flat)
             ]
-

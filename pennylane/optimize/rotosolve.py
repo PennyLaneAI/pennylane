@@ -104,8 +104,9 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            *args (Union[Sequence[float], float]): variable length sequence containing the initial values of the
-                variables to be optimized over or a single float with the initial value
+            *args (Union[Sequence[float], float]): variable length sequence containing the initial
+                values of the variables to be optimized over or a single float with the initial
+                value
             **kwargs : Variable length dictionary of keywords for the cost function
 
         Returns:
@@ -118,8 +119,8 @@ class RotosolveOptimizer:
             if getattr(arg, "requires_grad", True):
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
 
-                objective_fn_flat = lambda x_flat: objective_fn(*before_args,
-                    unflatten(x_flat, arg), *after_args, **kwargs)
+                objective_fn_flat = lambda x_flat, arg_kw=arg : objective_fn(*before_args,
+                    unflatten(x_flat, arg_kw), *after_args, **kwargs)
 
                 for d, _ in enumerate(x_flat):
                     x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
