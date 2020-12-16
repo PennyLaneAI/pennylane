@@ -47,6 +47,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
             kwargs (dict): Keywords for the cost function
             grad_fn (function): Optional gradient function of the objective function with respect to
                 the variables ``x``. If ``None``, the gradient function is computed automatically.
+                Must match shape of autograd derivative.
 
         Returns:
             tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
