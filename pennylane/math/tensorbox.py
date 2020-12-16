@@ -12,10 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the TensorBox abstract base class."""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-public-methods
 import abc
+import functools
+import numbers
+import sys
 
-import numpy as np
+
+def wrap_output(func):
+    """Decorator to automate the wrapping of TensorBox method outputs.
+
+    When applied to a TensorBox method, it inserts an additional argument
+    into the signature, ``wrap_output``. By default, this is True, causing
+    the output of the method to be wrapped as a TensorBox; specifying
+    ``wrap_output=False`` when calling the method results in the
+    underlying tensor itself being returned.
+    """
+
+    @functools.wraps(func)
+    def _wrapper(*args, **kwargs):
+        wrap = kwargs.pop("wrap_output", True)
+
+        if wrap:
+            cls = vars(sys.modules[func.__module__])[func.__qualname__.split(".")[0]]
+            return cls(func(*args, **kwargs))
+
+        return func(*args, **kwargs)
+
+    return _wrapper
 
 
 class TensorBox(abc.ABC):
@@ -69,6 +93,7 @@ class TensorBox(abc.ABC):
     tf.Tensor([[1. 1. 1.]], shape=(1, 3), dtype=float32)
     """
 
+    __array_priority__ = 100
     _initialized = False
 
     def __new__(cls, tensor):
@@ -80,7 +105,7 @@ class TensorBox(abc.ABC):
 
         namespace = tensor.__class__.__module__.split(".")[0]
 
-        if isinstance(tensor, (list, tuple)) or namespace == "numpy":
+        if isinstance(tensor, (numbers.Number, list, tuple)) or namespace == "numpy":
             from .numpy_box import NumpyBox
 
             return NumpyBox.__new__(NumpyBox, tensor)
@@ -102,49 +127,6 @@ class TensorBox(abc.ABC):
 
         raise ValueError(f"Unknown tensor type {type(tensor)}")
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        """By defining this special method, NumPy ufuncs can act directly
-        on the contained tensor, with broadcasting taken into account. For
-        more details, see https://numpy.org/devdocs/user/basics.subclassing.html#array-ufunc-for-ufuncs"""
-        outputs = [v.data if isinstance(v, TensorBox) else v for v in kwargs.get("out", ())]
-
-        if outputs:
-            # Insert the unwrapped outputs into the keyword
-            # args dictionary, to be passed to ndarray.__array_ufunc__
-            outputs = tuple(outputs)
-            kwargs["out"] = outputs
-        else:
-            # If the ufunc has no outputs, we simply
-            # create a tuple containing None for all potential outputs.
-            outputs = (None,) * ufunc.nout
-
-        args = [v.data if isinstance(v, TensorBox) else v for v in inputs]
-        res = getattr(ufunc, method)(*args, **kwargs)
-
-        if ufunc.nout == 1:
-            res = (res,)
-
-        # construct a list of ufunc outputs to return
-        ufunc_output = []
-        for result, output in zip(res, outputs):
-            if output is not None:
-                ufunc_output.append(output)
-            else:
-                if isinstance(result, np.ndarray):
-                    if result.ndim == 0 and result.dtype == np.dtype("bool"):
-                        ufunc_output.append(result.item())
-                    else:
-                        ufunc_output.append(self.__class__(result))
-                else:
-                    ufunc_output.append(result)
-
-        if len(ufunc_output) == 1:
-            # the ufunc has a single output so return a single tensor
-            return ufunc_output[0]
-
-        # otherwise we must return a tuple of tensors
-        return tuple(ufunc_output)
-
     def __init__(self, tensor):
         if self._initialized:
             return
@@ -158,6 +140,13 @@ class TensorBox(abc.ABC):
     def __len__(self):
         return len(self.data)
 
+    def __eq__(self, other):
+        if other is NotImplemented:
+            return NotImplemented
+
+        other = TensorBox(other).numpy()
+        return self.numpy() == other
+
     def __add__(self, other):
         if isinstance(other, TensorBox):
             other = other.data
@@ -169,6 +158,12 @@ class TensorBox(abc.ABC):
             other = other.data
 
         return self.__class__(self.data - other)
+
+    def __rsub__(self, other):
+        if isinstance(other, TensorBox):
+            other = other.data
+
+        return self.__class__(other - self.data)
 
     def __mul__(self, other):
         if isinstance(other, TensorBox):
@@ -195,7 +190,6 @@ class TensorBox(abc.ABC):
         return self.__class__(other ** self.data)
 
     __radd__ = __add__
-    __rsub__ = __sub__
     __rmul__ = __mul__
 
     @staticmethod
@@ -238,6 +232,18 @@ class TensorBox(abc.ABC):
     # Abstract methods and properties
     ###############################################################################
 
+    @abc.abstractmethod
+    def abs(self):
+        """TensorBox: Returns the element-wise absolute value."""
+
+    @abc.abstractmethod
+    def angle(self):
+        """TensorBox: Returns the elementwise complex angle."""
+
+    @abc.abstractmethod
+    def arcsin(self):
+        """Returns the element-wise inverse sine of the tensor"""
+
     @staticmethod
     @abc.abstractmethod
     def astensor(tensor):
@@ -255,6 +261,62 @@ class TensorBox(abc.ABC):
             dtype (np.dtype, str): the NumPy datatype to cast to
                 If the boxed tensor is not a NumPy array, the equivalent
                 datatype in the target framework is chosen.
+        """
+
+    @staticmethod
+    @abc.abstractmethod
+    def concatenate(values, axis=0):
+        """Join a sequence of tensors along an existing axis.
+
+        Args:
+            values (Sequence[tensor_like]): sequence of arrays/tensors to concatenate
+            axis (int): axis on which to concatenate
+
+        **Example**
+
+        >>> x = tf.Variable([[1, 2], [3, 4]])
+        >>> a = tf.constant([[5, 6]])
+        >>> y = TensorBox(x)
+        >>> y.concatenate([a, y], axis=0)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([[1, 2],
+               [3, 4],
+               [5, 6]]), dtype=float32)>
+
+        >>> y.concatenate([a, y], axis=1)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([[1, 2, 5],
+               [3, 4, 6]]), dtype=float32)>
+
+        >>> y.concatenate([a, y], axis=None)
+        <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+        array([1, 2, 3, 4, 5, 6]), dtype=float32)>
+
+        Note that this is a static method, so we must pass the unified tensor itself
+        if we would like it to be included.
+        """
+
+    @staticmethod
+    @abc.abstractmethod
+    def dot(x, y):
+        """Returns the matrix or dot product of two tensors.
+
+        * If both tensors are 0-dimensional, elementwise multiplication
+          is performed and a 0-dimensional scalar returned.
+
+        * If both tensors are 1-dimensional, the dot product is returned.
+
+        * If the first array is 2-dimensional and the second array 1-dimensional,
+          the matrix-vector product is returned.
+
+        * If both tensors are 2-dimensional, the matrix product is returned.
+
+        * Finally, if the the first array is N-dimensional and the second array
+          M-dimensional, a sum product over the last dimension of the first array,
+          and the second-to-last dimension of the second array is returned.
+
+        Args:
+            other (tensor_like): the tensor-like object to right-multiply the TensorBox by
         """
 
     @abc.abstractmethod
@@ -327,6 +389,10 @@ class TensorBox(abc.ABC):
     def shape(self):
         """tuple[int]: returns the shape of the tensor as a tuple of integers"""
 
+    @abc.abstractmethod
+    def sqrt(self):
+        """Returns the square root of the tensor"""
+
     @staticmethod
     @abc.abstractmethod
     def stack(values, axis=0):
@@ -335,6 +401,9 @@ class TensorBox(abc.ABC):
         Args:
             values (Sequence[tensor_like]): sequence of arrays/tensors to stack
             axis (int): axis on which to stack
+
+        Returns:
+            TensorBox: TensorBox containing the stacked array
 
         **Example**
 
@@ -350,7 +419,73 @@ class TensorBox(abc.ABC):
         if we would like it to be included.
         """
 
-    @property
+    @abc.abstractmethod
+    def sum(self, axis=None, keepdims=False):
+        """TensorBox: Returns the sum of the tensor elements across the specified dimensions.
+
+        Args:
+            axis (int or tuple[int]): The axis or axes along which to perform the sum.
+                If not specified, all elements of the tensor across all dimensions
+                will be summed, returning a tensor.
+            keepdims (bool): If True, retains all summed dimensions.
+
+        **Example**
+
+        Summing over all dimensions:
+
+        >>> x = tf.Variable([[1., 2.], [3., 4.]])
+        >>> y = TensorBox(x)
+        >>> y.sum()
+        TensorBox: <tf.Tensor: shape=(), dtype=float32, numpy=10.0>
+
+        Summing over specified dimensions:
+
+        >>> x = np.array([[[1, 1], [5, 3]], [[1, 4], [-6, -1]]])
+        >>> y = TensorBox(x)
+        >>> y.shape
+        (2, 2, 2)
+        >>> y.sum(axis=(0, 2))
+        TensorBox: tensor([7, 1], requires_grad=True)
+        >>> y.sum(axis=(0, 2), keepdims=True)
+        TensorBox: tensor([[[7],
+                            [1]]], requires_grad=True)
+        """
+
     @abc.abstractmethod
     def T(self):
         """Returns the transpose of the tensor."""
+
+    @abc.abstractmethod
+    def take(self, indices, axis=None):
+        """Gather elements from a tensor.
+
+        Note that ``tensorbox.take(indices, axis=3)`` is equivalent
+        to ``tensor[:, :, :, indices, ...]`` for frameworks that support
+        NumPy-like fancy indexing.
+
+        This method is roughly equivalent to ``np.take`` and ``tf.gather``.
+        In the case of a 1-dimensional set of indices, it is roughly equivalent
+        to ``torch.index_select``, but deviates for multi-dimensional indices.
+
+        Args:
+            indices (Sequence[int]): the indices of the values to extract
+            axis: The axis over which to select the values. If not provided,
+                the tensor is flattened before value extraction.
+
+        **Example**
+
+        >>> x = torch.tensor([[1, 2], [3, 4]])
+        >>> y = qml.math.TensorBox(x)
+        >>> y.take([[0, 0], [1, 0]], axis=1)
+        TensorBox: tensor([[[1, 1],
+                 [2, 1]],
+
+                [[3, 3],
+                 [4, 3]]])
+        """
+
+    @staticmethod
+    @abc.abstractmethod
+    def where(condition, x, y):
+        """Return a tensor of elements selected from ``x`` if the condition is True,
+        ``y`` otherwise."""
