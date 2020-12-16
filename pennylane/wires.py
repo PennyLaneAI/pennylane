@@ -43,7 +43,9 @@ def _process(wires):
         if all(isinstance(w, Wires) for w in wires):
             # if the elements are themselves Wires objects, merge them to a new one
             merged = tuple(w for wires_ in wires for w in wires_.tolist())
-        elif all(isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires):
+        elif all(
+            isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
+        ):
             # if the elements are strings or numbers, turn iterable into tuple
             merged = tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
         # check that all wires are unique
