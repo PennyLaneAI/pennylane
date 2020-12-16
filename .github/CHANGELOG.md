@@ -26,7 +26,7 @@
   the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
-  [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
+  [(#954)](https://github.com/PennyLaneAI/pennylane/pull/954)
 
   They can be used in the same manner as existing error channels:
 
