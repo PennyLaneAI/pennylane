@@ -672,62 +672,64 @@ class TestOptimizer:
         opt.update_stepsize(eta2)
         assert opt._stepsize == eta2
 
-
-    @pytest.mark.parametrize("opt",[
-        GradientDescentOptimizer(stepsize),
-        MomentumOptimizer(stepsize, momentum=gamma),
-        NesterovMomentumOptimizer(stepsize, momentum=gamma),
-        AdagradOptimizer(stepsize),
-        RMSPropOptimizer(stepsize, decay=gamma),
-        AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
-        RotosolveOptimizer()
-    ])
+    @pytest.mark.parametrize(
+        "opt",
+        [
+            GradientDescentOptimizer(stepsize),
+            MomentumOptimizer(stepsize, momentum=gamma),
+            NesterovMomentumOptimizer(stepsize, momentum=gamma),
+            AdagradOptimizer(stepsize),
+            RMSPropOptimizer(stepsize, decay=gamma),
+            AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
+            RotosolveOptimizer(),
+        ],
+    )
     class Test_over_opts:
         def test_kwargs(self, opt, tol):
-            """ Test that the keywords get passed and alter the function
-            """
+            """Test that the keywords get passed and alter the function"""
+
             def kwargs_func(x, c=1.0):
-                return (x-c)**2
+                return (x - c) ** 2
 
             x_new_one = opt.step(kwargs_func, 1.0, c=1.0)
             x_new_two = opt.step(kwargs_func, 1.0, c=2.0)
 
-            if getattr(opt,"reset", None):
+            if getattr(opt, "reset", None):
                 opt.reset()
 
             assert x_new_one != pytest.approx(x_new_two, abs=tol)
 
-
-        @pytest.mark.parametrize("func, args",[
-            (lambda x, y: x*y, (1.0, 1.0)),
-            (lambda x, y: x[0]*y[0], (np.array([1.0]), np.array([1.0])))
-        ])
+        @pytest.mark.parametrize(
+            "func, args",
+            [
+                (lambda x, y: x * y, (1.0, 1.0)),
+                (lambda x, y: x[0] * y[0], (np.array([1.0]), np.array([1.0]))),
+            ],
+        )
         def test_multi_args(self, opt, func, args, tol):
-            """ Test multiple arguments to function
-            """
+            """Test multiple arguments to function"""
             x_new, y_new = opt.step(func, *args)
 
-            if getattr(opt,"reset", None):
+            if getattr(opt, "reset", None):
                 opt.reset()
-            
+
             assert x_new != pytest.approx(args[0], abs=tol)
             assert y_new != pytest.approx(args[1], abs=tol)
 
         def test_nontrainable_data(self, opt, tol):
-            """ Check non-trainable argument does not get updated
-            """
+            """Check non-trainable argument does not get updated"""
+
             def func(x, data):
-                return x[0]*data[0]
+                return x[0] * data[0]
 
             x = np.array([1.0])
             data = np.array([1.0], requires_grad=False)
 
             args_new = opt.step(func, x, data)
 
-            if getattr(opt,"reset", None):
+            if getattr(opt, "reset", None):
                 opt.reset()
 
             assert len(args_new) == pytest.approx(2, abs=tol)
             assert args_new[0] != pytest.approx(x, abs=tol)
             assert args_new[1] == pytest.approx(data, abs=tol)
-

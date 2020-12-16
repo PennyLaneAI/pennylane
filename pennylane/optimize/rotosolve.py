@@ -96,7 +96,6 @@ class RotosolveOptimizer:
 
         return x_new, objective_fn(*args, **kwargs)
 
-
     def step(self, objective_fn, *args, **kwargs):
         r"""Update args with one step of the optimizer.
 
@@ -119,8 +118,9 @@ class RotosolveOptimizer:
             if getattr(arg, "requires_grad", True):
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
 
-                objective_fn_flat = lambda x_flat, arg_kw=arg : objective_fn(*before_args,
-                    unflatten(x_flat, arg_kw), *after_args, **kwargs)
+                objective_fn_flat = lambda x_flat, arg_kw=arg: objective_fn(
+                    *before_args, unflatten(x_flat, arg_kw), *after_args, **kwargs
+                )
 
                 for d, _ in enumerate(x_flat):
                     x_flat = self._rotosolve(objective_fn_flat, x_flat, d)

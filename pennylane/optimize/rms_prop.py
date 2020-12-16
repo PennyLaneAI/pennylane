@@ -97,9 +97,7 @@ class RMSPropOptimizer(AdagradOptimizer):
             grad_flat (list): flattened form of the gradient
         """
         if self.accumulation[index] is None:
-            self.accumulation[index] = [
-                (1 - self.decay) * g * g for g in grad_flat
-            ]
+            self.accumulation[index] = [(1 - self.decay) * g * g for g in grad_flat]
         else:
             self.accumulation[index] = [
                 self.decay * a + (1 - self.decay) * g * g

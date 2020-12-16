@@ -72,7 +72,7 @@ class GradientDescentOptimizer:
         if forward is None:
             forward = objective_fn(*args, **kwargs)
 
-        if len(new_args)==1:
+        if len(new_args) == 1:
             return new_args[0], forward
         return new_args, forward
 
@@ -95,7 +95,7 @@ class GradientDescentOptimizer:
         g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
         new_args = self.apply_grad(g, args)
 
-        if len(new_args)==1:
+        if len(new_args) == 1:
             return new_args[0]
 
         return new_args
@@ -153,6 +153,5 @@ class GradientDescentOptimizer:
                 if isinstance(arg, ndarray):
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
-
 
         return args_new

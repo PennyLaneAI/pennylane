@@ -79,7 +79,9 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
+            self._stepsize
+            * math.sqrt(1 - self.beta2 ** self.t)
+            / (1 - self.beta1 ** self.t)
         )
 
         if self.fm is None:
@@ -110,25 +112,27 @@ class AdamOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_moments(self, index, grad_flat):
-        r""" Update the moments
+        r"""Update the moments
 
         Args:
             index (Int): the index of the trainable argument to update out of trainable params
             grad_flat (list): the flattened gradient for that trainable param
         """
-        #update first moment
+        # update first moment
         if self.fm[index] is None:
             self.fm[index] = grad_flat
         else:
-            self.fm[index] = [self.beta1 * f + (1 - self.beta1) * g
-                for f, g in zip(self.fm[index], grad_flat)]
+            self.fm[index] = [
+                self.beta1 * f + (1 - self.beta1) * g
+                for f, g in zip(self.fm[index], grad_flat)
+            ]
 
-        #update second moment
+        # update second moment
         if self.sm[index] is None:
             self.sm[index] = [g * g for g in grad_flat]
         else:
             self.sm[index] = [
-                self.beta2 * f + (1 - self.beta2) * g * g 
+                self.beta2 * f + (1 - self.beta2) * g * g
                 for f, g in zip(self.sm[index], grad_flat)
             ]
 

@@ -66,7 +66,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
             if getattr(arg, "requires_grad", True):
                 x_flat = _flatten(arg)
                 grad_flat = _flatten(grad[trained_index])
-                trained_index +=1
+                trained_index += 1
 
                 self._update_momentum(index, grad_flat)
 
@@ -81,7 +81,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_momentum(self, index, grad_flat):
-        r""" Update the momentum
+        r"""Update the momentum
 
         Args:
             index (Int): location of arg to update
@@ -91,10 +91,9 @@ class MomentumOptimizer(GradientDescentOptimizer):
             self.accumulation[index] = [self._stepsize * g for g in grad_flat]
         else:
             self.accumulation[index] = [
-                self.momentum * a + self._stepsize * g for a, g in
-                zip(self.accumulation[index], grad_flat)
+                self.momentum * a + self._stepsize * g
+                for a, g in zip(self.accumulation[index], grad_flat)
             ]
-
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

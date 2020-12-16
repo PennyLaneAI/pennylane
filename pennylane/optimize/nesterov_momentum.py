@@ -64,7 +64,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                     x_flat = _flatten(arg)
                     acc = _flatten(self.accumulation[index])
 
-                    shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
+                    shifted_x_flat = [
+                        e - self.momentum * a for a, e in zip(acc, x_flat)
+                    ]
 
                     shifted_args[index] = unflatten(shifted_x_flat, arg)
 

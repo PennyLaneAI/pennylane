@@ -67,7 +67,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [None]*len(args)
+            self.accumulation = [None] * len(args)
 
         trained_index = 0
         for index, arg in enumerate(args):
@@ -91,7 +91,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_accumulation(self, index, grad_flat):
-        r""" Update the accumulation at index with gradient
+        r"""Update the accumulation at index with gradient
 
         Args:
             index (Int): location of arg to update
@@ -100,8 +100,9 @@ class AdagradOptimizer(GradientDescentOptimizer):
         if self.accumulation[index] is None:
             self.accumulation[index] = [g * g for g in grad_flat]
         else:
-            self.accumulation[index] = [a + g * g for a,g in
-                zip(self.accumulation[index], grad_flat)]
+            self.accumulation[index] = [
+                a + g * g for a, g in zip(self.accumulation[index], grad_flat)
+            ]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
