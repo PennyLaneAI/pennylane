@@ -71,7 +71,6 @@
 * Moves the check for uniqueness of wires from `wires.py::Wires.__init__` to `wires.py::_process`
   in order to reduce overhead from repeated creation of `Wires` instances.
   Skips calling of Wires on Wires instances in `Operation.__init__`.
-  Changes `elif` to `if` conditions in `wires.py::_process` following pylint suggestion.
   
 
 <h3>Breaking changes</h3>
