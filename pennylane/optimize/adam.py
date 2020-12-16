@@ -79,9 +79,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self._stepsize
-            * math.sqrt(1 - self.beta2 ** self.t)
-            / (1 - self.beta1 ** self.t)
+            self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         )
 
         if self.fm is None:
@@ -123,8 +121,7 @@ class AdamOptimizer(GradientDescentOptimizer):
             self.fm[index] = grad_flat
         else:
             self.fm[index] = [
-                self.beta1 * f + (1 - self.beta1) * g
-                for f, g in zip(self.fm[index], grad_flat)
+                self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm[index], grad_flat)
             ]
 
         # update second moment
@@ -132,8 +129,7 @@ class AdamOptimizer(GradientDescentOptimizer):
             self.sm[index] = [g * g for g in grad_flat]
         else:
             self.sm[index] = [
-                self.beta2 * f + (1 - self.beta2) * g * g
-                for f, g in zip(self.sm[index], grad_flat)
+                self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm[index], grad_flat)
             ]
 
     def reset(self):
