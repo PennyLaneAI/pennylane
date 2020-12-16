@@ -30,15 +30,15 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.labels
 
-    elif isinstance(wires, (Number, str)):
+    if isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
 
-    elif hasattr(wires, "shape") and wires.shape == tuple():
+    if hasattr(wires, "shape") and wires.shape == tuple():
         # Scalar NumPy array
         return (wires.item(),)
 
-    elif isinstance(wires, Iterable):
+    if isinstance(wires, Iterable):
         # wires is an iterable, presumably of Wires, Number or scalar NumPy array instances
         if all(isinstance(w, Wires) for w in wires):
             # if the elements are themselves Wires objects, merge them to a new one
@@ -51,12 +51,11 @@ def _process(wires):
             raise WireError("Wires must be unique; got {}.".format(merged))
         return merged
 
-    else:
-        raise WireError(
-            "Wires must be represented by a number or string; got {} of type {}.".format(
-                wires, type(wires)
-            )
+    raise WireError(
+        "Wires must be represented by a number or string; got {} of type {}.".format(
+            wires, type(wires)
         )
+    )
 
 
 class Wires(Sequence):
