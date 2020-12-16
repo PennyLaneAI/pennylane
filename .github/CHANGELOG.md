@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* A new  `qml.draw` function is available. This allows for QNodes to easily be drawn by simply giving example input.
+  [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
+
+  ```python
+
+  qml.enable_tape()
+
+  @qml.qnode(dev)
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  drawer = qml.draw(circuit)
+  result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
+  print(result)
+  #  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+  #  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+`qml.draw` is only avaliable in tape mode.
+
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
@@ -26,7 +50,7 @@
   the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
-  [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
+  [(#954)](https://github.com/PennyLaneAI/pennylane/pull/954)
 
   They can be used in the same manner as existing error channels:
 
@@ -39,6 +63,20 @@
       qml.RY(0.5, wires=1)
       qml.BitFlip(0.01, wires=0)
       qml.PhaseFlip(0.01, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+* Apply permutations to wires using the `Permute` subroutine.
+  [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
+
+  ```python
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
+
+  @qml.qnode(dev)
+  def apply_perm():
+      # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+      qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
       return qml.expval(qml.PauliZ(0))
   ```
 
