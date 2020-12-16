@@ -26,7 +26,7 @@
   the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
-  [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
+  [(#954)](https://github.com/PennyLaneAI/pennylane/pull/954)
 
   They can be used in the same manner as existing error channels:
 
@@ -39,6 +39,20 @@
       qml.RY(0.5, wires=1)
       qml.BitFlip(0.01, wires=0)
       qml.PhaseFlip(0.01, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+* Apply permutations to wires using the `Permute` subroutine.
+  [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
+
+  ```python
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
+
+  @qml.qnode(dev)
+  def apply_perm():
+      # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+      qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
       return qml.expval(qml.PauliZ(0))
   ```
 
