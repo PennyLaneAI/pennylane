@@ -15,8 +15,8 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
-from .gradient_descent import GradientDescentOptimizer
 from pennylane.numpy import ndarray, tensor
+from .gradient_descent import GradientDescentOptimizer
 
 
 class AdagradOptimizer(GradientDescentOptimizer):
@@ -76,7 +76,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
                 grad_flat = list(_flatten(grad[trained_index]))
 
                 self._update_accumulation(index, grad_flat)
-            
+
                 x_new_flat = [
                     e - (self._stepsize / math.sqrt(a + self.eps)) * g
                     for a, g, e in zip(self.accumulation[index], grad_flat, x_flat)

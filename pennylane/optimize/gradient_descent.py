@@ -97,7 +97,7 @@ class GradientDescentOptimizer:
 
         if len(new_args)==1:
             return new_args[0]
-        
+
         return new_args
 
     @staticmethod

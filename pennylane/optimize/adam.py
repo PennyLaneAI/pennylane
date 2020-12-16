@@ -15,8 +15,8 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
-from .gradient_descent import GradientDescentOptimizer
 from pennylane.numpy import ndarray, tensor
+from .gradient_descent import GradientDescentOptimizer
 
 
 class AdamOptimizer(GradientDescentOptimizer):
@@ -76,7 +76,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         """
         args_new = list(args)
         self.t += 1
-        
+
         # Update step size (instead of correcting for bias)
         new_stepsize = (
             self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
@@ -120,7 +120,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         if self.fm[index] is None:
             self.fm[index] = grad_flat
         else:
-            self.fm[index] = [self.beta1 * f + (1 - self.beta1) * g 
+            self.fm[index] = [self.beta1 * f + (1 - self.beta1) * g
                 for f, g in zip(self.fm[index], grad_flat)]
 
         #update second moment

@@ -104,8 +104,9 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            *args (Union[Sequence[float], float]): variable length sequence containing the initial values of the
-                variables to be optimized over or a single float with the initial value
+            *args (Union[Sequence[float], float]): variable length sequence containing the initial
+                values of the variables to be optimized over or a single float with the initial
+                value
             **kwargs : Variable length dictionary of keywords for the cost function
 
         Returns:
