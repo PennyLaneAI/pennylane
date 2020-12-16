@@ -54,6 +54,12 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
+* Moves the check for uniqueness of wires from `wires.py::Wires.__init__` to `wires.py::_process`
+  in order to reduce overhead from repeated creation of `Wires` instances.
+  Skips calling of Wires on Wires instances in `Operation.__init__`.
+  Changes `elif` to `if` conditions in `wires.py::_process` following pylint suggestion.
+  
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -73,7 +79,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs.
 
 # Release 0.13.0 (current release)
 
