@@ -59,7 +59,7 @@ class GradientDescentOptimizer:
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
                 Must match shape of autograd derivative.
-            **kwargs : Variable length of keywords for the cost function
+            **kwargs : Variable length of keywords for the objective function
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
