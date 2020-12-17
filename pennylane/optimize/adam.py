@@ -110,10 +110,10 @@ class AdamOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_moments(self, index, grad_flat):
-        r"""Update the moments
+        r"""Update the moments.
 
         Args:
-            index (Int): the index of the trainable argument to update out of trainable params
+            index (int): the index of the trainable argument to update
             grad_flat (list): the flattened gradient for that trainable param
         """
         # update first moment
