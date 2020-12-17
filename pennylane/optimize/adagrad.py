@@ -91,10 +91,10 @@ class AdagradOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_accumulation(self, index, grad_flat):
-        r"""Update the accumulation at index with gradient
+        r"""Update the accumulation at index with gradient.
 
         Args:
-            index (Int): location of arg to update
+            index (int): index of parameter to update.
             grad_flat (list): flattened list form of gradient
         """
         if self.accumulation[index] is None:
