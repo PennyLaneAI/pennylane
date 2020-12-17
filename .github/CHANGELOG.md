@@ -23,7 +23,7 @@
 
   ```python
   def cost(x, y, data, scale=1.0):
-    return scale * (x[0]-data)**2 + scale * (y-data)**2
+      return scale * (x[0]-data)**2 + scale * (y-data)**2
 
   x = np.array([1.], requires_grad=True)
   y = np.array([1.0])
