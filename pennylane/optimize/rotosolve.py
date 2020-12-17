@@ -86,7 +86,7 @@ class RotosolveOptimizer:
                 return a single value.
             *args (Union[Sequence[float], float]): sequence containing the initial values of the
                 variables to be optimized over or a single float with the initial value
-            **kwargs : Variable length dictionary of keywords for the cost function
+            **kwargs : Variable length dictionary of keywords for the objective function
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
