@@ -127,6 +127,9 @@ class RotosolveOptimizer:
 
                 args_new[index] = unflatten(x_flat, arg)
 
+                before_args.append(arg)
+                after_args.pop(0) if after_args else None
+
         if len(args_new) == 1:
             return args_new[0]
         return args_new
