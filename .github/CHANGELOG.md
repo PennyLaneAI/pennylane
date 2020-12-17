@@ -2,11 +2,11 @@
 
 <h3>New features since last release</h3>
 
-* A new  `qml.draw` function is available. This allows for QNodes to easily be drawn by simply giving example input.
+* A new  `qml.draw` function is available, allowing QNodes to be easily
+  drawn without execution by providing example input.
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
 
   ```python
-
   qml.enable_tape()
 
   @qml.qnode(dev)
@@ -16,15 +16,21 @@
       qml.Rot(*w, wires=[1])
       qml.CRX(-a, wires=[0, 1])
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-  drawer = qml.draw(circuit)
-  result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
-  print(result)
-  #  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-  #  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
   ```
 
-`qml.draw` is only avaliable in tape mode.
+  The QNode circuit structure may depend on the input arguments;
+  this is taken into account by passing example QNode arguments
+  to the `qml.draw()` drawing function:
+
+  ```pycon
+  >>> drawer = qml.draw(circuit)
+  >>> result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
+  >>> print(result)
+  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+  Currently, `qml.draw` is only avaliable in tape mode.
 
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
