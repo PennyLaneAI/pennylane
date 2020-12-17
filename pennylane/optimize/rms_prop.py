@@ -55,12 +55,12 @@ class RMSPropOptimizer(AdagradOptimizer):
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
+            grad (tuple(array)): The gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            args (array): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
 
@@ -84,6 +84,10 @@ class RMSPropOptimizer(AdagradOptimizer):
                 args_new[index] = unflatten(x_new_flat, arg)
 
                 if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors. Long term, we should fix this bug in unflatten.
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
 
@@ -93,7 +97,7 @@ class RMSPropOptimizer(AdagradOptimizer):
         r"""Update the accumulation with the flattened gradient
 
         Args:
-            index (Int): location of arg to update
+            index (int): index of argument to update
             grad_flat (list): flattened form of the gradient
         """
         if self.accumulation[index] is None:

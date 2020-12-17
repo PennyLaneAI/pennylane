@@ -62,7 +62,7 @@ class GradientDescentOptimizer:
             **kwargs : Variable length of keywords for the objective function
 
         Returns:
-            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+            tuple(list, float): the new variable values :math:`x^{(t+1)}` and the objective function output
                 prior to the step
         """
 
@@ -72,6 +72,7 @@ class GradientDescentOptimizer:
         if forward is None:
             forward = objective_fn(*args, **kwargs)
 
+        # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0], forward
         return new_args, forward
@@ -89,12 +90,13 @@ class GradientDescentOptimizer:
             **kwargs : Variable length of keywords for the objective function
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}`
+            list: the new variable values :math:`x^{(t+1)}`
         """
 
         g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
         new_args = self.apply_grad(g, args)
 
+        # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0]
 
@@ -107,15 +109,15 @@ class GradientDescentOptimizer:
 
         Args:
             objective_fn (function): the objective function for optimization
-            args (tuple(array)): Tuple of NumPy arrays containing the current parameters for the
+            args (tuple): Tuple of NumPy arrays containing the current parameters for the
                 objection function
             kwargs (dict): Keywords for the objective function
             grad_fn (function): Optional gradient function of the objective function with respect to
                 the variables ``x``. If ``None``, the gradient function is computed automatically.
-                Must match shape of autograd derivative.
+                Must return same shaped tuple(array) as autograd derivative
 
         Returns:
-            tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+            tuple(array): The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
                 objective function output. If ``grad_fn`` is provided, the objective function
                 will not be evaluted and instead ``None`` will be returned.
         """
@@ -130,12 +132,12 @@ class GradientDescentOptimizer:
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
+            grad (tuple(array)): The gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (tuple(array)): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
 

@@ -67,12 +67,12 @@ class AdamOptimizer(GradientDescentOptimizer):
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
+            grad (tuple(array)): The gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
         self.t += 1
@@ -104,6 +104,10 @@ class AdamOptimizer(GradientDescentOptimizer):
                 args_new[index] = unflatten(x_new_flat, arg)
 
                 if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors. Long term, we should fix this bug in unflatten.
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
 
@@ -113,7 +117,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         r"""Update the moments.
 
         Args:
-            index (int): the index of the trainable argument to update
+            index (int): the index of the argument to update
             grad_flat (list): the flattened gradient for that trainable param
         """
         # update first moment
