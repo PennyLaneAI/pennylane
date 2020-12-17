@@ -107,7 +107,7 @@ class GradientDescentOptimizer:
 
         Args:
             objective_fn (function): the objective function for optimization
-            args (tuple(array)): Tuple of NumPy arrays containing the current values for the
+            args (tuple(array)): Tuple of NumPy arrays containing the current parameters for the
                 objection function
             kwargs (dict): Keywords for the cost function
             grad_fn (function): Optional gradient function of the objective function with respect to
