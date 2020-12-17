@@ -2,46 +2,46 @@
 
 <h3>New features since last release</h3>
 
-
 * Optimizers allow more flexible cost functions. The cost function passed to most optimizers 
-may accept any combination of trainable arguments, non-trainable arguments, and keywords. 
-The `requires_grad=False` property must mark any non-trainable constant argument. 
-The `RotoselectOptimizer` allows only keywords.
-See pull request [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
+  may accept any combination of trainable arguments, non-trainable arguments, and keywords. 
+  The `requires_grad=False` property must mark any non-trainable constant argument. 
+  The `RotoselectOptimizer` allows only keywords.
+  [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
 
-The full changes apply to:
-* `AdagradOptimizer`
-* `AdamOptimizer`
-* `GradientDescentOptimizer`
-* `MomentumOptimizer`
-* `NesterovMomentumOptimizer`
-* `RMSPropOptimizer`
-* `RotosolveOptimizer`
+  The full changes apply to:
+  
+  * `AdagradOptimizer`
+  * `AdamOptimizer`
+  * `GradientDescentOptimizer`
+  * `MomentumOptimizer`
+  * `NesterovMomentumOptimizer`
+  * `RMSPropOptimizer`
+  * `RotosolveOptimizer`
 
-Example use:
+  Example use:
 
-```python
-def cost(x, y, data, scale=1.0):
-  return scale * (x[0]-data)**2 + scale * (y-data)**2
+  ```python
+  def cost(x, y, data, scale=1.0):
+    return scale * (x[0]-data)**2 + scale * (y-data)**2
 
-x = np.array([1.], requires_grad=True)
-y = np.array([1.0])
-data = np.array([2.], requires_grad=False)
+  x = np.array([1.], requires_grad=True)
+  y = np.array([1.0])
+  data = np.array([2.], requires_grad=False)
 
-opt = qml.GradientDescentOptimizer()
-x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
+  opt = qml.GradientDescentOptimizer()
+  x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
 
-(x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
+  (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
 
-params = (x, y, data)
-params = opt.step(cost, *params)
-```
+  params = (x, y, data)
+  params = opt.step(cost, *params)
+  ```
 
-* A new  `qml.draw` function is available. This allows for QNodes to easily be drawn by simply giving example input.
+* A new  `qml.draw` function is available, allowing QNodes to be easily
+  drawn without execution by providing example input.
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
 
   ```python
-
   qml.enable_tape()
 
   @qml.qnode(dev)
@@ -51,15 +51,21 @@ params = opt.step(cost, *params)
       qml.Rot(*w, wires=[1])
       qml.CRX(-a, wires=[0, 1])
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-  drawer = qml.draw(circuit)
-  result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
-  print(result)
-  #  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-  #  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
   ```
 
-`qml.draw` is only avaliable in tape mode.
+  The QNode circuit structure may depend on the input arguments;
+  this is taken into account by passing example QNode arguments
+  to the `qml.draw()` drawing function:
+
+  ```pycon
+  >>> drawer = qml.draw(circuit)
+  >>> result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
+  >>> print(result)
+  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+  Currently, `qml.draw` is only avaliable in tape mode.
 
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
