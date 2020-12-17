@@ -81,10 +81,10 @@ class MomentumOptimizer(GradientDescentOptimizer):
         return args_new
 
     def _update_momentum(self, index, grad_flat):
-        r"""Update the momentum
+        r"""Update the momentum.
 
         Args:
-            index (Int): location of arg to update
+            index (int): index of argument to update
             grad_flat (list): flattened list form of gradient
         """
         if self.accumulation[index] is None:
