@@ -44,9 +44,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         Args:
             objective_fn (function): the objective function for optimization
-            args (tuple(array)): Tuple of NumPy arrays containing the current values for the
+            args (tuple(array)): tuple of NumPy arrays containing the current values for the
                 objection function
-            kwargs (dict): Keywords for the cost function
+            kwargs (dict): keyword arguments for the objective function
             grad_fn (function): Optional gradient function of the objective function with respect to
                 the variables ``x``. If ``None``, the gradient function is computed automatically.
                 Must match shape of autograd derivative.
