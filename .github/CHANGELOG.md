@@ -30,10 +30,13 @@
   data = np.array([2.], requires_grad=False)
 
   opt = qml.GradientDescentOptimizer()
+  
+  # the optimizer step and step_and_cost methods can
+  # now update multiple parameters at once
   x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
-
   (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
 
+  # list and tuple unpacking is also supported
   params = (x, y, data)
   params = opt.step(cost, *params)
   ```
