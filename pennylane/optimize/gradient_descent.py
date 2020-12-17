@@ -151,6 +151,10 @@ class GradientDescentOptimizer:
                 args_new[index] = unflatten(x_new_flat, args[index])
 
                 if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors. Long term, we should fix this bug in unflatten.
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
 
