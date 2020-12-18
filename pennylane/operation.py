@@ -961,6 +961,7 @@ class Channel(Operation, abc.ABC):
         """
         return self._kraus_matrices(*self.parameters)
 
+
 # =============================================================================
 # Base Observable class
 # =============================================================================
