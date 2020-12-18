@@ -961,10 +961,6 @@ class Channel(Operation, abc.ABC):
         """
         return self._kraus_matrices(*self.parameters)
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-
-
 # =============================================================================
 # Base Observable class
 # =============================================================================

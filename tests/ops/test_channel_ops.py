@@ -34,7 +34,7 @@ ch_list = [
     channel.DepolarizingChannel,
 ]
 
-
+pytestmark = pytest.mark.usefixtures("tape_mode")
 class TestChannels:
     """Tests for the quantum channels"""
 
@@ -139,7 +139,7 @@ class TestBitFlip:
             qml.BitFlip(p, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        gradient = np.squeeze(circuit.jacobian(prob))
+        gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1)-circuit(0)
 
 
@@ -171,7 +171,7 @@ class TestPhaseFlip:
             qml.PhaseFlip(p, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        gradient = np.squeeze(circuit.jacobian(prob))
+        gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
 
 
@@ -205,7 +205,7 @@ class TestDepolarizingChannel:
             qml.DepolarizingChannel(p, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        gradient = np.squeeze(circuit.jacobian(prob))
+        gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
 
 
