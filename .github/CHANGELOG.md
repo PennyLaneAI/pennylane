@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
-  may accept any combination of trainable arguments, non-trainable arguments, and keywords. 
+  may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
   [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
 
   The full changes apply to:
@@ -17,7 +17,7 @@
   * `RotosolveOptimizer` 
   
   The `requires_grad=False` property must mark any non-trainable constant argument. 
-  The `RotoselectOptimizer` allows only keywords.
+  The `RotoselectOptimizer` allows passing only keyword arguments.
 
   Example use:
 

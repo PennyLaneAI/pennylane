@@ -57,7 +57,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (tuple(array)): The gradient of the objective
+            grad (tuple[array]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
             args (tuple): the current value of the variables :math:`x^{(t)}`
 

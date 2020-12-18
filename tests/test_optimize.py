@@ -684,7 +684,7 @@ class TestOptimizer:
             RotosolveOptimizer(),
         ],
     )
-    class Test_over_opts:
+    class TestOverOpts:
         def test_kwargs(self, opt, tol):
             """Test that the keywords get passed and alter the function"""
 
