@@ -98,6 +98,10 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
+* Adds the following generators to the `qml.operation` module: `MultiRZ`, `PauliRot`. These 
+  generators are required to construct the metric tensor for some optimizer. 
+  [(#895)](https://github.com/PennyLaneAI/pennylane/pull/895)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -117,7 +121,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
