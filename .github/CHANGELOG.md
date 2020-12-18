@@ -98,9 +98,9 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
-* Adds the following generators to the `qml.operation` module: `MultiRZ`, `PauliRot`. These 
-  generators are required to construct the metric tensor for some optimizer. 
-  [(#895)](https://github.com/PennyLaneAI/pennylane/pull/895)
+* Adds the `PauliRot` generator to the `qml.operation` module. This 
+  generator is required to construct the metric tensor. 
+  [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
 <h3>Breaking changes</h3>
 
