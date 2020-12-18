@@ -1050,6 +1050,7 @@ class TestPauliRot:
         "pauli_word",
         [
             ("XIZ"),
+            ("IIII"),
             ("XIYIZI"),
             ("IXI"),
             ("IIIIIZI"),
@@ -1064,7 +1065,7 @@ class TestPauliRot:
 
         if pauli_word[0] == 'I':
             # this is the identity
-            expected_gen = qml.PauliZ(wires=0) @ qml.PauliZ(wires=0)
+            expected_gen = qml.Identity(wires=0) 
         else:
             expected_gen = getattr(
                 qml, 'Pauli{}'.format(pauli_word[0]))(wires=0)
@@ -1072,8 +1073,8 @@ class TestPauliRot:
         for i, pauli in enumerate(pauli_word[1:]):
             i += 1
             if pauli == 'I':
-                expected_gen = expected_gen @  qml.PauliZ(
-                    wires=i) @  qml.PauliZ(wires=i)
+                expected_gen = expected_gen @  qml.Identity(
+                    wires=i) 
             else:
                 expected_gen = expected_gen @ getattr(
                     qml, 'Pauli{}'.format(pauli))(wires=i)
@@ -1194,7 +1195,7 @@ class TestMultiRZ:
         )
 
     @pytest.mark.parametrize("qubits", range(3, 6))
-    def test_multirz_generator(self, qubits):
+    def test_multirz_generator(self, qubits, mocker):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator
@@ -1207,6 +1208,13 @@ class TestMultiRZ:
 
         assert np.allclose(gen[0], expected_gen_mat)
         assert gen[1] == -0.5
+
+        spy = mocker.spy(qml.utils, "pauli_eigs")
+
+        op.generator
+        spy.assert_not_called()
+
+
 
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
