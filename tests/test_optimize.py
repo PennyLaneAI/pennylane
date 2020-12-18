@@ -672,6 +672,7 @@ class TestOptimizer:
         opt.update_stepsize(eta2)
         assert opt._stepsize == eta2
 
+
 @pytest.mark.parametrize(
     "opt",
     [
@@ -685,8 +686,8 @@ class TestOptimizer:
     ],
 )
 class TestOverOpts:
-    """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers
-    """
+    """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers"""
+
     def test_kwargs(self, opt, tol):
         """Test that the keywords get passed and alter the function"""
 
@@ -760,13 +761,13 @@ class TestOverOpts:
         """ Check all multiargs, non-trainable data, and keywords at the same time."""
 
         def func(x, data, y, c=1.0):
-            return c*(x[0]+y[0]-data[0])**2
+            return c * (x[0] + y[0] - data[0]) ** 2
 
         x = np.array([1.0], requires_grad=True)
         y = np.array([1.0])
         data = np.array([1.0], requires_grad=False)
 
-        args_new, cost  = opt.step_and_cost(func, x, data, y, c=0.5)
+        args_new, cost = opt.step_and_cost(func, x, data, y, c=0.5)
         args_new2 = opt.step(func, *args_new, c=0.5)
 
         assert cost == pytest.approx(func(x, data, y, c=0.5), abs=tol)
