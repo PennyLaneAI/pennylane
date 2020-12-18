@@ -14,6 +14,7 @@
 """Nesterov momentum optimizer"""
 from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 from .momentum import MomentumOptimizer
 
 
@@ -67,6 +68,15 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                     shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
 
                     shifted_args[index] = unflatten(shifted_x_flat, arg)
+
+                    if isinstance(shifted_args[index], ndarray):
+                        # Due to a bug in unflatten, input PennyLane tensors
+                        # are being unwrapped. Here, we cast them back to PennyLane
+                        # tensors.
+                        # TODO: remove when the following is fixed:
+                        # https://github.com/PennyLaneAI/pennylane/issues/966
+                        shifted_args[index] = shifted_args[index].view(tensor)
+                        shifted_args[index].requires_grad = True
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*shifted_args, **kwargs)

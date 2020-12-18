@@ -68,7 +68,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
                 grad_flat = _flatten(grad[trained_index])
                 trained_index += 1
 
-                self._update_momentum(index, grad_flat)
+                self._update_accumulation(index, grad_flat)
 
                 x_new_flat = [e - a for a, e in zip(self.accumulation[index], x_flat)]
 
@@ -85,8 +85,8 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
         return args_new
 
-    def _update_momentum(self, index, grad_flat):
-        r"""Update the momentum.
+    def _update_accumulation(self, index, grad_flat):
+        r"""Update the accumulation.
 
         Args:
             index (int): index of argument to update.
