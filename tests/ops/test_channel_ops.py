@@ -127,7 +127,7 @@ class TestBitFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_bitflip(self, angle):
+    def test_grad_bitflip(self, angle, tol):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -142,6 +142,7 @@ class TestBitFlip:
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1)-circuit(0)
+        assert np.allclose(gradient, (-2*np.cos(angle)))
 
 
 class TestPhaseFlip:
@@ -159,7 +160,7 @@ class TestPhaseFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_phaseflip(self, angle):
+    def test_grad_phaseflip(self, angle, tol):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -174,6 +175,7 @@ class TestPhaseFlip:
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, 0.0)
 
 
 class TestDepolarizingChannel:
@@ -193,7 +195,7 @@ class TestDepolarizingChannel:
         assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_depolarizing(self, angle):
+    def test_grad_depolarizing(self, angle, tol):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -208,6 +210,7 @@ class TestDepolarizingChannel:
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, -(4/3) * np.cos(angle))
 
 
 class TestQubitChannel:
