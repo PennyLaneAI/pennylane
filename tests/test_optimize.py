@@ -50,33 +50,41 @@ multid_list = [[0.1, 0.2], [-0.1, -0.4]]
 
 
 # functions and their gradients
-fnames = ['test_function_1', 'test_function_2', 'test_function_3']
+fnames = ["test_function_1", "test_function_2", "test_function_3"]
 univariate_funcs = [np.sin,
-                    lambda x: np.exp(x / 10.),
+                    lambda x: np.exp(x / 10.0),
                     lambda x: x ** 2]
-grad_uni_fns = [lambda x: tuple(np.cos(x)),
-                lambda x: tuple(np.exp(x / 10.) / 10.),
-                lambda x: tuple(2 * x)]
-multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
-                      lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                      lambda x: np.sum([x_ ** 2 for x_ in x])]
-grad_multi_funcs = [lambda x: tuple(np.array([np.cos(x[0]), -np.sin(x[1])])),
-                    lambda x: tuple(np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)])),
-                    lambda x: tuple(np.array([2 * x_ for x_ in x]))]
-mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
-                   lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-                   lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-grad_mvar_mdim_funcs = [lambda x: tuple(np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
-                                            [-np.sin(x[1, 0]), 1.]])),
-                        lambda x: tuple(np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
-                                             np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
-                                            [0., 0.]])),
-                        lambda x: tuple(np.array([[2 * x_[0], 0.] for x_ in x]))]
+grad_uni_fns = [lambda x: (np.cos(x),),
+                lambda x: (np.exp(x / 10.0) / 10.0,),
+                lambda x: (2 * x,)]
+
+multivariate_funcs = [
+    lambda x: np.sin(x[0]) + np.cos(x[1]),
+    lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+    lambda x: np.sum([x_ ** 2 for x_ in x]),
+]
+grad_multi_funcs = [
+    lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+    lambda x: (np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                         np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),),
+    lambda x: (np.array([2 * x_ for x_ in x]),),
+]
+
+mvar_mdim_funcs = [
+    lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
+    lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
+    lambda x: np.sum([x_[0] ** 2 for x_ in x]),
+]
+grad_mvar_mdim_funcs = [
+    lambda x: (np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])], [-np.sin(x[1, 0]), 1.0]]),),
+    lambda x: (np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+                          np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2),],
+                          [0.0, 0.0],]),),
+    lambda x: (np.array([[2 * x_[0], 0.0] for x_ in x]),),
+]
 
 
-
-@qml.qnode(qml.device('default.qubit', wires=1))
+@qml.qnode(qml.device("default.qubit", wires=1))
 def quant_fun(variables):
     qml.RX(variables[0][1], wires=[0])
     qml.RY(variables[1][2], wires=[0])
@@ -660,6 +668,45 @@ class TestOptimizer:
         assert x_start == pytest.approx(optimal_x_start, abs=tol)
         assert generators == optimal_generators
 
+    @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
+    def test_keywords_rotoselect(self, bunch, x_start, tol):
+        """test rotoselect accepts keywords"""
+
+        generators = [qml.RY, qml.RX]
+        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        bunch.rotoselect_opt.possible_generators = possible_generators
+
+        dev = qml.device("default.qubit", analytic=True, wires=2)
+
+        def ansatz(params, generators):
+            generators[0](params[0], wires=0)
+            generators[1](params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliX(0))
+
+        def cost_fn(params, generators, shift=0.0):
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
+            return 0.5 * (Y_2 - shift) ** 2 + 0.8 * (Z_1 - shift) ** 2 - 0.2 * (X_1 - shift) ** 2
+
+        params_new, _, res_new = bunch.rotoselect_opt.step_and_cost(
+            cost_fn, x_start, generators, shift=0.0
+        )
+        params_new2, _, res_new2 = bunch.rotoselect_opt.step_and_cost(
+            cost_fn, x_start, generators, shift=1.0
+        )
+
+        assert params_new != pytest.approx(params_new2, abs=tol)
+        assert res_new2 == pytest.approx(cost_fn(x_start, generators, shift=1.0), abs=tol)
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
@@ -674,21 +721,21 @@ class TestOptimizer:
 
 
 @pytest.mark.parametrize(
-    "opt",
+    "opt, opt_name",
     [
-        GradientDescentOptimizer(stepsize),
-        MomentumOptimizer(stepsize, momentum=gamma),
-        NesterovMomentumOptimizer(stepsize, momentum=gamma),
-        AdagradOptimizer(stepsize),
-        RMSPropOptimizer(stepsize, decay=gamma),
-        AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
-        RotosolveOptimizer(),
+        (GradientDescentOptimizer(stepsize), "gd"),
+        (MomentumOptimizer(stepsize, momentum=gamma), "moment"),
+        (NesterovMomentumOptimizer(stepsize, momentum=gamma), "nest"),
+        (AdagradOptimizer(stepsize), "ada"),
+        (RMSPropOptimizer(stepsize, decay=gamma), "rms"),
+        (AdamOptimizer(stepsize, beta1=gamma, beta2=delta), "adam"),
+        (RotosolveOptimizer(), "roto"),
     ],
 )
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers"""
 
-    def test_kwargs(self, opt, tol):
+    def test_kwargs(self, opt, opt_name, tol):
         """Test that the keywords get passed and alter the function"""
 
         def func(x, c=1.0):
@@ -707,8 +754,10 @@ class TestOverOpts:
 
         assert x_new_one != pytest.approx(x_new_two, abs=tol)
         assert x_new_one_wc != pytest.approx(x_new_two_wc, abs=tol)
-        assert cost_one == pytest.approx(func(x, c=1.0), abs=tol)
-        assert cost_two == pytest.approx(func(x, c=2.0), abs=tol)
+
+        if opt_name != "nest":
+            assert cost_one == pytest.approx(func(x, c=1.0), abs=tol)
+            assert cost_two == pytest.approx(func(x, c=2.0), abs=tol)
 
     @pytest.mark.parametrize(
         "func, args",
@@ -717,7 +766,7 @@ class TestOverOpts:
             (lambda x, y: x[0] * y[0], (np.array([1.0]), np.array([1.0]))),
         ],
     )
-    def test_multi_args(self, opt, func, args, tol):
+    def test_multi_args(self, opt, opt_name, func, args, tol):
         """Test multiple arguments to function"""
         x_new, y_new = opt.step(func, *args)
         x_new2, y_new2 = opt.step(func, x_new, y_new)
@@ -734,9 +783,10 @@ class TestOverOpts:
         assert x_new_wc != pytest.approx(args[0], abs=tol)
         assert y_new_wc != pytest.approx(args[1], abs=tol)
 
-        assert cost == pytest.approx(func(*args), abs=tol)
+        if opt_name != "nest":
+            assert cost == pytest.approx(func(*args), abs=tol)
 
-    def test_nontrainable_data(self, opt, tol):
+    def test_nontrainable_data(self, opt, opt_name, tol):
         """Check non-trainable argument does not get updated"""
 
         def func(x, data):
@@ -755,9 +805,10 @@ class TestOverOpts:
         assert args_new[0] != pytest.approx(x, abs=tol)
         assert args_new[1] == pytest.approx(data, abs=tol)
 
-        assert cost == pytest.approx(func(args_new[0], data), abs=tol)
+        if opt_name != "nest":
+            assert cost == pytest.approx(func(args_new[0], data), abs=tol)
 
-    def test_multiargs_data_kwargs(self, opt, tol):
+    def test_multiargs_data_kwargs(self, opt, opt_name, tol):
         """ Check all multiargs, non-trainable data, and keywords at the same time."""
 
         def func(x, data, y, c=1.0):
@@ -770,7 +821,46 @@ class TestOverOpts:
         args_new, cost = opt.step_and_cost(func, x, data, y, c=0.5)
         args_new2 = opt.step(func, *args_new, c=0.5)
 
-        assert cost == pytest.approx(func(x, data, y, c=0.5), abs=tol)
+        if getattr(opt, "reset", None):
+            opt.reset()
+
         assert args_new[0] != pytest.approx(x, abs=tol)
         assert args_new[1] == pytest.approx(data, abs=tol)
         assert args_new[2] != pytest.approx(y, abs=tol)
+
+        if opt_name != "nest":
+            assert cost == pytest.approx(func(x, data, y, c=0.5), abs=tol)
+
+    def test_steps_the_same(self, opt, opt_name, tol):
+        """Tests optimizing single parameter same as with several at a time"""
+        x = np.array([1.0])
+        y = np.array([2.0])
+        z = np.array([3.0])
+
+        def func(x, y, z):
+            return x[0] * y[0] * z[0]
+
+        fx = lambda xp: func(xp, y, z)
+        fy = lambda yp: func(x, yp, z)
+        fz = lambda zp: func(x, y, zp)
+
+        if getattr(opt, "reset", None):
+            opt.reset()
+
+        x_full, y_full, z_full = opt.step(func, x, y, z)
+        if getattr(opt, "reset", None):
+            opt.reset()
+
+        x_part = opt.step(fx, x)
+        if getattr(opt, "reset", None):
+            opt.reset()
+        y_part = opt.step(fy, y)
+        if getattr(opt, "reset", None):
+            opt.reset()
+        z_part = opt.step(fz, z)
+        if getattr(opt, "reset", None):
+            opt.reset()
+
+        assert x_full == pytest.approx(x_part, abs=tol)
+        assert y_full == pytest.approx(y_part, abs=tol)
+        assert z_full == pytest.approx(z_part, abs=tol)
