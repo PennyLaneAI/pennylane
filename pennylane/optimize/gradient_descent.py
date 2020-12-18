@@ -49,21 +49,22 @@ class GradientDescentOptimizer:
         self._stepsize = stepsize
 
     def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):
-        """Update x with one step of the optimizer and return the corresponding objective
-        function value prior to the step.
+        """Update trainable arguments with one step of the optimizer and return the corresponding
+        objective function value prior to the step.
 
         Args:
             objective_fn (function): the objective function for optimization
-            *args : Variable length argument list for objective function
-            grad_fn (function): Optional gradient function of the
-                objective function with respect to the variables ``x``.
+            *args : variable length argument list for objective function
+            grad_fn (function): optional gradient function of the
+                objective function with respect to the variables ``*args``.
                 If ``None``, the gradient function is computed automatically.
-                Must match shape of autograd derivative.
-            **kwargs : Variable length of keywords for the objective function
+                Must return the same shape of tuple [array] as the autograd derivative.
+            **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            tuple[list, float]: the new variable values :math:`x^{(t+1)}` and the objective function output
-            prior to the step
+            tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
+                function output prior to the step.
+                If single arg is provided, list [array] is replaced by array.
         """
 
         g, forward = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
@@ -78,19 +79,20 @@ class GradientDescentOptimizer:
         return new_args, forward
 
     def step(self, objective_fn, *args, grad_fn=None, **kwargs):
-        """Update x with one step of the optimizer.
+        """Update trainable args with one step of the optimizer.
 
         Args:
             objective_fn (function): the objective function for optimization
             *args : Variable length argument list for objective function
-            grad_fn (function): Optional gradient function of the
+            grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
-                Must match shape of autograd derivative.
-            **kwargs : Variable length of keywords for the objective function
+                Must return the same shape of tuple [array] as the autograd derivative.
+            **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            list: the new variable values :math:`x^{(t+1)}`
+            list [array]: the new variable values :math:`x^{(t+1)}`.
+                If single arg is provided, list [array] is replaced by array.
         """
 
         g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
@@ -105,16 +107,16 @@ class GradientDescentOptimizer:
     @staticmethod
     def compute_grad(objective_fn, args, kwargs, grad_fn=None):
         r"""Compute gradient of the objective_fn at the point x and return it along with the
-            objective function forward pass (if available).
+        objective function forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
             args (tuple): tuple of NumPy arrays containing the current parameters for the
                 objection function
             kwargs (dict): keyword arguments for the objective function
-            grad_fn (function): Optional gradient function of the objective function with respect to
-                the variables ``x``. If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple(array) as the autograd derivative.
+            grad_fn (function): optional gradient function of the objective function with respect to
+                the variables ``args``. If ``None``, the gradient function is computed automatically.
+                Must return the same shape of tuple [array] as the autograd derivative.
 
         Returns:
             tuple (array): NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
@@ -132,12 +134,12 @@ class GradientDescentOptimizer:
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (tuple(array)): The gradient of the objective
+            grad (tuple [array]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
             args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            list: the new values :math:`x^{(t+1)}`
+            list [array]: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
 
@@ -155,7 +157,8 @@ class GradientDescentOptimizer:
                 if isinstance(arg, ndarray):
                     # Due to a bug in unflatten, input PennyLane tensors
                     # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors. Long term, we should fix this bug in unflatten.
+                    # tensors.
+                    # TODO: remove when the following is fixed:
                     # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True

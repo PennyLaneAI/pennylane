@@ -51,16 +51,16 @@ class RMSPropOptimizer(AdagradOptimizer):
         self.eps = eps
 
     def apply_grad(self, grad, args):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+        r"""Update the variables args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (tuple(array)): The gradient of the objective
-                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            args (tuple): the current value of the variables :math:`x^{(t)}`
+            grad (tuple(array)): the gradient of the objective function at
+                point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`.
+            args (tuple): the current value of the variables :math:`x^{(t)}`.
 
         Returns:
-            list: the new values :math:`x^{(t+1)}`
+            list [array]: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
 
@@ -86,7 +86,8 @@ class RMSPropOptimizer(AdagradOptimizer):
                 if isinstance(arg, ndarray):
                     # Due to a bug in unflatten, input PennyLane tensors
                     # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors. Long term, we should fix this bug in unflatten.
+                    # tensors.
+                    # TODO: remove when the following is fixed:
                     # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
@@ -94,11 +95,11 @@ class RMSPropOptimizer(AdagradOptimizer):
         return args_new
 
     def _update_accumulation(self, index, grad_flat):
-        r"""Update the accumulation with the flattened gradient
+        r"""Update the accumulation with the flattened gradient.
 
         Args:
-            index (int): index of argument to update
-            grad_flat (list): flattened form of the gradient
+            index (int): index of argument to update.
+            grad_flat (list): flattened form of the gradient.
         """
         if self.accumulation[index] is None:
             self.accumulation[index] = [(1 - self.decay) * g * g for g in grad_flat]

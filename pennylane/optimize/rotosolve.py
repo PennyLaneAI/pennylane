@@ -77,20 +77,20 @@ class RotosolveOptimizer:
     # pylint: disable=too-few-public-methods
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
-        r"""Update x with one step of the optimizer and return the corresponding objective
+        r"""Update args with one step of the optimizer and return the corresponding objective
         function value prior to the step.
 
         Args:
             objective_fn (function): The objective function for optimization. It should take a
-                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
-                return a single value.
+                sequence of the values ``*args``  as inputs, and return a single value.
             *args (Union[Sequence[float], float]): sequence containing the initial values of the
                 variables to be optimized over or a single float with the initial value
             **kwargs : Variable length dictionary of keywords for the objective function
 
         Returns:
-            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
-                prior to the step
+            tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
+                function output prior to the step.
+                If single arg is provided, list [array] is replaced by array.
         """
         x_new = self.step(objective_fn, *args, **kwargs)
 
@@ -100,36 +100,47 @@ class RotosolveOptimizer:
         r"""Update args with one step of the optimizer.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take a
+            objective_fn (function): the objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
             *args (Union[Sequence[float], float]): variable length sequence containing the initial
                 values of the variables to be optimized over or a single float with the initial
-                value
-            **kwargs : Variable length dictionary of keywords for the objective function
+                value.
+            **kwargs : variable length keyword arguments for the objective function.
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}`
+            list [array]: the new variable values :math:`x^{(t+1)}`.
+                If single arg is provided, list [array] is replaced by array.
         """
+        # will single out one variable to change at a time
+        # these hold the arguments not getting updated
         before_args = []
-        after_args = list(args[1:])
+        after_args = list(args)
+
+        # mutable version of args to get updated
         args_new = list(args)
+
         for index, arg in enumerate(args):
+            # removing current arg from after_args
+            del after_args[0]
+
             if getattr(arg, "requires_grad", True):
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
 
+                # version of objective function that depends on a flattened version of
+                # just the one argument.  All others held constant.
                 objective_fn_flat = lambda x_flat, arg_kw=arg: objective_fn(
                     *before_args, unflatten(x_flat, arg_kw), *after_args, **kwargs
                 )
 
+                # updating each parameter in current arg
                 for d, _ in enumerate(x_flat):
                     x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
 
                 args_new[index] = unflatten(x_flat, arg)
 
-                before_args.append(arg)
-                if after_args:
-                    del after_args[0]
+            # updating before_args for next loop
+            before_args.append(arg)
 
         if len(args_new) == 1:
             return args_new[0]
@@ -143,15 +154,15 @@ class RotosolveOptimizer:
         `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take a
+            objective_fn (function): the objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
             x (Union[Sequence[float], float]): sequence containing the initial values of the
-                variables to be optimized over or a single float with the initial value
-            d (int): the position in the input sequence ``x`` containing the value to be optimized
+                variables to be optimized over or a single float with the initial value.
+            d (int): the position in the input sequence ``x`` containing the value to be optimized.
 
         Returns:
-            array: the input sequence ``x`` with the value at position ``d`` optimized
+            array: the input sequence ``x`` with the value at position ``d`` optimized.
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):

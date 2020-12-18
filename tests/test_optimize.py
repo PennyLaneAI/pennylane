@@ -54,25 +54,25 @@ fnames = ['test_function_1', 'test_function_2', 'test_function_3']
 univariate_funcs = [np.sin,
                     lambda x: np.exp(x / 10.),
                     lambda x: x ** 2]
-grad_uni_fns = [lambda x: (np.cos(x), ),
-                lambda x: (np.exp(x / 10.) / 10., ),
-                lambda x: (2 * x, )]
+grad_uni_fns = [lambda x: tuple(np.cos(x)),
+                lambda x: tuple(np.exp(x / 10.) / 10.),
+                lambda x: tuple(2 * x)]
 multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
                       lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
                       lambda x: np.sum([x_ ** 2 for x_ in x])]
-grad_multi_funcs = [lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]), ),
-                    lambda x: (np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]), ),
-                    lambda x: (np.array([2 * x_ for x_ in x]), )]
+grad_multi_funcs = [lambda x: tuple(np.array([np.cos(x[0]), -np.sin(x[1])])),
+                    lambda x: tuple(np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)])),
+                    lambda x: tuple(np.array([2 * x_ for x_ in x]))]
 mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
                    lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
                    lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-grad_mvar_mdim_funcs = [lambda x: (np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
-                                            [-np.sin(x[1, 0]), 1.]]), ),
-                        lambda x: (np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+grad_mvar_mdim_funcs = [lambda x: tuple(np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
+                                            [-np.sin(x[1, 0]), 1.]])),
+                        lambda x: tuple(np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
                                              np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
-                                            [0., 0.]]), ),
-                        lambda x: (np.array([[2 * x_[0], 0.] for x_ in x]), )]
+                                            [0., 0.]])),
+                        lambda x: tuple(np.array([[2 * x_[0], 0.] for x_ in x]))]
 
 
 
@@ -672,64 +672,104 @@ class TestOptimizer:
         opt.update_stepsize(eta2)
         assert opt._stepsize == eta2
 
+@pytest.mark.parametrize(
+    "opt",
+    [
+        GradientDescentOptimizer(stepsize),
+        MomentumOptimizer(stepsize, momentum=gamma),
+        NesterovMomentumOptimizer(stepsize, momentum=gamma),
+        AdagradOptimizer(stepsize),
+        RMSPropOptimizer(stepsize, decay=gamma),
+        AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
+        RotosolveOptimizer(),
+    ],
+)
+class TestOverOpts:
+    """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers
+    """
+    def test_kwargs(self, opt, tol):
+        """Test that the keywords get passed and alter the function"""
+
+        def func(x, c=1.0):
+            return (x - c) ** 2
+
+        x = 1.0
+
+        x_new_one = opt.step(func, x, c=1.0)
+        x_new_two = opt.step(func, x, c=2.0)
+
+        x_new_one_wc, cost_one = opt.step_and_cost(func, x, c=1.0)
+        x_new_two_wc, cost_two = opt.step_and_cost(func, x, c=2.0)
+
+        if getattr(opt, "reset", None):
+            opt.reset()
+
+        assert x_new_one != pytest.approx(x_new_two, abs=tol)
+        assert x_new_one_wc != pytest.approx(x_new_two_wc, abs=tol)
+        assert cost_one == pytest.approx(func(x, c=1.0), abs=tol)
+        assert cost_two == pytest.approx(func(x, c=2.0), abs=tol)
+
     @pytest.mark.parametrize(
-        "opt",
+        "func, args",
         [
-            GradientDescentOptimizer(stepsize),
-            MomentumOptimizer(stepsize, momentum=gamma),
-            NesterovMomentumOptimizer(stepsize, momentum=gamma),
-            AdagradOptimizer(stepsize),
-            RMSPropOptimizer(stepsize, decay=gamma),
-            AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
-            RotosolveOptimizer(),
+            (lambda x, y: x * y, (1.0, 1.0)),
+            (lambda x, y: x[0] * y[0], (np.array([1.0]), np.array([1.0]))),
         ],
     )
-    class TestOverOpts:
-        def test_kwargs(self, opt, tol):
-            """Test that the keywords get passed and alter the function"""
+    def test_multi_args(self, opt, func, args, tol):
+        """Test multiple arguments to function"""
+        x_new, y_new = opt.step(func, *args)
+        x_new2, y_new2 = opt.step(func, x_new, y_new)
 
-            def kwargs_func(x, c=1.0):
-                return (x - c) ** 2
+        (x_new_wc, y_new_wc), cost = opt.step_and_cost(func, *args)
+        (x_new2_wx, y_new2_wc), cost2 = opt.step_and_cost(func, x_new_wc, y_new_wc)
 
-            x_new_one = opt.step(kwargs_func, 1.0, c=1.0)
-            x_new_two = opt.step(kwargs_func, 1.0, c=2.0)
+        if getattr(opt, "reset", None):
+            opt.reset()
 
-            if getattr(opt, "reset", None):
-                opt.reset()
+        assert x_new != pytest.approx(args[0], abs=tol)
+        assert y_new != pytest.approx(args[1], abs=tol)
 
-            assert x_new_one != pytest.approx(x_new_two, abs=tol)
+        assert x_new_wc != pytest.approx(args[0], abs=tol)
+        assert y_new_wc != pytest.approx(args[1], abs=tol)
 
-        @pytest.mark.parametrize(
-            "func, args",
-            [
-                (lambda x, y: x * y, (1.0, 1.0)),
-                (lambda x, y: x[0] * y[0], (np.array([1.0]), np.array([1.0]))),
-            ],
-        )
-        def test_multi_args(self, opt, func, args, tol):
-            """Test multiple arguments to function"""
-            x_new, y_new = opt.step(func, *args)
+        assert cost == pytest.approx(func(*args), abs=tol)
 
-            if getattr(opt, "reset", None):
-                opt.reset()
+    def test_nontrainable_data(self, opt, tol):
+        """Check non-trainable argument does not get updated"""
 
-            assert x_new != pytest.approx(args[0], abs=tol)
-            assert y_new != pytest.approx(args[1], abs=tol)
+        def func(x, data):
+            return x[0] * data[0]
 
-        def test_nontrainable_data(self, opt, tol):
-            """Check non-trainable argument does not get updated"""
+        x = np.array([1.0])
+        data = np.array([1.0], requires_grad=False)
 
-            def func(x, data):
-                return x[0] * data[0]
+        args_new = opt.step(func, x, data)
+        args_new_wc, cost = opt.step_and_cost(func, *args_new)
 
-            x = np.array([1.0])
-            data = np.array([1.0], requires_grad=False)
+        if getattr(opt, "reset", None):
+            opt.reset()
 
-            args_new = opt.step(func, x, data)
+        assert len(args_new) == pytest.approx(2, abs=tol)
+        assert args_new[0] != pytest.approx(x, abs=tol)
+        assert args_new[1] == pytest.approx(data, abs=tol)
 
-            if getattr(opt, "reset", None):
-                opt.reset()
+        assert cost == pytest.approx(func(args_new[0], data), abs=tol)
 
-            assert len(args_new) == pytest.approx(2, abs=tol)
-            assert args_new[0] != pytest.approx(x, abs=tol)
-            assert args_new[1] == pytest.approx(data, abs=tol)
+    def test_multiargs_data_kwargs(self, opt, tol):
+        """ Check all multiargs, non-trainable data, and keywords at the same time."""
+
+        def func(x, data, y, c=1.0):
+            return c*(x[0]+y[0]-data[0])**2
+
+        x = np.array([1.0], requires_grad=True)
+        y = np.array([1.0])
+        data = np.array([1.0], requires_grad=False)
+
+        args_new, cost  = opt.step_and_cost(func, x, data, y, c=0.5)
+        args_new2 = opt.step(func, *args_new, c=0.5)
+
+        assert cost == pytest.approx(func(x, data, y, c=0.5), abs=tol)
+        assert args_new[0] != pytest.approx(x, abs=tol)
+        assert args_new[1] == pytest.approx(data, abs=tol)
+        assert args_new[2] != pytest.approx(y, abs=tol)

@@ -53,7 +53,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         self.accumulation = None
 
     def apply_grad(self, grad, args):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+        r"""Update the variables in args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
@@ -87,7 +87,8 @@ class AdagradOptimizer(GradientDescentOptimizer):
                 if isinstance(arg, ndarray):
                     # Due to a bug in unflatten, input PennyLane tensors
                     # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors. Long term, we should fix this bug in unflatten.
+                    # tensors.
+                    # TODO: remove when the following is fixed:
                     # https://github.com/PennyLaneAI/pennylane/issues/966
                     args_new[index] = args_new[index].view(tensor)
                     args_new[index].requires_grad = True
