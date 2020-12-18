@@ -1,7 +1,9 @@
 on:
   pull_request:
     types: [opened, ready_for_review]
+
 name: Changelog Reminder
+
 jobs:
   remind:
     name: Changelog Reminder
@@ -15,10 +17,8 @@ jobs:
         customPrMessage: |
           Hello. You may have forgotten to update the changelog!
           Please edit [.github/CHANGELOG.md](/PennyLaneAI/pennylane/blob/master/.github/CHANGELOG.md) with:
-          * A one-to-two sentence description of the change. You may include a
-            small working example for new features.
+          * A one-to-two sentence description of the change. You may include a small working example for new features.
           * A link back to this PR.
           * Your name (or GitHub username) in the contributors section.
-                            
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
