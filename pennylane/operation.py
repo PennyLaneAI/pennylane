@@ -510,6 +510,11 @@ class Operator(abc.ABC):
                         "{}: Natural number parameter expected, got {}.".format(self.name, p)
                     )
         elif self.par_domain == "L":
+            if isinstance(self, qml.FockDiagonalObservable):
+                if not all(issubclass(qml.ops.CVObservable, elem) for elem in p):
+                    raise TypeError("List elements must be subclasses of CVObservable.")
+                return p
+
             if not isinstance(p, list):
                 raise TypeError("{}: List parameter expected, got {}.".format(self.name, type(p)))
             if not all(isinstance(elem, np.ndarray) for elem in p):

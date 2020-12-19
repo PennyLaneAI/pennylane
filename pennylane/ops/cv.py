@@ -36,6 +36,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
 import math
+import numbers
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -1012,6 +1013,46 @@ class PolyXP(CVObservable):
     def _heisenberg_rep(p):
         return p[0]
 
+class FockDiagonalObservable(CVObservable):
+
+    num_wires = AnyWires
+    num_params = 2
+    par_domain = None
+
+    accepted_obs = [NumberOperator]
+    grad_method = "F"
+    ev_order = 2
+
+    def __new__(cls, *params, wires=None, obs=None, orders=None, do_queue=True):
+        # Custom definition for __new__ needed such that a NumberOperator can
+        # be returned when a single mode is defined
+
+        if wires is None:
+            wires = params[-1]
+            params = params[:-1]
+
+        if isinstance(wires, int) or len(wires) == 1:
+            return NumberOperator(*params, wires=wires, do_queue=do_queue)
+
+        return super().__new__(cls)
+
+    def __init__(self, *params, obs=None, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    def check_domain(self, p, flattened=False):
+        order_accepted = all(isinstance(elem, numbers.Integral) for elem in p)
+        if order_accepted:
+            return p
+
+        obs_accepted = all(issubclass(elem, CVObservable) for elem in p)
+        if obs_accepted:
+            return p
+
+        raise TypeError("List elements must be subclasses of CVObservable.")
+
+    @property
+    def parameters(self):
+        return self.data
 
 class FockStateProjector(CVObservable):
     r"""pennylane.ops.FockStateProjector(n, wires)
@@ -1095,6 +1136,7 @@ obs = {
     "P",
     "X",
     "PolyXP",
+    "FockDiagonalObservable",
     "FockStateProjector",
 }
 
