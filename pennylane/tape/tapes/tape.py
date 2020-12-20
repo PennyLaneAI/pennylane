@@ -15,17 +15,18 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-import copy
 import contextlib
+import copy
+from collections import Counter
+from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-
+from pennylane.grouping import diagonalize_qwc_pauli_words
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
-
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -95,6 +96,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+
+    # Check for observables acting on the same wire. If present, observables must be
+    # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
+    # rotations and the observables updated to the computational basis. Note that this
+    # expansion acts on the original tape in place.
+    if tape._obs_sharing_wires:
+        try:
+            rotations, diag_obs = diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+        except ValueError as e:
+            raise qml.QuantumFunctionError(
+                "Only observables that are qubit-wise commuting "
+                "Pauli words can be returned on the same wire"
+            ) from e
+
+        tape._ops.extend(rotations)
+
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+            new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+            tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
@@ -201,6 +221,9 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
     """
 
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
+
     def __init__(self, name=None):
         super().__init__()
         self.name = name
@@ -234,29 +257,42 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
+        self._obs_sharing_wires = []
+        """list[.Observable]: subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires."""
+        self._obs_sharing_wires_id = []
+
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
-        if not QueuingContext.recording():
-            # if the tape is the first active queuing context
-            # monkeypatch the operations to support the new queuing context
-            with contextlib.ExitStack() as stack:
-                for mock in mock_operations():
-                    stack.enter_context(mock)
-                self._stack = stack.pop_all()
+        QuantumTape._lock.acquire()
+        try:
+            if not QueuingContext.recording():
+                # if the tape is the first active queuing context
+                # monkeypatch the operations to support the new queuing context
+                with contextlib.ExitStack() as stack:
+                    for mock in mock_operations():
+                        stack.enter_context(mock)
+                    self._stack = stack.pop_all()
 
-        QueuingContext.append(self)
-        return super().__enter__()
+            QueuingContext.append(self)
+            return super().__enter__()
+        except Exception as _:
+            QuantumTape._lock.release()
+            raise
 
     def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
+        try:
+            super().__exit__(exception_type, exception_value, traceback)
 
-        if not QueuingContext.recording():
-            # remove the monkeypatching
-            self._stack.__exit__(exception_type, exception_value, traceback)
+            if not QueuingContext.recording():
+                # remove the monkeypatching
+                self._stack.__exit__(exception_type, exception_value, traceback)
 
-        self._process_queue()
+            self._process_queue()
+        finally:
+            QuantumTape._lock.release()
 
     @property
     def interface(self):
@@ -339,6 +375,23 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
+    def _update_observables(self):
+        """Update information about observables, including the wires that are acted upon and
+        identifying any observables that share wires"""
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        self._obs_sharing_wires = []
+        self._obs_sharing_wires_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None:
+                    if len(set(m.wires) & repeated_wires) > 0:
+                        self._obs_sharing_wires.append(m.obs)
+                        self._obs_sharing_wires_id.append(i)
+
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -364,6 +417,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
+        self._update_observables()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -662,7 +716,7 @@ class QuantumTape(AnnotatedQueue):
         [4, 1, 6]
         """
         if trainable_only:
-            iterator = zip(self.trainable_params, params)
+            iterator = zip(sorted(self.trainable_params), params)
             required_length = self.num_params
         else:
             iterator = enumerate(params)
@@ -1014,6 +1068,12 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        if not all(len(o.diagonalizing_gates()) == 0 for o in self._obs_sharing_wires):
+            raise qml.QuantumFunctionError(
+                "Multiple observables are being evaluated on the same wire. Call tape.expand() "
+                "prior to execution to support this."
+            )
+
         device.reset()
 
         # backup the current parameters

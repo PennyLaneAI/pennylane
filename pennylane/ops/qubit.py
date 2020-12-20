@@ -26,6 +26,7 @@ from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperati
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import pauli_eigs, expand
 from pennylane._queuing import OperationRecorder
+import pennylane as qml
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -823,6 +824,14 @@ class MultiRZ(DiagonalOperation):
 
         return multi_Z_rot_matrix
 
+    _generator = None
+
+    @property
+    def generator(self):
+        if self._generator is None:
+            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
+        return self._generator
+
     @property
     def matrix(self):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
@@ -963,6 +972,44 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
+    _generator = None
+
+    @property
+    def generator(self):
+        if self._generator is None:
+            pauli_word = self.parameters[1]
+
+            # Simplest case is if the Pauli is the identity matrix
+            if pauli_word == "I" * len(pauli_word):
+                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
+                return self._generator
+
+            # We first generate the matrix excluding the identity parts and expand it afterwards.
+            # To this end, we have to store on which wires the non-identity parts act
+            non_identity_wires, non_identity_gates = zip(
+                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+            )
+
+            # get MultiRZ's generator
+            multi_Z_rot_generator = np.diag(pauli_eigs(len(non_identity_gates)))
+
+            # now we conjugate with Hadamard and RX to create the Pauli string
+            conjugation_matrix = functools.reduce(
+                np.kron,
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            )
+
+            self._generator = [
+                expand(
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    non_identity_wires,
+                    list(range(len(pauli_word))),
+                ),
+                -1 / 2,
+            ]
+
+        return self._generator
+
     @classmethod
     def _eigvals(cls, theta, pauli_word):
         # Identity must be treated specially because its eigenvalues are all the same
@@ -999,6 +1046,14 @@ class PauliRot(Operation):
                 Hadamard(wires=[wire])
             elif gate == "Y":
                 RX(-np.pi / 2, wires=[wire])
+
+
+# Four term gradient recipe for controlled rotations
+c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
+c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+a = np.pi / 2
+b = 3 * np.pi / 4
+four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class CRX(Operation):
@@ -1047,6 +1102,8 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @classmethod
@@ -1114,6 +1171,8 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @classmethod
@@ -1179,6 +1238,8 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
     @classmethod
@@ -1247,6 +1308,7 @@ class CRot(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe * 3
 
     @classmethod
     def _matrix(cls, *params):
@@ -1262,6 +1324,32 @@ class CRot(Operation):
                 [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
             ]
         )
+
+    @staticmethod
+    def decomposition(phi, theta, omega, wires):
+        if qml.tape_mode_active():
+            decomp_ops = [
+                RZ((phi - omega) / 2, wires=wires[1]),
+                CNOT(wires=wires),
+                RZ(-(phi + omega) / 2, wires=wires[1]),
+                RY(-theta / 2, wires=wires[1]),
+                CNOT(wires=wires),
+                RY(theta / 2, wires=wires[1]),
+                RZ(omega, wires=wires[1]),
+            ]
+        else:  # We cannot add gate parameters in non-tape mode, resulting in greater depth
+            decomp_ops = [
+                RZ(phi / 2, wires=wires[1]),
+                RZ(-omega / 2, wires=wires[1]),
+                CNOT(wires=wires),
+                RZ(-phi / 2, wires=wires[1]),
+                RZ(-omega / 2, wires=wires[1]),
+                RY(-theta / 2, wires=wires[1]),
+                CNOT(wires=wires),
+                RY(theta / 2, wires=wires[1]),
+                RZ(omega, wires=wires[1]),
+            ]
+        return decomp_ops
 
 
 class U1(Operation):

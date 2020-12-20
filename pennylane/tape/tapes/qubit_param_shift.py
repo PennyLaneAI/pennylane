@@ -129,6 +129,9 @@ class QubitParamShiftTape(JacobianTape):
             idx (int): trainable parameter index to differentiate with respect to
             params (list[Any]): the quantum tape operation parameters
 
+        Keyword Args:
+            shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
             in addition to a post-processing function to be applied to the evaluated
@@ -138,23 +141,21 @@ class QubitParamShiftTape(JacobianTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        s = (
-            np.pi / 2
-            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
-            else op.grad_recipe[p_idx]
-        )
-        s = options.get("shift", s)
+        s = options.get("shift", np.pi / 2)
+        param_shift = op.get_parameter_shift(p_idx, shift=s)
 
         shift = np.zeros_like(params)
-        shift[idx] = s
+        coeffs = []
+        tapes = []
 
-        shifted_forward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_forward.set_parameters(params + shift)
+        for c, a, s in param_shift:
+            shift[idx] = s
 
-        shifted_backward = self.copy(copy_operations=True, tape_cls=QuantumTape)
-        shifted_backward.set_parameters(params - shift)
+            shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+            shifted_tape.set_parameters(a * params + shift)
 
-        tapes = [shifted_forward, shifted_backward]
+            coeffs.append(c)
+            tapes.append(shifted_tape)
 
         def processing_fn(results):
             """Computes the gradient of the parameter at index idx via the
@@ -167,9 +168,7 @@ class QubitParamShiftTape(JacobianTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            res_forward = np.array(results[0])
-            res_backward = np.array(results[1])
-            return (res_forward - res_backward) / (2 * np.sin(s))
+            return np.dot(coeffs, results)
 
         return tapes, processing_fn
 
@@ -180,6 +179,9 @@ class QubitParamShiftTape(JacobianTape):
         Args:
             idx (int): trainable parameter index to differentiate with respect to
             params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,

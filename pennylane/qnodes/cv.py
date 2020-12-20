@@ -181,20 +181,37 @@ class CVQNode(JacobianQNode):
             temp_var.idx = n
             op.data[p_idx] = temp_var
 
-            multiplier, shift = op.get_parameter_shift(p_idx)
-
-            # shifted parameter values
-            shift_p1 = np.r_[args, args[idx] + shift]
-            shift_p2 = np.r_[args, args[idx] - shift]
+            param_shift = op.get_parameter_shift(p_idx)
 
             if not force_order2 and op.use_method != "B":
                 # basic parameter-shift method, for Gaussian CV gates
                 # succeeded by order-1 observables
-                # evaluate the circuit at two points with shifted parameter values
-                y2 = np.asarray(self.evaluate(shift_p1, kwargs))
-                y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-                pd += (y2 - y1) * multiplier
+                # evaluate the circuit at multiple points with the linear
+                # combination of parameter values (in most cases at two points)
+                for multiplier, a, shift in param_shift:
+
+                    # shifted parameter values
+                    shift_p = np.r_[args, a * args[idx] + shift]
+
+                    term = multiplier * np.asarray(self.evaluate(shift_p, kwargs))
+                    pd += term
             else:
+                if len(param_shift) != 2:
+                    # The 2nd order CV parameter-shift rule only accepts two-term shifts
+                    raise NotImplementedError(
+                        "Taking the analytic gradient for order-2 operators is "
+                        "unsupported for {op} which contains a parameter with a "
+                        "gradient recipe of more than two terms."
+                    )
+
+                # Get the shifts and the multipliers
+                pos_multiplier, a1, pos_shift = param_shift[0]
+                neg_multiplier, a2, neg_shift = param_shift[1]
+
+                # shifted parameter values
+                shift_p1 = np.r_[args, a1 * args[idx] + pos_shift]
+                shift_p2 = np.r_[args, a2 * args[idx] + neg_shift]
+
                 # order-2 parameter-shift method, for gaussian CV gates
                 # succeeded by order-2 observables
                 # evaluate transformed observables at the original parameter point
@@ -203,7 +220,7 @@ class CVQNode(JacobianQNode):
                 Z2 = op.heisenberg_tr(self.device.wires)
                 self._set_variables(shift_p2, kwargs)
                 Z1 = op.heisenberg_tr(self.device.wires)
-                Z = (Z2 - Z1) * multiplier  # derivative of the operation
+                Z = pos_multiplier * Z2 + neg_multiplier * Z1  # derivative of the operation
 
                 unshifted_args = np.r_[args, args[idx]]
                 self._set_variables(unshifted_args, kwargs)

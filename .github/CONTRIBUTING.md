@@ -136,8 +136,8 @@ Before submitting a pull request, please make sure the following is done:
 
 * Once you have submitted the pull request, three things will automatically occur:
 
-  - The **test suite** will automatically run on [Travis CI](https://travis-ci.org/XanaduAI/pennylane)
-    to ensure that the all tests continue to pass.
+  - The **test suite** will automatically run as a GitHub action to ensure that the all tests
+    continue to pass.
   - Once the test suite is finished, a **code coverage report** will be generated on
     [Codecov](https://codecov.io/gh/XanaduAI/pennylane). This will calculate the percentage of PennyLane
     covered by the test suite, to ensure that all new code additions are adequately tested.

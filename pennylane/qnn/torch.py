@@ -330,7 +330,7 @@ class TorchLayer(Module):
 
         for arg in self.sig:
             if arg is not self.input_arg:  # Non-input arguments must always be positional
-                w = self.qnode_weights[arg]
+                w = self.qnode_weights[arg].to(x)
 
                 qnode = functools.partial(qnode, w)
             else:
@@ -349,7 +349,10 @@ class TorchLayer(Module):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x}, **self.qnode_weights}
+        kwargs = {
+            **{self.input_arg: x},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+        }
         return self.qnode(**kwargs).type(x.dtype)
 
     def __str__(self):

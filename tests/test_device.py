@@ -14,12 +14,14 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
+import importlib
+import pkg_resources
 
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.qnodes import QuantumFunctionError 
+from pennylane.qnodes import QuantumFunctionError
 from pennylane.qnodes.base import BaseQNode
 from pennylane.wires import Wires
 from collections import OrderedDict
@@ -721,6 +723,57 @@ class TestDeviceInit:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit", wires=0)
+
+    def test_refresh_entrypoints(self, monkeypatch):
+        """Test that new entrypoints are found by the refresh_devices function"""
+        assert qml.plugin_devices
+
+        with monkeypatch.context() as m:
+            # remove all entry points
+            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+
+            # reimporting PennyLane within the context sets qml.plugin_devices to {}
+            importlib.reload(qml)
+
+            # since there are no entry points, there will be no plugin devices
+            assert not qml.plugin_devices
+
+        # outside of the context, entrypoints will now be found
+        assert not qml.plugin_devices
+        qml.refresh_devices()
+        assert qml.plugin_devices
+
+        # Test teardown: re-import PennyLane to revert all changes and
+        # restore the plugin_device dictionary
+        importlib.reload(qml)
+
+    def test_hot_refresh_entrypoints(self, monkeypatch):
+        """Test that new entrypoints are found by the device loader if not currently present"""
+        assert qml.plugin_devices
+
+        with monkeypatch.context() as m:
+            # remove all entry points
+            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+
+            # reimporting PennyLane within the context sets qml.plugin_devices to {}
+            importlib.reload(qml)
+
+            m.setattr(qml, "refresh_devices", lambda: None)
+            assert not qml.plugin_devices
+
+            # since there are no entry points, there will be no plugin devices
+            with pytest.raises(DeviceError, match="Device does not exist"):
+                qml.device("default.qubit", wires=0)
+
+        # outside of the context, entrypoints will now be found automatically
+        assert not qml.plugin_devices
+        dev = qml.device("default.qubit", wires=0)
+        assert qml.plugin_devices
+        assert dev.short_name == "default.qubit"
+
+        # Test teardown: re-import PennyLane to revert all changes and
+        # restore the plugin_device dictionary
+        importlib.reload(qml)
 
 
 class TestBatchExecution:

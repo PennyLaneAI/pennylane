@@ -498,6 +498,27 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
+    @pytest.mark.parametrize("tapemode", [True, False])
+    def test_CRot_decomposition(self, tol, phi, theta, omega, tapemode, monkeypatch):
+        """Tests that the decomposition of the CRot gate is correct"""
+        op = qml.CRot(phi, theta, omega, wires=[0, 1])
+
+        with monkeypatch.context() as m:
+            m.setattr(qml, "tape_mode_active", lambda: tapemode)
+            res = op.decomposition(phi, theta, omega, op.wires)
+
+        mats = []
+        for i in reversed(res):
+            if len(i.wires) == 1:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 
@@ -1025,6 +1046,43 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
+    @pytest.mark.parametrize(
+        "pauli_word",
+        [
+            ("XIZ"),
+            ("IIII"),
+            ("XIYIZI"),
+            ("IXI"),
+            ("IIIIIZI"),
+            ("XYZIII"),
+            ("IIIXYZ"),
+        ],
+    )
+    def test_multirz_generator(self, pauli_word):
+        """Test that the generator of the MultiRZ gate is correct."""
+        op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
+        gen = op.generator
+
+        if pauli_word[0] == 'I':
+            # this is the identity
+            expected_gen = qml.Identity(wires=0) 
+        else:
+            expected_gen = getattr(
+                qml, 'Pauli{}'.format(pauli_word[0]))(wires=0)
+
+        for i, pauli in enumerate(pauli_word[1:]):
+            i += 1
+            if pauli == 'I':
+                expected_gen = expected_gen @  qml.Identity(
+                    wires=i) 
+            else:
+                expected_gen = expected_gen @ getattr(
+                    qml, 'Pauli{}'.format(pauli))(wires=i)
+
+        expected_gen_mat = expected_gen.matrix
+
+        assert np.allclose(gen[0], expected_gen_mat)
+        assert gen[1] == -0.5
 
 class TestMultiRZ:
     """Test the MultiRZ operation."""
@@ -1135,6 +1193,27 @@ class TestMultiRZ:
         assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
             np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
         )
+
+    @pytest.mark.parametrize("qubits", range(3, 6))
+    def test_multirz_generator(self, qubits, mocker):
+        """Test that the generator of the MultiRZ gate is correct."""
+        op = qml.MultiRZ(0.3, wires=range(qubits))
+        gen = op.generator
+
+        expected_gen = qml.PauliZ(wires=0)
+        for i in range(1, qubits):
+            expected_gen = expected_gen @ qml.PauliZ(wires=i)
+
+        expected_gen_mat = expected_gen.matrix
+
+        assert np.allclose(gen[0], expected_gen_mat)
+        assert gen[1] == -0.5
+
+        spy = mocker.spy(qml.utils, "pauli_eigs")
+
+        op.generator
+        spy.assert_not_called()
+
 
 
 class TestDiagonalQubitUnitary:

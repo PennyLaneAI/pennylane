@@ -497,3 +497,62 @@ class TestNumpyConversion:
         assert np.all(res == data)
         assert isinstance(res, np.ndarray)
         assert not isinstance(res, np.tensor)
+
+    def test_single_gate_parameter(self, monkeypatch):
+        """Test that when supplied a PennyLane tensor, a QNode passes an
+        unwrapped tensor as the argument to a gate taking a single parameter"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi=None):
+            for y in phi:
+                for idx, x in enumerate(y):
+                    qml.RX(x, wires=idx)
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
+
+        with qml._queuing.OperationRecorder() as rec:
+            circuit(phi=phi)
+
+        for i in range(phi.shape[1]):
+            # Test each rotation applied
+            assert rec.queue[0].name == "RX"
+            assert len(rec.queue[0].parameters) == 1
+
+            # Test that the gate parameter is not a PennyLane tensor, but a
+            # float
+            assert not isinstance(rec.queue[0].parameters[0], np.tensor)
+            assert isinstance(rec.queue[0].parameters[0], float)
+
+    def test_multiple_gate_parameter(self):
+        """Test that when supplied a PennyLane tensor, a QNode passes arguments
+        as unwrapped tensors to a gate taking multiple parameters"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(phi=None):
+            for idx, x in enumerate(phi):
+                qml.Rot(*x, wires=idx)
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
+
+
+        with qml._queuing.OperationRecorder() as rec:
+            circuit(phi=phi)
+
+        # Test the rotation applied
+        assert rec.queue[0].name == "Rot"
+        assert len(rec.queue[0].parameters) == 3
+
+        # Test that the gate parameters are not PennyLane tensors, but a
+        # floats
+        assert not isinstance(rec.queue[0].parameters[0], np.tensor)
+        assert isinstance(rec.queue[0].parameters[0], float)
+
+        assert not isinstance(rec.queue[0].parameters[1], np.tensor)
+        assert isinstance(rec.queue[0].parameters[1], float)
+
+        assert not isinstance(rec.queue[0].parameters[2], np.tensor)
+        assert isinstance(rec.queue[0].parameters[2], float)

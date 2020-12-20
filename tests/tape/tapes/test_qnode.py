@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
-from pennylane.tape.measure import MeasurementProcess
+from pennylane import QNodeCollection
+from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
 class TestValidation:
@@ -26,8 +26,13 @@ class TestValidation:
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
+        test_interface = "something"
+        expected_error = (
+            fr"Unknown interface {test_interface}\. Interface must be "
+            r"one of \['autograd', 'torch', 'tf', 'jax'\]\."
+        )
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unknown interface"):
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             QNode(None, dev, interface="something")
 
     def test_invalid_device(self):
@@ -324,6 +329,73 @@ class TestTapeConstruction:
         assert qn.qtape.operations == [op1, op2, op3]
         assert qn.qtape.measurements == [m1, m2]
 
+
+    def test_draw_transform(self):
+        """Test circuit drawing"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        result = draw(circuit)(p1=x, p3=z)
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+        assert result == expected
+
+    def test_draw_transform_ascii(self):
+        """Test circuit drawing when using ASCII characters"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
+        expected = """\
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
+"""
+
+        assert result == expected
+
+    def test_draw_transform_raises(self):
+        qml.disable_tape()
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(p1, p2, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with pytest.raises(ValueError, match="only works when tape mode is enabled"):
+            result = draw(circuit, charset="ascii")
+
     def test_drawing(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -336,11 +408,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -364,11 +436,11 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         circuit(p1=x, p3=z)
 
@@ -379,6 +451,7 @@ class TestTapeConstruction:
 """
 
         assert result == expected
+
     def test_drawing_exception(self):
         """Test that an error is raised if a QNode is drawn prior to
         construction."""
@@ -392,16 +465,71 @@ class TestTapeConstruction:
 
         @qnode(dev, interface="autograd")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError, match="can only be drawn after"):
             circuit.draw()
 
-            
+    def test_multiple_observables_same_wire_expval(self, mocker):
+        """Test that the QNode supports returning expectation values of observables that are on the
+        same wire (provided that they are Pauli words and qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return (
+                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.PauliX(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(2)),
+            )
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
+        res_2 = qnodes(w)
+
+        assert np.allclose(res, res_2)
+
+    def test_multiple_observables_same_wire_mixed(self, mocker):
+        """Test that the QNode supports returning observables that are on the
+        same wire but with different return types (provided that the observables are Pauli words and
+        qubit-wise commuting)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        w = np.random.random((2, 3, 3))
+
+        @qnode(dev)
+        def f(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
+            return qml.expval(qml.PauliX(0)), qml.var(qml.PauliX(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
+        res = f(w)
+        spy.assert_called_once()
+
+        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
+        q2 = qml.map(
+            qml.templates.StronglyEntanglingLayers,
+            [qml.PauliX(0) @ qml.PauliZ(1)],
+            dev,
+            measure="var",
+        )
+
+        res_2 = np.array([q1(w), q2(w)]).squeeze()
+
+        assert np.allclose(res, res_2)
+
+
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
@@ -438,11 +566,11 @@ class TestTFInterface:
 
         @qnode(dev, interface="tf")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.state()
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
 
         circuit(p1=x, p3=z)
 
@@ -491,11 +619,11 @@ class TestTorchInterface:
 
         @qnode(dev, interface="torch")
         def circuit(p1, p2=y, **kwargs):
-          qml.RX(p1, wires=0)
-          qml.RY(p2[0] * p2[1], wires=1)
-          qml.RX(kwargs["p3"], wires=0)
-          qml.CNOT(wires=[0, 1])
-          return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
@@ -545,3 +673,43 @@ class TestDecorator:
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert func.qtape is not old_tape
+
+
+class TestQNodeCollection:
+    """Unittests for the QNodeCollection"""
+
+    @pytest.fixture
+    def enable_tape_mode(self):
+        qml.enable_tape()
+        yield
+        qml.disable_tape()
+
+    def test_multi_thread(self, enable_tape_mode):
+        """Test that multi-threaded queuing in tape mode works correctly"""
+        n_qubits = 4
+        n_batches = 5
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+
+        def circuit(inputs, weights):
+            for index, input in enumerate(inputs):
+                qml.RY(input, wires=index)
+            for index in range(n_qubits - 1):
+                qml.CNOT(wires=(index, index + 1))
+            for index, weight in enumerate(weights):
+                qml.RX(weight, wires=index)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+        weight_shapes = {"weights": (n_qubits)}
+
+        try:
+            qnode = QNodeCollection([QNode(circuit, dev) for _ in range(n_batches)])
+        except Exception as e:
+            pytest.fail("QNodeCollection cannot be instantiated")
+        x = np.random.rand(n_qubits).astype(np.float64)
+        p = np.random.rand(weight_shapes["weights"]).astype(np.float64)
+        try:
+            for _ in range(10):
+                qnode(x, p, parallel=True)
+        except:
+            pytest.fail("Multi-threading on QuantumTape failed")

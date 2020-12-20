@@ -295,8 +295,8 @@ pennylane.collections.qnode_collection.QNodeCollection
 >>> qnodes(params)
 array([-0.02854835  0.99280864])
 
-Functions are available to process QNode collections, including :func:`~.dot`,
-:func:`~.sum`, and :func:`~.apply`:
+Functions are available to process QNode collections, including :func:`~.pennylane.collections.dot`,
+:func:`~.pennylane.collections.sum`, and :func:`~.pennylane.collections.apply`:
 
 >>> cost_fn = qml.sum(qnodes)
 >>> cost_fn(params)

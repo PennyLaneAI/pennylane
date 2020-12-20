@@ -15,7 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
-from functools import lru_cache, update_wrapper
+from functools import lru_cache, update_wrapper, wraps
 
 import numpy as np
 
@@ -112,6 +112,7 @@ class QNode:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
+        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
     **Example**
 
@@ -130,7 +131,7 @@ class QNode:
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {self.INTERFACE_MAP.values()}."
+                f"one of {list(self.INTERFACE_MAP.keys())}."
             )
 
         if not isinstance(device, Device):
@@ -394,18 +395,18 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        stop_at = self.device.operations
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
+        ops_not_supported = any(
+            not self.device.supports_operation(op.name) for op in self.qtape.operations
+        )
 
-        # Hotfix that allows controlled rotations to return the correct gradients
-        # when using the parameter shift rule.
-        if isinstance(self.qtape, QubitParamShiftTape):
-            # controlled rotations aren't supported by the parameter-shift rule
-            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
-
-        # expand out the tape, if any operations are not supported on the device
-        if not {op.name for op in self.qtape.operations}.issubset(stop_at):
+        # expand out the tape, if any operations are not supported on the device or multiple
+        # observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
-                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+                depth=self.max_expansion,
+                stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):
@@ -439,7 +440,9 @@ class QNode:
             # For PennyLane and autograd we must branch, since
             # 'squeeze' does not exist in the top-level of the namespace
             return anp.squeeze(res)
-
+        # Same for JAX
+        if res_type_namespace == "jax":
+            return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
     def draw(self, charset="unicode"):
@@ -560,7 +563,16 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
+    def to_jax(self):
+        """Validation checks when a user expects to use the JAX interface."""
+        if self.diff_method != "backprop":
+            raise qml.QuantumFunctionError(
+                "The JAX interface can only be used with "
+                "diff_method='backprop' on supported devices"
+            )
+        self.interface = "jax"
+
+    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
 def qnode(device, interface="autograd", diff_method="best", **diff_options):
@@ -671,3 +683,54 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
         return update_wrapper(qn, func)
 
     return qfunc_decorator
+
+
+def draw(_qnode, charset="unicode"):
+    """draw(qnode, charset="unicode"):
+    Create a function that draws the given _qnode.
+
+    Args:
+        qnode (.QNode): the input QNode that is to be drawn.
+        charset (str, optional): The charset that should be used. Currently, "unicode" and
+            "ascii" are supported.
+
+    Returns:
+        A function that has the same arguement signature as ``qnode``. When called,
+        the function will draw the QNode.
+
+    **Example**
+
+    Given the following definition of a QNode,
+
+    .. code-block:: python3
+
+        qml.enable_tape()
+
+        @qml.qnode(dev)
+        def circuit(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(*w, wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    We can draw the it like such:
+
+    >>> drawer = qml.draw(circuit)
+    >>> drawer(a=2.3, w=[1.2, 3.2, 0.7])
+    0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+    1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+    """
+    print(_qnode)
+    if not hasattr(_qnode, "qtape"):
+        raise ValueError(
+            "qml.draw only works when tape mode is enabled. "
+            "You can enable tape mode with qml.enable_tape()."
+        )
+
+    @wraps(_qnode)
+    def wrapper(*args, **kwargs):
+        _qnode.construct(args, kwargs)
+        return _qnode.qtape.draw(charset)
+
+    return wrapper
