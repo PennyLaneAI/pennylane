@@ -98,10 +98,18 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
-* Moves the check for uniqueness of wires from `wires.py::Wires.__init__` to `wires.py::_process`
-  in order to reduce overhead from repeated creation of `Wires` instances.
-  Skips calling of Wires on Wires instances in `Operation.__init__`.
+* * Several improvements have been made to the `Wires` class to reduce overhead:
+  [(#967)](https://github.com/PennyLaneAI/pennylane/pull/967)
+
+  - Moves the check for uniqueness of wires from `Wires` instantiation to
+    the `qml.wires._process` function in order to reduce overhead from repeated
+    creation of `Wires` instances.
   
+  - Skips calling of Wires on Wires instances on `Operation` instantiation.
+  
+* Adds the `PauliRot` generator to the `qml.operation` module. This 
+  generator is required to construct the metric tensor. 
+  [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
 <h3>Breaking changes</h3>
 
@@ -122,7 +130,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
