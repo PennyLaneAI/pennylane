@@ -4,7 +4,7 @@
 
 * Support added for calculating the Hessian of quantum tapes using the second-order
   parameter shift formula.
-  [#961](https://github.com/PennyLaneAI/pennylane/pull/961)
+  [(#961)](https://github.com/PennyLaneAI/pennylane/pull/961)
 
   The following example shows the calculation of the Hessian of a quantum tape:
 
