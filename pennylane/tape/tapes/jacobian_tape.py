@@ -208,7 +208,13 @@ class JacobianTape(QuantumTape):
 
     @staticmethod
     def _has_trainable_params(params, diff_methods):
-        """Determines if there are any trainable parameters."""
+        """Determines if there are any trainable parameters.
+
+        Args:
+            params (array[float]): one-dimensional array of parameters
+            diff_methods (Sequence[str]): The corresponding differentiation method for each parameter.
+                A differentiation method of ``"0"`` corresponds to a constant parameter.
+        """
         return params.size and not all(g == "0" for g in diff_methods)
 
     @staticmethod
@@ -646,7 +652,7 @@ class JacobianTape(QuantumTape):
 
         >>> tape.trainable_params = {}
         >>> tape.hessian(dev)
-        array([], shape=(1, 0), dtype=float64)
+        array([], shape=(0, 0), dtype=float64)
         """
         if any([m.return_type is State for m in self.measurements]):
             raise ValueError("The Hessian method does not support circuits that return the state")
@@ -667,7 +673,7 @@ class JacobianTape(QuantumTape):
         if not self._has_trainable_params(params, diff_methods):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Hessian.
-            return np.zeros((self.output_dim, len(params)), dtype=float)
+            return np.zeros((len(params), len(params)), dtype=float)
 
         # some gradient methods need the device or the device wires
         options["device"] = device
@@ -680,11 +686,11 @@ class JacobianTape(QuantumTape):
         processing_fns = []
         nonzero_grad_idx = []
 
+        # From Schwarz's theorem, the Hessian will be symmetric, so we
+        # can compute the upper triangular part only and symmetrize
+        # the final Hessian.
         for i, j in itertools.combinations_with_replacement(range(len(diff_methods)), 2):
-            if j < i or diff_methods[i] == "0" or diff_methods[j] == "0":
-                # From Schwarz's theorem, the Hessian will be symmetric, so we
-                # can compute the upper triangular part only and symmetrize
-                # the final Hessian.
+            if diff_methods[i] == "0" or diff_methods[j] == "0":
                 continue
 
             nonzero_grad_idx.append((i, j))
@@ -714,13 +720,11 @@ class JacobianTape(QuantumTape):
             g = self._flatten_processing_result(processing_fn(res))
 
             if hessian is None:
-                # update the tape's output dimension
-                self._output_dim = len(params)
                 # create the Hessian matrix
                 hessian = np.zeros((len(params), len(params)), dtype=float)
 
             if i == j:
-                hessian[i][i] = g
+                hessian[i, i] = g
             else:
                 hessian[i, j] = hessian[j, i] = g
 

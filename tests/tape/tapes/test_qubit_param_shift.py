@@ -593,4 +593,4 @@ class TestHessian:
 
         hessian = tape.hessian(dev)
 
-        assert hessian.shape == (1, 0)
+        assert hessian.shape == (0, 0)

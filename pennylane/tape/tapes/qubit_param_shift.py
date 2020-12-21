@@ -299,12 +299,15 @@ class QubitParamShiftTape(JacobianTape):
 
         if i == j and idx_shifts[i] == idx_shifts[j]:
             if idx_shifts[i] == np.pi / 2:
-                # when i = j and s1 = s2 = pi/2, the Hessian parameter shift rule
+                # When i = j and s1 = s2 = pi/2, the Hessian parameter shift rule
                 # can be simplified to two device executions
                 param_shifts = [(0.5, 1, np.pi), (-0.5, 1, 0)]
             elif idx_shifts[i] == np.pi / 4:
-                # when i = j and s1 = s2 = pi/4, the Hessian parameter shift rule
+                # When i = j and s1 = s2 = pi/4, the Hessian parameter shift rule
                 # can be simplified to three device executions
+                # TODO: The first and last parameter shift values below are identical
+                # to those used when computing the Jacobian with s=pi/2. We should find
+                # a way to re-use those values rather than re-calculating them.
                 param_shifts = [(0.5, 1, np.pi / 2), (-1, 1, 0), (0.5, 1, -np.pi / 2)]
 
         coeffs = []
@@ -312,7 +315,7 @@ class QubitParamShiftTape(JacobianTape):
         shift = np.eye(len(params))
 
         if param_shifts:
-            # optimizations can be made to reduce amount of tape executions
+            # Optimizations can be made to reduce amount of tape executions
             for c, a, s in param_shifts:
                 shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
                 shifted_tape.set_parameters(a * params + s * shift[i])
@@ -320,7 +323,7 @@ class QubitParamShiftTape(JacobianTape):
                 coeffs.append(c)
                 tapes.append(shifted_tape)
         else:
-            # no optimizations can be made, generate all 4 tapes
+            # No optimizations can be made, generate all 4 tapes
             for idx in idxs:
                 t_idx = list(self.trainable_params)[idx]
                 op = self._par_info[t_idx]["op"]
