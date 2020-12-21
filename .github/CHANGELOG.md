@@ -29,6 +29,36 @@
   print(tape.hessian(dev))
   ```
 
+* A new  `qml.draw` function is available, allowing QNodes to be easily
+  drawn without execution by providing example input.
+  [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
+
+  ```python
+  qml.enable_tape()
+
+  @qml.qnode(dev)
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  The QNode circuit structure may depend on the input arguments;
+  this is taken into account by passing example QNode arguments
+  to the `qml.draw()` drawing function:
+
+  ```pycon
+  >>> drawer = qml.draw(circuit)
+  >>> result = drawer(a=2.3, w=[1.2, 3.2, 0.7])
+  >>> print(result)
+  0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+  1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+  Currently, `qml.draw` is only avaliable in tape mode.
+
 * A new `default.qubit.jax` device was added. This device runs end to end in JAX, meaning that it
   supports all of the awesome JAX transformations (`jax.vmap`, `jax.jit`, `jax.hessian`, etc).
 
@@ -53,7 +83,7 @@
   the future.
 
 * Two new error channels, `BitFlip` and `PhaseFlip` have been added.
-  [#954](https://github.com/PennyLaneAI/pennylane/pull/954)
+  [(#954)](https://github.com/PennyLaneAI/pennylane/pull/954)
 
   They can be used in the same manner as existing error channels:
 
@@ -69,6 +99,20 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
+* Apply permutations to wires using the `Permute` subroutine.
+  [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
+
+  ```python
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
+
+  @qml.qnode(dev)
+  def apply_perm():
+      # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
+      qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
 <h3>Improvements</h3>
 
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
@@ -80,6 +124,19 @@
   `angle`, `arcsin`, `concatenate`, `dot`, `sqrt`, `sum`, `take`, `where`. These functions are
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
+
+* * Several improvements have been made to the `Wires` class to reduce overhead:
+  [(#967)](https://github.com/PennyLaneAI/pennylane/pull/967)
+
+  - Moves the check for uniqueness of wires from `Wires` instantiation to
+    the `qml.wires._process` function in order to reduce overhead from repeated
+    creation of `Wires` instances.
+  
+  - Skips calling of Wires on Wires instances on `Operation` instantiation.
+  
+* Adds the `PauliRot` generator to the `qml.operation` module. This 
+  generator is required to construct the metric tensor. 
+  [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
 <h3>Breaking changes</h3>
 
@@ -100,7 +157,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Steven Oud, Chase Roberts.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Steven Oud, Chase Roberts, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
