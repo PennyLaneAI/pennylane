@@ -133,7 +133,9 @@ class RotoselectOptimizer:
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
-        objective_fn_flat = lambda x_flat, gen: objective_fn(unflatten(x_flat, x), generators=gen, **kwargs)
+        objective_fn_flat = lambda x_flat, gen: objective_fn(
+            unflatten(x_flat, x), generators=gen, **kwargs
+        )
 
         try:
             assert len(x_flat) == len(generators)
