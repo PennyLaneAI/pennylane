@@ -5,7 +5,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops import FermionOperator, QubitOperator
+from openfermion import FermionOperator, QubitOperator
 
 t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
 

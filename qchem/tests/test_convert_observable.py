@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pennylane as qml
 import pytest
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import QubitOperator
 
 from pennylane import qchem
 
