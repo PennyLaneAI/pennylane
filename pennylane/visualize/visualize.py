@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+r"""
+Contains the ``Visualize`` context manager.
+"""
 import time
 from matplotlib import pyplot as plt
 from IPython import display
@@ -31,7 +33,6 @@ def _j_nb():
 
 
 class Visualize:
-
     """
     A context manager for storing data relating to visualizations and post-processing of
     variational quantum circuit optimization.
@@ -87,7 +88,7 @@ class Visualize:
     @property
     def time_data(self):
         """
-        Returns a tuple of the recorded optimization steps, and the corresponding variational parameters.
+        Returns a tuple of the recorded optimization steps, and the corresponding execution time.
 
         Returns:
             tuple: a tuple containing lists of optimization steps and execution times for each optimization step.
@@ -154,7 +155,8 @@ class Visualize:
                         params = optimizer.step(cost, params)
                         viz.update(params=params)
 
-            We can then call the values of the cost function for each step:
+            We can then return values of data recorded during the optimization procedure. For example, we can call
+            the values of the cost function after each optimization step:
 
             >>> steps, cost = viz.cost_data
             >>> print(cost)
@@ -235,23 +237,23 @@ class Visualize:
 
                 Beginning Optimization
                 --------------------------
-                Optimization Step 1 / 5
+                Optimization Step 1
                 Cost: 0.29001330299410394
                 Parameters: [1.03569363]
                 --------------------------
-                Optimization Step 2 / 5
+                Optimization Step 2
                 Cost: 0.16958978666464564
                 Parameters: [1.07061477]
                 --------------------------
-                Optimization Step 3 / 5
+                Optimization Step 3
                 Cost: 0.0554891459073546
                 Parameters: [1.10463974]
                 --------------------------
-                Optimization Step 4 / 5
+                Optimization Step 4
                 Cost: -0.05179578982297689
                 Parameters: [1.13766278]
                 --------------------------
-                Optimization Step 5 / 5
+                Optimization Step 5
                 Cost: -0.151952780085496
                 Parameters: [1.16959683]
                 --------------------------
@@ -344,15 +346,15 @@ class Visualize:
 
             .. code-block:: python3
 
-            optimizer = qml.GradientDescentOptimizer()
-            steps = 5
-            params = np.array([1.])
+                optimizer = qml.GradientDescentOptimizer()
+                steps = 5
+                params = np.array([1.])
 
-            with Visualize(steps, cost_fn=cost) as viz:
-                for i in range(steps):
-                    params = optimizer.step(cost, params)
-                    viz.update(params=params)
-                 viz.graph()
+                with Visualize(steps, cost_fn=cost) as viz:
+                    for i in range(steps):
+                        params = optimizer.step(cost, params)
+                        viz.update(params=params)
+                    viz.graph()
         """
 
         if color is None:
@@ -382,7 +384,9 @@ class Visualize:
             plt.scatter(self._x_log, self._y_log, color=color)
 
             plt.gcf().text(0.13, 1.02, "Step {}".format(len(self._x_log)), fontsize=12)
-            plt.gcf().text(0.13, 0.95, "Cost = {}".format(self._y_log[len(self._y_log)-1]), fontsize=12)
+            plt.gcf().text(
+                0.13, 0.95, "Cost = {}".format(self._y_log[len(self._y_log) - 1]), fontsize=12
+            )
 
             display.display(plt.gcf())
             display.clear_output(wait=True)
@@ -406,6 +410,8 @@ class Visualize:
             plt.scatter(self._x_log, self._y_log, color=color)
 
             plt.gcf().text(0.13, 0.94, "Step {}".format(len(self._x_log)), fontsize=11)
-            plt.gcf().text(0.13, 0.9, "Cost = {}".format(self._y_log[len(self._y_log) - 1]), fontsize=11)
+            plt.gcf().text(
+                0.13, 0.9, "Cost = {}".format(self._y_log[len(self._y_log) - 1]), fontsize=11
+            )
 
             plt.pause(0.025)
