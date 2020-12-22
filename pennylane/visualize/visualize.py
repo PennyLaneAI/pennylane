@@ -46,6 +46,8 @@ class Visualize:
 
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, step_size=1, cost_fn=None):
 
         if not isinstance(step_size, int):
