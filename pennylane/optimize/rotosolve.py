@@ -83,9 +83,9 @@ class RotosolveOptimizer:
         Args:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``*args``  as inputs, and return a single value.
-            *args (Union[Sequence[float], float]): sequence containing the initial values of the
+            *args : variable length argument list containing the initial values of the
                 variables to be optimized over or a single float with the initial value
-            **kwargs : Variable length dictionary of keywords for the objective function
+            **kwargs : variable length dictionary of keywords for the objective function
 
         Returns:
             tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
@@ -101,9 +101,9 @@ class RotosolveOptimizer:
 
         Args:
             objective_fn (function): the objective function for optimization. It should take a
-                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                sequence of the values ``*args`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            *args (Union[Sequence[float], float]): variable length sequence containing the initial
+            *args : variable length sequence containing the initial
                 values of the variables to be optimized over or a single float with the initial
                 value.
             **kwargs : variable length keyword arguments for the objective function.
@@ -142,6 +142,7 @@ class RotosolveOptimizer:
             # updating before_args for next loop
             before_args.append(arg)
 
+        # unwrap arguments if only one, backward compatible and cleaner
         if len(args_new) == 1:
             return args_new[0]
         return args_new
