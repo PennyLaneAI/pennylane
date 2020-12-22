@@ -14,7 +14,7 @@
 r"""
 Contains the ``Visualize`` context manager.
 """
-#pylint: disable=wrong-import-position"
+# pylint: disable=wrong-import-position"
 import time
 from matplotlib import pyplot as plt
 from IPython import display
