@@ -5,7 +5,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import QubitOperator
 
 terms_h20_jw_full = {
     (): (7 + 0j),

@@ -1,18 +1,15 @@
-# Release 0.14.0-dev
-
-<h3>New features since last release</h3>
-
-<h3>Improvements</h3>
-
-<h3>Breaking changes</h3>
-
-<h3>Documentation</h3>
+# Release 0.13.1
 
 <h3>Bug fixes</h3>
+
+* Updates `PennyLane-QChem` to support the new OpenFermion v1.0 release.
+  [(#973)](https://github.com/PennyLaneAI/pennylane/pull/973)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Josh Izaac
 
 # Release 0.13.0
 
