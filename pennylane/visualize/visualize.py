@@ -60,7 +60,6 @@ class Visualize:
         self._param_log = []
         self._time_log = []
 
-        self._complete = False
         self._graph_bool = False
 
     @property
