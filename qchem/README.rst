@@ -33,10 +33,10 @@ Installation
 PennyLane-Qchem requires Python version 3.5 and above, and the following dependencies:
 
 * `pySCF <https://sunqm.github.io/pyscf>`__
-  and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.4
+  and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.5
 
 * (optional) `Psi4 <http://www.psicode.org/>`__
-  and `OpenFermion-Psi4 <https://github.com/quantumlib/OpenFermion-Psi4>`__ >= 0.4
+  and `OpenFermion-Psi4 <https://github.com/quantumlib/OpenFermion-Psi4>`__ >= 0.5
 
   The easiest way to install Psi4 is via Ananconda:
 
@@ -44,7 +44,7 @@ PennyLane-Qchem requires Python version 3.5 and above, and the following depende
 
     conda install psi4 psi4-rt -c psi4
 
-* `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 0.10
+* `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 1.0
 
 * `Open Babel <https://openbabel.org>`__ (optional)
 

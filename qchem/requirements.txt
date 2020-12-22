@@ -1,7 +1,7 @@
 numpy
 scipy
 pennylane>=0.13.0
-openfermion==0.10.0
-openfermionpsi4==0.4
+openfermion==1.0
+openfermionpsi4==0.5
 pyscf==1.7.2
-openfermionpyscf==0.4
+openfermionpyscf==0.5

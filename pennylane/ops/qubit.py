@@ -972,6 +972,44 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
+    _generator = None
+
+    @property
+    def generator(self):
+        if self._generator is None:
+            pauli_word = self.parameters[1]
+
+            # Simplest case is if the Pauli is the identity matrix
+            if pauli_word == "I" * len(pauli_word):
+                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
+                return self._generator
+
+            # We first generate the matrix excluding the identity parts and expand it afterwards.
+            # To this end, we have to store on which wires the non-identity parts act
+            non_identity_wires, non_identity_gates = zip(
+                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+            )
+
+            # get MultiRZ's generator
+            multi_Z_rot_generator = np.diag(pauli_eigs(len(non_identity_gates)))
+
+            # now we conjugate with Hadamard and RX to create the Pauli string
+            conjugation_matrix = functools.reduce(
+                np.kron,
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            )
+
+            self._generator = [
+                expand(
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    non_identity_wires,
+                    list(range(len(pauli_word))),
+                ),
+                -1 / 2,
+            ]
+
+        return self._generator
+
     @classmethod
     def _eigvals(cls, theta, pauli_word):
         # Identity must be treated specially because its eigenvalues are all the same
