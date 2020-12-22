@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane.visualize` submodule.
 import pytest
 import pennylane as qml
 import numpy as np
-from pennylane.visualize import Visualize
+from pennylane.visualize import *
 
 """A variational quantum circuit for the tests"""
 

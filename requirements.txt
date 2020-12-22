@@ -7,4 +7,5 @@ toml
 appdirs
 semantic_version==2.6
 matplotlib
+IPython
 dask[delayed]
