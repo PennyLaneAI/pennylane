@@ -19,9 +19,9 @@ with open("pennylane_qchem/_version.py") as f:
 requirements = [
     "pennylane>=0.13",
     "scipy",
-    "openfermion",
-    "openfermionpyscf; platform_system != 'Windows'",
-    "openfermionpsi4",
+    "openfermion==0.11",
+    "openfermionpyscf==0.4; platform_system != 'Windows'",
+    "openfermionpsi4==0.4",
     "pyscf==1.7.2; platform_system != 'Windows'",
 ]
 
