@@ -16,3 +16,6 @@ tensornetwork==0.3
 toml
 torch==1.7.0+cpu
 torchvision==0.8.1+cpu
+openfermion==0.11
+openfermionpyscf==0.4
+openfermionpsi4==0.4
