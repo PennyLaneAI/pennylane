@@ -19,6 +19,7 @@ import itertools as it
 
 import numpy as onp
 import pytest
+from pytest_mock import mocker
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -720,6 +721,10 @@ class TestOptimizer:
         assert opt._stepsize == eta2
 
 
+def reset(opt):
+    if getattr(opt, "reset", None):
+        opt.reset()
+
 @pytest.mark.parametrize(
     "opt, opt_name",
     [
@@ -735,56 +740,68 @@ class TestOptimizer:
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers"""
 
-    def test_kwargs(self, opt, opt_name, tol):
+    def test_kwargs(self, mocker, opt, opt_name, tol):
         """Test that the keywords get passed and alter the function"""
 
-        def func(x, c=1.0):
-            return (x - c) ** 2
+        class func_wrapper:
+            @staticmethod
+            def func(x, c=1.0):
+                return (x - c) ** 2
 
         x = 1.0
 
-        x_new_one = opt.step(func, x, c=1.0)
-        x_new_two = opt.step(func, x, c=2.0)
+        wrapper = func_wrapper()
+        spy = mocker.spy(wrapper, "func")
 
-        x_new_one_wc, cost_one = opt.step_and_cost(func, x, c=1.0)
-        x_new_two_wc, cost_two = opt.step_and_cost(func, x, c=2.0)
+        x_new_two = opt.step(wrapper.func, x, c=2.0)
+        reset(opt)
 
-        if getattr(opt, "reset", None):
-            opt.reset()
+        args2, kwargs2 = spy.call_args_list[-1]
 
-        assert x_new_one != pytest.approx(x_new_two, abs=tol)
-        assert x_new_one_wc != pytest.approx(x_new_two_wc, abs=tol)
+        x_new_three_wc, cost_three = opt.step_and_cost(wrapper.func, x, c=3.0)
+        reset(opt)
 
-        if opt_name != "nest":
-            assert cost_one == pytest.approx(func(x, c=1.0), abs=tol)
-            assert cost_two == pytest.approx(func(x, c=2.0), abs=tol)
+        args3, kwargs3 = spy.call_args_list[-1]
 
-    @pytest.mark.parametrize(
-        "func, args",
-        [
-            (lambda x, y: x * y, (1.0, 1.0)),
-            (lambda x, y: x[0] * y[0], (np.array([1.0]), np.array([1.0]))),
-        ],
-    )
-    def test_multi_args(self, opt, opt_name, func, args, tol):
-        """Test multiple arguments to function"""
-        x_new, y_new = opt.step(func, *args)
-        x_new2, y_new2 = opt.step(func, x_new, y_new)
+        if opt_name != "roto":
+            assert args2 == (x, )
+            assert args3 == (x, )
 
-        (x_new_wc, y_new_wc), cost = opt.step_and_cost(func, *args)
-        (x_new2_wx, y_new2_wc), cost2 = opt.step_and_cost(func, x_new_wc, y_new_wc)
+        assert kwargs2 == {'c':2.0}
+        assert kwargs3 == {'c': 3.0}
 
-        if getattr(opt, "reset", None):
-            opt.reset()
+        assert cost_three == pytest.approx(wrapper.func(x, c=3.0), abs=tol)
+        
+    def test_multi_args(self, mocker, opt, opt_name, tol):
+        """Test passing multiple arguments to function"""
+        class func_wrapper:
+            @staticmethod
+            def func(x, y, z):
+                return x[0] * y[0] + z[0]
 
-        assert x_new != pytest.approx(args[0], abs=tol)
-        assert y_new != pytest.approx(args[1], abs=tol)
+        wrapper = func_wrapper()
+        spy = mocker.spy(wrapper, "func")
 
-        assert x_new_wc != pytest.approx(args[0], abs=tol)
-        assert y_new_wc != pytest.approx(args[1], abs=tol)
+        x = np.array([1.0])
+        y = np.array([2.0])
+        z = np.array([3.0])
 
-        if opt_name != "nest":
-            assert cost == pytest.approx(func(*args), abs=tol)
+        (x_new, y_new, z_new), cost = opt.step_and_cost(wrapper.func, x, y, z)
+        reset(opt)
+        args_called1, kwargs1 = spy.call_args_list[-1] # just take last call
+
+        x_new2, y_new2, z_new2 = opt.step(wrapper.func, x_new, y_new, z_new)
+        reset(opt)
+        args_called2, kwargs2 = spy.call_args_list[-1] # just take last call
+
+        if opt_name != "roto":
+            assert args_called1 == (x, y, z)
+            assert args_called2 == (x_new, y_new, z_new)
+            
+        assert kwargs1 == {}
+        assert kwargs2 == {}
+
+        assert cost == pytest.approx(wrapper.func(x, y, z), abs=tol)
 
     def test_nontrainable_data(self, opt, opt_name, tol):
         """Check non-trainable argument does not get updated"""
@@ -796,71 +813,36 @@ class TestOverOpts:
         data = np.array([1.0], requires_grad=False)
 
         args_new = opt.step(func, x, data)
+        reset(opt)
         args_new_wc, cost = opt.step_and_cost(func, *args_new)
-
-        if getattr(opt, "reset", None):
-            opt.reset()
+        reset(opt)
 
         assert len(args_new) == pytest.approx(2, abs=tol)
         assert args_new[0] != pytest.approx(x, abs=tol)
         assert args_new[1] == pytest.approx(data, abs=tol)
 
-        if opt_name != "nest":
-            assert cost == pytest.approx(func(args_new[0], data), abs=tol)
-
-    def test_multiargs_data_kwargs(self, opt, opt_name, tol):
-        """ Check all multiargs, non-trainable data, and keywords at the same time."""
-
-        def func(x, data, y, c=1.0):
-            return c * (x[0] + y[0] - data[0]) ** 2
-
-        x = np.array([1.0], requires_grad=True)
-        y = np.array([1.0])
-        data = np.array([1.0], requires_grad=False)
-
-        args_new, cost = opt.step_and_cost(func, x, data, y, c=0.5)
-        args_new2 = opt.step(func, *args_new, c=0.5)
-
-        if getattr(opt, "reset", None):
-            opt.reset()
-
-        assert args_new[0] != pytest.approx(x, abs=tol)
-        assert args_new[1] == pytest.approx(data, abs=tol)
-        assert args_new[2] != pytest.approx(y, abs=tol)
-
-        if opt_name != "nest":
-            assert cost == pytest.approx(func(x, data, y, c=0.5), abs=tol)
+        assert cost == pytest.approx(func(*args_new), abs=tol)
 
     def test_steps_the_same(self, opt, opt_name, tol):
-        """Tests optimizing single parameter same as with several at a time"""
+        """Tests whether separating the args into different inputs affects their
+        optimization step. Assumes single argument optimization is correct, as tested elsewhere."""
+        def func1(x, y, z):
+            return x[0] * y[0] * z[0]
+
+        def func2(args):
+            return args[0][0] * args[1][0] * args[2][0]
+
         x = np.array([1.0])
         y = np.array([2.0])
         z = np.array([3.0])
+        args = (x, y, z)
 
-        def func(x, y, z):
-            return x[0] * y[0] * z[0]
+        x_seperate, y_seperate, z_seperate = opt.step(func1, x, y, z)
+        reset(opt)
 
-        fx = lambda xp: func(xp, y, z)
-        fy = lambda yp: func(x, yp, z)
-        fz = lambda zp: func(x, y, zp)
+        args_new = opt.step(func2, args)
+        reset(opt)
 
-        if getattr(opt, "reset", None):
-            opt.reset()
-
-        x_full, y_full, z_full = opt.step(func, x, y, z)
-        if getattr(opt, "reset", None):
-            opt.reset()
-
-        x_part = opt.step(fx, x)
-        if getattr(opt, "reset", None):
-            opt.reset()
-        y_part = opt.step(fy, y)
-        if getattr(opt, "reset", None):
-            opt.reset()
-        z_part = opt.step(fz, z)
-        if getattr(opt, "reset", None):
-            opt.reset()
-
-        assert x_full == pytest.approx(x_part, abs=tol)
-        assert y_full == pytest.approx(y_part, abs=tol)
-        assert z_full == pytest.approx(z_part, abs=tol)
+        assert x_seperate == pytest.approx(args_new[0], abs=tol)
+        assert y_seperate == pytest.approx(args_new[1], abs=tol)
+        assert z_seperate == pytest.approx(args_new[2], abs=tol)

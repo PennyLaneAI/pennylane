@@ -170,7 +170,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Chase Roberts, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
