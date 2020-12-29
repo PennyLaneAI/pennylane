@@ -160,16 +160,23 @@ class Hamiltonian:
     def __str__(self):
         terms = []
 
-        for i, obs in enumerate(self.ops):
-            coeff = "({}) [{{}}]".format(self.coeffs[i])
+        paired_coeff_op = [(coeff, op) for coeff, op in zip(self.coeffs, self.ops)]
+        paired_coeff_op.sort(key=lambda pair: pair[1].num_wires)
 
-            if isinstance(obs, Tensor):
-                obs_strs = ["{}{}".format(OBS_MAP[i.name], i.wires.tolist()[0]) for i in obs.obs]
-                term = " ".join(obs_strs)
-            elif isinstance(obs, Observable):
-                term = "{}{}".format(OBS_MAP[obs.name], obs.wires.tolist()[0])
+        for coeff, op in paired_coeff_op:
 
-            terms.append(coeff.format(term))
+            if isinstance(op, Tensor):
+                obs_str_ls = [
+                    "{}{}".format(OBS_MAP[observable.name], observable.wires.tolist()[0])
+                    for observable in op.obs
+                ]
+                obs_str = " ".join(obs_str_ls)
+            elif isinstance(op, Observable):
+                obs_str = "{}{}".format(OBS_MAP[op.name], op.wires.tolist()[0])
+
+            term_str = "({})\t[{}]".format(coeff, obs_str)
+
+            terms.append(term_str)
 
         return "\n+ ".join(terms)
 
