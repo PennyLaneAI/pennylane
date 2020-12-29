@@ -161,7 +161,7 @@ class Hamiltonian:
         terms = []
 
         paired_coeff_op = [(coeff, op) for coeff, op in zip(self.coeffs, self.ops)]
-        paired_coeff_op.sort(key=lambda pair: pair[1].num_wires)
+        paired_coeff_op.sort(key=lambda pair: (pair[1].num_wires, pair[0]))
 
         for coeff, op in paired_coeff_op:
 
@@ -178,7 +178,7 @@ class Hamiltonian:
 
             terms.append(term_str)
 
-        return "\n+ ".join(terms)
+        return "  " + "\n+ ".join(terms)
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
