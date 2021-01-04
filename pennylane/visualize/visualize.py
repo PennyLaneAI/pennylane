@@ -14,7 +14,6 @@
 r"""
 Contains the ``Visualize`` context manager.
 """
-# pylint: disable=wrong-import-position"
 import time
 from matplotlib import pyplot as plt
 from IPython import display
@@ -22,7 +21,9 @@ from IPython import display
 
 def _j_nb():
     try:
+        # pylint: disable=wrong-import-position
         from IPython import get_ipython
+        # pylint: enable=wrong-import-position
 
         if "IPKernelApp" not in get_ipython().config:
             return False
