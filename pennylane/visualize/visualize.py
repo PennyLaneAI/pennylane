@@ -21,9 +21,9 @@ from IPython import display
 
 def _j_nb():
     try:
-        # pylint: disable=wrong-import-position
+        # pylint: disable=import-error
         from IPython import get_ipython
-        # pylint: enable=wrong-import-position
+        # pylint: enable=import-error
 
         if "IPKernelApp" not in get_ipython().config:
             return False
