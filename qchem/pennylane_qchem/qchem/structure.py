@@ -18,8 +18,7 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-from openfermion.hamiltonians import MolecularData
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import MolecularData, QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf

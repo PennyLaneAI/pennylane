@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pytest
-from openfermion.hamiltonians import MolecularData
+from openfermion import MolecularData
 
 from pennylane import qchem
 
