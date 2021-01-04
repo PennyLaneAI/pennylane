@@ -2,6 +2,33 @@
 
 <h3>New features since last release</h3>
 
+* Support added for calculating the Hessian of quantum tapes using the second-order
+  parameter shift formula.
+  [(#961)](https://github.com/PennyLaneAI/pennylane/pull/961)
+
+  The following example shows the calculation of the Hessian of a quantum tape:
+
+  ```python
+  qml.enable_tape()
+  n_wires = 5
+  weights = [2.73943676, 0.16289932, 3.4536312, 2.73521126, 2.6412488]
+
+  dev = qml.device("default.qubit", wires=n_wires)
+
+  with qml.tape.QubitParamShiftTape() as tape:
+      for i in range(n_wires):
+          qml.RX(weights[i], wires=i)
+
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[2, 1])
+      qml.CNOT(wires=[3, 1])
+      qml.CNOT(wires=[4, 3])
+
+      qml.expval(qml.PauliZ(1))
+
+  print(tape.hessian(dev))
+  ```
+
 * A new  `qml.draw` function is available, allowing QNodes to be easily
   drawn without execution by providing example input.
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
@@ -130,7 +157,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Steven Oud, Chase Roberts, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
