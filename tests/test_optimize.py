@@ -725,6 +725,7 @@ def reset(opt):
     if getattr(opt, "reset", None):
         opt.reset()
 
+
 @pytest.mark.parametrize(
     "opt, opt_name",
     [
@@ -764,16 +765,17 @@ class TestOverOpts:
         args3, kwargs3 = spy.call_args_list[-1]
 
         if opt_name != "roto":
-            assert args2 == (x, )
-            assert args3 == (x, )
+            assert args2 == (x,)
+            assert args3 == (x,)
 
-        assert kwargs2 == {'c':2.0}
-        assert kwargs3 == {'c': 3.0}
+        assert kwargs2 == {"c": 2.0}
+        assert kwargs3 == {"c": 3.0}
 
         assert cost_three == pytest.approx(wrapper.func(x, c=3.0), abs=tol)
-        
+
     def test_multi_args(self, mocker, opt, opt_name, tol):
         """Test passing multiple arguments to function"""
+
         class func_wrapper:
             @staticmethod
             def func(x, y, z):
@@ -788,16 +790,16 @@ class TestOverOpts:
 
         (x_new, y_new, z_new), cost = opt.step_and_cost(wrapper.func, x, y, z)
         reset(opt)
-        args_called1, kwargs1 = spy.call_args_list[-1] # just take last call
+        args_called1, kwargs1 = spy.call_args_list[-1]  # just take last call
 
         x_new2, y_new2, z_new2 = opt.step(wrapper.func, x_new, y_new, z_new)
         reset(opt)
-        args_called2, kwargs2 = spy.call_args_list[-1] # just take last call
+        args_called2, kwargs2 = spy.call_args_list[-1]  # just take last call
 
         if opt_name != "roto":
             assert args_called1 == (x, y, z)
             assert args_called2 == (x_new, y_new, z_new)
-            
+
         assert kwargs1 == {}
         assert kwargs2 == {}
 
@@ -826,6 +828,7 @@ class TestOverOpts:
     def test_steps_the_same(self, opt, opt_name, tol):
         """Tests whether separating the args into different inputs affects their
         optimization step. Assumes single argument optimization is correct, as tested elsewhere."""
+
         def func1(x, y, z):
             return x[0] * y[0] * z[0]
 
