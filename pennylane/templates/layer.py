@@ -216,6 +216,6 @@ def layer(template, depth, *args, **kwargs):
 
     _preprocess(args, depth)
 
-    for i in range(0, depth):
+    for i in range(0, int(depth)):
         arg_params = [k[i] for k in args]
         template(*arg_params, **kwargs)

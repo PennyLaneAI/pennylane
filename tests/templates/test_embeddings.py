@@ -113,7 +113,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be a one-dimensional vector"):
+        with pytest.raises(ValueError, match="Features must be"):
             circuit(x=[[1., 0.], [0., 0.]])
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)

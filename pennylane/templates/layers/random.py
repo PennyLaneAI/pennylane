@@ -21,7 +21,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.templates.utils import (
     check_shape,
-    check_type,
     check_number_of_layers,
     get_shape,
 )
@@ -46,7 +45,7 @@ def _preprocess(weights):
 
         if len(shape) != 2:
             raise ValueError(
-                f"Weights must be a 2-dimensional tensor; got shape {shape}"
+                f"Weights tensor must be 2-dimensional; got shape {shape}"
             )
 
         repeat = shape[0]
@@ -253,7 +252,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         rotations = [RX, RY, RZ]
 
     wires = Wires(wires)
-    repeat = _preprocess(weights, ratio_imprim, rotations, seed)
+    repeat = _preprocess(weights)
 
     for l in range(repeat):
         random_layer(

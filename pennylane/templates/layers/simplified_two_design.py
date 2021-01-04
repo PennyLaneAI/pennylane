@@ -46,16 +46,17 @@ def _preprocess(weights, initial_layer_weights, wires):
         shape = qml.math.shape(weights)
         repeat = shape[0]
 
-        if shape[1] != len(wires) - 1:
-            raise ValueError(f"Second dimension of weights tensor must be of length {len(wires) - 1}; got {shape[1]}")
+        if len(shape) > 1:
+            if shape[1] != len(wires) - 1:
+                raise ValueError(f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}")
 
-        if shape[2] != 2:
-            raise ValueError(f"Third dimension of weights tensor must be of length 2; got {shape[2]}")
+            if shape[2] != 2:
+                raise ValueError(f"Weights tensor must have third dimension of length 2; got {shape[2]}")
 
         shape2 = qml.math.shape(initial_layer_weights)
         if shape2 != (len(wires),):
             raise ValueError(
-                f"Initial layer weights must be of shape {(len(wires),)}; got {shape}"
+                f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
             )
 
     else:
@@ -77,7 +78,7 @@ def _preprocess(weights, initial_layer_weights, wires):
         check_shape(
             weights,
             expected_shape_weights,
-            msg="Weights must be of shape {}; got {}"
+            msg="Weights tensor must be of shape {}; got {}"
             "".format(expected_shape_weights, get_shape(weights)),
         )
     return repeat

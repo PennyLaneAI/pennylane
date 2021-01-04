@@ -55,12 +55,12 @@ def _preprocess(weights, wires, init_state):
 
         if len(shape) != 2:
             raise ValueError(
-                f"Weights must be a 2-dimensional tensor; got shape {shape}"
+                f"Weights tensor must be 2-dimensional; got shape {shape}"
             )
 
         if shape[1] != 2 * len(wires) - 1:
             raise ValueError(
-                f"Second dimension of weights tensor must be of length {2 * len(wires) - 1}; got {shape[1]}"
+                f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
         repeat = shape[0]
@@ -72,7 +72,7 @@ def _preprocess(weights, wires, init_state):
         check_shape(
             weights,
             expected_shape,
-            msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
         )
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]

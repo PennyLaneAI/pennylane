@@ -927,21 +927,21 @@ class TestUCCSDUnitary:
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "Weights must be of",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "Weights must be of",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "Weights must be of",
+                "Weights tensor must be of",
             ),
         ],
     )
@@ -1029,23 +1029,6 @@ class TestApproxTimeEvolution:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
-            circuit()
-
-    def test_n_error(self):
-        """Tests if the correct error is thrown when n is not an integer"""
-
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
-        n = 1.37
-
-        @qml.qnode(dev)
-        def circuit():
-            ApproxTimeEvolution(hamiltonian, 2, n)
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="n must be of type int"):
             circuit()
 
     @pytest.mark.parametrize(

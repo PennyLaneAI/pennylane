@@ -68,7 +68,7 @@ def _preprocess(init_state, weights, s_wires, d_wires):
         shape = qml.math.shape(weights)
         if shape != (len(s_wires) + len(d_wires),):
             raise ValueError(
-                f"Weights must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
+                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
             )
 
     else:
@@ -76,7 +76,7 @@ def _preprocess(init_state, weights, s_wires, d_wires):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
         )
 
     # we can extract the numpy representation here

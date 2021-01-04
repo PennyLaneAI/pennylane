@@ -697,7 +697,7 @@ class TestParticleConservingU2:
             (
                 np.array([[-0.080, 2.629, -0.710, 5.383]]),
                 [0, 1, 2, 3],
-                "'weights' must be of shape",
+                "Weights tensor must",
             ),
             (
                 np.array(
@@ -707,7 +707,7 @@ class TestParticleConservingU2:
                     ]
                 ),
                 [0, 1, 2, 3],
-                "'weights' must be of shape",
+                "Weights tensor must",
             ),
         ],
     )
@@ -873,8 +873,9 @@ class TestParticleConservingU1:
     @pytest.mark.parametrize(
         ("weights", "n_wires", "msg_match"),
         [
-            (np.ones((4, 2, 2)), 4, "'weights' must be of shape"),
-            (np.ones((4, 3, 1)), 4, "'weights' must be of shape"),
+            (np.ones((4, 3)), 4, "Weights tensor must"),
+            (np.ones((4, 2, 2)), 4, "Weights tensor must"),
+            (np.ones((4, 3, 1)), 4, "Weights tensor must"),
             (
                 np.ones((4, 3, 1)),
                 1,

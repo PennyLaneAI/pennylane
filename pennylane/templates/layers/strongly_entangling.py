@@ -32,7 +32,7 @@ def _preprocess(weights, wires, ranges):
     """Validate and pre-process inputs as follows:
 
     * Check the shape of the weights tensor.
-    * If ranges is None, define default.
+    * If ranges is None, define a default.
 
     Args:
         weights (tensor_like): trainable parameters of the template
@@ -50,18 +50,14 @@ def _preprocess(weights, wires, ranges):
 
         if len(shape) != 3:
             raise ValueError(
-                f"Weights must be a 3-dimensional tensor; got shape {shape}"
+                f"Weights tensor must be 3-dimensional; got shape {shape}"
             )
 
         if shape[1] != len(wires):
-            raise ValueError(f"Second dimension of weights tensor must be of length {len(wires)}; got {shape[1]}")
+            raise ValueError(f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}")
 
         if shape[2] != 3:
-            raise ValueError(f"Third dimension of weights tensor must be of length 3; got {shape[2]}")
-
-        if ranges is None:
-            # tile ranges with iterations of range(1, n_wires)
-            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+            raise ValueError(f"Weights tensor must have third dimension of length 3; got {shape[2]}")
 
     else:
 
@@ -71,34 +67,15 @@ def _preprocess(weights, wires, ranges):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
         )
 
-        if len(wires) > 1:
-            if ranges is None:
-                # tile ranges with iterations of range(1, n_wires)
-                ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
-
-            expected_shape = (repeat,)
-            check_shape(
-                ranges,
-                expected_shape,
-                msg="'ranges' must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(weights)),
-            )
-
-            check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
-            for r in ranges:
-                check_type(
-                    r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges)
-                )
-            if any((r >= len(wires) or r == 0) for r in ranges):
-                raise ValueError(
-                    "the range for all layers needs to be smaller than the number of "
-                    "qubits; got ranges {}.".format(ranges)
-                )
-        else:
-            ranges = [0] * repeat
+    if len(wires) > 1:
+        if ranges is None:
+            # tile ranges with iterations of range(1, n_wires)
+            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+    else:
+        ranges = [0] * repeat
 
     return repeat, ranges
 

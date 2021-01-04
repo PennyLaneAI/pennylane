@@ -48,12 +48,12 @@ def _preprocess(weights, wires):
 
         if len(shape) != 2:
             raise ValueError(
-                f"Weights must be a 2-dimensional tensor; got shape {shape}"
+                f"Weights tensor must be 2-dimensional; got shape {shape}"
             )
 
         if shape[1] != len(wires):
             raise ValueError(
-                f"Second dimension of weights must be of size {len(wires)}; got {shape[1]}"
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
             )
 
     else:
@@ -64,7 +64,7 @@ def _preprocess(weights, wires):
         check_shape(
             weights,
             expected_shape,
-            msg=f"Second dimension of weights must be of size {len(wires)}; got {get_shape(weights)[1]}",
+            msg=f"Weights tensor must have second dimension of length {len(wires)}; got {get_shape(weights)[1]}",
         )
 
     return repeat

@@ -36,7 +36,7 @@ def _preprocess(weights, wires):
         shape = qml.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(
-                f"Weights must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
+                f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
             )
 
     else:
@@ -45,7 +45,7 @@ def _preprocess(weights, wires):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights must be of shape {}; got {}.".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}.".format(expected_shape, get_shape(weights)),
         )
 
 

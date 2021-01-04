@@ -36,14 +36,14 @@ def _preprocess(weights, wires):
 
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
-            raise ValueError(f"Weights must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
+            raise ValueError(f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
 
     else:
         expected_shape = (4 ** len(wires) - 1,)
         check_shape(
             weights,
             expected_shape,
-            msg="Weights must be of shape {}; got {}."
+            msg="Weights tensor must be of shape {}; got {}."
             "".format(expected_shape, get_shape(weights)),
         )
 

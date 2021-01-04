@@ -62,14 +62,14 @@ def _preprocess(features, wires, weights):
 
         if len(wires) == 1:
             if shape != (repeat, 1):
-                raise ValueError(f"Weights must be of shape {(repeat, 1)}; got {shape}")
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
 
         elif len(wires) == 2:
             if shape != (repeat, 3):
-                raise ValueError(f"Weights must be of shape {(repeat, 3)}; got {shape}")
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
         else:
             if shape != (repeat, 2 * len(wires)):
-                raise ValueError(f"Weights must be of shape {(repeat, 2*len(wires))}; got {shape}")
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}")
 
     else:
 
@@ -89,7 +89,7 @@ def _preprocess(features, wires, weights):
             check_shape(
                 weights,
                 expected_shape,
-                msg="Weights must be of shape {}; got {}"
+                msg="Weights tensor must be of shape {}; got {}"
                 "".format(expected_shape, get_shape(features)),
             )
         elif len(wires) == 2:
@@ -97,7 +97,7 @@ def _preprocess(features, wires, weights):
             check_shape(
                 weights,
                 expected_shape,
-                msg="Weights must be of shape {}; got {}"
+                msg="Weights tensor must be of shape {}; got {}"
                 "".format(expected_shape, get_shape(features)),
             )
         else:
@@ -105,7 +105,7 @@ def _preprocess(features, wires, weights):
             check_shape(
                 weights,
                 expected_shape,
-                msg="Weights must be of shape {}; got {}"
+                msg="Weights tensor must be of shape {}; got {}"
                 "".format(expected_shape, get_shape(features)),
             )
 
