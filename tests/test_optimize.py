@@ -767,6 +767,9 @@ class TestOverOpts:
         if opt_name != "roto":
             assert args2 == (x,)
             assert args3 == (x,)
+        else:
+            assert x_new_two != pytest.approx(x, abs=tol)
+            assert x_new_three_wc != pytest.approx(x, abs=tol)
 
         assert kwargs2 == {"c": 2.0}
         assert kwargs3 == {"c": 3.0}
@@ -799,6 +802,10 @@ class TestOverOpts:
         if opt_name != "roto":
             assert args_called1 == (x, y, z)
             assert args_called2 == (x_new, y_new, z_new)
+        else:
+            assert x_new != pytest.approx(x, abs=tol)
+            assert y_new != pytest.approx(y, abs=tol)
+            assert z_new != pytest.approx(z, abs=tol)
 
         assert kwargs1 == {}
         assert kwargs2 == {}

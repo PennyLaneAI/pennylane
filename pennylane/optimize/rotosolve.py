@@ -140,7 +140,7 @@ class RotosolveOptimizer:
                 args_new[index] = unflatten(x_flat, arg)
 
             # updating before_args for next loop
-            before_args.append(arg)
+            before_args.append(args_new[index])
 
         # unwrap arguments if only one, backward compatible and cleaner
         if len(args_new) == 1:
