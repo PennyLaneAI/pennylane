@@ -17,10 +17,13 @@ Contains the ``Visualize`` context manager.
 import time
 from matplotlib import pyplot as plt
 
+try:
+    from IPython import display, get_ipython
+
 
 def _j_nb():
     try:
-        from IPython import display, get_ipython
+        from IPython import get_ipython
 
         if "IPKernelApp" not in get_ipython().config:
             return False
