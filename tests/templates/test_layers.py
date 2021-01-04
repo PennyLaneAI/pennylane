@@ -187,6 +187,19 @@ class TestCVNeuralNet:
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
             qnode(wrong_weights)
 
+    def test_cvqnn_layers_exception_nlayers(self, weights, gaussian_device_4modes):
+        """Integration test for the CVNeuralNetLayers method."""
+
+        def circuit(*weights):
+            CVNeuralNetLayers(*weights, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        qnode = qml.QNode(circuit, gaussian_device_4modes)
+
+        wrong_weights = [np.array([[0, 1, 0, 0, 0], [0, 1, 0, 0, 0]])] + weights[1:]
+        with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
+            qnode(*wrong_weights)
+
 
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
@@ -620,6 +633,26 @@ class TestBasicEntangler:
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_wires = 1
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit([1, 0])
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+            circuit([[1, 0], [1, 0]])
+
 
 class TestParticleConservingU2:
     """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
@@ -709,6 +742,11 @@ class TestParticleConservingU2:
                 [0, 1, 2, 3],
                 "Weights tensor must",
             ),
+            (
+                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 2-dimensional",
+            ),
         ],
     )
     def test_u2_exceptions(self, weights, wires, msg_match):
@@ -718,6 +756,9 @@ class TestParticleConservingU2:
         init_state = np.array([1, 1, 0, 0])
 
         dev = qml.device("default.qubit", wires=N)
+
+        if not qml.tape_mode_active() and "must be 2-dimensional" in msg_match:
+            pytest.skip("Validation only performed in tape mode")
 
         @qml.qnode(dev)
         def circuit():
