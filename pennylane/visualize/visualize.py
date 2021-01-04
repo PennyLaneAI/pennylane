@@ -19,6 +19,8 @@ from matplotlib import pyplot as plt
 
 try:
     from IPython import display, get_ipython
+except ImportError:
+    pass
 
 
 def _j_nb():
