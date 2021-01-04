@@ -145,6 +145,31 @@ class TestBasisStatePreparation:
         with pytest.raises(ValueError, match="Basis state must only contain"):
             BasisStatePreparation(basis_state, wires)
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            BasisStatePreparation(basis_state, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
+            basis_state = np.array([[0, 1]])
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must be of length"):
+            basis_state = np.array([0, 1])
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must consist of"):
+            basis_state = np.array([0, 2])
+            circuit(basis_state)
+
 
 class TestMottonenStatePreparation:
     """Tests the template MottonenStatePreparation."""
@@ -318,6 +343,31 @@ class TestMottonenStatePreparation:
         res = _get_alpha_y(state, 3, current_qubit)
         assert np.allclose(res, expected, atol=tol)
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            MottonenStatePreparation(state_vector, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="State vector must be a one-dimensional"):
+            state_vector = np.array([[0, 1]])
+            circuit(state_vector)
+
+        with pytest.raises(ValueError, match="State vector must be of length"):
+            state_vector = np.array([0, 1])
+            circuit(state_vector)
+
+        with pytest.raises(ValueError, match="State vector has to be of length"):
+            state_vector = np.array([0, 2, 0, 0])
+            circuit(state_vector)
+
 
 class TestArbitraryStatePreparation:
     """Test the ArbitraryStatePreparation template."""
@@ -415,3 +465,20 @@ class TestArbitraryStatePreparation:
         circuit(weights)
 
         assert np.allclose(qubit_device_3_wires.state, even_superposition_state, atol=tol, rtol=0)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ArbitraryStatePreparation(weights, wires=range(3))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must be of shape"):
+            weights = np.zeros(12)
+            circuit(weights)

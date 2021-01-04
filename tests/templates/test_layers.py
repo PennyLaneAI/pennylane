@@ -187,7 +187,7 @@ class TestCVNeuralNet:
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
             qnode(wrong_weights)
 
-    def test_cvqnn_layers_exception_nlayers(self, weights, gaussian_device_4modes):
+    def test_cvqnn_layers_exception_second_dim(self, weights, gaussian_device_4modes):
         """Integration test for the CVNeuralNetLayers method."""
 
         def circuit(*weights):
@@ -256,6 +256,31 @@ class TestStronglyEntangling:
 
         types = [type(q) for q in rec.queue]
         assert types.count(imprimitive) == n_subsystems * n_layers
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(weights)
+
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 2, 1)
+            circuit(weights)
+
+        with pytest.raises(ValueError, match="Weights tensor must be 3-dimensional"):
+            weights = np.random.randn(2, 2, 3, 1)
+            circuit(weights)
 
 
 class TestRandomLayers:
@@ -468,6 +493,24 @@ class TestRandomLayers:
 
         qml.jacobian(circuit)(phi)
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.array([0.04439891, 0.14490549, 3.29725643, 2.51240058])
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit(phi)
+
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
 
@@ -548,6 +591,33 @@ class TestSimplifiedTwoDesign:
         expectations = circuit(initial_layer_weights, weights)
         for exp, target_exp in zip(expectations, target):
             assert pytest.approx(exp, target_exp, abs=TOLERANCE)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        initial_layer = np.random.randn(2)
+
+        @qml.qnode(dev)
+        def circuit(initial_layer, weights):
+            SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 2, 2)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Initial layer weights must be of shape"):
+            initial_layer = np.random.randn(3)
+            weights = np.random.randn(2, 1, 2)
+            circuit(initial_layer, weights)
 
 
 class TestBasicEntangler:

@@ -128,14 +128,15 @@ class TestInterferometer:
         with pytest.raises(ValueError, match="did not recognize mesh"):
             circuit(varphi, mesh="a")
 
-    def test_invalid_beamsplitter_exception(self):
+    @pytest.mark.parametrize("mesh", ["rectangular", "triangular"])
+    def test_invalid_beamsplitter_exception(self, mesh):
         """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
         dev = qml.device("default.gaussian", wires=2)
         varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, wires=[0, 1])
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize beamsplitter"):
@@ -346,6 +347,34 @@ class TestInterferometer:
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
+    def test_interferometer_wrong_dim(self):
+        """Integration test for the CVNeuralNetLayers method."""
+        if not qml.tape_mode_active():
+            pytest.skip("Validation only performed in tape mode")
+
+        dev = qml.device("default.gaussian", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi, varphi):
+            Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
+        phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
+        varphi = np.array([0.4134863, 6.17555778, 0.80334114, 2.02400747])
+
+        with pytest.raises(ValueError, match=r"Theta must be of shape \(6,\)"):
+            wrong_theta = np.array([0.1, 0.2])
+            circuit(wrong_theta, phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Phi must be of shape \(6,\)"):
+            wrong_phi = np.array([0.1, 0.2])
+            circuit(theta, wrong_phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Varphi must be of shape \(4,\)"):
+            wrong_varphi = np.array([0.1, 0.2])
+            circuit(theta, phi, wrong_varphi)
+
 
 class TestSingleExcitationUnitary:
     """Tests for the SingleExcitationUnitary template from the
@@ -531,6 +560,23 @@ class TestArbitraryUnitary:
         for i, op in enumerate(rec.queue):
             assert op.data[0] == weights[i]
             assert op.data[1] == pauli_words[i]
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ArbitraryUnitary(weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must be of shape"):
+            weights = np.array([0, 1])
+            circuit(weights)
 
 
 class TestDoubleExcitationUnitary:
