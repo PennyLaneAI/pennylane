@@ -76,7 +76,9 @@ def _preprocess(init_state, weights, s_wires, d_wires):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights tensor must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}".format(
+                expected_shape, get_shape(weights)
+            ),
         )
 
     # we can extract the numpy representation here

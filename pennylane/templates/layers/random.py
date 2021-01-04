@@ -44,9 +44,7 @@ def _preprocess(weights):
         shape = qml.math.shape(weights)
 
         if len(shape) != 2:
-            raise ValueError(
-                f"Weights tensor must be 2-dimensional; got shape {shape}"
-            )
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         repeat = shape[0]
 

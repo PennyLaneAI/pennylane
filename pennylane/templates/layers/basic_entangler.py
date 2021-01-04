@@ -47,9 +47,7 @@ def _preprocess(weights, wires):
         repeat = shape[0]
 
         if len(shape) != 2:
-            raise ValueError(
-                f"Weights tensor must be 2-dimensional; got shape {shape}"
-            )
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         if shape[1] != len(wires):
             raise ValueError(

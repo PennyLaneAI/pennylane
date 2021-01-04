@@ -49,15 +49,17 @@ def _preprocess(weights, wires, ranges):
         repeat = shape[0]
 
         if len(shape) != 3:
-            raise ValueError(
-                f"Weights tensor must be 3-dimensional; got shape {shape}"
-            )
+            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
         if shape[1] != len(wires):
-            raise ValueError(f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}")
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
 
         if shape[2] != 3:
-            raise ValueError(f"Weights tensor must have third dimension of length 3; got {shape[2]}")
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 3; got {shape[2]}"
+            )
 
     else:
 
@@ -67,7 +69,8 @@ def _preprocess(weights, wires, ranges):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights tensor must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(weights)),
         )
 
     if len(wires) > 1:

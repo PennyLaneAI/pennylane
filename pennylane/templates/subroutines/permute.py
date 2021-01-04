@@ -50,6 +50,7 @@ def _preprocess(permutation, wires):
         if label not in wires.labels:
             raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
+
 @template
 def Permute(permutation, wires):
     r"""Applies a permutation to a set of wires.

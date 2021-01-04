@@ -69,7 +69,9 @@ def _preprocess(features, wires, weights):
                 raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
         else:
             if shape != (repeat, 2 * len(wires)):
-                raise ValueError(f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}")
+                raise ValueError(
+                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
+                )
 
     else:
 

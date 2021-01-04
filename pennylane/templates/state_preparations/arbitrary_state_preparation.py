@@ -45,7 +45,9 @@ def _preprocess(weights, wires):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights tensor must be of shape {}; got {}.".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}.".format(
+                expected_shape, get_shape(weights)
+            ),
         )
 
 

@@ -48,10 +48,14 @@ def _preprocess(weights, initial_layer_weights, wires):
 
         if len(shape) > 1:
             if shape[1] != len(wires) - 1:
-                raise ValueError(f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}")
+                raise ValueError(
+                    f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
+                )
 
             if shape[2] != 2:
-                raise ValueError(f"Weights tensor must have third dimension of length 2; got {shape[2]}")
+                raise ValueError(
+                    f"Weights tensor must have third dimension of length 2; got {shape[2]}"
+                )
 
         shape2 = qml.math.shape(initial_layer_weights)
         if shape2 != (len(wires),):

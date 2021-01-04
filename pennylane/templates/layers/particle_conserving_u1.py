@@ -55,9 +55,7 @@ def _preprocess(weights, wires, init_state):
         shape = qml.math.shape(weights)
 
         if len(shape) != 3:
-            raise ValueError(
-                f"Weights tensor must be 3-dimensional; got shape {shape}"
-            )
+            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
         if shape[1] != len(wires) - 1:
             raise ValueError(
@@ -78,7 +76,9 @@ def _preprocess(weights, wires, init_state):
         check_shape(
             weights,
             expected_shape,
-            msg="Weights tensor must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+            msg="Weights tensor must be of shape {}; got {}".format(
+                expected_shape, get_shape(weights)
+            ),
         )
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]

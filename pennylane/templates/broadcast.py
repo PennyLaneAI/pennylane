@@ -62,6 +62,7 @@ def wires_all_to_all(wires):
             sequence += [wires.subset([i, j])]
     return sequence
 
+
 ###################
 
 
