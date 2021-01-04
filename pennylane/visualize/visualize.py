@@ -18,7 +18,7 @@ import time
 from matplotlib import pyplot as plt
 
 try:
-    from IPython import display, get_ipython
+    from IPython import display
 except ImportError:
     pass
 
