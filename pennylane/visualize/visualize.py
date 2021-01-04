@@ -25,8 +25,9 @@ except ImportError:
 
 def _j_nb():
     try:
+        # pylint: disable=import-outside-toplevel
         from IPython import get_ipython
-
+        # pylint: enable=import-outside-toplevel
         if "IPKernelApp" not in get_ipython().config:
             return False
     except ImportError:
