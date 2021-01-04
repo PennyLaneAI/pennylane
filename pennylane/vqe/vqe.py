@@ -174,7 +174,7 @@ class Hamiltonian:
             elif isinstance(op, Observable):
                 obs_str = "{}{}".format(OBS_MAP[op.name], op.wires.tolist()[0])
 
-            term_str = "({})\t[{}]".format(coeff, obs_str)
+            term_str = "({}) [{}]".format(coeff, obs_str)
 
             terms.append(term_str)
 
