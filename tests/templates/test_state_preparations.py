@@ -32,6 +32,9 @@ from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestHelperFunctions:
     """Tests the functionality of helper functions."""
 
@@ -129,7 +132,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error message is raised when the number
         of qubits doesn't match the number of wires."""
 
-        with pytest.raises(ValueError, match="Basis state must be of shape"):
+        with pytest.raises(ValueError, match="Basis state must be of (shape|length)"):
             BasisStatePreparation(basis_state, wires)
 
     # fmt: off
@@ -142,7 +145,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(ValueError, match="Basis state must only contain"):
+        with pytest.raises(ValueError, match="Basis state must only (contain|consist)"):
             BasisStatePreparation(basis_state, wires)
 
     def test_exception_wrong_dim(self):
@@ -163,10 +166,10 @@ class TestBasisStatePreparation:
             circuit(basis_state)
 
         with pytest.raises(ValueError, match="Basis state must be of length"):
-            basis_state = np.array([0, 1])
+            basis_state = np.array([0, 1, 0])
             circuit(basis_state)
 
-        with pytest.raises(ValueError, match="Basis state must consist of"):
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
 
@@ -328,7 +331,7 @@ class TestMottonenStatePreparation:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(ValueError, match="State vector must be of shape"):
+        with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
             MottonenStatePreparation(state_vector, wires)
 
     @pytest.mark.parametrize("current_qubit, expected", [
