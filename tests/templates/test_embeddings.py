@@ -62,7 +62,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=None, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -113,7 +113,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be"):
+        with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
             circuit(x=[[1., 0.], [0., 0.]])
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
@@ -190,6 +190,21 @@ class TestAmplitudeEmbedding:
 
         # No normalization error is raised
         circuit(x=inputs)
+
+    def test_deprecated_pad_arg(self):
+        """Test that the pad argument raises a deprecation warning"""
+
+        num_qubits = 2
+        dev = qml.device('default.qubit', wires=num_qubits)
+        inputs = np.array([1.0, 0.0, 0.0, 0.0])
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(x, list(range(num_qubits)), pad=0., normalize=True)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(PendingDeprecationWarning, match="will be replaced by the pad_with option in future versions"):
+            circuit(x=inputs)
 
 
 class TestAngleEmbedding:
@@ -296,6 +311,23 @@ class TestAngleEmbedding:
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
+            circuit(x=[[1], [0]])
+
 
 class TestBasisEmbedding:
     """ Tests the BasisEmbedding method."""
@@ -357,6 +389,23 @@ class TestBasisEmbedding:
 
         with pytest.raises(ValueError, match="Basis state must only consist of"):
             circuit(x=[2, 3])
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_subsystems = 2
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(features=x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Features must be one-dimensional"):
+            circuit(x=[[1], [0]])
 
 
 class TestIQPEmbedding:
@@ -668,6 +717,23 @@ class TestDisplacementEmbedding:
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1, 2])
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_subsystems = 2
+        dev = qml.device('default.gaussian', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, wires=[0, 1])
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
+            circuit(x=[[1], [0]])
+
 
 class TestSqueezingEmbedding:
     """ Tests the SqueezingEmbedding method."""
@@ -729,3 +795,20 @@ class TestSqueezingEmbedding:
 
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1, 2])
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_subsystems = 2
+        dev = qml.device('default.gaussian', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, wires=[0, 1])
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="Features must be one-dimensional"):
+            circuit(x=[[1], [0]])

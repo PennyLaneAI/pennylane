@@ -315,3 +315,18 @@ class TestCustomPattern:
 
         res = circuit()
         assert np.allclose(res, expected)
+
+
+def test_unknown_pattern():
+    """Test that an unknown pattern raises an error"""
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(pars):
+        broadcast(unitary=RX, wires=range(2), pattern="hello", parameters=pars)
+        return qml.expval(qml.PauliZ(0))
+
+    pars = [[1.6], [2.1]]
+
+    with pytest.raises(ValueError, match="did not recognize pattern hello"):
+        circuit(pars)
