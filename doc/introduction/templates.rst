@@ -188,6 +188,11 @@ of other templates.
   :description: ApproxTimeEvolution
   :figure: ../_static/templates/subroutines/approx_time_evolution.png
 
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.Permute.html
+  :description: Permute
+  :figure: ../_static/templates/subroutines/permute.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

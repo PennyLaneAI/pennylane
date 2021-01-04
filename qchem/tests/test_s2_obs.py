@@ -5,7 +5,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import QubitOperator
 
 
 me_1 = np.array([[0.0, 0.0, 0.0, 0.0, 0.25],])

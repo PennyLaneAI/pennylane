@@ -15,7 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
-from functools import lru_cache, update_wrapper
+from functools import lru_cache, update_wrapper, wraps
 
 import numpy as np
 
@@ -683,3 +683,54 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
         return update_wrapper(qn, func)
 
     return qfunc_decorator
+
+
+def draw(_qnode, charset="unicode"):
+    """draw(qnode, charset="unicode"):
+    Create a function that draws the given _qnode.
+
+    Args:
+        qnode (.QNode): the input QNode that is to be drawn.
+        charset (str, optional): The charset that should be used. Currently, "unicode" and
+            "ascii" are supported.
+
+    Returns:
+        A function that has the same arguement signature as ``qnode``. When called,
+        the function will draw the QNode.
+
+    **Example**
+
+    Given the following definition of a QNode,
+
+    .. code-block:: python3
+
+        qml.enable_tape()
+
+        @qml.qnode(dev)
+        def circuit(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(*w, wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    We can draw the it like such:
+
+    >>> drawer = qml.draw(circuit)
+    >>> drawer(a=2.3, w=[1.2, 3.2, 0.7])
+    0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+    1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+    """
+    print(_qnode)
+    if not hasattr(_qnode, "qtape"):
+        raise ValueError(
+            "qml.draw only works when tape mode is enabled. "
+            "You can enable tape mode with qml.enable_tape()."
+        )
+
+    @wraps(_qnode)
+    def wrapper(*args, **kwargs):
+        _qnode.construct(args, kwargs)
+        return _qnode.qtape.draw(charset)
+
+    return wrapper

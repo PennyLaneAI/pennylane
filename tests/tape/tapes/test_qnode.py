@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QNodeCollection
-from pennylane.tape import JacobianTape, QNode, qnode, QubitParamShiftTape, CVParamShiftTape
+from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
 class TestValidation:
@@ -328,6 +328,73 @@ class TestTapeConstruction:
         qn(5, 1)  # evaluate the QNode
         assert qn.qtape.operations == [op1, op2, op3]
         assert qn.qtape.measurements == [m1, m2]
+
+
+    def test_draw_transform(self):
+        """Test circuit drawing"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        result = draw(circuit)(p1=x, p3=z)
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+        assert result == expected
+
+    def test_draw_transform_ascii(self):
+        """Test circuit drawing when using ASCII characters"""
+        from pennylane import numpy as anp
+
+        x = anp.array(0.1, requires_grad=True)
+        y = anp.array([0.2, 0.3], requires_grad=True)
+        z = anp.array(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="autograd")
+        def circuit(p1, p2, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
+        expected = """\
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
+"""
+
+        assert result == expected
+
+    def test_draw_transform_raises(self):
+        qml.disable_tape()
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(p1, p2, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with pytest.raises(ValueError, match="only works when tape mode is enabled"):
+            result = draw(circuit, charset="ascii")
 
     def test_drawing(self):
         """Test circuit drawing"""
