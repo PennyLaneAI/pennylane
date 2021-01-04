@@ -69,7 +69,7 @@ class TestVisualize:
                 params = optimizer.step(cost, params)
                 viz.update(params=params)
 
-        assert cost_values == viz.cost_data[1]
+        assert np.allclose(cost_values, viz.cost_data[1])
 
     def test_param_data(self):
         """Tests that the correct parameter data is being recorded"""
