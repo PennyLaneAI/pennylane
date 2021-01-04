@@ -20,10 +20,14 @@ from pennylane.templates.decorator import template as temp
 
 
 def _preprocess(args, depth):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
 
-    if not isinstance(depth, int):
-        raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
+    * Check that the dimension of the arguments corresponds to the depth
+
+    Args:
+        args (tensor_like): trainable parameters of the template
+        depth (int): how often the layer is repeated
+    """
 
     for arg in args:
 

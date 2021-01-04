@@ -24,7 +24,19 @@ from pennylane.wires import Wires
 
 
 def _preprocess(theta, phi, varphi, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the three weight tensors.
+
+    Args:
+        theta (tensor_like): trainable parameters of the template
+        phi (tensor_like): trainable parameters of the template
+        varphi (tensor_like): trainable parameters of the template
+        wires (Wires): wires that the template acts on
+
+    Returns:
+        tuple: shape of varphi tensor
+    """
 
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
@@ -120,9 +132,9 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         thus increase the number of elementary operations in the circuit.
 
     Args:
-        theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
-        phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
-        varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
+        theta (tensor_like): size :math:`(M(M-1)/2,)` tensor of transmittivity angles :math:`\theta`
+        phi (tensor_like): size :math:`(M(M-1)/2,)` tensor of phase angles :math:`\phi`
+        varphi (tensor_like): size :math:`(M,)` tensor of rotation angles :math:`\varphi`
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         mesh (string): the type of mesh to use

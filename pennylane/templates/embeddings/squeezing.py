@@ -27,7 +27,22 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires, method, c):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n` or less, where :math:`n` is the number of qubits.
+    * Create a parameter tensor which combines the features with a tensor of constants.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        method (str): indicates whether amplitude or phase encoding is used
+        c (float): value of constant
+
+    Returns:
+        tensor_like: 2-dimensional tensor containing the features and constants
+    """
 
     if qml.tape_mode_active():
 
@@ -95,7 +110,7 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     ``features`` than wires, the circuit does not apply the remaining squeezing gates.
 
     Args:
-        features (array): Array of features of size (N,)
+        features (tensor_like): Array of features of size (N,)
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while

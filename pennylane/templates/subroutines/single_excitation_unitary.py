@@ -28,8 +28,15 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weight, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
 
+    * Check the shape of the weights tensor.
+    * Check that there are at least 2 wires.
+
+    Args:
+        weight (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
     if len(wires) < 2:
         raise ValueError("expected at least two wires; got {}".format(len(wires)))
 
@@ -37,7 +44,7 @@ def _preprocess(weight, wires):
 
         shape = qml.math.shape(weight)
         if shape != ():
-            raise ValueError(f"Weight must be a scalar {()}; got shape {shape}.")
+            raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
     else:
         expected_shape = ()

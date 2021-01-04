@@ -28,14 +28,28 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires, weights):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n` or less, where :math:`n` is the number of qubits.
+    * Check that the shape of the weights tensor is correct for the number of qubits.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        weights (tensor_like): weights of the embedding
+
+    Returns:
+        int: number of times that embedding is repeated
+    """
 
     if qml.tape_mode_active():
 
         shape = qml.math.shape(features)
 
         if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
         if n_features > len(wires):
@@ -102,7 +116,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
-        features (array): array of features to encode
+        features (tensor_like): array of features to encode
         wires (Wires): wires that the template acts on
     """
 
@@ -124,7 +138,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """Implements the Ising-like Hamiltonian of the QAOA embedding.
 
     Args:
-        weights (array): array of weights for one layer
+        weights (tensor_like): array of weights for one layer
         wires (Wires): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
     """
@@ -192,8 +206,8 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
-        features (array): array of features to encode
-        weights (array): array of weights
+        features (tensor_like): array of features to encode
+        weights (tensor_like): array of weights
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``

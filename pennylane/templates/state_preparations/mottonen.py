@@ -25,7 +25,19 @@ from pennylane.wires import Wires
 
 
 def _preprocess(state_vector, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the state vector.
+    * Check that the state vector is normalized.
+    * Extract polar coordinates of the state vector.
+
+    Args:
+        state_vector (tensor_like): amplitude state vector to prepare
+        wires (Wires): wires that template acts on
+
+    Returns:
+        tensor_like, tensor_like, Wires: amplitudes a, phases omega and preprocessed wires
+    """
 
     n_wires = len(wires)
 
@@ -131,10 +143,10 @@ def _compute_theta(alpha):
      to the rotation angles used in the Gray code implementation.
 
     Args:
-        alpha (array[float]): alpha parameters
+        alpha (tensor_like): alpha parameters
 
     Returns:
-        (array[float]): rotation angles theta
+        (tensor_like): rotation angles theta
     """
     ln = alpha.shape[0]
     k = np.log2(alpha.shape[0])
@@ -166,7 +178,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter
-        alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
     """
@@ -203,7 +215,7 @@ def _get_alpha_z(omega, n, k):
     .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
-        omega (array): phases of the state to prepare
+        omega (tensor_like): phases of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
@@ -235,7 +247,7 @@ def _get_alpha_y(a, n, k):
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        a (array): absolute values of the state to prepare
+        a (tensor_like): absolute values of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
@@ -285,7 +297,7 @@ def MottonenStatePreparation(state_vector, wires):
         The final state is only equal to the input state vector up to a global phase.
 
     Args:
-        state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
+        state_vector (tensor_like): Input array of shape ``(2^N,)``, where N is the number of wires
             the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or

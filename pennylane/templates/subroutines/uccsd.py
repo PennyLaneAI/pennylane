@@ -29,7 +29,24 @@ from pennylane.wires import Wires
 
 
 def _preprocess(init_state, weights, s_wires, d_wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that not both wire sets are empty.
+    * Check that d_wires contains wire pairs.
+    * Check shaoe of the weights tensor.
+    * Cast initial state to numpy array.
+    * Check that initial state contains only zeros and ones.
+    * Flip bits in initial state.
+
+    Args:
+        init_state (tensor_like): shape ``(len(wires),)`` tensor
+        weights (tensor_like): trainable parameters of the template
+        s_wires (Wires): set of wires
+        d_wires (Wires): another set of wires
+
+    Returns:
+        array: preprocessed initial state
+    """
 
     if (not s_wires) and (not d_wires):
         raise ValueError(
@@ -111,7 +128,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (array): Length ``len(s_wires) + len(d_wires)`` vector containing the parameters
+        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.SingleExcitationUnitary`
             and

@@ -19,8 +19,14 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 
 
-def _preprocess(hamiltonian, n):
-    """Validate and pre-process inputs."""
+def _preprocess(hamiltonian):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the hamiltonian is of the correct type.
+
+    Args:
+        hamiltonian (qml.vqe.vqe.Hamiltonian): Hamiltonian to simulate
+    """
 
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
@@ -28,14 +34,6 @@ def _preprocess(hamiltonian, n):
                 type(hamiltonian).__name__
             )
         )
-
-    if qml.tape_mode_active():
-        if not isinstance(n, int):
-            raise ValueError("n must be of type int, got {}".format(type(n).__name__))
-
-    else:
-        if not isinstance(n, (int, qml.variable.Variable)):
-            raise ValueError("n must be of type int, got {}".format(type(n).__name__))
 
 
 @template
@@ -119,7 +117,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         [-0.41614684 -0.41614684]
     """
 
-    _preprocess(hamiltonian, n)
+    _preprocess(hamiltonian)
 
     pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 

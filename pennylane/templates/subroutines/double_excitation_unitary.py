@@ -28,7 +28,16 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weight, wires1, wires2):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+    * Check that both wire sets have at least 2 wires.
+
+    Args:
+        weight (tensor_like): trainable parameters of the template
+        wires1 (Wires): first set of wires
+        wires2 (Wires): second set of wires
+    """
 
     if len(wires1) < 2:
         raise ValueError(

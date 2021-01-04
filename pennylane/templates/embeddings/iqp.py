@@ -31,14 +31,29 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires, pattern, n_repeats):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n`, where :math:`n` is the number of qubits.
+    * If pattern is None, create default pattern. Else cast wires in user-provided pattern to Wires objects.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        pattern (list[int]): specifies the wires and features of the entanglers
+        n_repeats (int): number of times the basic embedding is repeated
+
+    Returns:
+        list[Wires]: preprocessed pattern
+    """
 
     if qml.tape_mode_active():
 
         shape = qml.math.shape(features)
 
         if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
         if n_features != len(wires):
@@ -139,7 +154,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
       Since diagonal gates commute, the order of the entanglers does not change the result.
 
     Args:
-        features (array): array of features to encode
+        features (tensor_like): array of features to encode
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         n_repeats (int): number of times the basic embedding is repeated

@@ -30,7 +30,24 @@ TOLERANCE = 1e-10
 
 
 def _preprocess(features, wires, pad_with, normalize):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * If pad_with is None, check that the first dimension of the features tensor
+      has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
+      first dimension of the features tensor is not larger than :math:`2^n` and pad features with value if necessary.
+    * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
+      features tensor.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        pad_with (float): constant used to pad the features tensor to required dimension
+        normalize (bool): whether or not to normalize the features vector
+
+    Returns:
+        tensor: pre-processed features
+    """
 
     if qml.tape_mode_active():
 
@@ -38,7 +55,7 @@ def _preprocess(features, wires, pad_with, normalize):
 
         # check shape
         if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
         if pad_with is None and n_features != 2 ** len(wires):

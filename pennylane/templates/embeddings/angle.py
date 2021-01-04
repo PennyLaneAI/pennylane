@@ -26,14 +26,26 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n` or less, where :math:`n` is the number of qubits.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of features
+    """
 
     if qml.tape_mode_active():
 
         shape = qml.math.shape(features)
 
         if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional vector; got shape {shape}.")
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
         if n_features > len(wires):

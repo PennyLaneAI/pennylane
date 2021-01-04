@@ -23,7 +23,14 @@ _PAULIS = ["I", "X", "Y", "Z"]
 
 
 def _preprocess(weights, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
 
     if qml.tape_mode_active():
 
@@ -108,7 +115,7 @@ def ArbitraryUnitary(weights, wires):
             qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
 
     Args:
-        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+        weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.

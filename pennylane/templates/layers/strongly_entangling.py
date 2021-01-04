@@ -29,22 +29,39 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weights, wires, ranges):
-    """Validate and pre-process inputs"""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+    * If ranges is None, define default.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+        ranges (Sequence[int]): range for each subsequent layer
+
+    Returns:
+        int, list[int]: number of times that the ansatz is repeated and preprocessed ranges
+    """
 
     if qml.tape_mode_active():
 
         shape = qml.math.shape(weights)
         repeat = shape[0]
 
-        if shape != (repeat, len(wires), 3):
-            raise ValueError(f"Weights must be of shape {(repeat, len(wires), 3)}; got {shape}")
+        if len(shape) != 3:
+            raise ValueError(
+                f"Weights must be a 3-dimensional tensor; got shape {shape}"
+            )
 
-        if len(wires) > 1:
-            if ranges is None:
-                # tile ranges with iterations of range(1, n_wires)
-                ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
-        else:
-            ranges = [0] * repeat
+        if shape[1] != len(wires):
+            raise ValueError(f"Second dimension of weights tensor must be of length {len(wires)}; got {shape[1]}")
+
+        if shape[2] != 3:
+            raise ValueError(f"Third dimension of weights tensor must be of length 3; got {shape[2]}")
+
+        if ranges is None:
+            # tile ranges with iterations of range(1, n_wires)
+            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
 
     else:
 
@@ -90,7 +107,7 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
     r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     Args:
-        weights (array[float]): array of weights of shape ``(len(wires), 3)``
+        weights (tensor_like): weight tensor of shape ``(len(wires), 3)``
         wires (Wires): wires that the template acts on
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
@@ -128,7 +145,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(L, M, 3)``
+        weights (tensor_like): weight tensor of shape ``(L, M, 3)``
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None

@@ -22,7 +22,18 @@ from pennylane.wires import Wires
 
 
 def _preprocess(basis_state, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the basis state.
+    * Cast basis state to a numpy array.
+
+    Args:
+        basis_state (tensor_like): basis state to prepare
+        wires (Wires): wires that template acts on
+
+    Returns:
+        array: preprocessed basis state
+    """
 
     if qml.tape_mode_active():
 

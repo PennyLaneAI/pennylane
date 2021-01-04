@@ -62,19 +62,30 @@ def wires_all_to_all(wires):
             sequence += [wires.subset([i, j])]
     return sequence
 
-
 ###################
 
 
 def _preprocess(parameters, pattern, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that pattern is recognised, or use default pattern if None.
+    * Check the dimension of the parameters
+    * Create wire sequence of the pattern.
+
+    Args:
+        parameters (tensor_like): trainable parameters of the template
+        pattern (str): specifies the wire pattern
+        wires (Wires): wires that template acts on
+
+    Returns:
+        wire_sequence, parameters: preprocessed pattern and parameters
+    """
 
     custom_pattern = None
 
     if isinstance(pattern, str):
         if pattern not in OPTIONS:
             raise ValueError(f"did not recognize pattern {pattern}".format())
-
     else:
         # turn custom pattern into list of Wires objects
         custom_pattern = [Wires(w) for w in pattern]

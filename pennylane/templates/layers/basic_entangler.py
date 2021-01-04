@@ -28,11 +28,28 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weights, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor, making sure that the second dimension
+      has length :math:`n`, where :math:`n` is the number of qubits.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
 
     if qml.tape_mode_active():
 
         shape = qml.math.shape(weights)
         repeat = shape[0]
+
+        if len(shape) != 2:
+            raise ValueError(
+                f"Weights must be a 2-dimensional tensor; got shape {shape}"
+            )
 
         if shape[1] != len(wires):
             raise ValueError(
@@ -82,8 +99,8 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
             :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
-                                for the rotation
+        weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
+                                for the rotation.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,

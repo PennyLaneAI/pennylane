@@ -25,7 +25,29 @@ from pennylane.wires import Wires
 
 
 def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    """Validate parameters"""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the first dimensions of all weight tensors match
+    * Check that the other dimensions of all weight tensors are correct for the number of qubits.
+
+    Args:
+        heta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
+        theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
+
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
 
@@ -92,21 +114,21 @@ def cv_neural_net_layer(
     of :math:`K=M(M-1)/2` beamsplitters.
 
     Args:
-        theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
-        varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(M, )` array of squeezing amounts for
+        theta_1 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(K, )` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(M, )` tensor of squeezing amounts for
             :class:`~pennylane.ops.Squeezing` operations
-        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for
+        phi_r (tensor_like): shape :math:`(M, )` tensor of squeezing angles for
             :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(M, )` array of displacement magnitudes for
+        theta_2 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(K, )` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(M, )` tensor of displacement magnitudes for
             :class:`~pennylane.ops.Displacement` operations
-        phi_a (array[float]): length :math:`(M, )` array of displacement angles for
+        phi_a (tensor_like): shape :math:`(M, )` tensor of displacement angles for
             :class:`~pennylane.ops.Displacement` operations
-        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        k (tensor_like): shape :math:`(M, )` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Wires): wires that the template acts on
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
@@ -152,17 +174,17 @@ def CVNeuralNetLayers(
        device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta_1 (array[float]): length :math:`(L, K)` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`(L, K)` array of phase angles for first interferometer
-        varphi_1 (array[float]): length :math:`(L, M)` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(L, M)` array of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
-        phi_r (array[float]): length :math:`(L, M)` array of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (array[float]): length :math:`(L, K)` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`(L, K)` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`(L, M)` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
-        phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~pennylane.ops.Displacement` operations
-        k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        theta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
+        theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     Raises:

@@ -28,21 +28,34 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weights, initial_layer_weights, wires):
-    """Verify inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shapes of the two weights tensors.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        initial_layer_weights (tensor_like): weight tensor for the initial rotation block, shape ``(M,)``
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
+
     if qml.tape_mode_active():
 
         shape = qml.math.shape(weights)
         repeat = shape[0]
 
-        if len(wires) <= 1 and shape != (repeat,):
-            raise ValueError(f"Weights must be of shape {(repeat, )}; got {shape}")
-        if len(wires) > 1 and shape != (repeat, len(wires) - 1, 2):
-            raise ValueError(f"Weights must be of shape {(repeat, len(wires) - 1, 2)}; got {shape}")
+        if shape[1] != len(wires) - 1:
+            raise ValueError(f"Second dimension of weights tensor must be of length {len(wires) - 1}; got {shape[1]}")
 
-        shape = qml.math.shape(initial_layer_weights)
-        if shape != (len(wires),):
+        if shape[2] != 2:
+            raise ValueError(f"Third dimension of weights tensor must be of length 2; got {shape[2]}")
+
+        shape2 = qml.math.shape(initial_layer_weights)
+        if shape2 != (len(wires),):
             raise ValueError(
-                f"Initial layer weights must be of shape {(len(wires),)}; " f"got {shape}"
+                f"Initial layer weights must be of shape {(len(wires),)}; got {shape}"
             )
 
     else:
@@ -120,8 +133,8 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     The number of layers :math:`L` is derived from the first dimension of ``weights``.
 
     Args:
-        initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
-        weights (array[float]): array of rotation angles for the layers, shape ``(L, M-1, 2)``
+        initial_layer_weights (tensor_like): weight tensor for the initial rotation block, shape ``(M,)``
+        weights (tensor_like): tensor of rotation angles for the layers, shape ``(L, M-1, 2)``
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
 

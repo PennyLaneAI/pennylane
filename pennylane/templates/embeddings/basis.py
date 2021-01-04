@@ -23,7 +23,20 @@ from pennylane.wires import Wires
 
 
 def _preprocess(features, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n`, where :math:`n` is the number of qubits.
+    * Check that the entries of the features tensor are zeros and ones.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+
+    Returns:
+        array: numpy array representation of the features tensor
+    """
 
     if qml.tape_mode_active():
 

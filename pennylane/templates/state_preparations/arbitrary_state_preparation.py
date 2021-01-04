@@ -22,7 +22,14 @@ from pennylane.wires import Wires
 
 
 def _preprocess(weights, wires):
-    """Validate and pre-process inputs."""
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
 
     if qml.tape_mode_active():
 
@@ -90,7 +97,7 @@ def ArbitraryStatePreparation(weights, wires):
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
     Args:
-        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
+        weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
