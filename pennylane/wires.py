@@ -22,6 +22,7 @@ from numbers import Number
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
+
 """ This is based on the new version by Maria Schuld, to be discussed further
 def _process(wires):
     if isinstance(wires, Wires):
@@ -49,6 +50,8 @@ def _process(wires):
     return (wires,)
 
 """
+
+
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
     if isinstance(wires, (Number, str)):
@@ -89,6 +92,7 @@ def _process(wires):
             wires, type(wires)
         )
     )
+
 
 class Wires(Sequence):
     r"""
@@ -261,7 +265,7 @@ class Wires(Sequence):
         <Wires = [4, 2, 3]>
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
-        #wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
+        # wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
 
         for w in self:
             if w not in wire_map:
