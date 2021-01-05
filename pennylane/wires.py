@@ -60,7 +60,7 @@ def _process(wires):
 
     if isinstance(wires, Wires):
         # if input is already a Wires object, just return its wire tuple
-        return wires._labels
+        return wires.labels
 
     if hasattr(wires, "shape") and wires.shape == tuple():
         # Scalar NumPy array
@@ -424,7 +424,7 @@ class Wires(Sequence):
                     "Expected a Wires object; got {} of type {}".format(wires, type(wires))
                 )
 
-            combined.extend(wire for wire in wires._labels if wire not in combined)
+            combined.extend(wire for wire in wires.labels if wire not in combined)
 
         if sort:
             if all([isinstance(w, int) for w in combined]):
