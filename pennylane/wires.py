@@ -26,36 +26,38 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
-    if isinstance(wires, Wires):
-        # if input is already a Wires object, just return its wire tuple
-        return wires.labels
-
     if isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
+
+    if isinstance(wires, Wires):
+        # if input is already a Wires object, just return its wire tuple
+        return wires.labels
 
     if hasattr(wires, "shape") and wires.shape == tuple():
         # Scalar NumPy array
         return (wires.item(),)
 
-    if isinstance(wires, Iterable):
-        # wires is an iterable, presumably of Wires, Number or scalar NumPy array instances
-        if all(isinstance(w, Wires) for w in wires):
-            # if the elements are themselves Wires objects, merge them to a new one
-            merged = tuple(w for wires_ in wires for w in wires_.tolist())
-        elif all(
-            isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
-        ):
-            # if the elements are strings or numbers, turn iterable into tuple
-            merged = tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
-        else:
-            merged = None
+    if isinstance(wires, range):
+        return tuple(wires)
 
-        if merged is not None:
-            # check that all wires are unique
-            if len(set(merged)) != len(merged):
+    if isinstance(wires, Iterable):
+        merged = []
+        for w in wires:
+            if isinstance(w, (str, Number)):
+                merged.append(w)
+            elif isinstance(w, Wires):
+                merged.extend(w)
+            elif getattr(w, "shape", None) == tuple():
+                merged.append(w.item())
+            else:
+                break
+        else:
+            # did not break above loop, all elements in wires were fine
+            if len(merged) != len(set(merged)):
                 raise WireError("Wires must be unique; got {}.".format(merged))
-            return merged
+            return tuple(merged)
+        # did break at one of the w in wires, raise WireError
 
     raise WireError(
         "Wires must be represented by a number or string; got {} of type {}.".format(
