@@ -22,36 +22,6 @@ from numbers import Number
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
-
-""" This is based on the new version by Maria Schuld, to be discussed further
-def _process(wires):
-    if isinstance(wires, Wires):
-        return wires._labels
-
-    if isinstance(wires, Iterable) and not isinstance(wires, str):
-        if hasattr(wires, "shape") and wires.shape == tuple():
-            # Scalar NumPy array
-            return (wires.item(),)
-        if isinstance(wires, range):
-            return tuple(wires)
-        merged = []
-        for w in wires:
-            if isinstance(w, Wires):
-                merged.extend(w._labels)
-            elif hasattr(w, "shape") and w.shape == tuple():
-                merged.append(w.item())
-            else:
-                merged.append(w)
-
-        if len(set(merged)) != len(merged):
-            raise WireError(f"Wires must be unique; got {merged}.")
-        return tuple(merged)
-
-    return (wires,)
-
-"""
-
-
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
     if isinstance(wires, (Number, str)):
