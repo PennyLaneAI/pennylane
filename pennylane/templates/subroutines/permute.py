@@ -21,6 +21,36 @@ from pennylane.templates.decorator import template
 from pennylane.wires import Wires
 
 
+def _preprocess(permutation, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check that we have more than 1 qubit.
+    * Check that permutation and wires have same length.
+    * Check uniqueness of wire labels in permutation.
+    * Check that wire labels of permutation exist.
+
+    Args:
+        permutation (list): list of wire labels
+        wires (Wires): wires that template acts on
+    """
+
+    if len(permutation) <= 1 or len(wires) <= 1:
+        raise ValueError("Permutations must involve at least 2 qubits.")
+
+        # Make sure the lengths of permutation and wires are the same
+    if len(permutation) != len(wires):
+        raise ValueError("Permutation must specify outcome of all wires.")
+
+        # Permutation order must contain all unique values
+    if len(set(permutation)) != len(permutation):
+        raise ValueError("Values in a permutation must all be unique.")
+
+        # Make sure everything in the permutation has an associated label in wires
+    for label in permutation:
+        if label not in wires.labels:
+            raise ValueError(f"Cannot permute wire {label} not present in wire set.")
+
+
 @template
 def Permute(permutation, wires):
     r"""Applies a permutation to a set of wires.
@@ -148,22 +178,7 @@ def Permute(permutation, wires):
     """
 
     wires = Wires(wires)
-
-    if len(permutation) <= 1 or len(wires) <= 1:
-        raise ValueError("Permutations must involve at least 2 qubits.")
-
-    # Make sure the lengths of permutation and wires are the same
-    if len(permutation) != len(wires):
-        raise ValueError("Permutation must specify outcome of all wires.")
-
-    # Permutation order must contain all unique values
-    if len(set(permutation)) != len(permutation):
-        raise ValueError("Values in a permutation must all be unique.")
-
-    # Make sure everything in the permutation has an associated label in wires
-    for label in permutation:
-        if label not in wires.labels:
-            raise ValueError(f"Cannot permute wire {label} not present in wire set.")
+    _preprocess(permutation, wires)
 
     # Temporary storage to keep track as we permute
     working_order = list(wires.labels)

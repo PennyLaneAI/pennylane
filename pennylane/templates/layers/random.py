@@ -16,22 +16,58 @@ Contains the ``RandomLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.templates.utils import (
     check_shape,
-    check_type,
     check_number_of_layers,
     get_shape,
 )
 from pennylane.wires import Wires
 
 
+def _preprocess(weights):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the weights tensor is 2-dimensional.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+
+        repeat = shape[0]
+
+    else:
+        repeat = check_number_of_layers([weights])
+        n_rots = get_shape(weights)[1]
+
+        expected_shape = (repeat, n_rots)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(weights)),
+        )
+
+    return repeat
+
+
 def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
     r"""A single random layer.
 
     Args:
-        weights (array[float]): array of weights of shape ``(k,)``
+        weights (tensor_like): tensor of weights of shape ``(k,)``
         wires (Wires): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
@@ -89,7 +125,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights of shape ``(L, k)``,
+        weights (tensor_like): weight tensor of shape ``(L, k)``,
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
@@ -213,36 +249,8 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     if rotations is None:
         rotations = [RX, RY, RZ]
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    repeat = check_number_of_layers([weights])
-    n_rots = get_shape(weights)[1]
-
-    expected_shape = (repeat, n_rots)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    check_type(
-        ratio_imprim,
-        [float, type(None)],
-        msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
-    )
-    check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
-    # TODO: Check that 'rotations' contains operations
-    check_type(
-        rotations,
-        [list, type(None)],
-        msg="'rotations' must be a list of PennyLane operations; got {}" "".format(rotations),
-    )
-    check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
-
-    ###############
+    repeat = _preprocess(weights)
 
     for l in range(repeat):
         random_layer(
