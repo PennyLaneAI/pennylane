@@ -22,7 +22,7 @@ from numbers import Number
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
-"""
+""" This is based on the new version by Maria Schuld, to be discussed further
 def _process(wires):
     if isinstance(wires, Wires):
         return wires._labels
