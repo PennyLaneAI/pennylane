@@ -343,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == Wires(0)
+        assert qnode.ops[0].wires[0] == 0
 
 
 class TestQNodeExceptions:

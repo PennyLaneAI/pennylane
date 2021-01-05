@@ -212,7 +212,7 @@ class DefaultTensor(Device):
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, wires.labels)
+        name = "{}{}".format(name, (tuple([wires]) if isinstance(wires, int) else wires.labels))
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend

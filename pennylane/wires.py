@@ -85,7 +85,9 @@ class Wires(Sequence):
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object representing a single wire."""
-        return Wires(self.labels[idx])
+        if isinstance(idx, slice):
+            return Wires(self.labels[idx])
+        return self.labels[idx]
 
     def __len__(self):
         """Method to support ``len()``."""
@@ -93,8 +95,8 @@ class Wires(Sequence):
 
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
-        if isinstance(item, Wires):
-            item = item.tolist()
+        if isinstance(item, (str, Number)):
+            return item in self.labels
         # if all wires can be found in tuple, return True, else False
         return all(wire in self.labels for wire in item)
 
@@ -130,7 +132,7 @@ class Wires(Sequence):
         Wires([4, 0, 1, 2])
         """
         other = Wires(other)
-        return Wires(Wires.all_wires([self, other]))
+        return Wires.all_wires([self, other])
 
     def __radd__(self, other):
         """Defines addition according to __add__ if the left object has no addition defined.
@@ -142,7 +144,7 @@ class Wires(Sequence):
             Wires: all wires appearing in either object
         """
         other = Wires(other)
-        return Wires(Wires.all_wires([other, self]))
+        return Wires.all_wires([other, self])
 
     def __array__(self):
         """Defines a numpy array representation of the Wires object.
@@ -188,7 +190,7 @@ class Wires(Sequence):
             if len(wire) != 1:
                 raise WireError("Can only retrieve index of a Wires object of length 1.")
 
-            wire = wire.labels[0]
+            wire = wire[0]
 
         try:
             return self.labels.index(wire)
@@ -233,7 +235,7 @@ class Wires(Sequence):
         <Wires = [4, 2, 3]>
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
-        wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
+        #wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
 
         for w in self:
             if w not in wire_map:
@@ -296,7 +298,7 @@ class Wires(Sequence):
                     "Cannot subset wire at index {} from {} wires.".format(i, len(self.labels))
                 )
 
-        subset = [self.labels[i] for i in indices]
+        subset = [self[i] for i in indices]
         return Wires(subset)
 
     def select_random(self, n_samples, seed=None):
@@ -320,7 +322,7 @@ class Wires(Sequence):
             np.random.seed(seed)
 
         indices = np.random.choice(len(self.labels), size=n_samples, replace=False)
-        subset = [self.labels[i] for i in indices]
+        subset = [self[i] for i in indices]
         return Wires(subset)
 
     @staticmethod
@@ -356,7 +358,7 @@ class Wires(Sequence):
         # only need to iterate through the first object,
         # since any wire not in this object will also not be shared
         for wire in list_of_wires[0]:
-            if all(wire in wires_ for wires_ in list_of_wires):
+            if all(wire in wires_ for wires_ in list_of_wires[1:]):
                 shared.append(wire)
 
         return Wires(shared)

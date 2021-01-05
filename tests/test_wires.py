@@ -97,7 +97,7 @@ class TestWires:
 
         # check single index
         for i in range(len(iterable)):
-            assert wires[i] == Wires(iterable[i])
+            assert wires[i] == iterable[i]
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
 
@@ -176,7 +176,7 @@ class TestWires:
         wires = Wires([0, 1, 2])
         list_of_wires = [Wires([1]), Wires([1]), Wires([1, 2, 3]), Wires([4])]
 
-        assert set(wires) == {Wires([0]), Wires([1]), Wires([2])}
+        assert set(wires) == {0, 1, 2}
         assert set(list_of_wires) == {Wires([1]), Wires([1, 2, 3]), Wires([4])}
 
     def test_label_property(self):
@@ -237,10 +237,10 @@ class TestWires:
         assert wires.indices(1) == [2]
 
     @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']),
-                                                            {Wires('a'): Wires(0), Wires('b'): Wires(1)},
+                                                            {'a': Wires(0), 'b': Wires(1)},
                                                             Wires([0, 1])),
                                                            (Wires([-1, 1]),
-                                                            {Wires(1): Wires('c'), Wires(-1): Wires(1), Wires('d'): Wires('e')},
+                                                            {1: 'c', -1: 1, 'd': 'e'},
                                                             Wires([1, 'c'])),
                                                            ])
     def test_map_method(self, wires, wire_map, expected):
@@ -250,12 +250,12 @@ class TestWires:
 
         # error when labels not in wire_map dictionary
         with pytest.raises(WireError, match="No mapping for wire label"):
-            wires.map({Wires(-1): Wires(4)}) == expected
+            wires.map({-1: Wires(4)}) == expected
 
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
             wires = Wires([0, 1])
-            wires.map({Wires(0): Wires('a'), Wires(1): Wires('a')})
+            wires.map({0: 'a', 1: Wires('a')})
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
