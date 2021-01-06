@@ -19,7 +19,6 @@ import itertools as it
 
 import numpy as onp
 import pytest
-from pytest_mock import mocker
 
 import pennylane as qml
 from pennylane import numpy as np
