@@ -26,6 +26,10 @@ from pennylane.ops import RX, RY, T, S, Rot, CRX, CRot, CNOT
 from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires_ring
 from pennylane.wires import Wires
 
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 @template
 def ConstantTemplate(wires):
     T(wires=wires)
@@ -226,7 +230,7 @@ class TestBuiltinPatterns:
             broadcast(unitary=RX, wires=range(n_wires), pattern="single", parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="'parameters' must contain entries for"):
+        with pytest.raises(ValueError, match="Parameters must contain entries for"):
             circuit()
 
     def test_throws_special_error_for_ring_pattern_2_wires(self):
@@ -311,3 +315,18 @@ class TestCustomPattern:
 
         res = circuit()
         assert np.allclose(res, expected)
+
+
+def test_unknown_pattern():
+    """Test that an unknown pattern raises an error"""
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(pars):
+        broadcast(unitary=RX, wires=range(2), pattern="hello", parameters=pars)
+        return qml.expval(qml.PauliZ(0))
+
+    pars = [[1.6], [2.1]]
+
+    with pytest.raises(ValueError, match="did not recognize pattern hello"):
+        circuit(pars)

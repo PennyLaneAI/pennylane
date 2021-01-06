@@ -190,7 +190,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         # The QNGOptimizer.step does not permit passing an external gradient function.
         # Autograd will always calculate the gradient and `forward` will never be `None`.
-        g, forward = self.compute_grad(qnode, x)
+        g, forward = self.compute_grad(qnode, (x,), dict())
         x_out = self.apply_grad(g, x)
         return x_out, forward
 

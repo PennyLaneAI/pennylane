@@ -23,10 +23,72 @@ from pennylane.templates.decorator import template
 from pennylane.templates.subroutines import DoubleExcitationUnitary, SingleExcitationUnitary
 from pennylane.templates.utils import (
     check_shape,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(init_state, weights, s_wires, d_wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check that not both wire sets are empty.
+    * Check that d_wires contains wire pairs.
+    * Check shaoe of the weights tensor.
+    * Cast initial state to numpy array.
+    * Check that initial state contains only zeros and ones.
+    * Flip bits in initial state.
+
+    Args:
+        init_state (tensor_like): shape ``(len(wires),)`` tensor
+        weights (tensor_like): trainable parameters of the template
+        s_wires (Wires): set of wires
+        d_wires (Wires): another set of wires
+
+    Returns:
+        array: preprocessed initial state
+    """
+
+    if (not s_wires) and (not d_wires):
+        raise ValueError(
+            "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
+                s_wires, d_wires
+            )
+        )
+
+    for d_wires_ in d_wires:
+        if len(d_wires_) != 2:
+            raise ValueError(
+                "expected entries of d_wires to be of size 2; got {} of length {}".format(
+                    d_wires_, len(d_wires_)
+                )
+            )
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+        if shape != (len(s_wires) + len(d_wires),):
+            raise ValueError(
+                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
+            )
+
+    else:
+        expected_shape = (len(s_wires) + len(d_wires),)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights tensor must be of shape {}; got {}".format(
+                expected_shape, get_shape(weights)
+            ),
+        )
+
+    # we can extract the numpy representation here
+    # since init_state can never be differentiable
+    init_state = qml.math.toarray(init_state)
+
+    if init_state.dtype != np.dtype("int"):
+        raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
+
+    return np.flip(init_state)
 
 
 @template
@@ -68,7 +130,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (array): Length ``len(s_wires) + len(d_wires)`` vector containing the parameters
+        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.SingleExcitationUnitary`
             and
@@ -153,57 +215,10 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
 
     """
 
-    ##############
-    # Input checks
-
     wires = Wires(wires)
+    init_state_flipped = _preprocess(init_state, weights, s_wires, d_wires)
 
-    if (not s_wires) and (not d_wires):
-        raise ValueError(
-            "'s_wires' and 'd_wires' lists can not be both empty; got ph={}, pphh={}".format(
-                s_wires, d_wires
-            )
-        )
-
-    check_type(
-        init_state,
-        [np.ndarray],
-        msg="'init_state' must be a Numpy array; got {}".format(init_state),
-    )
-    for i in init_state:
-        check_type(
-            i,
-            [int, np.int64, np.ndarray],
-            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
-        )
-
-    expected_shape = (len(s_wires) + len(d_wires),)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-    )
-
-    expected_shape = (len(wires),)
-    check_shape(
-        init_state,
-        expected_shape,
-        msg="'init_state' must be of shape {}; got {}".format(
-            expected_shape, get_shape(init_state)
-        ),
-    )
-
-    for d_wires_ in d_wires:
-        if len(d_wires_) != 2:
-            raise ValueError(
-                "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                    d_wires_, len(d_wires_)
-                )
-            )
-
-    ###############
-
-    qml.BasisState(np.flip(init_state), wires=wires)
+    qml.BasisState(init_state_flipped, wires=wires)
 
     # turn wire arguments into Wires objects
     s_wires = [Wires(w) for w in s_wires]

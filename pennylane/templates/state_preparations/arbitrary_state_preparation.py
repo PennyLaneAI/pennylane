@@ -21,6 +21,36 @@ from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
+def _preprocess(weights, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+        if shape != (2 ** (len(wires) + 1) - 2,):
+            raise ValueError(
+                f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
+            )
+
+    else:
+
+        expected_shape = (2 ** (len(wires) + 1) - 2,)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights tensor must be of shape {}; got {}.".format(
+                expected_shape, get_shape(weights)
+            ),
+        )
+
+
 @functools.lru_cache()
 def _state_preparation_pauli_words(num_wires):
     """Pauli words necessary for a state preparation.
@@ -69,21 +99,14 @@ def ArbitraryStatePreparation(weights, wires):
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
     Args:
-        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
+        weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     """
 
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    expected_shape = (2 ** (n_wires + 1) - 2,)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
-    )
+    _preprocess(weights, wires)
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

@@ -38,6 +38,10 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _n_k_gray_code,
 )
 
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 # fmt: off
 PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),
@@ -113,28 +117,29 @@ class TestInterferometer:
 
     def test_invalid_mesh_exception(self):
         """Test that Interferometer() raises correct exception when mesh not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="Mesh option"):
+        with pytest.raises(ValueError, match="did not recognize mesh"):
             circuit(varphi, mesh="a")
 
-    def test_invalid_mesh_exception(self):
+    @pytest.mark.parametrize("mesh", ["rectangular", "triangular"])
+    def test_invalid_beamsplitter_exception(self, mesh):
         """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="did not recognize option"):
+        with pytest.raises(ValueError, match="did not recognize beamsplitter"):
             circuit(varphi, bs="a")
 
     def test_clements_beamsplitter_convention(self, tol):
@@ -342,10 +347,33 @@ class TestInterferometer:
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
-        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
+    def test_interferometer_wrong_dim(self):
+        """Integration test for the CVNeuralNetLayers method."""
+        if not qml.tape_mode_active():
+            pytest.skip("Validation only performed in tape mode")
+
+        dev = qml.device("default.gaussian", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi, varphi):
+            Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
+        phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
+        varphi = np.array([0.4134863, 6.17555778, 0.80334114, 2.02400747])
+
+        with pytest.raises(ValueError, match=r"Theta must be of shape \(6,\)"):
+            wrong_theta = np.array([0.1, 0.2])
+            circuit(wrong_theta, phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Phi must be of shape \(6,\)"):
+            wrong_phi = np.array([0.1, 0.2])
+            circuit(theta, wrong_phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Varphi must be of shape \(4,\)"):
+            wrong_varphi = np.array([0.1, 0.2])
+            circuit(theta, phi, wrong_varphi)
 
 
 class TestSingleExcitationUnitary:
@@ -442,7 +470,7 @@ class TestSingleExcitationUnitary:
         [
             (0.2, [0], "expected at least two wires"),
             (0.2, [], "expected at least two wires"),
-            ([0.2, 1.1], [0, 1, 2], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 1, 2], "Weight must be a scalar"),
         ],
     )
     def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
@@ -475,19 +503,13 @@ class TestSingleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0]))
+            init_state = np.array([0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=wires)
             SingleExcitationUnitary(weight, wires=single_wires)
-
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestArbitraryUnitary:
@@ -538,6 +560,23 @@ class TestArbitraryUnitary:
         for i, op in enumerate(rec.queue):
             assert op.data[0] == weights[i]
             assert op.data[1] == pauli_words[i]
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ArbitraryUnitary(weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must be of shape"):
+            weights = np.array([0, 1])
+            circuit(weights)
 
 
 class TestDoubleExcitationUnitary:
@@ -739,7 +778,7 @@ class TestDoubleExcitationUnitary:
             (0.2, [0], [1, 2], "expected at least two wires representing the occupied"),
             (0.2, [0, 1], [2], "expected at least two wires representing the unoccupied"),
             (0.2, [0], [1], "expected at least two wires representing the occupied"),
-            ([0.2, 1.1], [0, 2], [4, 6], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 2], [4, 6], "Weight must be a scalar"),
         ],
     )
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
@@ -771,19 +810,13 @@ class TestDoubleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0, 0]))
+            init_state = np.array([0, 0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=range(N))
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
-
             return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestUCCSDUnitary:
@@ -907,8 +940,6 @@ class TestUCCSDUnitary:
     @pytest.mark.parametrize(
         ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
         [
-            (np.array([-2.8]), [[0, 1, 2]], [], [1, 1, 0, 0], "'init_state' must be a Numpy array"),
-            (np.array([-2.8]), [[0, 1, 2]], [], (1, 1, 0, 0), "'init_state' must be a Numpy array"),
             (
                 np.array([-2.8]),
                 [[0, 1, 2]],
@@ -921,7 +952,7 @@ class TestUCCSDUnitary:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'s_wires' and 'd_wires' lists can not be both empty",
+                "s_wires and d_wires lists can not be both empty",
             ),
             (
                 np.array([-2.8]),
@@ -935,28 +966,28 @@ class TestUCCSDUnitary:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
-                "'init_state' must be of shape",
+                "BasisState parameter and wires",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
         ],
     )
@@ -1026,11 +1057,6 @@ class TestUCCSDUnitary:
         res = circuit(w0, w1, w2)
         assert np.allclose(res, np.array(expected), atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((w0, w1, w2), method="A")
-        jac_F = circuit.jacobian((w0, w1, w2), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
-
 
 class TestApproxTimeEvolution:
     """Tests for the ApproxTimeEvolution template from the pennylane.templates.subroutine module."""
@@ -1049,23 +1075,6 @@ class TestApproxTimeEvolution:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
-            circuit()
-
-    def test_n_error(self):
-        """Tests if the correct error is thrown when n is not an integer"""
-
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
-        n = 1.37
-
-        @qml.qnode(dev)
-        def circuit():
-            ApproxTimeEvolution(hamiltonian, 2, n)
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="n must be of type int"):
             circuit()
 
     @pytest.mark.parametrize(

@@ -28,6 +28,67 @@ from pennylane.templates.utils import (
 from pennylane.wires import Wires
 
 
+def _preprocess(weights, wires, init_state):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the weights tensor has the correct shape.
+    * Extract a wire list for the subroutines of this template.
+    * Cast initial state to a numpy array.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+        init_state (tensor_like): shape ``(len(wires),)`` tensor
+
+    Returns:
+        int, list[Wires], array: number of times that the ansatz is repeated, wires pattern,
+            and preprocessed initial state
+    """
+    if len(wires) < 2:
+        raise ValueError(
+            "This template requires the number of qubits to be greater than one;"
+            "got a wire sequence with {} elements".format(len(wires))
+        )
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+
+        if len(shape) != 3:
+            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
+
+        if shape[1] != len(wires) - 1:
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
+            )
+
+        if shape[2] != 2:
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 2; got {shape[2]}"
+            )
+
+        repeat = shape[0]
+
+    else:
+        repeat = get_shape(weights)[0]
+
+        expected_shape = (repeat, len(wires) - 1, 2)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights tensor must be of shape {}; got {}".format(
+                expected_shape, get_shape(weights)
+            ),
+        )
+
+    nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
+    nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
+    # we can extract the numpy representation here
+    # since init_state can never be differentiable
+    init_state = qml.math.toarray(init_state)
+    return repeat, nm_wires, init_state
+
+
 def decompose_ua(phi, wires=None):
     r"""Implements the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
@@ -228,28 +289,10 @@ def ParticleConservingU1(weights, wires, init_state=None):
     """
 
     wires = Wires(wires)
-
-    layers = weights.shape[0]
-
-    if len(wires) < 2:
-        raise ValueError(
-            "This template requires the number of qubits to be greater than one; a wire sequence with {} elements".format(
-                len(wires)
-            )
-        )
-
-    expected_shape = (layers, len(wires) - 1, 2)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-    )
-
-    nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
-    nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
+    repeat, nm_wires, init_state = _preprocess(weights, wires, init_state)
 
     qml.BasisState(init_state, wires=wires)
 
-    for l in range(layers):
+    for l in range(repeat):
         for i, wires_ in enumerate(nm_wires):
-            u1_ex_gate(weights[l, i, 0], weights[l, i, 1], wires=wires_)
+            u1_ex_gate(weights[l][i][0], weights[l][i][1], wires=wires_)

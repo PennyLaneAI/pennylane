@@ -15,6 +15,7 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -51,33 +52,62 @@ class AdagradOptimizer(GradientDescentOptimizer):
         self.eps = eps
         self.accumulation = None
 
-    def apply_grad(self, grad, x):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+    def apply_grad(self, grad, args):
+        r"""Update the variables in args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
+            grad (tuple[array]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list: the new values :math:`x^{(t+1)}`
         """
-
-        x_flat = _flatten(x)
-        grad_flat = list(_flatten(grad))
+        args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [g * g for g in grad_flat]
+            self.accumulation = [None] * len(args)
+
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = list(_flatten(grad[trained_index]))
+
+                self._update_accumulation(index, grad_flat)
+
+                x_new_flat = [
+                    e - (self._stepsize / math.sqrt(a + self.eps)) * g
+                    for a, g, e in zip(self.accumulation[index], grad_flat, x_flat)
+                ]
+
+                args_new[index] = unflatten(x_new_flat, arg)
+
+                if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors.
+                    # TODO: remove when the following is fixed:
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
+
+        return args_new
+
+    def _update_accumulation(self, index, grad_flat):
+        r"""Update the accumulation at index with gradient.
+
+        Args:
+            index (int): index of parameter to update.
+            grad_flat (list): flattened list form of gradient
+        """
+        if self.accumulation[index] is None:
+            self.accumulation[index] = [g * g for g in grad_flat]
         else:
-            self.accumulation = [a + g * g for a, g in zip(self.accumulation, grad_flat)]
-
-        x_new_flat = [
-            e - (self._stepsize / math.sqrt(a + self.eps)) * g
-            for a, g, e in zip(self.accumulation, grad_flat, x_flat)
-        ]
-
-        return unflatten(x_new_flat, x)
+            self.accumulation[index] = [
+                a + g * g for a, g in zip(self.accumulation[index], grad_flat)
+            ]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

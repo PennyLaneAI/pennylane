@@ -103,6 +103,8 @@ class QubitParamShiftTape(JacobianTape):
             # measurement queue.
             self.var_idx = np.where(self.var_mask)[0]
 
+        self.hessian_pd = self.parameter_shift_hessian
+
     def _grad_method(self, idx, use_graph=True, default_method="A"):
         op = self._par_info[idx]["op"]
 
@@ -150,7 +152,6 @@ class QubitParamShiftTape(JacobianTape):
 
         for c, a, s in param_shift:
             shift[idx] = s
-
             shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_tape.set_parameters(a * params + shift)
 
@@ -269,5 +270,90 @@ class QubitParamShiftTape(JacobianTape):
             # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
             # d<A>/dp for plain expectations
             return np.where(self.var_mask, pdA2 - 2 * self._evA_result * pdA, pdA)
+
+        return tapes, processing_fn
+
+    def parameter_shift_hessian(self, i, j, params, **options):
+        """Generate the tapes and postprocessing methods required to compute the
+        second derivative with respect to tape parameter :math:`i` and :math:`j`
+        using the second-order parameter-shift method.
+
+        Args:
+            i (int): trainable parameter index to differentiate with respect to
+            j (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            s1=pi/2 (float): the size of the shift for index i in the parameter-shift Hessian computations
+            s2=pi/2 (float): the size of the shift for index j in the parameter-shift Hessian computations
+
+        Returns:
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
+        """
+        idxs = (i, j)
+        idx_shifts = {i: options.get("s1", np.pi / 2), j: options.get("s2", np.pi / 2)}
+
+        param_shifts = []
+
+        if i == j and idx_shifts[i] == idx_shifts[j]:
+            if idx_shifts[i] == np.pi / 2:
+                # When i = j and s1 = s2 = pi/2, the Hessian parameter shift rule
+                # can be simplified to two device executions
+                param_shifts = [(0.5, 1, np.pi), (-0.5, 1, 0)]
+            elif idx_shifts[i] == np.pi / 4:
+                # When i = j and s1 = s2 = pi/4, the Hessian parameter shift rule
+                # can be simplified to three device executions
+                # TODO: The first and last parameter shift values below are identical
+                # to those used when computing the Jacobian with s=pi/2. We should find
+                # a way to re-use those values rather than re-calculating them.
+                param_shifts = [(0.5, 1, np.pi / 2), (-1, 1, 0), (0.5, 1, -np.pi / 2)]
+
+        coeffs = []
+        tapes = []
+        shift = np.eye(len(params))
+
+        if param_shifts:
+            # Optimizations can be made to reduce amount of tape executions
+            for c, a, s in param_shifts:
+                shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+                shifted_tape.set_parameters(a * params + s * shift[i])
+
+                coeffs.append(c)
+                tapes.append(shifted_tape)
+        else:
+            # No optimizations can be made, generate all 4 tapes
+            for idx in idxs:
+                t_idx = list(self.trainable_params)[idx]
+                op = self._par_info[t_idx]["op"]
+                p_idx = self._par_info[t_idx]["p_idx"]
+                s = idx_shifts[idx]
+
+                param_shift = op.get_parameter_shift(p_idx, shift=s)
+                param_shifts.append(param_shift)
+
+            for c1, a, s1 in param_shifts[0]:
+                for c2, _, s2 in param_shifts[1]:
+                    c = c1 * c2
+                    s = s1 * shift[i] + s2 * shift[j]
+                    shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
+                    shifted_tape.set_parameters(a * params + s)
+
+                    coeffs.append(c)
+                    tapes.append(shifted_tape)
+
+        def processing_fn(results):
+            """Computes the second derivative with respect to tape parameters i
+            and j using the second-order parameter-shift method.
+
+            Args:
+                results (list[real]): evaluated quantum tapes
+
+            Returns:
+                array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
+            """
+            return np.dot(coeffs, results)
 
         return tapes, processing_fn
