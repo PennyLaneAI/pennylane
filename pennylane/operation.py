@@ -119,14 +119,13 @@ import copy
 import itertools
 import functools
 import numbers
-from collections.abc import Sequence
 from enum import Enum, IntEnum
-from pennylane.wires import Wires
 
 import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 from .variable import Variable

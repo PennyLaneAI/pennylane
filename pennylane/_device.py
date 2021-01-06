@@ -19,7 +19,8 @@ import abc
 
 import numpy as np
 
-from collections import Iterable, OrderedDict
+from collections.abc import Iterable
+from collections import OrderedDict
 from pennylane.operation import (
     Operation,
     Observable,

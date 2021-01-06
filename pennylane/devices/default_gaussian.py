@@ -56,7 +56,7 @@ def partitions(s, include_singles=True):
         if include_singles:
             yield (s[0],), (s[1],)
 
-        yield tuple(s),
+        yield (tuple(s),)
     else:
         # pull off a single item and partition the rest
         if include_singles:
@@ -67,7 +67,7 @@ def partitions(s, include_singles=True):
                 for p in rest_partitions:
                     yield ((item_partition),) + p
             else:
-                yield tuple(s),
+                yield (tuple(s),)
 
         # pull off a pair of items and partition the rest
         for idx1 in range(1, len(s)):

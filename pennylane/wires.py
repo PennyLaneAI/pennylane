@@ -15,8 +15,8 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections.abc import Sequence, Iterable
-import numpy as np
 from numbers import Number
+import numpy as np
 
 
 class WireError(Exception):
@@ -195,8 +195,8 @@ class Wires(Sequence):
 
         try:
             return self._labels.index(wire)
-        except ValueError:
-            raise WireError("Wire with label {} not found in {}.".format(wire, self))
+        except ValueError as e:
+            raise WireError("Wire with label {} not found in {}.".format(wire, self)) from e
 
     def indices(self, wires):
         """
@@ -251,7 +251,7 @@ class Wires(Sequence):
         except WireError as e:
             raise WireError(
                 "Failed to implement wire map {}. Make sure that the new labels are unique and "
-                "valid wire labels.".format(w, wire_map)
+                "valid wire labels.".format(wire_map)
             ) from e
 
         return new_wires
