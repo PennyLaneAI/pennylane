@@ -22,6 +22,7 @@ from numbers import Number
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
+
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
     if isinstance(wires, (Number, str)):
