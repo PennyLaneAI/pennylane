@@ -178,6 +178,11 @@
   generator is required to construct the metric tensor. 
   [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
+* The templates are modified to make use of the new `qml.math` module, for framework-agnostic
+  tensor manipulation. This allows the template library to be differentiable
+  in backpropagation mode (`diff_method="backprop"`).
+  [(#873)](https://github.com/PennyLaneAI/pennylane/pull/873)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -197,7 +202,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 

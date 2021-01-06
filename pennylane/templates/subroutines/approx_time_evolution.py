@@ -19,6 +19,23 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 
 
+def _preprocess(hamiltonian):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the hamiltonian is of the correct type.
+
+    Args:
+        hamiltonian (qml.vqe.vqe.Hamiltonian): Hamiltonian to simulate
+    """
+
+    if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
+        raise ValueError(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+                type(hamiltonian).__name__
+            )
+        )
+
+
 @template
 def ApproxTimeEvolution(hamiltonian, time, n):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
@@ -100,19 +117,9 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         [-0.41614684 -0.41614684]
     """
 
+    _preprocess(hamiltonian)
+
     pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-    if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
-        raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
-        )
-
-    if not isinstance(n, (int, qml.variable.Variable)):
-        raise ValueError("n must be of type int, got {}".format(type(n).__name__))
-
-    ###############
 
     theta = []
     pauli_words = []
@@ -132,7 +139,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         except KeyError as error:
             raise ValueError(
                 "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
-            )
+            ) from error
 
         # Skips terms composed solely of identities
         if word.count("I") != len(word):

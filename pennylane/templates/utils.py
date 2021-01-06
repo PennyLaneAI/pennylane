@@ -203,7 +203,7 @@ def check_number_of_layers(list_of_weights):
 
     if any(len(s) == 0 for s in shapes):
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got scalar weights."
         )
 
@@ -213,7 +213,7 @@ def check_number_of_layers(list_of_weights):
 
     if n_different_first_dims > 1:
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got differing first dimensions: {}.".format(*different_first_dims)
         )
 

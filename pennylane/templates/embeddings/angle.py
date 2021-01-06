@@ -15,16 +15,56 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.ops import RX, RY, RZ
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_is_in_options,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(features, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n` or less, where :math:`n` is the number of qubits.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of features
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
+
+    else:
+
+        shp = check_shape(
+            features,
+            (len(wires),),
+            bound="max",
+            msg="Features must be of shape {} or smaller; "
+            "got {}.".format((len(wires),), get_shape(features)),
+        )
+        n_features = shp[0]
+
+    return n_features
 
 
 @template
@@ -49,41 +89,22 @@ def AngleEmbedding(features, wires, rotation="X"):
             with :math:`N\leq n`
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
-        rotation (str): Type of rotations used
+        rotation (str): type of rotations used
 
-    Raises:
-        ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    shp = check_shape(
-        features,
-        (len(wires),),
-        bound="max",
-        msg="'features' must be of shape {} or smaller; "
-        "got {}.".format((len(wires),), get_shape(features)),
-    )
-    check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
-
-    check_is_in_options(
-        rotation,
-        ["X", "Y", "Z"],
-        msg="did not recognize option {} for 'rotation'.".format(rotation),
-    )
-
-    wires = wires[: shp[0]]
-
-    ###############
+    n_features = _preprocess(features, wires)
+    wires = wires[:n_features]
 
     if rotation == "X":
-        broadcast(unitary=RX, pattern="single", wires=wires, parameters=features)
+        broadcast(unitary=qml.RX, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Y":
-        broadcast(unitary=RY, pattern="single", wires=wires, parameters=features)
+        broadcast(unitary=qml.RY, pattern="single", wires=wires, parameters=features)
 
     elif rotation == "Z":
-        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
+        broadcast(unitary=qml.RZ, pattern="single", wires=wires, parameters=features)
+
+    else:
+        raise ValueError(f"Rotation option {rotation} not recognized.")
