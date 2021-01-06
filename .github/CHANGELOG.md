@@ -2,6 +2,45 @@
 
 <h3>New features since last release</h3>
 
+* The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
+  may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
+  [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
+
+  The full changes apply to:
+  
+  * `AdagradOptimizer`
+  * `AdamOptimizer`
+  * `GradientDescentOptimizer`
+  * `MomentumOptimizer`
+  * `NesterovMomentumOptimizer`
+  * `RMSPropOptimizer`
+  * `RotosolveOptimizer` 
+  
+  The `requires_grad=False` property must mark any non-trainable constant argument. 
+  The `RotoselectOptimizer` allows passing only keyword arguments.
+
+  Example use:
+
+  ```python
+  def cost(x, y, data, scale=1.0):
+      return scale * (x[0]-data)**2 + scale * (y-data)**2
+
+  x = np.array([1.], requires_grad=True)
+  y = np.array([1.0])
+  data = np.array([2.], requires_grad=False)
+
+  opt = qml.GradientDescentOptimizer()
+  
+  # the optimizer step and step_and_cost methods can
+  # now update multiple parameters at once
+  x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
+  (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
+
+  # list and tuple unpacking is also supported
+  params = (x, y, data)
+  params = opt.step(cost, *params)
+  ```
+ 
 * Support added for calculating the Hessian of quantum tapes using the second-order
   parameter shift formula.
   [(#961)](https://github.com/PennyLaneAI/pennylane/pull/961)
@@ -113,6 +152,7 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
+
 <h3>Improvements</h3>
 
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
@@ -162,7 +202,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
