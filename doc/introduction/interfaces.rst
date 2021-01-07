@@ -11,7 +11,7 @@ circuits in PennyLane, and connect them easily to the top scientific computing a
 libraries.
 
 The bridge between the quantum and classical worlds is provided in PennyLane via *interfaces*.
-Currently, there are three built-in interfaces: NumPy, PyTorch, and TensorFlow.
+Currently, there are three built-in interfaces: NumPy, PyTorch, JAX, and TensorFlow.
 These interfaces make each of these libraries quantum-aware, allowing quantum circuits to be
 treated just like any other operation.
 
@@ -73,6 +73,15 @@ See the links below for walkthroughs of each specific interface:
                     </div>
                 </a>
             </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="interfaces/jax.html">
+                    <div class="card rounded-lg py-2" style="height:100%;">
+                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
+                            <img src="../_static/jax.png" class="card-img-top" style="width:80%;"></img>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -95,3 +104,4 @@ converting QNodes into both Keras and ``torch.nn`` layers:
     interfaces/numpy
     interfaces/torch
     interfaces/tf
+    interfaces/jax
