@@ -105,6 +105,11 @@ class TensorBox(abc.ABC):
 
         namespace = tensor.__class__.__module__.split(".")[0]
 
+        if namespace == "jax":
+            from .jax_box import JaxBox
+
+            return JaxBox.__new__(JaxBox, tensor)
+
         if isinstance(tensor, (numbers.Number, list, tuple)) or namespace == "numpy":
             from .numpy_box import NumpyBox
 
