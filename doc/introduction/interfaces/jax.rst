@@ -14,13 +14,7 @@ quantum nodes. A basic ``QNode`` can be translated into a quantum node that inte
 .. note::
 
     To use the JAX interface in PennyLane, you must first
-    install ``jax`` and ``jaxlib``. 
-
-    .. code::
-
-        pip install jax jaxlib
-
-    You can then import pennylane and jax as follows:
+    install ``jax`` and ``jaxlib``. You can then import pennylane and jax as follows:
 
     .. code::
 
@@ -56,7 +50,7 @@ as input, and returning ``jax.DeviceArray`` objects. It can now be used like any
 DeviceArray([0.8776, 0.6880], dtype=float64)
 
 Quantum gradients using JAX
--------------------------------
+---------------------------
 
 Since a JAX-interfacing QNode acts like any other JAX interfacing python function,
 the standard method used to calculate gradients with JAX can be used.
@@ -87,7 +81,7 @@ For example:
 Using jax.jit on Qnodes
 -----------------------
 
-To fully utilize the power and speed of JAX, you'll need to just-in-time compile your functions JAX. If you're only taking expectation values, you can simply add the decorator on your Qnode directly.
+To fully utilize the power and speed of JAX, you'll need to just-in-time compile your functions. If you're only taking expectation values, you can simply add the decorator on your Qnode directly.
 
 .. code-block:: python
 
@@ -102,7 +96,7 @@ To fully utilize the power and speed of JAX, you'll need to just-in-time compile
         return qml.expval(qml.PauliZ(0))
 
 
-However, if you want to do random sampling instead, you'll need to pass a ``jax.random.PRNGKey`` to the device construction. Your jitted function will need to include the device construction.
+However, if you want to do random sampling instead, you'll need to pass a ``jax.random.PRNGKey`` to the device construction. Your jitted function will also need to include the device construction.
 
 .. code-block:: python
 
@@ -110,7 +104,7 @@ However, if you want to do random sampling instead, you'll need to pass a ``jax.
     import pennylane as qml
 
 
-    @jax.jit  # Qnode calls will now be jitted, and should run faster.
+    @jax.jit
     def sample_circuit(phi, theta, key)
         
         # Device construction should happen inside a `jax.jit` function
