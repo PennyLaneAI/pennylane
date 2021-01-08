@@ -42,8 +42,7 @@ class JaxBox(qml.math.TensorBox):
     )
 
     def __init__(self, tensor):
-        if not isinstance(tensor, jnp.ndarray):
-            tensor = jnp.asarray(tensor)
+        tensor = jnp.asarray(tensor)
 
         super().__init__(tensor)
 

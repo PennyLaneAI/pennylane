@@ -304,6 +304,17 @@ class TestConcatenate:
         assert isinstance(res, np.ndarray)
         assert np.all(res == np.concatenate([t1, t2, t3]))
 
+    def test_concatenate_jax(self):
+        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        t1 = jnp.array([5.0, 8.0, 101.0])
+        t2 = jnp.array([0.6, 0.1, 0.6])
+        t3 = jnp.array([0.1, 0.2, 0.3])
+
+
+        res = fn.concatenate([t1, t2, t3])
+        assert jnp.all(res == jnp.concatenate([t1, t2, t3]))
+
+
     def test_stack_tensorflow(self):
         """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
         t1 = tf.constant([0.6, 0.1, 0.6])
