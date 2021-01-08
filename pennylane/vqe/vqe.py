@@ -67,7 +67,6 @@ class Hamiltonian:
     >>> print(H)
     (0.8) a0'1
 
-
     Alternatively, the :func:`~.generate_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
