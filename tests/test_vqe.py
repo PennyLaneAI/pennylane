@@ -77,6 +77,19 @@ valid_hamiltonians = [
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
 ]
 
+valid_hamiltonians_str = [
+    '(1.0) [Hermitian:0,1]',
+    '(-0.8) [Z:0]',
+    '(0.5) [X:0]\n+ (-1.6) [Y:1]',
+    '(0.5) [X:1]\n+ (-1.6) [Y:1]',
+    '(0.5) [X:a]\n+ (-1.6) [Y:b]',
+    '(1.1) [X:0]\n+ (-0.4) [Hermitian:2]\n+ (0.333) [Z:2]',
+    '(-0.4) [Hermitian:0,2]\n+ (0.15) [Z:1]',
+    '(1.5) [Z:0]\n+ (2.0) [Y:2]',
+    '(-0.1) [Hermitian:0,1]\n+ (0.5) [Y:0]',
+    '(0.5) [X:0]\n+ (1.2) [X:0 X:1]',
+]
+
 invalid_hamiltonians = [
     ((), (qml.PauliZ(0),)),
     ((), (qml.PauliZ(0), qml.PauliY(1))),
@@ -526,6 +539,12 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object has correct wires."""
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
+    def test_hamiltonian_str(self, terms, string):
+        """Tests that the __str__ function for printing is correct"""
+        H = qml.vqe.Hamiltonian(*terms)
+        assert H.__str__() == string
 
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
     def test_simplify(self, old_H, new_H):

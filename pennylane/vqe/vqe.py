@@ -158,18 +158,24 @@ class Hamiltonian:
         self._ops = ops
 
     def __str__(self):
+        #lambda function that formats the wires
+        wires_print = lambda ob: ",".join(map(str,ob.wires.tolist()))
+
         terms = []
 
         for i, obs in enumerate(self.ops):
-            coeff = "({}) [{{}}]".format(self.coeffs[i])
 
             if isinstance(obs, Tensor):
-                obs_strs = ["{}{}".format(OBS_MAP[i.name], i.wires.tolist()[0]) for i in obs.obs]
-                term = " ".join(obs_strs)
+                obs_strs = ["{}:{}".format(OBS_MAP.get(ob.name, ob.name),
+                                         wires_print(ob)) for ob in obs.obs]
+                ob_str = " ".join(obs_strs)
             elif isinstance(obs, Observable):
-                term = "{}{}".format(OBS_MAP[obs.name], obs.wires.tolist()[0])
+                ob_str = "{}:{}".format(OBS_MAP.get(obs.name, obs.name),
+                                        wires_print(obs))
 
-            terms.append(coeff.format(term))
+            term = "({}) [{}]".format(self.coeffs[i], ob_str)
+
+            terms.append(term)
 
         return "\n+ ".join(terms)
 
