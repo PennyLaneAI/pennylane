@@ -10,5 +10,5 @@ jobs:
       - uses: Naturalclar/issue-action@v2.0.2
         with:
           title-or-body: "both"
-          parameters: '[ {"keywords": ["[BUG]", "bug", "error"], "labels": ["Bug", "BUG"], "assignees": ["antalszava"]}]'
+          parameters: '[ {"keywords": ["[BUG]", "bug"], "labels": ["Bug", "BUG"], "assignees": ["antalszava"]}]'
           github-token: "${{ secrets.GITHUB_TOKEN }}"
