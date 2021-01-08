@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.math` module now supports JAX.
+
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
   [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
