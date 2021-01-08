@@ -104,4 +104,3 @@ converting QNodes into both Keras and ``torch.nn`` layers:
     interfaces/numpy
     interfaces/torch
     interfaces/tf
-    interfaces/jax
