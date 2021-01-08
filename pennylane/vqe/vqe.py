@@ -179,9 +179,7 @@ class Hamiltonian:
         for i, obs in enumerate(self.ops):
 
             if isinstance(obs, Tensor):
-                obs_strs = [
-                    f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs
-                ]
+                obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)
             elif isinstance(obs, Observable):
                 ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
