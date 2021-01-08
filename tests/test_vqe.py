@@ -67,6 +67,7 @@ JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 valid_hamiltonians = [
     ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
     ((-0.8,), (qml.PauliZ(0),)),
+    ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
     ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX("a"), qml.PauliY("b"))),
@@ -80,6 +81,7 @@ valid_hamiltonians = [
 valid_hamiltonians_str = [
     "(1.0) [Hermitian:0,1]",
     "(-0.8) [Z:0]",
+    "(0.6) [X:0 X:1]",
     "(0.5) [X:0]\n+ (-1.6) [Y:1]",
     "(0.5) [X:1]\n+ (-1.6) [Y:1]",
     "(0.5) [X:a]\n+ (-1.6) [Y:b]",
