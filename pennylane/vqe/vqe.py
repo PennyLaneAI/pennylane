@@ -179,6 +179,10 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
+            terms.append(term_str)
+
+        return "  " + "\n+ ".join(terms)
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
