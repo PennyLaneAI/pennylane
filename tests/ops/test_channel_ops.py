@@ -35,7 +35,6 @@ ch_list = [
     channel.DepolarizingChannel,
 ]
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
 class TestChannels:
     """Tests for the quantum channels"""
 
