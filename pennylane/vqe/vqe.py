@@ -158,30 +158,26 @@ class Hamiltonian:
         self._ops = ops
 
     def __str__(self):
-        #lambda function that formats the wires
-        wires_print = lambda ob: ",".join(map(str,ob.wires.tolist()))
+        # lambda function that formats the wires
+        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
-        terms = []
+        terms_ls = []
 
         for i, obs in enumerate(self.ops):
 
             if isinstance(obs, Tensor):
-                obs_strs = ["{}:{}".format(OBS_MAP.get(ob.name, ob.name),
-                                         wires_print(ob)) for ob in obs.obs]
+                obs_strs = [
+                    "{}:{}".format(OBS_MAP.get(ob.name, ob.name), wires_print(ob)) for ob in obs.obs
+                ]
                 ob_str = " ".join(obs_strs)
             elif isinstance(obs, Observable):
-                ob_str = "{}:{}".format(OBS_MAP.get(obs.name, obs.name),
-                                        wires_print(obs))
+                ob_str = "{}:{}".format(OBS_MAP.get(obs.name, obs.name), wires_print(obs))
 
-            term = "({}) [{}]".format(self.coeffs[i], ob_str)
+            term_str = "({}) [{}]".format(self.coeffs[i], ob_str)
 
-            terms.append(term)
+            terms_ls.append(term_str)
 
-        return "\n+ ".join(terms)
-
-            terms.append(term_str)
-
-        return "  " + "\n+ ".join(terms)
+        return "\n+ ".join(terms_ls)
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.

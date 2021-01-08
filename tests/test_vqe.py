@@ -78,16 +78,16 @@ valid_hamiltonians = [
 ]
 
 valid_hamiltonians_str = [
-    '(1.0) [Hermitian:0,1]',
-    '(-0.8) [Z:0]',
-    '(0.5) [X:0]\n+ (-1.6) [Y:1]',
-    '(0.5) [X:1]\n+ (-1.6) [Y:1]',
-    '(0.5) [X:a]\n+ (-1.6) [Y:b]',
-    '(1.1) [X:0]\n+ (-0.4) [Hermitian:2]\n+ (0.333) [Z:2]',
-    '(-0.4) [Hermitian:0,2]\n+ (0.15) [Z:1]',
-    '(1.5) [Z:0]\n+ (2.0) [Y:2]',
-    '(-0.1) [Hermitian:0,1]\n+ (0.5) [Y:0]',
-    '(0.5) [X:0]\n+ (1.2) [X:0 X:1]',
+    "(1.0) [Hermitian:0,1]",
+    "(-0.8) [Z:0]",
+    "(0.5) [X:0]\n+ (-1.6) [Y:1]",
+    "(0.5) [X:1]\n+ (-1.6) [Y:1]",
+    "(0.5) [X:a]\n+ (-1.6) [Y:b]",
+    "(1.1) [X:0]\n+ (-0.4) [Hermitian:2]\n+ (0.333) [Z:2]",
+    "(-0.4) [Hermitian:0,2]\n+ (0.15) [Z:1]",
+    "(1.5) [Z:0]\n+ (2.0) [Y:2]",
+    "(-0.1) [Hermitian:0,1]\n+ (0.5) [Y:0]",
+    "(0.5) [X:0]\n+ (1.2) [X:0 X:1]",
 ]
 
 invalid_hamiltonians = [
@@ -800,7 +800,9 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True
+        )
         cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False
         )
