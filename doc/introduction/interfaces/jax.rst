@@ -4,7 +4,7 @@ JAX interface
 =================
 
 In order to use PennyLane in combination with JAX, we have to generate JAX-compatible
-quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with JAX by using the ``interface='jax'`` flag in the QNode Decorator.
+quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with JAX by using the ``interface='jax'`` flag in the QNode decorator.
 
 .. note::
     
@@ -14,7 +14,7 @@ quantum nodes. A basic ``QNode`` can be translated into a quantum node that inte
 .. note::
 
     To use the JAX interface in PennyLane, you must first
-    install ``jax`` and ``jaxlib``. You can then import pennylane and jax as follows:
+    install ``jax`` and ``jaxlib``. You can then import PennyLane and JAX as follows:
 
     .. code::
 
@@ -59,7 +59,7 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qml.device('default.qubit.jax', wires=2)
 
     @qml.qnode(dev, interface='jax')
     def circuit3(phi, theta):
@@ -74,19 +74,28 @@ For example:
     grads = jax.grad(circuit3, argnums=(0, 1))
     phi_grad, theta_grad = grads(phi, theta)
 
+This has output:
+
+>>> phi_grad
+DeviceArray([-0.47942555,  0.        ], dtype=float32)
+>>> theta_grad
+DeviceArray(-3.4332792e-10, dtype=float32)
 
 
 .. _jax_optimize:
 
-Using jax.jit on Qnodes
+Using jax.jit on QNodes
 -----------------------
 
-To fully utilize the power and speed of JAX, you'll need to just-in-time compile your functions. If you're only taking expectation values, you can simply add the decorator on your Qnode directly.
+To fully utilize the power and speed of JAX, you'll need to just-in-time compile
+your functions. If you're only taking expectation values, you can simply add the
+decorator on your QNode directly.
 
 .. code-block:: python
 
     dev = qml.device('default.qubit.jax', wires=2)
-    @jax.jit  # Qnode calls will now be jitted, and should run faster.
+    
+    @jax.jit  # QNode calls will now be jitted, and should run faster.
     @qml.qnode(dev, interface='jax')
     def circuit4(phi, theta):
         qml.RX(phi[0], wires=0)
