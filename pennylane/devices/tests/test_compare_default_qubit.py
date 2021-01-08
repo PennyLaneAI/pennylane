@@ -145,57 +145,68 @@ class TestComparison:
 
     def test_four_qubit_random_circuit(self, device, tol):
         """Test a four-qubit random circuit with the whole set of possible gates"""
-        n_wires = 4
-        dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
 
-        if dev.name == dev_def.name:
-            pytest.skip("Device is default.qubit.")
+        tape_mode_active = qml.tape_mode_active()
 
-        if not dev.analytic:
-            pytest.skip("Device is in non-analytical mode.")
+        if not tape_mode_active:
+            qml.enable_tape()
 
-        gates = [
-            qml.PauliX,
-            qml.PauliY,
-            qml.PauliZ,
-            qml.S,
-            qml.T,
-            qml.RX,
-            qml.RY,
-            qml.RZ,
-            qml.Hadamard,
-            qml.Rot,
-            qml.CRot,
-            qml.Toffoli,
-            qml.SWAP,
-            qml.CSWAP,
-            qml.U1,
-            qml.U2,
-            qml.U3,
-            qml.CRX,
-            qml.CRY,
-            qml.CRZ,
-        ]
+        try:
+            n_wires = 4
+            dev = device(n_wires)
+            dev_def = qml.device("default.qubit", wires=n_wires)
 
-        layers = 3
-        np.random.seed(1967)
-        gates_per_layers = [np.random.permutation(gates).numpy() for _ in range(layers)]
+            if dev.name == dev_def.name:
+                pytest.skip("Device is default.qubit.")
 
-        def circuit():
-            """4-qubit circuit with layers of randomly selected gates and random connections for
-            multi-qubit gates."""
+            if not dev.analytic:
+                pytest.skip("Device is in non-analytical mode.")
+
+            gates = [
+                qml.PauliX,
+                qml.PauliY,
+                qml.PauliZ,
+                qml.S,
+                qml.T,
+                qml.RX,
+                qml.RY,
+                qml.RZ,
+                qml.Hadamard,
+                qml.Rot,
+                qml.CRot,
+                qml.Toffoli,
+                qml.SWAP,
+                qml.CSWAP,
+                qml.U1,
+                qml.U2,
+                qml.U3,
+                qml.CRX,
+                qml.CRY,
+                qml.CRZ,
+            ]
+
+            layers = 3
             np.random.seed(1967)
-            for gates in gates_per_layers:
-                for gate in gates:
-                    params = list(np.pi * np.random.rand(gate.num_params))
-                    gate(
-                        *params,
-                        wires=np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
-                    )
-            return qml.expval(qml.PauliZ(0))
+            gates_per_layers = [np.random.permutation(gates).numpy() for _ in range(layers)]
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+            def circuit():
+                """4-qubit circuit with layers of randomly selected gates and random connections for
+                multi-qubit gates."""
+                np.random.seed(1967)
+                for gates in gates_per_layers:
+                    for gate in gates:
+                        params = list(np.pi * np.random.rand(gate.num_params))
+                        gate(
+                            *params,
+                            wires=np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
+                        )
+                return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qnode(), qnode_def(), atol=tol(dev.analytic))
+            qnode_def = qml.QNode(circuit, dev_def)
+            qnode = qml.QNode(circuit, dev)
+
+            assert np.allclose(qnode(), qnode_def(), atol=tol(dev.analytic))
+
+        finally:
+            if not tape_mode_active:
+                qml.disable_tape()
