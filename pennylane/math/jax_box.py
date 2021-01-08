@@ -37,7 +37,9 @@ class JaxBox(qml.math.TensorBox):
         lambda self, axis=None, keepdims=False: jnp.sum(self.data, axis=axis, keepdims=keepdims)
     )
     T = wrap_output(lambda self: self.data.T)
-    take = wrap_output(lambda self, indices, axis=None: jnp.take(self.data, indices, axis=axis))
+    take = wrap_output(
+        lambda self, indices, axis=None: jnp.take(self.data, indices, axis=axis, mode="wrap")
+    )
 
     def __init__(self, tensor):
         if not isinstance(tensor, jnp.ndarray):
