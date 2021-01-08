@@ -234,7 +234,7 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(steps, cost_fn=cost) as viz:
+                with Visualize(cost_fn=cost) as viz:
                     for i in range(steps):
                         params = optimizer.step(cost, params)
                         viz.update(params=params)
@@ -338,7 +338,7 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(steps, cost_fn=cost) as viz:
+                with Visualize(cost_fn=cost) as viz:
                     for i in range(steps):
                         params = optimizer.step(cost, params)
                         viz.update(params=params)
@@ -357,7 +357,7 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(steps, cost_fn=cost) as viz:
+                with Visualize(cost_fn=cost) as viz:
                     for i in range(steps):
                         params = optimizer.step(cost, params)
                         viz.update(params=params)
