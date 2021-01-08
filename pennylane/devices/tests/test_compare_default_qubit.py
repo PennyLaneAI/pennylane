@@ -198,7 +198,9 @@ class TestComparison:
                         params = list(np.pi * np.random.rand(gate.num_params))
                         gate(
                             *params,
-                            wires=np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
+                            wires=np.random.choice(
+                                range(n_wires), size=gate.num_wires, replace=False
+                            )
                         )
                 return qml.expval(qml.PauliZ(0))
 
