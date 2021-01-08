@@ -176,7 +176,22 @@ def tape_mode(request, mocker):
         mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
         mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
         mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
-        mocker.patch("pennylane.tape.QNode.jacobian", lambda self: self.qtape.jacobian, create=True)
+
+        def patched_jacobian(self, args, **kwargs):
+            method = kwargs.get("method", "best")
+
+            if method == "A":
+                method = "analytic"
+            elif method == "F":
+                method = "numeric"
+
+            kwargs["method"] = method
+            dev = kwargs["options"]["device"]
+
+            return self.qtape.jacobian(dev, **kwargs)
+
+
+        mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
 
         qml.enable_tape()
 

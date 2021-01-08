@@ -15,6 +15,7 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 from .adagrad import AdagradOptimizer
 
 
@@ -39,7 +40,8 @@ class RMSPropOptimizer(AdagradOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta`
             used in the Adagrad optmization
         decay (float): the learning rate decay :math:`\gamma`
-        eps (float): offset :math:`\epsilon` added for numerical stability (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
+        eps (float): offset :math:`\epsilon` added for numerical stability
+            (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
 
     """
 
@@ -48,33 +50,61 @@ class RMSPropOptimizer(AdagradOptimizer):
         self.decay = decay
         self.eps = eps
 
-    def apply_grad(self, grad, x):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+    def apply_grad(self, grad, args):
+        r"""Update the variables args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
-                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the variables :math:`x^{(t)}`
+            grad (tuple [array]): the gradient of the objective function at
+                point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`.
+            args (tuple): the current value of the variables :math:`x^{(t)}`.
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list [array]: the new values :math:`x^{(t+1)}`
         """
-
-        grad_flat = list(_flatten(grad))
-        x_flat = _flatten(x)
+        args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [(1 - self.decay) * g * g for g in grad_flat]
+            self.accumulation = [None] * len(args)
+
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = list(_flatten(grad[trained_index]))
+                trained_index += 1
+
+                self._update_accumulation(index, grad_flat)
+
+                x_new_flat = [
+                    e - (self._stepsize / math.sqrt(a + self.eps)) * g
+                    for a, g, e in zip(self.accumulation[index], grad_flat, x_flat)
+                ]
+
+                args_new[index] = unflatten(x_new_flat, arg)
+
+                if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors.
+                    # TODO: remove when the following is fixed:
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
+
+        return args_new
+
+    def _update_accumulation(self, index, grad_flat):
+        r"""Update the accumulation with the flattened gradient.
+
+        Args:
+            index (int): index of argument to update.
+            grad_flat (list): flattened form of the gradient.
+        """
+        if self.accumulation[index] is None:
+            self.accumulation[index] = [(1 - self.decay) * g * g for g in grad_flat]
         else:
-            self.accumulation = [
+            self.accumulation[index] = [
                 self.decay * a + (1 - self.decay) * g * g
-                for a, g in zip(self.accumulation, grad_flat)
+                for a, g in zip(self.accumulation[index], grad_flat)
             ]
-
-        x_new_flat = [
-            e - (self._stepsize / math.sqrt(a + self.eps)) * g
-            for a, g, e in zip(self.accumulation, grad_flat, x_flat)
-        ]
-
-        return unflatten(x_new_flat, x)

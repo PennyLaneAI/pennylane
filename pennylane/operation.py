@@ -416,7 +416,10 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
+        if isinstance(wires, Wires):
+            self._wires = wires
+        else:
+            self._wires = Wires(wires)  #: Wires: wires on which the operator acts
 
         # check that the number of wires given corresponds to required number
         if (

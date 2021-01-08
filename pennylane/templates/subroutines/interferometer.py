@@ -14,14 +14,55 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+import pennylane as qml
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.templates.utils import (
-    check_shapes,
-    check_is_in_options,
-)
+from pennylane.templates.utils import check_shapes, get_shape
 from pennylane.wires import Wires
+
+
+def _preprocess(theta, phi, varphi, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the three weight tensors.
+
+    Args:
+        theta (tensor_like): trainable parameters of the template
+        phi (tensor_like): trainable parameters of the template
+        varphi (tensor_like): trainable parameters of the template
+        wires (Wires): wires that the template acts on
+
+    Returns:
+        tuple: shape of varphi tensor
+    """
+
+    n_wires = len(wires)
+    n_if = n_wires * (n_wires - 1) // 2
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(theta)
+        if shape != (n_if,):
+            raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
+
+        shape = qml.math.shape(phi)
+        if shape != (n_if,):
+            raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
+
+        shape_varphi = qml.math.shape(varphi)
+        if shape_varphi != (n_wires,):
+            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
+
+    else:
+        weights_list = [theta, phi, varphi]
+
+        expected_shapes = [(n_if,), (n_if,), (n_wires,)]
+        check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
+        shape_varphi = get_shape(varphi)
+
+    return shape_varphi
 
 
 @template
@@ -91,9 +132,9 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         thus increase the number of elementary operations in the circuit.
 
     Args:
-        theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
-        phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
-        varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
+        theta (tensor_like): size :math:`(M(M-1)/2,)` tensor of transmittivity angles :math:`\theta`
+        phi (tensor_like): size :math:`(M(M-1)/2,)` tensor of phase angles :math:`\phi`
+        varphi (tensor_like): size :math:`(M,)` tensor of rotation angles :math:`\varphi`
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         mesh (string): the type of mesh to use
@@ -105,30 +146,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    weights_list = [theta, phi, varphi]
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-    expected_shapes = [(n_if,), (n_if,), (n_wires,)]
-    check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
-
-    check_is_in_options(
-        beamsplitter,
-        ["clements", "pennylane"],
-        msg="did not recognize option {} for 'beamsplitter'" "".format(beamsplitter),
-    )
-    check_is_in_options(
-        mesh,
-        ["triangular", "rectangular"],
-        msg="did not recognize option {} for 'mesh'" "".format(mesh),
-    )
-    ###############
-
     M = len(wires)
+
+    shape_varphi = _preprocess(theta, phi, varphi, wires)
 
     if M == 1:
         # the interferometer is a single rotation
@@ -147,8 +168,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                     if beamsplitter == "clements":
                         Rotation(phi[n], wires=Wires(w1))
                         Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
-                    else:
+                    elif beamsplitter == "pennylane":
                         Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
+                    else:
+                        raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
                     n += 1
 
     elif mesh == "triangular":
@@ -159,11 +182,15 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 if beamsplitter == "clements":
                     Rotation(phi[n], wires=wires[k])
                     Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
-                else:
+                elif beamsplitter == "pennylane":
                     Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                else:
+                    raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
                 n += 1
+    else:
+        raise ValueError(f"did not recognize mesh {mesh}")
 
     # apply the final local phase shifts to all modes
-    for i, p in enumerate(varphi):
+    for i in range(shape_varphi[0]):
         act_on = wires[i]
-        Rotation(p, wires=act_on)
+        Rotation(varphi[i], wires=act_on)
