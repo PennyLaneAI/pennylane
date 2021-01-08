@@ -198,7 +198,8 @@
   PennyLane tensors, which can cause issues on some devices.
   [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
 
-* `qml.vqe.Hamiltonian` prints any observable with any number of strings
+* `qml.vqe.Hamiltonian` prints any observable with any number of strings.
+  [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
 <h3>Contributors</h3>
 
