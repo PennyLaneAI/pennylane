@@ -629,7 +629,7 @@ class TestRequiresGrad:
 
     @pytest.mark.parametrize("t", [jnp.array([1, 2, 3])])
     def test_jax(self, t):
-        """Vanilla NumPy arrays, sequences, and lists will always return False"""
+        """jax.DeviceArrays will always return True"""
         assert fn.requires_grad(t)
 
     def test_autograd(self):
