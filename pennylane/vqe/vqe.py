@@ -169,7 +169,7 @@ class Hamiltonian:
         self._ops = ops
 
     def __str__(self):
-        # lambda function that formats the wires
+        # Lambda function that formats the wires
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
         terms_ls = []
