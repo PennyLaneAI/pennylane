@@ -680,7 +680,7 @@ class TestCircuitDrawerIntegration:
         self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values
     ):
         """Test that a parametrized qubit circuit renders correctly with values."""
-        output = parameterized_qubit_qnode.draw(show_variable_names=False, wire_order=range(5))
+        output = parameterized_qubit_qnode.draw(show_variable_names=False)
         assert output == drawn_parameterized_qubit_circuit_with_values
 
     def test_wide_qubit_circuit_with_variable_names(
@@ -708,7 +708,7 @@ class TestCircuitDrawerIntegration:
         self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
     ):
         """Test that non-consecutive wires show correctly."""
-        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False, wire_order=[0, "q2", -1, "b"])
+        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False)
 
         assert output == drawn_qubit_circuit_with_interesting_wires
 
@@ -733,14 +733,14 @@ class TestCircuitDrawerIntegration:
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):
         """Test that a parametrized CV circuit renders correctly with values."""
-        output = parameterized_cv_qnode.draw(show_variable_names=False, wire_order=range(4))
+        output = parameterized_cv_qnode.draw(show_variable_names=False)
         assert output == drawn_parameterized_cv_qnode_with_values
 
     def test_qubit_circuit_with_unused_wires(
         self, qubit_circuit_with_unused_wires, drawn_qubit_circuit_with_unused_wires
     ):
         """Test that a qubit circuit with unused wires renders correctly."""
-        output = qubit_circuit_with_unused_wires.draw(wire_order=range(6))
+        output = qubit_circuit_with_unused_wires.draw()
 
         assert output == drawn_qubit_circuit_with_unused_wires
 
@@ -748,7 +748,7 @@ class TestCircuitDrawerIntegration:
         self, qubit_circuit_with_probs, drawn_qubit_circuit_with_probs
     ):
         """Test that a qubit circuit with probability output renders correctly."""
-        output = qubit_circuit_with_probs.draw(wire_order=[0, 1, 2, 4, 5])
+        output = qubit_circuit_with_probs.draw()
 
         assert output == drawn_qubit_circuit_with_probs
 

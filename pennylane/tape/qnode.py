@@ -473,7 +473,8 @@ class QNode:
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and
                 "ascii" are supported.
-            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+                If not provided, this defaults to the wire order of the device.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -490,6 +491,8 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."
             )
+
+        wire_order = wire_order or self.device.wires
 
         return self.qtape.draw(charset=charset, wire_order=wire_order)
 
