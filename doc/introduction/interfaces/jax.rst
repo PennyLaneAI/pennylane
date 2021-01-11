@@ -88,7 +88,7 @@ Using jax.jit on QNodes
 -----------------------
 
 To fully utilize the power and speed of JAX, you'll need to just-in-time compile
-your functions. If you're only taking expectation values, you can simply add the
+your functions - a process called ``jitting''. If you're only taking expectation values, you can simply add the
 decorator on your QNode directly.
 
 .. code-block:: python
