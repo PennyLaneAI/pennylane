@@ -22,6 +22,34 @@ from pennylane.wires import Wires
 _PAULIS = ["I", "X", "Y", "Z"]
 
 
+def _preprocess(weights, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+        if shape != (4 ** len(wires) - 1,):
+            raise ValueError(
+                f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
+            )
+
+    else:
+        expected_shape = (4 ** len(wires) - 1,)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights tensor must be of shape {}; got {}."
+            "".format(expected_shape, get_shape(weights)),
+        )
+
+
 def _tuple_to_word(index_tuple):
     """Convert an integer tuple to the corresponding Pauli word.
 
@@ -89,20 +117,13 @@ def ArbitraryUnitary(weights, wires):
             qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
 
     Args:
-        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+        weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     """
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    expected_shape = (4 ** n_wires - 1,)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
-    )
+    _preprocess(weights, wires)
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

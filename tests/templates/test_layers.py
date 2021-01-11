@@ -38,6 +38,9 @@ from pennylane.init import particle_conserving_u1_normal
 TOLERANCE = 1e-8
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestCVNeuralNet:
     """Tests for the CVNeuralNet from the pennylane.template module."""
 
@@ -181,8 +184,21 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="The first dimension of all parameters"):
             qnode(wrong_weights)
+
+    def test_cvqnn_layers_exception_second_dim(self, weights, gaussian_device_4modes):
+        """Integration test for the CVNeuralNetLayers method."""
+
+        def circuit(*weights):
+            CVNeuralNetLayers(*weights, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        qnode = qml.QNode(circuit, gaussian_device_4modes)
+
+        wrong_weights = [np.array([[0, 1, 0, 0, 0], [0, 1, 0, 0, 0]])] + weights[1:]
+        with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
+            qnode(*wrong_weights)
 
 
 class TestStronglyEntangling:
@@ -198,8 +214,8 @@ class TestStronglyEntangling:
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
         assert all([q._wires[0] == Wires(0) for q in rec.queue])
 
-    def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
+    def test_uses_correct_weights(self, n_subsystems):
+        """Test that correct weights are used in the circuit."""
         np.random.seed(12)
         n_layers = 2
         num_wires = n_subsystems
@@ -228,8 +244,8 @@ class TestStronglyEntangling:
                 exp_params = weights[l, n, :]
                 assert sum([r == e for r, e in zip(res_params, exp_params)])
 
-    def test_strong_ent_layers_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct number of imprimitives."""
+    def test_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
+        """Test that correct number of imprimitives are used in the circuit."""
         imprimitive = CZ
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
@@ -241,54 +257,30 @@ class TestStronglyEntangling:
         types = [type(q) for q in rec.queue]
         assert types.count(imprimitive) == n_subsystems * n_layers
 
-    @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]), (3, 1, [5])])
-    def test_strong_ent_layers_ranges_equals_wires_exception(self, n_layers, n_wires, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if a range is equal to or
-        larger than the number of wires."""
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
 
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
         def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+            StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(weights)
 
-        with pytest.raises(ValueError, match="the range for all layers needs to be smaller than"):
-            qnode(weights)
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 2, 1)
+            circuit(weights)
 
-    def test_strong_ent_layers_illegal_ranges_exception(self):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter of illegal type."""
-        n_wires = 2
-        n_layers = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=["a", "a"])
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be a list of integers"):
-            qnode(weights)
-
-    @pytest.mark.parametrize("n_layers, ranges", [(2, [1, 2, 4]), (5, [2])])
-    def test_strong_ent_layers_wrong_size_ranges_exception(self, n_layers, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter
-        not of shape (len(wires),)."""
-        n_wires = 5
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be of shape"):
-            qnode(weights)
+        with pytest.raises(ValueError, match="Weights tensor must be 3-dimensional"):
+            weights = np.random.randn(2, 2, 3, 1)
+            circuit(weights)
 
 
 class TestRandomLayers:
@@ -355,6 +347,8 @@ class TestRandomLayers:
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
+        if qml.tape_mode_active():
+            pytest.skip("Immutable QNodes no longer exist in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1] * 100]
@@ -481,53 +475,10 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
-    def test_tensor_unwrapped(self, monkeypatch):
-        """Test that the random_layer() function used by RandomLayers passes a
-        float value to its gate after successfully unwrapping a one element
-        PennyLane tensor.
-
-        The test involves using RandomLayers, which then calls random_layer
-        internally. Eventually each gate used by random_layer receives a single
-        scalar. In this test case, this is done by indexing into a PennyLane
-        tensor two times.
-        """
-        dev = qml.device("default.qubit", wires=4)
-
-        lst = []
-
-        # Mock function that accumulates gate parameters
-        mock_func = lambda par, wires: lst.append(par)
-
-        with monkeypatch.context() as m:
-
-            # Mock the gates used in RandomLayers
-            m.setattr(pennylane.templates.layers.random, "RX", mock_func)
-            m.setattr(pennylane.templates.layers.random, "RY", mock_func)
-            m.setattr(pennylane.templates.layers.random, "RZ", mock_func)
-
-            @qml.qnode(dev)
-            def circuit(phi=None):
-
-                # Random quantum circuit
-                RandomLayers(phi, wires=list(range(4)))
-
-                return qml.expval(qml.PauliZ(0))
-
-            phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
-
-            # Call the QNode, accumulate parameters
-            circuit(phi=phi)
-
-            # Check parameters
-            assert all([isinstance(x, float) for x in lst])
-
-    def test_tensor_unwrapped_gradient_no_error(self, monkeypatch):
+    def test_tensor_gradient_no_error(self, monkeypatch):
         """Tests that the gradient calculation of a circuit that contains a
         RandomLayers template taking a PennyLane tensor as differentiable
         argument executes without error.
-
-        The main aim of the test is to check that unwrapping a single element
-        tensor does not cause errors.
         """
         dev = qml.device("default.qubit", wires=4)
 
@@ -541,6 +492,24 @@ class TestRandomLayers:
         phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
         qml.jacobian(circuit)(phi)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.array([0.04439891, 0.14490549, 3.29725643, 2.51240058])
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit(phi)
 
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
@@ -622,6 +591,33 @@ class TestSimplifiedTwoDesign:
         expectations = circuit(initial_layer_weights, weights)
         for exp, target_exp in zip(expectations, target):
             assert pytest.approx(exp, target_exp, abs=TOLERANCE)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        initial_layer = np.random.randn(2)
+
+        @qml.qnode(dev)
+        def circuit(initial_layer, weights):
+            SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 2, 2)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Initial layer weights must be of shape"):
+            initial_layer = np.random.randn(3)
+            weights = np.random.randn(2, 1, 2)
+            circuit(initial_layer, weights)
 
 
 class TestBasicEntangler:
@@ -707,6 +703,26 @@ class TestBasicEntangler:
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
 
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_wires = 1
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit([1, 0])
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+            circuit([[1, 0], [1, 0]])
+
 
 class TestParticleConservingU2:
     """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
@@ -784,7 +800,7 @@ class TestParticleConservingU2:
             (
                 np.array([[-0.080, 2.629, -0.710, 5.383]]),
                 [0, 1, 2, 3],
-                "'weights' must be of shape",
+                "Weights tensor must",
             ),
             (
                 np.array(
@@ -794,7 +810,12 @@ class TestParticleConservingU2:
                     ]
                 ),
                 [0, 1, 2, 3],
-                "'weights' must be of shape",
+                "Weights tensor must",
+            ),
+            (
+                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 2-dimensional",
             ),
         ],
     )
@@ -805,6 +826,9 @@ class TestParticleConservingU2:
         init_state = np.array([1, 1, 0, 0])
 
         dev = qml.device("default.qubit", wires=N)
+
+        if not qml.tape_mode_active() and "must be 2-dimensional" in msg_match:
+            pytest.skip("Validation only performed in tape mode")
 
         @qml.qnode(dev)
         def circuit():
@@ -960,8 +984,9 @@ class TestParticleConservingU1:
     @pytest.mark.parametrize(
         ("weights", "n_wires", "msg_match"),
         [
-            (np.ones((4, 2, 2)), 4, "'weights' must be of shape"),
-            (np.ones((4, 3, 1)), 4, "'weights' must be of shape"),
+            (np.ones((4, 3)), 4, "Weights tensor must"),
+            (np.ones((4, 2, 2)), 4, "Weights tensor must"),
+            (np.ones((4, 3, 1)), 4, "Weights tensor must"),
             (
                 np.ones((4, 3, 1)),
                 1,

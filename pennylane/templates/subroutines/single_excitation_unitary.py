@@ -14,6 +14,7 @@
 r"""
 Contains the ``SingleExcitationUnitary`` template.
 """
+import pennylane as qml
 from pennylane import numpy as np
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
@@ -24,6 +25,34 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weight, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+    * Check that there are at least 2 wires.
+
+    Args:
+        weight (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+    """
+    if len(wires) < 2:
+        raise ValueError("expected at least two wires; got {}".format(len(wires)))
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weight)
+        if shape != ():
+            raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
+
+    else:
+        expected_shape = ()
+        check_shape(
+            weight,
+            expected_shape,
+            msg="Weight must be a scalar; got shape {}".format(expected_shape, get_shape(weight)),
+        )
 
 
 @template
@@ -121,22 +150,8 @@ def SingleExcitationUnitary(weight, wires=None):
 
     """
 
-    ##############
-    # Input checks
-
     wires = Wires(wires)
-
-    if len(wires) < 2:
-        raise ValueError("expected at least two wires; got {}".format(len(wires)))
-
-    expected_shape = ()
-    check_shape(
-        weight,
-        expected_shape,
-        msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
-    )
-
-    ###############
+    _preprocess(weight, wires)
 
     # Interpret first and last wire as r and p
     r = wires[0]

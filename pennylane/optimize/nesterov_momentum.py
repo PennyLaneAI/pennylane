@@ -14,14 +14,17 @@
 """Nesterov momentum optimizer"""
 from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 from .momentum import MomentumOptimizer
 
 
 class NesterovMomentumOptimizer(MomentumOptimizer):
     r"""Gradient-descent optimizer with Nesterov momentum.
 
-    Nesterov Momentum works like the :class:`Momentum optimizer <.pennylane.optimize.MomentumOptimizer>`,
-    but shifts the current input by the momentum term when computing the gradient of the objective function:
+    Nesterov Momentum works like the
+    :class:`Momentum optimizer <.pennylane.optimize.MomentumOptimizer>`,
+    but shifts the current input by the momentum term when computing the gradient
+    of the objective function:
 
     .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)} - m a^{(t)}).
 
@@ -35,34 +38,48 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         momentum (float): user-defined hyperparameter :math:`m`
     """
 
-    def compute_grad(self, objective_fn, x, grad_fn=None):
+    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
         r"""Compute gradient of the objective_fn at at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function
         forward pass (if available).
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
-            grad_fn (function): Optional gradient function of the objective function with respect to
+            objective_fn (function): the objective function for optimization.
+            args (tuple): tuple of NumPy arrays containing the current values for the
+                objection function.
+            kwargs (dict): keyword arguments for the objective function.
+            grad_fn (function): optional gradient function of the objective function with respect to
                 the variables ``x``. If ``None``, the gradient function is computed automatically.
+                Must return the same shape of tuple [array] as the autograd derivative.
 
         Returns:
-            tuple: The NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
+            tuple [array]: the NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
                 objective function output. If ``grad_fn`` is provided, the objective function
                 will not be evaluted and instead ``None`` will be returned.
         """
+        shifted_args = list(args)
 
-        x_flat = _flatten(x)
+        if self.accumulation:
+            for index, arg in enumerate(args):
+                if self.accumulation[index]:
+                    x_flat = _flatten(arg)
+                    acc = _flatten(self.accumulation[index])
 
-        if self.accumulation is None:
-            shifted_x_flat = list(x_flat)
-        else:
-            shifted_x_flat = [e - self.momentum * a for a, e in zip(self.accumulation, x_flat)]
+                    shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
 
-        shifted_x = unflatten(shifted_x_flat, x)
+                    shifted_args[index] = unflatten(shifted_x_flat, arg)
+
+                    if isinstance(shifted_args[index], ndarray):
+                        # Due to a bug in unflatten, input PennyLane tensors
+                        # are being unwrapped. Here, we cast them back to PennyLane
+                        # tensors.
+                        # TODO: remove when the following is fixed:
+                        # https://github.com/PennyLaneAI/pennylane/issues/966
+                        shifted_args[index] = shifted_args[index].view(tensor)
+                        shifted_args[index].requires_grad = True
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
-        grad = g(shifted_x)
+        grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
         return grad, forward

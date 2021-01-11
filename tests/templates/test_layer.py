@@ -94,17 +94,6 @@ REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
 class TestLayer:
     """Tests the layering function"""
 
-    def test_depth_error(self):
-        """Tests that the correct error is thrown when depth is not an integer"""
-
-        depth = 1.5
-
-        def unitary(wires):
-            qml.PauliX(wires=wires)
-
-        with pytest.raises(ValueError, match=r"'depth' must be of type int"):
-            layer(unitary, depth, wires=[0])
-
     def test_args_length(self):
         """Tests that the correct error is thrown when the length of an argument is incorrect"""
 

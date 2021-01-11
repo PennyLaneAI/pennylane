@@ -24,6 +24,69 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
+def _preprocess(state_vector, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the state vector.
+    * Check that the state vector is normalized.
+    * Extract polar coordinates of the state vector.
+
+    Args:
+        state_vector (tensor_like): amplitude state vector to prepare
+        wires (Wires): wires that template acts on
+
+    Returns:
+        tensor_like, tensor_like, Wires: amplitudes a, phases omega and preprocessed wires
+    """
+
+    n_wires = len(wires)
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(state_vector)
+
+        if len(shape) != 1:
+            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
+
+        n_amplitudes = shape[0]
+        if n_amplitudes != 2 ** len(wires):
+            raise ValueError(
+                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
+            )
+
+        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+        if not qml.math.allclose(norm, 1.0, atol=1e-3):
+            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+        a = qml.math.abs(state_vector)
+        omega = qml.math.angle(state_vector)
+
+    else:
+
+        expected_shape = (2 ** n_wires,)
+        check_shape(
+            state_vector,
+            expected_shape,
+            msg="State vector must be of shape {}; got {}."
+            "".format(expected_shape, get_shape(state_vector)),
+        )
+
+        if isinstance(state_vector[0], Variable):
+            state_vector = np.array([s.val for s in state_vector])
+
+        # check if normalized
+        norm = np.sum(np.abs(state_vector) ** 2)
+        if not np.isclose(norm, 1.0, atol=1e-3):
+            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+
+        a = np.absolute(state_vector)
+        omega = np.angle(state_vector)
+
+    # change ordering of wires, since original code was written for IBM machines
+    wires_reverse = wires[::-1]
+
+    return a, omega, wires_reverse
+
+
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
     """Generates the Gray code of given rank.
@@ -80,10 +143,10 @@ def _compute_theta(alpha):
      to the rotation angles used in the Gray code implementation.
 
     Args:
-        alpha (array[float]): alpha parameters
+        alpha (tensor_like): alpha parameters
 
     Returns:
-        (array[float]): rotation angles theta
+        (tensor_like): rotation angles theta
     """
     ln = alpha.shape[0]
     k = np.log2(alpha.shape[0])
@@ -93,13 +156,13 @@ def _compute_theta(alpha):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
-    theta = M_trans @ alpha
+    theta = qml.math.dot(M_trans, alpha)
 
     return theta / 2 ** k
 
 
 def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
-    """Applies a uniformly-controlled rotation to the target qubit.
+    r"""Applies a uniformly-controlled rotation to the target qubit.
 
     A uniformly-controlled rotation is a sequence of multi-controlled
     rotations, each of which is conditioned on the control qubits being in a different state.
@@ -115,7 +178,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter
-        alpha (array[float]): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
     """
@@ -152,7 +215,7 @@ def _get_alpha_z(omega, n, k):
     .. math:: \alpha^{z,k}_j = \sum_{l=1}^{2^{k-1}} \frac{\omega_{(2j-1) 2^{k-1}+l} - \omega_{(2j-2) 2^{k-1}+l}}{2^{k-1}}
 
     Args:
-        omega (array): phases of the state to prepare
+        omega (tensor_like): phases of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
@@ -168,11 +231,11 @@ def _get_alpha_z(omega, n, k):
         for j in range(1, 2 ** (n - k) + 1)
     ]
 
-    term1 = np.take(omega, indices=indices1)
-    term2 = np.take(omega, indices=indices2)
+    term1 = qml.math.take(omega, indices=indices1)
+    term2 = qml.math.take(omega, indices=indices2)
     diff = (term1 - term2) / 2 ** (k - 1)
 
-    return np.sum(diff, axis=1)
+    return qml.math.sum(diff, axis=1)
 
 
 def _get_alpha_y(a, n, k):
@@ -184,7 +247,7 @@ def _get_alpha_y(a, n, k):
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        a (array): absolute values of the state to prepare
+        a (tensor_like): absolute values of the state to prepare
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
@@ -195,20 +258,22 @@ def _get_alpha_y(a, n, k):
         [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
         for j in range(2 ** (n - k))
     ]
-    numerator = np.take(a, indices=indices_numerator)
-    numerator = np.sum(np.abs(numerator) ** 2, axis=1)
+    numerator = qml.math.take(a, indices=indices_numerator)
+    numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=1)
 
     indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
-    denominator = np.take(a, indices=indices_denominator)
-    denominator = np.sum(np.abs(denominator) ** 2, axis=1)
+    denominator = qml.math.take(a, indices=indices_denominator)
+    denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
-    division = np.divide(
-        numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator != 0.0
-    )
 
-    return 2 * np.arcsin(np.sqrt(division))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        division = numerator / denominator
+
+    division = qml.math.where(denominator != 0.0, division, 0.0)
+
+    return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
 @template
@@ -232,7 +297,7 @@ def MottonenStatePreparation(state_vector, wires):
         The final state is only equal to the input state vector up to a global phase.
 
     Args:
-        state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
+        state_vector (tensor_like): Input array of shape ``(2^N,)``, where N is the number of wires
             the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
@@ -247,42 +312,18 @@ def MottonenStatePreparation(state_vector, wires):
 
     wires = Wires(wires)
 
-    n_wires = len(wires)
-    expected_shape = (2 ** n_wires,)
-    check_shape(
-        state_vector,
-        expected_shape,
-        msg="'state_vector' must be of shape {}; got {}."
-        "".format(expected_shape, get_shape(state_vector)),
-    )
-
-    # TODO: delete when tape is new core
-    if isinstance(state_vector[0], Variable):
-        state_vector = np.array([s.val for s in state_vector])
-
-    # check if normalized
-    norm = np.sum(np.abs(state_vector) ** 2)
-    if not np.isclose(norm, 1.0, atol=1e-3):
-        raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
-
-    #######################
-
-    # change ordering of wires, since original code was written for IBM machines
-    wires_reverse = wires[::-1]
-
-    a = np.absolute(state_vector)
-    omega = np.angle(state_vector)
+    a, omega, wires_reverse = _preprocess(state_vector, wires)
 
     # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
-    for k in range(n_wires, 0, -1):
-        alpha_y_k = _get_alpha_y(a, n_wires, k)
+    for k in range(len(wires_reverse), 0, -1):
+        alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
         control = wires_reverse[k:]
         target = wires_reverse[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
     # Apply inverse z rotation cascade to prepare correct phases of amplitudes
-    for k in range(n_wires, 0, -1):
-        alpha_z_k = _get_alpha_z(omega, n_wires, k)
+    for k in range(len(wires_reverse), 0, -1):
+        alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
         control = wires_reverse[k:]
         target = wires_reverse[k - 1]
         if len(alpha_z_k) > 0:

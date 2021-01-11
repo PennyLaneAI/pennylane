@@ -15,12 +15,94 @@ r"""
 Contains the ``CVNeuralNetLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
 from pennylane.templates.utils import check_number_of_layers, check_shapes
 from pennylane.wires import Wires
+
+
+def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the first dimensions of all weight tensors match
+    * Check that the other dimensions of all weight tensors are correct for the number of qubits.
+
+    Args:
+        heta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
+        theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
+
+    n_wires = len(wires)
+    n_if = n_wires * (n_wires - 1) // 2
+
+    if qml.tape_mode_active():
+
+        # check that first dimension is the same
+        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+        shapes = [qml.math.shape(w) for w in weights_list]
+
+        first_dims = [s[0] for s in shapes]
+        if len(set(first_dims)) > 1:
+            raise ValueError(
+                f"The first dimension of all parameters needs to be the same, got {first_dims}"
+            )
+        repeat = shapes[0][0]
+
+        second_dims = [s[1] for s in shapes]
+        expected = [
+            n_if,
+            n_if,
+            n_wires,
+            n_wires,
+            n_wires,
+            n_if,
+            n_if,
+            n_wires,
+            n_wires,
+            n_wires,
+            n_wires,
+        ]
+        if not all(e == d for e, d in zip(expected, second_dims)):
+            raise ValueError("Got unexpected shape for one or more parameters.")
+
+    else:
+        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+        repeat = check_number_of_layers(weights_list)
+
+        expected_shapes = [
+            (repeat, n_if),
+            (repeat, n_if),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_if),
+            (repeat, n_if),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+            (repeat, n_wires),
+        ]
+        check_shapes(
+            weights_list, expected_shapes, msg="Got unexpected shape for one or more parameters"
+        )
+
+    return repeat
 
 
 def cv_neural_net_layer(
@@ -32,21 +114,21 @@ def cv_neural_net_layer(
     of :math:`K=M(M-1)/2` beamsplitters.
 
     Args:
-        theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
-        varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(M, )` array of squeezing amounts for
+        theta_1 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(K, )` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(M, )` tensor of squeezing amounts for
             :class:`~pennylane.ops.Squeezing` operations
-        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for
+        phi_r (tensor_like): shape :math:`(M, )` tensor of squeezing angles for
             :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(M, )` array of displacement magnitudes for
+        theta_2 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(K, )` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(M, )` tensor of displacement magnitudes for
             :class:`~pennylane.ops.Displacement` operations
-        phi_a (array[float]): length :math:`(M, )` array of displacement angles for
+        phi_a (tensor_like): shape :math:`(M, )` tensor of displacement angles for
             :class:`~pennylane.ops.Displacement` operations
-        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        k (tensor_like): shape :math:`(M, )` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Wires): wires that the template acts on
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
@@ -92,17 +174,17 @@ def CVNeuralNetLayers(
        device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta_1 (array[float]): length :math:`(L, K)` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`(L, K)` array of phase angles for first interferometer
-        varphi_1 (array[float]): length :math:`(L, M)` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(L, M)` array of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
-        phi_r (array[float]): length :math:`(L, M)` array of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (array[float]): length :math:`(L, K)` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`(L, K)` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`(L, M)` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
-        phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~pennylane.ops.Displacement` operations
-        k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        theta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
+        phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
+        varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
+        r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
+        theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
+        phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
+        varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
+        a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     Raises:
@@ -113,26 +195,9 @@ def CVNeuralNetLayers(
     # Input checks
 
     wires = Wires(wires)
-
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-    weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-    repeat = check_number_of_layers(weights_list)
-
-    expected_shapes = [
-        (repeat, n_if),
-        (repeat, n_if),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_if),
-        (repeat, n_if),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-        (repeat, n_wires),
-    ]
-    check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
+    repeat = _preprocess(
+        theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+    )
 
     ###############
 

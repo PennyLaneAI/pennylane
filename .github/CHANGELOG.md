@@ -2,6 +2,72 @@
 
 <h3>New features since last release</h3>
 
+* The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
+  may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
+  [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
+
+  The full changes apply to:
+  
+  * `AdagradOptimizer`
+  * `AdamOptimizer`
+  * `GradientDescentOptimizer`
+  * `MomentumOptimizer`
+  * `NesterovMomentumOptimizer`
+  * `RMSPropOptimizer`
+  * `RotosolveOptimizer` 
+  
+  The `requires_grad=False` property must mark any non-trainable constant argument. 
+  The `RotoselectOptimizer` allows passing only keyword arguments.
+
+  Example use:
+
+  ```python
+  def cost(x, y, data, scale=1.0):
+      return scale * (x[0]-data)**2 + scale * (y-data)**2
+
+  x = np.array([1.], requires_grad=True)
+  y = np.array([1.0])
+  data = np.array([2.], requires_grad=False)
+
+  opt = qml.GradientDescentOptimizer()
+  
+  # the optimizer step and step_and_cost methods can
+  # now update multiple parameters at once
+  x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
+  (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
+
+  # list and tuple unpacking is also supported
+  params = (x, y, data)
+  params = opt.step(cost, *params)
+  ```
+ 
+* Support added for calculating the Hessian of quantum tapes using the second-order
+  parameter shift formula.
+  [(#961)](https://github.com/PennyLaneAI/pennylane/pull/961)
+
+  The following example shows the calculation of the Hessian of a quantum tape:
+
+  ```python
+  qml.enable_tape()
+  n_wires = 5
+  weights = [2.73943676, 0.16289932, 3.4536312, 2.73521126, 2.6412488]
+
+  dev = qml.device("default.qubit", wires=n_wires)
+
+  with qml.tape.QubitParamShiftTape() as tape:
+      for i in range(n_wires):
+          qml.RX(weights[i], wires=i)
+
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[2, 1])
+      qml.CNOT(wires=[3, 1])
+      qml.CNOT(wires=[4, 3])
+
+      qml.expval(qml.PauliZ(1))
+
+  print(tape.hessian(dev))
+  ```
+
 * A new  `qml.draw` function is available, allowing QNodes to be easily
   drawn without execution by providing example input.
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
@@ -86,6 +152,7 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
+
 <h3>Improvements</h3>
 
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
@@ -111,6 +178,11 @@
   generator is required to construct the metric tensor. 
   [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
+* The templates are modified to make use of the new `qml.math` module, for framework-agnostic
+  tensor manipulation. This allows the template library to be differentiable
+  in backpropagation mode (`diff_method="backprop"`).
+  [(#873)](https://github.com/PennyLaneAI/pennylane/pull/873)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -130,7 +202,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Alejandro Montanez, Chase Roberts, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
