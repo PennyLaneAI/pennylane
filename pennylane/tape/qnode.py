@@ -448,6 +448,22 @@ class QNode:
     def draw(self, charset="unicode", wire_order=None, **kwargs):
         """Draw the quantum tape as a circuit diagram.
 
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and
+                "ascii" are supported.
+            wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+                If not provided, this defaults to the wire order of the device.
+
+        Raises:
+            ValueError: if the given charset is not supported
+            .QuantumFunctionError: drawing is impossible because the underlying
+                quantum tape has not yet been constructed
+
+        Returns:
+            str: the circuit representation of the tape
+
+        **Example**
+
         Consider the following circuit as an example:
 
         .. code-block:: python3
@@ -470,20 +486,32 @@ class QNode:
         0: --H--+C----------------------------+C---------+| <Z @ Z>
         1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
 
-        Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and
-                "ascii" are supported.
-            wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
-                If not provided, this defaults to the wire order of the device.
+        Circuit drawing works with devices with custom wire labels:
 
-        Raises:
-            ValueError: if the given charset is not supported
-            .QuantumFunctionError: drawing is impossible because the underlying
-                quantum tape has not yet been constructed
+        .. code-block:: python3
 
-        Returns:
-            str: the circuit representation of the tape
+            dev = qml.device('default.qubit', wires=["a", -1, "q2"])
 
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=-1)
+                qml.CNOT(wires=["a", "q2"])
+                qml.RX(0.2, wires="a")
+                return qml.expval(qml.PauliX(wires="q2"))
+
+        When printed, the wire order matches the order defined on the device:
+
+        >>> print(circuit.draw())
+          a: ─────╭C──RX(0.2)──┤
+         -1: ──H──│────────────┤
+         q2: ─────╰X───────────┤ ⟨X⟩
+
+        We can use the ``wire_order`` argument to change the wire order:
+
+        >>> print(circuit.draw(wire_order=["q2", "a", -1]))
+         q2: ──╭X───────────┤ ⟨X⟩
+          a: ──╰C──RX(0.2)──┤
+         -1: ───H───────────┤
         """
         # TODO: remove 'kwargs' when tape mode is default.
         # Currently it only exists to match the signature of non-tape mode draw.
@@ -727,6 +755,33 @@ def draw(_qnode, charset="unicode", wire_order=None):
     >>> drawer(a=2.3, w=[1.2, 3.2, 0.7])
     0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+
+    Circuit drawing works with devices with custom wire labels:
+
+    .. code-block:: python3
+
+        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+    When printed, the wire order matches the order defined on the device:
+
+    >>> print(circuit.draw())
+      a: ─────╭C──RX(0.2)──┤
+     -1: ──H──│────────────┤
+     q2: ─────╰X───────────┤ ⟨X⟩
+
+    We can use the ``wire_order`` argument to change the wire order:
+
+    >>> print(circuit.draw(wire_order=["q2", "a", -1]))
+     q2: ──╭X───────────┤ ⟨X⟩
+      a: ──╰C──RX(0.2)──┤
+     -1: ───H───────────┤
     """
     if not hasattr(_qnode, "qtape"):
         raise ValueError(

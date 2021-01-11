@@ -198,17 +198,17 @@
   ... def circuit():
   ...     qml.Hadamard(wires=-1)
   ...     qml.CNOT(wires=["a", "q2"])
-  ...     qml.RX(wires="a")
+  ...     qml.RX(0.2, wires="a")
   ...     return qml.expval(qml.PauliX(wires="q2"))
   ```
 
-  Printing with default wire order (defined by order of operations):
+  Printing with default wire order of the device:
 
   ```pycon
   >>> print(circuit.draw())
-   -1: ───H───────────┤
-    a: ──╭C──RX(0.2)──┤
-   q2: ──╰X───────────┤ ⟨X⟩
+    a: ─────╭C──RX(0.2)──┤
+   -1: ──H──│────────────┤
+   q2: ─────╰X───────────┤ ⟨X⟩
   ```
 
   Changing the wire order:
