@@ -3,7 +3,8 @@
 JAX interface
 =================
 
-In order to use PennyLane in combination with JAX, we have to generate JAX-compatible
+Born out of the autograd package, `JAX <https://jax.readthedocs.io/en/latest/index.html>`_ is the next generation of differentiable functional computation, 
+adding support for powerful hardware accelerators like GPUs and TPUs via `XLA <https://www.tensorflow.org/xla>`_. In order to use PennyLane in combination with JAX, we have to generate JAX-compatible
 quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with JAX by using the ``interface='jax'`` flag in the QNode decorator.
 
 .. note::
@@ -105,7 +106,15 @@ decorator on your QNode directly.
         return qml.expval(qml.PauliZ(0))
 
 
-However, if you want to do random sampling instead, you'll need to pass a ``jax.random.PRNGKey`` to the device construction. Your jitted function will also need to include the device construction.
+Randomness: Shots and Samples
+-----------------------------
+In JAX, there is no such thing as statefull randomness, meaning all random number generators must be explicitly seeded. 
+(See the `JAX random package documentation <https://jax.readthedocs.io/en/latest/jax.random.html?highlight=random#module-jax.random>`_ for more details).
+While a real quantum computer's randomness can not be seeded, we are forced to when using a JAX simulator.
+
+If you want to simulate randomness (meaning you either have a finite ``shots`` value, or the qnode returns a ``qml.samples()``), JAX requires you to use a ``jax.random.PRNGKey``. On a normal method, we handle this automatically for you. However, if you wish to decorate your qnode with a ``jax.jit``, you must contruct your device inside of the ``jax.jit`` decorated method.
+
+Example:
 
 .. code-block:: python
 
@@ -116,9 +125,11 @@ However, if you want to do random sampling instead, you'll need to pass a ``jax.
     @jax.jit
     def sample_circuit(phi, theta, key)
         
-        # Device construction should happen inside a `jax.jit` function
-        # when using a PRNGKey.
+        # Device construction should happen inside a `jax.jit` decorated
+        # method when using a PRNGKey.
         dev = qml.device('default.qubit.jax', wires=2, prng_key=key)
+
+
         @qml.qnode(dev, interface='jax')
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
