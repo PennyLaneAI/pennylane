@@ -721,7 +721,6 @@ def draw(_qnode, charset="unicode"):
     0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
     """
-    print(_qnode)
     if not hasattr(_qnode, "qtape"):
         raise ValueError(
             "qml.draw only works when tape mode is enabled. "
