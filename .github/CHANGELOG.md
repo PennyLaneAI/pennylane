@@ -1,6 +1,9 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+* PennyLane now supports analytical gradients for the following noisy channels:
+  `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
+  [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
 
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
