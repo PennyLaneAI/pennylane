@@ -24,6 +24,8 @@ from pennylane.math import fn
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 
 class TestGetMultiTensorbox:
@@ -302,6 +304,17 @@ class TestConcatenate:
         assert isinstance(res, np.ndarray)
         assert np.all(res == np.concatenate([t1, t2, t3]))
 
+    def test_concatenate_jax(self):
+        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        t1 = jnp.array([5.0, 8.0, 101.0])
+        t2 = jnp.array([0.6, 0.1, 0.6])
+        t3 = jnp.array([0.1, 0.2, 0.3])
+
+
+        res = fn.concatenate([t1, t2, t3])
+        assert jnp.all(res == jnp.concatenate([t1, t2, t3]))
+
+
     def test_stack_tensorflow(self):
         """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
         t1 = tf.constant([0.6, 0.1, 0.6])
@@ -387,6 +400,7 @@ class TestDot:
         [tf.Variable(2), onp.array(6)],
         [tf.constant(2), onp.array(6)],
         [tf.Variable(2), tf.Variable(6)],
+        [jnp.array(2), jnp.array(6)],
     ]
 
     @pytest.mark.parametrize("t1, t2", scalar_product_data)
@@ -403,6 +417,7 @@ class TestDot:
         [tf.Variable([1, 2, 3]), onp.array([1, 2, 3])],
         [tf.constant([1, 2, 3]), onp.array([1, 2, 3])],
         [tf.Variable([1, 2, 3]), tf.Variable([1, 2, 3])],
+        [jnp.array([1, 2, 3]), jnp.array([1, 2, 3])],
     ]
 
     @pytest.mark.parametrize("t1, t2", vector_product_data)
@@ -419,6 +434,9 @@ class TestDot:
         [tf.Variable([[1, 2], [3, 4]]), onp.array([6, 7])],
         [tf.constant([[1, 2], [3, 4]]), onp.array([6, 7])],
         [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
+        [jnp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
+        [np.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
+
     ]
 
     @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
@@ -446,6 +464,8 @@ class TestDot:
         [onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), tf.Variable([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
         [tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), onp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
         [tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), tf.constant([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+        [jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]), jnp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]])],
+
     ]
 
     @pytest.mark.parametrize("t1, t2", multidim_product_data)
@@ -534,6 +554,7 @@ interface_test_data = [
     [torch.tensor([1, 2, 3]), "torch"],
     [tf.Variable([1, 2, 3]), "tf"],
     [tf.constant([1, 2, 3]), "tf"],
+    [jnp.array([1, 2, 3]), "jax"],
 ]
 
 
@@ -607,6 +628,11 @@ class TestRequiresGrad:
         """Vanilla NumPy arrays, sequences, and lists will always return False"""
         assert not fn.requires_grad(t)
 
+    @pytest.mark.parametrize("t", [jnp.array([1, 2, 3])])
+    def test_jax(self, t):
+        """jax.DeviceArrays will always return True"""
+        assert fn.requires_grad(t)
+
     def test_autograd(self):
         """Autograd arrays will simply return their requires_grad attribute"""
         t = np.array([1.0, 2.0], requires_grad=True)
@@ -658,6 +684,7 @@ shape_test_data = [
         ("sequence", lambda shape: np.empty(shape).tolist()),
         ("autograd", np.empty),
         ("torch", torch.empty),
+        ("jax", jnp.ones),
         ("tf", tf.ones),
     ],
 )
@@ -691,6 +718,17 @@ class TestStack:
         res = fn.stack([t1, t2, t3])
         assert isinstance(res, np.ndarray)
         assert np.all(res == np.stack([t1, t2, t3]))
+
+
+    def test_stack_array_jax(self):
+        """Test that stack, called without the axis arguments, stacks vertically"""
+        t1 = onp.array([0.6, 0.1, 0.6])
+        t2 = jnp.array([0.1, 0.2, 0.3])
+        t3 = jnp.array([5.0, 8.0, 101.0])
+
+        res = fn.stack([t1, t2, t3])
+        assert np.all(res == np.stack([t1, t2, t3]))
+
 
     def test_stack_tensorflow(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
@@ -751,10 +789,18 @@ class TestSum:
         assert isinstance(res, torch.Tensor)
         assert fn.allclose(res, 2.1)
 
+    def test_jax(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = jnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        res = fn.sum_(t)
+        assert fn.allclose(res, 2.1)
+
+
     @pytest.mark.parametrize("t1", [
         np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     ])
     def test_sum_axis(self, t1):
         """Test that passing the axis argument allows for summing along
@@ -771,7 +817,8 @@ class TestSum:
     @pytest.mark.parametrize("t1", [
         np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
     ])
     def test_sum_axis_keepdims(self, t1):
         """Test that passing the axis argument allows for summing along
@@ -813,6 +860,7 @@ class TestTake:
         onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        jnp.asarray([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     ]
 
     @pytest.mark.parametrize("t", take_data)
@@ -886,6 +934,7 @@ where_data = [
     onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
 ]
 
 

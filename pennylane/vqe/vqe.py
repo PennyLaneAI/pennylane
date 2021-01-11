@@ -55,6 +55,17 @@ class Hamiltonian:
     >>> print(H)
     (0.2) [X0 Z1] + (-0.543) [Z0 H2]
 
+    The user can also provide custom observables:
+
+    >>> obs_matrix = np.array([[0.5, 1.0j, 0.0, -3j],
+                               [-1.0j, -1.1, 0.0, -0.1],
+                               [0.0, 0.0, -0.9, 12.0],
+                               [3j, -0.1, 12.0, 0.0]])
+    >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
+    >>> H = qml.Hamiltonian((0.8, ), (obs, ))
+    >>> print(H)
+    (0.8) [Hermitian0'1]
+
     Alternatively, the :func:`~.generate_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
@@ -158,20 +169,24 @@ class Hamiltonian:
         self._ops = ops
 
     def __str__(self):
-        terms = []
+        # Lambda function that formats the wires
+        wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
+
+        terms_ls = []
 
         for i, obs in enumerate(self.ops):
-            coeff = "({}) [{{}}]".format(self.coeffs[i])
 
             if isinstance(obs, Tensor):
-                obs_strs = ["{}{}".format(OBS_MAP[i.name], i.wires.tolist()[0]) for i in obs.obs]
-                term = " ".join(obs_strs)
+                obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
+                ob_str = " ".join(obs_strs)
             elif isinstance(obs, Observable):
-                term = "{}{}".format(OBS_MAP[obs.name], obs.wires.tolist()[0])
+                ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
 
-            terms.append(coeff.format(term))
+            term_str = f"({self.coeffs[i]}) [{ob_str}]"
 
-        return "\n+ ".join(terms)
+            terms_ls.append(term_str)
+
+        return "\n+ ".join(terms_ls)
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
