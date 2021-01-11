@@ -591,13 +591,13 @@ class CircuitGraph:
             if not observables[wire]:
                 observables[wire] = [None]
 
-        if wire_order is not None and wire_order in self.wires:
+        if wire_order is not None:
             temp_op_grid = OrderedDict()
             temp_obs_grid = OrderedDict()
 
-            permutation = [self.wires.labels.index(i) for i in wire_order.labels]
+            permutation = [self.wires.labels.index(i) for i in wire_order.labels if [i] in self.wires]
 
-            for i, j in zip(range(len(self.wires)), permutation):
+            for i, j in enumerate(permutation):
                 if j in operations:
                     temp_op_grid[i] = operations[j]
                 if j in observables:

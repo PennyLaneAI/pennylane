@@ -686,7 +686,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def draw(_qnode, charset="unicode"):
+def draw(_qnode, charset="unicode", wire_order=None):
     """draw(qnode, charset="unicode"):
     Create a function that draws the given _qnode.
 
@@ -694,6 +694,7 @@ def draw(_qnode, charset="unicode"):
         qnode (.QNode): the input QNode that is to be drawn.
         charset (str, optional): The charset that should be used. Currently, "unicode" and
             "ascii" are supported.
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
 
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
@@ -731,6 +732,6 @@ def draw(_qnode, charset="unicode"):
     @wraps(_qnode)
     def wrapper(*args, **kwargs):
         _qnode.construct(args, kwargs)
-        return _qnode.qtape.draw(charset)
+        return _qnode.qtape.draw(charset, wire_order=wire_order)
 
     return wrapper

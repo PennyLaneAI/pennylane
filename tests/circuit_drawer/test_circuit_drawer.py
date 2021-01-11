@@ -740,7 +740,7 @@ class TestCircuitDrawerIntegration:
         self, qubit_circuit_with_unused_wires, drawn_qubit_circuit_with_unused_wires
     ):
         """Test that a qubit circuit with unused wires renders correctly."""
-        output = qubit_circuit_with_unused_wires.draw(wire_order=[0, 1, 5])
+        output = qubit_circuit_with_unused_wires.draw(wire_order=range(6))
 
         assert output == drawn_qubit_circuit_with_unused_wires
 
@@ -749,8 +749,6 @@ class TestCircuitDrawerIntegration:
     ):
         """Test that a qubit circuit with probability output renders correctly."""
         output = qubit_circuit_with_probs.draw(wire_order=[0, 1, 2, 4, 5])
-        print(output)
-        print(drawn_qubit_circuit_with_probs)
 
         assert output == drawn_qubit_circuit_with_probs
 
