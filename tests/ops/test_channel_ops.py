@@ -20,6 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import channel
 from pennylane.wires import Wires
+pytestmark = pytest.mark.usefixtures("tape_mode")
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
@@ -33,7 +34,6 @@ ch_list = [
     channel.PhaseFlip,
     channel.DepolarizingChannel,
 ]
-
 
 class TestChannels:
     """Tests for the quantum channels"""
@@ -50,18 +50,6 @@ class TestChannels:
         K_arr = np.array(K_list)
         Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         assert np.allclose(Kraus_sum, np.eye(2), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("ops", ch_list)
-    @pytest.mark.parametrize("p", [1.5])
-    def test_valid_input(self, ops, p):
-        """Test input parameters are valid probabilities"""
-        if ops.__name__ == "GeneralizedAmplitudeDamping":
-            with pytest.raises(ValueError, match="Channel probability parameters should be"):
-                ops(0.1, p, wires=0)
-        else:
-            with pytest.raises(ValueError, match="Channel probability parameters should be"):
-                ops(p, wires=0)
-
 
 class TestAmplitudeDamping:
     """Tests for the quantum channel AmplitudeDamping"""
@@ -137,6 +125,24 @@ class TestBitFlip:
         expected_K1 = np.sqrt(p) * X
         assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_grad_bitflip(self, angle, tol):
+        """Test that analytical gradient is computed correctly for different states. Channel
+        grad recipes are independent of channel parameter"""
+
+        dev = qml.device("default.mixed", wires=1)
+        prob = 0.5
+
+        @qml.qnode(dev)
+        def circuit(p):
+            qml.RX(angle, wires=0)
+            qml.BitFlip(p, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        gradient = np.squeeze(qml.grad(circuit)(prob))
+        assert gradient == circuit(1)-circuit(0)
+        assert np.allclose(gradient, (-2*np.cos(angle)))
+
 
 class TestPhaseFlip:
     """Test that various values of p give correct Kraus matrices"""
@@ -151,6 +157,24 @@ class TestPhaseFlip:
 
         expected_K1 = np.sqrt(p) * Z
         assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_grad_phaseflip(self, angle, tol):
+        """Test that analytical gradient is computed correctly for different states. Channel
+        grad recipes are independent of channel parameter"""
+
+        dev = qml.device("default.mixed", wires=1)
+        prob = 0.5
+
+        @qml.qnode(dev)
+        def circuit(p):
+            qml.RX(angle, wires=0)
+            qml.PhaseFlip(p, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        gradient = np.squeeze(qml.grad(circuit)(prob))
+        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, 0.0)
 
 
 class TestDepolarizingChannel:
@@ -168,6 +192,24 @@ class TestDepolarizingChannel:
         op = channel.DepolarizingChannel
         expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_grad_depolarizing(self, angle, tol):
+        """Test that analytical gradient is computed correctly for different states. Channel
+        grad recipes are independent of channel parameter"""
+
+        dev = qml.device("default.mixed", wires=1)
+        prob = 0.5
+
+        @qml.qnode(dev)
+        def circuit(p):
+            qml.RX(angle, wires=0)
+            qml.DepolarizingChannel(p, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        gradient = np.squeeze(qml.grad(circuit)(prob))
+        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, -(4/3) * np.cos(angle))
 
 
 class TestQubitChannel:
