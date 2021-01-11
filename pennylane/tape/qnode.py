@@ -445,7 +445,7 @@ class QNode:
             return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
-    def draw(self, charset="unicode"):
+    def draw(self, charset="unicode", wire_order=None, **kwargs):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -473,6 +473,7 @@ class QNode:
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and
                 "ascii" are supported.
+            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
 
         Raises:
             ValueError: if the given charset is not supported
@@ -488,7 +489,7 @@ class QNode:
                 "The QNode can only be drawn after its quantum tape has been constructed."
             )
 
-        return self.qtape.draw(charset=charset)
+        return self.qtape.draw(charset=charset, wire_order=wire_order)
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -721,7 +722,6 @@ def draw(_qnode, charset="unicode"):
     0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
     """
-    print(_qnode)
     if not hasattr(_qnode, "qtape"):
         raise ValueError(
             "qml.draw only works when tape mode is enabled. "

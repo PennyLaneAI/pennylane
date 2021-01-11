@@ -24,6 +24,9 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 @pytest.fixture
 def queue():
     """A fixture of a complex example of operations that depend on previous operations."""
