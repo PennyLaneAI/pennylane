@@ -46,7 +46,7 @@ See the links below for walkthroughs of each specific interface:
     </style>
     <div id="interfaces" class="container mt-2 mb-2">
         <div class="row mt-3">
-            <div class="col-lg-4 mb-2 align-items-stretch">
+            <div class="col-lg-3 mb-2 align-items-stretch">
                 <a href="interfaces/numpy.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -55,7 +55,7 @@ See the links below for walkthroughs of each specific interface:
                     </div>
                 </a>
             </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
+            <div class="col-lg-3 mb-2 align-items-stretch">
                 <a href="interfaces/torch.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -64,7 +64,7 @@ See the links below for walkthroughs of each specific interface:
                     </div>
                 </a>
             </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
+            <div class="col-lg-3 mb-2 align-items-stretch">
                 <a href="interfaces/tf.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -77,7 +77,7 @@ See the links below for walkthroughs of each specific interface:
                 <a href="interfaces/jax.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/jax.png" class="card-img-top" style="width:80%;"></img>
+                            <img src="../_static/jax.png" class="card-img-top" style="max-width:60%;"></img>
                         </div>
                     </div>
                 </a>
