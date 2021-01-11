@@ -5,6 +5,9 @@
   `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
   [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
 
+* The `qml.math` module now supports JAX.
+  [(#985)](https://github.com/XanaduAI/software-docs/pull/274)
+
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
   [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)

@@ -72,6 +72,9 @@ def _get_multi_tensorbox(values):
     if "autograd" in interfaces:
         return TensorBox(values[interfaces.index("autograd")])
 
+    if "jax" in interfaces:
+        return TensorBox(values[interfaces.index("jax")])
+
     return TensorBox(values[interfaces.index("numpy")])
 
 

@@ -104,28 +104,35 @@ class TensorBox(abc.ABC):
             return super(TensorBox, cls).__new__(cls)
 
         namespace = tensor.__class__.__module__.split(".")[0]
+        box = None
+        if namespace == "jax":
+            from .jax_box import JaxBox
+
+            box = JaxBox.__new__(JaxBox, tensor)
 
         if isinstance(tensor, (numbers.Number, list, tuple)) or namespace == "numpy":
             from .numpy_box import NumpyBox
 
-            return NumpyBox.__new__(NumpyBox, tensor)
+            box = NumpyBox.__new__(NumpyBox, tensor)
 
         if namespace in ("pennylane", "autograd"):
             from .autograd_box import AutogradBox
 
-            return AutogradBox.__new__(AutogradBox, tensor)
+            box = AutogradBox.__new__(AutogradBox, tensor)
 
         if namespace == "tensorflow":
             from .tf_box import TensorFlowBox
 
-            return TensorFlowBox.__new__(TensorFlowBox, tensor)
+            box = TensorFlowBox.__new__(TensorFlowBox, tensor)
 
         if namespace == "torch":
             from .torch_box import TorchBox
 
-            return TorchBox.__new__(TorchBox, tensor)
+            box = TorchBox.__new__(TorchBox, tensor)
 
-        raise ValueError(f"Unknown tensor type {type(tensor)}")
+        if box is None:
+            raise ValueError(f"Unknown tensor type {type(tensor)}")
+        return box
 
     def __init__(self, tensor):
         if self._initialized:
