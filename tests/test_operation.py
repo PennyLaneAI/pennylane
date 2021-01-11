@@ -406,7 +406,7 @@ class TestOperationConstruction:
 
     def test_list_of_arrays(self):
         """Test that an exception is raised if a list of arrays is expected
-         but a list of mixed types is passed"""
+        but a list of mixed types is passed"""
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
@@ -580,19 +580,19 @@ class TestObservableConstruction:
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
-        m = qml.expval(qml.PauliZ(wires=['a']) @ qml.PauliZ(wires=['b']))
+        m = qml.expval(qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"]))
         expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
         assert str(m) == expected
 
-        m = qml.probs(wires=['a'])
+        m = qml.probs(wires=["a"])
         expected = "probs(wires=['a'])"
         assert str(m) == expected
 
-        m = qml.PauliZ(wires=['a']) @ qml.PauliZ(wires=['b'])
+        m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
         expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
         assert str(m) == expected
 
-        m = qml.PauliZ(wires=['a'])
+        m = qml.PauliZ(wires=["a"])
         expected = "PauliZ(wires=['a'])"
         assert str(m) == expected
 
@@ -1428,26 +1428,3 @@ class TestChannel:
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
         op = DummyOp(0.1, wires=0)
         assert np.all(op.kraus_matrices[0] == expected)
-
-    def test_grad_method(self):
-        """Test that an exception is raised if a gradient method is set to analytic
-        as only finite difference or ``None`` is allowed at the moment. This can be updated
-        once we add gradient recipes for channels. """
-
-        class DummyOp(qml.operation.Channel):
-            r"""Dummy custom channel"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-            grad_method = "A"
-
-            def _kraus_matrices(self, *params):
-                p = params[0]
-                K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1 - p) * I
-                return [K1, K2]
-
-        with pytest.raises(
-            ValueError, match="Analytic gradients can not be used for quantum channels"
-        ):
-            DummyOp(0.5, wires=0)
