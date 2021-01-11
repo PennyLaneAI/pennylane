@@ -25,9 +25,6 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
 

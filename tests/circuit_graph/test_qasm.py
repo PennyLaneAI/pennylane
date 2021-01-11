@@ -276,7 +276,6 @@ class TestToQasmUnitTests:
         assert res == qasm2
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestQNodeQasmIntegrationTests:
     """Test that the QASM serialization works correctly
     when circuits are created via QNodes."""
