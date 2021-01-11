@@ -67,6 +67,7 @@ JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 valid_hamiltonians = [
     ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
     ((-0.8,), (qml.PauliZ(0),)),
+    ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
     ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX("a"), qml.PauliY("b"))),
@@ -75,6 +76,20 @@ valid_hamiltonians = [
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+]
+
+valid_hamiltonians_str = [
+    "(1.0) [Hermitian0'1]",
+    "(-0.8) [Z0]",
+    "(0.6) [X0 X1]",
+    "(0.5) [X0]\n+ (-1.6) [Y1]",
+    "(0.5) [X1]\n+ (-1.6) [Y1]",
+    "(0.5) [Xa]\n+ (-1.6) [Yb]",
+    "(1.1) [X0]\n+ (-0.4) [Hermitian2]\n+ (0.333) [Z2]",
+    "(-0.4) [Hermitian0'2]\n+ (0.15) [Z1]",
+    "(1.5) [Z0]\n+ (2.0) [Y2]",
+    "(-0.1) [Hermitian0'1]\n+ (0.5) [Y0]",
+    "(0.5) [X0]\n+ (1.2) [X0 X1]",
 ]
 
 invalid_hamiltonians = [
@@ -527,6 +542,12 @@ class TestHamiltonian:
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
+    @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
+    def test_hamiltonian_str(self, terms, string):
+        """Tests that the __str__ function for printing is correct"""
+        H = qml.vqe.Hamiltonian(*terms)
+        assert H.__str__() == string
+
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
@@ -781,7 +802,9 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True
+        )
         cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False
         )
