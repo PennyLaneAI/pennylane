@@ -484,6 +484,8 @@ class QNode:
             str: the circuit representation of the tape
 
         """
+        # TODO: remove 'kwargs' when tape mode is default.
+        # Currently it only exists to match the signature of non-tape mode draw.
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."
