@@ -395,7 +395,6 @@ class TestPassthruIntegration:
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
-    @pytest.mark.xfail(reason="This test will fail until JAX support is added to qml.math")
     def test_template_integration(self):
         """Test that a PassthruQNode using default.qubit.jax works with templates."""
         dev = qml.device("default.qubit.jax", wires=2)

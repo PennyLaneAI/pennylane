@@ -5,6 +5,9 @@
   `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
   [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
 
+* The `qml.math` module now supports JAX.
+  [(#985)](https://github.com/XanaduAI/software-docs/pull/274)
+
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
   [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
@@ -200,6 +203,9 @@
 * Fixes an issue where the Autograd interface was not unwrapping non-differentiable
   PennyLane tensors, which can cause issues on some devices.
   [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
+
+* `qml.vqe.Hamiltonian` prints any observable with any number of strings.
+  [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
 <h3>Contributors</h3>
 
