@@ -435,6 +435,7 @@ class TestDot:
         [tf.constant([[1, 2], [3, 4]]), onp.array([6, 7])],
         [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
         [jnp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
+        [np.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
 
     ]
 
