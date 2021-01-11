@@ -62,7 +62,6 @@ class Hamiltonian:
                                [0.0, 0.0, -0.9, 12.0],
                                [3j, -0.1, 12.0, 0.0]])
     >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
-    >>> obs.name = 'a'
     >>> H = qml.Hamiltonian((0.8, ), (obs, ))
     >>> print(H)
     (0.8) a0'1
