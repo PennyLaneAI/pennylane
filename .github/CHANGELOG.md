@@ -1,6 +1,9 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+* PennyLane now supports analytical gradients for the following noisy channels:
+  `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
+  [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
 
 * The `qml.math` module now supports JAX.
 
@@ -199,6 +202,9 @@
 * Fixes an issue where the Autograd interface was not unwrapping non-differentiable
   PennyLane tensors, which can cause issues on some devices.
   [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
+
+* `qml.vqe.Hamiltonian` prints any observable with any number of strings.
+  [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
 <h3>Contributors</h3>
 
