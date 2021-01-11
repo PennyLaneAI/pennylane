@@ -260,7 +260,9 @@ class BaseQNode(qml.QueuingContext):
             str: The circuit representation of the QNode
         """
         if self.circuit:
-            return self.circuit.draw(charset=charset, show_variable_names=show_variable_names, wire_order=wire_order)
+            return self.circuit.draw(
+                charset=charset, show_variable_names=show_variable_names, wire_order=wire_order
+            )
 
         raise RuntimeError(
             "The QNode can only be drawn after its CircuitGraph has been constructed."

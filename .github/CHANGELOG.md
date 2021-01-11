@@ -186,6 +186,37 @@
   in backpropagation mode (`diff_method="backprop"`).
   [(#873)](https://github.com/PennyLaneAI/pennylane/pull/873)
 
+* The circuit drawer now allows for the wire order to be (optionally) modified:
+  [(#992)](https://github.com/PennyLaneAI/pennylane/pull/992)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.Hadamard(wires=-1)
+  ...     qml.CNOT(wires=["a", "q2"])
+  ...     qml.RX(wires="a")
+  ...     return qml.expval(qml.PauliX(wires="q2"))
+  ```
+
+  Printing with default wire order (defined by order of operations):
+
+  ```pycon
+  >>> print(circuit.draw())
+   -1: ───H───────────┤
+    a: ──╭C──RX(0.2)──┤
+   q2: ──╰X───────────┤ ⟨X⟩
+  ```
+
+  Changing the wire order:
+
+  ```pycon
+  >>> print(circuit.draw(wire_order=["q2", "a", -1]))
+   q2: ──╭X───────────┤ ⟨X⟩
+    a: ──╰C──RX(0.2)──┤
+   -1: ───H───────────┤
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
