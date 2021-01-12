@@ -9,7 +9,8 @@ quantum nodes. A basic ``QNode`` can be translated into a quantum node that inte
 
 .. note::
     
-    Currently, only the ``default.qubit.jax`` device supports the JAX interface.
+    Currently, only the ``default.qubit.jax`` device supports the JAX interface, 
+    and only if `diff_method="backprop"` is used.
 
 
 .. note::
@@ -89,7 +90,7 @@ Using jax.jit on QNodes
 -----------------------
 
 To fully utilize the power and speed of JAX, you'll need to just-in-time compile
-your functions - a process called ``jitting``. 
+your functions - a process called "jitting". 
 If you're only taking expectation values, you can simply add the decorator on your QNode directly.
 
 .. code-block:: python
@@ -110,7 +111,7 @@ Randomness: Shots and Samples
 -----------------------------
 In JAX, there is no such thing as statefull randomness, meaning all random number generators must be explicitly seeded. 
 (See the `JAX random package documentation <https://jax.readthedocs.io/en/latest/jax.random.html?highlight=random#module-jax.random>`_ for more details).
-While a real quantum computer's randomness can not be seeded, we are forced to when using a JAX simulator.
+To emulate a real quantum computer's randomness, we are forced to use randomness - and hence seeding - when using a JAX simulator.
 
 If you want to simulate randomness (meaning you either have a finite ``shots`` value, or the qnode returns ``qml.samples()``), JAX requires you to use a ``jax.random.PRNGKey``. On a normal method, we handle this automatically for you. However, if you wish to decorate your qnode with a ``jax.jit``, you must contruct your device inside of the ``jax.jit`` decorated method.
 
