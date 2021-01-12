@@ -2,8 +2,8 @@
 pip
 appdirs
 autograd
-jax
-jaxlib
+jax==0.2.7
+jaxlib==0.1.57
 m2r
 numpy
 pygments-github-lexers
