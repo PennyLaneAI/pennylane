@@ -118,15 +118,3 @@ class TapeCircuitGraph(CircuitGraph):
             bool: returns ``True`` if a path exists
         """
         return nx.has_path(self._graph, a, b)
-
-    @property
-    def diagonalizing_gates(self):
-        rotation_gates = []
-
-        for measurement in self.observables:
-            if hasattr(measurement, "obs"):
-                rotation_gates.extend(measurement.obs.diagonalizing_gates())
-            else:
-                rotation_gates.extend(measurement.diagonalizing_gates())
-
-        return rotation_gates
