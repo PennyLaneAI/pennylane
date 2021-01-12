@@ -111,9 +111,8 @@ Randomness: Shots and Samples
 -----------------------------
 In JAX, there is no such thing as statefull randomness, meaning all random number generators must be explicitly seeded. 
 (See the `JAX random package documentation <https://jax.readthedocs.io/en/latest/jax.random.html?highlight=random#module-jax.random>`_ for more details).
-To emulate a real quantum computer's randomness, we are forced to use randomness - and hence seeding - when using a JAX simulator.
 
-When simulations include randomness (i.e., if the device has a finite ``shots`` value, or the qnode returns ``qml.samples()``), JAX requires a ``jax.random.PRNGKey``. Usually, PennyLane automatically handles this for you. However, if you wish to use jitting, not only the qnode, but also the device needs to be created in the context of the ``jax.jit`` decorator. This can be achieved by wrapping device and qnode creation into a function decorated by ``@jax.jit``:
+When simulations include randomness (i.e., if the device has a finite ``shots`` value, or the qnode returns ``qml.samples()``), the JAX device requires a ``jax.random.PRNGKey``. Usually, PennyLane automatically handles this for you. However, if you wish to use jitting with randomness, both the qnode and the device need to be created in the context of the ``jax.jit`` decorator. This can be achieved by wrapping device and qnode creation into a function decorated by ``@jax.jit``:
 
 Example:
 
