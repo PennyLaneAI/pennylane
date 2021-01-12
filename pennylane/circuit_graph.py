@@ -91,18 +91,18 @@ def _is_observable(x):
     return getattr(x, "return_type", None) is not None
 
 
-def _list_at_index_or_none(list, idx):
+def _list_at_index_or_none(ls, idx):
     """Return the element of a list at the given index if it exists, return None otherwise.
 
     Args:
-        list (list[object]): The target list
+        ls (list[object]): The target list
         idx (int): The target index
 
     Returns:
         Union[object,NoneType]: The element at the target index or None
     """
-    if len(list) > idx:
-        return list[idx]
+    if len(ls) > idx:
+        return ls[idx]
 
     return None
 
