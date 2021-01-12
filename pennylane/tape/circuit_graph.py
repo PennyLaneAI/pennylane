@@ -15,10 +15,11 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an operator and observable queue.
 """
+# pylint: disable=too-many-arguments
 import networkx as nx
 
 import pennylane as qml
-from pennylane.circuit_graph import CircuitGraph, Layer, LayerData
+from pennylane.circuit_graph import CircuitGraph, Layer
 
 
 class TapeCircuitGraph(CircuitGraph):
@@ -32,7 +33,6 @@ class TapeCircuitGraph(CircuitGraph):
         self._observables = obs
         self.par_info = par_info
         self.trainable_params = trainable_params
-        super().__init__(ops + obs, variable_deps={}, wires=wires)
 
         self._depth = None
 
@@ -40,6 +40,12 @@ class TapeCircuitGraph(CircuitGraph):
             if m.return_type is qml.operation.State:
                 # state measurements are applied to all device wires
                 m._wires = wires  # pylint: disable=protected-access
+
+        super().__init__(ops + obs, variable_deps={}, wires=wires)
+
+        # For computing depth; want only a graph with the operations, not
+        # including the observables
+        self._operation_graph = None
 
     @property
     def operations(self):
@@ -67,9 +73,6 @@ class TapeCircuitGraph(CircuitGraph):
         # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
         current = Layer([], [])
         layers = [current]
-
-        # sort vars by first occurrence of the var in the ops queue
-        variable_ops_sorted = []
 
         for idx, info in self.par_info.items():
             if idx in self.trainable_params:
