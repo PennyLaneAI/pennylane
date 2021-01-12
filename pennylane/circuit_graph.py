@@ -636,7 +636,7 @@ class CircuitGraph:
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             show_variable_names (bool, optional): Show variable names instead of variable values.
-            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
 
         Raises:
             ValueError: If the given charset is not supported
@@ -644,7 +644,9 @@ class CircuitGraph:
         Returns:
             str: The circuit diagram representation of the ``CircuitGraph``
         """
-        wire_order = None if wire_order is None else qml.wires.Wires(wire_order)
+        if wire_order is not None:
+            wire_order = qml.wires.Wires.all_wires([wire_order, self.wires])
+
         grid, obs = self.greedy_layers(wire_order=wire_order)
 
         if charset not in CHARSETS:

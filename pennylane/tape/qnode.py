@@ -521,6 +521,12 @@ class QNode:
             )
 
         wire_order = wire_order or self.device.wires
+        wire_order = qml.wires.Wires(wire_order)
+
+        if wire_order not in self.device.wires:
+            raise ValueError(
+                f"Provided wire order {wire_order.labels} contains wires not contained on the device: {self.device.wires}."
+            )
 
         return self.qtape.draw(charset=charset, wire_order=wire_order)
 
@@ -771,14 +777,16 @@ def draw(_qnode, charset="unicode", wire_order=None):
 
     When printed, the wire order matches the order defined on the device:
 
-    >>> print(circuit.draw())
+    >>> drawer = qml.draw(circuit)
+    >>> drawer()
       a: ─────╭C──RX(0.2)──┤
      -1: ──H──│────────────┤
      q2: ─────╰X───────────┤ ⟨X⟩
 
     We can use the ``wire_order`` argument to change the wire order:
 
-    >>> print(circuit.draw(wire_order=["q2", "a", -1]))
+    >>> drawer = qml.draw(circuit, wire_order=["q2", "a", -1])
+    >>> drawer()
      q2: ──╭X───────────┤ ⟨X⟩
       a: ──╰C──RX(0.2)──┤
      -1: ───H───────────┤

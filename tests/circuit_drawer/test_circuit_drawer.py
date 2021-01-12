@@ -792,3 +792,106 @@ class TestCircuitDrawerIntegration:
                 " 0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
                 + " 1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩ \n"
             )
+
+
+class TestWireOrdering:
+    """Tests for wire ordering functionality"""
+
+    @pytest.fixture
+    def tape_only(self):
+        """Ensures tests only run in tape mode"""
+        if not qml.tape_mode_active():
+            pytest.skip("Tests only run in tape mode")
+
+    def test_default_ordering(self, tape_only):
+        """Test that the default wire ordering matches the device"""
+
+        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+        res = circuit.draw()
+        expected = [
+            "  a: ─────╭C──RX(0.2)──┤     ",
+            " -1: ──H──│────────────┤     ",
+            " q2: ─────╰X───────────┤ ⟨X⟩ \n"
+        ]
+
+        assert res == "\n".join(expected)
+
+    def test_wire_reordering(self, tape_only):
+        """Test that wires are correctly reordered"""
+
+        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+        res = circuit.draw(wire_order=["q2", "a", -1])
+        expected = [
+            " q2: ──╭X───────────┤ ⟨X⟩ ",
+            "  a: ──╰C──RX(0.2)──┤     ",
+            " -1: ───H───────────┤     \n"
+        ]
+
+        assert res == "\n".join(expected)
+
+    def test_missing_wire(self, tape_only):
+        """Test that wires not specifically mentioned in the wire
+        reordering are appended at the bottom of the circuit drawing"""
+
+        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+        res = circuit.draw(wire_order=["q2", "a"])
+        expected = [
+            " q2: ──╭X───────────┤ ⟨X⟩ ",
+            "  a: ──╰C──RX(0.2)──┤     ",
+            " -1: ───H───────────┤     \n"
+        ]
+
+        assert res == "\n".join(expected)
+
+        res = circuit.draw(wire_order=["q2", -1])
+        expected = [
+            " q2: ─────╭X───────────┤ ⟨X⟩ ",
+            " -1: ──H──│────────────┤     ",
+            "  a: ─────╰C──RX(0.2)──┤     \n"
+        ]
+
+        assert res == "\n".join(expected)
+
+    def test_invalid_wires(self, tape_only):
+        """Test that an exception is raised if a wire in the wire
+        ordering does not exist on the device"""
+        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+
+        with pytest.raises(ValueError, match="contains wires not contained on the device"):
+            res = circuit.draw(wire_order=["q2", 5])
