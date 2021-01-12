@@ -18,7 +18,7 @@ representation of a quantum circuit from an operator and observable queue.
 import networkx as nx
 
 import pennylane as qml
-from pennylane import CircuitGraph
+from pennylane.circuit_graph import CircuitGraph, Layer, LayerData
 
 
 class TapeCircuitGraph(CircuitGraph):
@@ -27,21 +27,19 @@ class TapeCircuitGraph(CircuitGraph):
     current CircuitGraph, and modify the instantiation so that it
     can be created via the quantum tape."""
 
-    def __init__(self, ops, obs, wires):
+    def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
         self._operations = ops
         self._observables = obs
+        self.par_info = par_info
+        self.trainable_params = trainable_params
+        super().__init__(ops + obs, variable_deps={}, wires=wires)
+
         self._depth = None
 
         for m in self._observables:
             if m.return_type is qml.operation.State:
                 # state measurements are applied to all device wires
                 m._wires = wires  # pylint: disable=protected-access
-
-        super().__init__(ops + obs, variable_deps={}, wires=wires)
-
-        # For computing depth; want only a graph with the operations, not
-        # including the observables
-        self._operation_graph = None
 
     @property
     def operations(self):
@@ -52,6 +50,46 @@ class TapeCircuitGraph(CircuitGraph):
     def observables(self):
         """Observables in the circuit."""
         return self._observables
+
+    def update_node(self, old, new):
+        super().update_node(old, new)
+        self._operations = self.operations_in_order
+        self._observables = self.observables_in_order
+
+    @property
+    def parametrized_layers(self):
+        """Identify the parametrized layer structure of the circuit.
+
+        Returns:
+            list[Layer]: layers of the circuit
+        """
+        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0
+        # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
+        current = Layer([], [])
+        layers = [current]
+
+        # sort vars by first occurrence of the var in the ops queue
+        variable_ops_sorted = []
+
+        for idx, info in self.par_info.items():
+            if idx in self.trainable_params:
+                op = info["op"]
+
+                # get all predecessor ops of the op
+                sub = self.ancestors((op,))
+
+                # check if any of the dependents are in the
+                # currently assembled layer
+                if set(current.ops) & sub:
+                    # operator depends on current layer, start a new layer
+                    current = Layer([], [])
+                    layers.append(current)
+
+                # store the parameters and ops indices for the layer
+                current.ops.append(op)
+                current.param_inds.append(idx)
+
+        return layers
 
     def get_depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""
@@ -80,3 +118,15 @@ class TapeCircuitGraph(CircuitGraph):
             bool: returns ``True`` if a path exists
         """
         return nx.has_path(self._graph, a, b)
+
+    @property
+    def diagonalizing_gates(self):
+        rotation_gates = []
+
+        for measurement in self.observables:
+            if hasattr(measurement, "obs"):
+                rotation_gates.extend(measurement.obs.diagonalizing_gates())
+            else:
+                rotation_gates.extend(measurement.diagonalizing_gates())
+
+        return rotation_gates
