@@ -14,7 +14,6 @@
 r"""
 Contains the ``Visualize`` context manager.
 """
-import time
 from matplotlib import pyplot as plt
 
 try:
@@ -48,25 +47,21 @@ class Visualize:
 
     Keyword Args:
         step_size (int): The number of steps taken between each data recording instance.
-        cost_fn (func): The cost function that is being optimized.
-
     """
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, step_size=1, cost_fn=None):
+    def __init__(self, step_size=1):
 
         if not isinstance(step_size, int):
             raise ValueError("'step_size' must be of type int, got {}".format(type(step_size)))
 
         self.step_size = step_size
-        self.cost_fn = cost_fn
 
         self._step_log = 0
         self._x_log = []
         self._y_log = []
         self._param_log = []
-        self._time_log = []
 
         self._graph_bool = False
 
@@ -92,36 +87,23 @@ class Visualize:
 
         return (self._x_log, self._param_log)
 
-    @property
-    def time_data(self):
-        """
-        Returns a tuple of the recorded optimization steps, and the corresponding execution time.
-
-        Returns:
-            tuple: a tuple containing lists of optimization steps and execution times for each optimization step.
-        """
-
-        return (self._x_log, self._time_log)
-
     def __enter__(self):
-        print("Beginning Optimization")
-        print("--------------------------")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
-        print("Optimization Complete")
-
         if self._graph_bool:
             plt.show()
 
-    def update(self, params=None):
+    def update(self, cost=None, params=None):
         """
         Updates the data in the Visualize context manager instance. This data can then be called by the user, or
         utilized by the active context manager to create text or graphical outputs.
 
         Keyword Args:
-            params: Variational parameters to be fed into the cost function.
+
+            cost (float): Value of the cost function corresponding to an optimization step
+            params (Iterable): Variational parameters corresponding to an optimization step
 
         .. UsageDetails::
 
@@ -145,7 +127,7 @@ class Visualize:
 
                     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-                def cost(gamma):
+                def cost_fn(gamma):
                     return sum(circuit(gamma[0]))
 
             To utilize the PennyLane visualizations functionality, we wrap the optimization loop
@@ -157,10 +139,10 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(steps, cost_fn=cost) as viz:
+                with Visualize() as viz:
                     for i in range(steps):
-                        params = optimizer.step(cost, params)
-                        viz.update(params=params)
+                        params, cost = optimizer.step_and_cost(cost_fn, params)
+                        viz.update(cost=cost, params=params)
 
             We can then return values of data recorded during the optimization procedure. For example, we can call
             the values of the cost function after each optimization step:
@@ -178,14 +160,10 @@ class Visualize:
 
             if params is not None:
                 self._param_log.append(params)
-                if self.cost_fn is not None:
-                    start = time.time()
-                    val = self.cost_fn(params)
-                    end = time.time()
-                    self._y_log.append(val)
-                    self._time_log.append(start - end)
+            if cost is not None:
+                self._y_log.append(cost)
 
-    def text(self, step=True, cost=False, params=False):
+    def text(self, step=True, cost=False, params=False, static=True):
         """
         Returns a text-based output of the data in the Visualize context manager instance.
 
@@ -193,6 +171,8 @@ class Visualize:
             step (bool): Choice of whether the number of steps are outputted or not.
             cost (bool): Choice of whether the cost function values are outputted or not.
             params (bool): Choice of whether the parameter values are outputted or not.
+            static (bool): Choice of whether the text output only displays the information at the current
+                           step (static), or all steps.
 
         .. Warning::
 
@@ -207,7 +187,7 @@ class Visualize:
 
             .. code-block:: python3
 
-               import pennylane as qml
+                import pennylane as qml
                 from pennylane.visualize import Visualize
 
                 dev = qml.device('default.qubit', wires=3)
@@ -223,7 +203,7 @@ class Visualize:
 
                     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-                def cost(gamma):
+                def cost_fn(gamma):
                     return sum(circuit(gamma[0]))
 
             We then call the ``text()`` and ``update()`` methods inside the optimization loop:
@@ -234,37 +214,19 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(cost_fn=cost) as viz:
+                with Visualize() as viz:
                     for i in range(steps):
-                        params = optimizer.step(cost, params)
-                        viz.update(params=params)
-                        viz.text(cost=True, params=True)
+                        params, cost = optimizer.step_and_cost(cost_fn, params)
+                        viz.update(cost=cost, params=params)
+                        viz.text(cost=True, params=True, static=False)
 
             .. code-block:: none
 
-                Beginning Optimization
-                --------------------------
-                Optimization Step 1
-                Cost: 0.29001330299410394
-                Parameters: [1.03569363]
-                --------------------------
-                Optimization Step 2
-                Cost: 0.16958978666464564
-                Parameters: [1.07061477]
-                --------------------------
-                Optimization Step 3
-                Cost: 0.0554891459073546
-                Parameters: [1.10463974]
-                --------------------------
-                Optimization Step 4
-                Cost: -0.05179578982297689
-                Parameters: [1.13766278]
-                --------------------------
-                Optimization Step 5
-                Cost: -0.151952780085496
-                Parameters: [1.16959683]
-                --------------------------
-                Optimization Complete
+                || Optimization Step 001 || Cost: 0.41608205 || Parameters: ['1.03569363'] ||
+                || Optimization Step 002 || Cost: 0.29001330 || Parameters: ['1.07061477'] ||
+                || Optimization Step 003 || Cost: 0.16958979 || Parameters: ['1.10463974'] ||
+                || Optimization Step 004 || Cost: 0.05548915 || Parameters: ['1.13766278'] ||
+                || Optimization Step 005 || Cost: -0.0517958 || Parameters: ['1.16959683'] ||
 
         """
 
@@ -279,13 +241,35 @@ class Visualize:
 
         if self._step_log % self.step_size == 0:
 
+            output_str = "|"
+
             if step:
-                print("Optimization Step {}".format(self._step_log))
+                if not static:
+                    output_str += "| Optimization Step {} |".format(str(self._step_log).zfill(3))
+                else:
+                    output_str += "| Optimization Step {} |".format(self._step_log)
             if cost:
-                print("Cost: {}".format(self._y_log[len(self._y_log) - 1]))
+                if self._y_log[len(self._y_log) - 1] < 0:
+                    output_str += "| Cost: {} |".format(
+                        format(self._y_log[len(self._y_log) - 1], ".7f")
+                    )
+                else:
+                    output_str += "| Cost: {} |".format(
+                        format(self._y_log[len(self._y_log) - 1], ".8f")
+                    )
             if params:
-                print("Parameters: {}".format(self._param_log[len(self._param_log) - 1]))
-            print("--------------------------")
+                display_par = [
+                    format(o, ".7f") if o < 0 else format(o, ".8f")
+                    for o in self._param_log[len(self._param_log) - 1]
+                ]
+                output_str += "| Parameters: {} |".format(display_par)
+
+            output_str += "|"
+
+            if static:
+                print(output_str, end="\r")
+            else:
+                print(output_str)
 
     def graph(self, color=None, xlim=None, ylim=None):
         """
@@ -327,7 +311,7 @@ class Visualize:
 
                     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-                def cost(gamma):
+                def cost_fn(gamma):
                     return sum(circuit(gamma[0]))
 
             We then call the ``graph()`` and ``update()`` methods inside the optimization loop:
@@ -338,10 +322,10 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(cost_fn=cost) as viz:
+                with Visualize() as viz:
                     for i in range(steps):
-                        params = optimizer.step(cost, params)
-                        viz.update(params=params)
+                        params, cost = optimizer.step_and_cost(cost_fn, params)
+                        viz.update(cost=cost, params=params)
                         viz.graph()
 
             Execution of this code block will result an a graph window, which will dynamically plot the value
@@ -357,10 +341,10 @@ class Visualize:
                 steps = 5
                 params = np.array([1.])
 
-                with Visualize(cost_fn=cost) as viz:
+                with Visualize() as viz:
                     for i in range(steps):
-                        params = optimizer.step(cost, params)
-                        viz.update(params=params)
+                        params, cost = optimizer.step_and_cost(cost_fn, params)
+                        viz.update(cost=cost, params=params)
                     viz.graph()
         """
 

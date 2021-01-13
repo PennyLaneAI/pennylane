@@ -35,7 +35,7 @@ def circuit(gamma):
     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
 
-def cost(gamma):
+def cost_fn(gamma):
     return sum(circuit(gamma[0]))
 
 
@@ -64,10 +64,10 @@ class TestVisualize:
         params = np.array([1.0])
         steps = 5
 
-        with Visualize(cost_fn=cost) as viz:
+        with Visualize() as viz:
             for i in range(steps):
-                params = optimizer.step(cost, params)
-                viz.update(params=params)
+                params, cost = optimizer.step_and_cost(cost_fn, params)
+                viz.update(cost=cost, params=params)
 
         assert np.allclose(cost_values, viz.cost_data[1])
 
@@ -80,10 +80,10 @@ class TestVisualize:
         params = np.array([1.0])
         steps = 5
 
-        with Visualize(cost_fn=cost) as viz:
+        with Visualize() as viz:
             for i in range(steps):
-                params = optimizer.step(cost, params)
-                viz.update(params=params)
+                params, cost = optimizer.step_and_cost(cost_fn, params)
+                viz.update(cost=cost, params=params)
 
         assert np.allclose(param_values, [i[0] for i in viz.param_data[1]])
 
