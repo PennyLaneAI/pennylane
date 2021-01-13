@@ -861,6 +861,8 @@ class TestWireOrdering:
             return qml.expval(qml.PauliX(wires="q2"))
 
         circuit()
+
+        # test one missing wire
         res = circuit.draw(wire_order=["q2", "a"])
         expected = [
             " q2: ──╭X───────────┤ ⟨X⟩ ",
@@ -870,7 +872,18 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
+        # test one missing wire
         res = circuit.draw(wire_order=["q2", -1])
+        expected = [
+            " q2: ─────╭X───────────┤ ⟨X⟩ ",
+            " -1: ──H──│────────────┤     ",
+            "  a: ─────╰C──RX(0.2)──┤     \n"
+        ]
+
+        assert res == "\n".join(expected)
+
+        # test multiple missing wires
+        res = circuit.draw(wire_order=["q2"])
         expected = [
             " q2: ─────╭X───────────┤ ⟨X⟩ ",
             " -1: ──H──│────────────┤     ",
