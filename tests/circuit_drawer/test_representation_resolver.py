@@ -25,6 +25,9 @@ from pennylane.wires import Wires
 from pennylane.tape.measure import state
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 @pytest.fixture
 def unicode_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
