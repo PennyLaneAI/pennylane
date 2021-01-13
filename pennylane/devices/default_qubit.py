@@ -460,7 +460,7 @@ class DefaultQubit(QubitDevice):
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        if not self._allclose(self._norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if (
@@ -472,14 +472,17 @@ class DefaultQubit(QubitDevice):
             return
 
         # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+        basis_states = self._asarray(list(itertools.product([0, 1], repeat=len(device_wires))))
 
         # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
+        unravelled_indices = self._zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+
+        # explicitly convert wires to np array to not run into segfault with PyTorch
+        unravelled_indices[:, np.array(device_wires)] = basis_states
+
 
         # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+        ravelled_indices = self._ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
         state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
@@ -522,7 +525,8 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires.labels)
+        mat_axes = np.arange(len(device_wires), 2 * len(device_wires)).tolist()
+        axes = (mat_axes, device_wires.labels)
         tdot = self._tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
