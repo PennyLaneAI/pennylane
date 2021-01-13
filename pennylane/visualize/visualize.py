@@ -405,4 +405,4 @@ class Visualize:
                 0.13, 0.9, "Cost = {}".format(self._y_log[len(self._y_log) - 1]), fontsize=11
             )
 
-            plt.pause(0.025)
+            plt.pause(0.0025)
