@@ -921,7 +921,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._depth
 
-    def draw(self, charset="unicode"):
+    def draw(self, charset="unicode", wire_order=None):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -947,6 +947,7 @@ class QuantumTape(AnnotatedQueue):
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and
                 "ascii" are supported.
+            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
 
         Raises:
             ValueError: if the given charset is not supported
@@ -954,7 +955,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(charset=charset, show_variable_names=False)
+        return self.graph.draw(charset=charset, show_variable_names=False, wire_order=wire_order)
 
     @property
     def data(self):

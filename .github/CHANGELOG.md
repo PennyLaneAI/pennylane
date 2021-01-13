@@ -1,6 +1,12 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+* PennyLane now supports analytical gradients for the following noisy channels:
+  `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
+  [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
+
+* The `qml.math` module now supports JAX.
+  [(#985)](https://github.com/XanaduAI/software-docs/pull/274)
 
 * The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
@@ -183,6 +189,37 @@
   in backpropagation mode (`diff_method="backprop"`).
   [(#873)](https://github.com/PennyLaneAI/pennylane/pull/873)
 
+* The circuit drawer now allows for the wire order to be (optionally) modified:
+  [(#992)](https://github.com/PennyLaneAI/pennylane/pull/992)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.Hadamard(wires=-1)
+  ...     qml.CNOT(wires=["a", "q2"])
+  ...     qml.RX(0.2, wires="a")
+  ...     return qml.expval(qml.PauliX(wires="q2"))
+  ```
+
+  Printing with default wire order of the device:
+
+  ```pycon
+  >>> print(circuit.draw())
+    a: ─────╭C──RX(0.2)──┤
+   -1: ──H──│────────────┤
+   q2: ─────╰X───────────┤ ⟨X⟩
+  ```
+
+  Changing the wire order:
+
+  ```pycon
+  >>> print(circuit.draw(wire_order=["q2", "a", -1]))
+   q2: ──╭X───────────┤ ⟨X⟩
+    a: ──╰C──RX(0.2)──┤
+   -1: ───H───────────┤
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -197,6 +234,9 @@
 * Fixes an issue where the Autograd interface was not unwrapping non-differentiable
   PennyLane tensors, which can cause issues on some devices.
   [(#941)](https://github.com/PennyLaneAI/pennylane/pull/941)
+
+* `qml.vqe.Hamiltonian` prints any observable with any number of strings.
+  [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
 <h3>Contributors</h3>
 
