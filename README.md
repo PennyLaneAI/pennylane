@@ -47,7 +47,7 @@
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
-- *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
+- *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
 - *Device independent*. Run the same quantum circuit on different quantum backends. Install
   [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
