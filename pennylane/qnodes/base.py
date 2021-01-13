@@ -216,7 +216,7 @@ class BaseQNode(qml.QueuingContext):
             return
         self.circuit.print_contents()
 
-    def draw(self, charset="unicode", show_variable_names=False):
+    def draw(self, charset="unicode", show_variable_names=False, wire_order=None):
         """Draw the QNode as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -250,6 +250,7 @@ class BaseQNode(qml.QueuingContext):
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             show_variable_names (bool, optional): Show variable names instead of values.
+            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
 
         Raises:
             ValueError: If the given charset is not supported
@@ -259,7 +260,9 @@ class BaseQNode(qml.QueuingContext):
             str: The circuit representation of the QNode
         """
         if self.circuit:
-            return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
+            return self.circuit.draw(
+                charset=charset, show_variable_names=show_variable_names, wire_order=wire_order
+            )
 
         raise RuntimeError(
             "The QNode can only be drawn after its CircuitGraph has been constructed."
