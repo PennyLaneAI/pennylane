@@ -33,20 +33,17 @@ Templates are tested with a range of interfaces. To test templates with an addit
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-import numpy as np
 import pennylane as qml
-
+from pennylane import numpy as np
 
 #######################################
-# Interfaces
+# Interfaces and their methods to create differentiable tensors
 
-INTERFACES = [('numpy', np.array)]
+INTERFACES = [('autograd', lambda x: np.array(x, requires_grad=True))]
 
 try:
     import torch
-    from torch.autograd import Variable as TorchVariable
-
-    INTERFACES.append(('torch', torch.tensor))
+    INTERFACES.append(('torch', lambda x: torch.tensor(x, requires_grad=True)))
 except ImportError as e:
     pass
 
@@ -57,7 +54,7 @@ try:
         tf.enable_eager_execution()
 
     from tensorflow import Variable as TFVariable
-    INTERFACES.append(('tf', TFVariable))
+    INTERFACES.append(('tf', lambda x: TFVariable(x, dtype=tf.float64)))
 
 except ImportError as e:
     pass
@@ -65,6 +62,8 @@ except ImportError as e:
 #########################################
 # Fixtures for integration tests
 #########################################
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
 
 # Each entry to QUBIT_DIFFABLE_NONDIFFABLE or CV_DIFFABLE_NONDIFFABLE
 # adds a template with specified inputs to the integration tests
@@ -146,15 +145,15 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                               (qml.templates.UCCSD,
                                {'weights': [3.90575761, -1.89772083, -1.36689032]},
                                {'wires': [0, 1, 2, 3], 's_wires': [[0, 1, 2], [1, 2, 3]],
-                                'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0])},
+                                'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0], requires_grad=False)},
                                4),
                               (qml.templates.ParticleConservingU2,
                                {'weights': np.array([[0.35172862, 0.60808317, 1.44397231]])},
                                {'wires': [0, 1], 'init_state': np.array([1, 0])},
                                2),
                               (qml.templates.ParticleConservingU1,
-                               {'weights': np.array([[[ 0.17586701, -0.20382066]]])},
-                               {'wires': [0, 1], 'init_state':np.array([1, 0])},
+                               {'weights': [[[ 0.17586701, -0.20382066]]]},
+                               {'wires': [0, 1], 'init_state': np.array([1, 0], requires_grad=False)},
                                2),
                               ]
 
@@ -327,8 +326,7 @@ class TestIntegrationQnode:
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_qubit_qnode_primary_args(self, template, diffable, nondiffable, n_wires, interface, to_var):
-        """Tests integration of qubit templates with other operations, passing differentiable arguments
-        as primary arguments to qnode."""
+        """Tests integration of qubit templates with other operations."""
 
         # Extract keys and items
         keys_diffable = [*diffable]
@@ -337,15 +335,14 @@ class TestIntegrationQnode:
         # Turn into correct format
         diffable = [to_var(i) for i in diffable]
 
-        # Generate qnode
-        dev = qml.device('default.qubit', wires=n_wires)
-
         # Generate qnode in which differentiable arguments are passed
         # as primary argument
+        dev = qml.device('default.qubit', wires=n_wires)
+
         @qml.qnode(dev, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            all_args = {key: item for key, item in zip(keys_diffable, diffable)}
+            all_args = dict(zip(keys_diffable, diffable))
 
             # Merge with nondiffables
             all_args.update(nondiffable)
@@ -354,6 +351,7 @@ class TestIntegrationQnode:
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
+        print(diffable)
         circuit(*diffable, keys_diffable=keys_diffable, nondiffable=nondiffable)
 
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", CV_DIFFABLE_NONDIFFABLE)
@@ -467,6 +465,7 @@ class TestIntegrationOtherOps:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
+        nondiffable = nondiffable.copy()
         nondiffable.update(diffable)
 
         # Generate qnode
@@ -499,6 +498,7 @@ class TestIntegrationOtherOps:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
+        nondiffable = nondiffable.copy()
         nondiffable.update(diffable)
 
         # Make qnode
@@ -529,6 +529,8 @@ class TestIntegrationGradient:
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_integration_qubit_grad(self, template, diffable, nondiffable, n_wires, interface, to_var):
         """Tests that gradient calculations of qubit templates execute without error."""
+        if template.__name__ in ["AmplitudeEmbedding"]:
+            pytest.skip("Template cannot be differentiated")
 
         # Extract keys and items
         keys_diffable = [*diffable]
@@ -557,13 +559,17 @@ class TestIntegrationGradient:
         for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
-            if interface == 'numpy':
+            if interface == 'autograd':
                 grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
+                for i in range(len(diffable)):
+                    if i != argnum:
+                        diffable[i].requires_grad = False
+                diffable[argnum].requires_grad = True
+
                 res = circuit(*diffable)
                 res.backward()
                 diffable[argnum].grad.numpy()
@@ -606,13 +612,17 @@ class TestIntegrationGradient:
         for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
-            if interface == 'numpy':
+            if interface == 'autograd':
                 grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
+                for i in range(len(diffable)):
+                    if i != argnum:
+                        diffable[i].requires_grad = False
+                diffable[argnum].requires_grad = True
+                
                 res = circuit(*diffable)
                 res.backward()
                 diffable[argnum].grad.numpy()
@@ -668,6 +678,11 @@ class TestNonConsecutiveWires:
 
         # merge differentiable and non-differentiable arguments:
         # we don't need them separate here
+        # Extract keys and items
+        if template.__name__ == "AmplitudeEmbedding":
+            diffable = diffable.copy()
+            diffable["features"] = np.array(diffable["features"])
+
         kwargs = {**nondiffable, **diffable}
 
         # construct qnode with consecutive wires
@@ -689,8 +704,6 @@ class TestNonConsecutiveWires:
             kwargs2['wires2'] = nonconsecutive_wires[2:]
         # some kwargs in UCSSD need to be manually replaced
         if template.__name__ == 'UCCSD':
-             # kwargs2['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
-             # kwargs2['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
              kwargs2['s_wires'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
              kwargs2['d_wires'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
 

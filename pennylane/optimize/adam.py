@@ -15,6 +15,7 @@
 import math
 
 from pennylane.utils import _flatten, unflatten
+from pennylane.numpy import ndarray, tensor
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -61,49 +62,80 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.sm = None
         self.t = 0
 
-    def apply_grad(self, grad, x):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+    def apply_grad(self, grad, args):
+        r"""Update the variables args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (array): The gradient of the objective
+            grad (tuple[array]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new values :math:`x^{(t+1)}`
+            list: the new values :math:`x^{(t+1)}`
         """
-
+        args_new = list(args)
         self.t += 1
-
-        grad_flat = list(_flatten(grad))
-        x_flat = _flatten(x)
-
-        # Update first moment
-        if self.fm is None:
-            self.fm = grad_flat
-        else:
-            self.fm = [self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm, grad_flat)]
-
-        # Update second moment
-        if self.sm is None:
-            self.sm = [g * g for g in grad_flat]
-        else:
-            self.sm = [
-                self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm, grad_flat)
-            ]
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
             self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         )
 
-        x_new_flat = [
-            e - new_stepsize * f / (math.sqrt(s) + self.eps)
-            for f, s, e in zip(self.fm, self.sm, x_flat)
-        ]
+        if self.fm is None:
+            self.fm = [None] * len(args)
 
-        return unflatten(x_new_flat, x)
+        if self.sm is None:
+            self.sm = [None] * len(args)
+
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                x_flat = _flatten(arg)
+                grad_flat = list(_flatten(grad[trained_index]))
+                trained_index += 1
+
+                self._update_moments(index, grad_flat)
+
+                x_new_flat = [
+                    e - new_stepsize * f / (math.sqrt(s) + self.eps)
+                    for f, s, e in zip(self.fm[index], self.sm[index], x_flat)
+                ]
+                args_new[index] = unflatten(x_new_flat, arg)
+
+                if isinstance(arg, ndarray):
+                    # Due to a bug in unflatten, input PennyLane tensors
+                    # are being unwrapped. Here, we cast them back to PennyLane
+                    # tensors.
+                    # TODO: remove when the following is fixed:
+                    # https://github.com/PennyLaneAI/pennylane/issues/966
+                    args_new[index] = args_new[index].view(tensor)
+                    args_new[index].requires_grad = True
+
+        return args_new
+
+    def _update_moments(self, index, grad_flat):
+        r"""Update the moments.
+
+        Args:
+            index (int): the index of the argument to update
+            grad_flat (list): the flattened gradient for that trainable param
+        """
+        # update first moment
+        if self.fm[index] is None:
+            self.fm[index] = grad_flat
+        else:
+            self.fm[index] = [
+                self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm[index], grad_flat)
+            ]
+
+        # update second moment
+        if self.sm[index] is None:
+            self.sm[index] = [g * g for g in grad_flat]
+        else:
+            self.sm[index] = [
+                self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm[index], grad_flat)
+            ]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

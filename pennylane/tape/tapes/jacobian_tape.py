@@ -17,6 +17,7 @@ to the ``QuantumTape`` class.
 """
 # pylint: disable=too-many-branches
 
+import itertools
 import numpy as np
 
 import pennylane as qml
@@ -205,6 +206,26 @@ class JacobianTape(QuantumTape):
 
         return tuple(diff_methods.values())
 
+    @staticmethod
+    def _has_trainable_params(params, diff_methods):
+        """Determines if there are any trainable parameters.
+
+        Args:
+            params (array[float]): one-dimensional array of parameters
+            diff_methods (Sequence[str]): The corresponding differentiation method for each parameter.
+                A differentiation method of ``"0"`` corresponds to a constant parameter.
+        """
+        return params.size and not all(g == "0" for g in diff_methods)
+
+    @staticmethod
+    def _flatten_processing_result(g):
+        """Flattens the output from processing_fn in parameter shift methods."""
+        if g.dtype is np.dtype("object"):
+            # object arrays cannot be flattened; must hstack them
+            g = np.hstack(g)
+
+        return g.flatten()
+
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
         finite-difference method.
@@ -344,6 +365,23 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
+    def hessian_pd(self, i, j, params, **options):
+        """Generate the quantum tapes and classical post-processing function required to compute the
+        Hessian of the tape with respect to two trainable tape parameter using an analytic
+        method.
+
+        Args:
+            i (int): trainable parameter index to differentiate with respect to
+            j (int): trainable parameter index to differentiate with respect to
+            params (list[Any]): the quantum tape operation parameters
+
+        Returns:
+            tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
+            in addition to a post-processing function to be applied to the evaluated
+            tapes.
+        """
+        raise NotImplementedError
+
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
@@ -467,7 +505,7 @@ class JacobianTape(QuantumTape):
         # perform gradient method validation
         diff_methods = self._grad_method_validation(method)
 
-        if not params.size or all(g == "0" for g in diff_methods):
+        if not self._has_trainable_params(params, diff_methods):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
@@ -523,19 +561,12 @@ class JacobianTape(QuantumTape):
         start = 0
 
         for i, processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
-
             # extract the correct results from the flat list
             res = results[start : start + res_len]
             start += res_len
 
             # postprocess results to compute the gradient
-            g = processing_fn(res)
-
-            if g.dtype is np.dtype("object"):
-                # object arrays cannot be flattened; must hstack them
-                g = np.hstack(g)
-
-            g = g.flatten()
+            g = self._flatten_processing_result(processing_fn(res))
 
             if jac is None:
                 # update the tape's output dimension
@@ -546,3 +577,155 @@ class JacobianTape(QuantumTape):
             jac[:, i] = g
 
         return jac
+
+    def hessian(self, device, params=None, **options):
+        r"""Compute the Hessian of the parametrized quantum circuit recorded by the quantum tape.
+
+        The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
+        mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
+        such as expectation values or probabilities.
+
+        By default, the Hessian will be computed with respect to all parameters on the quantum tape.
+        This can be modified by setting the :attr:`~.trainable_params` attribute of the tape.
+
+        The Hessian can be currently computed using only the ``'analytic'`` method.
+
+        Args:
+            device (.Device, .QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Keyword Args:
+            method="analytic" (str): The differentiation method. Currently only
+                supports ``"analytic"``.
+            s1=pi/2 (float): the size of the shift for index i in the parameter-shift Hessian computations
+            s2=pi/2 (float): the size of the shift for index j in the parameter-shift Hessian computations
+
+        Returns:
+            array[float]: 2-dimensional array of shape ``(tape.num_params, tape.num_params)``
+
+        **Example**
+
+        .. code-block:: python
+
+            n_wires = 5
+            weights = [2.73943676, 0.16289932, 3.4536312, 2.73521126, 2.6412488]
+
+            with QubitParamShiftTape() as tape:
+                for i in range(n_wires):
+                    qml.RX(weights[i], wires=i)
+
+                qml.CNOT(wires=[0, 1])
+                qml.CNOT(wires=[2, 1])
+                qml.CNOT(wires=[3, 1])
+                qml.CNOT(wires=[4, 3])
+
+                qml.expval(qml.PauliZ(1))
+
+        If parameters are not provided, the existing tape parameters are used:
+
+        >>> dev = qml.device("default.qubit", wires=n_wires)
+        >>> tape.hessian(dev)
+        array([[ 0.79380556,  0.05549219,  0.10891309, -0.1452963,   0.],
+               [ 0.05549219,  0.79380556, -0.04208544,  0.05614438,  0.],
+               [ 0.10891309, -0.04208544,  0.79380556,  0.11019314,  0.],
+               [-0.1452963,   0.05614438,  0.11019314,  0.79380556,  0.],
+               [ 0.,          0.,          0.,          0.,          0.]])
+
+        Parameters can be optionally passed during execution:
+
+        >>> tape.hessian(dev, params=[1.0, 1.0, 2.0, 0, 0])
+        array([[ 0.12148432, -0.29466251,  0.41341091,  0.,          0.],
+               [-0.29466251,  0.12148432,  0.41341091,  0.,          0.],
+               [ 0.41341091,  0.41341091,  0.12148432,  0.,          0.],
+               [ 0.,          0.,          0.,          0.12148432,  0.],
+               [ 0.,          0.,          0.,          0.,          0.]])
+
+        Parameters provided for execution are temporary, and do not affect
+        the tapes' parameters in-place:
+
+        >>> tape.get_parameters()
+        [2.73943676, 0.16289932, 3.4536312, 2.73521126, 2.6412488]
+
+        If a tape has no trainable parameters, the Hessian will be empty:
+
+        >>> tape.trainable_params = {}
+        >>> tape.hessian(dev)
+        array([], shape=(0, 0), dtype=float64)
+        """
+        if any([m.return_type is State for m in self.measurements]):
+            raise ValueError("The Hessian method does not support circuits that return the state")
+
+        method = options.get("method", "analytic")
+
+        if method != "analytic":
+            raise ValueError(f"Unknown Hessian method '{method}'")
+
+        if params is None:
+            params = self.get_parameters()
+
+        params = np.array(params)
+
+        # perform gradient method validation
+        diff_methods = self._grad_method_validation(method)
+
+        if not self._has_trainable_params(params, diff_methods):
+            # Either all parameters have grad method 0, or there are no trainable
+            # parameters. Simply return an empty Hessian.
+            return np.zeros((len(params), len(params)), dtype=float)
+
+        # some gradient methods need the device or the device wires
+        options["device"] = device
+        options["dev_wires"] = device.wires
+
+        # collect all circuits (tapes) and postprocessing functions required
+        # to compute the Hessian
+        all_tapes = []
+        reshape_info = []
+        processing_fns = []
+        nonzero_grad_idx = []
+
+        # From Schwarz's theorem, the Hessian will be symmetric, so we
+        # can compute the upper triangular part only and symmetrize
+        # the final Hessian.
+        for i, j in itertools.combinations_with_replacement(range(len(diff_methods)), 2):
+            if diff_methods[i] == "0" or diff_methods[j] == "0":
+                continue
+
+            nonzero_grad_idx.append((i, j))
+
+            tapes, processing_fn = self.hessian_pd(i, j, params=params, **options)
+
+            processing_fns.append(processing_fn)
+
+            # we create a flat list here to feed at once to the device
+            all_tapes.extend(tapes)
+
+            # to extract the correct result for this parameter later, remember the number of tapes
+            reshape_info.append(len(tapes))
+
+        # execute all tapes at once
+        results = device.batch_execute(all_tapes)
+
+        hessian = None
+        start = 0
+
+        for (i, j), processing_fn, res_len in zip(nonzero_grad_idx, processing_fns, reshape_info):
+            # extract the correct results from the flat list
+            res = results[start : start + res_len]
+            start += res_len
+
+            # postprocess results to compute the gradient
+            g = self._flatten_processing_result(processing_fn(res))
+
+            if hessian is None:
+                # create the Hessian matrix
+                hessian = np.zeros((len(params), len(params)), dtype=float)
+
+            if i == j:
+                hessian[i, i] = g
+            else:
+                hessian[i, j] = hessian[j, i] = g
+
+        return hessian

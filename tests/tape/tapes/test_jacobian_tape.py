@@ -592,3 +592,46 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+class TestHessian:
+    """Unit tests for the hessian method"""
+
+    def test_non_differentiable_error(self):
+        """Test error raised if attempting to differentiate with respect to a
+        non-differentiable argument"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        # by default all parameters are assumed to be trainable
+        with pytest.raises(
+            ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
+        ):
+            tape.hessian(None)
+
+    def test_unknown_hessian_method_error(self):
+        """Test error raised if gradient method is unknown."""
+        tape = JacobianTape()
+        with pytest.raises(ValueError, match="Unknown Hessian method"):
+            tape.hessian(None, method="unknown method")
+
+    def test_return_state_hessian_error(self):
+        """Test error raised if circuit returns the state."""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.state()
+
+        with pytest.raises(
+            ValueError, match=r"The Hessian method does not support circuits that return the state"
+        ):
+            tape.hessian(None)

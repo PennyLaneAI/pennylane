@@ -541,3 +541,55 @@ class TestJacobianIntegration:
         ).T
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+class TestHessian:
+    """Tests for parameter Hessian method"""
+
+    @pytest.mark.parametrize("s1", [np.pi / 2, np.pi / 4, 2])
+    @pytest.mark.parametrize("s2", [np.pi / 2, np.pi / 4, 3])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
+    def test_pauli_rotation_hessian(self, s1, s2, G, tol):
+        """Tests that the automatic Hessian of Pauli rotations are correct."""
+        theta = np.array([0.234, 2.443])
+        dev = qml.device("default.qubit", wires=2)
+
+        with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1., 1., -1.]) / np.sqrt(4), wires=[0, 1])
+            G(theta[0], wires=[0])
+            G(theta[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2}
+
+        autograd_val = tape.hessian(dev, s1=s1, s2=s2)
+
+        assert autograd_val.shape == (len(theta), len(theta))
+
+        shift = np.eye(len(theta))
+        manualgrad_val = np.zeros((len(theta), len(theta)))
+        for i in range(len(theta)):
+            for j in range(len(theta)):
+                manualgrad_val[i, j] = (
+                    tape.execute(dev, params=theta + s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta - s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta + s1 * shift[i] - s2 * shift[j])
+                    + tape.execute(dev, params=theta - s1 * shift[i] - s2 * shift[j])
+                ) / (4 * np.sin(s1) * np.sin(s2))
+
+        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+
+    def test_no_trainable_params_hessian(self):
+        """Test that an empty Hessian is returned when there are no trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with QubitParamShiftTape() as tape:
+            qml.RX(0.224, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {}
+
+        hessian = tape.hessian(dev)
+
+        assert hessian.shape == (0, 0)

@@ -67,6 +67,7 @@ class TensorFlowBox(qml.math.TensorBox):
 
     @staticmethod
     def _coerce_types(tensors):
+        tensors = [TensorFlowBox.astensor(t) for t in tensors]
         dtypes = {i.dtype for i in tensors}
 
         if len(dtypes) == 1:

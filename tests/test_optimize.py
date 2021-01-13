@@ -50,33 +50,41 @@ multid_list = [[0.1, 0.2], [-0.1, -0.4]]
 
 
 # functions and their gradients
-fnames = ['test_function_1', 'test_function_2', 'test_function_3']
+fnames = ["test_function_1", "test_function_2", "test_function_3"]
 univariate_funcs = [np.sin,
-                    lambda x: np.exp(x / 10.),
+                    lambda x: np.exp(x / 10.0),
                     lambda x: x ** 2]
-grad_uni_fns = [np.cos,
-                lambda x: np.exp(x / 10.) / 10.,
-                lambda x: 2 * x]
-multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
-                      lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                      lambda x: np.sum([x_ ** 2 for x_ in x])]
-grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
-                    lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
-                    lambda x: np.array([2 * x_ for x_ in x])]
-mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
-                   lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-                   lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
-                                            [-np.sin(x[1, 0]), 1.]]),
-                        lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
-                                             np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
-                                            [0., 0.]]),
-                        lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
+grad_uni_fns = [lambda x: (np.cos(x),),
+                lambda x: (np.exp(x / 10.0) / 10.0,),
+                lambda x: (2 * x,)]
+
+multivariate_funcs = [
+    lambda x: np.sin(x[0]) + np.cos(x[1]),
+    lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+    lambda x: np.sum([x_ ** 2 for x_ in x]),
+]
+grad_multi_funcs = [
+    lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+    lambda x: (np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                         np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),),
+    lambda x: (np.array([2 * x_ for x_ in x]),),
+]
+
+mvar_mdim_funcs = [
+    lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
+    lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
+    lambda x: np.sum([x_[0] ** 2 for x_ in x]),
+]
+grad_mvar_mdim_funcs = [
+    lambda x: (np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])], [-np.sin(x[1, 0]), 1.0]]),),
+    lambda x: (np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+                          np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2),],
+                          [0.0, 0.0],]),),
+    lambda x: (np.array([[2 * x_[0], 0.0] for x_ in x]),),
+]
 
 
-
-@qml.qnode(qml.device('default.qubit', wires=1))
+@qml.qnode(qml.device("default.qubit", wires=1))
 def quant_fun(variables):
     qml.RX(variables[0][1], wires=[0])
     qml.RY(variables[1][2], wires=[0])
@@ -201,9 +209,9 @@ class TestOptimizer:
             return quant_fun_mdlist(var) + var[0][0]
 
         array = bunch.sgd_opt.step(hybrid_fun_mdarr, multid_array)
-        list = bunch.sgd_opt.step(hybrid_fun_mdlist, multid_list)
+        ls = bunch.sgd_opt.step(hybrid_fun_mdlist, multid_list)
 
-        assert array == pytest.approx(np.asarray(list), abs=tol)
+        assert array == pytest.approx(np.asarray(ls), abs=tol)
 
     @pytest.mark.parametrize(
         "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
@@ -292,7 +300,7 @@ class TestOptimizer:
         # TODO parametrize this for also
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             x_new = bunch.sgd_opt.step(f, x_start)
-            x_correct = x_start - gradf(x_start) * stepsize
+            x_correct = x_start - gradf(x_start)[0] * stepsize
             assert x_new == pytest.approx(x_correct, abs=tol)
 
     def test_gradient_descent_optimizer_multivar(self, bunch, tol):
@@ -303,7 +311,7 @@ class TestOptimizer:
             for jdx in range(len(x_vals[:-1])):
                 x_vec = x_vals[jdx:jdx+2]
                 x_new = bunch.sgd_opt.step(f, x_vec)
-                x_correct = x_vec - gradf(x_vec) * stepsize
+                x_correct = x_vec - gradf(x_vec)[0] * stepsize
                 assert x_new == pytest.approx(x_correct, abs=tol)
 
     def test_gradient_descent_optimizer_multivar_multidim(self, bunch, tol):
@@ -315,7 +323,7 @@ class TestOptimizer:
                 x_vec = x_vals[jdx:jdx+4]
                 x_vec_multidim = np.reshape(x_vec, (2, 2))
                 x_new = bunch.sgd_opt.step(f, x_vec_multidim)
-                x_correct = x_vec_multidim - gradf(x_vec_multidim) * stepsize
+                x_correct = x_vec_multidim - gradf(x_vec_multidim)[0] * stepsize
                 x_new_flat = x_new.flatten()
                 x_correct_flat = x_correct.flatten()
                 assert x_new_flat == pytest.approx(x_correct_flat, abs=tol)
@@ -327,7 +335,7 @@ class TestOptimizer:
 
         for gradf, f, name in zip(grad_uni_fns[::-1], univariate_funcs, fnames):
             x_new = bunch.sgd_opt.step(f, x_start, grad_fn=gradf)
-            x_correct = x_start - gradf(x_start) * stepsize
+            x_correct = x_start - gradf(x_start)[0] * stepsize
             assert x_new == pytest.approx(x_correct, abs=tol)
 
     @pytest.mark.parametrize('x_start', x_vals)
@@ -339,12 +347,12 @@ class TestOptimizer:
             bunch.mom_opt.reset()
 
             x_onestep = bunch.mom_opt.step(f, x_start)
-            x_onestep_target = x_start - gradf(x_start) * stepsize
+            x_onestep_target = x_start - gradf(x_start)[0] * stepsize
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.mom_opt.step(f, x_onestep)
-            momentum_term = gamma * gradf(x_start)
-            x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
+            momentum_term = gamma * gradf(x_start)[0]
+            x_twosteps_target = x_onestep - (gradf(x_onestep)[0] + momentum_term) * stepsize
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_momentum_optimizer_multivar(self, bunch, tol):
@@ -357,12 +365,12 @@ class TestOptimizer:
 
                 x_vec = x_vals[jdx:jdx + 2]
                 x_onestep = bunch.mom_opt.step(f, x_vec)
-                x_onestep_target = x_vec - gradf(x_vec) * stepsize
+                x_onestep_target = x_vec - gradf(x_vec)[0] * stepsize
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.mom_opt.step(f, x_onestep)
-                momentum_term = gamma * gradf(x_vec)
-                x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
+                momentum_term = gamma * gradf(x_vec)[0]
+                x_twosteps_target = x_onestep - (gradf(x_onestep)[0] + momentum_term) * stepsize
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     @pytest.mark.parametrize('x_start', x_vals)
@@ -374,12 +382,12 @@ class TestOptimizer:
             bunch.nesmom_opt.reset()
 
             x_onestep = bunch.nesmom_opt.step(f, x_start)
-            x_onestep_target = x_start - gradf(x_start) * stepsize
+            x_onestep_target = x_start - gradf(x_start)[0] * stepsize
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.nesmom_opt.step(f, x_onestep)
-            momentum_term = gamma * gradf(x_start)
-            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+            momentum_term = gamma * gradf(x_start)[0]
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
@@ -393,12 +401,12 @@ class TestOptimizer:
 
                 x_vec = x_vals[jdx:jdx + 2]
                 x_onestep = bunch.nesmom_opt.step(f, x_vec)
-                x_onestep_target = x_vec - gradf(x_vec) * stepsize
+                x_onestep_target = x_vec - gradf(x_vec)[0] * stepsize
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.nesmom_opt.step(f, x_onestep)
-                momentum_term = gamma * gradf(x_vec)
-                shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+                momentum_term = gamma * gradf(x_vec)[0]
+                shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
                 x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
@@ -411,12 +419,12 @@ class TestOptimizer:
             bunch.nesmom_opt.reset()
 
             x_onestep = bunch.nesmom_opt.step(f, x_start, grad_fn=gradf)
-            x_onestep_target = x_start - gradf(x_start) * stepsize
+            x_onestep_target = x_start - gradf(x_start)[0] * stepsize
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.nesmom_opt.step(f, x_onestep, grad_fn=gradf)
-            momentum_term = gamma * gradf(x_start)
-            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+            momentum_term = gamma * gradf(x_start)[0]
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
@@ -429,15 +437,15 @@ class TestOptimizer:
             bunch.adag_opt.reset()
 
             x_onestep = bunch.adag_opt.step(f, x_start)
-            past_grads = gradf(x_start)*gradf(x_start)
+            past_grads = gradf(x_start)[0]*gradf(x_start)[0]
             adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-            x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
+            x_onestep_target = x_start - gradf(x_start)[0] * adapt_stepsize
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.adag_opt.step(f, x_onestep)
-            past_grads = gradf(x_start)*gradf(x_start) + gradf(x_onestep)*gradf(x_onestep)
+            past_grads = gradf(x_start)[0]*gradf(x_start)[0] + gradf(x_onestep)[0]*gradf(x_onestep)[0]
             adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-            x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+            x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_adagrad_optimizer_multivar(self, bunch, tol):
@@ -450,15 +458,15 @@ class TestOptimizer:
 
                 x_vec = x_vals[jdx:jdx + 2]
                 x_onestep = bunch.adag_opt.step(f, x_vec)
-                past_grads = gradf(x_vec)*gradf(x_vec)
+                past_grads = gradf(x_vec)[0]*gradf(x_vec)[0]
                 adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
+                x_onestep_target = x_vec - gradf(x_vec)[0] * adapt_stepsize
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.adag_opt.step(f, x_onestep)
-                past_grads = gradf(x_vec) * gradf(x_vec) + gradf(x_onestep) * gradf(x_onestep)
+                past_grads = gradf(x_vec)[0] * gradf(x_vec)[0] + gradf(x_onestep)[0] * gradf(x_onestep)[0]
                 adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-                x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+                x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     @pytest.mark.parametrize('x_start', x_vals)
@@ -470,16 +478,16 @@ class TestOptimizer:
             bunch.rms_opt.reset()
 
             x_onestep = bunch.rms_opt.step(f, x_start)
-            past_grads = (1 - gamma) * gradf(x_start)*gradf(x_start)
+            past_grads = (1 - gamma) * gradf(x_start)[0]*gradf(x_start)[0]
             adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-            x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
+            x_onestep_target = x_start - gradf(x_start)[0] * adapt_stepsize
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.rms_opt.step(f, x_onestep)
-            past_grads = (1 - gamma) * gamma * gradf(x_start)*gradf(x_start) \
-                         + (1 - gamma) * gradf(x_onestep)*gradf(x_onestep)
+            past_grads = (1 - gamma) * gamma * gradf(x_start)[0]*gradf(x_start)[0] \
+                         + (1 - gamma) * gradf(x_onestep)[0]*gradf(x_onestep)[0]
             adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-            x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+            x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_rmsprop_optimizer_multivar(self, bunch, tol):
@@ -492,16 +500,16 @@ class TestOptimizer:
 
                 x_vec = x_vals[jdx:jdx + 2]
                 x_onestep = bunch.rms_opt.step(f, x_vec)
-                past_grads = (1 - gamma) * gradf(x_vec)*gradf(x_vec)
+                past_grads = (1 - gamma) * gradf(x_vec)[0]*gradf(x_vec)[0]
                 adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
+                x_onestep_target = x_vec - gradf(x_vec)[0] * adapt_stepsize
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.rms_opt.step(f, x_onestep)
-                past_grads = (1 - gamma) * gamma * gradf(x_vec) * gradf(x_vec) \
-                             + (1 - gamma) * gradf(x_onestep) * gradf(x_onestep)
+                past_grads = (1 - gamma) * gamma * gradf(x_vec)[0] * gradf(x_vec)[0] \
+                             + (1 - gamma) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
                 adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-                x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+                x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     @pytest.mark.parametrize('x_start', x_vals)
@@ -514,15 +522,15 @@ class TestOptimizer:
 
             x_onestep = bunch.adam_opt.step(f, x_start)
             adapted_stepsize = stepsize * np.sqrt(1 - delta)/(1 - gamma)
-            firstmoment = gradf(x_start)
-            secondmoment = gradf(x_start) * gradf(x_start)
+            firstmoment = gradf(x_start)[0]
+            secondmoment = gradf(x_start)[0] * gradf(x_start)[0]
             x_onestep_target = x_start - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.adam_opt.step(f, x_onestep)
             adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
-            firstmoment = (gamma * gradf(x_start) + (1 - gamma) * gradf(x_onestep))
-            secondmoment = (delta * gradf(x_start) * gradf(x_start) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
+            firstmoment = (gamma * gradf(x_start)[0] + (1 - gamma) * gradf(x_onestep)[0])
+            secondmoment = (delta * gradf(x_start)[0] * gradf(x_start)[0] + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0])
             x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
@@ -537,15 +545,15 @@ class TestOptimizer:
                 x_vec = x_vals[jdx:jdx + 2]
                 x_onestep = bunch.adam_opt.step(f, x_vec)
                 adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
-                firstmoment = gradf(x_vec)
-                secondmoment = gradf(x_vec) * gradf(x_vec)
+                firstmoment = gradf(x_vec)[0]
+                secondmoment = gradf(x_vec)[0] * gradf(x_vec)[0]
                 x_onestep_target = x_vec - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.adam_opt.step(f, x_onestep)
                 adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
-                firstmoment = (gamma * gradf(x_vec) + (1 - gamma) * gradf(x_onestep))
-                secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
+                firstmoment = (gamma * gradf(x_vec)[0] + (1 - gamma) * gradf(x_onestep)[0])
+                secondmoment = (delta * gradf(x_vec)[0] * gradf(x_vec)[0] + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0])
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
@@ -660,6 +668,45 @@ class TestOptimizer:
         assert x_start == pytest.approx(optimal_x_start, abs=tol)
         assert generators == optimal_generators
 
+    @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
+    def test_keywords_rotoselect(self, bunch, x_start, tol):
+        """test rotoselect accepts keywords"""
+
+        generators = [qml.RY, qml.RX]
+        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        bunch.rotoselect_opt.possible_generators = possible_generators
+
+        dev = qml.device("default.qubit", analytic=True, wires=2)
+
+        def ansatz(params, generators):
+            generators[0](params[0], wires=0)
+            generators[1](params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliX(0))
+
+        def cost_fn(params, generators, shift=0.0):
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
+            return 0.5 * (Y_2 - shift) ** 2 + 0.8 * (Z_1 - shift) ** 2 - 0.2 * (X_1 - shift) ** 2
+
+        params_new, _, res_new = bunch.rotoselect_opt.step_and_cost(
+            cost_fn, x_start, generators, shift=0.0
+        )
+        params_new2, _, res_new2 = bunch.rotoselect_opt.step_and_cost(
+            cost_fn, x_start, generators, shift=1.0
+        )
+
+        assert params_new != pytest.approx(params_new2, abs=tol)
+        assert res_new2 == pytest.approx(cost_fn(x_start, generators, shift=1.0), abs=tol)
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
@@ -671,3 +718,140 @@ class TestOptimizer:
         eta2 = 0.1
         opt.update_stepsize(eta2)
         assert opt._stepsize == eta2
+
+
+def reset(opt):
+    if getattr(opt, "reset", None):
+        opt.reset()
+
+
+@pytest.mark.parametrize(
+    "opt, opt_name",
+    [
+        (GradientDescentOptimizer(stepsize), "gd"),
+        (MomentumOptimizer(stepsize, momentum=gamma), "moment"),
+        (NesterovMomentumOptimizer(stepsize, momentum=gamma), "nest"),
+        (AdagradOptimizer(stepsize), "ada"),
+        (RMSPropOptimizer(stepsize, decay=gamma), "rms"),
+        (AdamOptimizer(stepsize, beta1=gamma, beta2=delta), "adam"),
+        (RotosolveOptimizer(), "roto"),
+    ],
+)
+class TestOverOpts:
+    """Tests keywords, multiple arguements, and non-training arguments in relevent optimizers"""
+
+    def test_kwargs(self, mocker, opt, opt_name, tol):
+        """Test that the keywords get passed and alter the function"""
+
+        class func_wrapper:
+            @staticmethod
+            def func(x, c=1.0):
+                return (x - c) ** 2
+
+        x = 1.0
+
+        wrapper = func_wrapper()
+        spy = mocker.spy(wrapper, "func")
+
+        x_new_two = opt.step(wrapper.func, x, c=2.0)
+        reset(opt)
+
+        args2, kwargs2 = spy.call_args_list[-1]
+
+        x_new_three_wc, cost_three = opt.step_and_cost(wrapper.func, x, c=3.0)
+        reset(opt)
+
+        args3, kwargs3 = spy.call_args_list[-1]
+
+        if opt_name != "roto":
+            assert args2 == (x,)
+            assert args3 == (x,)
+        else:
+            assert x_new_two != pytest.approx(x, abs=tol)
+            assert x_new_three_wc != pytest.approx(x, abs=tol)
+
+        assert kwargs2 == {"c": 2.0}
+        assert kwargs3 == {"c": 3.0}
+
+        assert cost_three == pytest.approx(wrapper.func(x, c=3.0), abs=tol)
+
+    def test_multi_args(self, mocker, opt, opt_name, tol):
+        """Test passing multiple arguments to function"""
+
+        class func_wrapper:
+            @staticmethod
+            def func(x, y, z):
+                return x[0] * y[0] + z[0]
+
+        wrapper = func_wrapper()
+        spy = mocker.spy(wrapper, "func")
+
+        x = np.array([1.0])
+        y = np.array([2.0])
+        z = np.array([3.0])
+
+        (x_new, y_new, z_new), cost = opt.step_and_cost(wrapper.func, x, y, z)
+        reset(opt)
+        args_called1, kwargs1 = spy.call_args_list[-1]  # just take last call
+
+        x_new2, y_new2, z_new2 = opt.step(wrapper.func, x_new, y_new, z_new)
+        reset(opt)
+        args_called2, kwargs2 = spy.call_args_list[-1]  # just take last call
+
+        if opt_name != "roto":
+            assert args_called1 == (x, y, z)
+            assert args_called2 == (x_new, y_new, z_new)
+        else:
+            assert x_new != pytest.approx(x, abs=tol)
+            assert y_new != pytest.approx(y, abs=tol)
+            assert z_new != pytest.approx(z, abs=tol)
+
+        assert kwargs1 == {}
+        assert kwargs2 == {}
+
+        assert cost == pytest.approx(wrapper.func(x, y, z), abs=tol)
+
+    def test_nontrainable_data(self, opt, opt_name, tol):
+        """Check non-trainable argument does not get updated"""
+
+        def func(x, data):
+            return x[0] * data[0]
+
+        x = np.array([1.0])
+        data = np.array([1.0], requires_grad=False)
+
+        args_new = opt.step(func, x, data)
+        reset(opt)
+        args_new_wc, cost = opt.step_and_cost(func, *args_new)
+        reset(opt)
+
+        assert len(args_new) == pytest.approx(2, abs=tol)
+        assert args_new[0] != pytest.approx(x, abs=tol)
+        assert args_new[1] == pytest.approx(data, abs=tol)
+
+        assert cost == pytest.approx(func(*args_new), abs=tol)
+
+    def test_steps_the_same(self, opt, opt_name, tol):
+        """Tests whether separating the args into different inputs affects their
+        optimization step. Assumes single argument optimization is correct, as tested elsewhere."""
+
+        def func1(x, y, z):
+            return x[0] * y[0] * z[0]
+
+        def func2(args):
+            return args[0][0] * args[1][0] * args[2][0]
+
+        x = np.array([1.0])
+        y = np.array([2.0])
+        z = np.array([3.0])
+        args = (x, y, z)
+
+        x_seperate, y_seperate, z_seperate = opt.step(func1, x, y, z)
+        reset(opt)
+
+        args_new = opt.step(func2, args)
+        reset(opt)
+
+        assert x_seperate == pytest.approx(args_new[0], abs=tol)
+        assert y_seperate == pytest.approx(args_new[1], abs=tol)
+        assert z_seperate == pytest.approx(args_new[2], abs=tol)
