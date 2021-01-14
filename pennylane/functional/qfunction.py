@@ -34,7 +34,15 @@ def _get_tape(func):
 
 
 def qfunc(device):
-    """A Quantum function. Used as a decorato"""
+    """A Quantum function. Used as a decorator
+
+    Args:
+        device: A device.
+
+    Returns:
+        wrapper: A function that takes a tape generating method and 
+            returns a Qfunc.
+    """
 
     def wrapper(func):
         return QFunc(device, _get_tape(func))
@@ -43,7 +51,14 @@ def qfunc(device):
 
 
 def device_transform(transform):
-    """Transform a device into a new device. Used to add custom gradients"""
+    """Transform a device into a new device. Used to add custom gradients
+
+    Args:
+        transform: A function with signature device -> device.
+
+    returns:
+        wrapper: A function that transforms either QFunc -> QFunc or device -> device.
+    """
 
     def wrapper(obj):
         if isinstance(obj, QFunc):
