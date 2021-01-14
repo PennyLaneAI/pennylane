@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf
+from math import pi
 
 def test_sanity_check():
 
@@ -55,8 +56,8 @@ def test_custom_gradient_jax():
 
     double_circuit = double_gradient(circuit)
 
-    val = jax.grad(circuit)(jnp.array(3.14/2.0))
-    val2 = jax.grad(double_circuit)(jnp.array(3.14/2.0))
+    val = jax.grad(circuit)(jnp.array(pi/2.0))
+    val2 = jax.grad(double_circuit)(jnp.array(pi/2.0))
     np.testing.assert_allclose(val * 2.0, val2)
 
 
@@ -68,8 +69,8 @@ def test_custom_gradient_jax():
         return qml.expval(qml.Hadamard(0))
 
     
-    val = jax.grad(circuit)(jnp.array(3.14/2.0))
-    val2 = jax.grad(device_doubler_circuit)(jnp.array(3.14/2.0))
+    val = jax.grad(circuit)(jnp.array(pi/2.0))
+    val2 = jax.grad(device_doubler_circuit)(jnp.array(pi/2.0))
     np.testing.assert_allclose(val * 2.0, val2)
 
 
@@ -99,7 +100,7 @@ def test_custom_gradient_tensorflow():
 
     # Make sure it works normally.
     with tf.GradientTape() as g:
-        x = tf.constant(3.14/2.0)
+        x = tf.constant(pi/2.0)
         g.watch(x)
         val = circuit(x)
     y = g.gradient(val, x)
@@ -107,7 +108,7 @@ def test_custom_gradient_tensorflow():
 
     # Ensure our custom gradient is now constant.
     with tf.GradientTape() as g:
-        x = tf.constant(3.14/2.0)
+        x = tf.constant(pi/2.0)
         g.watch(x)
         val = const_gradient(circuit)(x)
     y = g.gradient(val, x)
