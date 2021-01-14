@@ -57,6 +57,13 @@ from .tape.qnode import draw
 default_config = Configuration("config.toml")
 
 
+def custom_gradient(fn):
+    def wrapper(qnode):
+        qnode.diff_options["custom_gradient_method"] = fn
+        return qnode
+    return wrapper
+
+
 def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""

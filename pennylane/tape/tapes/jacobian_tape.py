@@ -485,6 +485,8 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        custom_diff_method = options.get("custom_gradient_method", None)
+
         if any([m.return_type is State for m in self.measurements]):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
@@ -522,6 +524,11 @@ class JacobianTape(QuantumTape):
         # some gradient methods need the device or the device wires
         options["device"] = device
         options["dev_wires"] = device.wires
+
+        if custom_diff_method is not None:
+            tapes, processing_fn = custom_diff_method(self, params)
+            results = device.batch_execute(tapes)
+            return processing_fn(results)
 
         # collect all circuits (tapes) and postprocessing functions required
         # to compute the jacobian
