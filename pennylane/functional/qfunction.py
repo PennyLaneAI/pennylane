@@ -38,7 +38,7 @@ def device_transform(transform):
         if isinstance(obj, QFunc):
             return QFunc(transform(obj.device), obj.func)
         else:
-            return func(obj)
+            return transform(obj)
     return wrapper
 
 def functional_device(device):

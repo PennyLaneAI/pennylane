@@ -23,9 +23,9 @@ def test_custom_gradient_jax():
     device = qfunction.functional_device(DefaultQubitJax(wires=1))
 
     @qfunction.device_transform
-    def custom_gradient(device):
+    def double_gradient(device):
+        """Define a custom gradient that doubles the original gradient"""
         def execute(tape):
-
             def run_device(params):
                 return device(tape.with_parameters(params))
 
@@ -34,8 +34,7 @@ def test_custom_gradient_jax():
                 return run_device(params)
 
             def f_fwd(params):
-                result = run_device(params)
-                return result, params
+                return run_device(params), params
 
             def f_bwd(params, grads):
                 # This line is cheating :-)
@@ -51,25 +50,42 @@ def test_custom_gradient_jax():
         qml.RX(a, wires=0)
         return qml.expval(qml.Hadamard(0))
 
+    double_circuit = double_gradient(circuit)
+
     val = jax.grad(circuit)(jnp.array(3.14/2.0))
-    val2 = jax.grad(custom_gradient(circuit))(jnp.array(3.14/2.0))
+    val2 = jax.grad(double_circuit)(jnp.array(3.14/2.0))
+    np.testing.assert_allclose(val * 2.0, val2)
+
+
+    device_doubler = double_gradient(device)
+    @qfunction.qfunc(device_doubler)
+    def device_doubler_circuit(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.Hadamard(0))
+
+    
+    val = jax.grad(circuit)(jnp.array(3.14/2.0))
+    val2 = jax.grad(device_doubler_circuit)(jnp.array(3.14/2.0))
     np.testing.assert_allclose(val * 2.0, val2)
 
 
 def test_custom_gradient_tensorflow():
-    device = qfunction.functional_device(DefaultQubitTF(wires=1))
-
     @qfunction.device_transform
-    def custom_gradient(device):
+    def const_gradient(device):
+        """A custom graident that always returns 2.0"""
         def execute(tape):
             @tf.custom_gradient
             def f(params):
                 def grad(upstream):
-                    return 2.0
+                    return tf.constant(2.0)
                 return device(tape.with_parameters(params)), grad
             return f(tape.get_parameters())
         return execute
 
+    # Build a TF device.
+    device = qfunction.functional_device(DefaultQubitTF(wires=1))
+
+    @const_gradient
     @qfunction.qfunc(device)
     def circuit(a):
         qml.RX(a, wires=0)
@@ -80,12 +96,6 @@ def test_custom_gradient_tensorflow():
         g.watch(x)
         val = circuit(x)
     y = g.gradient(val, x)
-    with tf.GradientTape() as g:
-        x = tf.constant(3.14/2.0)
-        g.watch(x)
-        val = custom_gradient(circuit)(x)
-    y2 = g.gradient(val, x)
-    np.testing.assert_allclose(y, -0.707107, rtol=1e-6)
-    np.testing.assert_allclose(y2, 2.0)
+    np.testing.assert_allclose(y, 2.0)
 
 
