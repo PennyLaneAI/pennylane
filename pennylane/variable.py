@@ -167,16 +167,16 @@ class Variable:
         """
         if not show_name_only:
             if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
-                return str(round(self.val, 3))
+                return f"{self.val:.3g}"
 
             if (
                 not self.is_kwarg
                 and Variable.positional_arg_values is not None
                 and len(Variable.positional_arg_values) > self.idx
             ):
-                return str(round(self.val, 3))
+                return f"{self.val:.3g}"
 
         if self.mult != 1:
-            return "{}*{}".format(str(round(self.mult, 3)), self.name)
+            return f"{self.mult:.3g}*{self.name}"
 
         return self.name
