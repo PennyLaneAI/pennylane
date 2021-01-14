@@ -10,7 +10,7 @@ import tensorflow as tf
 def test_sanity_check():
 
     device = qfunction.functional_device(DefaultQubitJax(wires=1))
-
+    # Make sure it still works similarly to a qnode.
     @qfunction.qfunc(device)
     def circuit(a):
         qml.RZ(a, wires=0)
@@ -26,6 +26,8 @@ def test_custom_gradient_jax():
     def double_gradient(device):
         """Define a custom gradient that doubles the original gradient"""
         def execute(tape):
+            """The execute function is the new device"""
+
             def run_device(params):
                 return device(tape.with_parameters(params))
 
@@ -43,8 +45,9 @@ def test_custom_gradient_jax():
 
             f.defvjp(f_fwd, f_bwd)
             return f(tape.get_parameters())
-        return execute
+        return execute # Return `execute` as the new device method.
 
+    # Example 1: Using the double_gradient on a qfunc
     @qfunction.qfunc(device)
     def circuit(a):
         qml.RX(a, wires=0)
@@ -57,6 +60,7 @@ def test_custom_gradient_jax():
     np.testing.assert_allclose(val * 2.0, val2)
 
 
+    # Example 2: Using double_gradient directly on the device.
     device_doubler = double_gradient(device)
     @qfunction.qfunc(device_doubler)
     def device_doubler_circuit(a):
@@ -74,6 +78,7 @@ def test_custom_gradient_tensorflow():
     def const_gradient(device):
         """A custom graident that always returns 2.0"""
         def execute(tape):
+            # Below is all just boilerplate for tensorflow.
             @tf.custom_gradient
             def f(params):
                 def grad(upstream):
@@ -85,17 +90,25 @@ def test_custom_gradient_tensorflow():
     # Build a TF device.
     device = qfunction.functional_device(DefaultQubitTF(wires=1))
 
-    @const_gradient
+    # Build our circuit.
     @qfunction.qfunc(device)
     def circuit(a):
         qml.RX(a, wires=0)
         return qml.expval(qml.Hadamard(0))
 
+
+    # Make sure it works normally.
     with tf.GradientTape() as g:
         x = tf.constant(3.14/2.0)
         g.watch(x)
         val = circuit(x)
     y = g.gradient(val, x)
+    np.testing.assert_allclose(y, -0.707107, rtol=1e-6)
+
+    # Ensure our custom gradient is now constant.
+    with tf.GradientTape() as g:
+        x = tf.constant(3.14/2.0)
+        g.watch(x)
+        val = const_gradient(circuit)(x)
+    y = g.gradient(val, x)
     np.testing.assert_allclose(y, 2.0)
-
-
