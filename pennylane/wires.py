@@ -96,9 +96,9 @@ class Wires(Sequence):
         """Method checking if Wires object contains an object."""
         if isinstance(item, Wires):
             item = item.toset()
-        # if all wires can be found in tuple, return True, else False
-        items_set = set(item)
-        not_found_items = (items_set ^ set(self.labels)) & items_set
+        else:
+            item = set(item)
+        not_found_items = item - set(self.labels)
         return not bool(not_found_items)
 
     def __repr__(self):
@@ -363,14 +363,16 @@ class Wires(Sequence):
                     "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
                 )
 
-        first_wire = list_of_wires[0]
+        first_wires_obj = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
         # This find the intersection of the labels of all wires in O(n) time.
-        intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires, first_wire.toset())
+        intersecting_wires = functools.reduce(
+            lambda a, b: a & b, sets_of_wires, first_wires_obj.toset()
+        )
         shared = []
         # only need to iterate through the first object,
         # since any wire not in this object will also not be shared
-        for wire in first_wire.tolist():
+        for wire in first_wires_obj.tolist():
             if wire in intersecting_wires:
                 shared.append(wire)
 
@@ -407,13 +409,13 @@ class Wires(Sequence):
 
         label_sets = map(lambda x: x.toset(), list_of_wires)
         # This makes a set of all labels in O(n) time.
-        all_labels = functools.reduce(lambda a, b: a | b, label_sets, set())
+        uncombined_set = functools.reduce(lambda a, b: a | b, label_sets, set())
         combined = []
         for wires in list_of_wires:
-            extension = [wire for wire in wires.labels if wire in all_labels]
+            extension = [wire for wire in wires.labels if wire in uncombined_set]
             combined.extend(extension)
             for wire in extension:
-                all_labels.remove(wire)
+                uncombined_set.remove(wire)
 
         if sort:
             if all([isinstance(w, int) for w in combined]):
@@ -468,6 +470,5 @@ class Wires(Sequence):
                 # check that wire is only contained in one of the Wires objects
                 if wire in seen_once:
                     unique.append(wire)
-                    seen_once.remove(wire)
 
         return Wires(unique)
