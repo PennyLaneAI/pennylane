@@ -34,6 +34,20 @@ class TestWires:
         wires = Wires(iterable)
         assert wires.labels == (0, 1, 2)
 
+    @pytest.mark.parametrize("iterable", [[qml.RX, qml.RY],
+                                          [qml.PauliX],
+                                          (None, qml.expval),
+                                          (
+                                              qml.device('default.qubit', wires=range(3)),
+                                              qml.device('default.gaussian', wires=[qml.RX, 3]),
+                                          )
+                                          ])
+    def test_creation_from_iterables_of_exotic_elements(self, iterable):
+        """Tests that a Wires object can be created from standard iterable inputs."""
+
+        wires = Wires(iterable)
+        assert wires.labels == tuple(iterable)
+
     @pytest.mark.parametrize("iterable", [Wires([0, 1, 2])])
     def test_creation_from_wires_object(self, iterable):
         """Tests that a Wires object can be created from another Wires object."""
@@ -51,6 +65,7 @@ class TestWires:
 
     @pytest.mark.parametrize("iterable", [[1, 0, 4],
                                           ['a', 'b', 'c'],
+                                          [0, 1, None],
                                           ['a', 1, "ancilla"]])
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different
@@ -67,9 +82,7 @@ class TestWires:
         wires = Wires(wire)
         assert wires.labels == (wire,)
 
-    @pytest.mark.parametrize("iterable", [[0, 1, None],
-                                          [qml.RX],
-                                          None,
+    @pytest.mark.parametrize("iterable", [None,
                                           qml.RX])
     def test_error_for_incorrect_wire_types(self, iterable):
         """Tests that a Wires object cannot be created from wire types that are not allowed."""

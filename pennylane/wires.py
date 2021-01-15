@@ -33,30 +33,32 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.labels
 
-    if hasattr(wires, "shape") and wires.shape == tuple():
+    if getattr(wires, "shape", None) == tuple():
         # Scalar NumPy array
         return (wires.item(),)
 
-    if isinstance(wires, range):
-        return tuple(wires)
-
     if isinstance(wires, Iterable):
-        merged = []
-        for w in wires:
-            if isinstance(w, (str, Number)):
-                merged.append(w)
-            elif isinstance(w, Wires):
-                merged.extend(w)
-            elif getattr(w, "shape", None) == tuple():
-                merged.append(w.item())
+        for wire in wires:
+            if isinstance(wire, Wires):
+                merged_wires_tuple = Wires.all_wires(wires).labels
+                if sum([len(w.labels) for w in wires]) != len(merged_wires_tuple):
+                    raise WireError("Wires must be unique; got {}.".format(wires))
+                return merged_wires_tuple
+
+        tuple_of_wires = tuple(wires)
+        try:  # We need the set for the uniqueness check, so we can use it for hashability check
+            set_of_wires = set(wires)
+        except TypeError as e:
+            # Make sure it really was a hashability issue
+            if str(e).startswith("unhashable"):
+                raise WireError("Wires must be hashable; got {}.".format(wires))
             else:
-                break
-        else:
-            # did not break above loop, all elements in wires were fine
-            if len(merged) != len(set(merged)):
-                raise WireError("Wires must be unique; got {}.".format(merged))
-            return tuple(merged)
-        # did break at one of the w in wires, raise WireError
+                raise WireError("Unknown issue with iterable wires input; got {}.".format(wires))
+
+        if len(set_of_wires) != len(tuple_of_wires):
+            raise WireError("Wires must be unique; got {}.".format(wires))
+
+        return tuple_of_wires
 
     raise WireError(
         "Wires must be represented by a number or string; got {} of type {}.".format(
@@ -96,10 +98,13 @@ class Wires(Sequence):
 
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
-        if isinstance(item, (str, Number)):
-            return item in self._labels
-        # if all wires can be found in tuple, return True, else False
-        return all(wire in self._labels for wire in item)
+        if isinstance(item, Iterable):
+            if not isinstance(item, str):
+                if getattr(item, "shape", None) != tuple():
+                    # if all wires can be found in tuple, return True, else False
+                    return all(wire in self._labels for wire in item)
+
+        return item in self._labels
 
     def __repr__(self):
         """Method defining the string representation of this class."""
