@@ -17,6 +17,7 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 from collections.abc import Sequence, Iterable
 import numpy as np
 from numbers import Number
+import functools
 
 
 class WireError(Exception):
@@ -47,7 +48,7 @@ def _process(wires):
             isinstance(w, (str, Number)) or (getattr(w, "shape", None) == tuple()) for w in wires
         ):
             # if the elements are strings or numbers, turn iterable into tuple
-            merged = tuple([w.item() if isinstance(w, np.ndarray) else w for w in wires])
+            merged = tuple(w.item() if isinstance(w, np.ndarray) else w for w in wires)
         else:
             merged = None
 
@@ -94,9 +95,11 @@ class Wires(Sequence):
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
         if isinstance(item, Wires):
-            item = item.tolist()
+            item = item.toset()
         # if all wires can be found in tuple, return True, else False
-        return all(wire in self.labels for wire in item)
+        items_set = set(item)
+        not_found_items = (items_set ^ set(self.labels)) & items_set
+        return not bool(not_found_items)
 
     def __repr__(self):
         """Method defining the string representation of this class."""
@@ -111,7 +114,7 @@ class Wires(Sequence):
 
     def __hash__(self):
         """Implements the hash function."""
-        return hash(repr(self.labels))
+        return hash(self.labels)
 
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
@@ -172,6 +175,14 @@ class Wires(Sequence):
             List: list of wire labels
         """
         return list(self.labels)
+
+    def toset(self):
+        """Returns a set representation of the Wires object.
+
+        Returns:
+            Set: set of wire labels
+        """
+        return set(self.labels)
 
     def index(self, wire):
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
@@ -352,11 +363,15 @@ class Wires(Sequence):
                     "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
                 )
 
+        first_wire = list_of_wires[0]
+        sets_of_wires = [wire.toset() for wire in list_of_wires]
+        # This find the intersection of the labels of all wires in O(n) time.
+        intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires)
         shared = []
         # only need to iterate through the first object,
         # since any wire not in this object will also not be shared
-        for wire in list_of_wires[0]:
-            if all(wire in wires_ for wires_ in list_of_wires):
+        for wire in first_wire.tolist():
+            if wire in intersecting_wires:
                 shared.append(wire)
 
         return Wires(shared)
@@ -384,15 +399,21 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         <Wires = [4, 0, 1, 3, 5]>
         """
-
-        combined = []
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
                     "Expected a Wires object; got {} of type {}".format(wires, type(wires))
                 )
 
-            combined.extend(wire for wire in wires.labels if wire not in combined)
+        label_sets = map(lambda x: x.toset(), list_of_wires)
+        # This makes a set of all labels in O(n) time.
+        all_labels = functools.reduce(lambda a, b: a | b, label_sets)
+        combined = []
+        for wires in list_of_wires:
+            extension = [wire for wire in wires.labels if wire in all_labels]
+            combined.extend(extension)
+            for wire in extension:
+                all_labels.remove(wire)
 
         if sort:
             if all([isinstance(w, int) for w in combined]):
@@ -427,11 +448,22 @@ class Wires(Sequence):
                     "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
                 )
 
+        label_sets = [wire.toset() for wire in list_of_wires]
+        seen_ever = set()
+        seen_once = set()
+
+        # Find unique set in O(n) time.
+        for labels in label_sets:
+            seen_once = (seen_once ^ labels) - (seen_ever - seen_once)
+            seen_ever.update(labels)
+
+        # Get unique values in order they appear.
         unique = []
         for wires in list_of_wires:
-            for wire in wires:
+            for wire in wires.tolist():
                 # check that wire is only contained in one of the Wires objects
-                if sum([1 for wires_ in list_of_wires if wire in wires_]) == 1:
+                if wire in seen_once:
                     unique.append(wire)
+                    seen_once.remove(wire)
 
         return Wires(unique)
