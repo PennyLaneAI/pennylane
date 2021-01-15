@@ -15,9 +15,9 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections.abc import Sequence, Iterable
+import functools
 import numpy as np
 from numbers import Number
-import functools
 
 
 class WireError(Exception):
@@ -366,8 +366,7 @@ class Wires(Sequence):
         first_wire = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
         # This find the intersection of the labels of all wires in O(n) time.
-        intersecting_wires = functools.reduce(
-            lambda a, b: a & b, sets_of_wires, first_wire.toset())
+        intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires, first_wire.toset())
         shared = []
         # only need to iterate through the first object,
         # since any wire not in this object will also not be shared
