@@ -401,21 +401,17 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         <Wires = [4, 0, 1, 3, 5]>
         """
+        combined = []
+        seen_labels = set()
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
                     "Expected a Wires object; got {} of type {}".format(wires, type(wires))
                 )
 
-        label_sets = map(lambda x: x.toset(), list_of_wires)
-        # This makes a set of all labels in O(n) time.
-        uncombined_set = functools.reduce(lambda a, b: a | b, label_sets, set())
-        combined = []
-        for wires in list_of_wires:
-            extension = [wire for wire in wires.labels if wire in uncombined_set]
+            extension = [label for label in wires.labels if label not in seen_labels]
             combined.extend(extension)
-            for wire in extension:
-                uncombined_set.remove(wire)
+            seen_labels.update(extension)
 
         if sort:
             if all([isinstance(w, int) for w in combined]):
