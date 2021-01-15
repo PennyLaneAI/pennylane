@@ -366,7 +366,8 @@ class Wires(Sequence):
         first_wire = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
         # This find the intersection of the labels of all wires in O(n) time.
-        intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires)
+        intersecting_wires = functools.reduce(
+            lambda a, b: a & b, sets_of_wires, first_wire.toset())
         shared = []
         # only need to iterate through the first object,
         # since any wire not in this object will also not be shared
@@ -407,7 +408,7 @@ class Wires(Sequence):
 
         label_sets = map(lambda x: x.toset(), list_of_wires)
         # This makes a set of all labels in O(n) time.
-        all_labels = functools.reduce(lambda a, b: a | b, label_sets)
+        all_labels = functools.reduce(lambda a, b: a | b, label_sets, set())
         combined = []
         for wires in list_of_wires:
             extension = [wire for wire in wires.labels if wire in all_labels]
