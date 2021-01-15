@@ -454,7 +454,11 @@ class Wires(Sequence):
 
         # Find unique set in O(n) time.
         for labels in label_sets:
+            # (seen_once ^ labels) finds all of the unique labels seen once
+            # (seen_ever - seen_once) is the set of labels already seen more than once
+            # Subtracting these two sets makes a set of labels only seen once so far.
             seen_once = (seen_once ^ labels) - (seen_ever - seen_once)
+            # Update seen labels with all new seen labels
             seen_ever.update(labels)
 
         # Get unique values in order they appear.
