@@ -18,6 +18,8 @@ import numpy as np
 import semantic_version
 
 from pennylane.operation import DiagonalOperation
+from pennylane.wires import Wires
+import pennylane.numpy.tensor as Tensor
 
 try:
     import tensorflow as tf
@@ -209,3 +211,24 @@ class DefaultQubitTF(DefaultQubit):
             return unitary.eigvals
 
         return unitary.matrix
+
+    def map_wires(self, wires):
+        """Map the wire labels of wires using this device's wire map.
+
+        Args:
+            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
+
+        Returns:
+            Wires: wires with new labels
+        """
+        wires = Wires([w.item() if isinstance(w, Tensor) else w for w in wires])
+        try:
+            mapped_wires = wires.map(self.wire_map)
+        except WireError as e:
+            raise WireError(
+                "Did not find some of the wires {} on device with wires {}.".format(
+                    wires, self.wires
+                )
+            ) from e
+
+        return mapped_wires

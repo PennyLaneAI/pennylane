@@ -98,11 +98,15 @@ class Wires(Sequence):
 
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
+        """
         if isinstance(item, Iterable):
             if not isinstance(item, str):
                 if getattr(item, "shape", None) != tuple():
                     # if all wires can be found in tuple, return True, else False
                     return all(wire in self._labels for wire in item)
+                    """
+        if isinstance(item, Wires):
+            return all(wire in self._labels for wire in item.labels)
 
         return item in self._labels
 
