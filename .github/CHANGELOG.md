@@ -240,7 +240,7 @@
 
 * Fixes a bug where tape-mode parameter-shift differentiation would fail if the QNode
   contained a single probability output.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1007)](https://github.com/PennyLaneAI/pennylane/pull/1007)
 
 <h3>Contributors</h3>
 
