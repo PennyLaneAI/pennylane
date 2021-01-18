@@ -67,7 +67,7 @@ class TestGroupingUtils:
         """Test conversion of Pauli word from operator to binary vector representation if a
         ``wire_map`` is specified."""
 
-        wire_map = {Wires("a"): 0, Wires("b"): 1, Wires("c"): 2, Wires(6): 3}
+        wire_map = {"a": 0, "b": 1, "c": 2, 6: 3}
 
         assert (pauli_to_binary(op, wire_map=wire_map) == vec).all()
 
@@ -113,7 +113,7 @@ class TestGroupingUtils:
         """Test conversion of Pauli in binary vector representation to operator form when
         ``wire_map`` is specified."""
 
-        wire_map = {Wires("alice"): 0, Wires("bob"): 1, Wires("ancilla"): 2}
+        wire_map = {"alice": 0, "bob": 1, "ancilla": 2}
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
@@ -166,7 +166,7 @@ class TestGroupingUtils:
         """Determining if two Pauli words are qubit-wise commuting."""
 
         n_qubits = 3
-        wire_map = {Wires(0): 0, Wires("a"): 1, Wires("b"): 2}
+        wire_map = {0: 0, "a": 1, "b": 2}
         p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
         p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
         p3_vec = pauli_to_binary(PauliX(0) @ PauliZ("a") @ Identity("b"), wire_map=wire_map)

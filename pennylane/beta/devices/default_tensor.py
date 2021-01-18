@@ -212,7 +212,7 @@ class DefaultTensor(Device):
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, wires.labels)
+        name = "{}{}".format(name, (tuple([wires]) if isinstance(wires, int) else wires.labels))
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend
@@ -551,7 +551,7 @@ class DefaultTensor(Device):
                 tn.connect(obs_node[input_idx], ket[l])  # A|psi>
                 tn.connect(bra[l], obs_node[output_idx])  # <psi|A
 
-        meas_device_wires = Wires(meas_device_wires)
+        meas_device_wires = Wires.all_wires(meas_device_wires)
 
         # unmeasured wires are contracted directly between bra and ket
         unmeasured_device_wires = Wires.unique_wires([all_device_wires, meas_device_wires])

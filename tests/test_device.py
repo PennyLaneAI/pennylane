@@ -424,8 +424,8 @@ class TestInternalFunctions:
     def test_wire_map_property(self, mock_device):
         """Tests that the wire_map is constructed correctly."""
         dev = mock_device(wires=['a1', 'q', -1, 3])
-        expected = OrderedDict([(Wires('a1'), Wires(0)), (Wires('q'), Wires(1)),
-                                (Wires(-1), Wires(2)), (Wires(3), Wires(3))])
+        expected = OrderedDict([('a1', 0), ('q', 1),
+                                (-1, 2), (3, 3)])
         assert dev.wire_map == expected
 
     def test_execution_property(self, mock_device):

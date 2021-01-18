@@ -16,10 +16,11 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
+from collections.abc import Iterable
+from collections import OrderedDict
 
 import numpy as np
 
-from collections import Iterable, OrderedDict
 from pennylane.operation import (
     Operation,
     Observable,

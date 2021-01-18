@@ -343,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == Wires(0)
+        assert qnode.ops[0].wires[0] == 0
 
 
 class TestQNodeExceptions:
@@ -518,17 +518,6 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
-    def test_bad_wire_argument(self, operable_mock_device_2_wires):
-        """Error: wire arguments must be intergers."""
-
-        def circuit(x):
-            qml.RX(x, wires=[qml.PauliX])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
-
-        node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
-            node(1)
-
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
         """Error: trying to use a differentiable parameter as a wire argument."""
 
@@ -537,7 +526,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(WireError, match="Wires must be hashable"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -548,7 +537,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(WireError, match="Wires must be hashable"):
             node(x=1)
 
     @pytest.mark.xfail(

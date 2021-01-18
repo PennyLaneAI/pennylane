@@ -34,23 +34,35 @@ class TestWires:
         wires = Wires(iterable)
         assert wires.labels == (0, 1, 2)
 
-    @pytest.mark.parametrize("iterable", [Wires([0, 1, 2])])
-    def test_creation_from_wires_object(self, iterable):
+    @pytest.mark.parametrize("iterable", [[qml.RX, qml.RY],
+                                          [qml.PauliX],
+                                          (None, qml.expval),
+                                          (
+                                              qml.device('default.qubit', wires=range(3)),
+                                              qml.device('default.gaussian', wires=[qml.RX, 3]),
+                                          )
+                                          ])
+    def test_creation_from_iterables_of_exotic_elements(self, iterable):
+        """Tests that a Wires object can be created from standard iterable inputs."""
+
+        wires = Wires(iterable)
+        assert wires.labels == tuple(iterable)
+
+    def test_creation_from_wires_object(self):
         """Tests that a Wires object can be created from another Wires object."""
 
-        wires = Wires(iterable)
+        wires = Wires(Wires([0, 1, 2]))
         assert wires.labels == (0, 1, 2)
 
-    @pytest.mark.parametrize("iterable", [[Wires([0, 1]), Wires([2])],
-                                          [Wires([0]), Wires([1]), Wires([2])]])
-    def test_creation_from_wires_object(self, iterable):
+    def test_creation_from_wires_lists(self):
         """Tests that a Wires object can be created from a list of Wires."""
 
-        wires = Wires(iterable)
-        assert wires.labels == (0, 1, 2)
+        wires = Wires([Wires([0]), Wires([1]), Wires([2])])
+        assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
 
     @pytest.mark.parametrize("iterable", [[1, 0, 4],
                                           ['a', 'b', 'c'],
+                                          [0, 1, None],
                                           ['a', 1, "ancilla"]])
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different
@@ -67,9 +79,7 @@ class TestWires:
         wires = Wires(wire)
         assert wires.labels == (wire,)
 
-    @pytest.mark.parametrize("iterable", [[0, 1, None],
-                                          [qml.RX],
-                                          None,
+    @pytest.mark.parametrize("iterable", [None,
                                           qml.RX])
     def test_error_for_incorrect_wire_types(self, iterable):
         """Tests that a Wires object cannot be created from wire types that are not allowed."""
@@ -80,8 +90,7 @@ class TestWires:
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3),
-                                          ['a', 'a', 'b'],
-                                          [Wires([1, 0]), Wires([1, 2]), Wires([3])]])
+                                          ['a', 'a', 'b']])
     def test_error_for_repeated_wires(self, iterable):
         """Tests that a Wires object cannot be created from iterables with repeated indices."""
 
@@ -97,7 +106,7 @@ class TestWires:
 
         # check single index
         for i in range(len(iterable)):
-            assert wires[i] == Wires(iterable[i])
+            assert wires[i] == iterable[i]
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
 
@@ -121,19 +130,30 @@ class TestWires:
     def test_contains(self, ):
         """Tests the __contains__() method."""
 
-        wires = Wires([0, 1, 2, 3])
+        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
 
-        assert Wires([0, 3]) in wires
-        assert Wires([1]) in wires
+        assert 0 in wires
+        assert Wires([4, 5]) in wires
+        assert None in wires
+        assert not Wires([1]) in wires
+        assert not Wires([0, 3]) in wires
         assert not Wires([0, 4]) in wires
-        assert not Wires([4]) in wires
 
-        assert [0, 3] in wires
-        assert [1] in wires
         assert not [0, 4] in wires
         assert not [4] in wires
 
-        assert (0, 3) in wires
+    def test_contains_wires(self, ):
+        """Tests the dedicated contains_wires() method."""
+
+        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+
+        assert wires.contains_wires(Wires([0, 3]))
+        assert wires.contains_wires(Wires([1, 2, None]))
+        assert wires.contains_wires(Wires([Wires([4, 5])])) # Wires([4, 5]) is just a label!
+
+        assert not wires.contains_wires(0) # wrong type
+        assert not wires.contains_wires([0, 1]) # wrong type
+        assert not wires.contains_wires(Wires([4,5])) # looks up 4 and 5 in wires, which are not present
 
     def test_add_two_wires_objects(self):
         """Tests that wires objects add correctly."""
@@ -154,11 +174,13 @@ class TestWires:
         wires2 = Wires([1, 2])
         assert sum([wires1, wires2], Wires([]))
 
-    def test_representation(self):
-        """Tests the string representation."""
+    def test_representation_and_string(self):
+        """Tests the string representation via both __str__ and __repr__."""
 
         wires_str = str(Wires([1, 2, 3]))
+        wires_repr = repr(Wires([1, 2, 3]))
         assert wires_str == "<Wires = [1, 2, 3]>"
+        assert wires_repr == "<Wires = [1, 2, 3]>"
 
     def test_array_representation(self):
         """Tests that Wires object has an array representation."""
@@ -176,7 +198,7 @@ class TestWires:
         wires = Wires([0, 1, 2])
         list_of_wires = [Wires([1]), Wires([1]), Wires([1, 2, 3]), Wires([4])]
 
-        assert set(wires) == {Wires([0]), Wires([1]), Wires([2])}
+        assert set(wires) == {0, 1, 2}
         assert set(list_of_wires) == {Wires([1]), Wires([1, 2, 3]), Wires([4])}
 
     def test_label_property(self):
@@ -237,10 +259,10 @@ class TestWires:
         assert wires.indices(1) == [2]
 
     @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']),
-                                                            {Wires('a'): Wires(0), Wires('b'): Wires(1)},
+                                                            {'a': 0, 'b': 1},
                                                             Wires([0, 1])),
                                                            (Wires([-1, 1]),
-                                                            {Wires(1): Wires('c'), Wires(-1): Wires(1), Wires('d'): Wires('e')},
+                                                            {1: 'c', -1: 1, 'd': 'e'},
                                                             Wires([1, 'c'])),
                                                            ])
     def test_map_method(self, wires, wire_map, expected):
@@ -250,12 +272,12 @@ class TestWires:
 
         # error when labels not in wire_map dictionary
         with pytest.raises(WireError, match="No mapping for wire label"):
-            wires.map({Wires(-1): Wires(4)}) == expected
+            wires.map({-1: Wires(4)}) == expected
 
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
             wires = Wires([0, 1])
-            wires.map({Wires(0): Wires('a'), Wires(1): Wires('a')})
+            wires.map({0: 'a', 1: 'a'})
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
