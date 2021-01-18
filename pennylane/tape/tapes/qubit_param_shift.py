@@ -169,7 +169,7 @@ class QubitParamShiftTape(JacobianTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            return np.dot(coeffs, results)
+            return np.dot(coeffs, np.squeeze(results))
 
         return tapes, processing_fn
 
@@ -354,6 +354,6 @@ class QubitParamShiftTape(JacobianTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            return np.dot(coeffs, results)
+            return np.dot(coeffs, np.squeeze(results))
 
         return tapes, processing_fn
