@@ -76,7 +76,7 @@ class Wires(Sequence):
             and hence interpreted as a single wire.
     """
 
-    def __init__(self, wires, __override=False):
+    def __init__(self, wires, _override=False):
         if __override:
             self._labels = wires._labels
         self._labels = _process(wires)
@@ -306,7 +306,7 @@ class Wires(Sequence):
                 )
 
         subset = tuple(self[i] for i in indices)
-        return Wires(subset, __override=True)
+        return Wires(subset, _override=True)
 
     def select_random(self, n_samples, seed=None):
         """
@@ -330,7 +330,7 @@ class Wires(Sequence):
 
         indices = np.random.choice(len(self._labels), size=n_samples, replace=False)
         subset = [self[i] for i in indices]
-        return Wires(subset)
+        return Wires(subset, _override=True)
 
     @staticmethod
     def shared_wires(list_of_wires):
@@ -372,7 +372,7 @@ class Wires(Sequence):
             if wire in intersecting_wires:
                 shared.append(wire)
 
-        return Wires(shared)
+        return Wires(tuple(shared), _override=True)
 
     @staticmethod
     def all_wires(list_of_wires, sort=False):
@@ -415,7 +415,7 @@ class Wires(Sequence):
             else:
                 combined = sorted(combined, key=str)
 
-        return Wires(combined)
+        return Wires(combined, _override=True)
 
     @staticmethod
     def unique_wires(list_of_wires):
@@ -463,4 +463,4 @@ class Wires(Sequence):
                 if wire in seen_once:
                     unique.append(wire)
 
-        return Wires(unique)
+        return Wires(unique, _override=True)
