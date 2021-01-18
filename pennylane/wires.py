@@ -47,7 +47,6 @@ def _process(wires):
             # Make sure it really was a hashability issue
             if str(e).startswith("unhashable"):
                 raise WireError("Wires must be hashable; got {}.".format(wires)) from e
-            raise WireError("Unknown issue with iterable wires input; got {}.".format(wires)) from e
 
         if len(set_of_wires) != len(tuple_of_wires):
             raise WireError("Wires must be unique; got {}.".format(wires))
@@ -92,13 +91,6 @@ class Wires(Sequence):
 
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
-        """
-        if isinstance(item, Iterable):
-            if not isinstance(item, str):
-                if getattr(item, "shape", None) != tuple():
-                    # if all wires can be found in tuple, return True, else False
-                    return all(wire in self._labels for wire in item)
-                    """
         if isinstance(item, Wires):
             return all(wire in self._labels for wire in item.labels)
 
