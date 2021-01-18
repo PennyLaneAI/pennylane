@@ -109,7 +109,7 @@ class Wires(Sequence):
         """Method to support the '==' operator. This will also implicitly define the '!=' operator."""
         # The order is respected in comparison, so that ``assert Wires([0, 1]) != Wires([1,0])``
         if isinstance(other, Wires):
-            return self._labels == other._labels
+            return self._labels == other.labels
         else:
             return self._labels == other
 
