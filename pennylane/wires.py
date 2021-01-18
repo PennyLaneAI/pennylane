@@ -91,7 +91,7 @@ class Wires(Sequence):
 
     def contains_wires(self, wires):
         if isinstance(wires, Wires):
-            return all(wire in self._labels for wire in wires.labels)
+            return set(wires.labels).issubset(set(self._labels))
         return False
 
     def __contains__(self, item):
