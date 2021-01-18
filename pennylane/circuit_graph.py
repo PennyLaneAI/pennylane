@@ -596,9 +596,7 @@ class CircuitGraph:
             temp_op_grid = OrderedDict()
             temp_obs_grid = OrderedDict()
 
-            permutation = [
-                self.wires.labels.index(i) for i in wire_order.labels if [i] in self.wires
-            ]
+            permutation = [self.wires.labels.index(i) for i in wire_order.labels if i in self.wires]
 
             for i, j in enumerate(permutation):
                 if j in operations:

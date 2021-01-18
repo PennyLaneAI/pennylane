@@ -523,7 +523,7 @@ class QNode:
         wire_order = wire_order or self.device.wires
         wire_order = qml.wires.Wires(wire_order)
 
-        if wire_order not in self.device.wires:
+        if not self.device.wires.contains_wires(wire_order):
             raise ValueError(
                 f"Provided wire order {wire_order.labels} contains wires not contained on the device: {self.device.wires}."
             )
