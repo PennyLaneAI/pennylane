@@ -110,8 +110,7 @@ class Wires(Sequence):
         # The order is respected in comparison, so that ``assert Wires([0, 1]) != Wires([1,0])``
         if isinstance(other, Wires):
             return self._labels == other.labels
-        else:
-            return self._labels == other
+        return self._labels == other
 
     def __hash__(self):
         """Implements the hash function."""
