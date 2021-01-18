@@ -31,14 +31,6 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires._labels
 
-    if isinstance(wires, (Number, str)):
-        # interpret as a single wire
-        return (wires,)
-
-    if getattr(wires, "shape", None) == tuple():
-        # Scalar NumPy array
-        return (wires.item(),)
-
     if isinstance(wires, Iterable):
         tuple_of_wires = tuple(wires)
         try:  # We need the set for the uniqueness check, so we can use it for hashability check
@@ -52,6 +44,14 @@ def _process(wires):
             raise WireError("Wires must be unique; got {}.".format(wires))
 
         return tuple_of_wires
+
+    if isinstance(wires, (Number, str)):
+        # interpret as a single wire
+        return (wires,)
+
+    if getattr(wires, "shape", None) == tuple():
+        # Scalar NumPy array
+        return (wires.item(),)
 
     raise WireError(
         "Wires must be represented by a number or string; got {} of type {}.".format(
@@ -77,7 +77,7 @@ class Wires(Sequence):
     """
 
     def __init__(self, wires):
-        self._labels = tuple(wires)
+        self._labels = _process(wires)
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
