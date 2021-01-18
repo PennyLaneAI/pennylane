@@ -352,3 +352,4 @@ class TestWires:
     def test_equal_to_tuple(self):
         assert Wires([1, 2, 3]) == (1, 2, 3)
         assert Wires([1, 2, 3]) != (1, 5, 3)
+        assert (1, 5, 3) != Wires([1, 2, 3])
