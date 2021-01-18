@@ -365,7 +365,7 @@ class Wires(Sequence):
 
         first_wires_obj = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
-        # This find the intersection of the labels of all wires in O(n) time.
+        # find the intersection of the labels of all wires in O(n) time.
         intersecting_wires = functools.reduce(
             lambda a, b: a & b, sets_of_wires, first_wires_obj.toset()
         )
