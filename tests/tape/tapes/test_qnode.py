@@ -89,7 +89,7 @@ class TestValidation:
 
         assert tape_class is JacobianTape
         assert method == "backprop"
-        assert interface == None
+        assert interface == "something"
         assert device is dev
 
     def test_validate_backprop_child_method(self, monkeypatch):
@@ -106,7 +106,7 @@ class TestValidation:
 
         assert tape_class is JacobianTape
         assert method == "backprop"
-        assert interface is None
+        assert interface == "something"
         assert isinstance(device, qml.devices.DefaultGaussian)
 
     def test_validate_backprop_child_method_wrong_interface(self, monkeypatch):
@@ -166,7 +166,7 @@ class TestValidation:
         # backprop is next priority
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
         res = QNode.get_best_method(dev, "some_interface")
-        assert res == (JacobianTape, None, "backprop", dev)
+        assert res == (JacobianTape, "some_interface", "backprop", dev)
 
         # The next fallback is parameter-shift.
         res = QNode.get_best_method(dev, "another_interface")

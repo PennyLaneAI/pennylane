@@ -264,14 +264,14 @@ class QNode:
             # device supports backpropagation natively
 
             if interface == backprop_interface:
-                return JacobianTape, None, "backprop", device
+                return JacobianTape, interface, "backprop", device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
                 f"{backprop_interface} interface."
             )
 
-        if device.analytic and backprop_devices is not None:
+        if getattr(device, "analytic", False) and backprop_devices is not None:
             # device is analytic and has child devices that support backpropagation natively
 
             if interface in backprop_devices:
@@ -280,7 +280,7 @@ class QNode:
                 device = qml.device(
                     backprop_devices[interface], wires=device.num_wires, analytic=True
                 )
-                return JacobianTape, None, "backprop", device
+                return JacobianTape, interface, "backprop", device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
@@ -401,7 +401,7 @@ class QNode:
         state_returns = any([m.return_type is State for m in measurement_processes])
 
         # apply the interface (if any)
-        if self.interface is not None:
+        if self.diff_options["method"] != "backprop" and self.interface is not None:
             # pylint: disable=protected-access
             if state_returns and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
