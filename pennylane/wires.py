@@ -25,6 +25,7 @@ class WireError(Exception):
 
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
+
     if isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
@@ -38,12 +39,6 @@ def _process(wires):
         return (wires.item(),)
 
     if isinstance(wires, Iterable):
-        for wire in wires:
-            if isinstance(wire, Wires):
-                merged_wires_tuple = Wires.all_wires(wires).labels
-                if sum([len(w.labels) for w in wires]) != len(merged_wires_tuple):
-                    raise WireError("Wires must be unique; got {}.".format(wires))
-                return merged_wires_tuple
 
         tuple_of_wires = tuple(wires)
         try:  # We need the set for the uniqueness check, so we can use it for hashability check
@@ -51,9 +46,8 @@ def _process(wires):
         except TypeError as e:
             # Make sure it really was a hashability issue
             if str(e).startswith("unhashable"):
-                raise WireError("Wires must be hashable; got {}.".format(wires))
-            else:
-                raise WireError("Unknown issue with iterable wires input; got {}.".format(wires))
+                raise WireError("Wires must be hashable; got {}.".format(wires)) from e
+            raise WireError("Unknown issue with iterable wires input; got {}.".format(wires)) from e
 
         if len(set_of_wires) != len(tuple_of_wires):
             raise WireError("Wires must be unique; got {}.".format(wires))

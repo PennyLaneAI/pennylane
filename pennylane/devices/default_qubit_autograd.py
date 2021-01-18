@@ -16,8 +16,8 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
-from pennylane.wires import Wires
-import pennylane.numpy.tensor as Tensor
+from pennylane.wires import Wires, WireError
+from pennylane.numpy.tensor import tensor
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import autograd_ops
@@ -170,7 +170,7 @@ class DefaultQubitAutograd(DefaultQubit):
         Returns:
             Wires: wires with new labels
         """
-        wires = Wires([w.item() if isinstance(w, Tensor) else w for w in wires])
+        wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
         try:
             mapped_wires = wires.map(self.wire_map)
         except WireError as e:

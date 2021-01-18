@@ -18,8 +18,8 @@ import numpy as np
 import semantic_version
 
 from pennylane.operation import DiagonalOperation
-from pennylane.wires import Wires
-import pennylane.numpy.tensor as Tensor
+from pennylane.wires import Wires, WireError
+from pennylane.numpy.tensor import tensor
 
 try:
     import tensorflow as tf
@@ -221,7 +221,7 @@ class DefaultQubitTF(DefaultQubit):
         Returns:
             Wires: wires with new labels
         """
-        wires = Wires([w.item() if isinstance(w, Tensor) else w for w in wires])
+        wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
         try:
             mapped_wires = wires.map(self.wire_map)
         except WireError as e:
