@@ -59,7 +59,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = qml.map(template, obs_list, dev, diff_method="parameter-shift")
 
         assert len(qc) == 2
 
@@ -85,7 +85,7 @@ class TestMap:
         obs_list = (qml.PauliX(0), qml.PauliY(0))
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = qml.map(template, obs_list, dev, diff_method="parameter-shift")
 
         assert len(qc) == 2
 
@@ -111,7 +111,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev_list)
+        qc = qml.map(template, obs_list, dev_list, diff_method="parameter-shift")
 
         assert len(qc) == 2
 

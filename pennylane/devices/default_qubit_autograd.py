@@ -92,6 +92,7 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRX": autograd_ops.CRX,
         "CRY": autograd_ops.CRY,
         "CRZ": autograd_ops.CRZ,
+        "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
     }
 
