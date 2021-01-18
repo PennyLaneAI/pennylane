@@ -77,7 +77,7 @@ class Wires(Sequence):
     """
 
     def __init__(self, wires, _override=False):
-        if __override:
+        if _override:
             self._labels = wires._labels
         self._labels = _process(wires)
 
