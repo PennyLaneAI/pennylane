@@ -278,7 +278,7 @@ class QNode:
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 device = qml.device(
-                    backprop_devices[interface], wires=device.num_wires, analytic=True
+                    backprop_devices[interface], wires=device.wires, analytic=True
                 )
                 return JacobianTape, interface, "backprop", device
 
