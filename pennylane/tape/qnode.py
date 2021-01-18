@@ -140,13 +140,16 @@ class QNode:
             )
 
         self.func = func
-        self.device = device
+        self.original_device = device
         self.qtape = None
         self.qfunc_output = None
+        self.diff_method = diff_method
 
-        self._tape, self.interface, self.diff_method = self.get_tape(device, interface, diff_method)
+        self._tape, self.interface, diff_method, self.device = self.get_tape(
+            device, interface, diff_method
+        )
         self.diff_options = diff_options or {}
-        self.diff_options["method"] = self.diff_method
+        self.diff_options["method"] = diff_method
 
         self.dtype = np.float64
         self.max_expansion = 2
@@ -182,10 +185,10 @@ class QNode:
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return QNode._get_parameter_shift_tape(device), interface, "analytic"
+            return QNode._get_parameter_shift_tape(device), interface, "analytic", device
 
         if diff_method == "finite-diff":
-            return JacobianTape, interface, "numeric"
+            return JacobianTape, interface, "numeric", device
 
         raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
@@ -218,15 +221,15 @@ class QNode:
             to pass to the ``JacobianTape.jacobian`` method
         """
         try:
-            return QNode._validate_backprop_method(device, interface)
+            return QNode._validate_device_method(device, interface)
         except qml.QuantumFunctionError:
             try:
-                return QNode._validate_device_method(device, interface)
+                return QNode._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_tape(device), interface, "best"
+                    return QNode._get_parameter_shift_tape(device), interface, "best", device
                 except qml.QuantumFunctionError:
-                    return JacobianTape, interface, "numeric"
+                    return JacobianTape, interface, "numeric", device
 
     @staticmethod
     def _validate_backprop_method(device, interface):
@@ -249,19 +252,39 @@ class QNode:
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
 
+        # determine if the device has any child devices that support backpropagation
+        backprop_devices = device.capabilities().get("passthru_devices", None)
+
         if getattr(device, "cache", 0):
             raise qml.QuantumFunctionError(
                 "Device caching is incompatible with the backprop diff_method"
             )
 
         if backprop_interface is not None:
+            # device supports backpropagation natively
 
             if interface == backprop_interface:
-                return JacobianTape, None, "backprop"
+                return JacobianTape, None, "backprop", device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
                 f"{backprop_interface} interface."
+            )
+
+        elif device.analytic and backprop_devices is not None:
+            # device is analytic and has child devices that support backpropagation natively
+
+            if interface in backprop_devices:
+                # TODO: need a better way of passing existing device init options
+                # to a new device?
+                device = qml.device(
+                    backprop_devices[interface], wires=device.num_wires, analytic=True
+                )
+                return JacobianTape, None, "backprop", device
+
+            raise qml.QuantumFunctionError(
+                f"Device {device.short_name} only supports diff_method='backprop' when using the "
+                f"{list(backprop_devices.keys())} interfaces."
             )
 
         raise qml.QuantumFunctionError(
@@ -295,7 +318,7 @@ class QNode:
                 f"The {device.short_name} device does not support reversible differentiation."
             )
 
-        return ReversibleTape, interface, "analytic"
+        return ReversibleTape, interface, "analytic", device
 
     @staticmethod
     def _validate_device_method(device, interface):
@@ -324,7 +347,7 @@ class QNode:
                 "method for computing the jacobian."
             )
 
-        return JacobianTape, interface, "device"
+        return JacobianTape, interface, "device", device
 
     @staticmethod
     def _get_parameter_shift_tape(device):
@@ -546,6 +569,10 @@ class QNode:
             from pennylane.tape.interfaces.tf import TFInterface
 
             self.interface = "tf"
+            self._tape, self.interface, diff_method, self.device = self.get_tape(
+                self.original_device, self.interface, self.diff_method
+            )
+            self.diff_options["method"] = diff_method
 
             if not isinstance(self.dtype, tf.DType):
                 self.dtype = None
@@ -577,6 +604,10 @@ class QNode:
             from pennylane.tape.interfaces.torch import TorchInterface
 
             self.interface = "torch"
+            self._tape, self.interface, diff_method, self.device = self.get_tape(
+                self.original_device, self.interface, self.diff_method
+            )
+            self.diff_options["method"] = diff_method
 
             if not isinstance(self.dtype, torch.dtype):
                 self.dtype = None

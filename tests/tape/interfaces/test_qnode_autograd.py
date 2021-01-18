@@ -34,7 +34,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x[0], wires=0)
             qml.Rot(*x[1:], wires=0)
@@ -98,7 +98,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -128,7 +128,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, interface="tf", diff_method="parameter-shift")
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -252,7 +252,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
