@@ -233,7 +233,6 @@ class Wires(Sequence):
         <Wires = [4, 2, 3]>
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
-        # wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
 
         for w in self:
             if w not in wire_map:
