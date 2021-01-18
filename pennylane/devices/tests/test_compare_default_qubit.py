@@ -192,7 +192,9 @@ class TestComparison:
                     rnd_wires = np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
                     gate(
                         *params,
-                        wires=[int(w) for w in rnd_wires]  # make sure we do not address wires as 0-d arrays
+                        wires=[
+                            int(w) for w in rnd_wires
+                        ]  # make sure we do not address wires as 0-d arrays
                     )
             return qml.expval(qml.PauliZ(0))
 
