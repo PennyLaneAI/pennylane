@@ -27,6 +27,10 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
+    if isinstance(wires, Wires):
+        # if input is already a Wires object, just return its wire tuple
+        return wires._labels
+
     if isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
@@ -73,7 +77,7 @@ class Wires(Sequence):
     """
 
     def __init__(self, wires):
-        self._labels = _process(wires)
+        self._labels = tuple(wires)
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
