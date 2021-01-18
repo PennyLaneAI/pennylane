@@ -119,14 +119,13 @@ import copy
 import itertools
 import functools
 import numbers
-from collections.abc import Sequence
 from enum import Enum, IntEnum
-from pennylane.wires import Wires
 
 import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 from .variable import Variable
@@ -1247,7 +1246,7 @@ class Tensor(Observable):
         Returns:
             Wires: wires addressed by the observables in the tensor product
         """
-        return Wires([o.wires for o in self.obs])
+        return Wires.all_wires([o.wires for o in self.obs])
 
     @property
     def data(self):
@@ -1502,7 +1501,7 @@ class CV:
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if self.wires not in wires:
+        if not wires.contains_wires(self.wires):
             raise ValueError(
                 "{}: Some observable wires {} do not exist on this device with wires {}".format(
                     self.name, self.wires, wires

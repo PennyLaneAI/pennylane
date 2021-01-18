@@ -58,7 +58,7 @@ class TestMixerHamiltonians:
 
         assert mixer_coeffs == [1, 1, 1, 1]
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [Wires(0), Wires(1), Wires(2), Wires(3)]
+        assert mixer_wires == [0, 1, 2, 3]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
