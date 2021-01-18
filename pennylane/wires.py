@@ -50,7 +50,7 @@ def _process(wires):
             raise WireError("Unknown issue with iterable wires input; got {}.".format(wires)) from e
 
         if len(set_of_wires) != len(tuple_of_wires):
-            raise WireError("Wires must be unique; got {}.".format(wires)) from e
+            raise WireError("Wires must be unique; got {}.".format(wires))
 
         return tuple_of_wires
 
