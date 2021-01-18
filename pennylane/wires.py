@@ -76,7 +76,9 @@ class Wires(Sequence):
             and hence interpreted as a single wire.
     """
 
-    def __init__(self, wires):
+    def __init__(self, wires, __override=False):
+        if __override:
+            self._labels = wires._labels
         self._labels = _process(wires)
 
     def __getitem__(self, idx):
@@ -303,8 +305,8 @@ class Wires(Sequence):
                     "Cannot subset wire at index {} from {} wires.".format(i, len(self._labels))
                 )
 
-        subset = [self[i] for i in indices]
-        return Wires(subset)
+        subset = tuple(self[i] for i in indices)
+        return Wires(subset, __override=True)
 
     def select_random(self, n_samples, seed=None):
         """
