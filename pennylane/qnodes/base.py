@@ -371,7 +371,7 @@ class BaseQNode(qml.QueuingContext):
             if w not in self.device.wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with wires {}.".format(obj.name, w.labels, self.device.wires.labels)
+                    "on device with wires {}.".format(obj.name, w, self.device.wires.labels)
                 )
 
         # observables go to their own, temporary queue

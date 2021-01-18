@@ -17,7 +17,7 @@ compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name
 import numbers
-from collections import Iterable
+from collections.abc import Iterable
 from functools import partial
 
 import numpy as np

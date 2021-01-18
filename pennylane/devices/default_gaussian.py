@@ -56,7 +56,7 @@ def partitions(s, include_singles=True):
         if include_singles:
             yield (s[0],), (s[1],)
 
-        yield tuple(s),
+        yield (tuple(s),)
     else:
         # pull off a single item and partition the rest
         if include_singles:
@@ -67,7 +67,7 @@ def partitions(s, include_singles=True):
                 for p in rest_partitions:
                     yield ((item_partition),) + p
             else:
-                yield tuple(s),
+                yield (tuple(s),)
 
         # pull off a pair of items and partition the rest
         for idx1 in range(1, len(s)):
@@ -477,7 +477,7 @@ def set_state(state, wire, mu, cov):
     N = len(mu0) // 2
 
     # insert the new state into the means vector
-    mu0[[wire.labels[0], wire.labels[0] + N]] = mu
+    mu0[[wire[0], wire[0] + N]] = mu
 
     # insert the new state into the covariance matrix
     ind = np.concatenate([wire.toarray(), wire.toarray() + N])
@@ -733,7 +733,7 @@ class DefaultGaussian(Device):
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, device_wires[0], mu, cov)
+            self._state = set_state(self._state, device_wires[:1], mu, cov)
             return  # we are done here
 
         # get the symplectic matrix
