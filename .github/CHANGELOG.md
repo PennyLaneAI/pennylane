@@ -238,6 +238,10 @@
 * `qml.vqe.Hamiltonian` prints any observable with any number of strings.
   [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
+* Fixes a bug where tape-mode parameter-shift differentiation would fail if the QNode
+  contained a single probability output.
+  [(#1007)](https://github.com/PennyLaneAI/pennylane/pull/1007)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
