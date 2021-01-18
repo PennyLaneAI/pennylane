@@ -461,7 +461,7 @@ class TestQNode:
                 [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
             ]
         )
-        assert np.testing.assert_allclose(res, expected, atol=tol, rtol=0)
+        assert np..allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
