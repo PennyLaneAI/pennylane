@@ -180,7 +180,7 @@
     }
     ```
 
-  As a result of this change, if the QNode ``diff_method`` is not explicitly provided,
+  As a result of this change, if the QNode `diff_method` is not explicitly provided,
   it is possible that the QNode will run on a *child device* of the device that was
   specifically provided:
 
