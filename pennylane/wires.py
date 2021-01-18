@@ -33,7 +33,7 @@ def _process(wires):
 
     if isinstance(wires, Wires):
         # if input is already a Wires object, just return its wire tuple
-        return wires._labels
+        return wires.labels
 
     if getattr(wires, "shape", None) == tuple():
         # Scalar NumPy array
