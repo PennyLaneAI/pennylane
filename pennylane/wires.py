@@ -46,12 +46,11 @@ def _process(wires):
         except TypeError as e:
             # Make sure it really was a hashability issue
             if str(e).startswith("unhashable"):
-                raise WireError("Wires must be hashable; got {}.".format(wires))
-            else:
-                raise WireError("Unknown issue with iterable wires input; got {}.".format(wires))
+                raise WireError("Wires must be hashable; got {}.".format(wires)) from e
+            raise WireError("Unknown issue with iterable wires input; got {}.".format(wires)) from e
 
         if len(set_of_wires) != len(tuple_of_wires):
-            raise WireError("Wires must be unique; got {}.".format(wires))
+            raise WireError("Wires must be unique; got {}.".format(wires)) from e
 
         return tuple_of_wires
 
