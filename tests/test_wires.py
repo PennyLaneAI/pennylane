@@ -159,11 +159,13 @@ class TestWires:
         wires2 = Wires([1, 2])
         assert sum([wires1, wires2], Wires([]))
 
-    def test_representation(self):
-        """Tests the string representation."""
+    def test_representation_and_string(self):
+        """Tests the string representation via both __str__ and __repr__."""
 
         wires_str = str(Wires([1, 2, 3]))
+        wires_repr = repr(Wires([1, 2, 3]))
         assert wires_str == "<Wires = [1, 2, 3]>"
+        assert wires_repr == "<Wires = [1, 2, 3]>"
 
     def test_array_representation(self):
         """Tests that Wires object has an array representation."""

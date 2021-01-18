@@ -171,13 +171,6 @@ class DefaultQubitAutograd(DefaultQubit):
             Wires: wires with new labels
         """
         wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
-        try:
-            mapped_wires = wires.map(self.wire_map)
-        except WireError as e:
-            raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires, self.wires
-                )
-            ) from e
+        mapped_wires = super().map_wires(wires)
 
         return mapped_wires
