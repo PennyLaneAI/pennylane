@@ -108,9 +108,10 @@ class Wires(Sequence):
     def __eq__(self, other):
         """Method to support the '==' operator. This will also implicitly define the '!=' operator."""
         # The order is respected in comparison, so that ``assert Wires([0, 1]) != Wires([1,0])``
-        if isinstance(other, self.__class__):
+        if isinstance(other, Wires):
             return self._labels == other._labels
-        return False
+        else:
+            return self._labels == other
 
     def __hash__(self):
         """Implements the hash function."""
@@ -416,7 +417,7 @@ class Wires(Sequence):
             else:
                 combined = sorted(combined, key=str)
 
-        return Wires(combined, _override=True)
+        return Wires(tuple(combined), _override=True)
 
     @staticmethod
     def unique_wires(list_of_wires):
