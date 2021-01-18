@@ -28,6 +28,11 @@ class TestQNodeIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "passthru_interface": "jax",
+            "passthru_devices": {
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
         }
         assert cap == capabilities
 
