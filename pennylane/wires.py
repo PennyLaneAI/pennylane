@@ -27,6 +27,14 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
+    if isinstance(wires, (Number, str)):
+        # interpret as a single wire
+        return (wires,)
+
+    if getattr(wires, "shape", None) == tuple():
+        # Scalar NumPy array
+        return (wires.item(),)
+
     if isinstance(wires, Wires):
         # if input is already a Wires object, just return its wire tuple
         return wires._labels
@@ -44,14 +52,6 @@ def _process(wires):
             raise WireError("Wires must be unique; got {}.".format(wires))
 
         return tuple_of_wires
-
-    if isinstance(wires, (Number, str)):
-        # interpret as a single wire
-        return (wires,)
-
-    if getattr(wires, "shape", None) == tuple():
-        # Scalar NumPy array
-        return (wires.item(),)
 
     raise WireError(
         "Wires must be represented by a number or string; got {} of type {}.".format(
@@ -78,7 +78,7 @@ class Wires(Sequence):
 
     def __init__(self, wires, _override=False):
         if _override:
-            self._labels = wires._labels
+            self._labels = wires
         self._labels = _process(wires)
 
     def __getitem__(self, idx):
@@ -329,7 +329,7 @@ class Wires(Sequence):
             np.random.seed(seed)
 
         indices = np.random.choice(len(self._labels), size=n_samples, replace=False)
-        subset = [self[i] for i in indices]
+        subset = tuple(self[i] for i in indices)
         return Wires(subset, _override=True)
 
     @staticmethod
@@ -463,4 +463,4 @@ class Wires(Sequence):
                 if wire in seen_once:
                     unique.append(wire)
 
-        return Wires(unique, _override=True)
+        return Wires(tuple(unique), _override=True)
