@@ -79,7 +79,8 @@ class Wires(Sequence):
     def __init__(self, wires, _override=False):
         if _override:
             self._labels = wires
-        self._labels = _process(wires)
+        else:
+            self._labels = _process(wires)
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
