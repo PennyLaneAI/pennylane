@@ -169,13 +169,14 @@
     this is now preferred over the parameter-shift rule.
 
     Devices define child devices via their `capabilities()` dictionary. For example,
-    `default.qubit` supports child devices for TensorFlow and Autograd:
+    `default.qubit` supports child devices for TensorFlow, Autograd, and JAX:
 
     ```python
     {
       "passthru_devices": {
           "tf": "default.qubit.tf",
           "autograd": "default.qubit.autograd",
+          "jax": "default.qubit.jax",
       },
     }
     ```
@@ -188,6 +189,7 @@
   dev = qml.device("default.qubit", wires=2)
   qml.QNode(dev) # will default to backprop on default.qubit.autograd
   qml.QNode(dev, interface="tf") # will default to backprop on default.qubit.tf
+  qml.QNode(dev, interface="jax") # will default to backprop on default.qubit.jax
   ```
 
 
