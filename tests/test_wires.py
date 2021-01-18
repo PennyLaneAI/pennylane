@@ -130,15 +130,30 @@ class TestWires:
     def test_contains(self, ):
         """Tests the __contains__() method."""
 
-        wires = Wires([0, 1, 2, 3])
+        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
 
-        assert Wires([0, 3]) in wires
-        assert Wires([1]) in wires
+        assert 0 in wires
+        assert Wires([4, 5]) in wires
+        assert None in wires
+        assert not Wires([1]) in wires
+        assert not Wires([0, 3]) in wires
         assert not Wires([0, 4]) in wires
-        assert not Wires([4]) in wires
 
         assert not [0, 4] in wires
         assert not [4] in wires
+
+    def test_contains_wires(self, ):
+        """Tests the dedicated contains_wires() method."""
+
+        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+
+        assert wires.contains_wires(Wires([0, 3]))
+        assert wires.contains_wires(Wires([1, 2, None]))
+        assert wires.contains_wires(Wires([Wires([4, 5])])) # Wires([4, 5]) is just a label!
+
+        assert not wires.contains_wires(0) # wrong type
+        assert not wires.contains_wires([0, 1]) # wrong type
+        assert not wires.contains_wires(Wires([4,5])) # looks up 4 and 5 in wires, which are not present
 
     def test_add_two_wires_objects(self):
         """Tests that wires objects add correctly."""

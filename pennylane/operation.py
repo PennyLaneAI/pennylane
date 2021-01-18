@@ -1501,7 +1501,7 @@ class CV:
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if self.wires not in wires:
+        if not wires.contains_wires(self.wires):
             raise ValueError(
                 "{}: Some observable wires {} do not exist on this device with wires {}".format(
                     self.name, self.wires, wires

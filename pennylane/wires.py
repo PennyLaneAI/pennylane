@@ -89,11 +89,13 @@ class Wires(Sequence):
         """Method to support ``len()``."""
         return len(self._labels)
 
+    def contains_wires(self, wires):
+        if isinstance(wires, Wires):
+            return all(wire in self._labels for wire in wires.labels)
+        return False
+
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
-        if isinstance(item, Wires):
-            return all(wire in self._labels for wire in item.labels)
-
         return item in self._labels
 
     def __repr__(self):
