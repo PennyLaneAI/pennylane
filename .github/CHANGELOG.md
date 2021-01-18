@@ -160,7 +160,7 @@
 
 * The logic for choosing the 'best' differentiation method has been altered
   to improve performance.
-  [(#)]()
+  [(#1008)](https://github.com/PennyLaneAI/pennylane/pull/1008)
 
   - If the device provides its own gradient, this is now the preferred
     differentiation method.
