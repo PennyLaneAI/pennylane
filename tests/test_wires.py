@@ -48,20 +48,17 @@ class TestWires:
         wires = Wires(iterable)
         assert wires.labels == tuple(iterable)
 
-    @pytest.mark.parametrize("iterable", [Wires([0, 1, 2])])
-    def test_creation_from_wires_object(self, iterable):
+    def test_creation_from_wires_object(self):
         """Tests that a Wires object can be created from another Wires object."""
 
-        wires = Wires(iterable)
+        wires = Wires(Wires([0, 1, 2]))
         assert wires.labels == (0, 1, 2)
 
-    @pytest.mark.parametrize("iterable", [[Wires([0, 1]), Wires([2])],
-                                          [Wires([0]), Wires([1]), Wires([2])]])
-    def test_creation_from_wires_object(self, iterable):
+    def test_creation_from_wires_lists(self):
         """Tests that a Wires object can be created from a list of Wires."""
 
-        wires = Wires(iterable)
-        assert wires.labels == (0, 1, 2)
+        wires = Wires([Wires([0]), Wires([1]), Wires([2])])
+        assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
 
     @pytest.mark.parametrize("iterable", [[1, 0, 4],
                                           ['a', 'b', 'c'],
@@ -93,8 +90,7 @@ class TestWires:
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3),
-                                          ['a', 'a', 'b'],
-                                          [Wires([1, 0]), Wires([1, 2]), Wires([3])]])
+                                          ['a', 'a', 'b']])
     def test_error_for_repeated_wires(self, iterable):
         """Tests that a Wires object cannot be created from iterables with repeated indices."""
 
@@ -141,12 +137,8 @@ class TestWires:
         assert not Wires([0, 4]) in wires
         assert not Wires([4]) in wires
 
-        #assert [0, 3] in wires
-        #assert [1] in wires
         assert not [0, 4] in wires
         assert not [4] in wires
-
-        #assert (0, 3) in wires
 
     def test_add_two_wires_objects(self):
         """Tests that wires objects add correctly."""
@@ -250,7 +242,7 @@ class TestWires:
         assert wires.indices(1) == [2]
 
     @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']),
-                                                            {'a': Wires(0), 'b': Wires(1)},
+                                                            {'a': 0, 'b': 1},
                                                             Wires([0, 1])),
                                                            (Wires([-1, 1]),
                                                             {1: 'c', -1: 1, 'd': 'e'},
@@ -268,7 +260,7 @@ class TestWires:
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
             wires = Wires([0, 1])
-            wires.map({0: 'a', 1: Wires('a')})
+            wires.map({0: 'a', 1: 'a'})
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""

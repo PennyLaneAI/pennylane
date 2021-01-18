@@ -1246,7 +1246,7 @@ class Tensor(Observable):
         Returns:
             Wires: wires addressed by the observables in the tensor product
         """
-        return Wires([o.wires for o in self.obs])
+        return Wires.all_wires([o.wires for o in self.obs])
 
     @property
     def data(self):
