@@ -158,6 +158,38 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
+* The logic for choosing the 'best' differentiation method has been altered
+  to improve performance.
+  [(#)]()
+
+  - If the device provides its own gradient, this is now the preferred
+    differentiation method.
+
+  - If a device provides *child devices* that natively support classical backpropagation,
+    this is now preferred over the parameter-shift rule.
+
+    Devices define child devices via their `capabilities()` dictionary. For example,
+    `default.qubit` supports child devices for TensorFlow and Autograd:
+
+    ```python
+    {
+      "passthru_devices": {
+          "tf": "default.qubit.tf",
+          "autograd": "default.qubit.autograd",
+      },
+    }
+    ```
+
+  As a result of this change, if the QNode ``diff_method`` is not explicitly provided,
+  it is possible that the QNode will run on a *child device* of the device that was
+  specifically provided:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  qml.QNode(dev) # will default to backprop on default.qubit.autograd
+  qml.QNode(dev, interface="tf") # will default to backprop on default.qubit.tf
+  ```
+
 
 <h3>Improvements</h3>
 
