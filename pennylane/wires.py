@@ -31,13 +31,13 @@ def _process(wires):
         # interpret as a single wire
         return (wires,)
 
-    if getattr(wires, "shape", None) == tuple():
-        # Scalar NumPy array
-        return (wires.item(),)
-
     if isinstance(wires, Wires):
         # if input is already a Wires object, just return its wire tuple
         return wires._labels
+
+    if getattr(wires, "shape", None) == tuple():
+        # Scalar NumPy array
+        return (wires.item(),)
 
     if isinstance(wires, Iterable):
         tuple_of_wires = tuple(wires)
@@ -306,7 +306,7 @@ class Wires(Sequence):
                     "Cannot subset wire at index {} from {} wires.".format(i, len(self._labels))
                 )
 
-        subset = tuple(self[i] for i in indices)
+        subset = tuple(self._labels[i] for i in indices)
         return Wires(subset, _override=True)
 
     def select_random(self, n_samples, seed=None):
