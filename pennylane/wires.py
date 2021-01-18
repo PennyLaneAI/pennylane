@@ -27,13 +27,13 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
-    if isinstance(wires, (Number, str)):
-        # interpret as a single wire
-        return (wires,)
-
     if isinstance(wires, Wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.labels
+
+    if isinstance(wires, (Number, str)):
+        # interpret as a single wire
+        return (wires,)
 
     if getattr(wires, "shape", None) == tuple():
         # Scalar NumPy array
