@@ -40,6 +40,7 @@ class JaxBox(qml.math.TensorBox):
     take = wrap_output(
         lambda self, indices, axis=None: jnp.take(self.data, indices, axis=axis, mode="wrap")
     )
+    squeeze = wrap_output(lambda self: self.data.squeeze())
 
     def __init__(self, tensor):
         tensor = jnp.asarray(tensor)

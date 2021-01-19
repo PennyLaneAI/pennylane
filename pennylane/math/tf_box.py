@@ -54,6 +54,7 @@ class TensorFlowBox(qml.math.TensorBox):
         )
     )
     T = wrap_output(lambda self: tf.transpose(self.data))
+    squeeze = wrap_output(lambda self: tf.squeeze(self.data))
 
     def __len__(self):
         if isinstance(self.data, tf.Variable):

@@ -1,6 +1,10 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* Added `qml.math.squeeze`.
+  [(#1011)](https://github.com/PennyLaneAI/pennylane/pull/1011)
+ 
 * PennyLane now supports analytical gradients for the following noisy channels:
   `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
   [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
