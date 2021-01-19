@@ -84,6 +84,9 @@ class QNode:
               device directly to compute the gradient if supported, otherwise will use
               the analytic parameter-shift rule where possible with finite-difference as a fallback.
 
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient computation.
+
             * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
@@ -97,9 +100,6 @@ class QNode:
               depending on the density and location of parametrized gates in a circuit.
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
-
-            * ``"device"``: Queries the device directly for the gradient.
-              Only allowed on devices that provide their own gradient computation.
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
               rule for all supported quantum operation arguments, with finite-difference
@@ -161,7 +161,7 @@ class QNode:
 
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
-        """Determine the best JacobianTape, differentiation method, and interface
+        """Determine the best JacobianTape, differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
         Args:
@@ -172,9 +172,9 @@ class QNode:
                 ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the method argument
+            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
         """
 
         if diff_method == "best":
@@ -221,9 +221,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the method argument
+            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
         """
         try:
             return QNode._validate_device_method(device, interface)
@@ -246,9 +246,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the method argument
+            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support backpropagation, or the
@@ -305,9 +305,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the method argument
+            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support reversible backprop
@@ -333,9 +333,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the method argument
+            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
 
         Raises:
             qml.QuantumFunctionError: if the device does not provide a native method for computing
