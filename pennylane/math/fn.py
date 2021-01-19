@@ -518,7 +518,6 @@ def stack(values, axis=0):
 def squeeze(tensor):
     """Remove single-dimensional entries from the shape of an array.
 
-
     Args:
         tensor (tensor_like): A tensor-like object.
 
