@@ -158,7 +158,7 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
-* The logic for choosing the 'best' differentiation method has been altered
+* In tape-mode, the logic for choosing the 'best' differentiation method has been altered
   to improve performance.
   [(#1008)](https://github.com/PennyLaneAI/pennylane/pull/1008)
 

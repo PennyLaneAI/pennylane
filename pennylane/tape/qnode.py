@@ -140,15 +140,20 @@ class QNode:
             )
 
         self.func = func
-        self.original_device = device
+        self._original_device = device
         self.qtape = None
         self.qfunc_output = None
+        # store the user-specified differentiation method
         self.diff_method = diff_method
 
         self._tape, self.interface, diff_method, self.device = self.get_tape(
             device, interface, diff_method
         )
+        # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
+        # Store the differentiation method to be passed to JacobianTape.jacobian().
+        # Note that the tape accepts a different set of allowed methods than the QNode:
+        #     best, analytic, numeric, device
         self.diff_options["method"] = diff_method
 
         self.dtype = np.float64
@@ -568,7 +573,7 @@ class QNode:
 
             self.interface = "tf"
             self._tape, self.interface, diff_method, self.device = self.get_tape(
-                self.original_device, self.interface, self.diff_method
+                self._original_device, self.interface, self.diff_method
             )
             self.diff_options["method"] = diff_method
 
@@ -603,7 +608,7 @@ class QNode:
 
             self.interface = "torch"
             self._tape, self.interface, diff_method, self.device = self.get_tape(
-                self.original_device, self.interface, self.diff_method
+                self._original_device, self.interface, self.diff_method
             )
             self.diff_options["method"] = diff_method
 
