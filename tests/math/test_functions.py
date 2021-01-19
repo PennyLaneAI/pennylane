@@ -955,6 +955,6 @@ squeeze_data = [
 
 @pytest.mark.parametrize("t", squeeze_data)
 def test_squeeze(t):
-    """Test that the where function works as expected"""
+    """Test that the squeeze function works as expected"""
     res = fn.squeeze(t)
     assert res.shape == (2, 3, 5)
