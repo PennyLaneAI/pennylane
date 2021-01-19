@@ -165,11 +165,11 @@
   - If the device provides its own gradient, this is now the preferred
     differentiation method.
 
-  - If a device provides *child devices* that natively support classical backpropagation,
-    this is now preferred over the parameter-shift rule.
+  - If a device provides additional interface-specific versions that natively support classical
+    backpropagation, this is now preferred over the parameter-shift rule.
 
-    Devices define child devices via their `capabilities()` dictionary. For example,
-    `default.qubit` supports child devices for TensorFlow, Autograd, and JAX:
+    Devices define additional interface-specific devices via their `capabilities()` dictionary. For
+    example, `default.qubit` supports supplementary devices for TensorFlow, Autograd, and JAX:
 
     ```python
     {
@@ -182,7 +182,7 @@
     ```
 
   As a result of this change, if the QNode `diff_method` is not explicitly provided,
-  it is possible that the QNode will run on a *child device* of the device that was
+  it is possible that the QNode will run on a *supplementary device* of the device that was
   specifically provided:
 
   ```python
