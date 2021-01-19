@@ -38,6 +38,7 @@ class NumpyBox(qml.math.TensorBox):
     )
     T = wrap_output(lambda self: self.data.T)
     take = wrap_output(lambda self, indices, axis=None: np.take(self.data, indices, axis=axis))
+    squeeze = wrap_output(lambda self: self.data.squeeze())
 
     def __init__(self, tensor):
         if not isinstance(tensor, np.ndarray):
