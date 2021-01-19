@@ -571,11 +571,16 @@ class QNode:
             import tensorflow as tf
             from pennylane.tape.interfaces.tf import TFInterface
 
-            self.interface = "tf"
-            self._tape, self.interface, diff_method, self.device = self.get_tape(
-                self._original_device, self.interface, self.diff_method
-            )
-            self.diff_options["method"] = diff_method
+            if self.interface != "tf" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, diff_method, self.device = self.get_tape(
+                    self._original_device, "tf", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options["method"] = diff_method
+            else:
+                self.interface = "tf"
 
             if not isinstance(self.dtype, tf.DType):
                 self.dtype = None
@@ -606,11 +611,16 @@ class QNode:
             import torch
             from pennylane.tape.interfaces.torch import TorchInterface
 
-            self.interface = "torch"
-            self._tape, self.interface, diff_method, self.device = self.get_tape(
-                self._original_device, self.interface, self.diff_method
-            )
-            self.diff_options["method"] = diff_method
+            if self.interface != "torch" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, diff_method, self.device = self.get_tape(
+                    self._original_device, "torch", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options["method"] = diff_method
+            else:
+                self.interface = "torch"
 
             if not isinstance(self.dtype, torch.dtype):
                 self.dtype = None
@@ -631,8 +641,18 @@ class QNode:
 
     def to_autograd(self):
         """Apply the Autograd interface to the internal quantum tape."""
-        self.interface = "autograd"
         self.dtype = AutogradInterface.dtype
+
+        if self.interface != "autograd" and self.interface is not None:
+            # Since the interface is changing, need to re-validate the tape class.
+            self._tape, interface, diff_method, self.device = self.get_tape(
+                self._original_device, "autograd", self.diff_method
+            )
+
+            self.interface = interface
+            self.diff_options["method"] = diff_method
+        else:
+            self.interface = "autograd"
 
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)

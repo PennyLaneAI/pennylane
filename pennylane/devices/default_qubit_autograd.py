@@ -16,7 +16,7 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 from pennylane.numpy.tensor import tensor
 
 from pennylane.devices import DefaultQubit
