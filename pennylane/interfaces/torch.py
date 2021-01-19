@@ -16,7 +16,7 @@ This module contains the :func:`to_torch` function to convert Numpy-interfacing 
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
-from collections import Iterable
+from collections.abc import Iterable
 import inspect
 from functools import partial
 import numbers

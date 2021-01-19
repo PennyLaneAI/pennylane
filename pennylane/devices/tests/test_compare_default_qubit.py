@@ -189,9 +189,12 @@ class TestComparison:
             for gates in gates_per_layers:
                 for gate in gates:
                     params = list(np.pi * np.random.rand(gate.num_params))
+                    rnd_wires = np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
                     gate(
                         *params,
-                        wires=np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
+                        wires=[
+                            int(w) for w in rnd_wires
+                        ]  # make sure we do not address wires as 0-d arrays
                     )
             return qml.expval(qml.PauliZ(0))
 

@@ -212,7 +212,7 @@ class TestStronglyEntangling:
 
         assert len(rec.queue) == n_layers
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
-        assert all([q._wires[0] == Wires(0) for q in rec.queue])
+        assert all([q._wires[0] == 0 for q in rec.queue])
 
     def test_uses_correct_weights(self, n_subsystems):
         """Test that correct weights are used in the circuit."""
@@ -954,7 +954,7 @@ class TestParticleConservingU1:
                     assert isinstance(rec.queue[idx], exp_gate)
 
                     # check the wires the gates act on
-                    assert rec.queue[idx]._wires == exp_wires[j]
+                    assert rec.queue[idx]._wires == Wires(exp_wires[j])
 
                     # check that parametrized gates take the parameters \phi and \theta properly
                     if exp_gate is qml.CRot:
