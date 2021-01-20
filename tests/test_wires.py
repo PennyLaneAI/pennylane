@@ -252,6 +252,7 @@ class TestWires:
         # check for non-Wires inputs
         assert wires.index(element) == 1
         assert wires.index(np.array(element)) == 1
+        assert wires.index(np.array([element])) == 1
         # check for Wires inputs
         assert wires.index(Wires([element])) == 1
         # check that Wires of length >1 produce an error
