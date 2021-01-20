@@ -20,6 +20,14 @@ import pennylane as qml
 from pennylane.wires import Wires, WireError
 
 
+labels_with_indices = [
+        ([1, 2, 3], {1:0, 2:1, 3:2}),
+        (['a', 0, 'label'], {'a':0, 0:1, 'label':2}),
+        (['a'], {'a':0}),
+        ([1, 0], {1:0,0:1}),
+        ([1,2,0], {1:0,2:1, 0:2}),
+]
+
 class TestWires:
     """Tests for the ``Wires`` class."""
 
@@ -353,3 +361,8 @@ class TestWires:
         assert Wires([1, 2, 3]) == (1, 2, 3)
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
+
+    @pytest.mark.parametrize("wires, indices", labels_with_indices)
+    def test_wires_label_indices(self, wires, indices):
+        """Test that the indices of the wire labels are stored correctly."""
+        assert Wires(wires)._label_indices == indices
