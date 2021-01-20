@@ -59,7 +59,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, diff_method="parameter-shift")
+        qc = qml.map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -73,9 +73,6 @@ class TestMap:
         assert len(qc[1].ops) == 2
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
-
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
 
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
@@ -85,7 +82,7 @@ class TestMap:
         obs_list = (qml.PauliX(0), qml.PauliY(0))
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, diff_method="parameter-shift")
+        qc = qml.map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -100,9 +97,6 @@ class TestMap:
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
 
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
-
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
         a QNodeCollection with the correct QNodes"""
@@ -111,7 +105,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev_list, diff_method="parameter-shift")
+        qc = qml.map(template, obs_list, dev_list)
 
         assert len(qc) == 2
 
@@ -128,8 +122,6 @@ class TestMap:
 
         # test that device is not broadcast
         assert qc[0].device is not qc[1].device
-        assert qc[0].device is dev_list[0]
-        assert qc[1].device is dev_list[1]
 
     def test_mapping_over_measurements(self):
         """Test that mapping over a list of measurement types produces
