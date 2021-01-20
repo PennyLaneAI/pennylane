@@ -237,6 +237,11 @@ class TestWires:
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
 
+    @pytest.mark.parametrize("wires, indices", labels_with_indices)
+    def test_wires_label_indices(self, wires, indices):
+        """Test that the indices of the wire labels are stored correctly."""
+        assert Wires(wires)._label_indices == indices
+
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
     def test_index_method(self, iterable):
@@ -246,11 +251,14 @@ class TestWires:
         element = iterable[1]
         # check for non-Wires inputs
         assert wires.index(element) == 1
+        assert wires.index(np.array(element)) == 1
         # check for Wires inputs
         assert wires.index(Wires([element])) == 1
         # check that Wires of length >1 produce an error
         with pytest.raises(WireError, match="Can only retrieve index"):
             wires.index(Wires([1, 2]))
+        with pytest.raises(WireError, match="Can only retrieve index"):
+            wires.index(Wires(np.array([1,2])))
         # check that error raised when wire does not exist
         with pytest.raises(WireError, match="Wire with label d not found"):
             wires.index(Wires(['d']))
@@ -361,8 +369,3 @@ class TestWires:
         assert Wires([1, 2, 3]) == (1, 2, 3)
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
-
-    @pytest.mark.parametrize("wires, indices", labels_with_indices)
-    def test_wires_label_indices(self, wires, indices):
-        """Test that the indices of the wire labels are stored correctly."""
-        assert Wires(wires)._label_indices == indices

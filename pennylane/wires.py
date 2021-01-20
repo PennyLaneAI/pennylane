@@ -203,6 +203,12 @@ class Wires(Sequence):
 
             wire = wire[0]
 
+        if isinstance(wire, np.ndarray):
+            if wire.size != 1:
+                raise WireError("Can only retrieve index of a Wires object of length 1.") from e
+
+            wire = wire.item()
+
         try:
             return self._label_indices[wire]
         except KeyError as e:
