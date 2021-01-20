@@ -760,12 +760,50 @@ def metric_tensor(qnode, diag_approx=False):
             the metric tensor but do not execute them, and return the tapes.
 
     Returns:
-        func: function which accepts the same arguments as the QNode, and returns the
-        metric tensor.
+        func: Function which accepts the same arguments as the QNode. When called, this
+        function will return the metric tensor.
 
     **Example**
 
+    Consider the following QNode:
 
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            # layer 1
+            qml.RX(weights[0, 0], wires=0)
+            qml.RX(weights[0, 1], wires=1)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            # layer 2
+            qml.RZ(weights[1, 0], wires=0)
+            qml.RZ(weights[1, 1], wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
+
+    We can use the ``metric_tensor`` function to generate a new function, that returns the
+    metric tensor of this QNode:
+
+    >>> met_fn = qml.metric_tensor(circuit)
+    tensor([[0.25  , 0.    , 0.    , 0.    ],
+            [0.    , 0.25  , 0.    , 0.    ],
+            [0.    , 0.    , 0.0025, 0.0024],
+            [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
+
+    The returned metric tensor is also fully differentiable, in all interfaces.
+    For example, differentiating the ``(3, 2)`` element:
+
+    >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
+    >>> grad_fn(weights)
+    array([[ 0.04867729, -0.00049502,  0.        ],
+           [ 0.        ,  0.        ,  0.        ]])
     """
 
     def _metric_tensor_fn(*args, **kwargs):
