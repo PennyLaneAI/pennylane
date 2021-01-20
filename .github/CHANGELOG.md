@@ -177,12 +177,15 @@
 
 * * Several improvements have been made to the `Wires` class to reduce overhead:
   [(#967)](https://github.com/PennyLaneAI/pennylane/pull/967)
+  [(#1015)](https://github.com/PennyLaneAI/pennylane/pull/1015)
 
   - Moves the check for uniqueness of wires from `Wires` instantiation to
     the `qml.wires._process` function in order to reduce overhead from repeated
     creation of `Wires` instances.
   
   - Skips calling of Wires on Wires instances on `Operation` instantiation.
+
+  - Stores the indices of `Wires` labels in a dictionary to fasten indexing.
   
 * Adds the `PauliRot` generator to the `qml.operation` module. This 
   generator is required to construct the metric tensor. 
@@ -250,7 +253,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts,
+Maria Schuld, David Wierichs, Jiahao Yao, Antal Száva.
 
 # Release 0.13.0 (current release)
 
