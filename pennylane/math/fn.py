@@ -515,6 +515,27 @@ def stack(values, axis=0):
     return _get_multi_tensorbox(values).stack(values, axis=axis, wrap_output=False)
 
 
+def squeeze(tensor):
+    """Remove single-dimensional entries from the shape of an array.
+
+    Args:
+        tensor (tensor_like): A tensor-like object.
+
+    Returns:
+        The input array, but with all or a subset of the dimensions of length 1 removed.
+        This is always a itself or a view into a. Note that if all axes are squeezed,
+        the result is a 0d array and not a scalar.
+
+    **Example**
+
+    >>> x = torch.ones((2, 1, 3, 4, 1))
+    >>> y = squeeze(x)
+    >>> y.shape
+    (2, 3, 4)
+    """
+    return TensorBox(tensor).squeeze(wrap_output=False)
+
+
 def sum_(tensor, axis=None, keepdims=False):
     """TensorBox: Returns the sum of the tensor elements across the specified dimensions.
 

@@ -1,6 +1,10 @@
 # Release 0.14.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* Added `qml.math.squeeze`.
+  [(#1011)](https://github.com/PennyLaneAI/pennylane/pull/1011)
+ 
 * PennyLane now supports analytical gradients for the following noisy channels:
   `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
   [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
@@ -237,6 +241,10 @@
 
 * `qml.vqe.Hamiltonian` prints any observable with any number of strings.
   [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
+
+* Fixes a bug where tape-mode parameter-shift differentiation would fail if the QNode
+  contained a single probability output.
+  [(#1007)](https://github.com/PennyLaneAI/pennylane/pull/1007)
 
 <h3>Contributors</h3>
 

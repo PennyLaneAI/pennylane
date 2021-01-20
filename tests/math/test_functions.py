@@ -944,3 +944,17 @@ def test_where(t):
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
     assert fn.allclose(res, expected)
+
+squeeze_data = [
+    np.ones((1, 2, 3, 1, 5, 1)),
+    torch.ones((1, 2, 3, 1, 5, 1)),
+    tf.ones((1, 2, 3, 1, 5, 1)),
+    jnp.ones((1, 2, 3, 1, 5, 1)),
+    onp.ones((1, 2, 3, 1, 5, 1))
+]
+
+@pytest.mark.parametrize("t", squeeze_data)
+def test_squeeze(t):
+    """Test that the squeeze function works as expected"""
+    res = fn.squeeze(t)
+    assert res.shape == (2, 3, 5)
