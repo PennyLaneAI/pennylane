@@ -262,6 +262,49 @@ def cov_matrix(prob, obs, diag_approx=False):
 
     Returns:
         tensor_like: the covariance matrix of size ``(len(obs), len(obs))``
+
+    **Example**
+
+    Consider the following ansatz and observable list:
+
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(2)]
+    >>> ansatz = qml.templates.StronglyEntanglingLayers
+
+    We can construct a QNode to output the probability distribution in the shared eigenbasis of the
+    observables:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            ansatz(weights, wires=[0, 1, 2])
+            # rotate into the basis of the observables
+            for o in obs_list:
+                o.diagonalizing_gates()
+            return qml.probs(wires=[0, 1, 2])
+
+    We can now compute the covariance matrix:
+
+    >>> weights = qml.init.strong_ent_layers_normal(n_layers=2, n_wires=3)
+    >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
+    >>> cov
+    array([[0.98707611, 0.03665537],
+         [0.03665537, 0.99998377]])
+
+    Autodifferentiation is fully supported using all interfaces.
+    Here we use autograd:
+
+    >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
+    >>> qml.grad(cost_fn)(weights)[0]
+    array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
+          [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
+          [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
+
+         [[ 6.80309533e-04, -1.23162742e-03,  1.08729813e-03],
+          [-1.53863193e-01, -1.38700657e-02, -1.36243323e-01],
+          [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
     """
     variances = []
 
