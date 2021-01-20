@@ -41,6 +41,7 @@ class TorchBox(qml.math.TensorBox):
         )
     )
     T = wrap_output(lambda self: self.data.T)
+    squeeze = wrap_output(lambda self: self.data.squeeze())
 
     @staticmethod
     def astensor(tensor):

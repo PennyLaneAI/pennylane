@@ -348,3 +348,8 @@ class TestWires:
 
         with pytest.raises(WireError, match="Expected a Wires object"):
             Wires.unique_wires([[2, 1], [8, 5]])
+
+    def test_equal_to_tuple(self):
+        assert Wires([1, 2, 3]) == (1, 2, 3)
+        assert Wires([1, 2, 3]) != (1, 5, 3)
+        assert (1, 5, 3) != Wires([1, 2, 3])

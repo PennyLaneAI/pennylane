@@ -38,6 +38,7 @@ class AutogradBox(qml.math.TensorBox):
         lambda self, axis=None, keepdims=False: np.sum(self.data, axis=axis, keepdims=keepdims)
     )
     T = wrap_output(lambda self: self.data.T)
+    squeeze = wrap_output(lambda self: self.data.squeeze())
 
     @staticmethod
     def astensor(tensor):
