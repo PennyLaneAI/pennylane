@@ -188,9 +188,10 @@
       for o in obs_list:
           o.diagonalizing_gates()
       return qml.probs(wires=[0, 1, 2])
-  ````
+  ```
 
   We can now compute the covariance matrix:
+
   ```pycon
   >>> weights = qml.init.strong_ent_layers_normal(n_layers=2, n_wires=3)
   >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
