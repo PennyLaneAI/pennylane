@@ -1201,23 +1201,3 @@ def test_block_diag(tensors):
        [ 0,  0,  0,  0,  5]
     ])
     assert fn.allclose(res, expected)
-
-
-gather_data = [
-    torch.tensor([[1, 2, 3], [-1, -6, -3]]),
-    tf.Variable([[1, 2, 3], [-1, -6, -3]]),
-    jnp.array([[1, 2, 3], [-1, -6, -3]]),
-    np.array([[1, 2, 3], [-1, -6, -3]])
-]
-
-
-@pytest.mark.parametrize("tensor", gather_data)
-def test_gather(tensor):
-    """Tests for the gather function"""
-    indices = [1, 0]
-    res = fn.gather(tensor, indices)
-    expected = np.array([
-        [-1, -6, -3],
-        [ 1,  2,  3]
-    ])
-    assert fn.allclose(res, expected)

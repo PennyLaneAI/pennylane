@@ -273,7 +273,7 @@ def concatenate(values, axis=0):
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
-def cov_matrix(prob, obs):
+def cov_matrix(prob, obs, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
 
@@ -286,6 +286,7 @@ def cov_matrix(prob, obs):
         prob (tensor_like): probability distribution
         obs (list[.Observable]): a list of observables for which
             to compute the covariance matrix for
+        diag_approx (bool): if True, return the diagonal approximation
 
     Returns:
         tensor_like: the covariance matrix of size ``(len(obs), len(obs))``
@@ -344,6 +345,9 @@ def cov_matrix(prob, obs):
         variances.append(res)
 
     cov = diag(variances)
+
+    if diag_approx:
+        return cov
 
     for i, j in itertools.combinations(range(len(obs)), r=2):
         o1 = obs[i]
@@ -493,31 +497,6 @@ def flatten(tensor):
     <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
     """
     return reshape(tensor, (-1,))
-
-
-def gather(tensor, indices):
-    """Gather tensor values given a tuple of indices.
-
-    This is equivalent to the following NumPy fancy indexing:
-
-    ..code-block:: python
-
-        tensor[array(indices)]
-
-    Args:
-        tensor (tensor_like): tensor to gather from
-        indices (Sequence[int]): the indices of the values to extract
-
-    Returns:
-        tensor_like: the gathered tensor values
-
-    .. seealso::
-
-        :func:`~.take`
-
-    **Example**
-    """
-    return TensorBox(tensor).gather(np.array(indices), wrap_output=False)
 
 
 def get_interface(tensor):

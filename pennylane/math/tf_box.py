@@ -40,7 +40,6 @@ class TensorFlowBox(qml.math.TensorBox):
     arcsin = wrap_output(lambda self: tf.math.asin(self.data))
     cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
     diag = staticmethod(wrap_output(lambda values, k=0: tf.linalg.diag(values, k=k)))
-    gather = wrap_output(lambda self, indices: tf.gather(self.data, indices))
     expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
     ones_like = wrap_output(lambda self: tf.ones_like(self.data))
     reshape = wrap_output(lambda self, shape: tf.reshape(self.data, shape))

@@ -28,7 +28,7 @@ def _stopping_critera(obj):
     return False
 
 
-def metric_tensor(tape):
+def metric_tensor(tape, diag_approx=False):
     """Returns a list of tapes, and a classical processing function,
     for computing the metric tensor of an input tape on hardware."""
 
@@ -53,13 +53,6 @@ def metric_tensor(tape):
         for op in curr_ops:
             gen, s = op.generator
             w = op.wires
-
-            if gen is None:
-                raise qml.qnodes.QuantumFunctionError(
-                    "Can't generate metric tensor, operation {}"
-                    "has no defined generator".format(op)
-                )
-
             coeffs_list[-1].append(s)
 
             # get the observable corresponding to the generator of the current operation
@@ -89,26 +82,17 @@ def metric_tensor(tape):
         metric_tensor_tapes.append(layer_tape)
 
     def processing_fn(probs):
-        qml.math.reshape(probs, [len(metric_tensor_tapes), -1])
-
         gs = []
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
             # calculate the covariance matrix of this layer
-            scale = np.outer(coeffs, coeffs)
-            g = scale * qml.math.cov_matrix(prob, obs)
+            scale = qml.math.convert_like(np.outer(coeffs, coeffs), prob)
+            scale = qml.math.cast_like(scale, prob)
+            g = scale * qml.math.cov_matrix(prob, obs, diag_approx=diag_approx)
             gs.append(g)
-
-        perm = np.array([item for sublist in params_list for item in sublist], dtype=np.int64)
 
         # create the block diagonal metric tensor
         metric_tensor = qml.math.block_diag(gs)
-
-        # permute rows
-        metric_tensor = qml.math.gather(metric_tensor, perm)
-
-        # permute columns
-        metric_tensor = qml.math.gather(qml.math.T(metric_tensor), perm)
         return metric_tensor
 
     return metric_tensor_tapes, processing_fn

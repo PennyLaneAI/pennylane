@@ -14,3 +14,4 @@
 """
 This subpackage contains tape transforms.
 """
+from .metric_tensor import metric_tensor

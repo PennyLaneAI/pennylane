@@ -51,7 +51,6 @@ from .fn import (
     dot,
     expand_dims,
     flatten,
-    gather,
     get_interface,
     marginal_prob,
     ones_like,

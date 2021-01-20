@@ -359,6 +359,16 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
+        if self.interface == "autograd":
+            # HOTFIX: to maintain compatibility with core, here we treat
+            # all inputs that do not explicitly specify `requires_grad=False`
+            # as trainable. This should be removed at some point, forcing users
+            # to specify `requires_grad=True` for trainable parameters.
+            args = [
+                anp.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
+                for a in args
+            ]
+
         self.qtape = self._tape()
 
         with self.qtape:
@@ -410,17 +420,6 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
-
-        if self.interface == "autograd":
-            # HOTFIX: to maintain compatibility with core, here we treat
-            # all inputs that do not explicitly specify `requires_grad=False`
-            # as trainable. This should be removed at some point, forcing users
-            # to specify `requires_grad=True` for trainable parameters.
-            args = [
-                anp.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
-                for a in args
-            ]
-
         # construct the tape
         self.construct(args, kwargs)
 
@@ -444,6 +443,30 @@ class QNode:
         if res_type_namespace == "jax":
             return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
+
+    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+        """Evaluate the value of the metric tensor.
+
+        Args:
+            args (tuple[Any]): positional arguments
+            kwargs (dict[str, Any]): auxiliary arguments
+            diag_approx (bool): iff True, use the diagonal approximation
+            only_construct (bool): Iff True, construct the circuits used for computing
+                the metric tensor but do not execute them, and return the tapes.
+
+        Returns:
+            array[float]: metric tensor
+        """
+        self.construct(args, kwargs)
+        metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
+            self.qtape, diag_approx=diag_approx
+        )
+
+        if only_construct:
+            return metric_tensor_tapes
+
+        res = [t.execute(device=self.device) for t in metric_tensor_tapes]
+        return processing_fn(res)
 
     def draw(self, charset="unicode", wire_order=None, **kwargs):
         """Draw the quantum tape as a circuit diagram.
@@ -723,6 +746,38 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
         return update_wrapper(qn, func)
 
     return qfunc_decorator
+
+
+def metric_tensor(qnode, diag_approx=False):
+    """Returns a function that evaluates the value of the metric tensor
+    of a given QNode.
+
+    Args:
+        qnode (~.QNode): QNode to compute the metric tensor of
+        kwargs (dict[str, Any]): auxiliary arguments
+        diag_approx (bool): iff True, use the diagonal approximation
+        only_construct (bool): Iff True, construct the circuits used for computing
+            the metric tensor but do not execute them, and return the tapes.
+
+    Returns:
+        func: function which accepts the same arguments as the QNode, and returns the
+        metric tensor.
+
+    **Example**
+
+
+    """
+
+    def _metric_tensor_fn(*args, **kwargs):
+        qnode.construct(args, kwargs)
+        metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
+            qnode.qtape, diag_approx=diag_approx
+        )
+
+        res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
+        return processing_fn(res)
+
+    return _metric_tensor_fn
 
 
 def draw(_qnode, charset="unicode", wire_order=None):
