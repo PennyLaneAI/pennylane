@@ -69,22 +69,20 @@ PATTERN_TO_WIRES = {
     "double": lambda wires: [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
     "double_odd": lambda wires: [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
     "chain": lambda wires: [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-    "ring": lambda wires: wires_ring(wires),
-    "pyramid": lambda wires: wires_pyramid(wires),
-    "all_to_all": lambda wires: wires_all_to_all(wires),
+    "ring": wires_ring,
+    "pyramid": wires_pyramid,
+    "all_to_all": wires_all_to_all,
     "custom": lambda wires: wires,
 }
 
 # define required number of parameters
 PATTERN_TO_NUM_PARAMS = {
-    "single": lambda wires: len(wires),
+    "single": len,  # Use the length of the given wires.
     "double": lambda wires: 0 if len(wires) in [0, 1] else len(wires) // 2,
     "double_odd": lambda wires: 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
     "chain": lambda wires: 0 if len(wires) in [0, 1] else len(wires) - 1,
     "ring": lambda wires: 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-    "pyramid": lambda wires: 0
-    if len(wires) in [0, 1]
-    else sum(i + 1 for i in range(len(wires) // 2)),
+    "pyramid": lambda w: 0 if len(w) in [0, 1] else sum(i + 1 for i in range(len(w) // 2)),
     "all_to_all": lambda wires: 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
     "custom": lambda wires: len(wires) if wires is not None else None,
 }
