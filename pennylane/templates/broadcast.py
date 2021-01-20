@@ -62,6 +62,7 @@ def wires_all_to_all(wires):
             sequence += [wires.subset([i, j])]
     return sequence
 
+
 # define wire sequences for patterns
 PATTERN_TO_WIRES = {
     "single": lambda wires: [wires[i] for i in range(len(wires))],
@@ -81,7 +82,9 @@ PATTERN_TO_NUM_PARAMS = {
     "double_odd": lambda wires: 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
     "chain": lambda wires: 0 if len(wires) in [0, 1] else len(wires) - 1,
     "ring": lambda wires: 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-    "pyramid": lambda wires: 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
+    "pyramid": lambda wires: 0
+    if len(wires) in [0, 1]
+    else sum(i + 1 for i in range(len(wires) // 2)),
     "all_to_all": lambda wires: 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
     "custom": lambda wires: len(wires) if wires is not None else None,
 }
@@ -104,7 +107,6 @@ def _preprocess(parameters, pattern, wires):
         wire_sequence, parameters: preprocessed pattern and parameters
     """
 
-
     if isinstance(pattern, str):
         _wires = wires
         if pattern not in OPTIONS:
@@ -114,7 +116,6 @@ def _preprocess(parameters, pattern, wires):
         _wires = [Wires(w) for w in pattern]
         # set "pattern" to "custom", indicating that custom settings have to be used
         pattern = "custom"
-
 
     # check that there are enough parameters for pattern
     if parameters is not None:
