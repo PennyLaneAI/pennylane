@@ -82,6 +82,8 @@ class Wires(Sequence):
         else:
             self._labels = _process(wires)
 
+        self._label_indices = {v:k for k,v in enumerate(self._labels)}
+
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
         if isinstance(idx, slice):
@@ -202,8 +204,8 @@ class Wires(Sequence):
             wire = wire[0]
 
         try:
-            return self._labels.index(wire)
-        except ValueError as e:
+            return self._label_indices[wire]
+        except KeyError as e:
             raise WireError("Wire with label {} not found in {}.".format(wire, self)) from e
 
     def indices(self, wires):
