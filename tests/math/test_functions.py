@@ -960,6 +960,58 @@ def test_squeeze(t):
     assert res.shape == (2, 3, 5)
 
 
+class TestDiag:
+    """Tests for the diag function"""
+
+    @pytest.mark.parametrize("a, interface", [[np.array(0.5), "autograd"], [tf.Variable(0.5), "tf"], [torch.tensor(0.5), "torch"]])
+    def test_sequence(self, a, interface):
+        """Test that a sequence is automatically converted into
+        a diagonal tensor"""
+        t = [0.1, 0.2, a]
+        res = fn.diag(t)
+        assert fn.get_interface(res) == interface
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.5]))
+
+    def test_array(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = np.array([0.1, 0.2, 0.3])
+        res = fn.diag(t)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
+
+        res = fn.diag(t, k=1)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
+
+    def test_tensorflow(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = tf.Variable([0.1, 0.2, 0.3])
+        res = fn.diag(t)
+        assert isinstance(res, tf.Tensor)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
+
+        res = fn.diag(t, k=1)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
+
+    def test_torch(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = torch.tensor([0.1, 0.2, 0.3])
+        res = fn.diag(t)
+        assert isinstance(res, torch.Tensor)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
+
+        res = fn.diag(t, k=1)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
+
+    def test_jax(self):
+        """Test that sum, called without the axis arguments, returns a scalar"""
+        t = jnp.array([0.1, 0.2, 0.3])
+        res = fn.diag(t)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
+
+        res = fn.diag(t, k=1)
+        assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
+
+
 class TestCovMatrix:
     """Tests for the cov matrix function"""
     obs_list = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(2)]
@@ -1111,4 +1163,3 @@ class TestCovMatrix:
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
-

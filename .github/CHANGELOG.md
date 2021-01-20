@@ -170,7 +170,7 @@
 
   For example, consider the following ansatz and observable list:
 
-  ```python
+  ```python3
   obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(2)]
   ansatz = qml.templates.StronglyEntanglingLayers
   ```
