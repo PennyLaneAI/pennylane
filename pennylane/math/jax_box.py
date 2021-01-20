@@ -31,7 +31,7 @@ class JaxBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: jnp.angle(self.data))
     arcsin = wrap_output(lambda self: jnp.arcsin(self.data))
     cast = wrap_output(lambda self, dtype: jnp.array(self.data, dtype=dtype))
-    diag = staticmethod(wrap_output(lambda values, k=0: jnp.diag(values, k=k)))
+    diag = staticmethod(wrap_output(lambda values, k=0: jnp.diag(jnp.array(values), k=k)))
     expand_dims = wrap_output(lambda self, axis: jnp.expand_dims(self.data, axis=axis))
     reshape = wrap_output(lambda self, shape: jnp.reshape(self.data, shape))
     ones_like = wrap_output(lambda self: jnp.ones_like(self.data))

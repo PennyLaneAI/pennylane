@@ -45,6 +45,7 @@ from .fn import (
     cast_like,
     concatenate,
     convert_like,
+    cov_matrix,
     diag,
     dot,
     expand_dims,

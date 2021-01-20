@@ -958,3 +958,157 @@ def test_squeeze(t):
     """Test that the squeeze function works as expected"""
     res = fn.squeeze(t)
     assert res.shape == (2, 3, 5)
+
+
+class TestCovMatrix:
+    """Tests for the cov matrix function"""
+    obs_list = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(2)]
+
+    @staticmethod
+    def ansatz(weights):
+        """Circuit ansatz for testing"""
+        qml.RY(weights[0], wires=0)
+        qml.RX(weights[1], wires=1)
+        qml.RX(weights[2], wires=2)
+        qml.CNOT(wires=[0, 1])
+        qml.CNOT(wires=[1, 2])
+
+    @staticmethod
+    def expected_cov(weights):
+        """Analytic covariance matrix for ansatz and obs_list"""
+        a, b, c = weights
+        return np.array([
+            [np.sin(b) ** 2, -np.cos(a) * np.sin(b) ** 2 * np.sin(c)],
+            [-np.cos(a) * np.sin(b) ** 2 * np.sin(c), 1 - np.cos(a) ** 2 * np.cos(b) ** 2 * np.sin(c) ** 2]
+        ])
+
+    @staticmethod
+    def expected_grad(weights):
+        """Analytic covariance matrix gradient for ansatz and obs_list"""
+        a, b, c = weights
+        return np.array([
+            np.sin(a) * np.sin(b) ** 2 * np.sin(c),
+            -2 * np.cos(a) * np.cos(b) * np.sin(b) * np.sin(c),
+            -np.cos(a) * np.cos(c) * np.sin(b) ** 2
+        ])
+
+    def test_autograd(self, in_tape_mode, tol):
+        """Test that the covariance matrix computes the correct
+        result, and is differentiable, using the Autograd interface"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            """Returns the shared probability distribution of ansatz
+            in the joint basis for obs_list"""
+            self.ansatz(weights)
+
+            for o in self.obs_list:
+                o.diagonalizing_gates()
+
+            return qml.probs(wires=[0, 1, 2])
+
+        def cov(weights):
+            probs = circuit(weights)
+            return fn.cov_matrix(probs, self.obs_list)
+
+        weights = np.array([0.1, 0.2, 0.3])
+        res = cov(weights)
+        expected = self.expected_cov(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        res = grad_fn(weights)
+        expected = self.expected_grad(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_torch(self, in_tape_mode, tol):
+        """Test that the covariance matrix computes the correct
+        result, and is differentiable, using the Torch interface"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            """Returns the shared probability distribution of ansatz
+            in the joint basis for obs_list"""
+            self.ansatz(weights)
+
+            for o in self.obs_list:
+                o.diagonalizing_gates()
+
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = np.array([0.1, 0.2, 0.3])
+        weights_t = torch.tensor(weights, requires_grad=True)
+        probs = circuit(weights_t)
+        res = fn.cov_matrix(probs, self.obs_list)
+        expected = self.expected_cov(weights)
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+
+        loss = res[0, 1]
+        loss.backward()
+        res = weights_t.grad
+        expected = self.expected_grad(weights)
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+
+    def test_tf(self, in_tape_mode, tol):
+        """Test that the covariance matrix computes the correct
+        result, and is differentiable, using the TF interface"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            """Returns the shared probability distribution of ansatz
+            in the joint basis for obs_list"""
+            self.ansatz(weights)
+
+            for o in self.obs_list:
+                o.diagonalizing_gates()
+
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = np.array([0.1, 0.2, 0.3])
+        weights_t = tf.Variable(weights)
+
+        with tf.GradientTape() as tape:
+            probs = circuit(weights_t)
+            cov = fn.cov_matrix(probs, self.obs_list)
+            loss = cov[0, 1]
+
+        expected = self.expected_cov(weights)
+        assert np.allclose(cov, expected, atol=tol, rtol=0)
+
+        grad = tape.gradient(loss, weights_t)
+        expected = self.expected_grad(weights)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_jax(self, in_tape_mode, tol):
+        """Test that the covariance matrix computes the correct
+        result, and is differentiable, using the JAX interface"""
+        dev = qml.device("default.qubit.jax", wires=3)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(weights):
+            """Returns the shared probability distribution of ansatz
+            in the joint basis for obs_list"""
+            self.ansatz(weights)
+
+            for o in self.obs_list:
+                o.diagonalizing_gates()
+
+            return qml.probs(wires=[0, 1, 2])
+
+        def cov(weights):
+            probs = circuit(weights)
+            return fn.cov_matrix(probs, self.obs_list)
+
+        weights = jnp.array([0.1, 0.2, 0.3])
+        res = cov(weights)
+        expected = self.expected_cov(weights)
+        assert jnp.allclose(res, expected, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(lambda weights: cov(weights)[0, 1])
+        res = grad_fn(weights)
+        expected = self.expected_grad(weights)
+        assert jnp.allclose(res, expected, atol=tol, rtol=0)
+

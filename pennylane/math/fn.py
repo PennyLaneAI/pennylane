@@ -14,6 +14,7 @@
 """Function wrappers for the TensorBox API"""
 # pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
 from collections.abc import Sequence
+import itertools
 import warnings
 
 import numpy as np
@@ -245,6 +246,58 @@ def concatenate(values, axis=0):
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
+def cov_matrix(prob, obs, diag_approx=False):
+    """Calculate the covariance matrix of a list of commuting observables, given
+    the joint probability distribution of the system in the shared eigenbasis.
+
+    .. note::
+        This method only works for **commuting observables.**
+        The probability distribution must be rotated into the shared
+        eigenbasis of the list of observables.
+
+    Args:
+        prob (tensor_like): probability distribution
+        obs (list[.Observable]): a list of observables for which
+            to compute the covariance matrix for
+
+    Returns:
+        tensor_like: the covariance matrix of size ``(len(obs), len(obs))``
+    """
+    variances = []
+
+    # diagonal variances
+    for i, o in enumerate(obs):
+        l = cast(o.eigvals, dtype=np.float64)
+        p = marginal_prob(prob, o.wires.labels)
+
+        res = dot(l ** 2, p) - (dot(l, p)) ** 2
+        variances.append(res)
+
+    cov = diag(variances)
+
+    if diag_approx:
+        return cov
+
+    for i, j in itertools.combinations(range(len(obs)), r=2):
+        o1 = obs[i]
+        o2 = obs[j]
+
+        l1 = cast(o1.eigvals, dtype=np.float64)
+        l2 = cast(o2.eigvals, dtype=np.float64)
+        l12 = cast(np.kron(l1, l2), dtype=np.float64)
+
+        p1 = marginal_prob(prob, o1.wires)
+        p2 = marginal_prob(prob, o2.wires)
+        p12 = marginal_prob(prob, o1.wires + o2.wires)
+
+        res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
+
+        cov = scatter_element_add(cov, [i, j], res)
+        cov = scatter_element_add(cov, [j, i], res)
+
+    return cov
+
+
 def convert_like(tensor1, tensor2):
     """Convert a tensor to the same type as another.
 
@@ -426,7 +479,7 @@ def marginal_prob(prob, axis):
     if num_wires == len(axis):
         return prob
 
-    inactive_wires = list(set(range(num_wires)) - set(axis))
+    inactive_wires = tuple(set(range(num_wires)) - set(axis))
     prob = reshape(prob, [2] * num_wires)
     prob = sum_(prob, axis=inactive_wires)
     return flatten(prob)
