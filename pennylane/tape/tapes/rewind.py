@@ -16,6 +16,7 @@ TODO
 """
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.devices import DefaultMixed
 from .jacobian_tape import JacobianTape
 
 
@@ -37,11 +38,33 @@ class RewindTape(JacobianTape):
         # The rewind tape only support differentiating expectation values of observables for now.
         for m in self.measurements:
             if (
-                m.return_type is qml.operation.Variance
-                or m.return_type is qml.operation.Probability
+                m.return_type is not qml.operation.Expectation
             ):
                 raise ValueError(
-                    f"{m.return_type} is not supported with the rewind gradient method"
+                    f"The {m.return_type.value} return type is not supported with the rewind gradient method"
                 )
+
+        method = options.get("method", "analytic")
+
+        if method == "device":
+            # Using device mode; simply query the device for the Jacobian
+            return self.device_pd(device, params=params, **options)
+        elif method == "numeric":
+            raise ValueError("RewindTape does not support numeric differentiation")
+
+        if not device.capabilities().get("returns_state") or isinstance(device, DefaultMixed):
+            # TODO: consider renaming returns_state to, e.g., uses_statevector
+            # TODO: consider adding a capability for mixed/pure state
+            raise qml.QuantumFunctionError("The rewind gradient method is only supported on statevector-based devices")
+
+        # Perform the forward pass
+        # TODO: Could we use lower-level like device.apply, since we just need the state?
+        self.execute(device, params=params)
+        phi = device.state
+
+
+
+
+
 
 
