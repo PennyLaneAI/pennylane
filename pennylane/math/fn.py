@@ -13,6 +13,7 @@
 # limitations under the License.
 """Function wrappers for the TensorBox API"""
 # pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
+from collections.abc import Sequence
 import warnings
 
 import numpy as np
@@ -265,6 +266,47 @@ def convert_like(tensor1, tensor2):
     return TensorBox(tensor2).astensor(tensor1)
 
 
+def diag(values, k=0):
+    """Construct a diagonal tensor from a list of scalars.
+
+    Args:
+        values (tensor_like or Sequence[scalar]): sequence of numeric values that
+            make up the diagonal
+        k (int): The diagonal in question. ``k=0`` corresponds to the main diagonal.
+            Use ``k>0`` for diagonals above the main diagonal, and ``k<0`` for
+            diagonals below the main diagonal.
+
+    Returns:
+        tensor_like: the 2D diagonal tensor
+
+    **Example**
+
+    >>> x = [1., 2., tf.Variable(3.)]
+    >>> diag(x)
+    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    array([[1., 0., 0.],
+           [0., 2., 0.],
+           [0., 0., 3.]], dtype=float32)>
+    >>> y = tf.Variable([0.65, 0.2, 0.1])
+    >>> diag(y, k=-1)
+    <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
+    array([[0.  , 0.  , 0.  , 0.  ],
+           [0.65, 0.  , 0.  , 0.  ],
+           [0.  , 0.2 , 0.  , 0.  ],
+           [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
+    >>> z = torch.tensor([0.1, 0.2])
+    >>> qml.diag(z, k=1)
+    >>> qml.math.diag(z, k=1)
+    tensor([[0.0000, 0.1000, 0.0000],
+            [0.0000, 0.0000, 0.2000],
+            [0.0000, 0.0000, 0.0000]])
+    """
+    if isinstance(values, Sequence):
+        return _get_multi_tensorbox(values).diag(values, k=k, wrap_output=False)
+
+    return TensorBox(values).diag(values, k=k, wrap_output=False)
+
+
 def dot(tensor1, tensor2):
     """Returns the matrix or dot product of two tensors.
 
@@ -315,6 +357,24 @@ def expand_dims(tensor, axis):
     return TensorBox(tensor).expand_dims(axis, wrap_output=False)
 
 
+def flatten(tensor):
+    """Flattens an N-dimensional tensor to a 1-dimensional tensor.
+
+    Args:
+        tensor (tensor_like): tensor to flatten
+
+    Returns:
+        tensor_like: the flattened tensor
+
+    **Example**
+
+    >>> x = tf.Variable([[1, 3], [2, 4]])
+    >>> flatten(x)
+    <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
+    """
+    return reshape(tensor, (-1,))
+
+
 def get_interface(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
@@ -337,6 +397,39 @@ def get_interface(tensor):
     'autograd'
     """
     return TensorBox(tensor).interface
+
+
+def marginal_prob(prob, axis):
+    """Compute the marginal probability given joint probabilities of the full system.
+
+    Args:
+        prob (tensor_like): 1D tensor of probabilities. This tensor should of size
+            ``(2**N,)`` for some integer value ``N``.
+        axis (list[int]): the axis for which to calculate the marginal
+            probability distribution
+
+    Returns:
+        tensor_like: the marginal probabilities, of
+        size ``(2**len(axis),)``
+
+    **Example**
+
+    >>> x = tf.Variable([1, 0, 0, 1.], dtype=tf.float64) / np.sqrt(2)
+    >>> marginal_prob(x, axis=[0, 1])
+    <tf.Tensor: shape=(4,), dtype=float64, numpy=array([0.70710678, 0.        , 0.        , 0.70710678])>
+    >>> marginal_prob(x, axis=[0])
+    <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.70710678, 0.70710678])>
+    """
+    prob = flatten(prob)
+    num_wires = int(np.log2(len(prob)))
+
+    if num_wires == len(axis):
+        return prob
+
+    inactive_wires = list(set(range(num_wires)) - set(axis))
+    prob = reshape(prob, [2] * num_wires)
+    prob = sum_(prob, axis=inactive_wires)
+    return flatten(prob)
 
 
 def toarray(tensor):
@@ -393,6 +486,33 @@ def ones_like(tensor, dtype=None):
     return TensorBox(tensor).ones_like(wrap_output=False)
 
 
+def reshape(tensor, shape):
+    """Gives a new shape to a tensor without changing its data.
+
+    Args:
+        tensor (tensor_like): input tensor
+        shape (tuple[int]): The new shape. The special value of -1 indicates
+            that the size of that dimension is computed so that the total size
+            remains constant. A dimension of -1 can only be specified once.
+
+    Returns:
+        tensor_like: a new view into the input tensor with
+        shape ``shape``
+
+    **Example**
+
+    >>> a = tf.range(4.)
+    >>> reshape(a, (2, 2))
+    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+    array([[0., 1.],
+           [2., 3.]], dtype=float32)>
+    >>> b = torch.tensor([[0, 1], [2, 3]])
+    >>> torch.reshape(b, (-1,))
+    tensor([0, 1, 2, 3])
+    """
+    return TensorBox(tensor).reshape(shape, wrap_output=False)
+
+
 def requires_grad(tensor):
     """Returns True if the tensor is considered trainable.
 
@@ -445,6 +565,30 @@ def requires_grad(tensor):
     True
     """
     return TensorBox(tensor).requires_grad
+
+
+def scatter_element_add(tensor, index, value):
+    """Adds a scalar value to a specific index of a tensor.
+
+    This is a pure equivalent of ``tensor[index] += value``.
+
+    Args:
+        tensor (tensor_like): the input tensor to be updated
+        index (tuple[int]): the index of the input tensor to update
+        value (scalar): the scalar value to add to the tensor element
+
+    Returns:
+        tensor_like: the output tensor
+
+    **Example**
+
+    >>> x = torch.ones((2, 3))
+    >>> qml.math.scatter_element_add(x, [1, 2], 3)
+    tensor([[1., 1., 1.],
+            [1., 1., 4.]])
+    """
+    value = convert_like(value, tensor)
+    return TensorBox(tensor).scatter_element_add(index, value, wrap_output=False)
 
 
 def shape(tensor):
