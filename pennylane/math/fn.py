@@ -279,8 +279,9 @@ def cov_matrix(prob, obs, diag_approx=False):
 
     .. note::
         This method only works for **commuting observables.**
-        The probability distribution must be rotated into the shared
-        eigenbasis of the list of observables.
+        If the probability distribution is the result of a quantum circuit,
+        the quantum state must be rotated into the shared
+        eigenbasis of the list of observables before measurement.
 
     Args:
         prob (tensor_like): probability distribution
@@ -524,7 +525,12 @@ def get_interface(tensor):
 
 
 def marginal_prob(prob, axis):
-    """Compute the marginal probability given joint probabilities of the full system.
+    """Compute the marginal probability given a joint probability distribution expressed as a tensor.
+    Each random variable corresponds to a dimension.
+
+    If the distribution arises from a quantum circuit measured in computational basis, each dimension
+    corresponds to a wire. For example, for a 2-qubit quantum circuit `prob[0, 1]` is the probability of measuring the
+    first qubit in state 0 and the second in state 1.
 
     Args:
         prob (tensor_like): 1D tensor of probabilities. This tensor should of size

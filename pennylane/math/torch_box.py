@@ -147,7 +147,8 @@ class TorchBox(qml.math.TensorBox):
 
     @wrap_output
     def scatter_element_add(self, index, value):
-        self.data = self.data.clone()
+        if self.data.is_leaf:
+            self.data = self.data.clone()
         self.data[tuple(index)] += value
         return self.data
 
