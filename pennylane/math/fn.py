@@ -163,6 +163,33 @@ def arcsin(tensor):
     return TensorBox(tensor).arcsin(wrap_output=False)
 
 
+def block_diag(values):
+    """Combine a sequence of 2D tensors to form a block diagonal tensor.
+
+    Args:
+        values (Sequence[tensor_like]): Sequence of 2D arrays/tensors to form
+            the block diagonal tensor.
+
+    Returns:
+        tensor_like: the block diagonal tensor
+
+    **Example**
+
+    >>> t = [
+    ...     np.array([[1, 2], [3, 4]]),
+    ...     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
+    ...     torch.tensor(5)
+    ... ]
+    >>> qml.math.block_diag(t)
+    tensor([[ 1,  2,  0,  0,  0,  0],
+        [ 3,  4,  0,  0,  0,  0],
+        [ 0,  0,  1,  2,  3,  0],
+        [ 0,  0, -1, -6, -3,  0],
+        [ 0,  0,  0,  0,  0,  5]])
+    """
+    return _get_multi_tensorbox(values).block_diag(values, wrap_output=False)
+
+
 def cast(tensor, dtype):
     """Casts the given tensor to a new type.
 
@@ -466,6 +493,31 @@ def flatten(tensor):
     <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
     """
     return reshape(tensor, (-1,))
+
+
+def gather(tensor, indices):
+    """Gather tensor values given a tuple of indices.
+
+    This is equivalent to the following NumPy fancy indexing:
+
+    ..code-block:: python
+
+        tensor[array(indices)]
+
+    Args:
+        tensor (tensor_like): tensor to gather from
+        indices (Sequence[int]): the indices of the values to extract
+
+    Returns:
+        tensor_like: the gathered tensor values
+
+    .. seealso::
+
+        :func:`~.take`
+
+    **Example**
+    """
+    return TensorBox(tensor).gather(np.array(indices), wrap_output=False)
 
 
 def get_interface(tensor):
