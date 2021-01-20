@@ -389,11 +389,11 @@ class DefaultTensor(Device):
                 self._free_wire_edges[l] = op_node[idx]
         elif self._rep == "mps":
             if len(wires) == 1:
-                reg = wires.labels[0]
+                reg = wires[0]
                 self.mps.apply_one_site_gate(op_node, reg)
                 self._free_wire_edges[reg] = self.mps.nodes[reg][1]
             elif len(wires) == 2:
-                if abs(wires.labels[1] - wires.labels[0]) == 1:
+                if abs(wires[1] - wires[0]) == 1:
                     # TODO: set ``max_singular_values`` or ``max_truncation_error``
                     self.mps.apply_two_site_gate(op_node, *wires.labels)
                     for reg in wires.labels:

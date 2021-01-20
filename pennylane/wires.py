@@ -231,7 +231,7 @@ class Wires(Sequence):
         return [self.index(w) for w in wires]
 
     def map(self, wire_map):
-        """Returns a new Wires object with different labels, using the rule defined in mapping.
+        """Returns a list of new labels, using the mapping rule defined in the wire map dictionary.
 
         Args:
             wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
@@ -241,24 +241,17 @@ class Wires(Sequence):
         >>> wires = Wires(['a', 'b', 'c'])
         >>> wire_map = {'a': 4, 'b':2, 'c': 3}
         >>> wires.map(wire_map)
-        <Wires = [4, 2, 3]>
+        [4, 2, 3]
+        >>> wires = Wires(['a', 'b', 'c'])
+        >>> wire_map = {0: Wires(4), 1: Wires(2)}
+        >>> wires.map(wire_map)
+        [<Wires = [4]>, <Wires = [2]>]
         """
-        # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
-
-        for w in self:
-            if w not in wire_map:
-                raise WireError(
-                    "No mapping for wire label {} specified in wire map {}.".format(w, wire_map)
-                )
-
-        new_wires = [wire_map[w] for w in self]
-
         try:
-            new_wires = Wires(new_wires)
+            new_wires = [wire_map[w] for w in self]
         except WireError as e:
             raise WireError(
-                "Failed to implement wire map {}. Make sure that the new labels are unique and "
-                "valid wire labels.".format(wire_map)
+                "Could not map wires {} with wire map {}.".format(self, wire_map)
             ) from e
 
         return new_wires

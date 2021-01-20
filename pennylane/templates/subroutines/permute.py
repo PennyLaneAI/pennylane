@@ -190,7 +190,7 @@ def Permute(permutation, wires):
             idx_there = working_order.index(permutation[idx_here])
 
             # SWAP based on the labels of the wires
-            qml.SWAP(wires=[wires.labels[idx_here], wires.labels[idx_there]])
+            qml.SWAP(wires=[wires[idx_here], wires[idx_there]])
 
             # Update the working order to account for the SWAP
             working_order[idx_here], working_order[idx_there] = (

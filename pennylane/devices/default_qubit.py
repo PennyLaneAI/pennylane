@@ -23,6 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+from collections import OrderedDict
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -145,6 +146,13 @@ class DefaultQubit(QubitDevice):
             "CZ": self._apply_cz,
         }
 
+    def define_wire_map(self, wires):
+        # HOTFIX: For speed improvement we temporarily overwrite this function only here.
+        # In the long term, this should be done in the device class
+        consecutive_wires = range(self.num_wires)
+        wire_map = zip(wires, consecutive_wires)
+        return OrderedDict(wire_map)
+
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
@@ -173,31 +181,31 @@ class DefaultQubit(QubitDevice):
             operation (~.Operation): operation to apply on the device
         """
         wires = operation.wires
+        device_wires = self.map_wires(wires)
 
         if isinstance(operation, QubitStateVector):
-            self._apply_state_vector(operation.parameters[0], wires)
+            self._apply_state_vector(operation.parameters[0], device_wires)
             return
 
         if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], wires)
+            self._apply_basis_state(operation.parameters[0], device_wires)
             return
 
         if operation.base_name in self._apply_ops:
-            axes = self.wires.indices(wires)
             self._state = self._apply_ops[operation.base_name](
-                self._state, axes, inverse=operation.inverse
+                self._state, device_wires, inverse=operation.inverse
             )
             return
 
         matrix = self._get_unitary_matrix(operation)
 
         if isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(matrix, wires)
+            self._apply_diagonal_unitary(matrix, device_wires)
         elif len(wires) <= 2:
             # Einsum is faster for small gates
-            self._apply_unitary_einsum(matrix, wires)
+            self._apply_unitary_einsum(matrix, device_wires)
         else:
-            self._apply_unitary(matrix, wires)
+            self._apply_unitary(matrix, device_wires)
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -451,9 +459,6 @@ class DefaultQubit(QubitDevice):
             device_wires (Wires): wires that get initialized in the state
         """
 
-        # translate to wire labels used by device
-        device_wires = self.map_wires(device_wires)
-
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
@@ -465,7 +470,7 @@ class DefaultQubit(QubitDevice):
 
         if (
             len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.tolist()
+            and sorted(device_wires.labels) == device_wires
         ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
@@ -476,7 +481,7 @@ class DefaultQubit(QubitDevice):
 
         # get basis states to alter on full set of qubits
         unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
+        unravelled_indices[:, list(device_wires)] = basis_states
 
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
@@ -485,16 +490,14 @@ class DefaultQubit(QubitDevice):
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
-    def _apply_basis_state(self, state, wires):
+    def _apply_basis_state(self, state, device_wires):
         """Initialize the state vector in a specified computational basis state.
 
         Args:
             state (array[int]): computational basis state of shape ``(wires,)``
                 consisting of 0s and 1s.
-            wires (Wires): wires that the provided computational state should be initialized on
+            device_wires (Wires): wires that get initialized in the state
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
 
         # length of basis state parameter
         n_basis_state = len(state)
@@ -506,35 +509,33 @@ class DefaultQubit(QubitDevice):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
+        basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
         num = int(np.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
-    def _apply_unitary(self, mat, wires):
+    def _apply_unitary(self, mat, device_wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
             mat (array): matrix to multiply
-            wires (Wires): target wires
+            device_wires (Wires): target wires
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires.labels)
+        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
         tdot = self._tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
         # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires.labels]
-        perm = list(device_wires.labels) + unused_idxs
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
+        perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         self._state = self._transpose(tdot, inv_perm)
 
-    def _apply_unitary_einsum(self, mat, wires):
+    def _apply_unitary_einsum(self, mat, device_wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -542,10 +543,8 @@ class DefaultQubit(QubitDevice):
 
         Args:
             mat (array): matrix to multiply
-            wires (Wires): target wires
+            device_wires (Wires): target wires
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
 
@@ -553,7 +552,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
         new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
@@ -578,23 +577,20 @@ class DefaultQubit(QubitDevice):
 
         self._state = self._einsum(einsum_indices, mat, self._state)
 
-    def _apply_diagonal_unitary(self, phases, wires):
+    def _apply_diagonal_unitary(self, phases, device_wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
 
         Args:
             phases (array): vector to multiply
-            wires (Wires): target wires
+            device_wires (Wires): target wires
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-
         # reshape vectors
         phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
             affected_indices=affected_indices, state_indices=state_indices

@@ -209,7 +209,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
             " instead got n_qubits={}.".format(n_qubits_min, n_qubits)
         )
 
-    pauli_wires = pauli_word.wires.map(wire_map).tolist()
+    pauli_wires = list(pauli_word.wires.map(wire_map))
 
     binary_pauli = np.zeros(2 * n_qubits)
 

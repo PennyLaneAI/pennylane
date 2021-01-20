@@ -716,7 +716,7 @@ class DefaultGaussian(Device):
 
         if operation == "Displacement":
             self._state = displacement(
-                self._state, device_wires.labels[0], par[0] * cmath.exp(1j * par[1])
+                self._state, device_wires[0], par[0] * cmath.exp(1j * par[1])
             )
             return  # we are done here
 
