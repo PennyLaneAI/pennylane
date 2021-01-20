@@ -258,7 +258,7 @@ class TestWires:
         with pytest.raises(WireError, match="Can only retrieve index"):
             wires.index(Wires([1, 2]))
         with pytest.raises(WireError, match="Can only retrieve index"):
-            wires.index(Wires(np.array([1,2])))
+            wires.index(np.array([1,2]))
         # check that error raised when wire does not exist
         with pytest.raises(WireError, match="Wire with label d not found"):
             wires.index(Wires(['d']))

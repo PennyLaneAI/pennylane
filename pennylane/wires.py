@@ -205,7 +205,7 @@ class Wires(Sequence):
 
         if isinstance(wire, np.ndarray):
             if wire.size != 1:
-                raise WireError("Can only retrieve index of a Wires object of length 1.") from e
+                raise WireError("Can only retrieve index of a numpy array of size 1.")
 
             wire = wire.item()
 
