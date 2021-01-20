@@ -25,7 +25,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.utils import get_shape
 from pennylane.wires import Wires
 
-OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
+OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"}
 
 ###################
 # helpers to define pattern wire sequences
@@ -95,26 +95,26 @@ def _preprocess(parameters, pattern, wires):
 
     # define wire sequences for patterns
     pattern_to_wires = {
-        "single": [wires[i] for i in range(len(wires))],
-        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-        "ring": wires_ring(wires),
-        "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern,
+        "single": lambda: [wires[i] for i in range(len(wires))],
+        "double": lambda: [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": lambda: [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": lambda: [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
+        "ring": lambda: wires_ring(wires),
+        "pyramid": lambda: wires_pyramid(wires),
+        "all_to_all": lambda: wires_all_to_all(wires),
+        "custom": lambda: custom_pattern,
     }
 
     # define required number of parameters
     pattern_to_num_params = {
-        "single": len(wires),
-        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
-        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
-        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
-        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
-        "custom": len(custom_pattern) if custom_pattern is not None else None,
+        "single": lambda: len(wires),
+        "double": lambda: 0 if len(wires) in [0, 1] else len(wires) // 2,
+        "double_odd": lambda: 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
+        "chain": lambda: 0 if len(wires) in [0, 1] else len(wires) - 1,
+        "ring": lambda: 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
+        "pyramid": lambda: 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
+        "all_to_all": lambda: 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+        "custom": lambda: len(custom_pattern) if custom_pattern is not None else None,
     }
 
     # check that there are enough parameters for pattern
@@ -140,14 +140,14 @@ def _preprocess(parameters, pattern, wires):
                 "the ring pattern with 2 wires is an exception and only applies one unitary"
             )
 
-        if shape[0] != pattern_to_num_params[pattern]:
+        if shape[0] != pattern_to_num_params[pattern]():
             raise ValueError(
                 "Parameters must contain entries for {} unitaries; got {} entries".format(
-                    pattern_to_num_params[pattern], shape[0]
+                    pattern_to_num_params[pattern](), shape[0]
                 )
             )
 
-    wire_sequence = pattern_to_wires[pattern]
+    wire_sequence = pattern_to_wires[pattern]()
     return wire_sequence, parameters
 
 
