@@ -70,17 +70,17 @@ class RewindTape(JacobianTape):
         jac = np.zeros((len(lambdas), len(self.trainable_params)))
 
         for i, op in enumerate(reversed(self.operations)):
-            adj = op.inv()
-            phi = device._apply_operation(phi, adj)
-
             # TODO: Only use a matrix when necessary
             d_op_matrix = operator_derivative(op)
+
+            op.inv()
+            phi = device._apply_operation(phi, op)
             mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
             jac_column = np.array([2 * np.real(dot_product(lambda_, mu)) for lambda_ in lambdas])
             jac[:, i] = jac_column
 
-            lambdas = [device._apply_operation(lambda_, adj) for lambda_ in lambdas]
+            lambdas = [device._apply_operation(lambda_, op) for lambda_ in lambdas]
 
         return np.flip(jac, axis=1)
 
@@ -91,12 +91,19 @@ def dot_product(a, b):
 
 
 def operator_derivative(operator):
-    """TODO: do this better"""
+    """TODO"""
     generator, prefactor = operator.generator
-    param = operator.parameters[0]
 
-    return (- prefactor * np.sin(param * prefactor) * np.eye(2)
-                        - 1j * prefactor * np.cos(param * prefactor) * generator.matrix).T.conj()
+    if generator is None:
+        raise ValueError(f"Operator {operator.name} does not have a generator")
+    if not isinstance(generator, np.ndarray):
+        generator = generator.matrix
+
+    if operator.inverse:
+        prefactor *= -1
+        generator = generator.conj().T
+
+    return 1j * prefactor * generator @ operator.matrix
 
 
 
