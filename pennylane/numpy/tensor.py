@@ -21,10 +21,7 @@ import autograd
 
 # Hotfix for missing asarray grad definition.
 # https://github.com/HIPS/autograd/issues/553
-autograd.extend.defvjp(
-    autograd.numpy.asarray,
-    lambda ans, *args, **kw: lambda g: g
-)
+autograd.extend.defvjp(autograd.numpy.asarray, lambda ans, *args, **kw: lambda g: g)
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
