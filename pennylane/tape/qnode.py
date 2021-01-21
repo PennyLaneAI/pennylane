@@ -483,16 +483,9 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        self.construct(args, kwargs)
-        metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
-            self.qtape, diag_approx=diag_approx
+        return metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
+            *args, **kwargs
         )
-
-        if only_construct:
-            return metric_tensor_tapes
-
-        res = [t.execute(device=self.device) for t in metric_tensor_tapes]
-        return processing_fn(res)
 
     def draw(self, charset="unicode", wire_order=None, **kwargs):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
@@ -802,7 +795,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def metric_tensor(_qnode, diag_approx=False):
+def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """metric_tensor(qnode, diag_approx=False)
     Returns a function that evaluates the value of the metric tensor
     of a given QNode.
@@ -872,8 +865,11 @@ def metric_tensor(_qnode, diag_approx=False):
     def _metric_tensor_fn(*args, **kwargs):
         _qnode.construct(args, kwargs)
         metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
-            _qnode.qtape, diag_approx=diag_approx
+            _qnode.qtape, diag_approx=diag_approx, interface=_qnode.interface
         )
+
+        if only_construct:
+            return metric_tensor_tapes
 
         res = [t.execute(device=_qnode.device) for t in metric_tensor_tapes]
         return processing_fn(res)
