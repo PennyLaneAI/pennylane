@@ -28,8 +28,10 @@ def _asarray(vals, *args, **kwargs):
     else:
         return _np.array(vals, *args, **kwargs)
 
+
 def _asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
     return lambda g: g
+
 
 defvjp(_asarray, _asarray_gradmaker, argnums=(0,))
 
