@@ -69,16 +69,22 @@ class RewindTape(JacobianTape):
 
         jac = np.zeros((len(lambdas), len(self.trainable_params)))
 
-        for i, op in enumerate(reversed(self.operations)):
+        param_number = 0
+
+        for op in reversed(self.operations):
             # TODO: Only use a matrix when necessary
-            d_op_matrix = operator_derivative(op)
+            if op.grad_method:
+                d_op_matrix = operator_derivative(op)
 
             op.inv()
             phi = device._apply_operation(phi, op)
-            mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
-            jac_column = np.array([2 * np.real(dot_product(lambda_, mu)) for lambda_ in lambdas])
-            jac[:, i] = jac_column
+            if op.grad_method:
+                mu = device._apply_unitary(phi, d_op_matrix, op.wires)
+
+                jac_column = np.array([2 * np.real(dot_product(lambda_, mu)) for lambda_ in lambdas])
+                jac[:, param_number] = jac_column
+                param_number += 1
 
             lambdas = [device._apply_operation(lambda_, op) for lambda_ in lambdas]
 
