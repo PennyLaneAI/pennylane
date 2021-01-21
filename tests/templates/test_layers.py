@@ -1069,7 +1069,7 @@ class TestParticleConservingU1:
 
         circuit(weight)
 
-        assert np.allclose(dev.state, exp_state, atol=tol)
+        assert np.allclose(circuit.device.state, exp_state, atol=tol)
 
 
     @pytest.mark.parametrize(
@@ -1129,4 +1129,4 @@ class TestParticleConservingU1:
 
         circuit(weights)
 
-        assert np.allclose(dev.state, exp_state, atol=tol)
+        assert np.allclose(circuit.device.state, exp_state, atol=tol)
