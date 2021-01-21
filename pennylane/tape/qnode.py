@@ -833,6 +833,7 @@ def _get_classical_jacobian(qnode):
 
         return _jacobian
 
+
 def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """metric_tensor(qnode, diag_approx=False)
     Returns a function that evaluates the value of the metric tensor
@@ -910,7 +911,7 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
 
         _qnode.construct(args, kwargs)
         metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
-            _qnode.qtape, diag_approx=diag_approx
+            _qnode.qtape, diag_approx=diag_approx, interface=_qnode.interface
         )
 
         if only_construct:

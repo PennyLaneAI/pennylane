@@ -218,8 +218,8 @@ class TestMetricTensor:
         )
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
-    @pytest.fixture
-    def sample_circuit(self):
+    @pytest.fixture(params=["parameter-shift", "backprop"])
+    def sample_circuit(self, request):
         """Sample variational circuit fixture used in the
         next couple of tests"""
         dev = qml.device("default.qubit", wires=3)
@@ -251,7 +251,7 @@ class TestMetricTensor:
             qml.RX(h, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        final = qml.QNode(final, dev)
+        final = qml.QNode(final, dev, diff_method=request.param)
 
         return dev, final, non_parametrized_layer, a, b, c
 
@@ -499,14 +499,15 @@ class TestMetricTensor:
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
 class TestDifferentiability:
     """Test for metric tensor differentiability"""
 
-    def test_autograd(self, tol):
+    def test_autograd(self, diff_method, tol):
         """Test metric tensor differentiability in the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -528,8 +529,11 @@ class TestDifferentiability:
         ])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_jax(self, tol):
+    def test_jax(self, diff_method, tol):
         """Test metric tensor differentiability in the JAX interface"""
+        if diff_method == "parameter-shift":
+            pytest.skip("Does not support parameter-shift")
+
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
@@ -559,13 +563,13 @@ class TestDifferentiability:
         ])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_tf(self, tol):
+    def test_tf(self, diff_method, tol):
         """Test metric tensor differentiability in the TF interface"""
         tf = pytest.importorskip("tensorflow", minversion="2.0")
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -588,13 +592,16 @@ class TestDifferentiability:
         ])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_torch(self, tol):
+    def test_torch(self, diff_method, tol):
         """Test metric tensor differentiability in the torch interface"""
+        if diff_method == "backprop":
+            pytest.skip("Does not support backprop")
+
         torch = pytest.importorskip("torch")
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
