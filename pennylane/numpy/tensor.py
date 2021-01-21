@@ -20,6 +20,14 @@ from autograd import numpy as _np
 from autograd.extend import primitive, defvjp
 import autograd
 
+from autograd.tracer import Box
+from autograd.numpy.numpy_boxes import ArrayBox
+from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
+from autograd.core import VSpace
+
+
+__doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
+
 # Hotfix since _np.asarray doesn't have a gradient rule defined.
 @primitive
 def asarray(vals, *args, **kwargs):
@@ -34,16 +42,6 @@ def asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
 
 
 defvjp(asarray, asarray_gradmaker, argnums=(0,))
-
-
-from autograd.tracer import Box
-from autograd.numpy.numpy_boxes import ArrayBox
-from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
-from autograd.core import VSpace
-
-
-__doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
-
 
 class tensor(_np.ndarray):
     """Constructs a PennyLane tensor for use with Autograd QNodes.
