@@ -353,7 +353,7 @@ class TestState:
             return state()
 
         state_val = func()
-        assert np.allclose(state_val, dev.state)
+        assert np.allclose(state_val, func.device.state)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     def test_interface_tf(self, skip_if_no_tf_support):
@@ -400,7 +400,7 @@ class TestState:
         """Test if an error is raised if the jacobian method is called via qml.grad"""
         dev = qml.device("default.qubit", wires=4)
 
-        @qnode(dev)
+        @qnode(dev, diff_method="parameter-shift")
         def func(x):
             for i in range(4):
                 qml.RX(x, wires=i)
@@ -449,7 +449,7 @@ class TestState:
 
         dev = qml.device(device, wires=4)
 
-        @qnode(dev)
+        @qnode(dev, diff_method="parameter-shift")
         def func():
             for i in range(4):
                 qml.Hadamard(i)
@@ -513,7 +513,7 @@ class TestState:
         """Test if an error is raised when custom wire labels are used"""
         dev = qml.device("default.qubit", wires=wires)
 
-        @qnode(dev)
+        @qnode(dev, diff_method="parameter-shift")
         def func():
             qml.Hadamard(wires=wires[0])
             for i in range(3):
@@ -750,7 +750,7 @@ class TestDensityMatrix:
         """Test if an error is raised when custom wire labels are used"""
         dev = qml.device(dev_name, wires=wires)
 
-        @qnode(dev)
+        @qnode(dev, diff_method="parameter-shift")
         def func():
             qml.Hadamard(wires=wires[0])
             for i in range(3):

@@ -161,6 +161,40 @@
       qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
       return qml.expval(qml.PauliZ(0))
   ```
+  
+* In tape-mode, the logic for choosing the 'best' differentiation method has been altered
+  to improve performance.
+  [(#1008)](https://github.com/PennyLaneAI/pennylane/pull/1008)
+
+  - If the device provides its own gradient, this is now the preferred
+    differentiation method.
+
+  - If a device provides additional interface-specific versions that natively support classical
+    backpropagation, this is now preferred over the parameter-shift rule.
+
+    Devices define additional interface-specific devices via their `capabilities()` dictionary. For
+    example, `default.qubit` supports supplementary devices for TensorFlow, Autograd, and JAX:
+
+    ```python
+    {
+      "passthru_devices": {
+          "tf": "default.qubit.tf",
+          "autograd": "default.qubit.autograd",
+          "jax": "default.qubit.jax",
+      },
+    }
+    ```
+
+  As a result of this change, if the QNode `diff_method` is not explicitly provided,
+  it is possible that the QNode will run on a *supplementary device* of the device that was
+  specifically provided:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  qml.QNode(dev) # will default to backprop on default.qubit.autograd
+  qml.QNode(dev, interface="tf") # will default to backprop on default.qubit.tf
+  qml.QNode(dev, interface="jax") # will default to backprop on default.qubit.jax
+  ```
 
 * Adds the new function `qml.math.cov_matrix()`. This function accepts a list of commuting
   observables, and the probability distribution in the shared observable eigenbasis after the

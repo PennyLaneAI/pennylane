@@ -235,7 +235,7 @@ class TestMottonenStatePreparation:
 
         circuit()
 
-        state = qubit_device_3_wires._state.ravel()
+        state = circuit.device.state.ravel()
         fidelity = abs(np.vdot(state, target_state))**2
 
         # We test for fidelity here, because the vector themselves will hardly match
@@ -300,7 +300,7 @@ class TestMottonenStatePreparation:
 
         circuit()
 
-        state = qubit_device_3_wires._state.ravel()
+        state = circuit.device.state.ravel()
 
         probabilities = np.abs(state)**2
         target_probabilities = np.abs(target_state)**2
@@ -447,7 +447,7 @@ class TestArbitraryStatePreparation:
 
         circuit(weights)
 
-        assert np.allclose(qubit_device_3_wires.state, GHZ_state, atol=tol, rtol=0)
+        assert np.allclose(circuit.device.state, GHZ_state, atol=tol, rtol=0)
 
     @pytest.mark.usefixtures("tape_mode")
     def test_even_superposition_generation(self, qubit_device_3_wires, tol):
@@ -467,7 +467,7 @@ class TestArbitraryStatePreparation:
 
         circuit(weights)
 
-        assert np.allclose(qubit_device_3_wires.state, even_superposition_state, atol=tol, rtol=0)
+        assert np.allclose(circuit.device.state, even_superposition_state, atol=tol, rtol=0)
 
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the

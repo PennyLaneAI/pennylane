@@ -770,6 +770,7 @@ class TestVQE:
             dev,
             optimize=True,
             interface=interface,
+            diff_method="parameter-shift"
         )
         cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
@@ -777,6 +778,7 @@ class TestVQE:
             dev,
             optimize=False,
             interface=interface,
+            diff_method="parameter-shift"
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -803,10 +805,10 @@ class TestVQE:
         hamiltonian = big_hamiltonian
 
         cost = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, diff_method="parameter-shift"
         )
         cost2 = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False, diff_method="parameter-shift"
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
