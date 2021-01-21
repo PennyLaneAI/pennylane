@@ -30,8 +30,10 @@ class NumpyBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: np.angle(self.data))
     arcsin = wrap_output(lambda self: np.arcsin(self.data))
     cast = wrap_output(lambda self, dtype: np.array(self.data, dtype=dtype))
+    diag = staticmethod(wrap_output(lambda values, k=0: np.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: np.expand_dims(self.data, axis=axis))
     ones_like = wrap_output(lambda self: np.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: np.reshape(self.data, shape))
     sqrt = wrap_output(lambda self: np.sqrt(self.data))
     sum = wrap_output(
         lambda self, axis=None, keepdims=False: np.sum(self.data, axis=axis, keepdims=keepdims)
@@ -80,6 +82,11 @@ class NumpyBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return False
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        self.data[tuple(index)] += value
+        return self.data
 
     @property
     def shape(self):

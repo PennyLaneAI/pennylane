@@ -39,8 +39,10 @@ class TensorFlowBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: tf.math.angle(self.data))
     arcsin = wrap_output(lambda self: tf.math.asin(self.data))
     cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
+    diag = staticmethod(wrap_output(lambda values, k=0: tf.linalg.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
     ones_like = wrap_output(lambda self: tf.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: tf.reshape(self.data, shape))
     sqrt = wrap_output(
         lambda self: tf.sqrt(
             tf.cast(self.data, dtype=tf.float64)
@@ -125,6 +127,13 @@ class TensorFlowBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return should_record_backprop([self.astensor(self.data)])
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        indices = tf.expand_dims(index, 0)
+        tensor = tf.cast(tf.expand_dims(value, 0), self.data.dtype)
+        self.data = tf.tensor_scatter_nd_add(self.data, indices, tensor)
+        return self.data
 
     @property
     def shape(self):
