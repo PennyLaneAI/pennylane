@@ -242,7 +242,7 @@ class OperationRecorder(Queue):
         # Code taken from https://stackoverflow.com/questions/480214
         seen = set()
         seen_add = seen.add
-        # self.queue #= [x for x in self.queue if not (x in seen or seen_add(x))]
+        self.queue = [x for x in self.queue if not (x in seen or seen_add(x))]
         self.operations = list(
             filter(
                 lambda op: not (
