@@ -17,7 +17,7 @@ This module provides the PennyLane :class:`~.tensor` class.
 import numpy as onp
 
 from autograd import numpy as _np
-
+import autograd
 # Hotfix for missing autograd definition
 autograd.extend.defvjp(
     autograd.numpy.asarray,
