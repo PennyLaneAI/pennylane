@@ -22,18 +22,18 @@ import autograd
 
 # Hotfix since _np.asarray doesn't have a gradient rule defined.
 @primitive
-def _asarray(vals, *args, **kwargs):
+def asarray(vals, *args, **kwargs):
     if isinstance(vals, (onp.ndarray, _np.ndarray)):
         return _np.asarray(vals, *args, **kwargs)
     else:
         return _np.array(vals, *args, **kwargs)
 
 
-def _asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
+def asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
     return lambda g: g
 
 
-defvjp(_asarray, _asarray_gradmaker, argnums=(0,))
+defvjp(asarray, asarray_gradmaker, argnums=(0,))
 
 
 from autograd.tracer import Box
@@ -108,7 +108,7 @@ class tensor(_np.ndarray):
     """
 
     def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
-        obj = _asarray(input_array, *args, **kwargs)
+        obj = asarray(input_array, *args, **kwargs)
 
         if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
