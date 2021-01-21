@@ -31,6 +31,7 @@ __doc__ = "NumPy with automatic differentiation support, provided by Autograd an
 # Hotfix since _np.asarray doesn't have a gradient rule defined.
 @primitive
 def asarray(vals, *args, **kwargs):
+    """Gradient supporting autograd asarray"""
     if isinstance(vals, (onp.ndarray, _np.ndarray)):
         return _np.asarray(vals, *args, **kwargs)
     else:
@@ -38,7 +39,8 @@ def asarray(vals, *args, **kwargs):
 
 
 def asarray_gradmaker(ans, *args, **kwargs):
-    del args, kwargs
+    """Gradient maker for asarray"""
+    del ans, args, kwargs
     return lambda g: g
 
 
