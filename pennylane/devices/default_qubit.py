@@ -151,8 +151,8 @@ class DefaultQubit(QubitDevice):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         try:
-            mapped_wires = wires.map(self.wire_map)
-        except WireError as e:
+            mapped_wires = [self.wire_map[w] for w in wires]
+        except KeyError as e:
             raise WireError(
                 "Did not find some of the wires {} on device with wires {}.".format(
                     wires, self.wires
