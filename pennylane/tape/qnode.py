@@ -16,6 +16,7 @@ This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
+import warnings
 
 import numpy as np
 
@@ -813,6 +814,18 @@ def metric_tensor(qnode, diag_approx=False):
     array([[ 0.04867729, -0.00049502,  0.        ],
            [ 0.        ,  0.        ,  0.        ]])
     """
+    if qnode.__class__.__name__ == "ExpvalCost":
+        if qnode._multiple_devices:
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
+                "will be used to evaluate the metric tensor."
+            )
+
+        qnode = qnode.qnodes.qnodes[0]
+
+    if not isinstance(qnode, QNode):
+        # non-tape mode QNode
+        return lambda *args, **kwargs: qnode.metric_tensor(args, kwargs, diag_approx=diag_approx)
 
     def _metric_tensor_fn(*args, **kwargs):
         qnode.construct(args, kwargs)
