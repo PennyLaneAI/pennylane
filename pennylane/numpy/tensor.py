@@ -18,7 +18,6 @@ import numpy as onp
 
 from autograd import numpy as _np
 from autograd.extend import primitive, defvjp
-import autograd
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -34,8 +33,7 @@ def asarray(vals, *args, **kwargs):
     """Gradient supporting autograd asarray"""
     if isinstance(vals, (onp.ndarray, _np.ndarray)):
         return _np.asarray(vals, *args, **kwargs)
-    else:
-        return _np.array(vals, *args, **kwargs)
+    return _np.array(vals, *args, **kwargs)
 
 
 def asarray_gradmaker(ans, *args, **kwargs):
