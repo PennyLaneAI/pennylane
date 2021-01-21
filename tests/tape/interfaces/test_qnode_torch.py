@@ -29,7 +29,7 @@ class TestQNode:
         """Test execution works without an interface"""
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev)
+        @qnode(dev, diff_method="parameter-shift")
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
