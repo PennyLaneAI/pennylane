@@ -328,7 +328,7 @@ def cov_matrix(prob, obs, wires=None):
 
         o1wires = o1.wires.labels if wires is None else wires.indices(o1.wires)
         o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
-        shared_wires = o1wires + o2wires
+        shared_wires = set(o1wires + o2wires)
 
         l1 = cast(o1.eigvals, dtype=np.float64)
         l2 = cast(o2.eigvals, dtype=np.float64)
