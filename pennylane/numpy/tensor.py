@@ -25,7 +25,7 @@ import autograd
 
 @primitive 
 def f(a, *args, **kwargs):
-    return _np.array(a)
+    return _np.asarray(a)
 
 
 autograd.extend.defvjp(
