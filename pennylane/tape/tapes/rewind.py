@@ -69,9 +69,19 @@ class RewindTape(JacobianTape):
 
         jac = np.zeros((len(lambdas), len(self.trainable_params)))
 
-        param_number = 0
-
+        expanded_ops = []
         for op in reversed(self.operations):
+            if op.num_params > 1:
+                ops = op.decomposition(*op.parameters, wires=op.wires)
+                if not all(op.generator[0] is not None and op.num_params == 1 for op in ops):
+                    raise qml.QuantumFunctionError(f"The {op.name} operation cannot be decomposed into single-parameter operations with a valid generator")
+                expanded_ops.extend(reversed(ops))
+            else:
+                expanded_ops.append(op)
+
+        param_number = 0
+        for op in expanded_ops:
+
             if op.grad_method:
                 # TODO: Only use a matrix when necessary
                 d_op_matrix = operator_derivative(op)
