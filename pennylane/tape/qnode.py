@@ -457,7 +457,9 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        return metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(*args, **kwargs)
+        return metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
+            *args, **kwargs
+        )
 
     def draw(self, charset="unicode", wire_order=None, **kwargs):
         """Draw the quantum tape as a circuit diagram.
