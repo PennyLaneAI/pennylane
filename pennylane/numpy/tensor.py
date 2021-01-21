@@ -23,12 +23,15 @@ import autograd
 # Hotfix since _np.asarray doesn't have a gradient rule defined.
 @primitive
 def _asarray(vals, *args, **kwargs):
-    return _np.asarray(vals, *args, **kwargs)
+    if isinstance(vals, (onp.ndarray, _np.ndarray)):
+        return _np.asarray(vals, *args, **kwargs)
+    else:
+        return _np.array(vals, *args, **kwargs)
 
-def asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
+def _asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
     return lambda g: g
 
-defvjp(_asarray, asarray_gradmaker, argnums=(0,))
+defvjp(_asarray, _asarray_gradmaker, argnums=(0,))
 
 
 from autograd.tracer import Box
