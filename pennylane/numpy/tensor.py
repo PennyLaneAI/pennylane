@@ -37,11 +37,13 @@ def asarray(vals, *args, **kwargs):
         return _np.array(vals, *args, **kwargs)
 
 
-def asarray_gradmaker(ans, scarray, *array_args, **array_kwargs):
+def asarray_gradmaker(ans, *args, **kwargs):
+    del args, kwargs
     return lambda g: g
 
 
 defvjp(asarray, asarray_gradmaker, argnums=(0,))
+
 
 class tensor(_np.ndarray):
     """Constructs a PennyLane tensor for use with Autograd QNodes.

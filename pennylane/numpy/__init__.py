@@ -33,8 +33,8 @@ from . import fft
 from . import linalg
 from . import random
 
-from .tensor import tensor, NonDifferentiableError, asarray
+from .tensor import tensor, NonDifferentiableError, asarray as _asarray
 
-asarray = tensor_wrapper(asarray)
+asarray = tensor_wrapper(_asarray)
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
