@@ -33,11 +33,11 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(weights):
-            qml.Rot(*weights, wires=0)
+            qml.Rot(weights[0], weights[1], weights[2], wires=0)
             return qml.expval(qml.PauliX(0))
 
         circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor([1, 2, 3], only_construct=True)
+        tapes = circuit.metric_tensor([1., 2., 3.], only_construct=True)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -74,7 +74,7 @@ class TestMetricTensor:
             m.setattr("pennylane.RX.generator", [qml.RX, 1])
 
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                circuit.metric_tensor(1, only_construct=True)
+                circuit.metric_tensor(1., only_construct=True)
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
@@ -88,7 +88,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor(1, 1, 1, only_construct=True)
+        tapes = circuit.metric_tensor(1., 1., 1., only_construct=True)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -328,7 +328,7 @@ class TestMetricTensor:
             qml.RY(y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
-            return qml.var(qml.PauliY(1)), qml.var(qml.PauliZ(2))
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
         layer2_diag = qml.QNode(layer2_diag, dev)
 
@@ -364,7 +364,7 @@ class TestMetricTensor:
         G2[0, 1] = (exK01 - exK0 * exK1) / 4
         G2[1, 0] = (exK01 - exK0 * exK1) / 4
 
-        assert np.allclose(G[3:5, 3:5], G2, atol=tol, rtol=0)
+        assert np.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
 
 
         # =============================================
@@ -392,13 +392,13 @@ class TestMetricTensor:
 
         layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
-        assert np.allclose(G[5:6, 5:6], G3, atol=tol, rtol=0)
+        assert np.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
         # Finally, double check that the entire metric
         # tensor is as computed.
 
-        G_expected = block_diag(G1, G2, G3)
+        G_expected = block_diag(G1, G3, G2)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
@@ -453,7 +453,7 @@ class TestMetricTensor:
             qml.RY(y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
-            return qml.var(qml.PauliY(1)), qml.var(qml.PauliZ(2))
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
         layer2_diag = qml.QNode(layer2_diag, dev)
 
@@ -462,7 +462,7 @@ class TestMetricTensor:
         G2[0, 0] = varK0 / 4
         G2[1, 1] = varK1 / 4
 
-        assert np.allclose(G[3:5, 3:5], G2, atol=tol, rtol=0)
+        assert np.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
 
         # =============================================
         # Test metric tensor of third layer is correct.
@@ -489,13 +489,13 @@ class TestMetricTensor:
 
         layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
-        assert np.allclose(G[5:6, 5:6], G3, atol=tol, rtol=0)
+        assert np.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
         # Finally, double check that the entire metric
         # tensor is as computed.
 
-        G_expected = block_diag(G1, G2, G3)
+        G_expected = block_diag(G1, G3, G2)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
 
@@ -543,6 +543,7 @@ class TestDifferentiability:
             qml.PhaseShift(weights[2], wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
+        circuit.interface = "jax"
 
         def cost(weights):
             return qml.metric_tensor(circuit)(weights)[2, 2]

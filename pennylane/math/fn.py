@@ -507,6 +507,30 @@ def flatten(tensor):
     return reshape(tensor, (-1,))
 
 
+def gather(tensor, indices):
+    """Gather tensor values given a tuple of indices.
+
+    This is equivalent to the following NumPy fancy indexing:
+
+    ..code-block:: python
+
+        tensor[array(indices)]
+
+    Args:
+        tensor (tensor_like): tensor to gather from
+        indices (Sequence[int]): the indices of the values to extract
+
+    Returns:
+
+        tensor_like: the gathered tensor values
+
+    .. seealso::
+
+        :func:`~.take`
+    """
+    return TensorBox(tensor).gather(np.array(indices), wrap_output=False)
+
+
 def get_interface(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
