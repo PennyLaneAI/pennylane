@@ -854,7 +854,9 @@ class QuantumTape(AnnotatedQueue):
             .TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
+            self._graph = TapeCircuitGraph(
+                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+            )
 
         return self._graph
 
