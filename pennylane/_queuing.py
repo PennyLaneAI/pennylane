@@ -52,13 +52,10 @@ class QueuingContext(abc.ABC):
             QueuingContext: This instance
         """
         QueuingContext._active_contexts.append(self)
-
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
-        if QueuingContext._active_contexts[-1] is not self:
-            raise AssertionError("Given QueuingContext is not the current one.")
         QueuingContext._active_contexts.pop()
 
     @abc.abstractmethod
@@ -241,8 +238,7 @@ class OperationRecorder(Queue):
         # Remove duplicates that might have arisen from measurements.
         # Code taken from https://stackoverflow.com/questions/480214
         seen = set()
-        seen_add = seen.add
-        self.queue = [x for x in self.queue if not (x in seen or seen_add(x))]
+        self.queue = [x for x in self.queue if not (x in seen or seen.add(x))]
         self.operations = list(
             filter(
                 lambda op: not (
