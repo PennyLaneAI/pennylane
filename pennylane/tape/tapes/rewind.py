@@ -95,7 +95,7 @@ class RewindTape(JacobianTape):
             if op.grad_method:
                 mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
-                jac_column = np.array([2 * np.real(dot_product(lambda_, mu)) for lambda_ in lambdas])
+                jac_column = np.array([2 * np.real(_dot_product(lambda_, mu)) for lambda_ in lambdas])
                 jac[:, param_number] = jac_column
                 param_number += 1
 
@@ -105,8 +105,8 @@ class RewindTape(JacobianTape):
         return np.flip(jac, axis=1)
 
 
-def dot_product(a, b):
-    """TODO"""
+def _dot_product(a: np.ndarray, b: np.ndarray) -> float:
+    """Returns the dot product (including complex conjugation) between two vectors."""
     return np.sum(a.conj() * b)
 
 
