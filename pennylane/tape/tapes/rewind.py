@@ -72,6 +72,8 @@ class RewindTape(JacobianTape):
         expanded_ops = []
         for op in reversed(self.operations):
             if op.num_params > 1:
+                if op.inverse:
+                    raise qml.QuantumFunctionError(f"Applying the inverse is not supported for {op.name}")
                 ops = op.decomposition(*op.parameters, wires=op.wires)
                 if not all(op.generator[0] is not None and op.num_params == 1 for op in ops):
                     raise qml.QuantumFunctionError(f"The {op.name} operation cannot be decomposed into single-parameter operations with a valid generator")
