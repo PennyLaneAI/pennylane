@@ -21,9 +21,9 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
+from collections import OrderedDict
 
 import numpy as np
-from collections import OrderedDict
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -150,15 +150,7 @@ class DefaultQubit(QubitDevice):
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
-        try:
-            mapped_wires = [self.wire_map[w] for w in wires]
-        except KeyError as e:
-            raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires, self.wires
-                )
-            ) from e
-
+        mapped_wires = [self.wire_map[w] for w in wires]
         return mapped_wires
 
     def define_wire_map(self, wires):
