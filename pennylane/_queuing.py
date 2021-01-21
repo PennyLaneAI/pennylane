@@ -58,7 +58,7 @@ class QueuingContext(abc.ABC):
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
         if QueuingContext._active_contexts[-1] is not self:
-            raise AssertionError("Popped queue not active queue.")
+            raise AssertionError("Given QueuingContext is not the current one.")
         QueuingContext._active_contexts.pop()
 
     @abc.abstractmethod
