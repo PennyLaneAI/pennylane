@@ -973,7 +973,8 @@ class TestDiag:
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.5]))
 
     def test_array(self):
-        """Test that sum, called without the axis arguments, returns a scalar"""
+        """Test that a NumPy array is automatically converted into
+        a diagonal tensor"""
         t = np.array([0.1, 0.2, 0.3])
         res = fn.diag(t)
         assert isinstance(res, np.ndarray)
@@ -983,7 +984,8 @@ class TestDiag:
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
     def test_tensorflow(self):
-        """Test that sum, called without the axis arguments, returns a scalar"""
+        """Test that a tensorflow tensor is automatically converted into
+        a diagonal tensor"""
         t = tf.Variable([0.1, 0.2, 0.3])
         res = fn.diag(t)
         assert isinstance(res, tf.Tensor)
@@ -993,7 +995,8 @@ class TestDiag:
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
     def test_torch(self):
-        """Test that sum, called without the axis arguments, returns a scalar"""
+        """Test that a torch tensor is automatically converted into
+        a diagonal tensor"""
         t = torch.tensor([0.1, 0.2, 0.3])
         res = fn.diag(t)
         assert isinstance(res, torch.Tensor)
@@ -1003,7 +1006,8 @@ class TestDiag:
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
     def test_jax(self):
-        """Test that sum, called without the axis arguments, returns a scalar"""
+        """Test that a jax array is automatically converted into
+        a diagonal tensor"""
         t = jnp.array([0.1, 0.2, 0.3])
         res = fn.diag(t)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
@@ -1017,13 +1021,13 @@ class TestCovMatrix:
     obs_list = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(2)]
 
     @staticmethod
-    def ansatz(weights):
+    def ansatz(weights, wires):
         """Circuit ansatz for testing"""
-        qml.RY(weights[0], wires=0)
-        qml.RX(weights[1], wires=1)
-        qml.RX(weights[2], wires=2)
-        qml.CNOT(wires=[0, 1])
-        qml.CNOT(wires=[1, 2])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RX(weights[1], wires=wires[1])
+        qml.RX(weights[2], wires=wires[2])
+        qml.CNOT(wires=[wires[0], wires[1]])
+        qml.CNOT(wires=[wires[1], wires[2]])
 
     @staticmethod
     def expected_cov(weights):
@@ -1044,6 +1048,37 @@ class TestCovMatrix:
             -np.cos(a) * np.cos(c) * np.sin(b) ** 2
         ])
 
+    def test_weird_wires(self, in_tape_mode, tol):
+        """Test that the covariance matrix computes the correct
+        result when weird wires are used"""
+        dev = qml.device("default.qubit", wires=["a", -1, "q"])
+        obs_list = [qml.PauliZ("a") @ qml.PauliZ(-1), qml.PauliY("q")]
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            """Returns the shared probability distribution of ansatz
+            in the joint basis for obs_list"""
+            self.ansatz(weights, wires=dev.wires)
+
+            for o in obs_list:
+                o.diagonalizing_gates()
+
+            return qml.probs(wires=dev.wires)
+
+        def cov(weights):
+            probs = circuit(weights)
+            return fn.cov_matrix(probs, obs_list, wires=dev.wires)
+
+        weights = np.array([0.1, 0.2, 0.3])
+        res = cov(weights)
+        expected = self.expected_cov(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        res = grad_fn(weights)
+        expected = self.expected_grad(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_autograd(self, in_tape_mode, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Autograd interface"""
@@ -1053,7 +1088,7 @@ class TestCovMatrix:
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
-            self.ansatz(weights)
+            self.ansatz(weights, wires=dev.wires)
 
             for o in self.obs_list:
                 o.diagonalizing_gates()
@@ -1083,7 +1118,7 @@ class TestCovMatrix:
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
-            self.ansatz(weights)
+            self.ansatz(weights, wires=dev.wires)
 
             for o in self.obs_list:
                 o.diagonalizing_gates()
@@ -1112,7 +1147,7 @@ class TestCovMatrix:
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
-            self.ansatz(weights)
+            self.ansatz(weights, wires=dev.wires)
 
             for o in self.obs_list:
                 o.diagonalizing_gates()
@@ -1143,7 +1178,7 @@ class TestCovMatrix:
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
-            self.ansatz(weights)
+            self.ansatz(weights, wires=dev.wires)
 
             for o in self.obs_list:
                 o.diagonalizing_gates()
