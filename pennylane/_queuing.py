@@ -59,7 +59,7 @@ class QueuingContext(abc.ABC):
         """Remove this instance from the global list of active contexts."""
         if QueuingContext._active_contexts[-1] is not self:
             raise AssertionError("Popped queue not active queue.")
-         QueuingContext._active_contexts.pop()
+        QueuingContext._active_contexts.pop()
 
     @abc.abstractmethod
     def _append(self, obj, **kwargs):
