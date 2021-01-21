@@ -18,6 +18,12 @@ import numpy as onp
 
 from autograd import numpy as _np
 
+# Hotfix for missing autograd definition
+autograd.extend.defvjp(
+    autograd.numpy.asarray,
+    lambda ans, *args, **kw: lambda g: g
+)
+
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
