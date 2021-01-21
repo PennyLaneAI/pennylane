@@ -64,6 +64,7 @@ class RewindTape(JacobianTape):
         # Perform the forward pass
         # TODO: Could we use lower-level like device.apply, since we just need the state?
         self.execute(device, params=params)
+        self.set_parameters(params)  # Could we skip this step?
         phi = device._state  # TODO: Do we need dev._state or dev.state?
 
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
