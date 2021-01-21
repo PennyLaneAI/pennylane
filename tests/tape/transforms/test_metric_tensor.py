@@ -28,6 +28,37 @@ pytestmark = pytest.mark.usefixtures("in_tape_mode")
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
+    def test_rot_decomposition(self):
+        """Test that the rotation gate is correctly decomposed"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(weights):
+            qml.Rot(*weights, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+        tapes = circuit.metric_tensor([1, 2, 3], only_construct=True)
+        assert len(tapes) == 3
+
+        # first parameter subcircuit
+        assert len(tapes[0].operations) == 0
+
+        # Second parameter subcircuit
+        assert len(tapes[1].operations) == 4
+        assert isinstance(tapes[1].operations[0], qml.RZ)
+        assert tapes[1].operations[0].data == [1]
+        # PauliY decomp
+        assert isinstance(tapes[1].operations[1], qml.PauliZ)
+        assert isinstance(tapes[1].operations[2], qml.S)
+        assert isinstance(tapes[1].operations[3], qml.Hadamard)
+
+        # Third parameter subcircuit
+        assert len(tapes[2].operations) == 2
+        assert isinstance(tapes[2].operations[0], qml.RZ)
+        assert isinstance(tapes[2].operations[1], qml.RY)
+        assert tapes[2].operations[0].data == [1]
+        assert tapes[2].operations[1].data == [2]
+
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
         operation with generator object that is not an observable"""

@@ -32,7 +32,7 @@ def metric_tensor(tape, diag_approx=False):
     """Returns a list of tapes, and a classical processing function,
     for computing the metric tensor of an input tape on hardware."""
 
-    # Only the RX, RY, RZ, and PhaseShift gates are supported.
+    # For parametrized operations, only the RX, RY, RZ, and PhaseShift gates are supported.
     # Expand out all other gates.
     tape = tape.expand(depth=2, stop_at=_stopping_critera)
 
@@ -70,6 +70,9 @@ def metric_tensor(tape, diag_approx=False):
                     "has no corresponding observable".format(gen)
                 )
 
+        # Create a quantum tape with all operations
+        # prior to the parametrized layer, and the rotations
+        # to measure in the basis of the parametrized layer generators.
         with tape.__class__() as layer_tape:
             for op in queue:
                 op.queue()
@@ -88,7 +91,7 @@ def metric_tensor(tape, diag_approx=False):
             # calculate the covariance matrix of this layer
             scale = qml.math.convert_like(np.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)
-            g = scale * qml.math.cov_matrix(prob, obs, diag_approx=diag_approx)
+            g = scale * qml.math.cov_matrix(prob, obs, wires=tape.wires, diag_approx=diag_approx)
             gs.append(g)
 
         # create the block diagonal metric tensor

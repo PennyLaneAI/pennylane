@@ -752,6 +752,12 @@ def metric_tensor(qnode, diag_approx=False):
     """Returns a function that evaluates the value of the metric tensor
     of a given QNode.
 
+    .. note::
+
+        Currently, only the :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`, and
+        :class:`~.PhaseShift` parametrized gates are supported.
+        All other parametrized gates will be decomposed if possible.
+
     Args:
         qnode (~.QNode): QNode to compute the metric tensor of
         kwargs (dict[str, Any]): auxiliary arguments
@@ -792,6 +798,8 @@ def metric_tensor(qnode, diag_approx=False):
     metric tensor of this QNode:
 
     >>> met_fn = qml.metric_tensor(circuit)
+    >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+    >>> met_fn(weights)
     tensor([[0.25  , 0.    , 0.    , 0.    ],
             [0.    , 0.25  , 0.    , 0.    ],
             [0.    , 0.    , 0.0025, 0.0024],

@@ -246,6 +246,8 @@
 
   ```pycon
   >>> met_fn = qml.metric_tensor(circuit)
+  >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+  >>> met_fn(weights)
   tensor([[0.25  , 0.    , 0.    , 0.    ],
           [0.    , 0.25  , 0.    , 0.    ],
           [0.    , 0.    , 0.0025, 0.0024],

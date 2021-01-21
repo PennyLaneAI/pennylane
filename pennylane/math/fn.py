@@ -182,10 +182,10 @@ def block_diag(values):
     ... ]
     >>> qml.math.block_diag(t)
     tensor([[ 1,  2,  0,  0,  0,  0],
-        [ 3,  4,  0,  0,  0,  0],
-        [ 0,  0,  1,  2,  3,  0],
-        [ 0,  0, -1, -6, -3,  0],
-        [ 0,  0,  0,  0,  0,  5]])
+            [ 3,  4,  0,  0,  0,  0],
+            [ 0,  0,  1,  2,  3,  0],
+            [ 0,  0, -1, -6, -3,  0],
+            [ 0,  0,  0,  0,  0,  5]])
     """
     return _get_multi_tensorbox(values).block_diag(values, wrap_output=False)
 
