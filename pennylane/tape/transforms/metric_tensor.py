@@ -95,7 +95,7 @@ def metric_tensor(tape, diag_approx=False):
             gs.append(g)
 
         # create the block diagonal metric tensor
-        metric_tensor = qml.math.block_diag(gs)
-        return metric_tensor
+        mt = qml.math.block_diag(gs)
+        return mt
 
     return metric_tensor_tapes, processing_fn

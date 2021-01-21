@@ -390,6 +390,11 @@ class DefaultQubit(QubitDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_devices={
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
         )
         return capabilities
 
