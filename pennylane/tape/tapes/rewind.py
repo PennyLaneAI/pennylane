@@ -72,8 +72,8 @@ class RewindTape(JacobianTape):
         param_number = 0
 
         for op in reversed(self.operations):
-            # TODO: Only use a matrix when necessary
             if op.grad_method:
+                # TODO: Only use a matrix when necessary
                 d_op_matrix = operator_derivative(op)
 
             op.inv()
@@ -87,6 +87,7 @@ class RewindTape(JacobianTape):
                 param_number += 1
 
             lambdas = [device._apply_operation(lambda_, op) for lambda_ in lambdas]
+            op.inv()
 
         return np.flip(jac, axis=1)
 
