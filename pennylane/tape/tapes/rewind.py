@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-TODO
+Quantum tape for implementing the gradient method outlined in https://arxiv.org/abs/2009.02823,
+referred to here as the "rewind" method.
 """
 # pylint: disable=protected-access
 import pennylane as qml
