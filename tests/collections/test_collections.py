@@ -320,7 +320,7 @@ class TestDot:
             coeffs = coeffs.numpy()
 
         expected = np.dot(coeffs, qcval)
-        assert np.all(res == expected)
+        np.testing.assert_allclose(res, expected)
 
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
     def test_dot_product_qnodes_qnodes(self, qnodes, interface, tf_support, torch_support):
