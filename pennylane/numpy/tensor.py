@@ -17,11 +17,22 @@ This module provides the PennyLane :class:`~.tensor` class.
 import numpy as onp
 
 from autograd import numpy as _np
+from autograd.extend import primitive, defvjp
 import autograd
 
 # Hotfix for missing asarray grad definition.
 # https://github.com/HIPS/autograd/issues/553
-autograd.extend.defvjp(autograd.numpy.asarray, lambda ans, *args, **kw: lambda g: g)
+
+@primitive 
+def f(a, *args, **kwargs):
+    return _np.array(a)
+
+
+autograd.extend.defvjp(
+    f,
+    lambda ans, *args, **kw: lambda g: g
+)
+
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -95,7 +106,7 @@ class tensor(_np.ndarray):
     """
 
     def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
-        obj = _np.asarray(input_array, *args, **kwargs)
+        obj = f(input_array, *args, **kwargs)
 
         if isinstance(obj, _np.ndarray):
             obj = obj.view(cls)
