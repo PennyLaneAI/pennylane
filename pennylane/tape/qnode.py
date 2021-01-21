@@ -866,7 +866,7 @@ def metric_tensor(qnode, diag_approx=False, only_construct=False):
         res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
         metric_tensor = processing_fn(res)
 
-        if perm is None or np.all(perm == np.arange(qnode.qtape.num_params)):
+        if perm is None:
             return metric_tensor
 
         # permute rows ad columns
