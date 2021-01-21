@@ -87,7 +87,7 @@ class RewindTape(JacobianTape):
 
             if op.grad_method:
                 # TODO: Only use a matrix when necessary
-                d_op_matrix = operator_derivative(op)
+                d_op_matrix = operation_derivative(op)
 
             op.inv()
             phi = device._apply_operation(phi, op)
@@ -110,25 +110,39 @@ def dot_product(a, b):
     return np.sum(a.conj() * b)
 
 
-def operator_derivative(operator):
-    """TODO"""
-    generator, prefactor = operator.generator
+def operation_derivative(operation: qml.operation.Operation) -> np.ndarray:
+    """Calculate the derivative of an operation.
+
+    For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
+    in the standard basis of its derivative with respect to :math:`t`, i.e.,
+
+    .. math:: \frac{d \, e^{i \hat{H} phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} phi t}.
+
+    Args:
+        operation (qml.Operation): The operation to be differentiated.
+
+    Returns:
+        np.ndarray: the derivative of the operation as a matrix in the standard basis
+
+    Raises:
+        ValueError: if the operation does not have a generator or is not composed of a single
+        trainable parameter
+    """
+    generator, prefactor = operation.generator
 
     if generator is None:
-        raise ValueError(f"Operator {operator.name} does not have a generator")
+        raise ValueError(f"Operation {operation.name} does not have a generator")
+    if operation.num_params != 1:
+        # Note, this case should already be caught by the previous raise since we haven't worked out
+        # how to have an operator for multiple parameters. It is added here in case of a future
+        # change
+        raise ValueError(f"Operation {operation.name} is not written in terms of a single parameter")
+
     if not isinstance(generator, np.ndarray):
         generator = generator.matrix
 
-    if operator.inverse:
+    if operation.inverse:
         prefactor *= -1
         generator = generator.conj().T
 
-    return 1j * prefactor * generator @ operator.matrix
-
-
-
-
-
-
-
-
+    return 1j * prefactor * generator @ operation.matrix
