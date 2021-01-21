@@ -236,8 +236,11 @@ class OperationRecorder(Queue):
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
 
-        # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.queue))
+        # Remove duplicates that might have arisen from measurements.
+        # Code taken from https://stackoverflow.com/questions/480214
+        seen = set()
+        seen_add = seen.add
+        self.queue = [x for x in seq if not (x in seen or seen_add(x))]
         self.operations = list(
             filter(
                 lambda op: not (
