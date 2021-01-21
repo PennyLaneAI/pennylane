@@ -164,6 +164,14 @@ def tear_down_hermitian():
     qml.Hermitian._eigs = {}
 
 
+@pytest.fixture
+def in_tape_mode():
+    """Run the test in tape mode"""
+    qml.enable_tape()
+    yield
+    qml.disable_tape()
+
+
 @pytest.fixture(params=[False, True])
 def tape_mode(request, mocker):
     """Tests using this fixture will be run twice, once in tape mode and once without."""
@@ -176,6 +184,7 @@ def tape_mode(request, mocker):
         mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
         mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
         mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True)
 
         def patched_jacobian(self, args, **kwargs):
             method = kwargs.get("method", "best")

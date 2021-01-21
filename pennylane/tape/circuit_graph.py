@@ -15,21 +15,43 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an operator and observable queue.
 """
+# pylint: disable=too-many-arguments
 import networkx as nx
 
 import pennylane as qml
-from pennylane import CircuitGraph
+from pennylane.circuit_graph import CircuitGraph, Layer
 
 
 class TapeCircuitGraph(CircuitGraph):
-    """New circuit graph object. This will eventually grow to replace
-    the existing CircuitGraph; for now, we simply inherit from the
-    current CircuitGraph, and modify the instantiation so that it
-    can be created via the quantum tape."""
+    """Represents a quantum circuit as a directed acyclic graph.
 
-    def __init__(self, ops, obs, wires):
+    This will eventually grow to replace the existing ``CircuitGraph``; for now, we simply inherit
+    from the current ``CircuitGraph``, and modify the instantiation so that it can be created via
+    the quantum tape.
+
+    In this representation the :class:`~.Operator` instances are the nodes of the graph,
+    and each directed edge represent a subsystem (or a group of subsystems) on which the two
+    Operators act subsequently. This representation can describe the causal relationships
+    between arbitrary quantum channels and measurements, not just unitary gates.
+
+    Args:
+        ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
+        obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
+        wires (.Wires): The addressable wire register of the device that will be executing this graph
+        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
+            parameter indices (in the order they appear on the tape), and values are a
+            dictionary containing the corresponding operation and operation parameter index.
+        trainable_params (set[int]): A set containing the indices of parameters that support
+            differentiability. The indices provided match the order of appearence in the
+            quantum circuit.
+    """
+
+    def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
         self._operations = ops
         self._observables = obs
+        self.par_info = par_info
+        self.trainable_params = trainable_params
+
         self._depth = None
 
         for m in self._observables:
@@ -52,6 +74,43 @@ class TapeCircuitGraph(CircuitGraph):
     def observables(self):
         """Observables in the circuit."""
         return self._observables
+
+    def update_node(self, old, new):
+        super().update_node(old, new)
+        self._operations = self.operations_in_order
+        self._observables = self.observables_in_order
+
+    @property
+    def parametrized_layers(self):
+        """Identify the parametrized layer structure of the circuit.
+
+        Returns:
+            list[Layer]: layers of the circuit
+        """
+        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0
+        # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
+        current = Layer([], [])
+        layers = [current]
+
+        for idx, info in self.par_info.items():
+            if idx in self.trainable_params:
+                op = info["op"]
+
+                # get all predecessor ops of the op
+                sub = self.ancestors((op,))
+
+                # check if any of the dependents are in the
+                # currently assembled layer
+                if set(current.ops) & sub:
+                    # operator depends on current layer, start a new layer
+                    current = Layer([], [])
+                    layers.append(current)
+
+                # store the parameters and ops indices for the layer
+                current.ops.append(op)
+                current.param_inds.append(idx)
+
+        return layers
 
     def get_depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""

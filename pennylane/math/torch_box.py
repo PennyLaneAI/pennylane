@@ -33,6 +33,7 @@ class TorchBox(qml.math.TensorBox):
     arcsin = wrap_output(lambda self: torch.asin(self.data))
     expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
     ones_like = wrap_output(lambda self: torch.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: torch.reshape(self.data, shape))
     sqrt = wrap_output(
         lambda self: torch.sqrt(
             self.data.to(torch.float64)
@@ -94,6 +95,14 @@ class TorchBox(qml.math.TensorBox):
 
     @staticmethod
     @wrap_output
+    def diag(values, k=0):
+        if isinstance(values, torch.Tensor):
+            return torch.diag(values, diagonal=k)
+
+        return torch.diag(TorchBox.stack(values).data, diagonal=k)
+
+    @staticmethod
+    @wrap_output
     def dot(x, y):
         x, y = [TorchBox.astensor(t) for t in TorchBox.unbox_list([x, y])]
         x, y = TorchBox._coerce_types([x, y])
@@ -116,6 +125,13 @@ class TorchBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return self.data.requires_grad
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        if self.data.is_leaf:
+            self.data = self.data.clone()
+        self.data[tuple(index)] += value
+        return self.data
 
     @property
     def shape(self):
