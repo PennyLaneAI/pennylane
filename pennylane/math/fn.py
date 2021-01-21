@@ -272,7 +272,6 @@ def concatenate(values, axis=0):
     """
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
-
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
@@ -330,12 +329,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
     >>> qml.grad(cost_fn)(weights)[0]
     array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
-          [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
-          [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
-
-         [[ 6.80309533e-04, -1.23162742e-03,  1.08729813e-03],
-          [-1.53863193e-01, -1.38700657e-02, -1.36243323e-01],
-          [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
+            [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
+            [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
+           [[ 6.80309533e-04, -1.23162742e-03,  1.08729813e-03],
+            [-1.53863193e-01, -1.38700657e-02, -1.36243323e-01],
+            [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
     """
     variances = []
 
@@ -359,7 +357,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         o1wires = o1.wires.labels if wires is None else wires.indices(o1.wires)
         o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
-        shared_wires = o1wires + o2wires
+        shared_wires = set(o1wires + o2wires)
 
         l1 = cast(o1.eigvals, dtype=np.float64)
         l2 = cast(o2.eigvals, dtype=np.float64)
