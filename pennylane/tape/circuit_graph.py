@@ -23,10 +23,28 @@ from pennylane.circuit_graph import CircuitGraph, Layer
 
 
 class TapeCircuitGraph(CircuitGraph):
-    """New circuit graph object. This will eventually grow to replace
-    the existing CircuitGraph; for now, we simply inherit from the
-    current CircuitGraph, and modify the instantiation so that it
-    can be created via the quantum tape."""
+    """Represents a quantum circuit as a directed acyclic graph.
+
+    This will eventually grow to replace the existing ``CircuitGraph``; for now, we simply inherit
+    from the current ``CircuitGraph``, and modify the instantiation so that it can be created via
+    the quantum tape.
+
+    In this representation the :class:`~.Operator` instances are the nodes of the graph,
+    and each directed edge represent a subsystem (or a group of subsystems) on which the two
+    Operators act subsequently. This representation can describe the causal relationships
+    between arbitrary quantum channels and measurements, not just unitary gates.
+
+    Args:
+        ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
+        obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
+        wires (.Wires): The addressable wire register of the device that will be executing this graph
+        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
+            parameter indices (in the order they appear on the tape), and values are a
+            dictionary containing the corresponding operation and operation parameter index.
+        trainable_params (set[int]): A set containing the indices of parameters that support
+            differentiability. The indices provided match the order of appearence in the
+            quantum circuit.
+    """
 
     def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
         self._operations = ops

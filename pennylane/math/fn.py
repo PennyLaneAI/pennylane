@@ -273,7 +273,7 @@ def concatenate(values, axis=0):
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
-def cov_matrix(prob, obs, diag_approx=False):
+def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
 
@@ -288,6 +288,8 @@ def cov_matrix(prob, obs, diag_approx=False):
         obs (list[.Observable]): a list of observables for which
             to compute the covariance matrix for
         diag_approx (bool): if True, return the diagonal approximation
+        wires (.Wires): The wire register of the system. If not provided,
+            it is assumed that the wires are labelled with consecutive integers.
 
     Returns:
         tensor_like: the covariance matrix of size ``(len(obs), len(obs))``
@@ -340,7 +342,8 @@ def cov_matrix(prob, obs, diag_approx=False):
     # diagonal variances
     for i, o in enumerate(obs):
         l = cast(o.eigvals, dtype=np.float64)
-        p = marginal_prob(prob, o.wires.labels)
+        w = o.wires.labels if wires is None else wires.indices(o.wires)
+        p = marginal_prob(prob, w)
 
         res = dot(l ** 2, p) - (dot(l, p)) ** 2
         variances.append(res)
@@ -354,13 +357,17 @@ def cov_matrix(prob, obs, diag_approx=False):
         o1 = obs[i]
         o2 = obs[j]
 
+        o1wires = o1.wires.labels if wires is None else wires.indices(o1.wires)
+        o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
+        shared_wires = o1wires + o2wires
+
         l1 = cast(o1.eigvals, dtype=np.float64)
         l2 = cast(o2.eigvals, dtype=np.float64)
         l12 = cast(np.kron(l1, l2), dtype=np.float64)
 
-        p1 = marginal_prob(prob, o1.wires)
-        p2 = marginal_prob(prob, o2.wires)
-        p12 = marginal_prob(prob, o1.wires + o2.wires)
+        p1 = marginal_prob(prob, o1wires)
+        p2 = marginal_prob(prob, o2wires)
+        p12 = marginal_prob(prob, shared_wires)
 
         res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
 
@@ -616,7 +623,7 @@ def ones_like(tensor, dtype=None):
     return TensorBox(tensor).ones_like(wrap_output=False)
 
 
-def reshape(tensor, shape):
+def reshape(tensor, shape):  # pylint: disable=redefined-outer-name
     """Gives a new shape to a tensor without changing its data.
 
     Args:
