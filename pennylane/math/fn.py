@@ -272,6 +272,7 @@ def concatenate(values, axis=0):
     """
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
+
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.

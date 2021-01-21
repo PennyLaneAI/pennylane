@@ -444,7 +444,9 @@ class QNode:
             return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+    def metric_tensor(
+        self, *args, diag_approx=False, only_construct=False, **kwargs
+    ):  # pylint: disable=unused-argument
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -748,8 +750,9 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def metric_tensor(qnode, diag_approx=False):
-    """Returns a function that evaluates the value of the metric tensor
+def metric_tensor(_qnode, diag_approx=False):
+    """metric_tensor(qnode, diag_approx=False)
+    Returns a function that evaluates the value of the metric tensor
     of a given QNode.
 
     .. note::
@@ -815,12 +818,12 @@ def metric_tensor(qnode, diag_approx=False):
     """
 
     def _metric_tensor_fn(*args, **kwargs):
-        qnode.construct(args, kwargs)
+        _qnode.construct(args, kwargs)
         metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
-            qnode.qtape, diag_approx=diag_approx
+            _qnode.qtape, diag_approx=diag_approx
         )
 
-        res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
+        res = [t.execute(device=_qnode.device) for t in metric_tensor_tapes]
         return processing_fn(res)
 
     return _metric_tensor_fn
