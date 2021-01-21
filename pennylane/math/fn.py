@@ -13,6 +13,8 @@
 # limitations under the License.
 """Function wrappers for the TensorBox API"""
 # pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
+from collections.abc import Sequence
+import itertools
 import warnings
 
 import numpy as np
@@ -244,6 +246,105 @@ def concatenate(values, axis=0):
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
+def cov_matrix(prob, obs, wires=None):
+    """Calculate the covariance matrix of a list of commuting observables, given
+    the joint probability distribution of the system in the shared eigenbasis.
+
+    .. note::
+        This method only works for **commuting observables.**
+        If the probability distribution is the result of a quantum circuit,
+        the quantum state must be rotated into the shared
+        eigenbasis of the list of observables before measurement.
+
+    Args:
+        prob (tensor_like): probability distribution
+        obs (list[.Observable]): a list of observables for which
+            to compute the covariance matrix for
+        wires (.Wires): The wire register of the system. If not provided,
+            it is assumed that the wires are labelled with consecutive integers.
+
+    Returns:
+        tensor_like: the covariance matrix of size ``(len(obs), len(obs))``
+
+    **Example**
+
+    Consider the following ansatz and observable list:
+
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(2)]
+    >>> ansatz = qml.templates.StronglyEntanglingLayers
+
+    We can construct a QNode to output the probability distribution in the shared eigenbasis of the
+    observables:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            ansatz(weights, wires=[0, 1, 2])
+            # rotate into the basis of the observables
+            for o in obs_list:
+                o.diagonalizing_gates()
+            return qml.probs(wires=[0, 1, 2])
+
+    We can now compute the covariance matrix:
+
+    >>> weights = qml.init.strong_ent_layers_normal(n_layers=2, n_wires=3)
+    >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
+    >>> cov
+    array([[0.98707611, 0.03665537],
+         [0.03665537, 0.99998377]])
+
+    Autodifferentiation is fully supported using all interfaces.
+    Here we use autograd:
+
+    >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
+    >>> qml.grad(cost_fn)(weights)[0]
+    array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
+            [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
+            [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
+           [[ 6.80309533e-04, -1.23162742e-03,  1.08729813e-03],
+            [-1.53863193e-01, -1.38700657e-02, -1.36243323e-01],
+            [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
+    """
+    variances = []
+
+    # diagonal variances
+    for i, o in enumerate(obs):
+        l = cast(o.eigvals, dtype=np.float64)
+        w = o.wires.labels if wires is None else wires.indices(o.wires)
+        p = marginal_prob(prob, w)
+
+        res = dot(l ** 2, p) - (dot(l, p)) ** 2
+        variances.append(res)
+
+    cov = diag(variances)
+
+    for i, j in itertools.combinations(range(len(obs)), r=2):
+        o1 = obs[i]
+        o2 = obs[j]
+
+        o1wires = o1.wires.labels if wires is None else wires.indices(o1.wires)
+        o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
+        shared_wires = set(o1wires + o2wires)
+
+        l1 = cast(o1.eigvals, dtype=np.float64)
+        l2 = cast(o2.eigvals, dtype=np.float64)
+        l12 = cast(np.kron(l1, l2), dtype=np.float64)
+
+        p1 = marginal_prob(prob, o1wires)
+        p2 = marginal_prob(prob, o2wires)
+        p12 = marginal_prob(prob, shared_wires)
+
+        res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
+
+        cov = scatter_element_add(cov, [i, j], res)
+        cov = scatter_element_add(cov, [j, i], res)
+
+    return cov
+
+
 def convert_like(tensor1, tensor2):
     """Convert a tensor to the same type as another.
 
@@ -263,6 +364,47 @@ def convert_like(tensor1, tensor2):
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
     return TensorBox(tensor2).astensor(tensor1)
+
+
+def diag(values, k=0):
+    """Construct a diagonal tensor from a list of scalars.
+
+    Args:
+        values (tensor_like or Sequence[scalar]): sequence of numeric values that
+            make up the diagonal
+        k (int): The diagonal in question. ``k=0`` corresponds to the main diagonal.
+            Use ``k>0`` for diagonals above the main diagonal, and ``k<0`` for
+            diagonals below the main diagonal.
+
+    Returns:
+        tensor_like: the 2D diagonal tensor
+
+    **Example**
+
+    >>> x = [1., 2., tf.Variable(3.)]
+    >>> diag(x)
+    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    array([[1., 0., 0.],
+           [0., 2., 0.],
+           [0., 0., 3.]], dtype=float32)>
+    >>> y = tf.Variable([0.65, 0.2, 0.1])
+    >>> diag(y, k=-1)
+    <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
+    array([[0.  , 0.  , 0.  , 0.  ],
+           [0.65, 0.  , 0.  , 0.  ],
+           [0.  , 0.2 , 0.  , 0.  ],
+           [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
+    >>> z = torch.tensor([0.1, 0.2])
+    >>> qml.diag(z, k=1)
+    >>> qml.math.diag(z, k=1)
+    tensor([[0.0000, 0.1000, 0.0000],
+            [0.0000, 0.0000, 0.2000],
+            [0.0000, 0.0000, 0.0000]])
+    """
+    if isinstance(values, Sequence):
+        return _get_multi_tensorbox(values).diag(values, k=k, wrap_output=False)
+
+    return TensorBox(values).diag(values, k=k, wrap_output=False)
 
 
 def dot(tensor1, tensor2):
@@ -315,6 +457,24 @@ def expand_dims(tensor, axis):
     return TensorBox(tensor).expand_dims(axis, wrap_output=False)
 
 
+def flatten(tensor):
+    """Flattens an N-dimensional tensor to a 1-dimensional tensor.
+
+    Args:
+        tensor (tensor_like): tensor to flatten
+
+    Returns:
+        tensor_like: the flattened tensor
+
+    **Example**
+
+    >>> x = tf.Variable([[1, 3], [2, 4]])
+    >>> flatten(x)
+    <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
+    """
+    return reshape(tensor, (-1,))
+
+
 def get_interface(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
@@ -337,6 +497,44 @@ def get_interface(tensor):
     'autograd'
     """
     return TensorBox(tensor).interface
+
+
+def marginal_prob(prob, axis):
+    """Compute the marginal probability given a joint probability distribution expressed as a tensor.
+    Each random variable corresponds to a dimension.
+
+    If the distribution arises from a quantum circuit measured in computational basis, each dimension
+    corresponds to a wire. For example, for a 2-qubit quantum circuit `prob[0, 1]` is the probability of measuring the
+    first qubit in state 0 and the second in state 1.
+
+    Args:
+        prob (tensor_like): 1D tensor of probabilities. This tensor should of size
+            ``(2**N,)`` for some integer value ``N``.
+        axis (list[int]): the axis for which to calculate the marginal
+            probability distribution
+
+    Returns:
+        tensor_like: the marginal probabilities, of
+        size ``(2**len(axis),)``
+
+    **Example**
+
+    >>> x = tf.Variable([1, 0, 0, 1.], dtype=tf.float64) / np.sqrt(2)
+    >>> marginal_prob(x, axis=[0, 1])
+    <tf.Tensor: shape=(4,), dtype=float64, numpy=array([0.70710678, 0.        , 0.        , 0.70710678])>
+    >>> marginal_prob(x, axis=[0])
+    <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.70710678, 0.70710678])>
+    """
+    prob = flatten(prob)
+    num_wires = int(np.log2(len(prob)))
+
+    if num_wires == len(axis):
+        return prob
+
+    inactive_wires = tuple(set(range(num_wires)) - set(axis))
+    prob = reshape(prob, [2] * num_wires)
+    prob = sum_(prob, axis=inactive_wires)
+    return flatten(prob)
 
 
 def toarray(tensor):
@@ -393,6 +591,33 @@ def ones_like(tensor, dtype=None):
     return TensorBox(tensor).ones_like(wrap_output=False)
 
 
+def reshape(tensor, shape):  # pylint: disable=redefined-outer-name
+    """Gives a new shape to a tensor without changing its data.
+
+    Args:
+        tensor (tensor_like): input tensor
+        shape (tuple[int]): The new shape. The special value of -1 indicates
+            that the size of that dimension is computed so that the total size
+            remains constant. A dimension of -1 can only be specified once.
+
+    Returns:
+        tensor_like: a new view into the input tensor with
+        shape ``shape``
+
+    **Example**
+
+    >>> a = tf.range(4.)
+    >>> reshape(a, (2, 2))
+    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+    array([[0., 1.],
+           [2., 3.]], dtype=float32)>
+    >>> b = torch.tensor([[0, 1], [2, 3]])
+    >>> torch.reshape(b, (-1,))
+    tensor([0, 1, 2, 3])
+    """
+    return TensorBox(tensor).reshape(shape, wrap_output=False)
+
+
 def requires_grad(tensor):
     """Returns True if the tensor is considered trainable.
 
@@ -445,6 +670,30 @@ def requires_grad(tensor):
     True
     """
     return TensorBox(tensor).requires_grad
+
+
+def scatter_element_add(tensor, index, value):
+    """Adds a scalar value to a specific index of a tensor.
+
+    This is a pure equivalent of ``tensor[index] += value``.
+
+    Args:
+        tensor (tensor_like): the input tensor to be updated
+        index (tuple[int]): the index of the input tensor to update
+        value (scalar): the scalar value to add to the tensor element
+
+    Returns:
+        tensor_like: the output tensor
+
+    **Example**
+
+    >>> x = torch.ones((2, 3))
+    >>> qml.math.scatter_element_add(x, [1, 2], 3)
+    tensor([[1., 1., 1.],
+            [1., 1., 4.]])
+    """
+    value = convert_like(value, tensor)
+    return TensorBox(tensor).scatter_element_add(index, value, wrap_output=False)
 
 
 def shape(tensor):
