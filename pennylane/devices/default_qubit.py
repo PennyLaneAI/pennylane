@@ -21,6 +21,7 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
+from collections import OrderedDict
 
 import numpy as np
 
@@ -144,6 +145,19 @@ class DefaultQubit(QubitDevice):
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
         }
+
+    def map_wires(self, wires):
+        # temporarily overwrite this method to bypass
+        # wire map that produces Wires objects
+        mapped_wires = [self.wire_map[w] for w in wires]
+        return mapped_wires
+
+    def define_wire_map(self, wires):
+        # temporarily overwrite this method to bypass
+        # wire map that produces Wires objects
+        consecutive_wires = range(self.num_wires)
+        wire_map = zip(wires, consecutive_wires)
+        return OrderedDict(wire_map)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -468,10 +482,7 @@ class DefaultQubit(QubitDevice):
         if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if (
-            len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.tolist()
-        ):
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
             return
@@ -511,7 +522,7 @@ class DefaultQubit(QubitDevice):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
+        basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
         num = int(np.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
@@ -527,15 +538,15 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires.labels)
+        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
         tdot = self._tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
         # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires.labels]
-        perm = list(device_wires.labels) + unused_idxs
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
+        perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         self._state = self._transpose(tdot, inv_perm)
 
@@ -558,7 +569,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
         new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
@@ -599,7 +610,7 @@ class DefaultQubit(QubitDevice):
         phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
             affected_indices=affected_indices, state_indices=state_indices
