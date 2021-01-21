@@ -444,9 +444,7 @@ class QNode:
             return __import__(res_type_namespace).numpy.squeeze(res)
         return __import__(res_type_namespace).squeeze(res)
 
-    def metric_tensor(
-        self, *args, diag_approx=False, only_construct=False, **kwargs
-    ):  # pylint: disable=unused-argument
+    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -470,7 +468,7 @@ class QNode:
         res = [t.execute(device=self.device) for t in metric_tensor_tapes]
         return processing_fn(res)
 
-    def draw(self, charset="unicode", wire_order=None, **kwargs):
+    def draw(self, charset="unicode", wire_order=None, **kwargs):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
         Args:
