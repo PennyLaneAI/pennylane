@@ -533,30 +533,6 @@ class ExpvalCost:
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
-        """Evaluate the value of the metric tensor.
-
-        Args:
-            args (tuple[Any]): positional (differentiable) arguments
-            kwargs (dict[str, Any]): auxiliary arguments
-            diag_approx (bool): iff True, use the diagonal approximation
-            only_construct (bool): Iff True, construct the circuits used for computing
-                the metric tensor but do not execute them, and return None.
-
-        Returns:
-            array[float]: metric tensor
-        """
-        if self._multiple_devices:
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor."
-            )
-
-        # all the qnodes share the same ansatz so we select the first
-        return qml.metric_tensor(self.qnodes.qnodes[0])(
-            *args, **kwargs, diag_approx=diag_approx, only_construct=only_construct
-        )
-
 
 class VQECost(ExpvalCost):
     """Create a cost function that gives the expectation value of an input Hamiltonian.

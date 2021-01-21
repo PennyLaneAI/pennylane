@@ -760,7 +760,7 @@ def metric_tensor(qnode, diag_approx=False):
         All other parametrized gates will be decomposed if possible.
 
     Args:
-        qnode (~.QNode): QNode to compute the metric tensor of
+        qnode (.QNode or .ExpvalCost): QNode(s) to compute the metric tensor of
         kwargs (dict[str, Any]): auxiliary arguments
         diag_approx (bool): iff True, use the diagonal approximation
         only_construct (bool): Iff True, construct the circuits used for computing
