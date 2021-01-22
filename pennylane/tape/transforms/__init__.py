@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains tape transforms.
+This subpackage contains tape transforms. These are functions that transform one or more tapes to
+other tapes are also provided.
 """
 from .metric_tensor import metric_tensor

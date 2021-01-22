@@ -29,8 +29,80 @@ def _stopping_critera(obj):
 
 
 def metric_tensor(tape, diag_approx=False, wrt=None):
-    """Returns a list of tapes, and a classical processing function,
-    for computing the metric tensor of an input tape on hardware."""
+    """Returns a list of tapes, and a classical processing function, for computing the block
+    diagronal metric tensor approximation of an input tape on hardware.
+
+    Args:
+        tape (.QuantumTape): the tape to compute the metric tensor of
+        diag_approx (bool): If ``True`` the diagonal approximation to the metric
+            tensor is computed. If ``False``, a block diagonal approximation
+            to the metric tensor is computed.
+        wrt (Sequence[int]): Indices of the tape parameters with which to
+            compute the metric tensor. Parameter indices not included are
+            treated as *fixed* parameters. Defaults to the tape's trainable
+            parameters.
+
+    Returns:
+        tuple[list[.QuantumTape], func]: Returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape results to compute the metric tensor.
+
+    **Example**
+
+    Given the following quantum tape,
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            # layer 1
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=1)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            # layer 2
+            qml.RZ(0.4, wires=0)
+            qml.RZ(0.5, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliY(2))
+
+    We can use the ``metric_tensor`` transform to generate a new tapes and a classical
+    processing function for computing the metric tensor.
+
+    >>> mt_tapes, fn = qml.tape.transforms.metric_tensor(tape)
+    >>> print(mt_tapes)
+    [<QuantumTape: wires=[0, 1, 2], params=0>, <QuantumTape: wires=[0, 1, 2], params=2>]
+    >>> print(mt_tapes[0].draw())
+     0: ──H──╭┤ Probs
+     1: ──H──├┤ Probs
+     2: ─────╰┤ Probs
+    >>> print(mt_tapes[0].draw())
+     0: ──RX(0.1)──╭C──────╭┤ Probs
+     1: ──RX(0.2)──╰X──╭C──├┤ Probs
+     2: ───────────────╰X──╰┤ Probs
+
+    We can evaluate these tapes on a device:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> res = dev.batch_execute(mt_tapes)
+    >>> print(res)
+    [array([[0.25, 0.  , 0.25, 0.  , 0.25, 0.  , 0.25, 0.  ]]),
+     array([[9.87560268e-01, 0.00000000e+00, 0.00000000e+00, 9.94181506e-03,
+             2.48960206e-05, 0.00000000e+00, 0.00000000e+00, 2.47302134e-03]])]
+
+    Applying the processing function results in the metric tensor:
+
+    >>> fn(res)
+    array([[0.25      , 0.        , 0.        , 0.        ],
+           [0.        , 0.25      , 0.        , 0.        ],
+           [0.        , 0.        , 0.00249168, 0.00244201],
+           [0.        , 0.        , 0.00244201, 0.01226071]])
+    """
 
     # For parametrized operations, only the RX, RY, RZ, and PhaseShift gates are supported.
     # Expand out all other gates.
