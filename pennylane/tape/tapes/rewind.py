@@ -94,8 +94,8 @@ class RewindTape(JacobianTape):
 
         expanded_ops = []
         for op in reversed(self.operations):
-            if op.num_params > 1 and not op.inverse:
-                if isinstance(op, qml.Rot):
+            if op.num_params > 1:
+                if isinstance(op, qml.Rot) and not op.inverse:
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
