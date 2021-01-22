@@ -69,7 +69,7 @@ class RewindTape(JacobianTape):
 
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
 
-        jac = np.zeros((len(lambdas), len(self.trainable_params)))
+        jac = np.zeros((len(self.observables), len(self.trainable_params)))
 
         expanded_ops = []
         for op in reversed(self.operations):
