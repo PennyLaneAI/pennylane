@@ -163,6 +163,33 @@ def arcsin(tensor):
     return TensorBox(tensor).arcsin(wrap_output=False)
 
 
+def block_diag(values):
+    """Combine a sequence of 2D tensors to form a block diagonal tensor.
+
+    Args:
+        values (Sequence[tensor_like]): Sequence of 2D arrays/tensors to form
+            the block diagonal tensor.
+
+    Returns:
+        tensor_like: the block diagonal tensor
+
+    **Example**
+
+    >>> t = [
+    ...     np.array([[1, 2], [3, 4]]),
+    ...     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
+    ...     torch.tensor(5)
+    ... ]
+    >>> qml.math.block_diag(t)
+    tensor([[ 1,  2,  0,  0,  0,  0],
+            [ 3,  4,  0,  0,  0,  0],
+            [ 0,  0,  1,  2,  3,  0],
+            [ 0,  0, -1, -6, -3,  0],
+            [ 0,  0,  0,  0,  0,  5]])
+    """
+    return _get_multi_tensorbox(values).block_diag(values, wrap_output=False)
+
+
 def cast(tensor, dtype):
     """Casts the given tensor to a new type.
 
@@ -246,7 +273,7 @@ def concatenate(values, axis=0):
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
 
 
-def cov_matrix(prob, obs, wires=None):
+def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
 
@@ -260,6 +287,7 @@ def cov_matrix(prob, obs, wires=None):
         prob (tensor_like): probability distribution
         obs (list[.Observable]): a list of observables for which
             to compute the covariance matrix for
+        diag_approx (bool): if True, return the diagonal approximation
         wires (.Wires): The wire register of the system. If not provided,
             it is assumed that the wires are labelled with consecutive integers.
 
@@ -320,6 +348,9 @@ def cov_matrix(prob, obs, wires=None):
         variances.append(res)
 
     cov = diag(variances)
+
+    if diag_approx:
+        return cov
 
     for i, j in itertools.combinations(range(len(obs)), r=2):
         o1 = obs[i]
@@ -473,6 +504,30 @@ def flatten(tensor):
     <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
     """
     return reshape(tensor, (-1,))
+
+
+def gather(tensor, indices):
+    """Gather tensor values given a tuple of indices.
+
+    This is equivalent to the following NumPy fancy indexing:
+
+    ..code-block:: python
+
+        tensor[array(indices)]
+
+    Args:
+        tensor (tensor_like): tensor to gather from
+        indices (Sequence[int]): the indices of the values to extract
+
+    Returns:
+
+        tensor_like: the gathered tensor values
+
+    .. seealso::
+
+        :func:`~.take`
+    """
+    return TensorBox(tensor).gather(np.array(indices), wrap_output=False)
 
 
 def get_interface(tensor):
