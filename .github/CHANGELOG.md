@@ -250,6 +250,10 @@
 
 <h3>Improvements</h3>
 
+* The `default.qubit` device has been updated so that internally it applies operations in a more
+  functional style, i.e., by accepting an input state and returning an evolved state.
+  [(#1025)](https://github.com/PennyLaneAI/pennylane/pull/1025)  
+
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
   a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
   `test_pauliz_expectation_analytic`, and `test_random_circuit`.
@@ -335,7 +339,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
+Thomas Bromley, Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
