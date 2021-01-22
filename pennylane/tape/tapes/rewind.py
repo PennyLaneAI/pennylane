@@ -67,7 +67,9 @@ class RewindTape(JacobianTape):
         """TODO"""
         # Perform the forward pass
         self.execute(device, params=params)
-        self.set_parameters(params)
+
+        if params is not None:
+            self.set_parameters(params)
 
         phi = device._reshape(device.state, [2] * device.num_wires)
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
