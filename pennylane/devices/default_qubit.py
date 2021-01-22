@@ -199,9 +199,7 @@ class DefaultQubit(QubitDevice):
 
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](
-                state, axes, inverse=operation.inverse
-            )
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._get_unitary_matrix(operation)
 
