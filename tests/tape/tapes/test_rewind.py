@@ -289,7 +289,7 @@ class TestQNodeIntegration:
 
     @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
     @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
-    def test_fanout_multiple_params(self, reused_p, other_p, tol):
+    def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker):
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""
 
@@ -310,10 +310,18 @@ class TestQNodeIntegration:
             return expval(qml.PauliZ(0))
 
         zero_state = np.array([1.0, 0.0])
+        cost(reused_p, other_p)
+
+        tape = cost.qtape
+
+        assert isinstance(tape, RewindTape)
+        spy = mocker.spy(RewindTape, "_rewind_jacobian")
 
         # analytic gradient
         grad_fn = qml.grad(cost)
         grad_A = grad_fn(reused_p, other_p)
+
+        spy.assert_called_once()
 
         # manual gradient
         grad_true0 = (
