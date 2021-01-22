@@ -837,7 +837,7 @@ def _get_classical_jacobian(_qnode):
 
 def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """metric_tensor(qnode, diag_approx=False)
-    Returns a function that evaluates the value of the metric tensor
+    Returns a function that returns the value of the metric tensor
     of a given QNode.
 
     .. note::
