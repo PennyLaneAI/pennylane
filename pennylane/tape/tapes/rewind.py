@@ -15,35 +15,48 @@
 Quantum tape for implementing the gradient method outlined in https://arxiv.org/abs/2009.02823,
 referred to here as the "rewind" method.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.devices import DefaultMixed
+
 from .jacobian_tape import JacobianTape
-import numpy as np
 
 
 class RewindTape(JacobianTape):
-    r"""TODO
+    r"""Quantum tape for computing gradients using the `rewind <https://arxiv.org/abs/2009.02823>`__
+    method.
+
+    After a forward pass, the circuit is "rewound" by iteratively applying the inverse gate to scan
+    backwards through the circuit. This method is similar to the reversible method, but has a lower
+    time overhead and a similar memory overhead.
+
+    .. note::
+
+        The rewind analytic differentation method has the following restrictions:
+
+        * As it requires knowledge of the statevector, only statevector simulator devices can be
+          used.
+
+        * Only expectation values are supported as measurements.
+
+    This class extends the :class:`~.jacobian` method of the quantum tape to support analytic
+    gradients of qubit operations using the rewind method of analytic differentiation.
+    This gradient method returns *exact* gradients, however requires use of a statevector simulator.
+    Simply create the tape, and then call the Jacobian method:
+
+    >>> tape.jacobian(dev)
+
+    For more details on the quantum tape, please see :class:`~.JacobianTape`.
     """
 
     def jacobian(self, device, params=None, **options):
-        """TODO
-
-        Args:
-            device:
-            params:
-            **options:
-
-        Returns:
-        """
-
         # The rewind tape only support differentiating expectation values of observables for now.
         for m in self.measurements:
-            if (
-                m.return_type is not qml.operation.Expectation
-            ):
+            if m.return_type is not qml.operation.Expectation:
                 raise ValueError(
-                    f"The {m.return_type.value} return type is not supported with the rewind gradient method"
+                    f"The {m.return_type.value} return type is not supported with the rewind "
+                    f"gradient method"
                 )
 
         method = options.get("method", "analytic")
@@ -59,12 +72,15 @@ class RewindTape(JacobianTape):
         supported_device = supported_device and device.capabilities().get("returns_state")
 
         if not supported_device:
-            raise qml.QuantumFunctionError("The rewind gradient method is only supported on statevector-based devices")
+            raise qml.QuantumFunctionError(
+                "The rewind gradient method is only supported on statevector-based devices"
+            )
 
         return self._rewind_jacobian(device, params=params)
 
     def _rewind_jacobian(self, device, params=None):
-        """TODO"""
+        """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
+        Jacobian."""
         # Perform the forward pass
         self.execute(device, params=params)
 
@@ -80,10 +96,15 @@ class RewindTape(JacobianTape):
         for op in reversed(self.operations):
             if op.num_params > 1:
                 if op.inverse:
-                    raise qml.QuantumFunctionError(f"Applying the inverse is not supported for {op.name}")
+                    raise qml.QuantumFunctionError(
+                        f"Applying the inverse is not supported for {op.name}"
+                    )
                 ops = op.decomposition(*op.parameters, wires=op.wires)
                 if not all(op.generator[0] is not None and op.num_params == 1 for op in ops):
-                    raise qml.QuantumFunctionError(f"The {op.name} operation cannot be decomposed into single-parameter operations with a valid generator")
+                    raise qml.QuantumFunctionError(
+                        f"The {op.name} operation cannot be decomposed into single-parameter "
+                        f"operations with a valid generator"
+                    )
                 expanded_ops.extend(reversed(ops))
             else:
                 expanded_ops.append(op)
@@ -104,7 +125,9 @@ class RewindTape(JacobianTape):
                 if param_number in self.trainable_params:
                     mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
-                    jac_column = np.array([2 * dot_product_real(lambda_, mu) for lambda_ in lambdas])
+                    jac_column = np.array(
+                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
+                    )
                     jac[:, trainable_param_number] = jac_column
                     trainable_param_number -= 1
                 param_number -= 1
@@ -141,7 +164,9 @@ def operation_derivative(operation: qml.operation.Operation) -> np.ndarray:
         # Note, this case should already be caught by the previous raise since we haven't worked out
         # how to have an operator for multiple parameters. It is added here in case of a future
         # change
-        raise ValueError(f"Operation {operation.name} is not written in terms of a single parameter")
+        raise ValueError(
+            f"Operation {operation.name} is not written in terms of a single parameter"
+        )
 
     if not isinstance(generator, np.ndarray):
         generator = generator.matrix
