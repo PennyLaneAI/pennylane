@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the RewindTape tape"""
-import numpy as np
+from pennylane import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.tape import QNode, qnode
+from pennylane.tape.measure import expval
 from pennylane.tape.tapes.rewind import operation_derivative, RewindTape
 
 
@@ -243,6 +245,127 @@ class TestRewindTapeJacobian:
         assert np.count_nonzero(grad_A) == 3
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+
+class TestQNodeIntegration:
+    """Test QNode integration with the rewind method"""
+
+    def test_qnode(self, mocker, tol):
+        """Test that specifying diff_method allows the rewind method to be selected"""
+        args = np.array([0.54, 0.1, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.RX(0.543, wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.Rot(x, y, z, wires=0)
+
+            qml.Rot(1.3, -2.3, 0.5, wires=[0])
+            qml.RZ(-0.5, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+
+            return expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        qnode1 = QNode(circuit, dev, diff_method="rewind")
+        spy = mocker.spy(RewindTape, "_rewind_jacobian")
+
+        grad_fn = qml.grad(qnode1)
+        grad_A = grad_fn(*args)
+
+        spy.assert_called()
+        assert isinstance(qnode1.qtape, RewindTape)
+
+        qnode2 = QNode(circuit, dev, diff_method="finite-diff")
+        grad_fn = qml.grad(qnode2)
+        grad_F = grad_fn(*args)
+
+        assert not isinstance(qnode2.qtape, RewindTape)
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
+
+    @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
+    @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
+    def test_fanout_multiple_params(self, reused_p, other_p, tol):
+        """Tests that the correct gradient is computed for qnodes which
+        use the same parameter in multiple gates."""
+
+        from gate_data import Rotx as Rx, Roty as Ry, Rotz as Rz
+
+        def expZ(state):
+            return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
+
+        dev = qml.device("default.qubit", wires=1)
+        extra_param = np.array(0.31, requires_grad=False)
+
+        @qnode(dev, diff_method="rewind")
+        def cost(p1, p2):
+            qml.RX(extra_param, wires=[0])
+            qml.RY(p1, wires=[0])
+            qml.RZ(p2, wires=[0])
+            qml.RX(p1, wires=[0])
+            return expval(qml.PauliZ(0))
+
+        zero_state = np.array([1.0, 0.0])
+
+        # analytic gradient
+        grad_fn = qml.grad(cost)
+        grad_A = grad_fn(reused_p, other_p)
+
+        # manual gradient
+        grad_true0 = (
+            expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        grad_true1 = (
+            expZ(
+                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        expected = grad_true0 + grad_true1  # product rule
+
+        assert np.allclose(grad_A[0], expected, atol=tol, rtol=0)
+
+    # def test_gradient_repeated_gate_parameters(self, mocker, tol):
+    #     """Tests that repeated use of a free parameter in a
+    #     multi-parameter gate yield correct gradients."""
+    #     dev = qml.device("default.qubit", wires=1)
+    #     params = np.array([0.8, 1.3], requires_grad=True)
+    #
+    #     def circuit(params):
+    #         qml.RX(np.array(np.pi / 4, requires_grad=False), wires=[0])
+    #         qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
+    #         return qml.expval(qml.PauliX(0))
+    #
+    #     spy_numeric = mocker.spy(JacobianTape, "numeric_pd")
+    #     spy_analytic = mocker.spy(ReversibleTape, "analytic_pd")
+    #
+    #     cost = QNode(circuit, dev, diff_method="finite-diff")
+    #     grad_fn = qml.grad(cost)
+    #     grad_F = grad_fn(params)
+    #
+    #     spy_numeric.assert_called()
+    #     spy_analytic.assert_not_called()
+    #
+    #     cost = QNode(circuit, dev, diff_method="reversible")
+    #     grad_fn = qml.grad(cost)
+    #     grad_A = grad_fn(params)
+    #
+    #     spy_analytic.assert_called()
+    #
+    #     # the different methods agree
+    #     assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
 
 
 class TestOperationDerivative:
