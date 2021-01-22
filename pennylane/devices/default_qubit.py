@@ -205,11 +205,11 @@ class DefaultQubit(QubitDevice):
 
         if isinstance(operation, DiagonalOperation):
             return self._apply_diagonal_unitary(state, matrix, wires)
-        elif len(wires) <= 2:
+        if len(wires) <= 2:
             # Einsum is faster for small gates
             return self._apply_unitary_einsum(state, matrix, wires)
-        else:
-            return self._apply_unitary(state, matrix, wires)
+
+        return self._apply_unitary(state, matrix, wires)
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
