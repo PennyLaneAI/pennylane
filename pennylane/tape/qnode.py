@@ -795,6 +795,45 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
+def _get_classical_jacobian(qnode):
+    """Helper function to extract the Jacobian
+    matrix of the classical part of a QNode"""
+
+    def classical_preprocessing(*args, **kwargs):
+        """Returns the trainable gate parameters for
+        a given QNode input"""
+        qnode.construct(args, kwargs)
+        return qml.math.stack(qnode.qtape.get_parameters())
+
+    if qnode.interface == "autograd":
+        return qml.jacobian(classical_preprocessing)
+
+    if qnode.interface == "torch":
+        import torch
+
+        def _jacobian(*args, **kwargs):
+            return torch.autograd.functional.jacobian(classical_preprocessing, args)
+
+        return _jacobian
+
+    if qnode.interface == "jax":
+        import jax
+
+        return jax.jacobian(classical_preprocessing)
+
+    if qnode.interface == "tf":
+        import tensorflow as tf
+
+        def _jacobian(*args, **kwargs):
+            with tf.GradientTape() as tape:
+                tape.watch(args)
+                gate_params = classical_preprocessing(*args, **kwargs)
+
+            return tape.jacobian(gate_params, args)
+
+        return _jacobian
+
+
 def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """metric_tensor(qnode, diag_approx=False)
     Returns a function that evaluates the value of the metric tensor
@@ -807,7 +846,7 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
         All other parametrized gates will be decomposed if possible.
 
     Args:
-        qnode (~.QNode): QNode to compute the metric tensor of
+        qnode (.QNode): QNode to compute the metric tensor of
         kwargs (dict[str, Any]): auxiliary arguments
         diag_approx (bool): iff True, use the diagonal approximation
         only_construct (bool): Iff True, construct the circuits used for computing
@@ -863,6 +902,13 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """
 
     def _metric_tensor_fn(*args, **kwargs):
+        try:
+            jac = qml.math.stack(_get_classical_jacobian(qnode)(*args, **kwargs))
+            jac = qml.math.reshape(jac, [qnode.qtape.num_params, -1])
+            perm = np.argsort(np.argsort(np.nonzero(qml.math.toarray(jac))[1]))
+        except:
+            perm = None
+
         _qnode.construct(args, kwargs)
         metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
             _qnode.qtape, diag_approx=diag_approx, interface=_qnode.interface
@@ -872,7 +918,15 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
             return metric_tensor_tapes
 
         res = [t.execute(device=_qnode.device) for t in metric_tensor_tapes]
-        return processing_fn(res)
+        metric_tensor = processing_fn(res)
+
+        if perm is None:
+            return metric_tensor
+
+        # permute rows ad columns
+        metric_tensor = qml.math.gather(metric_tensor, perm)
+        metric_tensor = qml.math.gather(qml.math.T(metric_tensor), perm)
+        return metric_tensor
 
     return _metric_tensor_fn
 

@@ -364,6 +364,20 @@ class TensorBox(abc.ABC):
                 dimensions should be inserted
         """
 
+    @abc.abstractmethod
+    def gather(self, indices):
+        """Gather tensor values given a tuple of indices.
+
+        This is equivalent to the following NumPy fancy indexing:
+
+        ..code-block:: python
+
+            tensor[indices]
+
+        Args:
+            indices (Sequence[int]): the indices of the values to extract
+        """
+
     @property
     @abc.abstractmethod
     def interface(self):
