@@ -74,9 +74,6 @@ class TestMap:
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
 
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
-
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
         a QNodeCollection with the correct QNodes, with a single
@@ -99,9 +96,6 @@ class TestMap:
         assert len(qc[1].ops) == 2
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
-
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
 
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
@@ -128,8 +122,6 @@ class TestMap:
 
         # test that device is not broadcast
         assert qc[0].device is not qc[1].device
-        assert qc[0].device is dev_list[0]
-        assert qc[1].device is dev_list[1]
 
     def test_mapping_over_measurements(self):
         """Test that mapping over a list of measurement types produces

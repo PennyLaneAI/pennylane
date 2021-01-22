@@ -633,7 +633,12 @@ class QubitDevice(Device):
         prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        # hotfix to catch when default.qubit uses this method
+        # since then device_wires is a list
+        if isinstance(inactive_device_wires, Wires):
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        else:
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -675,7 +680,7 @@ class QubitDevice(Device):
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, device_wires.labels[0]]
+            return 1 - 2 * self._samples[:, device_wires[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
