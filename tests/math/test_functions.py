@@ -1265,3 +1265,61 @@ class TestCovMatrix:
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
+
+
+block_diag_data = [
+    [
+        onp.array([[1, 2], [3, 4]]),
+        torch.tensor([[1, 2], [-1, -6]]),
+        torch.tensor([[5]])
+    ],
+    [
+        onp.array([[1, 2], [3, 4]]),
+        tf.Variable([[1, 2], [-1, -6]]),
+        tf.constant([[5]])
+    ],
+    [
+        np.array([[1, 2], [3, 4]]),
+        np.array([[1, 2], [-1, -6]]),
+        np.array([[5]])
+    ],
+    [
+        jnp.array([[1, 2], [3, 4]]),
+        jnp.array([[1, 2], [-1, -6]]),
+        jnp.array([[5]])
+    ]
+]
+
+
+@pytest.mark.parametrize("tensors", block_diag_data)
+def test_block_diag(tensors):
+    """Tests for the block diagonal function"""
+    res = fn.block_diag(tensors)
+    expected = np.array([
+       [ 1,  2,  0,  0,  0],
+       [ 3,  4,  0,  0,  0],
+       [ 0,  0,  1,  2,  0],
+       [ 0,  0, -1, -6,  0],
+       [ 0,  0,  0,  0,  5]
+    ])
+    assert fn.allclose(res, expected)
+
+
+gather_data = [
+    torch.tensor([[1, 2, 3], [-1, -6, -3]]),
+    tf.Variable([[1, 2, 3], [-1, -6, -3]]),
+    jnp.array([[1, 2, 3], [-1, -6, -3]]),
+    np.array([[1, 2, 3], [-1, -6, -3]])
+]
+
+
+@pytest.mark.parametrize("tensor", gather_data)
+def test_gather(tensor):
+    """Tests for the gather function"""
+    indices = [1, 0]
+    res = fn.gather(tensor, indices)
+    expected = np.array([
+        [-1, -6, -3],
+        [ 1,  2,  3]
+    ])
+    assert fn.allclose(res, expected)

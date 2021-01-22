@@ -490,29 +490,11 @@ class ExpvalCost:
         """Bool: Records if multiple devices are input"""
 
         tape_mode = qml.tape_mode_active()
-        if tape_mode:
-
-            d = device[0] if self._multiple_devices else device
-            w = d.wires.tolist()
-
-            try:
-                qml.disable_tape()
-
-                @qml.qnode(d, interface=interface, diff_method=diff_method, **kwargs)
-                def qnode_for_metric_tensor_in_tape_mode(*qnode_args, **qnode_kwargs):
-                    """The metric tensor cannot currently be calculated in tape-mode QNodes. As a
-                    short-term fix for ExpvalCost, we create a non-tape mode QNode just for
-                    calculation of the metric tensor. In doing so, we reintroduce the same
-                    restrictions of the old QNode but allow users to access new functionality
-                    such as measurement grouping and batch execution of the gradient."""
-                    ansatz(*qnode_args, wires=w, **qnode_kwargs)
-                    return qml.expval(qml.PauliZ(0))
-
-                self._qnode_for_metric_tensor_in_tape_mode = qnode_for_metric_tensor_in_tape_mode
-            finally:
-                qml.enable_tape()
-
         self._optimize = optimize
+
+        self.qnodes = qml.map(
+            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
+        )
 
         if self._optimize:
             if not tape_mode:
@@ -526,6 +508,8 @@ class ExpvalCost:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
+            d = device[0] if self._multiple_devices else device
+            w = d.wires.tolist()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(*qnode_args, obs, **qnode_kwargs):
@@ -544,43 +528,10 @@ class ExpvalCost:
             self.cost_fn = cost_fn
 
         else:
-            self.qnodes = qml.map(
-                ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
-            )
-
             self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
-
-    def metric_tensor(self, args, kwargs=None, diag_approx=False, only_construct=False):
-        """Evaluate the value of the metric tensor.
-
-        Args:
-            args (tuple[Any]): positional (differentiable) arguments
-            kwargs (dict[str, Any]): auxiliary arguments
-            diag_approx (bool): iff True, use the diagonal approximation
-            only_construct (bool): Iff True, construct the circuits used for computing
-                the metric tensor but do not execute them, and return None.
-
-        Returns:
-            array[float]: metric tensor
-        """
-        if self._multiple_devices:
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor."
-            )
-
-        if qml.tape_mode_active():
-            return self._qnode_for_metric_tensor_in_tape_mode.metric_tensor(
-                args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
-            )
-
-        # all the qnodes share the same ansatz so we select the first
-        return self.qnodes.qnodes[0].metric_tensor(
-            args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
-        )
 
 
 class VQECost(ExpvalCost):

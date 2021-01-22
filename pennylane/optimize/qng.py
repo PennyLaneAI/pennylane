@@ -16,6 +16,7 @@
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
@@ -173,7 +174,10 @@ class QNGOptimizer(GradientDescentOptimizer):
                 prior to the step
         """
         # pylint: disable=arguments-differ
-        if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
+        if (
+            not isinstance(qnode, (qml.tape.QNode, qml.qnodes.BaseQNode, qml.ExpvalCost))
+            and metric_tensor_fn is None
+        ):
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
                 "an ExpvalCost object for the natural gradient to be automatically computed. "
@@ -181,11 +185,11 @@ class QNGOptimizer(GradientDescentOptimizer):
             )
 
         if recompute_tensor or self.metric_tensor is None:
-            if not metric_tensor_fn:
+            if metric_tensor_fn is None:
                 # pseudo-inverse metric tensor
-                self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
+                self.metric_tensor = qml.metric_tensor(qnode, diag_approx=self.diag_approx)(x)
             else:
-                self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
+                self.metric_tensor = metric_tensor_fn(x)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         # The QNGOptimizer.step does not permit passing an external gradient function.
