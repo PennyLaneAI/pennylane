@@ -19,6 +19,62 @@ import pennylane as qml
 from pennylane.tape.tapes.rewind import operation_derivative, RewindTape
 
 
+class TestRewindTapeRaises:
+    """Tests for the possible raises thrown by RewindTape"""
+
+    def test_not_expval(self):
+        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
+        expectation values"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        with RewindTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The var return type is not supported"):
+            tape.jacobian(dev)
+
+    def test_no_apply_operation(self):
+        """Test if a QuantumFunctionError is raised when using a device without an _apply_method
+        method"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        with RewindTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The rewind gradient method is only"):
+            tape.jacobian(dev)
+
+    def test_no_apply_unitary(self):
+        """Test if a QuantumFunctionError is raised when using a device without an _apply_unitary
+        method"""
+        dev = qml.device("default.gaussian", wires=1)
+        dev._apply_operation = None
+
+        with RewindTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The rewind gradient method is only"):
+            tape.jacobian(dev)
+
+    def test_no_returns_state(self):
+        """Test if a QuantumFunctionError is raised when using a device without an _apply_unitary
+        method"""
+        dev = qml.device("default.gaussian", wires=1)
+        dev._apply_operation = None
+        dev._apply_unitary = None
+
+        with RewindTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The rewind gradient method is only"):
+            tape.jacobian(dev)
+
+
 class TestRewindTapeJacobian:
     """Tests for the jacobian method of RewindTape"""
 

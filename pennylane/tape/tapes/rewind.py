@@ -54,7 +54,7 @@ class RewindTape(JacobianTape):
         # The rewind tape only support differentiating expectation values of observables for now.
         for m in self.measurements:
             if m.return_type is not qml.operation.Expectation:
-                raise ValueError(
+                raise qml.QuantumFunctionError(
                     f"The {m.return_type.value} return type is not supported with the rewind "
                     f"gradient method"
                 )
