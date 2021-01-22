@@ -37,7 +37,8 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0))
 
         circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor([1., 2., 3.], only_construct=True)
+        params = np.array([1., 2., 3.])
+        tapes = qml.metric_tensor(circuit, only_construct=True)(params)
         assert len(tapes) == 3
 
         # first parameter subcircuit

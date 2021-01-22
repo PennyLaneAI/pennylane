@@ -902,31 +902,30 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     """
 
     def _metric_tensor_fn(*args, **kwargs):
-        try:
-            jac = qml.math.stack(_get_classical_jacobian(qnode)(*args, **kwargs))
-            jac = qml.math.reshape(jac, [qnode.qtape.num_params, -1])
-            perm = np.argsort(np.argsort(np.nonzero(qml.math.toarray(jac))[1]))
-        except:
-            perm = None
+        jac = qml.math.stack(_get_classical_jacobian(_qnode)(*args, **kwargs))
+        jac = qml.math.reshape(jac, [_qnode.qtape.num_params, -1])
+
+        wrt, perm = np.nonzero(qml.math.toarray(jac))
+        perm = np.argsort(np.argsort(perm))
 
         _qnode.construct(args, kwargs)
+
         metric_tensor_tapes, processing_fn = qml.tape.transforms.metric_tensor(
-            _qnode.qtape, diag_approx=diag_approx, interface=_qnode.interface
+            _qnode.qtape,
+            diag_approx=diag_approx,
+            wrt=wrt.tolist() if _qnode.diff_options["method"] == "backprop" else None,
         )
 
         if only_construct:
             return metric_tensor_tapes
 
         res = [t.execute(device=_qnode.device) for t in metric_tensor_tapes]
-        metric_tensor = processing_fn(res)
-
-        if perm is None:
-            return metric_tensor
+        mt = processing_fn(res)
 
         # permute rows ad columns
-        metric_tensor = qml.math.gather(metric_tensor, perm)
-        metric_tensor = qml.math.gather(qml.math.T(metric_tensor), perm)
-        return metric_tensor
+        mt = qml.math.gather(mt, perm)
+        mt = qml.math.gather(qml.math.T(mt), perm)
+        return mt
 
     return _metric_tensor_fn
 

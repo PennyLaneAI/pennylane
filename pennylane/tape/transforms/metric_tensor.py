@@ -28,28 +28,16 @@ def _stopping_critera(obj):
     return False
 
 
-def metric_tensor(tape, diag_approx=False, interface=None):
+def metric_tensor(tape, diag_approx=False, wrt=None):
     """Returns a list of tapes, and a classical processing function,
     for computing the metric tensor of an input tape on hardware."""
 
     # For parametrized operations, only the RX, RY, RZ, and PhaseShift gates are supported.
     # Expand out all other gates.
-
     tape = tape.expand(depth=2, stop_at=_stopping_critera)
 
-    if not hasattr(tape, "__bare__"):
-        if interface == "autograd":
-            from pennylane.tape.interfaces.autograd import AutogradInterface
-
-            AutogradInterface._update_trainable_params(tape)
-        elif interface == "torch":
-            from pennylane.tape.interfaces.torch import TorchInterface
-
-            TorchInterface._update_trainable_params(tape)
-        elif interface == "tf":
-            from pennylane.tape.interfaces.tf import TFInterface
-
-            TFInterface._update_trainable_params(tape)
+    if wrt is not None:
+        tape.trainable_params = set(wrt)
 
     # get the circuit graph
     graph = tape.graph
@@ -110,7 +98,6 @@ def metric_tensor(tape, diag_approx=False, interface=None):
             gs.append(g)
 
         # create the block diagonal metric tensor
-        mt = qml.math.block_diag(gs)
-        return mt
+        return qml.math.block_diag(gs)
 
     return metric_tensor_tapes, processing_fn
