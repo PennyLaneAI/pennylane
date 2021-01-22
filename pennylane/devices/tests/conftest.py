@@ -298,7 +298,7 @@ def tape_mode(request, mocker):
             "pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True
         )
 
-        def patched_jacobian(self, args, **kwargs):
+        def patched_jacobian(self, args, **kwargs): # pylint: disable=unused-argument
             method = kwargs.get("method", "best")
 
             if method == "A":
