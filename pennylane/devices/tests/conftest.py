@@ -264,14 +264,6 @@ def pytest_runtest_makereport(item, call):
     return tr
 
 
-@pytest.fixture
-def in_tape_mode():
-    """Run the test in tape mode"""
-    qml.enable_tape()
-    yield
-    qml.disable_tape()
-
-
 @pytest.fixture(params=[False, True])
 def tape_mode(request, mocker):
     """Tests using this fixture will be run twice, once in tape mode and once without."""
