@@ -23,6 +23,7 @@ import warnings
 import pennylane as qml
 
 from . import measure
+from . import transforms
 from .circuit_graph import TapeCircuitGraph
 from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import MeasurementProcess, state, density_matrix
