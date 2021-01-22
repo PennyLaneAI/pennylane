@@ -88,6 +88,10 @@ class RewindTape(JacobianTape):
             self.set_parameters(params)
 
         phi = device._reshape(device.state, [2] * device.num_wires)
+
+        for obs in self.observables:  # This is needed for when the observable is a tensor product
+            if not hasattr(obs, "base_name"):
+                obs.base_name = None
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
 
         jac = np.zeros((len(self.observables), len(self.trainable_params)))
