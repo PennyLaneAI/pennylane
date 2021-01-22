@@ -94,24 +94,13 @@ class RewindTape(JacobianTape):
 
         expanded_ops = []
         for op in reversed(self.operations):
-            if op.num_params > 1:
-                if op.inverse:
-                    raise qml.QuantumFunctionError(
-                        f"Applying the inverse is not supported for {op.name}"
-                    )
-                ops = op.decomposition(*op.parameters, wires=op.wires)
-
-                valid_decomposition = True
-                for op in ops:
-                    if (op.num_params == 1 and op.generator[0] is None) or (op.num_params > 1):
-                        valid_decomposition = False
-
-                if not valid_decomposition:
-                    raise qml.QuantumFunctionError(
-                        f"The {op.name} operation cannot be decomposed into single-parameter "
-                        f"operations with a valid generator"
-                    )
-                expanded_ops.extend(reversed(ops))
+            if op.num_params > 1 and not op.inverse:
+                if isinstance(op, qml.Rot):
+                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    expanded_ops.extend(reversed(ops))
+                else:
+                    raise qml.QuantumFunctionError("The {op.name} operation is not supported using "
+                                                   'the "rewind" differentiation method')
             else:
                 expanded_ops.append(op)
 
