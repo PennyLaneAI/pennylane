@@ -123,7 +123,7 @@ class TestRewindTapeJacobian:
 
     qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
     analytic_qubit_ops = {cls for cls in qubit_ops if cls.grad_method == "A"}
-    analytic_qubit_ops = analytic_qubit_ops - {
+    analytic_qubit_ops -= {
         qml.CRot,  # not supported for RewindTape
         qml.PauliRot,  # not supported in test
         qml.MultiRZ,  # not supported in test
@@ -148,22 +148,17 @@ class TestRewindTapeJacobian:
 
             qml.Rot(1.3, -2.3, 0.5, wires=[0])
             qml.RZ(-0.5, wires=0)
-            qml.RY(0.5, wires=1)
+            qml.RY(0.5, wires=1).inv()
             qml.CNOT(wires=[0, 1])
 
             qml.expval(obs(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
         dev = qml.device("default.qubit", wires=2)
-        res = tape.execute(dev)
+        tape.execute(dev)
 
-        # tape._update_gradient_info()
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
-        # # check that every parameter is analytic
-        # for i in range(op.num_params):
-        #     assert tape._par_info[1 + i]["grad_method"][0] == "A"
-        #
         grad_F = tape.jacobian(dev, method="numeric")
 
         spy = mocker.spy(RewindTape, "_rewind_jacobian")
@@ -171,7 +166,7 @@ class TestRewindTapeJacobian:
         spy.assert_called()
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-    def test_grfadient_gate_with_multiple_parameters(self, tol):
+    def test_gradient_gate_with_multiple_parameters(self, tol):
         """Tests that gates with multiple free parameters yield correct gradients."""
         x, y, z = [0.5, 0.3, -0.7]
 
@@ -192,7 +187,6 @@ class TestRewindTapeJacobian:
         assert np.count_nonzero(grad_A) == 3
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
-
 
 
 class TestOperationDerivative:
