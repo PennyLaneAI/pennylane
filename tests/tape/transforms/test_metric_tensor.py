@@ -28,7 +28,8 @@ pytestmark = pytest.mark.usefixtures("in_tape_mode")
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
-    def test_rot_decomposition(self):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_rot_decomposition(self, diff_method):
         """Test that the rotation gate is correctly decomposed"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -36,7 +37,7 @@ class TestMetricTensor:
             qml.Rot(weights[0], weights[1], weights[2], wires=0)
             return qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev)
+        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = np.array([1., 2., 3.])
         tapes = qml.metric_tensor(circuit, only_construct=True)(params)
         assert len(tapes) == 3
@@ -59,6 +60,43 @@ class TestMetricTensor:
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert tapes[2].operations[0].data == [1]
         assert tapes[2].operations[1].data == [2]
+
+        result = qml.metric_tensor(circuit)(params)
+        assert result.shape == (3, 3)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_multirz_decomposition(self, diff_method):
+        """Test that the MultiRZ gate is correctly decomposed"""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.MultiRZ(b, wires=[0, 1, 2])
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
+        params = [0.1, 0.2]
+        result = qml.metric_tensor(circuit)(*params)
+        assert result.shape == (2, 2)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_parameter_fan_out(self, diff_method):
+        """The metric tensor is always with respect to the quantum circuit. Any
+        classical processing is not taken into account. As a result, if there is
+        parameter fan-out, the returned metric tensor will be larger than
+        expected.
+        """
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(a):
+            qml.RX(a, wires=0)
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
+        params = [0.1]
+        result = qml.metric_tensor(circuit)(*params)
+        assert result.shape == (2, 2)
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
