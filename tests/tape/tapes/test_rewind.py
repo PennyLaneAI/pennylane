@@ -124,12 +124,12 @@ class TestRewindTapeJacobian:
     qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
     analytic_qubit_ops = {cls for cls in qubit_ops if cls.grad_method == "A"}
     analytic_qubit_ops = analytic_qubit_ops - {
-        qml.CRot,
-        qml.PauliRot,
-        qml.MultiRZ,
-        qml.U1,
-        qml.U2,
-        qml.U3,
+        qml.CRot,  # not supported for RewindTape
+        qml.PauliRot,  # not supported in test
+        qml.MultiRZ,  # not supported in test
+        qml.U1,  # not supported on device
+        qml.U2,  # not supported on device
+        qml.U3,  # not supported on device
     }
 
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
