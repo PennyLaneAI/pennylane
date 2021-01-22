@@ -186,7 +186,7 @@ def tape_mode(request, mocker):
         mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
         mocker.patch("pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True)
 
-        def patched_jacobian(self, args, **kwargs):
+        def patched_jacobian(self, *args, **kwargs):
             method = kwargs.get("method", "best")
 
             if method == "A":
