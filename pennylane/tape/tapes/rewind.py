@@ -90,26 +90,29 @@ class RewindTape(JacobianTape):
 
         dot_product_real = lambda a, b: device._real(qml.math.sum(device._conj(a) * b))
 
-        param_number = 0
+        param_number = len(self._par_info) - 1
+        trainable_param_number = len(self.trainable_params) - 1
         for op in expanded_ops:
 
-            if op.grad_method:
+            if op.grad_method and param_number in self.trainable_params:
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
             phi = device._apply_operation(phi, op)
 
             if op.grad_method:
-                mu = device._apply_unitary(phi, d_op_matrix, op.wires)
+                if param_number in self.trainable_params:
+                    mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
-                jac_column = np.array([2 * dot_product_real(lambda_, mu) for lambda_ in lambdas])
-                jac[:, param_number] = jac_column
-                param_number += 1
+                    jac_column = np.array([2 * dot_product_real(lambda_, mu) for lambda_ in lambdas])
+                    jac[:, trainable_param_number] = jac_column
+                    trainable_param_number -= 1
+                param_number -= 1
 
             lambdas = [device._apply_operation(lambda_, op) for lambda_ in lambdas]
             op.inv()
 
-        return np.flip(jac, axis=1)
+        return jac
 
 
 def operation_derivative(operation: qml.operation.Operation) -> np.ndarray:
