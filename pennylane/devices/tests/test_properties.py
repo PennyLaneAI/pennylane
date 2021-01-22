@@ -18,6 +18,8 @@ import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane._device import DeviceError
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
 try:
     import tensorflow as tf
 
