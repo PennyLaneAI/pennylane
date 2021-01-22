@@ -63,6 +63,8 @@ def operation_expand(self):
         operations decomposition, or if not implemented, simply
         the operation itself.
     """
+    # TODO: rename the following usage of JacobianTape to better describe that
+    # it's used for operation expansion
     tape = qml.tape.JacobianTape()
 
     with tape:
