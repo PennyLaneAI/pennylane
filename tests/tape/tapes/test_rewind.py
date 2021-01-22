@@ -80,11 +80,15 @@ class TestRewindTapeRaises:
 class TestRewindTapeJacobian:
     """Tests for the jacobian method of RewindTape"""
 
+    @pytest.fixture
+    def dev(self):
+        return qml.device('default.qubit', wires=2)
+
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
-    def test_pauli_rotation_gradient(self, G, theta, tol):
+    def test_pauli_rotation_gradient(self, G, theta, tol, dev):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        dev = qml.device("default.qubit", wires=1)
 
         with RewindTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
@@ -100,9 +104,8 @@ class TestRewindTapeJacobian:
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
-    def test_Rot_gradient(self, theta, tol):
+    def test_Rot_gradient(self, theta, tol, dev):
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
-        dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with RewindTape() as tape:
@@ -119,7 +122,7 @@ class TestRewindTapeJacobian:
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("par", [1, -2, 1.623, -0.051, 0])  # integers, floats, zero
-    def test_ry_gradient(self, par, tol):
+    def test_ry_gradient(self, par, tol, dev):
         """Test that the gradient of the RY gate matches the exact analytic formula."""
 
         with RewindTape() as tape:
@@ -127,8 +130,6 @@ class TestRewindTapeJacobian:
             qml.expval(qml.PauliX(0))
 
         tape.trainable_params = {0}
-
-        dev = qml.device("default.qubit", wires=1)
 
         # gradients
         exact = np.cos(par)
@@ -139,9 +140,8 @@ class TestRewindTapeJacobian:
         assert np.allclose(grad_F, exact, atol=tol, rtol=0)
         assert np.allclose(grad_A, exact, atol=tol, rtol=0)
 
-    def test_rx_gradient(self, tol):
+    def test_rx_gradient(self, tol, dev):
         """Test that the gradient of the RX gate matches the known formula."""
-        dev = qml.device("default.qubit", wires=2)
         a = 0.7418
 
         with RewindTape() as tape:
@@ -192,7 +192,7 @@ class TestRewindTapeJacobian:
 
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
     @pytest.mark.parametrize("op", analytic_qubit_ops)
-    def test_gradients(self, op, obs, mocker, tol):
+    def test_gradients(self, op, obs, mocker, tol, dev):
         """Tests that the gradients of circuits match between the
         finite difference and analytic methods."""
         args = np.linspace(0.2, 0.5, op.num_params)
@@ -212,7 +212,6 @@ class TestRewindTapeJacobian:
             qml.expval(obs(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
-        dev = qml.device("default.qubit", wires=2)
         tape.execute(dev)
 
         tape.trainable_params = set(range(1, 1 + op.num_params))
@@ -224,7 +223,7 @@ class TestRewindTapeJacobian:
         spy.assert_called()
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-    def test_gradient_gate_with_multiple_parameters(self, tol):
+    def test_gradient_gate_with_multiple_parameters(self, tol, dev):
         """Tests that gates with multiple free parameters yield correct gradients."""
         x, y, z = [0.5, 0.3, -0.7]
 
@@ -236,7 +235,6 @@ class TestRewindTapeJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        dev = qml.device("default.qubit", wires=1)
         grad_A = tape.jacobian(dev, method="analytic")
         grad_F = tape.jacobian(dev, method="numeric")
 
