@@ -902,7 +902,7 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
            [ 0.        ,  0.        ,  0.        ]])
     """
     if _qnode.__class__.__name__ == "ExpvalCost":
-        if _qnode._multiple_devices:
+        if _qnode._multiple_devices:  # pylint: disable=protected-access
             warnings.warn(
                 "ExpvalCost was instantiated with multiple devices. Only the first device "
                 "will be used to evaluate the metric tensor."
