@@ -61,6 +61,10 @@ class RewindTape(JacobianTape):
             # TODO: consider adding capability for apply_operation
             raise qml.QuantumFunctionError("The rewind gradient method is only supported on statevector-based devices")
 
+        return self._rewind_jacobian(device, params=params)
+
+    def _rewind_jacobian(self, device, params=None):
+        """TODO"""
         # Perform the forward pass
         # TODO: Could we use lower-level like device.apply, since we just need the state?
         self.execute(device, params=params)
