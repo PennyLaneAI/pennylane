@@ -260,6 +260,19 @@ class TensorBox(abc.ABC):
             tensor (tensor_like): array to convert
         """
 
+    @staticmethod
+    @abc.abstractmethod
+    def block_diag(values):
+        """Combine a sequence of 2D tensors to form a block diagonal tensor.
+
+        Args:
+            values (Sequence[tensor_like]): Sequence of 2D arrays/tensors to form
+                the block diagonal tensor.
+
+        Returns:
+            tensor_like: the block diagonal tensor
+        """
+
     @abc.abstractmethod
     def cast(self, dtype):
         """Cast the dtype of the TensorBox.
@@ -349,6 +362,20 @@ class TensorBox(abc.ABC):
         Args:
             axis (int or tuple[int]): the axis or axes where the additional
                 dimensions should be inserted
+        """
+
+    @abc.abstractmethod
+    def gather(self, indices):
+        """Gather tensor values given a tuple of indices.
+
+        This is equivalent to the following NumPy fancy indexing:
+
+        ..code-block:: python
+
+            tensor[indices]
+
+        Args:
+            indices (Sequence[int]): the indices of the values to extract
         """
 
     @property

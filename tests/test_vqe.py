@@ -882,7 +882,7 @@ class TestVQE:
             pytest.skip("This test is only intended for tape mode")
 
         dev = qml.device("default.qubit", wires=2)
-        p = [1, 1, 1]
+        p = np.array([1., 1., 1.])
 
         def ansatz(params, **kwargs):
             qml.RX(params[0], wires=0)
@@ -892,11 +892,7 @@ class TestVQE:
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
-
-        qn = qnodes._qnode_for_metric_tensor_in_tape_mode
-        mt = qnodes.metric_tensor([p])
-
-        assert isinstance(qn, qml.qnodes.BaseQNode)
+        mt = qml.metric_tensor(qnodes)(p)
         assert qml.tape_mode_active()  # Check that tape mode is still active
 
         qml.disable_tape()
@@ -936,7 +932,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qnodes.metric_tensor([w])
+            qml.metric_tensor(qnodes)(w)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""

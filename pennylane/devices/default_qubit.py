@@ -171,47 +171,45 @@ class DefaultQubit(QubitDevice):
                     "on a {} device.".format(operation.name, self.short_name)
                 )
 
-            self._apply_operation(operation)
+            if isinstance(operation, QubitStateVector):
+                self._apply_state_vector(operation.parameters[0], operation.wires)
+            elif isinstance(operation, BasisState):
+                self._apply_basis_state(operation.parameters[0], operation.wires)
+            else:
+                self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
-            self._apply_operation(operation)
+            self._state = self._apply_operation(self._state, operation)
 
-    def _apply_operation(self, operation):
-        """Applies operations to the internal device state.
+    def _apply_operation(self, state, operation):
+        """Applies operations to the input state.
 
         Args:
+            state (array[complex]): input state
             operation (~.Operation): operation to apply on the device
+
+        Returns:
+            array[complex]: output state
         """
         wires = operation.wires
 
-        if isinstance(operation, QubitStateVector):
-            self._apply_state_vector(operation.parameters[0], wires)
-            return
-
-        if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], wires)
-            return
-
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            self._state = self._apply_ops[operation.base_name](
-                self._state, axes, inverse=operation.inverse
-            )
-            return
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._get_unitary_matrix(operation)
 
         if isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(matrix, wires)
-        elif len(wires) <= 2:
+            return self._apply_diagonal_unitary(state, matrix, wires)
+        if len(wires) <= 2:
             # Einsum is faster for small gates
-            self._apply_unitary_einsum(matrix, wires)
-        else:
-            self._apply_unitary(matrix, wires)
+            return self._apply_unitary_einsum(state, matrix, wires)
+
+        return self._apply_unitary(state, matrix, wires)
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -527,19 +525,23 @@ class DefaultQubit(QubitDevice):
 
         self._state = self._create_basis_state(num)
 
-    def _apply_unitary(self, mat, wires):
+    def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
+            state (array[complex]): input state
             mat (array): matrix to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
-        tdot = self._tensordot(mat, self._state, axes=axes)
+        tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
@@ -548,17 +550,21 @@ class DefaultQubit(QubitDevice):
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        self._state = self._transpose(tdot, inv_perm)
+        return self._transpose(tdot, inv_perm)
 
-    def _apply_unitary_einsum(self, mat, wires):
+    def _apply_unitary_einsum(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
         faster for single- and two-qubit gates.
 
         Args:
+            state (array[complex]): input state
             mat (array): matrix to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -592,16 +598,20 @@ class DefaultQubit(QubitDevice):
             )
         )
 
-        self._state = self._einsum(einsum_indices, mat, self._state)
+        return self._einsum(einsum_indices, mat, state)
 
-    def _apply_diagonal_unitary(self, phases, wires):
+    def _apply_diagonal_unitary(self, state, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
 
         Args:
+            state (array[complex]): input state
             phases (array): vector to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -616,7 +626,7 @@ class DefaultQubit(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        self._state = self._einsum(einsum_indices, phases, self._state)
+        return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
         """Reset the device"""
