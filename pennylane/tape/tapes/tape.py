@@ -625,7 +625,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
-    def get_parameters(self, trainable_only=True):
+    def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
