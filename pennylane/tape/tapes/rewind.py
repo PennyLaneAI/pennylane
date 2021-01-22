@@ -54,11 +54,7 @@ class RewindTape(JacobianTape):
         if method == "numeric":
             return super().jacobian(device, params=params, **options)
 
-        if not device.capabilities().get("returns_state") or isinstance(device, DefaultMixed) \
-            or not hasattr(device, "_apply_operation"):
-            # TODO: consider renaming returns_state to, e.g., uses_statevector
-            # TODO: consider adding a capability for mixed/pure state
-            # TODO: consider adding capability for apply_operation
+        if not hasattr(device, "_apply_operation") or not hasattr(device, "_apply_unitary"):
             raise qml.QuantumFunctionError("The rewind gradient method is only supported on statevector-based devices")
 
         return self._rewind_jacobian(device, params=params)
