@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+# pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 
@@ -795,33 +796,33 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     return qfunc_decorator
 
 
-def _get_classical_jacobian(qnode):
+def _get_classical_jacobian(_qnode):
     """Helper function to extract the Jacobian
     matrix of the classical part of a QNode"""
 
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for
         a given QNode input"""
-        qnode.construct(args, kwargs)
-        return qml.math.stack(qnode.qtape.get_parameters())
+        _qnode.construct(args, kwargs)
+        return qml.math.stack(_qnode.qtape.get_parameters())
 
-    if qnode.interface == "autograd":
+    if _qnode.interface == "autograd":
         return qml.jacobian(classical_preprocessing)
 
-    if qnode.interface == "torch":
+    if _qnode.interface == "torch":
         import torch
 
-        def _jacobian(*args, **kwargs):
+        def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
             return torch.autograd.functional.jacobian(classical_preprocessing, args)
 
         return _jacobian
 
-    if qnode.interface == "jax":
+    if _qnode.interface == "jax":
         import jax
 
         return jax.jacobian(classical_preprocessing)
 
-    if qnode.interface == "tf":
+    if _qnode.interface == "tf":
         import tensorflow as tf
 
         def _jacobian(*args, **kwargs):
