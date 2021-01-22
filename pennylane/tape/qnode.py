@@ -350,11 +350,11 @@ class QNode:
         Raises:
             qml.QuantumFunctionError: if the device does not support rewind backprop
         """
-        supports_rewind = device.capabilities().get("returns_state")
-        supports_rewind = supports_rewind and not isinstance(device, DefaultMixed)
-        supports_rewind = supports_rewind and hasattr(device, "_apply_operation")
+        supported_device = hasattr(device, "_apply_operation")
+        supported_device = supported_device and hasattr(device, "_apply_unitary")
+        supported_device = supported_device and device.capabilities().get("returns_state")
 
-        if not supports_rewind:
+        if not supported_device:
             raise ValueError(
                 f"The {device.short_name} device does not support rewind differentiation."
             )

@@ -54,7 +54,11 @@ class RewindTape(JacobianTape):
         if method == "numeric":
             return super().jacobian(device, params=params, **options)
 
-        if not hasattr(device, "_apply_operation") or not hasattr(device, "_apply_unitary"):
+        supported_device = hasattr(device, "_apply_operation")
+        supported_device = supported_device and hasattr(device, "_apply_unitary")
+        supported_device = supported_device and device.capabilities().get("returns_state")
+
+        if not supported_device:
             raise qml.QuantumFunctionError("The rewind gradient method is only supported on statevector-based devices")
 
         return self._rewind_jacobian(device, params=params)
@@ -62,10 +66,9 @@ class RewindTape(JacobianTape):
     def _rewind_jacobian(self, device, params=None):
         """TODO"""
         # Perform the forward pass
-        # TODO: Could we use lower-level like device.apply, since we just need the state?
         self.execute(device, params=params)
-        self.set_parameters(params)  # Could we skip this step?
-        phi = device._state  # TODO: Do we need dev._state or dev.state?
+        self.set_parameters(params)
+        phi = device.state.reshape([2] * device.num_wires)
 
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
 
