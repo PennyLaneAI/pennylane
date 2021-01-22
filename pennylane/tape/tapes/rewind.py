@@ -51,8 +51,8 @@ class RewindTape(JacobianTape):
         if method == "device":
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)
-        elif method == "numeric":
-            super().jacobian(device, params=params, **options)
+        if method == "numeric":
+            return super().jacobian(device, params=params, **options)
 
         if not device.capabilities().get("returns_state") or isinstance(device, DefaultMixed) \
             or not hasattr(device, "_apply_operation"):
@@ -112,7 +112,7 @@ def _dot_product(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def operation_derivative(operation: qml.operation.Operation) -> np.ndarray:
-    """Calculate the derivative of an operation.
+    r"""Calculate the derivative of an operation.
 
     For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
     in the standard basis of its derivative with respect to :math:`t`, i.e.,
