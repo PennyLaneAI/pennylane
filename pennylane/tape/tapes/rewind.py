@@ -109,6 +109,7 @@ class RewindTape(JacobianTape):
             else:
                 expanded_ops.append(op)
 
+        expanded_ops = [o for o in expanded_ops if not isinstance(o, (qml.QubitStateVector, qml.BasisState))]
         dot_product_real = lambda a, b: device._real(qml.math.sum(device._conj(a) * b))
 
         param_number = len(self._par_info) - 1
