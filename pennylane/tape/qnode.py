@@ -359,7 +359,7 @@ class QNode:
                 f"The {device.short_name} device does not support rewind differentiation."
             )
 
-        return RewindTape, interface, "analytic"
+        return RewindTape, interface, "analytic", device
 
     @staticmethod
     def _validate_device_method(device, interface):
