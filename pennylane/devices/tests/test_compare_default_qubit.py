@@ -131,6 +131,7 @@ class TestComparison:
         weights = 2 * np.pi * np.random.rand(n_layers, 1)
 
         ret_type = getattr(qml, ret)
+
         def circuit(weights):
             RandomLayers(weights, wires=range(n_wires))
             return ret_type(qml.PauliZ(wires=0) @ qml.PauliX(wires=1))

@@ -263,6 +263,7 @@ def pytest_runtest_makereport(item, call):
 
     return tr
 
+
 @pytest.fixture
 def in_tape_mode():
     """Run the test in tape mode"""
@@ -280,10 +281,22 @@ def tape_mode(request, mocker):
         # Here, we dynamically mock so that the tests do not have to be modified to support both
         # tape and non-tape mode. Once tape mode is default, we can make the equivalent
         # changes directly in the tests.
-        mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
-        mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
-        mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
-        mocker.patch("pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True)
+        mocker.patch(
+            "pennylane.tape.QNode.ops",
+            property(lambda self: self.qtape.operations + self.qtape.observables),
+            create=True,
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.order",
+            property(lambda self: self.diff_options["order"]),
+            create=True,
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True
+        )
 
         def patched_jacobian(self, args, **kwargs):
             method = kwargs.get("method", "best")
@@ -297,7 +310,6 @@ def tape_mode(request, mocker):
             dev = kwargs["options"]["device"]
 
             return self.qtape.jacobian(dev, **kwargs)
-
 
         mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
 
