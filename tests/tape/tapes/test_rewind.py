@@ -248,10 +248,13 @@ class TestRewindTapeJacobian:
 class TestQNodeIntegration:
     """Test QNode integration with the rewind method"""
 
-    def test_qnode(self, mocker, tol):
+    @pytest.fixture
+    def dev(self):
+        return qml.device('default.qubit', wires=2)
+
+    def test_qnode(self, mocker, tol, dev):
         """Test that specifying diff_method allows the rewind method to be selected"""
         args = np.array([0.54, 0.1, 0.5], requires_grad=True)
-        dev = qml.device("default.qubit", wires=2)
 
         def circuit(x, y, z):
             qml.Hadamard(wires=0)
@@ -287,7 +290,7 @@ class TestQNodeIntegration:
 
     @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
     @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
-    def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker):
+    def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker, dev):
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""
 
@@ -296,7 +299,6 @@ class TestQNodeIntegration:
         def expZ(state):
             return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
-        dev = qml.device("default.qubit", wires=1)
         extra_param = np.array(0.31, requires_grad=False)
 
         @qnode(dev, diff_method="rewind")
@@ -342,10 +344,9 @@ class TestQNodeIntegration:
 
         assert np.allclose(grad_A[0], expected, atol=tol, rtol=0)
 
-    def test_gradient_repeated_gate_parameters(self, mocker, tol):
+    def test_gradient_repeated_gate_parameters(self, mocker, tol, dev):
         """Tests that repeated use of a free parameter in a multi-parameter gate yields correct
         gradients."""
-        dev = qml.device("default.qubit", wires=1)
         params = np.array([0.8, 1.3], requires_grad=True)
 
         def circuit(params):
