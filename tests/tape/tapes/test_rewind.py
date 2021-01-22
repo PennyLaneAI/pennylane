@@ -19,16 +19,6 @@ import pennylane as qml
 from pennylane.tape.tapes.rewind import dot_product, operation_derivative
 
 
-def test_dot_product():
-    """Test for the dot_product function"""
-    a = np.array([0, 1j])
-    b = np.array([1, 1])
-    assert np.allclose(dot_product(a, a), 1)
-    assert np.allclose(dot_product(a, b), -1j)
-    assert np.allclose(dot_product(b, a), 1j)
-    assert np.allclose(dot_product(b, b), 2)
-
-
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
