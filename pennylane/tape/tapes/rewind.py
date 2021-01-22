@@ -100,7 +100,13 @@ class RewindTape(JacobianTape):
                         f"Applying the inverse is not supported for {op.name}"
                     )
                 ops = op.decomposition(*op.parameters, wires=op.wires)
-                if not all(op.generator[0] is not None and op.num_params == 1 for op in ops):
+
+                valid_decomposition = True
+                for op in ops:
+                    if (op.num_params == 1 and op.generator[0] is None) or (op.num_params > 1):
+                        valid_decomposition = False
+
+                if not valid_decomposition:
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation cannot be decomposed into single-parameter "
                         f"operations with a valid generator"
