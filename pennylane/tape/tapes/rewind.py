@@ -52,7 +52,7 @@ class RewindTape(JacobianTape):
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)
         elif method == "numeric":
-            raise ValueError("RewindTape does not support numeric differentiation")
+            super().jacobian(device, params=params, **options)
 
         if not device.capabilities().get("returns_state") or isinstance(device, DefaultMixed) \
             or not hasattr(device, "_apply_operation"):
