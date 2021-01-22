@@ -247,6 +247,34 @@ class TestRewindTapeJacobian:
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
 
+# class TestRewindTapeIntegration:
+#     """Integration tests for RewindTape"""
+#
+#     def test_interface_tf(self):
+#         tf = pytest.importorskip("tensorflow")
+#         from pennylane.tape.interfaces.tf import TFInterface
+#
+#         dev = qml.device("default.qubit", wires=1)
+#
+#         with JacobianTape() as tape:
+#             qml.RX(0.4, wires=[0])
+#             qml.Rot(0.1, 0.2, 0.3, wires=[0])
+#             qml.RY(-0.2, wires=[0])
+#             qml.expval(qml.PauliZ(0))
+#
+#         # with tf.GradientTape() as tape_tf:
+#         TFInterface.apply(tape)
+#         # result = tape.execute(dev)
+#
+#
+#         jac = tape.jacobian(dev)
+#         print(jac)
+#         print("F")
+
+
+
+
+
 class TestQNodeIntegration:
     """Test QNode integration with the rewind method"""
 
