@@ -19,6 +19,9 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
@@ -144,8 +147,7 @@ class TestOptimize:
 
         # optimization for 200 steps total
         for t in range(num_steps):
-            theta_new = opt.step(cost_fn, theta,
-                                 metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+            theta_new = opt.step(cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0]))
 
             # check metric tensor
             res = opt.metric_tensor

@@ -17,6 +17,7 @@ This module contains the QNode class and qnode decorator.
 # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
+import warnings
 
 import numpy as np
 
@@ -847,8 +848,7 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
         All other parametrized gates will be decomposed if possible.
 
     Args:
-        qnode (.QNode): QNode to compute the metric tensor of
-        kwargs (dict[str, Any]): auxiliary arguments
+        qnode (.QNode or .ExpvalCost): QNode(s) to compute the metric tensor of
         diag_approx (bool): iff True, use the diagonal approximation
         only_construct (bool): Iff True, construct the circuits used for computing
             the metric tensor but do not execute them, and return the tapes.
@@ -901,6 +901,20 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     array([[ 0.04867729, -0.00049502,  0.        ],
            [ 0.        ,  0.        ,  0.        ]])
     """
+    if _qnode.__class__.__name__ == "ExpvalCost":
+        if _qnode._multiple_devices:  # pylint: disable=protected-access
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
+                "will be used to evaluate the metric tensor."
+            )
+
+        _qnode = _qnode.qnodes.qnodes[0]
+
+    if not isinstance(_qnode, QNode):
+        # non-tape mode QNode
+        return lambda *args, **kwargs: _qnode.metric_tensor(
+            args, kwargs, diag_approx=diag_approx, only_construct=only_construct
+        )
 
     def _metric_tensor_fn(*args, **kwargs):
         jac = qml.math.stack(_get_classical_jacobian(_qnode)(*args, **kwargs))
