@@ -103,12 +103,16 @@ class RewindTape(JacobianTape):
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
-                    raise qml.QuantumFunctionError(f"The {op.name} operation is not supported using "
-                                                   'the "rewind" differentiation method')
+                    raise qml.QuantumFunctionError(
+                        f"The {op.name} operation is not supported using "
+                        'the "rewind" differentiation method'
+                    )
             else:
                 expanded_ops.append(op)
 
-        expanded_ops = [o for o in expanded_ops if not isinstance(o, (qml.QubitStateVector, qml.BasisState))]
+        expanded_ops = [
+            o for o in expanded_ops if not isinstance(o, (qml.QubitStateVector, qml.BasisState))
+        ]
         dot_product_real = lambda a, b: device._real(qml.math.sum(device._conj(a) * b))
 
         param_number = len(self._par_info) - 1
