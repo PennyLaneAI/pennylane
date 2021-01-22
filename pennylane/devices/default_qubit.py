@@ -205,7 +205,6 @@ class DefaultQubit(QubitDevice):
 
         if isinstance(operation, DiagonalOperation):
             return self._apply_diagonal_unitary(state, matrix, wires)
-
         if len(wires) <= 2:
             # Einsum is faster for small gates
             return self._apply_unitary_einsum(state, matrix, wires)
