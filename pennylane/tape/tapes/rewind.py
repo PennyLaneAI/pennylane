@@ -68,8 +68,8 @@ class RewindTape(JacobianTape):
         # Perform the forward pass
         self.execute(device, params=params)
         self.set_parameters(params)
-        phi = device.state.reshape([2] * device.num_wires)
 
+        phi = device._reshape(device.state, [2] * device.num_wires)
         lambdas = [device._apply_operation(phi, obs) for obs in self.observables]
 
         jac = np.zeros((len(self.observables), len(self.trainable_params)))
@@ -86,11 +86,12 @@ class RewindTape(JacobianTape):
             else:
                 expanded_ops.append(op)
 
+        dot_product_real = lambda a, b: device._real(qml.math.sum(device._conj(a) * b))
+
         param_number = 0
         for op in expanded_ops:
 
             if op.grad_method:
-                # TODO: Only use a matrix when necessary
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
@@ -99,7 +100,7 @@ class RewindTape(JacobianTape):
             if op.grad_method:
                 mu = device._apply_unitary(phi, d_op_matrix, op.wires)
 
-                jac_column = np.array([2 * np.real(_dot_product(lambda_, mu)) for lambda_ in lambdas])
+                jac_column = np.array([2 * dot_product_real(lambda_, mu) for lambda_ in lambdas])
                 jac[:, param_number] = jac_column
                 param_number += 1
 
@@ -107,11 +108,6 @@ class RewindTape(JacobianTape):
             op.inv()
 
         return np.flip(jac, axis=1)
-
-
-def _dot_product(a: np.ndarray, b: np.ndarray) -> float:
-    """Returns the dot product (including complex conjugation) between two vectors."""
-    return np.sum(a.conj() * b)
 
 
 def operation_derivative(operation: qml.operation.Operation) -> np.ndarray:
