@@ -99,7 +99,7 @@ class RewindTape(JacobianTape):
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
-                    raise qml.QuantumFunctionError("The {op.name} operation is not supported using "
+                    raise qml.QuantumFunctionError(f"The {op.name} operation is not supported using "
                                                    'the "rewind" differentiation method')
             else:
                 expanded_ops.append(op)
