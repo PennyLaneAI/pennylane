@@ -508,7 +508,7 @@ class TestExpval:
 
         dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliX(0))
 
@@ -598,7 +598,7 @@ class TestVar:
 
         dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.var(qml.PauliX(0))
 
@@ -675,15 +675,21 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device("default.qubit", wires=1)
         cap = dev.capabilities()
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": True,
-                        "supports_tensor_observables": True,
-                        "returns_probs": True,
-                        "returns_state": True,
-                        "supports_reversible_diff": True,
-                        "supports_inverse_operations": True,
-                        "supports_analytic_computation": True,
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_reversible_diff": True,
+            "supports_inverse_operations": True,
+            "supports_analytic_computation": True,
+            "passthru_devices": {
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
+        }
         assert cap == capabilities
 
     def test_load_default_qubit_device(self):
@@ -738,7 +744,7 @@ class TestDefaultQubitIntegration:
 
         p = 0.543
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
@@ -1112,7 +1118,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
@@ -1130,7 +1136,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device('default.qubit', wires=num_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
@@ -1697,7 +1703,7 @@ class TestWiresIntegration:
         dev = qml.device("default.qubit", wires=wires)
         n_wires = len(wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.5, wires=wires[0 % n_wires])
             qml.RY(2., wires=wires[1 % n_wires])
@@ -1712,7 +1718,7 @@ class TestWiresIntegration:
         dev = qml.device("default.qubit", wires=wires)
         n_wires = len(wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.5, wires=wires[0 % n_wires])
             qml.RY(2., wires=wires[1 % n_wires])
@@ -1892,7 +1898,7 @@ class TestInverseDecomposition:
 
         dev = qml.device('default.qubit', wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def test_s():
             qml.Hadamard(wires=0)
             qml.S(wires=0)
@@ -1905,7 +1911,7 @@ class TestInverseDecomposition:
         expected = np.array([1., 1.j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def test_s_inverse():
             qml.Hadamard(wires=0)
             qml.S(wires=0).inv()
@@ -1927,7 +1933,7 @@ class TestInverseDecomposition:
         patched_operations.remove("S")
         monkeypatch.setattr(dev, "operations", patched_operations)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def test_s():
             qml.Hadamard(wires=0)
             qml.S(wires=0)
@@ -1941,7 +1947,7 @@ class TestInverseDecomposition:
         expected = np.array([1., 1.j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def test_s_inverse():
             qml.Hadamard(wires=0)
             qml.S(wires=0).inv()

@@ -28,13 +28,16 @@ def _stopping_critera(obj):
     return False
 
 
-def metric_tensor(tape, diag_approx=False):
+def metric_tensor(tape, diag_approx=False, wrt=None):
     """Returns a list of tapes, and a classical processing function,
     for computing the metric tensor of an input tape on hardware."""
 
     # For parametrized operations, only the RX, RY, RZ, and PhaseShift gates are supported.
     # Expand out all other gates.
     tape = tape.expand(depth=2, stop_at=_stopping_critera)
+
+    if wrt is not None:
+        tape.trainable_params = set(wrt)
 
     # get the circuit graph
     graph = tape.graph
@@ -95,7 +98,6 @@ def metric_tensor(tape, diag_approx=False):
             gs.append(g)
 
         # create the block diagonal metric tensor
-        metric_tensor = qml.math.block_diag(gs)
-        return metric_tensor
+        return qml.math.block_diag(gs)
 
     return metric_tensor_tapes, processing_fn
