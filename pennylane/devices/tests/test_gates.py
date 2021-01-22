@@ -46,7 +46,7 @@ ops = {
     "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
     "CZ": qml.CZ(wires=[0, 1]),
     "CY": qml.CY(wires=[0, 1]),
-    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.eye(2), wires=[0]),
+    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
     "PauliX": qml.PauliX(wires=[0]),
@@ -225,7 +225,7 @@ class TestSupportedGates:
 
             @qml.qnode(dev)
             def circuit():
-                ops[operation].inv()
+                ops[operation].queue().inv()
                 return qml.expval(qml.Identity(wires=0))
 
             assert isinstance(circuit(), (float, np.ndarray))
