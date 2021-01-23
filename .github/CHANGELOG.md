@@ -248,6 +248,58 @@
           [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
   ```
 
+* Adds the new `qml.metric_tensor` function, which transforms a QNode to produce the Fubini-Study
+  metric tensor with full autodifferentiation support---even on hardware.
+  [(#1014)](https://github.com/PennyLaneAI/pennylane/pull/1014)
+
+  Consider the following QNode:
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev, interface="autograd")
+  def circuit(weights):
+      # layer 1
+      qml.RX(weights[0, 0], wires=0)
+      qml.RX(weights[0, 1], wires=1)
+
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[1, 2])
+
+      # layer 2
+      qml.RZ(weights[1, 0], wires=0)
+      qml.RZ(weights[1, 1], wires=2)
+
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[1, 2])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
+  ```
+
+  We can use the `metric_tensor` function to generate a new function, that returns the
+  metric tensor of this QNode:
+
+  ```pycon
+  >>> met_fn = qml.metric_tensor(circuit)
+  >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+  >>> met_fn(weights)
+  tensor([[0.25  , 0.    , 0.    , 0.    ],
+          [0.    , 0.25  , 0.    , 0.    ],
+          [0.    , 0.    , 0.0025, 0.0024],
+          [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
+  ```
+
+  The returned metric tensor is also fully differentiable, in all interfaces.
+  For example, differentiating the `(3, 2)` element:
+
+  ```pycon
+  >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
+  >>> grad_fn(weights)
+  array([[ 0.04867729, -0.00049502,  0.        ],
+         [ 0.        ,  0.        ,  0.        ]])
+  ```
+
+ Differentiation is also supported using Torch, Jax, and TensorFlow.
+
 <h3>Improvements</h3>
 
 * The `default.qubit` device has been updated so that internally it applies operations in a more
