@@ -26,7 +26,7 @@ import numpy as np
 
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
-from pennylane import Device
+from pennylane import Device, math
 from pennylane.wires import Wires
 
 
@@ -136,6 +136,7 @@ class QubitDevice(Device):
             supports_finite_shots=True,
             supports_tensor_observables=True,
             returns_probs=True,
+            provides_jacobian=True
         )
         return capabilities
 
@@ -688,3 +689,105 @@ class QubitDevice(Device):
         unraveled_indices = [2] * len(device_wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
+
+    def jacobian(self, tape):
+        """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
+        Jacobian."""
+
+        # Perform the forward pass
+        self.execute(tape)
+
+        phi = self._reshape(self.state, [2] * self.num_wires)
+
+        for obs in tape.observables:  # This is needed for when the observable is a tensor product
+            if not hasattr(obs, "base_name"):
+                obs.base_name = None
+
+        lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
+
+        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+
+        expanded_ops = []
+        for op in reversed(tape.operations):
+            if op.num_params > 1:
+                if isinstance(op, qml.Rot) and not op.inverse:
+                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    expanded_ops.extend(reversed(ops))
+                else:
+                    raise qml.QuantumFunctionError(
+                        f"The {op.name} operation is not supported using "
+                        'the "rewind" differentiation method'
+                    )
+            else:
+                expanded_ops.append(op)
+
+        expanded_ops = [
+            o for o in expanded_ops if not o.name in ("QubitStateVector", "BasisState")
+        ]
+        dot_product_real = lambda a, b: self._real(math.sum(self._conj(a) * b))
+
+        param_number = len(tape._par_info) - 1
+        trainable_param_number = len(tape.trainable_params) - 1
+        for op in expanded_ops:
+
+            if op.grad_method and param_number in tape.trainable_params:
+                d_op_matrix = operation_derivative(op)
+
+            op.inv()
+            phi = self._apply_operation(phi, op)
+
+            if op.grad_method:
+                if param_number in tape.trainable_params:
+                    mu = self._apply_unitary(phi, d_op_matrix, op.wires)
+
+                    jac_column = np.array(
+                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
+                    )
+                    jac[:, trainable_param_number] = jac_column
+                    trainable_param_number -= 1
+                param_number -= 1
+
+            lambdas = [self._apply_operation(lambda_, op) for lambda_ in lambdas]
+            op.inv()
+
+        return jac
+
+
+def operation_derivative(operation) -> np.ndarray:
+    r"""Calculate the derivative of an operation.
+
+    For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
+    in the standard basis of its derivative with respect to :math:`t`, i.e.,
+
+    .. math:: \frac{d \, e^{i \hat{H} phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} phi t}.
+
+    Args:
+        operation (qml.Operation): The operation to be differentiated.
+
+    Returns:
+        np.ndarray: the derivative of the operation as a matrix in the standard basis
+
+    Raises:
+        ValueError: if the operation does not have a generator or is not composed of a single
+        trainable parameter
+    """
+    generator, prefactor = operation.generator
+
+    if generator is None:
+        raise ValueError(f"Operation {operation.name} does not have a generator")
+    if operation.num_params != 1:
+        # Note, this case should already be caught by the previous raise since we haven't worked out
+        # how to have an operator for multiple parameters. It is added here in case of a future
+        # change
+        raise ValueError(
+            f"Operation {operation.name} is not written in terms of a single parameter"
+        )
+
+    if not isinstance(generator, np.ndarray):
+        generator = generator.matrix
+
+    if operation.inverse:
+        prefactor *= -1
+        generator = generator.conj().T
+
+    return 1j * prefactor * generator @ operation.matrix
