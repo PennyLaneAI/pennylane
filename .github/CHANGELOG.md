@@ -373,7 +373,7 @@
 
 * Fixes an issue with tape expansions where information about sampling
   (``is_sampled`` tape attribute) was lost previously.
-  [(#956)](https://github.com/PennyLaneAI/pennylane/pull/1027)
+  [(#1027)](https://github.com/PennyLaneAI/pennylane/pull/1027)
 
 * In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
   causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
