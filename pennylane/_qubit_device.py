@@ -24,6 +24,7 @@ import itertools
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device, math
@@ -717,7 +718,7 @@ class QubitDevice(Device):
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "rewind" differentiation method'
                     )
