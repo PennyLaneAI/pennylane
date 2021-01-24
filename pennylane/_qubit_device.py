@@ -136,7 +136,6 @@ class QubitDevice(Device):
             supports_finite_shots=True,
             supports_tensor_observables=True,
             returns_probs=True,
-            provides_jacobian=True
         )
         return capabilities
 
@@ -690,11 +689,12 @@ class QubitDevice(Device):
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
 
-    def jacobian(self, tape):
+    def rewind_jacobian(self, tape):
         """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
         Jacobian."""
 
         # Perform the forward pass
+        self.reset()
         self.execute(tape)
 
         phi = self._reshape(self.state, [2] * self.num_wires)

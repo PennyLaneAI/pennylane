@@ -332,7 +332,8 @@ class JacobianTape(QuantumTape):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        # pylint:disable=unused-argument
+        jacobian_method = getattr(device, options.get("jacobian_method", "jacobian"))
+
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -343,7 +344,7 @@ class JacobianTape(QuantumTape):
 
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = device.jacobian(self)
+        jac = jacobian_method(self)
 
         # restore original parameters
         self.set_parameters(saved_parameters)
