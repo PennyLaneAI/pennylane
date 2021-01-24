@@ -372,7 +372,7 @@
 <h3>Bug fixes</h3>
 
 * Fixes an issue with tape expansions where information about sampling
-  (``is_sampled`` tape attribute) was lost previously.
+  (specifically the `is_sampled` tape attribute) was not preserved.
   [(#1027)](https://github.com/PennyLaneAI/pennylane/pull/1027)
 
 * In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
