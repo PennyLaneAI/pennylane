@@ -154,13 +154,13 @@ class QNode:
         # store the user-specified differentiation method
         self.diff_method = diff_method
 
-        self._tape, self.interface, self.device, diff_options = self.get_tape(
+        self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
-        self.diff_options.update(diff_options)
+        self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
         self.max_expansion = 2
@@ -199,7 +199,12 @@ class QNode:
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return QNode._get_parameter_shift_tape(device), interface, device, {"method": "analytic"}
+            return (
+                QNode._get_parameter_shift_tape(device),
+                interface,
+                device,
+                {"method": "analytic"},
+            )
 
         if diff_method == "finite-diff":
             return JacobianTape, interface, device, {"method": "numeric"}
@@ -241,7 +246,12 @@ class QNode:
                 return QNode._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_tape(device), interface, device, {"method": "best"}
+                    return (
+                        QNode._get_parameter_shift_tape(device),
+                        interface,
+                        device,
+                        {"method": "best"},
+                    )
                 except qml.QuantumFunctionError:
                     return JacobianTape, interface, device, {"method": "numeric"}
 
@@ -291,7 +301,12 @@ class QNode:
             if interface in backprop_devices:
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
-                device = qml.device(backprop_devices[interface], wires=device.wires, analytic=True)
+                device = qml.device(
+                    backprop_devices[interface],
+                    wires=device.wires,
+                    shots=device.shots,
+                    analytic=True,
+                )
                 return JacobianTape, interface, device, {"method": "backprop"}
 
             raise qml.QuantumFunctionError(
@@ -359,7 +374,12 @@ class QNode:
                 f"The {device.short_name} device does not support rewind differentiation."
             )
 
-        return JacobianTape, interface, device, {"method": "device", "jacobian_method": "rewind_jacobian"}
+        return (
+            JacobianTape,
+            interface,
+            device,
+            {"method": "device", "jacobian_method": "rewind_jacobian"},
+        )
 
     @staticmethod
     def _validate_device_method(device, interface):
@@ -627,11 +647,12 @@ class QNode:
 
             if self.interface != "tf" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                self._tape, interface, self.device, self.diff_options = self.get_tape(
+                self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "tf", self.diff_method
                 )
 
                 self.interface = interface
+                self.diff_options.update(diff_options)
             else:
                 self.interface = "tf"
 
@@ -666,11 +687,12 @@ class QNode:
 
             if self.interface != "torch" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                self._tape, interface, self.device, self.diff_options = self.get_tape(
+                self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "torch", self.diff_method
                 )
 
                 self.interface = interface
+                self.diff_options.update(diff_options)
             else:
                 self.interface = "torch"
 
@@ -697,11 +719,12 @@ class QNode:
 
         if self.interface != "autograd" and self.interface is not None:
             # Since the interface is changing, need to re-validate the tape class.
-            self._tape, interface, self.device, self.diff_options = self.get_tape(
+            self._tape, interface, self.device, diff_options = self.get_tape(
                 self._original_device, "autograd", self.diff_method
             )
 
             self.interface = interface
+            self.diff_options.update(diff_options)
         else:
             self.interface = "autograd"
 

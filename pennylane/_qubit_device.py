@@ -699,9 +699,12 @@ class QubitDevice(Device):
 
         phi = self._reshape(self.state, [2] * self.num_wires)
 
-        for obs in tape.observables:  # This is needed for when the observable is a tensor product
-            if not hasattr(obs, "base_name"):
-                obs.base_name = None
+        for m in tape.measurements:
+            if m.obs is None:
+                raise ValueError(f"Rewind differentiation method does not support measurement {m}")
+
+            if not hasattr(m.obs, "base_name"):
+                m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
         lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
 
@@ -721,9 +724,7 @@ class QubitDevice(Device):
             else:
                 expanded_ops.append(op)
 
-        expanded_ops = [
-            o for o in expanded_ops if not o.name in ("QubitStateVector", "BasisState")
-        ]
+        expanded_ops = [o for o in expanded_ops if not o.name in ("QubitStateVector", "BasisState")]
         dot_product_real = lambda a, b: self._real(math.sum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1
