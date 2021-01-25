@@ -747,8 +747,6 @@ class QubitDevice(Device):
 
         lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
 
-        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
@@ -764,6 +762,7 @@ class QubitDevice(Device):
                 if op.name not in ("QubitStateVector", "BasisState"):
                     expanded_ops.append(op)
 
+        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
         dot_product_real = lambda a, b: self._real(sum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
