@@ -828,45 +828,6 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class TestAdjointJacobian:
     """Tests for the adjoint_jacobian method"""
 
