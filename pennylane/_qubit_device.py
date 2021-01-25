@@ -702,9 +702,9 @@ class QubitDevice(Device):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
-        After a forward pass, the circuit is reversed by iteratively applying the inverse (adjoint)
-        gate to scan backwards through the circuit. This method is similar to the reversible method,
-        but has a lower time overhead and a similar memory overhead.
+        After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
+        gates to scan backwards through the circuit. This method is similar to the reversible
+        method, but has a lower time overhead and a similar memory overhead.
 
         .. note::
             The adjoint differentation method has the following restrictions:

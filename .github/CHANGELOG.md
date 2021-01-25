@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * A new differentiation method has been added for use with simulators in tape mode. The `"adjoint"`
-  method operates after a forward pass by iteratively applying the inverse gate to scan backwards
+  method operates after a forward pass by iteratively applying inverse gates to scan backwards
   through the circuit. This method is similar to the reversible method, but has a lower time
   overhead and a similar memory overhead. It follows the approach provided by
   [Jones and Gacon](https://arxiv.org/abs/2009.02823). This method is only compatible with certain
