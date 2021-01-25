@@ -52,12 +52,12 @@ class QueuingContext(abc.ABC):
             QueuingContext: This instance
         """
         QueuingContext._active_contexts.append(self)
-
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
-        QueuingContext._active_contexts.remove(self)
+        assert QueuingContext._active_contexts[-1] is self
+        QueuingContext._active_contexts.pop()
 
     @abc.abstractmethod
     def _append(self, obj, **kwargs):
@@ -236,8 +236,10 @@ class OperationRecorder(Queue):
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
 
-        # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.queue))
+        # Remove duplicates that might have arisen from measurements.
+        # Code taken from https://stackoverflow.com/questions/480214
+        seen = set()
+        self.queue = [x for x in self.queue if not (x in seen or seen.add(x))]
         self.operations = list(
             filter(
                 lambda op: not (
