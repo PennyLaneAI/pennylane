@@ -20,8 +20,11 @@ from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method",
-    [["default.qubit", "finite-diff"], ["default.qubit.autograd", "backprop"]],
+    "dev_name,diff_method", [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit.autograd", "backprop"],
+    ],
 )
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
@@ -29,8 +32,8 @@ class TestQNode:
     def test_nondiff_param_unwrapping(self, dev_name, diff_method, mocker):
         """Test that non-differentiable parameters are correctly unwrapped
         to NumPy ndarrays or floats (if 0-dimensional)"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "parameter-shift":
+            pytest.skip("Test only supports parameter-shift")
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -98,7 +101,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd", diff_method="parameter-shift")
+        @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -128,7 +131,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf", diff_method="parameter-shift")
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -244,8 +247,8 @@ class TestQNode:
     def test_changing_trainability(self, dev_name, diff_method, mocker, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "parameter-shift":
+            pytest.skip("Test only supports parameter-shift")
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
