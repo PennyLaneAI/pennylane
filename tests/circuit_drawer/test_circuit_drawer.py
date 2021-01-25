@@ -847,6 +847,28 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
+    def test_include_empty_wires(self, tape_only):
+        """Test that empty wires are correctly included"""
+
+        dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=[-1, "q2"])
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+        res = circuit.draw(show_all_wires=True)
+        expected = [
+            " -1: ──H──╭C──┤     ",
+            "  a: ─────│───┤     ",
+            " q2: ─────╰X──┤ ⟨X⟩ ",
+            "  0: ─────────┤     \n"
+        ]
+
+        assert res == "\n".join(expected)
+
     def test_missing_wire(self, tape_only):
         """Test that wires not specifically mentioned in the wire
         reordering are appended at the bottom of the circuit drawing"""
