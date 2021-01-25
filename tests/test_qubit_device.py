@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 import pytest
 from pennylane import numpy as np
+import numpy as anp
 from random import random
 
 import pennylane as qml
@@ -633,7 +634,7 @@ class TestMarginalProb:
         probs = np.array([random() for i in range(2 ** 3)])
         probs /= sum(probs)
 
-        spy = mocker.spy(np, "sum")
+        spy = mocker.spy(anp, "sum")
         dev = mock_qubit_device_with_original_statistics(wires=3)
         res = dev.marginal_prob(probs, wires=wires)
         array_call = spy.call_args[0][0]
