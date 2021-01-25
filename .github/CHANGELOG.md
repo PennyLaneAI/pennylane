@@ -302,6 +302,30 @@
 
 <h3>Improvements</h3>
 
+* The circuit drawer has been updated to support the inclusion of unused or inactive
+  wires, by passing the `show_all_wires` argument.
+  [(#1033)](https://github.com/PennyLaneAI/pennylane/pull/1033)
+
+  ```python
+  dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=-1)
+      qml.CNOT(wires=[-1, "q2"])
+      return qml.expval(qml.PauliX(wires="q2"))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit, show_all_wires=True)())
+  >>>
+   -1: ──H──╭C──┤
+    a: ─────│───┤
+   q2: ─────╰X──┤ ⟨X⟩
+    0: ─────────┤
+  ```
+
+
 * The `default.qubit` device has been updated so that internally it applies operations in a more
   functional style, i.e., by accepting an input state and returning an evolved state.
   [(#1025)](https://github.com/PennyLaneAI/pennylane/pull/1025)  

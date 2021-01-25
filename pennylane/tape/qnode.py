@@ -951,7 +951,7 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
 
 
 def draw(_qnode, charset="unicode", wire_order=None, show_all_wires=False):
-    """draw(qnode, charset="unicode", wire_order=None)
+    """draw(qnode, charset="unicode", wire_order=None, show_all_wires=False)
     Create a function that draws the given _qnode.
 
     Args:
