@@ -16,5 +16,5 @@ sphinxcontrib-bibtex==0.4.2
 tensorflow==2.4.0
 tensornetwork==0.3
 toml
-torch==1.7.1+cpu
-torchvision==0.8.2+cpu
+torch==1.7.0+cpu
+torchvision==0.8.1+cpu
