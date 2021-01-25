@@ -1026,8 +1026,8 @@ def draw(_qnode, charset="unicode", wire_order=None, show_all_wires=False):
     @wraps(_qnode)
     def wrapper(*args, **kwargs):
         _qnode.construct(args, kwargs)
-        wire_order = wire_order or _qnode.device.wires
-        wire_order = qml.wires.Wires(wire_order)
-        return _qnode.qtape.draw(charset, wire_order=wire_order, show_all_wires=show_all_wires)
+        _wire_order = wire_order or _qnode.device.wires
+        _wire_order = qml.wires.Wires(_wire_order)
+        return _qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper
