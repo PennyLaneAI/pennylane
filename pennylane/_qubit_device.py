@@ -695,8 +695,9 @@ class QubitDevice(Device):
         Jacobian."""
 
         for m in tape.measurements:
-            if m.obs is None:
-                raise ValueError(f"Adjoint differentiation method does not support measurement {m}")
+            if m.return_type is not qml.operation.Expectation:
+                raise qml.QuantumFunctionError("Adjoint differentiation method does not support"
+                                               f" measurement {m.return_type.value}")
 
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product

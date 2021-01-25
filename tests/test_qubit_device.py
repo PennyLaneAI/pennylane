@@ -835,6 +835,28 @@ class TestAdjointJacobian:
     def dev(self):
         return qml.device('default.qubit', wires=2)
 
+    def test_not_expval(self, dev):
+        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
+        expectation values"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
+            dev.adjoint_jacobian(tape)
+
+    def test_unsupported_op(self, dev):
+        """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
+        multi-parameter operations that are not qml.Rot"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
+            dev.adjoint_jacobian(tape)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_pauli_rotation_gradient(self, G, theta, tol, dev):
