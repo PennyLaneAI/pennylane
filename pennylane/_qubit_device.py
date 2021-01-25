@@ -691,6 +691,33 @@ class QubitDevice(Device):
         return observable.eigvals[indices]
 
     def adjoint_jacobian(self, tape):
+        """Implements the adjoint method outlined in
+        `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
+
+        After a forward pass, the circuit is reversed by iteratively applying the inverse (adjoint)
+        gate to scan backwards through the circuit. This method is similar to the reversible method,
+        but has a lower time overhead and a similar memory overhead.
+
+        .. note::
+            The adjoint differentation method has the following restrictions:
+
+            * As it requires knowledge of the statevector, only statevector simulator devices can be
+              used.
+
+            * Only expectation values are supported as measurements.
+
+        Args:
+            tape (.QuantumTape): circuit that the function takes the gradient of
+
+        Returns:
+            np.ndarray: the derivative of the tape with respect to trainable parameters.
+            Dimensions are ``(len(observables), len(trainable_params))``.
+
+        Raises:
+            QuantumFunctionError: if the input tape has measurements that are not expectation values
+                or contains a multi-parameter operation aside from :class:`~.Rot`
+        """
+        d = None
         """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
         Jacobian."""
 
