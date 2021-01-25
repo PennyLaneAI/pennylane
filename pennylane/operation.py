@@ -1735,7 +1735,9 @@ def operation_derivative(operation) -> np.ndarray:
     For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
     in the standard basis of its derivative with respect to :math:`t`, i.e.,
 
-    .. math:: \frac{d \, e^{i \hat{H} phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} phi t}.
+    .. math:: \frac{d \, e^{i \hat{H} \phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} \phi t},
+
+    where :math:`\phi` is a real constant.
 
     Args:
         operation (qml.Operation): The operation to be differentiated.
@@ -1745,7 +1747,7 @@ def operation_derivative(operation) -> np.ndarray:
 
     Raises:
         ValueError: if the operation does not have a generator or is not composed of a single
-        trainable parameter
+            trainable parameter
     """
     generator, prefactor = operation.generator
 
