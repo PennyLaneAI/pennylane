@@ -17,15 +17,13 @@ Unit tests for :mod:`pennylane.operation`.
 import itertools
 import functools
 
-import abc
 import pytest
 import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
 import pennylane._queuing
-from pennylane import numpy as np
-from pennylane.operation import Tensor, Channel, operation_derivative
+from pennylane.operation import Tensor, operation_derivative
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
