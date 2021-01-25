@@ -694,18 +694,21 @@ class QubitDevice(Device):
         """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
         Jacobian."""
 
-        # Perform the forward pass
-        self.reset()
-        self.execute(tape)
-
-        phi = self._reshape(self.state, [2] * self.num_wires)
-
         for m in tape.measurements:
             if m.obs is None:
                 raise ValueError(f"Rewind differentiation method does not support measurement {m}")
 
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
+
+        # Perform the forward pass
+        self.reset()
+
+        # Consider using caching and calling lower-level functionality. We just need the state
+        # without postprocessing https://github.com/PennyLaneAI/pennylane/pull/1032/files#r563441040
+        self.execute(tape)
+
+        phi = self._reshape(self.state, [2] * self.num_wires)
 
         lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
 
