@@ -718,9 +718,6 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
-        d = None
-        """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
-        Jacobian."""
 
         for m in tape.measurements:
             if m.return_type is not qml.operation.Expectation:
