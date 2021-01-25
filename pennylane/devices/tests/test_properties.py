@@ -18,6 +18,8 @@ import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane._device import DeviceError
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
 try:
     import tensorflow as tf
 
@@ -133,7 +135,11 @@ class TestCapabilities:
         assert interface in ["tf", "autograd", "jax"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
-        qnode = qml.qnodes.passthru.PassthruQNode(qfunc, dev)
+        qnode = (
+            qml.QNode(qfunc, dev)
+            if qml.tape_mode_active()
+            else qml.qnodes.passthru.PassthruQNode(qfunc, dev)
+        )
         qnode.interface = interface
 
         # assert that we can do a simple gradient computation in the passthru interface
