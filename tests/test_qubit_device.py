@@ -1025,19 +1025,6 @@ class TestAdjointJacobian:
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 class TestAdjointJacobianQNode:
     """Test QNode integration with the adjoint_jacobian method"""
 
@@ -1163,6 +1150,8 @@ class TestAdjointJacobianQNode:
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
     def test_interface_tf(self, dev):
+        """Test if gradients agree between the adjoint and finite-diff methods when using the
+        TensorFlow interface"""
         tf = pytest.importorskip("tensorflow")
 
         def f(params1, params2):
@@ -1188,6 +1177,36 @@ class TestAdjointJacobianQNode:
         g2 = tape.gradient(res2, [params1, params2])
 
         assert np.allclose(g1, g2)
+
+    def test_interface_torch(self, dev):
+        """Test if gradients agree between the adjoint and finite-diff methods when using the
+        Torch interface"""
+        torch = pytest.importorskip("torch")
+
+        def f(params1, params2):
+            qml.RX(0.4, wires=[0])
+            qml.RZ(params1 * torch.sqrt(params2), wires=[0])
+            qml.RY(torch.cos(params2), wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        params1 = torch.tensor(0.3, requires_grad=True)
+        params2 = torch.tensor(0.4, requires_grad=True)
+
+        qnode1 = QNode(f, dev, interface="torch", diff_method="adjoint")
+        qnode2 = QNode(f, dev, interface="torch", diff_method="finite-diff")
+
+        res1 = qnode1(params1, params2)
+        res1.backward()
+
+        grad_adjoint = params1.grad, params2.grad
+
+        res2 = qnode2(params1, params2)
+        res2.backward()
+
+        grad_fd = params1.grad, params2.grad
+
+        assert np.allclose(grad_adjoint, grad_fd)
+
 
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
