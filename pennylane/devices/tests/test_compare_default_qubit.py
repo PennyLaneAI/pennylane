@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [pytest.mark.skip_unsupported, pytest.mark.usefixtures("tape_mode")]
 
 
 @flaky(max_runs=10)
@@ -106,7 +106,7 @@ class TestComparison:
         assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.analytic))
         assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.analytic))
 
-    @pytest.mark.parametrize("ret", [qml.expval, qml.var])
+    @pytest.mark.parametrize("ret", ["expval", "var"])
     def test_random_circuit(self, device, tol, ret):
         """Test that the expectation value of a random circuit is correct"""
         n_wires = 2
@@ -130,9 +130,11 @@ class TestComparison:
         n_layers = np.random.randint(1, 5)
         weights = 2 * np.pi * np.random.rand(n_layers, 1)
 
+        ret_type = getattr(qml, ret)
+
         def circuit(weights):
             RandomLayers(weights, wires=range(n_wires))
-            return ret(qml.PauliZ(wires=0) @ qml.PauliX(wires=1))
+            return ret_type(qml.PauliZ(wires=0) @ qml.PauliX(wires=1))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
