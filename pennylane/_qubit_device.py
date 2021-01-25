@@ -729,22 +729,22 @@ class QubitDevice(Device):
                         'the "adjoint" differentiation method'
                     )
             else:
-                expanded_ops.append(op)
+                if not op.name in ("QubitStateVector", "BasisState"):
+                    expanded_ops.append(op)
 
-        expanded_ops = [o for o in expanded_ops if not o.name in ("QubitStateVector", "BasisState")]
         dot_product_real = lambda a, b: self._real(math.sum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
         for op in expanded_ops:
 
-            if op.grad_method and param_number in tape.trainable_params:
+            if (op.grad_method is not None) and (param_number in tape.trainable_params):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
             phi = self._apply_operation(phi, op)
 
-            if op.grad_method:
+            if op.grad_method is not None:
                 if param_number in tape.trainable_params:
                     mu = self._apply_unitary(phi, d_op_matrix, op.wires)
 

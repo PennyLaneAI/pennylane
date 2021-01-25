@@ -6,7 +6,8 @@
   method operates after a forward pass by iteratively applying the inverse gate to scan backwards
   through the circuit. This method is similar to the reversible method, but has a lower time
   overhead and a similar memory overhead. It follows the approach provided by
-  [Jones and Gacon](https://arxiv.org/abs/2009.02823).
+  [Jones and Gacon](https://arxiv.org/abs/2009.02823). This method is only compatible with certain
+  statevector-based devices such as `default.qubit`.
   
   Example use:
   
