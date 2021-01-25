@@ -446,6 +446,9 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
 
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -470,6 +473,9 @@ class TestQNode:
     def test_multiple_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -508,6 +514,9 @@ class TestQNode:
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -552,6 +561,9 @@ class TestQNode:
     def test_ragged_differentiation_variance(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
