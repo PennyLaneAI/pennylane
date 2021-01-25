@@ -165,6 +165,7 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = 2
 
+    # pylint: disable=too-many-return-statements
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
         """Determine the best JacobianTape, differentiation method, interface, and device
