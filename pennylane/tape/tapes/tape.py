@@ -27,6 +27,7 @@ from pennylane.grouping import diagonalize_qwc_pauli_words
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.operation import Sample
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -149,6 +150,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
 
+    # Check the observables without needing to create the circuit graph
+    new_tape.is_sampled = any(obs.return_type == Sample for obs in new_tape.observables)
     return new_tape
 
 
