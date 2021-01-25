@@ -433,7 +433,7 @@ class JacobianTape(QuantumTape):
         shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
-            array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
+            array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
 
         **Example**
 
