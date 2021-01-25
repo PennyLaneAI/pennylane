@@ -1444,6 +1444,7 @@ class TestOperationDerivative:
     def test_multiparam_raise(self):
         """Test if the function raises a ValueError if the input operation is composed of multiple
         parameters"""
+
         class RotWithGen(qml.Rot):
             generator = [np.zeros((2, 2)), 1]
 
@@ -1459,13 +1460,17 @@ class TestOperationDerivative:
 
         derivative = operation_derivative(op)
 
-        expected_derivative = 0.5 * np.array([[-np.sin(p / 2), -1j * np.cos(p / 2)],[-1j * np.cos(p / 2), - np.sin(p / 2)]])
+        expected_derivative = 0.5 * np.array(
+            [[-np.sin(p / 2), -1j * np.cos(p / 2)], [-1j * np.cos(p / 2), -np.sin(p / 2)]]
+        )
 
         assert np.allclose(derivative, expected_derivative)
 
         op.inv()
         derivative_inv = operation_derivative(op)
-        expected_derivative_inv = 0.5 * np.array([[-np.sin(p / 2), 1j * np.cos(p / 2)],[1j * np.cos(p / 2), -np.sin(p / 2)]])
+        expected_derivative_inv = 0.5 * np.array(
+            [[-np.sin(p / 2), 1j * np.cos(p / 2)], [1j * np.cos(p / 2), -np.sin(p / 2)]]
+        )
 
         assert not np.allclose(derivative, derivative_inv)
         assert np.allclose(derivative_inv, expected_derivative_inv)
@@ -1485,8 +1490,12 @@ class TestOperationDerivative:
         op = qml.CRY(p, wires=[0, 1])
 
         derivative = operation_derivative(op)
-        expected_derivative = 0.5 * np.array([[0, 0, 0, 0], [0, 0, 0, 0],
-                                        [0, 0, -np.sin(p / 2), - np.cos(p / 2)],
-                                        [0, 0, np.cos(p / 2), - np.sin(p / 2)],
-                                        ])
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
         assert np.allclose(derivative, expected_derivative)
