@@ -162,6 +162,18 @@ class DefaultQubitTF(DefaultQubit):
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
 
+    @staticmethod
+    def _asarray(array, dtype=None):
+        try:
+            res = tf.convert_to_tensor(array, dtype=dtype)
+        except tf.python.framework.errors_impl.InvalidArgumentError:
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+
+            if dtype is not None:
+                res = tf.cast(res, dtype=dtype)
+
+        return res
+
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 

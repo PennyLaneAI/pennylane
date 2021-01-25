@@ -26,7 +26,7 @@ from pennylane.tape import JacobianTape, qnode, QNode
     "dev_name,diff_method", [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
-        ["default.qubit.tf", "backprop"],
+        ["default.qubit", "backprop"],
     ],
 )
 class TestQNode:
@@ -469,26 +469,12 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
-
-        def _asarray(args, dtype=tf.float64):
-            res = [tf.reshape(i, [-1]) for i in args]
-            res = tf.concat(res, axis=0)
-            return tf.cast(res, dtype=dtype)
-
-        if dev_name == "default.qubit.tf":
-            # TODO: The current DefaultQubitTF device provides an _asarray method that does
-            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
-            # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour.
-            # TODO: once the tape has moved from the beta folder, we should implement
-            # this change directly in the device.
-            monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(x, y):
