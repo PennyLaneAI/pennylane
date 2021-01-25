@@ -25,7 +25,23 @@ class WireError(Exception):
 
 
 def _process(wires):
-    """Converts the input to a tuple of numbers or strings."""
+    """Converts the input to a tuple of wire labels.
+
+    If `wires` can be iterated over, its elements are interpreted as wire labels
+    and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
+
+    The only exception to this are strings, which are always interpreted as a single
+    wire label, so users can address wires with labels such as "ancilla".
+
+    Any type can be a wire label, as long as it is hashable. We need this to 
+
+
+    """
+
+    if isinstance(wires, str):
+        # interpret string as a non-iterable object:
+        # this is the only exception to the logic
+        wires = [wires]
 
     try:
         tuple_of_wires = tuple(wires)
