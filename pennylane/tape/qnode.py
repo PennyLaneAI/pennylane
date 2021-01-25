@@ -447,7 +447,6 @@ class QNode:
                 stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
-
     def __call__(self, *args, **kwargs):
         # construct the tape
         self.construct(args, kwargs)
