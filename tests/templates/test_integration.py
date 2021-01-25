@@ -339,7 +339,7 @@ class TestIntegrationQnode:
         # as primary argument
         dev = qml.device('default.qubit', wires=n_wires)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
             all_args = dict(zip(keys_diffable, diffable))

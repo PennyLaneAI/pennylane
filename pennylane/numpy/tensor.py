@@ -17,6 +17,7 @@ This module provides the PennyLane :class:`~.tensor` class.
 import numpy as onp
 
 from autograd import numpy as _np
+from autograd.extend import primitive, defvjp
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -25,6 +26,23 @@ from autograd.core import VSpace
 
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
+
+# Hotfix since _np.asarray doesn't have a gradient rule defined.
+@primitive
+def asarray(vals, *args, **kwargs):
+    """Gradient supporting autograd asarray"""
+    if isinstance(vals, (onp.ndarray, _np.ndarray)):
+        return _np.asarray(vals, *args, **kwargs)
+    return _np.array(vals, *args, **kwargs)
+
+
+def asarray_gradmaker(ans, *args, **kwargs):
+    """Gradient maker for asarray"""
+    del ans, args, kwargs
+    return lambda g: g
+
+
+defvjp(asarray, asarray_gradmaker, argnums=(0,))
 
 
 class tensor(_np.ndarray):
@@ -90,9 +108,9 @@ class tensor(_np.ndarray):
     """
 
     def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
-        obj = _np.array(input_array, *args, **kwargs)
+        obj = asarray(input_array, *args, **kwargs)
 
-        if isinstance(obj, _np.ndarray):
+        if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
             obj.requires_grad = requires_grad
 

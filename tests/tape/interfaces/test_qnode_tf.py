@@ -23,7 +23,11 @@ from pennylane.tape import JacobianTape, qnode, QNode
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [["default.qubit", "finite-diff"], ["default.qubit.tf", "backprop"]]
+    "dev_name,diff_method", [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit.tf", "backprop"],
+    ],
 )
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
@@ -36,7 +40,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev)
+        @qnode(dev, diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -68,7 +72,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -106,7 +110,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -177,7 +181,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev)
+        @qnode(dev, diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -202,8 +206,8 @@ class TestQNode:
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
         """Test setting finite-difference jacobian options"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only works with finite diff")
 
         spy = mocker.spy(JacobianTape, "numeric_pd")
 
@@ -211,7 +215,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface="tf", h=1e-8, order=2)
+        @qnode(dev, interface="tf", h=1e-8, order=2, diff_method=diff_method)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)

@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the NumpyBox implementation of the TensorBox API.
 """
+from scipy.linalg import block_diag
 import numpy as np
 import pennylane as qml
 
@@ -32,6 +33,7 @@ class NumpyBox(qml.math.TensorBox):
     cast = wrap_output(lambda self, dtype: np.array(self.data, dtype=dtype))
     diag = staticmethod(wrap_output(lambda values, k=0: np.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: np.expand_dims(self.data, axis=axis))
+    gather = wrap_output(lambda self, indices: self.data[indices])
     ones_like = wrap_output(lambda self: np.ones_like(self.data))
     reshape = wrap_output(lambda self, shape: np.reshape(self.data, shape))
     sqrt = wrap_output(lambda self: np.sqrt(self.data))
@@ -51,6 +53,11 @@ class NumpyBox(qml.math.TensorBox):
     @staticmethod
     def astensor(tensor):
         return np.asarray(tensor)
+
+    @staticmethod
+    @wrap_output
+    def block_diag(values):
+        return block_diag(*NumpyBox.unbox_list(values))
 
     @staticmethod
     @wrap_output

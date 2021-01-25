@@ -20,7 +20,7 @@ from flaky import flaky
 
 import pennylane as qml
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [pytest.mark.skip_unsupported, pytest.mark.usefixtures("tape_mode")]
 
 # ==========================================================
 # Some useful global variables

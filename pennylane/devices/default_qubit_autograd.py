@@ -16,7 +16,7 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 from pennylane.numpy.tensor import tensor
 
 from pennylane.devices import DefaultQubit
@@ -94,12 +94,13 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRX": autograd_ops.CRX,
         "CRY": autograd_ops.CRY,
         "CRZ": autograd_ops.CRZ,
+        "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
     }
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    _asarray = staticmethod(np.tensor)
+    _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
@@ -107,7 +108,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(np.einsum)
-    _cast = staticmethod(np.tensor)
+    _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
