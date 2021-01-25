@@ -179,9 +179,9 @@ class QNode:
                 ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
         """
 
         if diff_method == "best":
@@ -236,9 +236,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
         """
         try:
             return QNode._validate_device_method(device, interface)
@@ -266,9 +266,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support backpropagation, or the
@@ -330,9 +330,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support reversible backprop
@@ -358,9 +358,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str]: tuple containing the compatible
-            JacobianTape, the interface to apply, and the method argument
-            to pass to the ``JacobianTape.jacobian`` method
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support adjoint backprop
@@ -392,9 +392,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not provide a native method for computing
