@@ -371,6 +371,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes an issue with tape expansions where information about sampling
+  (specifically the `is_sampled` tape attribute) was not preserved.
+  [(#1027)](https://github.com/PennyLaneAI/pennylane/pull/1027)
+
 * In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
   causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
   as the `Operation.expand()` method, has been modified to fix this.
@@ -391,7 +395,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase Roberts, Maria Schuld, David Wierichs, Jiahao Yao.
+Thomas Bromley, Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase
+Roberts, Maria Schuld, Antal Száva, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 
