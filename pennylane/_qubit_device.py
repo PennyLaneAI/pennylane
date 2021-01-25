@@ -696,8 +696,10 @@ class QubitDevice(Device):
 
         for m in tape.measurements:
             if m.return_type is not qml.operation.Expectation:
-                raise qml.QuantumFunctionError("Adjoint differentiation method does not support"
-                                               f" measurement {m.return_type.value}")
+                raise qml.QuantumFunctionError(
+                    "Adjoint differentiation method does not support"
+                    f" measurement {m.return_type.value}"
+                )
 
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
@@ -732,7 +734,7 @@ class QubitDevice(Device):
         expanded_ops = [o for o in expanded_ops if not o.name in ("QubitStateVector", "BasisState")]
         dot_product_real = lambda a, b: self._real(math.sum(self._conj(a) * b))
 
-        param_number = len(tape._par_info) - 1
+        param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
         for op in expanded_ops:
 
