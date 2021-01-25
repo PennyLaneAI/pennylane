@@ -690,13 +690,13 @@ class QubitDevice(Device):
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
 
-    def rewind_jacobian(self, tape):
+    def adjoint_jacobian(self, tape):
         """Implements the method outlined in https://arxiv.org/abs/2009.02823 to calculate the
         Jacobian."""
 
         for m in tape.measurements:
             if m.obs is None:
-                raise ValueError(f"Rewind differentiation method does not support measurement {m}")
+                raise ValueError(f"Adjoint differentiation method does not support measurement {m}")
 
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
@@ -723,7 +723,7 @@ class QubitDevice(Device):
                 else:
                     raise QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
-                        'the "rewind" differentiation method'
+                        'the "adjoint" differentiation method'
                     )
             else:
                 expanded_ops.append(op)

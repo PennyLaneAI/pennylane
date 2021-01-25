@@ -26,7 +26,7 @@ from pennylane.tape import JacobianTape, qnode, QNode
     "dev_name,diff_method", [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
-        ["default.qubit", "rewind"]
+        ["default.qubit", "adjoint"]
     ],
 )
 class TestQNode:

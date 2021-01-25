@@ -103,11 +103,11 @@ class QNode:
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
-            * ``"rewind"``: Uses a `method <https://arxiv.org/abs/2009.02823>`__ that "rewinds" the
-              circuit after a forward pass by iteratively applying the inverse gate to scan
-              backwards through the circuit. This method is similar to the reversible method, but
-              has a lower time overhead and a similar memory overhead. Only allowed on simulator
-              devices such as :class:`default.qubit <~.DefaultQubit>`.
+            * ``"adjoint"``: Uses an adjoint `method <https://arxiv.org/abs/2009.02823>`__ that
+              reverses through the circuit after a forward pass by iteratively applying the inverse
+              (adjoint) gate. This method is similar to the reversible method, but has a lower time
+              overhead and a similar memory overhead. Only allowed on simulator devices such as
+              :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
               rule for all supported quantum operation arguments, with finite-difference
@@ -174,7 +174,7 @@ class QNode:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str): The requested method of differentiation. One of
-                ``"best"``, ``"backprop"``, ``"reversible"``, ``rewind``, ``"device"``,
+                ``"best"``, ``"backprop"``, ``"reversible"``, ``"adjoint"``, ``"device"``,
                 ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
@@ -192,8 +192,8 @@ class QNode:
         if diff_method == "reversible":
             return QNode._validate_reversible_method(device, interface)
 
-        if diff_method == "rewind":
-            return QNode._validate_rewind_method(device, interface)
+        if diff_method == "adjoint":
+            return QNode._validate_adjoint_method(device, interface)
 
         if diff_method == "device":
             return QNode._validate_device_method(device, interface)
@@ -211,7 +211,7 @@ class QNode:
 
         raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
-            "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'rewind')."
+            "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
         )
 
     @staticmethod
@@ -348,9 +348,9 @@ class QNode:
         return ReversibleTape, interface, device, {"method": "analytic"}
 
     @staticmethod
-    def _validate_rewind_method(device, interface):
+    def _validate_adjoint_method(device, interface):
         """Validates whether a particular device and JacobianTape interface
-        supports the ``"rewind"`` differentiation method.
+        supports the ``"adjoint"`` differentiation method.
 
         Args:
             device (.Device): PennyLane device
@@ -362,23 +362,23 @@ class QNode:
             to pass to the ``JacobianTape.jacobian`` method
 
         Raises:
-            qml.QuantumFunctionError: if the device does not support rewind backprop
+            qml.QuantumFunctionError: if the device does not support adjoint backprop
         """
         supported_device = hasattr(device, "_apply_operation")
         supported_device = supported_device and hasattr(device, "_apply_unitary")
         supported_device = supported_device and device.capabilities().get("returns_state")
-        supported_device = supported_device and hasattr(device, "rewind_jacobian")
+        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
 
         if not supported_device:
             raise ValueError(
-                f"The {device.short_name} device does not support rewind differentiation."
+                f"The {device.short_name} device does not support adjoint differentiation."
             )
 
         return (
             JacobianTape,
             interface,
             device,
-            {"method": "device", "jacobian_method": "rewind_jacobian"},
+            {"method": "device", "jacobian_method": "adjoint_jacobian"},
         )
 
     @staticmethod
@@ -813,11 +813,11 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
-            * ``"rewind"``: Uses a `method <https://arxiv.org/abs/2009.02823>`__ that "rewinds" the
-              circuit after a forward pass by iteratively applying the inverse gate to scan
-              backwards through the circuit. This method is similar to the reversible method, but
-              has a lower time overhead and a similar memory overhead. Only allowed on simulator
-              devices such as :class:`default.qubit <~.DefaultQubit>`.
+            * ``"adjoint"``: Uses an adjoint `method <https://arxiv.org/abs/2009.02823>`__ that
+              reverses through the circuit after a forward pass by iteratively applying the inverse
+              (adjoint) gate. This method is similar to the reversible method, but has a lower time
+              overhead and a similar memory overhead. Only allowed on simulator devices such as
+              :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.

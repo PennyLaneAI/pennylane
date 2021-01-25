@@ -24,7 +24,7 @@ from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
         ["default.qubit.autograd", "backprop"],
-        ["default.qubit", "rewind"]
+        ["default.qubit", "adjoint"]
     ],
 )
 class TestQNode:
