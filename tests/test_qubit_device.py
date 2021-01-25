@@ -28,7 +28,7 @@ from pennylane.variable import Variable
 from pennylane.wires import Wires
 from pennylane.tape.measure import state
 from pennylane._qubit_device import operation_derivative
-from pennylane.tape import QNode
+from pennylane.tape import QNode, qnode
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -1035,34 +1035,9 @@ class TestAdjointJacobian:
 
 
 
-# # class TestRewindTapeIntegration:
-# #     """Integration tests for RewindTape"""
-# #
-# #     def test_interface_tf(self):
-# #         tf = pytest.importorskip("tensorflow")
-# #         from pennylane.tape.interfaces.tf import TFInterface
-# #
-# #         dev = qml.device("default.qubit", wires=1)
-# #
-# #         with JacobianTape() as tape:
-# #             qml.RX(0.4, wires=[0])
-# #             qml.Rot(0.1, 0.2, 0.3, wires=[0])
-# #             qml.RY(-0.2, wires=[0])
-# #             qml.expval(qml.PauliZ(0))
-# #
-# #         # with tf.GradientTape() as tape_tf:
-# #         TFInterface.apply(tape)
-# #         # result = tape.execute(dev)
-# #
-# #
-# #         jac = tape.jacobian(dev)
-# #         print(jac)
-# #         print("F")
-#
-#
-#
-#
-#
+
+
+
 class TestAdjointJacobianQNode:
     """Test QNode integration with the adjoint_jacobian method"""
 
@@ -1102,94 +1077,118 @@ class TestAdjointJacobianQNode:
 
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-    # thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
-#
-#     @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
-#     @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
-#     def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker, dev):
-#         """Tests that the correct gradient is computed for qnodes which
-#         use the same parameter in multiple gates."""
-#
-#         from gate_data import Rotx as Rx, Roty as Ry, Rotz as Rz
-#
-#         def expZ(state):
-#             return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
-#
-#         extra_param = np.array(0.31, requires_grad=False)
-#
-#         @qnode(dev, diff_method="rewind")
-#         def cost(p1, p2):
-#             qml.RX(extra_param, wires=[0])
-#             qml.RY(p1, wires=[0])
-#             qml.RZ(p2, wires=[0])
-#             qml.RX(p1, wires=[0])
-#             return expval(qml.PauliZ(0))
-#
-#         zero_state = np.array([1.0, 0.0])
-#         cost(reused_p, other_p)
-#
-#         tape = cost.qtape
-#
-#         assert isinstance(tape, RewindTape)
-#         spy = mocker.spy(RewindTape, "_rewind_jacobian")
-#
-#         # analytic gradient
-#         grad_fn = qml.grad(cost)
-#         grad_A = grad_fn(reused_p, other_p)
-#
-#         spy.assert_called_once()
-#
-#         # manual gradient
-#         grad_true0 = (
-#             expZ(
-#                 Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
-#             )
-#             - expZ(
-#                 Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
-#             )
-#         ) / 2
-#         grad_true1 = (
-#             expZ(
-#                 Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
-#             )
-#             - expZ(
-#                 Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
-#             )
-#         ) / 2
-#         expected = grad_true0 + grad_true1  # product rule
-#
-#         assert np.allclose(grad_A[0], expected, atol=tol, rtol=0)
-#
-#     def test_gradient_repeated_gate_parameters(self, mocker, tol, dev):
-#         """Tests that repeated use of a free parameter in a multi-parameter gate yields correct
-#         gradients."""
-#         params = np.array([0.8, 1.3], requires_grad=True)
-#
-#         def circuit(params):
-#             qml.RX(np.array(np.pi / 4, requires_grad=False), wires=[0])
-#             qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
-#             return expval(qml.PauliX(0))
-#
-#         spy_numeric = mocker.spy(JacobianTape, "numeric_pd")
-#         spy_analytic = mocker.spy(RewindTape, "_rewind_jacobian")
-#
-#         cost = QNode(circuit, dev, diff_method="finite-diff")
-#         grad_fn = qml.grad(cost)
-#         grad_F = grad_fn(params)
-#
-#         spy_numeric.assert_called()
-#         spy_analytic.assert_not_called()
-#
-#         cost = QNode(circuit, dev, diff_method="rewind")
-#         grad_fn = qml.grad(cost)
-#         grad_A = grad_fn(params)
-#
-#         spy_analytic.assert_called_once()
-#
-#         # the different methods agree
-#         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
-#
-#
+    thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
+
+    @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
+    @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
+    def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker, dev):
+        """Tests that the correct gradient is computed for qnodes which
+        use the same parameter in multiple gates."""
+
+        from gate_data import Rotx as Rx, Roty as Ry, Rotz as Rz
+
+        def expZ(state):
+            return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
+
+        extra_param = np.array(0.31, requires_grad=False)
+
+        @qnode(dev, diff_method="adjoint")
+        def cost(p1, p2):
+            qml.RX(extra_param, wires=[0])
+            qml.RY(p1, wires=[0])
+            qml.RZ(p2, wires=[0])
+            qml.RX(p1, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        zero_state = np.array([1.0, 0.0])
+        cost(reused_p, other_p)
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        # analytic gradient
+        grad_fn = qml.grad(cost)
+        grad_D = grad_fn(reused_p, other_p)
+
+        spy.assert_called_once()
+
+        # manual gradient
+        grad_true0 = (
+            expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        grad_true1 = (
+            expZ(
+                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        expected = grad_true0 + grad_true1  # product rule
+
+        assert np.allclose(grad_D[0], expected, atol=tol, rtol=0)
+
+    def test_gradient_repeated_gate_parameters(self, mocker, tol, dev):
+        """Tests that repeated use of a free parameter in a multi-parameter gate yields correct
+        gradients."""
+        params = np.array([0.8, 1.3], requires_grad=True)
+
+        def circuit(params):
+            qml.RX(np.array(np.pi / 4, requires_grad=False), wires=[0])
+            qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        spy_numeric = mocker.spy(qml.tape.JacobianTape, "numeric_pd")
+        spy_analytic = mocker.spy(dev, "adjoint_jacobian")
+
+        cost = QNode(circuit, dev, diff_method="finite-diff")
+
+        grad_fn = qml.grad(cost)
+        grad_F = grad_fn(params)
+
+        spy_numeric.assert_called()
+        spy_analytic.assert_not_called()
+
+        cost = QNode(circuit, dev, diff_method="adjoint")
+        grad_fn = qml.grad(cost)
+        grad_D = grad_fn(params)
+
+        spy_analytic.assert_called_once()
+
+        # the different methods agree
+        assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
+
+    def test_interface_tf(self, dev):
+        tf = pytest.importorskip("tensorflow")
+
+        def f(params1, params2):
+            qml.RX(0.4, wires=[0])
+            qml.RZ(params1 * tf.sqrt(params2), wires=[0])
+            qml.RY(tf.cos(params2), wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        params1 = tf.Variable(0.3, dtype=tf.float64)
+        params2 = tf.Variable(0.4, dtype=tf.float64)
+
+        qnode1 = QNode(f, dev, interface="tf", diff_method="adjoint")
+        qnode2 = QNode(f, dev, interface="tf", diff_method="finite-diff")
+
+        with tf.GradientTape() as tape:
+            res1 = qnode1(params1, params2)
+
+        g1 = tape.gradient(res1, [params1, params2])
+
+        with tf.GradientTape() as tape:
+            res2 = qnode2(params1, params2)
+
+        g2 = tape.gradient(res2, [params1, params2])
+
+        assert np.allclose(g1, g2)
+
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
