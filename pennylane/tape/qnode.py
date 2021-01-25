@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import Device
 
-from pennylane.operation import State, Sample
+from pennylane.operation import State
 
 from pennylane.tape.interfaces.autograd import AutogradInterface, np as anp
 from pennylane.tape.tapes import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
@@ -447,8 +447,6 @@ class QNode:
                 stop_at=lambda obj: self.device.supports_operation(obj.name),
             )
 
-            # Check the observables without needing to create the circuit graph
-            self.qtape.is_sampled = any(obs.return_type == Sample for obs in self.qtape.observables)
 
     def __call__(self, *args, **kwargs):
         # construct the tape
