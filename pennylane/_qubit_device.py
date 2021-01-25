@@ -754,7 +754,7 @@ class QubitDevice(Device):
                         'the "adjoint" differentiation method'
                     )
             else:
-                if not op.name in ("QubitStateVector", "BasisState"):
+                if op.name not in ("QubitStateVector", "BasisState"):
                     expanded_ops.append(op)
 
         dot_product_real = lambda a, b: self._real(sum(self._conj(a) * b))
