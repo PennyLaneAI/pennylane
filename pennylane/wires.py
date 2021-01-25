@@ -27,37 +27,28 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
-    if isinstance(wires, (Number, str)):
-        # interpret as a single wire
-        return (wires,)
-
-    if isinstance(wires, Wires):
-        # if input is already a Wires object, just return its wire tuple
-        return wires.labels
-
-    if getattr(wires, "shape", None) == tuple():
-        # Scalar NumPy array
-        return (wires.item(),)
-
-    if isinstance(wires, Iterable):
+    try:
         tuple_of_wires = tuple(wires)
-        try:  # We need the set for the uniqueness check, so we can use it for hashability check
-            set_of_wires = set(wires)
+    except TypeError:
+        # if not iterable, interpret as single wire label
+        try:
+            hash(wires)
         except TypeError as e:
-            # Make sure it really was a hashability issue
+            # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
                 raise WireError("Wires must be hashable; got {}.".format(wires)) from e
+        return (wires,)
 
-        if len(set_of_wires) != len(tuple_of_wires):
-            raise WireError("Wires must be unique; got {}.".format(wires))
+    try:  # we need the set for the uniqueness check, so we can use it for hashability check of iterables
+        set_of_wires = set(wires)
+    except TypeError as e:
+        if str(e).startswith("unhashable"):
+            raise WireError("Wires must be hashable; got {}.".format(wires)) from e
 
-        return tuple_of_wires
+    if len(set_of_wires) != len(tuple_of_wires):
+        raise WireError("Wires must be unique; got {}.".format(wires))
 
-    raise WireError(
-        "Wires must be represented by a number or string; got {} of type {}.".format(
-            wires, type(wires)
-        )
-    )
+    return tuple_of_wires
 
 
 class Wires(Sequence):
