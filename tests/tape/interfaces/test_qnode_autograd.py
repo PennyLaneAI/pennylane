@@ -549,6 +549,50 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_ragged_differentiation_variance(self, dev_name, diff_method, monkeypatch, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and variance outputs"""
+        dev = qml.device(dev_name, wires=2)
+        x = np.array(0.543, requires_grad=True)
+        y = np.array(-0.654, requires_grad=True)
+
+        if dev_name == "default.qubit.autograd":
+            # The current DefaultQubitAutograd device provides an _asarray method that does
+            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
+            # flatten the array. Here, we patch the _asarray method on the device to achieve this
+            # behaviour.
+            # TODO: once the tape has moved from the beta folder, we should implement
+            # this change directly in the device.
+
+            def _asarray(args, dtype=np.float64):
+                return np.hstack(args).flatten()
+
+            monkeypatch.setattr(dev, "_asarray", _asarray)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [qml.var(qml.PauliZ(0)), qml.probs(wires=[1])]
+
+        res = circuit(x, y)
+
+        expected = np.array(
+            [np.sin(x) ** 2, (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = qml.jacobian(circuit)(x, y)
+        expected = np.array(
+            [
+                [2 * np.cos(x) * np.sin(x), 0],
+                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_sampling(self, dev_name, diff_method):
         """Test sampling works as expected"""
         dev = qml.device(dev_name, wires=2, shots=10)
