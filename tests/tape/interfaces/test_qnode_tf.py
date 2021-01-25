@@ -23,7 +23,11 @@ from pennylane.tape import JacobianTape, qnode, QNode
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [["default.qubit", "finite-diff"], ["default.qubit.tf", "backprop"]]
+    "dev_name,diff_method", [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit.tf", "backprop"],
+    ],
 )
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
@@ -202,8 +206,8 @@ class TestQNode:
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
         """Test setting finite-difference jacobian options"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only works with finite diff")
 
         spy = mocker.spy(JacobianTape, "numeric_pd")
 
