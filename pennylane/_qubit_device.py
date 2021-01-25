@@ -27,7 +27,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
-from pennylane import Device, math
+from pennylane import Device
+from pennylane.math import sum
 from pennylane.wires import Wires
 
 
@@ -759,7 +760,7 @@ class QubitDevice(Device):
                 if not op.name in ("QubitStateVector", "BasisState"):
                     expanded_ops.append(op)
 
-        dot_product_real = lambda a, b: self._real(math.sum(self._conj(a) * b))
+        dot_product_real = lambda a, b: self._real(sum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
