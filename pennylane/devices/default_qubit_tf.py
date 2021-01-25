@@ -27,6 +27,8 @@ try:
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
 except ImportError as e:
@@ -166,7 +168,7 @@ class DefaultQubitTF(DefaultQubit):
     def _asarray(array, dtype=None):
         try:
             res = tf.convert_to_tensor(array, dtype=dtype)
-        except tf.python.framework.errors_impl.InvalidArgumentError:
+        except InvalidArgumentError:
             res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
 
             if dtype is not None:
