@@ -171,11 +171,16 @@ class QubitParamShiftTape(JacobianTape):
             """
             results = np.squeeze(results)
 
-            if results.dtype is not np.dtype("O"):
-                dot = lambda x: np.dot(coeffs, x)
-                return np.apply_along_axis(dot, 0, results)
+            if results.dtype is np.dtype("O"):
+                # The evaluated quantum results are a ragged array.
+                # Need to use a list comprehension to compute the linear
+                # combination.
+                return sum([c * r for c, r in zip(coeffs, results)])
 
-            return sum([c * r for c, r in zip(coeffs, results)])
+            # The evaluated quantum results are a valid NumPy array,
+            # can instead apply the dot product along the first axis.
+            dot = lambda x: np.dot(coeffs, x)
+            return np.apply_along_axis(dot, 0, results)
 
         return tapes, processing_fn
 
@@ -362,10 +367,15 @@ class QubitParamShiftTape(JacobianTape):
             """
             results = np.squeeze(results)
 
-            if results.dtype is not np.dtype("O"):
-                dot = lambda x: np.dot(coeffs, x)
-                return np.apply_along_axis(dot, 0, results)
+            if results.dtype is np.dtype("O"):
+                # The evaluated quantum results are a ragged array.
+                # Need to use a list comprehension to compute the linear
+                # combination.
+                return sum([c * r for c, r in zip(coeffs, results)])
 
-            return sum([c * r for c, r in zip(coeffs, results)])
+            # The evaluated quantum results are a valid NumPy array,
+            # can instead apply the dot product along the first axis.
+            dot = lambda x: np.dot(coeffs, x)
+            return np.apply_along_axis(dot, 0, results)
 
         return tapes, processing_fn
