@@ -30,7 +30,7 @@ def _process(wires):
     and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
     The only exception to this are strings, which are always interpreted as a single
-    wire label, so users can address wires with labels such as "ancilla".
+    wire label, so users can address wires with labels such as `"ancilla"`.
 
     Any type can be a wire label, as long as it is hashable. We need this to establish
     the uniqueness of two labels. For example, `0` and `0.` are interpreted as

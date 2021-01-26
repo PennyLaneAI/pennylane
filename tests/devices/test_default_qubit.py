@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.operation import Operation
+from pennylane.wires import WireError
 
 U = np.array(
     [
@@ -1756,6 +1756,20 @@ class TestWiresIntegration:
 
         assert np.allclose(circuit1(), circuit2(), tol)
 
+    def test_wires_not_found_exception(self):
+        """Tests that an exception is raised when wires not present on the device are adressed. """
+        dev = qml.device("default.qubit", wires=['a', 'b'])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.5, wires='c')
+            return qml.expval(qml.PauliZ('a'))
+
+        with pytest.raises(
+                WireError,
+                match="Wires ['c'] not found"
+        ):
+            circuit()
 
 class TestGetSlice:
     """Tests for the _get_slice function."""
