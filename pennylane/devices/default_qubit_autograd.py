@@ -120,7 +120,7 @@ class DefaultQubitAutograd(DefaultQubit):
         res = np.asarray(array, dtype=dtype)
 
         if res.dtype is np.dtype("O"):
-            return np.asarray(np.hstack(array).flatten(), dtype=dtype)
+            return np.hstack(array).flatten().astype(dtype)
 
         return res
 
