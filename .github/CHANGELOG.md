@@ -2,6 +2,34 @@
 
 <h3>New features since last release</h3>
 
+* A new differentiation method has been added for use with simulators in tape mode. The `"adjoint"`
+  method operates after a forward pass by iteratively applying inverse gates to scan backwards
+  through the circuit. This method is similar to the reversible method, but has a lower time
+  overhead and a similar memory overhead. It follows the approach provided by
+  [Jones and Gacon](https://arxiv.org/abs/2009.02823). This method is only compatible with certain
+  statevector-based devices such as `default.qubit`.
+  
+  Example use:
+  
+  ```python
+  import pennylane as qml
+
+  qml.enable_tape()
+
+  wires = 1
+  device = qml.device("default.qubit", wires=wires)
+
+  @qml.qnode(device, diff_method="adjoint")
+  def f(params):
+      qml.RX(0.1, wires=0)
+      qml.Rot(*params, wires=0)
+      qml.RX(-0.3, wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  params = [0.1, 0.2, 0.3]
+  qml.grad(f)(params)
+  ```
+
 * Added `qml.math.squeeze`.
   [(#1011)](https://github.com/PennyLaneAI/pennylane/pull/1011)
 

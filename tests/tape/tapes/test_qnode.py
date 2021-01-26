@@ -52,7 +52,8 @@ class TestValidation:
             QNode._validate_device_method(dev, None)
 
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        tape_class, interface, method, device = QNode._validate_device_method(dev, "interface")
+        tape_class, interface, device, diff_options = QNode._validate_device_method(dev, "interface")
+        method = diff_options["method"]
 
         assert tape_class is JacobianTape
         assert method == "device"
@@ -85,7 +86,8 @@ class TestValidation:
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        tape_class, interface, method, device = QNode._validate_backprop_method(dev, test_interface)
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        method = diff_options["method"]
 
         assert tape_class is JacobianTape
         assert method == "backprop"
@@ -102,7 +104,8 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
-        tape_class, interface, method, device = QNode._validate_backprop_method(dev, test_interface)
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        method = diff_options["method"]
 
         assert tape_class is JacobianTape
         assert method == "backprop"
@@ -161,16 +164,16 @@ class TestValidation:
 
         # device is top priority
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (JacobianTape, "another_interface", "device", dev)
+        assert res == (JacobianTape, "another_interface", dev, {"method": "device"})
 
         # backprop is next priority
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
         res = QNode.get_best_method(dev, "some_interface")
-        assert res == (JacobianTape, "some_interface", "backprop", dev)
+        assert res == (JacobianTape, "some_interface", dev, {"method": "backprop"})
 
         # The next fallback is parameter-shift.
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QubitParamShiftTape, "another_interface", "best", dev)
+        assert res == (QubitParamShiftTape, "another_interface", dev, {"method": "best"})
 
         # finally, if both fail, finite differences is the fallback
         def capabilities(cls):
@@ -180,7 +183,7 @@ class TestValidation:
 
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (JacobianTape, "another_interface", "numeric", dev)
+        assert res == (JacobianTape, "another_interface", dev, {"method": "numeric"})
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff-method correctly returns the right
@@ -188,29 +191,29 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         mock_best = mocker.patch("pennylane.tape.QNode.get_best_method")
-        mock_best.return_value = 1, 2, 3, 0
+        mock_best.return_value = 1, 2, 3, {"method": "best"}
 
         mock_backprop = mocker.patch("pennylane.tape.QNode._validate_backprop_method")
-        mock_backprop.return_value = 4, 5, 6, 0
+        mock_backprop.return_value = 4, 5, 6, {"method": "backprop"}
 
         mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
-        mock_device.return_value = 7, 8, 9, 0
+        mock_device.return_value = 7, 8, 9, {"method": "device"}
 
         qn = QNode(None, dev, diff_method="best")
         assert qn._tape == mock_best.return_value[0]
         assert qn.interface == mock_best.return_value[1]
-        assert qn.diff_options["method"] == mock_best.return_value[2]
+        assert qn.diff_options["method"] == mock_best.return_value[3]["method"]
 
         qn = QNode(None, dev, diff_method="backprop")
         assert qn._tape == mock_backprop.return_value[0]
         assert qn.interface == mock_backprop.return_value[1]
-        assert qn.diff_options["method"] == mock_backprop.return_value[2]
+        assert qn.diff_options["method"] == mock_backprop.return_value[3]["method"]
         mock_backprop.assert_called_once()
 
         qn = QNode(None, dev, diff_method="device")
         assert qn._tape == mock_device.return_value[0]
         assert qn.interface == mock_device.return_value[1]
-        assert qn.diff_options["method"] == mock_device.return_value[2]
+        assert qn.diff_options["method"] == mock_device.return_value[3]["method"]
         mock_device.assert_called_once()
 
         qn = QNode(None, dev, diff_method="finite-diff")
@@ -232,6 +235,15 @@ class TestValidation:
             qml.QuantumFunctionError, match="Differentiation method hello not recognized"
         ):
             QNode(None, dev, diff_method="hello")
+
+    def test_validate_adjoint_invalid_device(self):
+        """Test if a ValueError is raised when an invalid device is provided to
+        _validate_adjoint_method"""
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        with pytest.raises(ValueError, match="The default.gaussian device does not"):
+            QNode._validate_adjoint_method(dev, "tf")
 
 
 class TestTapeConstruction:
