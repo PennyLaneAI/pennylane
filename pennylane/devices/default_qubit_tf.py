@@ -18,8 +18,6 @@ import numpy as np
 import semantic_version
 
 from pennylane.operation import DiagonalOperation
-from pennylane.wires import Wires, WireError
-from pennylane.numpy.tensor import tensor
 
 try:
     import tensorflow as tf

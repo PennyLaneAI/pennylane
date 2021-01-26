@@ -16,8 +16,6 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
-from pennylane.wires import Wires
-from pennylane.numpy.tensor import tensor
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import autograd_ops
