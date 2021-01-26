@@ -512,6 +512,11 @@ class DefaultTensor(Device):
         elif self._rep == "mps":
             expval = self._ev_mps(obs_nodes, obs_wires)
 
+        if self._abs(self._imag(expval)) > TOL:
+            warnings.warn(
+                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                RuntimeWarning,
+            )
         return self._real(expval)
 
     def _ev_exact(self, obs_nodes, obs_wires):

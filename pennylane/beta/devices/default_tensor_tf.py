@@ -25,7 +25,7 @@ try:
         raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
 
 except ImportError as e:
-    raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
+    raise ImportError("default.tensor.tf device requires TensorFlow>=2.0") from e
 
 from pennylane.beta.devices.default_tensor import DefaultTensor
 from pennylane.devices import tf_ops as ops
