@@ -16,7 +16,6 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 from collections.abc import Sequence, Iterable
 import functools
-from numbers import Number
 import numpy as np
 
 
@@ -76,18 +75,19 @@ def _process(wires):
 
 class Wires(Sequence):
     r"""
-    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\mathrm{th}` object
-    addresses the :math:`i\mathrm{th}` quantum subsystem.
+    A bookkeeping class for wires, which are ordered collections of unique objects.
 
-    There is no conceptual difference between registers of multiple wires and single wires,
-    which are just wire registers of length one.
+    If the input `wires` can be iterated over, it is interpreted as a sequence of wire labels that have to be
+    unique and hashable. Else it is interpreted as a single wire label that has to be hashable. The
+    only exception are strings which are interpreted as wire labels.
 
-    Indexing and slicing this sequence will return another ``Wires`` object.
+    The hash function of a wire label is considered the source of truth when deciding whether
+    two wire labels are the same or not.
+
+    Indexing an instance of this class will return a wire label.
 
     Args:
-         wires (Iterable[Number,str], Number): If iterable, interpreted as an ordered collection of unique objects
-            representing wires. If a Number, the input is converted into an iterable of a single entry,
-            and hence interpreted as a single wire.
+         wires (Any): the wire label(s)
     """
 
     def __init__(self, wires, _override=False):
