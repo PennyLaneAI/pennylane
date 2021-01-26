@@ -1727,3 +1727,45 @@ class CVObservable(CV, Observable):
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, wires)
+
+
+def operation_derivative(operation) -> np.ndarray:
+    r"""Calculate the derivative of an operation.
+
+    For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
+    in the standard basis of its derivative with respect to :math:`t`, i.e.,
+
+    .. math:: \frac{d \, e^{i \hat{H} \phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} \phi t},
+
+    where :math:`\phi` is a real constant.
+
+    Args:
+        operation (.Operation): The operation to be differentiated.
+
+    Returns:
+        array: the derivative of the operation as a matrix in the standard basis
+
+    Raises:
+        ValueError: if the operation does not have a generator or is not composed of a single
+            trainable parameter
+    """
+    generator, prefactor = operation.generator
+
+    if generator is None:
+        raise ValueError(f"Operation {operation.name} does not have a generator")
+    if operation.num_params != 1:
+        # Note, this case should already be caught by the previous raise since we haven't worked out
+        # how to have an operator for multiple parameters. It is added here in case of a future
+        # change
+        raise ValueError(
+            f"Operation {operation.name} is not written in terms of a single parameter"
+        )
+
+    if not isinstance(generator, np.ndarray):
+        generator = generator.matrix
+
+    if operation.inverse:
+        prefactor *= -1
+        generator = generator.conj().T
+
+    return 1j * prefactor * generator @ operation.matrix

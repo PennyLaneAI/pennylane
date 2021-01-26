@@ -262,3 +262,52 @@ def pytest_runtest_makereport(item, call):
                 tr.outcome = "skipped"
 
     return tr
+
+
+@pytest.fixture(params=[False, True])
+def tape_mode(request, mocker):
+    """Tests using this fixture will be run twice, once in tape mode and once without."""
+
+    if request.param:
+        # Several attributes and methods on the old QNode have a new location on the new QNode/tape.
+        # Here, we dynamically mock so that the tests do not have to be modified to support both
+        # tape and non-tape mode. Once tape mode is default, we can make the equivalent
+        # changes directly in the tests.
+        mocker.patch(
+            "pennylane.tape.QNode.ops",
+            property(lambda self: self.qtape.operations + self.qtape.observables),
+            create=True,
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.order",
+            property(lambda self: self.diff_options["order"]),
+            create=True,
+        )
+        mocker.patch(
+            "pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True
+        )
+
+        def patched_jacobian(self, args, **kwargs):  # pylint: disable=unused-argument
+            method = kwargs.get("method", "best")
+
+            if method == "A":
+                method = "analytic"
+            elif method == "F":
+                method = "numeric"
+
+            kwargs["method"] = method
+            dev = kwargs["options"]["device"]
+
+            return self.qtape.jacobian(dev, **kwargs)
+
+        mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
+
+        qml.enable_tape()
+
+    yield
+
+    if request.param:
+        qml.disable_tape()

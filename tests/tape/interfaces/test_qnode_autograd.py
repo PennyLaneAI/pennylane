@@ -20,8 +20,12 @@ from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method",
-    [["default.qubit", "finite-diff"], ["default.qubit.autograd", "backprop"]],
+    "dev_name,diff_method", [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit", "backprop"],
+        ["default.qubit", "adjoint"]
+    ],
 )
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
@@ -29,12 +33,12 @@ class TestQNode:
     def test_nondiff_param_unwrapping(self, dev_name, diff_method, mocker):
         """Test that non-differentiable parameters are correctly unwrapped
         to NumPy ndarrays or floats (if 0-dimensional)"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "parameter-shift":
+            pytest.skip("Test only supports parameter-shift")
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x[0], wires=0)
             qml.Rot(*x[1:], wires=0)
@@ -98,7 +102,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -128,7 +132,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -244,15 +248,15 @@ class TestQNode:
     def test_changing_trainability(self, dev_name, diff_method, mocker, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "parameter-shift":
+            pytest.skip("Test only supports parameter-shift")
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -442,6 +446,9 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
 
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -466,6 +473,9 @@ class TestQNode:
     def test_multiple_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -501,25 +511,15 @@ class TestQNode:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
-
-        if dev_name == "default.qubit.autograd":
-            # The current DefaultQubitAutograd device provides an _asarray method that does
-            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
-            # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour.
-            # TODO: once the tape has moved from the beta folder, we should implement
-            # this change directly in the device.
-
-            def _asarray(args, dtype=np.float64):
-                return np.hstack(args).flatten()
-
-            monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(x, y):
@@ -539,6 +539,40 @@ class TestQNode:
         expected = np.array(
             [
                 [-np.sin(x), 0],
+                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_ragged_differentiation_variance(self, dev_name, diff_method, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and variance outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
+        dev = qml.device(dev_name, wires=2)
+        x = np.array(0.543, requires_grad=True)
+        y = np.array(-0.654, requires_grad=True)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [qml.var(qml.PauliZ(0)), qml.probs(wires=[1])]
+
+        res = circuit(x, y)
+
+        expected = np.array(
+            [np.sin(x) ** 2, (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = qml.jacobian(circuit)(x, y)
+        expected = np.array(
+            [
+                [2 * np.cos(x) * np.sin(x), 0],
                 [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
                 [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
             ]

@@ -27,6 +27,7 @@ from pennylane.grouping import diagonalize_qwc_pauli_words
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.operation import Sample
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -149,6 +150,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
 
+    # Check the observables without needing to create the circuit graph
+    new_tape.is_sampled = any(obs.return_type == Sample for obs in new_tape.observables)
     return new_tape
 
 
@@ -625,7 +628,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
-    def get_parameters(self, trainable_only=True):
+    def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
@@ -854,7 +857,9 @@ class QuantumTape(AnnotatedQueue):
             .TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
+            self._graph = TapeCircuitGraph(
+                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+            )
 
         return self._graph
 
@@ -921,7 +926,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._depth
 
-    def draw(self, charset="unicode", wire_order=None):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -948,6 +953,7 @@ class QuantumTape(AnnotatedQueue):
             charset (str, optional): The charset that should be used. Currently, "unicode" and
                 "ascii" are supported.
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -955,7 +961,12 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(charset=charset, show_variable_names=False, wire_order=wire_order)
+        return self.graph.draw(
+            charset=charset,
+            show_variable_names=False,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+        )
 
     @property
     def data(self):

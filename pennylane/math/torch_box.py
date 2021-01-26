@@ -32,7 +32,9 @@ class TorchBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: torch.angle(self.data))
     arcsin = wrap_output(lambda self: torch.asin(self.data))
     expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
+    gather = wrap_output(lambda self, indices: self.data[indices])
     ones_like = wrap_output(lambda self: torch.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: torch.reshape(self.data, shape))
     sqrt = wrap_output(
         lambda self: torch.sqrt(
             self.data.to(torch.float64)
@@ -46,6 +48,25 @@ class TorchBox(qml.math.TensorBox):
     @staticmethod
     def astensor(tensor):
         return torch.as_tensor(tensor)
+
+    @staticmethod
+    @wrap_output
+    def block_diag(values):
+        tensors = [TorchBox.astensor(t) for t in TorchBox.unbox_list(values)]
+        tensors = TorchBox._coerce_types(tensors)
+
+        sizes = np.array([t.shape for t in tensors])
+        res = torch.zeros(np.sum(sizes, axis=0).tolist(), dtype=tensors[0].dtype)
+
+        p = np.cumsum(sizes, axis=0)
+        ridx, cidx = np.stack([p - sizes, p]).T
+
+        for t, r, c in zip(tensors, ridx, cidx):
+            row = np.arange(*r).reshape(-1, 1)
+            col = np.arange(*c).reshape(1, -1)
+            res[row, col] = t
+
+        return res
 
     @wrap_output
     def cast(self, dtype):
@@ -94,6 +115,14 @@ class TorchBox(qml.math.TensorBox):
 
     @staticmethod
     @wrap_output
+    def diag(values, k=0):
+        if isinstance(values, torch.Tensor):
+            return torch.diag(values, diagonal=k)
+
+        return torch.diag(TorchBox.stack(values).data, diagonal=k)
+
+    @staticmethod
+    @wrap_output
     def dot(x, y):
         x, y = [TorchBox.astensor(t) for t in TorchBox.unbox_list([x, y])]
         x, y = TorchBox._coerce_types([x, y])
@@ -116,6 +145,13 @@ class TorchBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return self.data.requires_grad
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        if self.data.is_leaf:
+            self.data = self.data.clone()
+        self.data[tuple(index)] += value
+        return self.data
 
     @property
     def shape(self):
