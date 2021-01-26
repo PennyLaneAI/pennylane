@@ -339,9 +339,6 @@ def inv(operation_list):
                 if o.inverse:
                     o.inv()
 
-        print(operation_list)
-        print("here", tape.operations)
-
         tape.inv()
         return tape
 

@@ -646,8 +646,6 @@ class TestInv:
             qml.Hadamard(wires=[0]),
         ]
 
-        print(rec.operations)
-
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires

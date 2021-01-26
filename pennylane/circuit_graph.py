@@ -321,7 +321,9 @@ class CircuitGraph:
                 # with parameter values.
                 params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
-            qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wire_labels)
+            qasm_str += "{name}{params} {wires};\n".format(
+                name=gate, params=params, wires=wire_labels
+            )
 
         # apply computational basis measurements to each quantum register
         # NOTE: This is not strictly necessary, we could inspect self.observables,
