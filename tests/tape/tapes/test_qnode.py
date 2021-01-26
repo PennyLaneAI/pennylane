@@ -236,6 +236,15 @@ class TestValidation:
         ):
             QNode(None, dev, diff_method="hello")
 
+    def test_validate_adjoint_invalid_device(self):
+        """Test if a ValueError is raised when an invalid device is provided to
+        _validate_adjoint_method"""
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        with pytest.raises(ValueError, match="The default.gaussian device does not"):
+            QNode._validate_adjoint_method(dev, "tf")
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
