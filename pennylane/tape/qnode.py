@@ -570,6 +570,11 @@ class QNode:
         wire_order = wire_order or self.device.wires
         wire_order = qml.wires.Wires(wire_order)
 
+        if show_all_wires and len(wire_order) < self.device.num_wires:
+            raise ValueError(
+                "When show_all_wires is enabled, the provided wire order must contain all wires on the device."
+            )
+
         if not self.device.wires.contains_wires(wire_order):
             raise ValueError(
                 f"Provided wire order {wire_order.labels} contains wires not contained on the device: {self.device.wires}."

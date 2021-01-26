@@ -869,6 +869,23 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
+    def test_show_all_wires_error(self, tape_only):
+        """Test that show_all_wires will raise an error if the provided wire
+        order does not contain all wires on the device"""
+
+        dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=[-1, "q2"])
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+
+        with pytest.raises(ValueError, match="must contain all wires"):
+            circuit.draw(show_all_wires=True, wire_order=[-1, "a"])
+
     def test_missing_wire(self, tape_only):
         """Test that wires not specifically mentioned in the wire
         reordering are appended at the bottom of the circuit drawing"""
