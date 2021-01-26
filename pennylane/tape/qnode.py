@@ -489,7 +489,9 @@ class QNode:
             *args, **kwargs
         )
 
-    def draw(self, charset="unicode", wire_order=None, **kwargs):  # pylint: disable=unused-argument
+    def draw(
+        self, charset="unicode", wire_order=None, show_all_wires=False, **kwargs
+    ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
         Args:
@@ -497,6 +499,7 @@ class QNode:
                 "ascii" are supported.
             wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
                 If not provided, this defaults to the wire order of the device.
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -567,12 +570,19 @@ class QNode:
         wire_order = wire_order or self.device.wires
         wire_order = qml.wires.Wires(wire_order)
 
+        if show_all_wires and len(wire_order) < self.device.num_wires:
+            raise ValueError(
+                "When show_all_wires is enabled, the provided wire order must contain all wires on the device."
+            )
+
         if not self.device.wires.contains_wires(wire_order):
             raise ValueError(
                 f"Provided wire order {wire_order.labels} contains wires not contained on the device: {self.device.wires}."
             )
 
-        return self.qtape.draw(charset=charset, wire_order=wire_order)
+        return self.qtape.draw(
+            charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
+        )
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -945,8 +955,8 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     return _metric_tensor_fn
 
 
-def draw(_qnode, charset="unicode", wire_order=None):
-    """draw(qnode, charset="unicode", wire_order=None)
+def draw(_qnode, charset="unicode", wire_order=None, show_all_wires=False):
+    """draw(qnode, charset="unicode", wire_order=None, show_all_wires=False)
     Create a function that draws the given _qnode.
 
     Args:
@@ -954,6 +964,7 @@ def draw(_qnode, charset="unicode", wire_order=None):
         charset (str, optional): The charset that should be used. Currently, "unicode" and
             "ascii" are supported.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
@@ -1020,6 +1031,8 @@ def draw(_qnode, charset="unicode", wire_order=None):
     @wraps(_qnode)
     def wrapper(*args, **kwargs):
         _qnode.construct(args, kwargs)
-        return _qnode.qtape.draw(charset, wire_order=wire_order)
+        _wire_order = wire_order or _qnode.device.wires
+        _wire_order = qml.wires.Wires(_wire_order)
+        return _qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper
