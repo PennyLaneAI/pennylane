@@ -1740,7 +1740,7 @@ def operation_derivative(operation) -> np.ndarray:
     where :math:`\phi` is a real constant.
 
     Args:
-        operation (qml.Operation): The operation to be differentiated.
+        operation (.Operation): The operation to be differentiated.
 
     Returns:
         array: the derivative of the operation as a matrix in the standard basis
