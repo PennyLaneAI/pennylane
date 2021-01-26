@@ -96,9 +96,6 @@ def tensor_init(self, *args):
 
         try:
             QueuingContext.update_info(o, owner=self)
-        except ValueError:
-            o.queue()
-            qml.tape.QueuingContext.update_info(o, owner=self)
         except NotImplementedError:
             pass
 
