@@ -193,7 +193,12 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
-        self._circuit_hash = circuit.hash
+        # TODO: Remove try/except and consider merging with previous caching
+        # case when circuit is always QuantumTape
+        try:
+            self._circuit_hash = circuit.graph.hash
+        except AttributeError as e:
+            self._circuit_hash = circuit.hash
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
