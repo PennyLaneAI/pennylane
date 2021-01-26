@@ -736,11 +736,11 @@ class QubitDevice(Device):
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
-        # Perform the forward pass
+        # Perform the forward pass.
+        # Consider using caching and calling lower-level functionality. We just need the device to
+        # be in the post-forward pass state.
+        # https://github.com/PennyLaneAI/pennylane/pull/1032/files#r563441040
         self.reset()
-
-        # Consider using caching and calling lower-level functionality. We just need the state
-        # without postprocessing https://github.com/PennyLaneAI/pennylane/pull/1032/files#r563441040
         self.execute(tape)
 
         phi = self._reshape(self.state, [2] * self.num_wires)
