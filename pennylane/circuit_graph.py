@@ -528,7 +528,7 @@ class CircuitGraph:
             post_queue = self.descendants_in_order(ops)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
-    def greedy_layers(self, wire_order=None):
+    def greedy_layers(self, wire_order=None, show_all_wires=False):
         """Greedily collected layers of the circuit. Empty slots are filled with ``None``.
 
         Layers are built by pushing back gates in the circuit as far as possible, so that
@@ -536,6 +536,7 @@ class CircuitGraph:
 
         Args:
             wire_order (Wires): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Returns:
             Tuple[list[list[~.Operation]], list[list[~.Observable]]]:
@@ -596,9 +597,22 @@ class CircuitGraph:
             temp_op_grid = OrderedDict()
             temp_obs_grid = OrderedDict()
 
-            permutation = [self.wires.labels.index(i) for i in wire_order.labels if i in self.wires]
+            if show_all_wires:
+                permutation = [
+                    self.wires.labels.index(i) if i in self.wires else None
+                    for i in wire_order.labels
+                ]
+            else:
+                permutation = [
+                    self.wires.labels.index(i) for i in wire_order.labels if i in self.wires
+                ]
 
             for i, j in enumerate(permutation):
+                if j is None:
+                    temp_op_grid[i] = [None] * len(operations[0])
+                    temp_obs_grid[i] = [None] * len(observables[0])
+                    continue
+
                 if j in operations:
                     temp_op_grid[i] = operations[j]
                 if j in observables:
@@ -628,13 +642,16 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
-    def draw(self, charset="unicode", show_variable_names=False, wire_order=None):
+    def draw(
+        self, charset="unicode", show_variable_names=False, wire_order=None, show_all_wires=False
+    ):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             show_variable_names (bool, optional): Show variable names instead of variable values.
             wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Raises:
             ValueError: If the given charset is not supported
@@ -645,7 +662,7 @@ class CircuitGraph:
         if wire_order is not None:
             wire_order = qml.wires.Wires.all_wires([wire_order, self.wires])
 
-        grid, obs = self.greedy_layers(wire_order=wire_order)
+        grid, obs = self.greedy_layers(wire_order=wire_order, show_all_wires=show_all_wires)
 
         if charset not in CHARSETS:
             raise ValueError(
@@ -660,6 +677,7 @@ class CircuitGraph:
             wires=wire_order or self.wires,
             charset=CHARSETS[charset],
             show_variable_names=show_variable_names,
+            show_all_wires=show_all_wires,
         )
 
         return drawer.draw()
