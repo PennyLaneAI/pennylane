@@ -1134,7 +1134,7 @@ class TestParameterHandlingIntegration:
     def test_non_diff_wires_argument(self, w, expected_res, expected_grad, tol):
         """Test that passing wires as a non-differentiable positional
         argument works correctly."""
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
         def circuit(wires, params):
