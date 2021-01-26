@@ -37,25 +37,8 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> qml.tape.QNode(qfunc, dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -118,7 +101,6 @@ class QNode:
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
@@ -721,25 +703,8 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
     compatible device.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> @qml.tape.qnode(dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -801,7 +766,6 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
     >>> def circuit(x):
