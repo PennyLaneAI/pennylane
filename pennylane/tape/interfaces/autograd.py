@@ -165,7 +165,10 @@ class AutogradInterface(AnnotatedQueue):
         res = self.execute_device(params, device=device)
         self.set_parameters(self._all_parameter_values, trainable_only=False)
 
-        if res.dtype == np.dtype("object") and not self.is_sampled:
+        if self.is_sampled:
+            return res
+
+        if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
         requires_grad = False

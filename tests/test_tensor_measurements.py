@@ -443,7 +443,7 @@ class TestTensorSample:
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))
 
-        s1 = circuit(theta, phi, varphi).numpy()
+        s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z

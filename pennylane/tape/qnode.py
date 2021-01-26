@@ -451,25 +451,11 @@ class QNode:
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
-        print(res)
 
         if isinstance(self.qfunc_output, Sequence):
             return res
 
-        # HOTFIX: Output is a single measurement function. To maintain compatibility
-        # with core, we squeeze all outputs.
-
-        # Get the namespace associated with the return type
-        res_type_namespace = res.__class__.__module__.split(".")[0]
-
-        if res_type_namespace in ("pennylane", "autograd"):
-            # For PennyLane and autograd we must branch, since
-            # 'squeeze' does not exist in the top-level of the namespace
-            return anp.squeeze(res)
-        # Same for JAX
-        if res_type_namespace == "jax":
-            return __import__(res_type_namespace).numpy.squeeze(res)
-        return __import__(res_type_namespace).squeeze(res)
+        return qml.math.squeeze(res)
 
     def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
         """Evaluate the value of the metric tensor.

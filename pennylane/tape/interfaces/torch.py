@@ -21,6 +21,7 @@ import semantic_version
 import torch
 
 from pennylane import QuantumFunctionError
+from pennylane.operation import Sample
 from pennylane.interfaces.torch import args_to_numpy
 
 from pennylane.tape.queuing import AnnotatedQueue
@@ -61,7 +62,12 @@ class _TorchInterface(torch.autograd.Function):
                         torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
                     )
 
-        if res.dtype == np.dtype("object") and not tape.is_sampled:
+        all_sampled = all(m.return_type is Sample for m in tape.measurements)
+
+        if tape.is_sampled and not all_sampled:
+            return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
+
+        if res.dtype == np.dtype("object"):
             res = np.hstack(res)
 
         return torch.as_tensor(torch.from_numpy(res), dtype=tape.dtype)
