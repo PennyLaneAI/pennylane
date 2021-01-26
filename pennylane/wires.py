@@ -33,9 +33,8 @@ def _process(wires):
     wire label, so users can address wires with labels such as "ancilla".
 
     Any type can be a wire label, as long as it is hashable. We need this to establish
-    the uniqueness of two labels. For example, `np.array(0)` and `0` are interpreted as
-    different wire labels.
-
+    the uniqueness of two labels. For example, `0` and `0.` are interpreted as
+    the same wire label because `hash(0.) == hash(0)` evaluates to true.
     """
 
     if isinstance(wires, str):
