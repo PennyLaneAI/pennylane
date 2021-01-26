@@ -17,6 +17,7 @@ import pennylane as qml
 import pytest
 from pennylane import numpy as np
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
