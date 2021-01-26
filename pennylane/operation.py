@@ -1743,7 +1743,7 @@ def operation_derivative(operation) -> np.ndarray:
         operation (qml.Operation): The operation to be differentiated.
 
     Returns:
-        np.ndarray: the derivative of the operation as a matrix in the standard basis
+        array: the derivative of the operation as a matrix in the standard basis
 
     Raises:
         ValueError: if the operation does not have a generator or is not composed of a single

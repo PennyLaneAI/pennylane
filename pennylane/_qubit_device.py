@@ -718,7 +718,7 @@ class QubitDevice(Device):
             tape (.QuantumTape): circuit that the function takes the gradient of
 
         Returns:
-            np.ndarray: the derivative of the tape with respect to trainable parameters.
+            array: the derivative of the tape with respect to trainable parameters.
             Dimensions are ``(len(observables), len(trainable_params))``.
 
         Raises:

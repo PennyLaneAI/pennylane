@@ -103,7 +103,7 @@ class QNode:
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
-            * ``"adjoint"``: Uses an adjoint `method <https://arxiv.org/abs/2009.02823>`__ that
+            * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
               reverses through the circuit after a forward pass by iteratively applying the inverse
               (adjoint) gate. This method is similar to the reversible method, but has a lower time
               overhead and a similar memory overhead. Only allowed on simulator devices such as
