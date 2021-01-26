@@ -35,6 +35,8 @@ def _process(wires):
     Any type can be a wire label, as long as it is hashable. We need this to establish
     the uniqueness of two labels. For example, `0` and `0.` are interpreted as
     the same wire label because `hash(0.) == hash(0)` evaluates to true.
+
+    Note that opposed to numpy arrays, `pennylane.numpy` 0-dim array are hashable.
     """
 
     if isinstance(wires, str):
