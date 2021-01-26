@@ -24,9 +24,18 @@ import itertools
 
 import numpy as np
 
-from pennylane.operation import Sample, Variance, Expectation, Probability, State
+import pennylane as qml
+from pennylane.operation import (
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+    operation_derivative,
+)
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 
@@ -688,3 +697,96 @@ class QubitDevice(Device):
         unraveled_indices = [2] * len(device_wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
+
+    def adjoint_jacobian(self, tape):
+        """Implements the adjoint method outlined in
+        `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
+
+        After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
+        gates to scan backwards through the circuit. This method is similar to the reversible
+        method, but has a lower time overhead and a similar memory overhead.
+
+        .. note::
+            The adjoint differentation method has the following restrictions:
+
+            * As it requires knowledge of the statevector, only statevector simulator devices can be
+              used.
+
+            * Only expectation values are supported as measurements.
+
+        Args:
+            tape (.QuantumTape): circuit that the function takes the gradient of
+
+        Returns:
+            array: the derivative of the tape with respect to trainable parameters.
+            Dimensions are ``(len(observables), len(trainable_params))``.
+
+        Raises:
+            QuantumFunctionError: if the input tape has measurements that are not expectation values
+                or contains a multi-parameter operation aside from :class:`~.Rot`
+        """
+
+        for m in tape.measurements:
+            if m.return_type is not qml.operation.Expectation:
+                raise qml.QuantumFunctionError(
+                    "Adjoint differentiation method does not support"
+                    f" measurement {m.return_type.value}"
+                )
+
+            if not hasattr(m.obs, "base_name"):
+                m.obs.base_name = None  # This is needed for when the observable is a tensor product
+
+        # Perform the forward pass.
+        # Consider using caching and calling lower-level functionality. We just need the device to
+        # be in the post-forward pass state.
+        # https://github.com/PennyLaneAI/pennylane/pull/1032/files#r563441040
+        self.reset()
+        self.execute(tape)
+
+        phi = self._reshape(self.state, [2] * self.num_wires)
+
+        lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
+
+        expanded_ops = []
+        for op in reversed(tape.operations):
+            if op.num_params > 1:
+                if isinstance(op, qml.Rot) and not op.inverse:
+                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    expanded_ops.extend(reversed(ops))
+                else:
+                    raise QuantumFunctionError(
+                        f"The {op.name} operation is not supported using "
+                        'the "adjoint" differentiation method'
+                    )
+            else:
+                if op.name not in ("QubitStateVector", "BasisState"):
+                    expanded_ops.append(op)
+
+        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
+
+        param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
+        trainable_param_number = len(tape.trainable_params) - 1
+        for op in expanded_ops:
+
+            if (op.grad_method is not None) and (param_number in tape.trainable_params):
+                d_op_matrix = operation_derivative(op)
+
+            op.inv()
+            phi = self._apply_operation(phi, op)
+
+            if op.grad_method is not None:
+                if param_number in tape.trainable_params:
+                    mu = self._apply_unitary(phi, d_op_matrix, op.wires)
+
+                    jac_column = np.array(
+                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
+                    )
+                    jac[:, trainable_param_number] = jac_column
+                    trainable_param_number -= 1
+                param_number -= 1
+
+            lambdas = [self._apply_operation(lambda_, op) for lambda_ in lambdas]
+            op.inv()
+
+        return jac
