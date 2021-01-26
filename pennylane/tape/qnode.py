@@ -159,7 +159,7 @@ class QNode:
         self.diff_options["method"] = diff_method
 
         self.dtype = np.float64
-        self.max_expansion = 2
+        self.max_expansion = 5
 
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
@@ -435,26 +435,24 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
-        for op in self.qtape.operations + self.qtape.observables:
-            if getattr(op, "num_wires", None) == qml.operation.WiresEnum.AllWires:
-                if len(op.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(f"Operator {op.name} must act on all wires")
-
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
-            not self.device.supports_operation(op.name) for op in self.qtape.operations
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in self.qtape.operations
         )
 
-        # expand out the tape, if any operations are not supported on the device or multiple
-        # observables are measured on the same wire
+        # expand out the tape, if nested tapes are present, any operations are not supported on the
+        # device, or multiple observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion,
-                stop_at=lambda obj: self.device.supports_operation(obj.name),
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):

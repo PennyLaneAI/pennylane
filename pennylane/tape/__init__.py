@@ -17,6 +17,7 @@ validate, execute, and differentiate quantum circuits.
 """
 import contextlib
 import inspect
+import functools
 from unittest import mock
 import warnings
 
@@ -116,6 +117,52 @@ class TapeOperationRecorder(QuantumTape):
         return self.ops + self.obs
 
 
+def TapeTemplateDecorator(func):
+    """Register a quantum template with PennyLane.
+
+    This decorator wraps the given function and makes it return a list of all queued Operations.
+
+    **Example:**
+
+    When defining a :doc:`template </introduction/templates>`, simply decorate
+    the template function with this decorator.
+
+    .. code-block:: python3
+
+        @qml.template
+        def bell_state_preparation(wires):
+            qml.Hadamard(wires=wires[0])
+            qml.CNOT(wires=wires)
+
+    This registers the template with PennyLane, making it compatible with
+    functions that act on templates, such as :func:`pennylane.inv`:
+
+    .. code-block:: python3
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.inv(bell_state_preparation(wires=[0, 1]))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    Args:
+        func (callable): A template function
+
+    Returns:
+        callable: The wrapper function
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with TapeOperationRecorder() as rec:
+            func(*args, **kwargs)
+
+        return rec.queue
+
+    return wrapper
+
+
 def enable_tape():
     """Enable tape mode.
 
@@ -159,6 +206,7 @@ def enable_tape():
         mock.patch("pennylane.probs", measure.probs),
         mock.patch("pennylane.sample", measure.sample),
         mock.patch("pennylane._queuing.OperationRecorder", TapeOperationRecorder),
+        mock.patch("pennylane.template", TapeTemplateDecorator),
     ]
 
     with contextlib.ExitStack() as stack:
