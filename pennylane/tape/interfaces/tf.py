@@ -159,7 +159,7 @@ class TFInterface(AnnotatedQueue):
 
             return grad_input
 
-        if res.dtype == np.dtype("object"):
+        if res.dtype == np.dtype("object") and not self.is_sampled:
             res = np.hstack(res)
 
         return tf.convert_to_tensor(res, dtype=self.dtype), grad
