@@ -21,6 +21,9 @@ import pytest
 from pennylane.qnn.cost import SquaredErrorLoss
 
 
+ALLOWED_INTERFACES = ["tf", "jax", "autograd", "torch"]
+
+
 def rx_ansatz(phis, **kwargs):
     for w, phi in enumerate(phis):
         qml.RX(phi, wires=w)
@@ -38,7 +41,7 @@ def skip_if_no_torch_support():
     pytest.importorskip("torch", minversion="1.4")
 
 
-@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+@pytest.mark.parametrize("interface", ALLOWED_INTERFACES)
 @pytest.mark.usefixtures("skip_if_no_torch_support", "skip_if_no_tf_support")
 class TestSquaredErrorLoss:
     def test_no_target(self, interface):
