@@ -15,7 +15,7 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-branches
 from collections.abc import Iterable
 import copy
 import functools

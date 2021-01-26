@@ -84,7 +84,10 @@ class MeasurementProcess:
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        return self.expand().operations
+        try:
+            return self.expand().operations
+        except NotImplementedError:
+            return []
 
     def __repr__(self):
         """Representation of this class."""

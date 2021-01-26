@@ -310,8 +310,8 @@ class CircuitGraph:
         for op in operations:
             try:
                 gate = OPENQASM_GATES[op.name]
-            except KeyError:
-                raise ValueError(f"Operation {op.name} not supported by the QASM serializer")
+            except KeyError as e:
+                raise ValueError(f"Operation {op.name} not supported by the QASM serializer") from e
 
             wire_labels = ",".join(["q[{}]".format(wires.index(w)) for w in op.wires.tolist()])
             params = ""

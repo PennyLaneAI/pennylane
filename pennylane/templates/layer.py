@@ -15,7 +15,6 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
 from pennylane.templates.decorator import template as temp
 
 
