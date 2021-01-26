@@ -423,6 +423,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes an issue where if the constituent observables of a tensor product do not exist in the queue,
+  an error is raised. With this fix, they are first queued before annotation occurs.
+  [(#1038)](https://github.com/PennyLaneAI/pennylane/pull/1038)
+
 * Fixes an issue with tape expansions where information about sampling
   (specifically the `is_sampled` tape attribute) was not preserved.
   [(#1027)](https://github.com/PennyLaneAI/pennylane/pull/1027)
