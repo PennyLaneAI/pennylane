@@ -35,7 +35,7 @@ from pennylane.operation import (
 )
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
-from pennylane.math import sum
+from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 
@@ -763,7 +763,7 @@ class QubitDevice(Device):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-        dot_product_real = lambda a, b: self._real(sum(self._conj(a) * b))
+        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
