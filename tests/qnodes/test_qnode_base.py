@@ -1495,6 +1495,7 @@ def test_old_qnode_in_tape_mode():
     """Test that the old QNode can still be evaluated when running in tape mode"""
 
     # tape mode should not be active so that we can use the old QNode
+    qml.disable_tape()
     assert not qml.tape_mode_active()
 
     try:
@@ -1516,5 +1517,5 @@ def test_old_qnode_in_tape_mode():
         # check that tape mode is turned on again after evaluating the old QNode
         assert qml.tape_mode_active()
 
-    finally:  # always make sure we turn off tape mode to prevent disrupting the other tests
-        qml.disable_tape()
+    finally:  # always make sure we turn on tape mode to prevent disrupting the other tests
+        qml.enable_tape()
