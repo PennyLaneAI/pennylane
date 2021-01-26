@@ -32,6 +32,7 @@ from pennylane.interfaces.tf import to_tf, unflatten_tf
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2

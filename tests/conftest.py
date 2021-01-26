@@ -156,7 +156,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, '__abstractmethods__', frozenset())
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
-        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT"})
+        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
         yield qml.Device(wires=2)
 
 
