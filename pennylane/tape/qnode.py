@@ -369,6 +369,10 @@ class QNode:
         supported_device = supported_device and hasattr(device, "_apply_unitary")
         supported_device = supported_device and device.capabilities().get("returns_state")
         supported_device = supported_device and hasattr(device, "adjoint_jacobian")
+        # The above provides a minimal set of requirements that we can likely improve upon in
+        # future, or alternatively summarize within a single device capability. Moreover, we also
+        # need to inspect the circuit measurements to ensure only expectation values are taken. This
+        # cannot be done here since we don't yet know the composition of the circuit.
 
         if not supported_device:
             raise ValueError(
