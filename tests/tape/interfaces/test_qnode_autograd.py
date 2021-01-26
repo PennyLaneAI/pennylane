@@ -23,7 +23,7 @@ from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
     "dev_name,diff_method", [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
-        ["default.qubit.autograd", "backprop"],
+        ["default.qubit", "backprop"],
     ],
 )
 class TestQNode:
@@ -504,25 +504,12 @@ class TestQNode:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
-
-        if dev_name == "default.qubit.autograd":
-            # The current DefaultQubitAutograd device provides an _asarray method that does
-            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
-            # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour.
-            # TODO: once the tape has moved from the beta folder, we should implement
-            # this change directly in the device.
-
-            def _asarray(args, dtype=np.float64):
-                return np.hstack(args).flatten()
-
-            monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(x, y):
@@ -548,25 +535,12 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation_variance(self, dev_name, diff_method, monkeypatch, tol):
+    def test_ragged_differentiation_variance(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
-
-        if dev_name == "default.qubit.autograd":
-            # The current DefaultQubitAutograd device provides an _asarray method that does
-            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
-            # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour.
-            # TODO: once the tape has moved from the beta folder, we should implement
-            # this change directly in the device.
-
-            def _asarray(args, dtype=np.float64):
-                return np.hstack(args).flatten()
-
-            monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(x, y):
