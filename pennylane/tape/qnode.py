@@ -435,6 +435,14 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
+        for obj in self.qtape.operations + self.qtape.observables:
+            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+                # check here only if enough wires
+                if len(obj.wires) != self.device.num_wires:
+                    raise qml.QuantumFunctionError(
+                        "Operator {} must act on all wires".format(obj.name)
+                    )
+
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
