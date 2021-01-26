@@ -1760,16 +1760,15 @@ class TestWiresIntegration:
         """Tests that an exception is raised when wires not present on the device are adressed. """
         dev = qml.device("default.qubit", wires=['a', 'b'])
 
-        @qml.qnode(dev)
-        def circuit():
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.5, wires='c')
-            return qml.expval(qml.PauliZ('a'))
 
         with pytest.raises(
                 WireError,
-                match="Wires ['c'] not found"
+                match="Did not find some of the wires"
         ):
-            circuit()
+            dev.execute(tape)
+
 
 class TestGetSlice:
     """Tests for the _get_slice function."""
