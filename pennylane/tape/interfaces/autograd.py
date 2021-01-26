@@ -21,7 +21,6 @@ import autograd.builtins
 from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
-from pennylane.operation import Sample
 from pennylane.tape.queuing import AnnotatedQueue
 
 
