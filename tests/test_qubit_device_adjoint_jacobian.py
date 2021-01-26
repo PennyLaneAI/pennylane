@@ -152,8 +152,8 @@ class TestAdjointJacobian:
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
     @pytest.mark.parametrize("op", ops)
     def test_gradients(self, op, obs, tol, dev):
-        """Tests that the gradients of circuits match between the
-        finite difference and device methods."""
+        """Tests that the gradients of circuits match between the finite difference and device
+         methods."""
         args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
