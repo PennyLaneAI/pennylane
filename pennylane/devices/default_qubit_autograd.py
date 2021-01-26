@@ -169,17 +169,3 @@ class DefaultQubitAutograd(DefaultQubit):
             return unitary.eigvals
 
         return unitary.matrix
-
-    def map_wires(self, wires):
-        """Map the wire labels of wires using this device's wire map.
-
-        Args:
-            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
-
-        Returns:
-            Wires: wires with new labels
-        """
-        wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
-        mapped_wires = super().map_wires(wires)
-
-        return mapped_wires
