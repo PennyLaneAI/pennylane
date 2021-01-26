@@ -72,11 +72,19 @@ class MeasurementProcess:
         # Below, we imitate an identity observable, so that the
         # device undertakes no action upon recieving this observable.
         self.name = "Identity"
-        self.diagonalizing_gates = lambda: []
         self.data = []
 
         # Queue the measurement process
         self.queue()
+
+    def diagonalizing_gates(self):
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Returns:
+            List[.Operation]: the operations that diagonalize the observables
+        """
+        return self.expand().operations
 
     def __repr__(self):
         """Representation of this class."""

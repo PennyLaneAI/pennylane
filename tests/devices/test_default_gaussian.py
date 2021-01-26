@@ -696,7 +696,8 @@ class TestDefaultGaussianIntegration:
         @qml.qnode(gaussian_dev)
         def circuit(*x):
             """Reference quantum function"""
-            qml.Displacement(a, 0, wires=[0])
+            if "State" not in g:
+                qml.Displacement(a, 0, wires=[0])
             op(*x, wires=wires)
             return qml.expval(qml.X(0))
 

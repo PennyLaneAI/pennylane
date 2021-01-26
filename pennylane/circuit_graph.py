@@ -253,7 +253,7 @@ class CircuitGraph:
         """
         return hash(self.serialize())
 
-    def to_openqasm(self, rotations=True):
+    def to_openqasm(self, wires=None, rotations=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
         Only operations are serialized; all measurements
@@ -265,6 +265,7 @@ class CircuitGraph:
             in ``qelib1.inc`` are available.
 
         Args:
+            wires (Wires or None): the wires to use when serializing the circuit
             rotations (bool): in addition to serializing user-specified
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
@@ -273,16 +274,7 @@ class CircuitGraph:
             str: OpenQASM serialization of the circuit
         """
         # We import decompose_queue here to avoid a circular import
-        from pennylane.qnodes.base import decompose_queue  # pylint: disable=import-outside-toplevel
-
-        class QASMSerializerDevice:
-            """A mock device, to be used when performing the decomposition.
-            The short_name is used in error messages if the decomposition fails.
-            """
-
-            # pylint: disable=too-few-public-methods
-            short_name = "QASM serializer"
-            supports_operation = staticmethod(lambda x: x in OPENQASM_GATES)
+        wires = wires or self.wires
 
         # add the QASM headers
         qasm_str = "OPENQASM 2.0;\n"
@@ -293,8 +285,8 @@ class CircuitGraph:
             return qasm_str
 
         # create the quantum and classical registers
-        qasm_str += "qreg q[{}];\n".format(self.num_wires)
-        qasm_str += "creg c[{}];\n".format(self.num_wires)
+        qasm_str += "qreg q[{}];\n".format(len(wires))
+        qasm_str += "creg c[{}];\n".format(len(wires))
 
         # get the user applied circuit operations
         operations = self.operations
@@ -304,13 +296,24 @@ class CircuitGraph:
             # to circuit observables
             operations += self.diagonalizing_gates
 
+        with qml.tape.QuantumTape() as tape:
+            for op in operations:
+                op.queue()
+
+                if op.inverse:
+                    op.inv()
+
         # decompose the queue
-        decomposed_ops = decompose_queue(operations, QASMSerializerDevice)
+        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations
-        for op in decomposed_ops:
-            gate = OPENQASM_GATES[op.name]
-            wires = ",".join(["q[{}]".format(self.wires.index(w)) for w in op.wires.tolist()])
+        for op in operations:
+            try:
+                gate = OPENQASM_GATES[op.name]
+            except KeyError:
+                raise ValueError(f"Operation {op.name} not supported by the QASM serializer")
+
+            wire_labels = ",".join(["q[{}]".format(wires.index(w)) for w in op.wires.tolist()])
             params = ""
 
             if op.num_params > 0:
@@ -318,14 +321,14 @@ class CircuitGraph:
                 # with parameter values.
                 params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
-            qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wires)
+            qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wire_labels)
 
         # apply computational basis measurements to each quantum register
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
         # measure all wires to be safe.
-        for wire in range(self.num_wires):
+        for wire in range(len(wires)):
             qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
 
         return qasm_str
