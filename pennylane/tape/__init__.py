@@ -49,7 +49,7 @@ class TapeOperationRecorder(QuantumTape):
     **Example**:
 
     The OperationRecorder is a context manager. Executing templates
-    or quantum functions stores resulting applied operators in the
+    or quantum functions stores applied operators in the
     recorder, which can then be printed.
 
     >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
