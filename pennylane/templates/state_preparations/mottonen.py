@@ -298,8 +298,8 @@ def MottonenStatePreparation(state_vector, wires):
 
     Args:
         state_vector (tensor_like): Input array of shape ``(2^N,)``, where N is the number of wires
-            the state preparation acts on. ``N`` must be smaller or equal to the total
-            number of wires.
+            the state preparation acts on. The input array must be normalized, and ``N`` must be smaller
+            or equal to the total number of wires.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
 
