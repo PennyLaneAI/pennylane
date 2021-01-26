@@ -58,7 +58,7 @@ def _process(wires):
             # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
                 raise WireError("Wires must be hashable; got {}.".format(wires)) from e
-        return wires,
+        return (wires,)
 
     try:
         # We need the set for the uniqueness check,
