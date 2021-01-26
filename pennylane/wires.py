@@ -33,17 +33,22 @@ def _process(wires):
     The only exception to this are strings, which are always interpreted as a single
     wire label, so users can address wires with labels such as "ancilla".
 
-    Any type can be a wire label, as long as it is hashable. We need this to 
-
+    Any type can be a wire label, as long as it is hashable. We need this to establish
+    the uniqueness of two labels. For example, `np.array(0)` and `0` are interpreted as
+    different wire labels.
 
     """
 
     if isinstance(wires, str):
-        # interpret string as a non-iterable object:
-        # this is the only exception to the logic
+        # Interpret string as a non-iterable object.
+        # This is the only exception to the logic
+        # of considering the elements of iterables as wire labels.
         wires = [wires]
 
     try:
+        # Use tuple conversion as a check for whether `wires` can be iterated over.
+        # Note, this is not the same as `isinstance(wires, Iterable)` which would
+        # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
     except TypeError:
         # if not iterable, interpret as single wire label
@@ -53,9 +58,11 @@ def _process(wires):
             # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
                 raise WireError("Wires must be hashable; got {}.".format(wires)) from e
-        return (wires,)
+        return wires,
 
-    try:  # we need the set for the uniqueness check, so we can use it for hashability check of iterables
+    try:
+        # We need the set for the uniqueness check,
+        # so we can use it for hashability check of iterables.
         set_of_wires = set(wires)
     except TypeError as e:
         if str(e).startswith("unhashable"):
