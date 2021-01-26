@@ -79,6 +79,8 @@ class TapeOperationRecorder(QuantumTape):
 
     def __init__(self):
         super().__init__()
+        self.ops = None
+        self.obs = None
 
     def _process_queue(self):
         super()._process_queue()
@@ -86,26 +88,32 @@ class TapeOperationRecorder(QuantumTape):
         for obj, info in self._queue.items():
             QueuingContext.append(obj, **info)
 
+        # remove the operation recorder from the queuing
+        # context
         QueuingContext.remove(self)
+
+        new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumTape))
+        self.ops = new_tape.operations
+        self.obs = new_tape.observables
 
     def __str__(self):
         output = ""
         output += "Operations\n"
         output += "==========\n"
-        for op in self.operations:
+        for op in self.ops:
             output += repr(op) + "\n"
 
         output += "\n"
         output += "Observables\n"
         output += "==========\n"
-        for op in self.observables:
+        for op in self.obs:
             output += repr(op) + "\n"
 
         return output
 
     @property
     def queue(self):
-        return self.operations + self.observables
+        return self.ops + self.obs
 
 
 def enable_tape():
