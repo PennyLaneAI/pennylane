@@ -473,8 +473,8 @@ class TestInv:
 
     def test_inversion_without_context(self):
         """Test that a sequence of operations is properly inverted."""
-        op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        inv_queue = [qml.PauliZ(0).inv(), qml.PauliY(0).inv(), qml.PauliX(0).inv()]
+        op_queue = [qml.PauliX(0), qml.PauliY(0).inv(), qml.PauliZ(0)]
+        inv_queue = [qml.PauliZ(0).inv(), qml.PauliY(0), qml.PauliX(0).inv()]
 
         inv_ops = pu.inv(op_queue).operations
 
