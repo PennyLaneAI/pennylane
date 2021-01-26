@@ -551,6 +551,8 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
+            if isinstance(o, qml.tape.MeasurementProcess) and o.obs is not None:
+                o = o.obs
 
             if isinstance(o, Tensor):
                 # TODO: update when all capabilities keys changed to "supports_tensor_observables"
@@ -570,10 +572,7 @@ class Device(abc.ABC):
                             )
                         )
             else:
-                if isinstance(o, qml.tape.MeasurementProcess) and o.obs is not None:
-                    observable_name = o.obs.name
-                else:
-                    observable_name = o.name
+                observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
                     # TODO: update when all capabilities keys changed to "supports_inverse_operations"

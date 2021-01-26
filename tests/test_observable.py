@@ -30,4 +30,4 @@ def test_pass_positional_wires_to_observable():
         return qml.expval(obs)
 
     circuit()
-    assert obs in circuit.ops
+    assert obs in circuit.qtape.observables

@@ -469,6 +469,7 @@ class QNode:
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
+        print(res)
 
         if isinstance(self.qfunc_output, Sequence):
             return res
