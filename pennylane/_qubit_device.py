@@ -219,7 +219,6 @@ class QubitDevice(Device):
         # increment counter for number of executions of qubit device
         self._num_executions += 1
 
-
         # TODO: Remove try/except and consider merging with previous caching
         # case when circuit is always QuantumTape
         try:
