@@ -202,14 +202,12 @@ class QubitDevice(Device):
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
+        all_sampled = all(m.return_type is Sample for m in circuit.observables)
 
-        # Ensures that a combination with sample does not put
-        # expvals and vars in superfluous arrays
-        all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
-        if circuit.is_sampled and not all_sampled:
-            results = self._asarray(results, dtype="object")
-        else:
+        if all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
+        else:
+            results = tuple([self._asarray(r) for r in results])
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
