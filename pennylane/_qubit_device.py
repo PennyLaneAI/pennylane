@@ -183,6 +183,13 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        # TODO: Remove try/except and consider merging with previous caching
+        # case when circuit is always QuantumTape
+        try:
+            self._circuit_hash = circuit.graph.hash
+        except AttributeError as e:
+            self._circuit_hash = circuit.hash
+
         if self._cache:
             try:  # TODO: Remove try/except when circuit is always QuantumTape
                 circuit_hash = circuit.graph.hash
@@ -216,13 +223,6 @@ class QubitDevice(Device):
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
-
-        # TODO: Remove try/except and consider merging with previous caching
-        # case when circuit is always QuantumTape
-        try:
-            self._circuit_hash = circuit.graph.hash
-        except AttributeError as e:
-            self._circuit_hash = circuit.hash
 
         return results
 
