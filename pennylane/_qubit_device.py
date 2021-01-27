@@ -185,13 +185,11 @@ class QubitDevice(Device):
         """
         if self._cache:
             try:  # TODO: Remove try/except when circuit is always QuantumTape
-                if circuit._graph is not None:
-                    circuit_hash = circuit.graph.hash
-
-                    if circuit_hash in self._cache_execute:
-                        return self._cache_execute[circuit_hash]
+                circuit_hash = circuit.graph.hash
             except AttributeError as e:
                 raise ValueError("Caching is only available when using tape mode") from e
+            if circuit_hash in self._cache_execute:
+                return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
 
@@ -204,12 +202,14 @@ class QubitDevice(Device):
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
-        all_sampled = all(m.return_type is Sample for m in circuit.observables)
 
-        if all_sampled or not circuit.is_sampled:
-            results = self._asarray(results)
+        # Ensures that a combination with sample does not put
+        # expvals and vars in superfluous arrays
+        all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
+        if circuit.is_sampled and not all_sampled:
+            results = self._asarray(results, dtype="object")
         else:
-            results = tuple([self._asarray(r) for r in results])
+            results = self._asarray(results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
