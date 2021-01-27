@@ -185,20 +185,15 @@ class QubitDevice(Device):
         """
         if self._cache:
             try:  # TODO: Remove try/except when circuit is always QuantumTape
-                circuit_hash = circuit.graph.hash
+                if circuit._graph is not None:
+                    circuit_hash = circuit.graph.hash
+
+                    if circuit_hash in self._cache_execute:
+                        return self._cache_execute[circuit_hash]
             except AttributeError as e:
                 raise ValueError("Caching is only available when using tape mode") from e
-            if circuit_hash in self._cache_execute:
-                return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
-
-        # TODO: Remove try/except and consider merging with previous caching
-        # case when circuit is always QuantumTape
-        try:
-            self._circuit_hash = circuit.graph.hash
-        except AttributeError as e:
-            self._circuit_hash = circuit.hash
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
@@ -223,6 +218,14 @@ class QubitDevice(Device):
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
+
+
+        # TODO: Remove try/except and consider merging with previous caching
+        # case when circuit is always QuantumTape
+        try:
+            self._circuit_hash = circuit.graph.hash
+        except AttributeError as e:
+            self._circuit_hash = circuit.hash
 
         return results
 
