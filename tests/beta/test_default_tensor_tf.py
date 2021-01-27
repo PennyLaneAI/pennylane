@@ -509,6 +509,7 @@ class TestJacobianIntegration:
         p = tf.Variable([0.43316321, 0.2162158, 0.75110998, 0.94714242])
 
         def circuit(x):
+            # multiple the Variable by 1.0 to make it iterable
             for i in range(0, len(1.0 * p), 2):
                 qml.RX(x[i], wires=0)
                 qml.RY(x[i + 1], wires=1)
