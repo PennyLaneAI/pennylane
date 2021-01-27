@@ -145,7 +145,7 @@ class QNode:
         self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
-        self.max_expansion = 5
+        self.max_expansion = 2
 
     # pylint: disable=too-many-return-statements
     @staticmethod
