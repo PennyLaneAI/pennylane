@@ -706,4 +706,12 @@ class CircuitGraph:
     def is_sampled(self):
         """Returns ``True`` if the circuit graph contains observables
         which are sampled."""
+        # TODO: remove when tape is core
         return any(obs.return_type == Sample for obs in self.observables_in_order)
+
+    @property
+    def all_sampled(self):
+        """Returns ``True`` if the circuit graph contains observables
+        which are sampled."""
+        # TODO: remove when tape is core
+        return all(obs.return_type == Sample for obs in self.observables_in_order)

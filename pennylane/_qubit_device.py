@@ -204,9 +204,8 @@ class QubitDevice(Device):
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
-        all_sampled = all(m.return_type is Sample for m in circuit.observables)
 
-        if all_sampled or not circuit.is_sampled:
+        if circuit.all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
         else:
             results = tuple([self._asarray(r) for r in results])

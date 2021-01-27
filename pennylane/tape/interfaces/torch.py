@@ -62,9 +62,7 @@ class _TorchInterface(torch.autograd.Function):
                         torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
                     )
 
-        all_sampled = all(m.return_type is Sample for m in tape.measurements)
-
-        if tape.is_sampled and not all_sampled:
+        if tape.is_sampled and not tape.all_sampled:
             return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
 
         if res.dtype == np.dtype("object"):

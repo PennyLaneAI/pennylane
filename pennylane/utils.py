@@ -329,8 +329,12 @@ def inv(operation_list):
     if qml.tape_mode_active():
         for op in operation_list:
             try:
+                # remove the queued operation to be inverted
+                # from the existing queuing context
                 qml.tape.QueuingContext.remove(op)
             except KeyError:
+                # operation to be inverted does not
+                # exist on the queuing context
                 pass
 
         with qml.tape.QuantumTape() as tape:

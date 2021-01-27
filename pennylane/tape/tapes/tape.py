@@ -150,8 +150,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
 
-    # Check the observables without needing to create the circuit graph
-    new_tape.is_sampled = any(obs.return_type == Sample for obs in new_tape.observables)
+    # Update circuit info
+    new_tape._update_circuit_info()
     return new_tape
 
 
@@ -256,6 +256,7 @@ class QuantumTape(AnnotatedQueue):
 
         self.hash = 0
         self.is_sampled = False
+        self.all_sampled = False
         self.inverse = False
 
         self._stack = None
@@ -377,6 +378,7 @@ class QuantumTape(AnnotatedQueue):
             [op.wires for op in self.operations + self.observables]
         )
         self.num_wires = len(self.wires)
+        self.all_sampled = all(m.return_type is Sample for m in self.measurements)
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
