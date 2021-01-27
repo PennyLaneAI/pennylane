@@ -79,14 +79,15 @@ class TestWires:
         wires = Wires(wire)
         assert wires.labels == (wire,)
 
-    @pytest.mark.parametrize("iterable", [None,
-                                          qml.RX])
-    def test_error_for_incorrect_wire_types(self, iterable):
-        """Tests that a Wires object cannot be created from wire types that are not allowed."""
+    @pytest.mark.parametrize("input", [[np.array([0, 1, 2]), np.array([3, 4])],
+                                       [[0, 1, 2], [3, 4]],
+                                       np.array(0.)])
+    def test_error_for_incorrect_wire_types(self, input):
+        """Tests that a Wires object cannot be created from unhashable objects such as np arrays or lists."""
 
-        with pytest.raises(WireError, match="Wires must be represented"):
-            Wires(iterable)
-            
+        with pytest.raises(WireError, match="Wires must be hashable"):
+            Wires(input)
+
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3),
