@@ -199,7 +199,11 @@ class AutogradInterface(AnnotatedQueue):
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
-            vjp = g.flatten() @ jac
+
+            if all(np.ndim(p) == 0 for p in params):
+                vjp = g.flatten() @ jac
+            else:
+                vjp = g @ jac
             return vjp
 
         return gradient_product
