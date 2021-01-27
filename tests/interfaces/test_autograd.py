@@ -893,7 +893,8 @@ class TestParameterHandlingIntegration:
     def test_non_diff_wires_argument(self, w, expected_res, expected_grad, tol):
         """Test that passing wires as a non-differentiable positional
         argument works correctly."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=[qml.numpy.array(0, requires_grad=False),
+                                                 qml.numpy.array(1, requires_grad=False)])
 
         @qml.qnode(dev, interface="autograd")
         def circuit(wires, params):
@@ -904,7 +905,7 @@ class TestParameterHandlingIntegration:
             qml.CNOT(wires=[wires[1], wires[0]])
             qml.RX(params[0], wires=wires[0])
             qml.RY(params[1], wires=wires[1])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(qml.numpy.array(0, requires_grad=False)))
 
         params = qml.numpy.array([0.6, 0.2])
         wires = qml.numpy.array(w, requires_grad=False)
