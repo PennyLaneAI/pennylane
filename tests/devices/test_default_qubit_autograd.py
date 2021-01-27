@@ -297,7 +297,7 @@ class TestPassthruIntegration:
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        # Check that the correct QNode type is being used.
+        # Check that the correct differentiation method is being used.
         if diff_method == "backprop":
             assert circuit.diff_options["method"] == "backprop"
         elif diff_method == "parameter-shift":

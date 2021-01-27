@@ -721,9 +721,6 @@ class TestQASMConformanceTests:
         res = qnode.qtape.graph.to_openqasm(wires=dev.wires)
         expected = dev._circuit.qasm()
 
-        print(res)
-        print(expected)
-
         assert res == expected
 
     def test_qiskit_load_generated_qasm(self, check_dependencies):
