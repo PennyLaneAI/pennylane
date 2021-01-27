@@ -21,7 +21,6 @@ import semantic_version
 import torch
 
 from pennylane import QuantumFunctionError
-from pennylane.operation import Sample
 from pennylane.interfaces.torch import args_to_numpy
 
 from pennylane.tape.queuing import AnnotatedQueue
