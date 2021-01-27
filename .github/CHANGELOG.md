@@ -368,14 +368,37 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
-* * Several improvements have been made to the `Wires` class to reduce overhead:
+* Several improvements have been made to the `Wires` class to reduce overhead and simplify the logic 
+  of how wire labels are interpreted:
+  [(#1019)](https://github.com/PennyLaneAI/pennylane/pull/1019)
+  [(#1010)](https://github.com/PennyLaneAI/pennylane/pull/1010)
+  [(#1005)](https://github.com/PennyLaneAI/pennylane/pull/1005)
+  [(#983)](https://github.com/PennyLaneAI/pennylane/pull/983)
   [(#967)](https://github.com/PennyLaneAI/pennylane/pull/967)
 
-  - Moves the check for uniqueness of wires from `Wires` instantiation to
+  - If the input `wires` to a wires class instantiation `Wires(wires)` can be iterated over, 
+    its elements are interpreted as wire labels. Otherwise, `wires` is interpreted as a single wire label.
+    The only exception to this are strings, which are always interpreted as a single 
+    wire label, so users can address wires with labels such as `"ancilla"`. 
+     
+  - Any type can now be a wire label as long as it is hashable. The hash is used to establish
+    the uniqueness of two labels.
+    
+  - Indexing wires objects now returns a label, instead of a new `Wires` object. For example:
+    
+    ```pycon
+    >>> w = Wires([0, 1, 2])
+    >>> w[1]
+    >>> 1
+    ```
+     
+  - The check for uniqueness of wires moved from `Wires` instantiation to
     the `qml.wires._process` function in order to reduce overhead from repeated
     creation of `Wires` instances.
   
-  - Skips calling of Wires on Wires instances on `Operation` instantiation.
+  - Calls to the `Wires` class are substantially reduced, for example by avoiding to call 
+    Wires on Wires instances on `Operation` instantiation, and by using labels instead of 
+    `Wires` objects inside the default qubit device.
   
 * Adds the `PauliRot` generator to the `qml.operation` module. This 
   generator is required to construct the metric tensor. 
