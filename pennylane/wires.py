@@ -57,7 +57,9 @@ def _process(wires):
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
-                raise WireError("Wires must be hashable; got object of type {}.".format(type(wires))) from e
+                raise WireError(
+                    "Wires must be hashable; got object of type {}.".format(type(wires))
+                ) from e
         return (wires,)
 
     try:
