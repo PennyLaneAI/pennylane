@@ -168,7 +168,6 @@ class TestToQasmUnitTests:
         qasm1 = circuit1.to_openqasm()
 
         ops2 = qml.QubitStateVector.decomposition(psi, wires=[0, 1])
-        print(ops2)
         circuit2 = CircuitGraph(ops2, {}, Wires([0, 1]))
         qasm2 = circuit2.to_openqasm()
 

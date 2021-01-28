@@ -25,7 +25,6 @@ from pennylane.templates import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import pauli_eigs, expand
-from pennylane._queuing import OperationRecorder
 import pennylane as qml
 
 INV_SQRT2 = 1 / math.sqrt(2)
