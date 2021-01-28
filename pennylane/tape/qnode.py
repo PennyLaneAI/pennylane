@@ -515,6 +515,13 @@ class QNode:
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
+        # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
+        # In the long run, we should make sure that the user's device is the one
+        # actually run so she has full control. This could be done by changing the class
+        # of the user's device before and after executing the tape.
+        if self.device is not self._original_device:
+            self._original_device._num_executions += 1  # pylint: disable=protected-access
+
         if isinstance(self.qfunc_output, Sequence):
             return res
 
