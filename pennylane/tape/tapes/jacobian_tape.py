@@ -444,7 +444,7 @@ class JacobianTape(QuantumTape):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
+                qml.probs(wires=[0, 'a'])
 
         If parameters are not provided, the existing tape parameters are used:
 

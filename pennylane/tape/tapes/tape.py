@@ -68,7 +68,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             qml.CNOT(wires=[0, 'a'])
             qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.probs(wires=0), qml.probs(wires='a')
 
     The nested structure is preserved:
 
@@ -178,7 +178,7 @@ class QuantumTape(AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliZ(wires=[0]))
 
     Once constructed, information about the quantum circuit can be queried:
 
@@ -449,7 +449,7 @@ class QuantumTape(AnnotatedQueue):
 
                 qml.CNOT(wires=[0, 'a'])
                 qml.RY(0.2, wires='a')
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         The nested structure is preserved:
 
@@ -495,7 +495,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
                 qml.CNOT(wires=[0, 'a'])
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         This tape has the following properties:
 
@@ -602,7 +602,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.trainable_params
         {0, 1, 2}
@@ -648,7 +648,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and will be returned:
 
@@ -696,7 +696,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and can be modified:
 
@@ -754,7 +754,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.operations
         [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
@@ -777,7 +777,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.observables
         [expval(PauliZ(wires=[0]))]
@@ -812,7 +812,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
         [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
@@ -1044,7 +1044,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
+                qml.probs(wires=[0, 'a'])
 
         If parameters are not provided, the existing tape parameters are used:
 
