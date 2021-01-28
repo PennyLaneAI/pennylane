@@ -200,30 +200,6 @@ class TestOperation:
                 test_class(*pars, wires=ww)
 
     @pytest.fixture(scope="function")
-    def qnode(self, mock_device):
-        """Provides a QNode for the subsequent tests of do_queue"""
-
-        def circuit(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1], do_queue=False)
-            qml.RY(0.4, wires=[0])
-            qml.RZ(-0.2, wires=[1], do_queue=False)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        node = qml.QNode(circuit, mock_device)
-        node._construct([1.0], {})
-
-        return node
-
-    def test_operation_inside_context_do_queue_false(self, qnode):
-        """Test that an operation does not get added to the QNode queue when do_queue=False"""
-        assert len(qnode.ops) == 4
-        assert qnode.ops[0].name == "RX"
-        assert qnode.ops[1].name == "RY"
-        assert qnode.ops[2].name == "PauliX"
-        assert qnode.ops[3].name == "PauliZ"
-
-    @pytest.fixture(scope="function")
     def qnode_for_inverse(self, mock_device):
         """Provides a QNode for the subsequent tests of inv"""
 
@@ -233,19 +209,19 @@ class TestOperation:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
         node = qml.QNode(circuit, mock_device)
-        node._construct([1.0], {})
+        node.construct([1.0], {})
 
         return node
 
     def test_operation_inverse_defined(self, qnode_for_inverse):
         """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
         of the original class"""
-        assert qnode_for_inverse.ops[0].name == "RZ.inv"
-        assert qnode_for_inverse.ops[0].inverse
-        assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
-        assert qnode_for_inverse.ops[1].name == "RZ"
-        assert not qnode_for_inverse.ops[1].inverse
-        assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
+        assert qnode_for_inverse.qtape.operations[0].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
+        assert not qnode_for_inverse.qtape.operations[1].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
 
     def test_operation_inverse_using_dummy_operation(self):
 
@@ -605,7 +581,7 @@ class TestOperatorIntegration:
 
         dev1 = qml.device("default.qubit", wires=2)
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
             num_params = 0
@@ -653,7 +629,7 @@ class TestOperationIntegration:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Gate Rotation.inv not supported on device {}".format(dev1.short_name),
+            match=r"inverse of gates are not supported on device default\.gaussian",
         ):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
@@ -1005,16 +981,14 @@ class TestTensor:
     ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
-    @pytest.mark.parametrize("statistics", [qml.expval, qml.var, qml.sample])
-    def test_prune(self, tensor_observable, expected, statistics):
+    def test_prune(self, tensor_observable, expected):
         """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
-        O = statistics(tensor_observable)
-        O_expected = statistics(expected)
+        O = tensor_observable
+        O_expected = expected
 
         O_pruned = O.prune()
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
-        assert O_pruned.return_type == O_expected.return_type
 
 
 equal_obs = [

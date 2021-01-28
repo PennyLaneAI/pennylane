@@ -1090,7 +1090,7 @@ class TestExecution:
 
         res = tape.execute(dev)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], float)
+        assert isinstance(res[1], np.ndarray)
 
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""

@@ -977,7 +977,7 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle):
+    def test_differentiability(self, angle, tol):
         """Test that differentiation of PauliRot works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -989,9 +989,9 @@ class TestPauliRot:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(angle)
-        gradient = np.squeeze(circuit.jacobian(angle))
+        gradient = np.squeeze(qml.grad(circuit)(angle))
 
-        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
+        assert gradient == pytest.approx(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_decomposition_integration(self, angle, tol):
@@ -1012,8 +1012,8 @@ class TestPauliRot:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
-            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        assert np.squeeze(qml.grad(circuit)(angle)) == pytest.approx(
+            np.squeeze(qml.grad(decomp_circuit)(angle)), abs=tol
         )
 
     def test_matrix_incorrect_pauli_word_error(self):
@@ -1152,7 +1152,7 @@ class TestMultiRZ:
         assert decomp_ops[4].wires == Wires([3, 2])
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle):
+    def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1165,9 +1165,9 @@ class TestMultiRZ:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(angle)
-        gradient = np.squeeze(circuit.jacobian(angle))
+        gradient = np.squeeze(qml.grad(circuit)(angle))
 
-        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
+        assert gradient == pytest.approx(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_decomposition_integration(self, angle, tol):
@@ -1190,8 +1190,8 @@ class TestMultiRZ:
             return qml.expval(qml.PauliX(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
-            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        assert np.squeeze(qml.jacobian(circuit)(angle)) == pytest.approx(
+            np.squeeze(qml.jacobian(decomp_circuit)(angle)), abs=tol
         )
 
     @pytest.mark.parametrize("qubits", range(3, 6))

@@ -72,16 +72,27 @@ class MeasurementProcess:
         # Below, we imitate an identity observable, so that the
         # device undertakes no action upon recieving this observable.
         self.name = "Identity"
-        self.diagonalizing_gates = lambda: []
         self.data = []
 
         # Queue the measurement process
         self.queue()
 
+    def diagonalizing_gates(self):
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Returns:
+            List[.Operation]: the operations that diagonalize the observables
+        """
+        try:
+            return self.expand().operations
+        except NotImplementedError:
+            return []
+
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:
-            return "{}(wires={})".format(self.return_type.value, self.wires)
+            return "{}(wires={})".format(self.return_type.value, self.wires.tolist())
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         if self.obs.return_type is None:
@@ -345,14 +356,6 @@ def probs(wires):
 def state():
     r"""Quantum state in the computational basis.
 
-    .. note::
-
-        The quantum state can only be returned in tape mode:
-
-        >>> qml.enable_tape()
-
-        For more details on tape mode, see :mod:`pennylane.tape`.
-
     This function accepts no observables and instead instructs the QNode to return its state. A
     ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
     describing all wires in the device.
@@ -360,8 +363,6 @@ def state():
     **Example:**
 
     .. code-block:: python3
-
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -391,14 +392,6 @@ def state():
 def density_matrix(wires):
     r"""Quantum density matrix in the computational basis.
 
-    .. note::
-
-        The density matrix can only be returned in tape mode:
-
-        >>> qml.enable_tape()
-
-        For more details on tape mode, see :mod:`pennylane.tape`.
-
     This function accepts no observables and instead instructs the QNode to return its density
     matrix or reduced density matrix. The ``wires`` argument gives the possibility
     to trace out a part of the system. It can result in obtaining a mixed state, which can be
@@ -407,8 +400,6 @@ def density_matrix(wires):
     **Example:**
 
     .. code-block:: python3
-
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 

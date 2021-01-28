@@ -54,7 +54,6 @@ class DefaultQubitJax(DefaultQubit):
     Using this method, the created QNode is a 'white-box', and is
     tightly integrated with your JAX computation:
 
-    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit.jax", wires=1)
     >>> @qml.qnode(dev, interface="jax", diff_method="backprop")
     ... def circuit(x):

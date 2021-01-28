@@ -183,6 +183,13 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        # TODO: Remove try/except when circuit is always QuantumTape and
+        # consider merging with caching case
+        try:
+            self._circuit_hash = circuit.graph.hash
+        except AttributeError as e:
+            self._circuit_hash = circuit.hash
+
         if self._cache:
             try:  # TODO: Remove try/except when circuit is always QuantumTape
                 circuit_hash = circuit.graph.hash
@@ -192,8 +199,6 @@ class QubitDevice(Device):
                 return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
-
-        self._circuit_hash = circuit.hash
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
@@ -205,13 +210,10 @@ class QubitDevice(Device):
         # compute the required statistics
         results = self.statistics(circuit.observables)
 
-        # Ensures that a combination with sample does not put
-        # expvals and vars in superfluous arrays
-        all_sampled = all(obs.return_type is Sample for obs in circuit.observables)
-        if circuit.is_sampled and not all_sampled:
-            results = self._asarray(results, dtype="object")
-        else:
+        if circuit.all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
+        else:
+            results = tuple(self._asarray(r) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results

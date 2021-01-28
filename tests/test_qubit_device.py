@@ -26,6 +26,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.variable import Variable
 from pennylane.wires import Wires
+from pennylane.tape import QuantumTape
 from pennylane.tape.measure import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -763,6 +764,42 @@ class TestExecution:
         for _ in range(num_evals_3):
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
+
+    def test_same_hash(self):
+        """Test that executing the same tape twice produces the same circuit
+        hash."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with QuantumTape() as tape0:
+            qml.RZ(0.3, wires=[0])
+            qml.expval(qml.PauliX(0))
+
+        tape0.execute(dev)
+        orig_hash = dev.circuit_hash
+
+        tape0.execute(dev)
+        new_hash = dev.circuit_hash
+        assert orig_hash == new_hash
+
+    def test_different_hash(self):
+        """Test that executing different tapes affects the circuit hash."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with QuantumTape() as tape0:
+            qml.RZ(0.3, wires=[0])
+            qml.expval(qml.PauliX(0))
+
+        tape0.execute(dev)
+        orig_hash = dev.circuit_hash
+
+        with QuantumTape() as tape1:
+            qml.RY(1.3, wires=[0])
+            qml.RX(0.9, wires=[0])
+            qml.expval(qml.PauliX(0))
+
+        tape1.execute(dev)
+        new_hash = dev.circuit_hash
+        assert orig_hash != new_hash
 
 
 class TestBatchExecution:

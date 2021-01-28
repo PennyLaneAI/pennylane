@@ -907,7 +907,7 @@ class TestQNodeIntegration:
 
         expected = -tf.math.sin(p)
 
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -1099,7 +1099,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
         res = tape.jacobian(res, p_tf)
-        assert np.allclose(res, circuit2.jacobian([p]), atol=tol, rtol=0)
+        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
         """Test that the device state can be differentiated"""
@@ -1137,7 +1137,7 @@ class TestPassthruIntegration:
 
         with tf.GradientTape() as tape:
             # get the probability of wire 1
-            prob_wire_1 = circuit(a, b)[0]
+            prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
             res = prob_wire_1[1] - prob_wire_1[0]
 
@@ -1189,7 +1189,7 @@ class TestPassthruIntegration:
         dev = qml.device("default.qubit.tf", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(x, weights, w=None):
+        def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
             qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
@@ -1198,11 +1198,11 @@ class TestPassthruIntegration:
 
         # Check that the correct QNode type is being used.
         if diff_method == "backprop":
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert not hasattr(circuit, "jacobian")
-        else:
-            assert not isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert hasattr(circuit, "jacobian")
+            assert circuit.diff_options["method"] == "backprop"
+        elif diff_method == "parameter-shift":
+            assert circuit.diff_options["method"] == "analytic"
+        elif diff_method == "finite-diff":
+            assert circuit.diff_options["method"] == "numeric"
 
         def cost(params):
             """Perform some classical processing"""
@@ -1249,7 +1249,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliX(w))
 
         with pytest.raises(
-            ValueError,
+            qml.QuantumFunctionError,
             match="default.qubit.tf only supports diff_method='backprop' when using the tf interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
@@ -1272,8 +1272,8 @@ class TestSamplesNonAnalytic:
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (1, shots)
-        assert set(res[0].numpy()) == {-1, 1}
+        assert res.shape == (shots,)
+        assert set(res.numpy()) == {-1, 1}
 
     def test_sample_observables_non_differentiable(self):
         """Test that sampled observables cannot be differentiated."""

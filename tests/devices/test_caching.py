@@ -265,14 +265,20 @@ class TestCaching:
         """Tests that an exception is raised when attempting to use caching outside of tape mode"""
         dev = qml.device("default.qubit", wires=3, cache=10)
 
-        def qfunc(x, y):
-            """Simple quantum function"""
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=1))
+        try:
+            qml.disable_tape()
 
-        qn = qml.QNode(qfunc, dev)
+            def qfunc(x, y):
+                """Simple quantum function"""
+                qml.RX(x, wires=0)
+                qml.RX(y, wires=1)
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(wires=1))
 
-        with pytest.raises(ValueError, match="Caching is only available when using tape mode"):
-            qn(0.1, 0.2)
+            qn = qml.QNode(qfunc, dev)
+
+            with pytest.raises(ValueError, match="Caching is only available when using tape mode"):
+                qn(0.1, 0.2)
+
+        finally:
+            qml.enable_tape()

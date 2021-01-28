@@ -440,6 +440,8 @@ class TestTapeConstruction:
         with pytest.raises(ValueError, match="only works when tape mode is enabled"):
             result = draw(circuit, charset="ascii")
 
+        qml.enable_tape()
+
     def test_drawing(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -722,13 +724,7 @@ class TestDecorator:
 class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 
-    @pytest.fixture
-    def enable_tape_mode(self):
-        qml.enable_tape()
-        yield
-        qml.disable_tape()
-
-    def test_multi_thread(self, enable_tape_mode):
+    def test_multi_thread(self):
         """Test that multi-threaded queuing in tape mode works correctly"""
         n_qubits = 4
         n_batches = 5
