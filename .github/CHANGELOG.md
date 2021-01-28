@@ -2,6 +2,24 @@
 
 <h3>New features since last release</h3>
 
+<h4>JAX is now supported on all devices</h4>
+
+* JAX can nw be used as the interface to any device
+
+  Here is an example of how to use JAX with Cirq:
+
+  ```python
+  dev = qml.device('cirq.simulator', wires=1)
+  @qml.qnode(dev, interface="jax")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  weights = jnp.array([0.2, 0.5, 0.1])
+  print(circuit(weights)) # DeviceArray(...)
+
+  ```
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -14,7 +32,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-
+Chase Roberts
 
 # Release 0.14.0 (current release)
 
