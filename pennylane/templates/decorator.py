@@ -57,7 +57,16 @@ def template(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with OperationRecorder() as rec:
+        import pennylane as qml
+
+        recorder_class = OperationRecorder
+
+        if qml.tape_mode_active():
+            from pennylane.tape import TapeOperationRecorder
+
+            recorder_class = TapeOperationRecorder
+
+        with recorder_class() as rec:
             func(*args, **kwargs)
 
         return rec.queue
