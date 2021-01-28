@@ -1615,10 +1615,7 @@ class BasisState(Operation):
 
     @staticmethod
     def decomposition(n, wires):
-        with OperationRecorder() as rec:
-            BasisStatePreparation(n, wires)
-
-        return rec.queue
+        return BasisStatePreparation(n, wires)
 
 
 class QubitStateVector(Operation):
@@ -1649,10 +1646,7 @@ class QubitStateVector(Operation):
 
     @staticmethod
     def decomposition(state, wires):
-        with OperationRecorder() as rec:
-            MottonenStatePreparation(state, wires)
-
-        return rec.queue
+        return MottonenStatePreparation(state, wires)
 
 
 # =============================================================================
