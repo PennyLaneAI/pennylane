@@ -51,7 +51,7 @@ class JAXInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        tape = AutogradInterface.apply(JacobianTape())
+        tape = JAXInterface.apply(JacobianTape())
 
         with tape:
             qml.Rot(0, 0, 0, wires=0)
@@ -96,19 +96,19 @@ class JAXInterface(AnnotatedQueue):
 
     @classmethod
     def apply(cls, tape):
-        """Apply the autograd interface to an existing tape in-place.
+        """Apply the JAX interface to an existing tape in-place.
 
         Args:
-            tape (.JacobianTape): a quantum tape to apply the Autograd interface to
+            tape (.JacobianTape): a quantum tape to apply the JAX interface to
 
         **Example**
 
         >>> with JacobianTape() as tape:
         ...     qml.RX(0.5, wires=0)
         ...     expval(qml.PauliZ(0))
-        >>> AutogradInterface.apply(tape)
+        >>> JAXInterface.apply(tape)
         >>> tape
-        <AutogradQuantumTape: wires=<Wires = [0]>, params=1>
+        <JAXQuantumTape: wires=<Wires = [0]>, params=1>
         """
         tape_class = getattr(tape, "__bare__", tape.__class__)
         tape.__bare__ = tape_class
