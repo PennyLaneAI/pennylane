@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import State
 from pennylane.tape.tapes.tape import QuantumTape
 
-# CV ops still need to support state preparation operetations prior to any
+# CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,

@@ -29,7 +29,7 @@ from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
-# CV ops still need to support state preparation operetations prior to any
+# CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
