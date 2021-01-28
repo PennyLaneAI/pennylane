@@ -54,6 +54,7 @@ def template(func):
     Returns:
         callable: The wrapper function
     """
+    # pylint: disable=import-outside-toplevel
 
     @wraps(func)
     def wrapper(*args, **kwargs):
