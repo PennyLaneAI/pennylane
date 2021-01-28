@@ -766,6 +766,7 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         try:
             from pennylane.tape.interfaces.jax import JAXInterface
+
             if self.interface != "jax" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
                 self._tape, interface, self.device, diff_options = self.get_tape(
@@ -776,7 +777,6 @@ class QNode:
                 self.diff_options.update(diff_options)
             else:
                 self.interface = "jax"
-
 
             if self.qtape is not None:
                 JAXInterface.apply(self.qtape)
