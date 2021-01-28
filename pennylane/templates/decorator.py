@@ -63,9 +63,7 @@ def template(func):
         recorder_class = OperationRecorder
 
         if qml.tape_mode_active():
-            from pennylane.tape import TapeOperationRecorder
-
-            recorder_class = TapeOperationRecorder
+            recorder_class = qml.tape.TapeOperationRecorder
 
         with recorder_class() as rec:
             func(*args, **kwargs)
