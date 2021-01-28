@@ -213,7 +213,7 @@ class QubitDevice(Device):
         if circuit.all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
         else:
-            results = tuple([self._asarray(r) for r in results])
+            results = tuple(self._asarray(r) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
