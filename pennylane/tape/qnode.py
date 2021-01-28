@@ -37,25 +37,8 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> qml.tape.QNode(qfunc, dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -124,7 +107,6 @@ class QNode:
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
@@ -491,21 +473,32 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
+        for obj in self.qtape.operations + self.qtape.observables:
+            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+                # check here only if enough wires
+                if len(obj.wires) != self.device.num_wires:
+                    raise qml.QuantumFunctionError(
+                        "Operator {} must act on all wires".format(obj.name)
+                    )
+
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
-            not self.device.supports_operation(op.name) for op in self.qtape.operations
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in self.qtape.operations
         )
 
-        # expand out the tape, if any operations are not supported on the device or multiple
-        # observables are measured on the same wire
+        # expand out the tape, if nested tapes are present, any operations are not supported on the
+        # device, or multiple observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion,
-                stop_at=lambda obj: self.device.supports_operation(obj.name),
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.device.supports_operation(obj.name),
             )
 
     def __call__(self, *args, **kwargs):
@@ -525,20 +518,7 @@ class QNode:
         if isinstance(self.qfunc_output, Sequence):
             return res
 
-        # HOTFIX: Output is a single measurement function. To maintain compatibility
-        # with core, we squeeze all outputs.
-
-        # Get the namespace associated with the return type
-        res_type_namespace = res.__class__.__module__.split(".")[0]
-
-        if res_type_namespace in ("pennylane", "autograd"):
-            # For PennyLane and autograd we must branch, since
-            # 'squeeze' does not exist in the top-level of the namespace
-            return anp.squeeze(res)
-        # Same for JAX
-        if res_type_namespace == "jax":
-            return __import__(res_type_namespace).numpy.squeeze(res)
-        return __import__(res_type_namespace).squeeze(res)
+        return qml.math.squeeze(res)
 
     def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
         """Evaluate the value of the metric tensor.
@@ -772,25 +752,8 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
     compatible device.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> @qml.tape.qnode(dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -858,7 +821,6 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
     >>> def circuit(x):

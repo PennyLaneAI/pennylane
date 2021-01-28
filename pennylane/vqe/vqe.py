@@ -441,7 +441,6 @@ class ExpvalCost:
 
         .. code-block:: python
 
-            qml.enable_tape()
             commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
             H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
 
@@ -463,8 +462,6 @@ class ExpvalCost:
         Number of executions: 2
         >>> print("Number of executions (optimized):", ex_opt)
         Number of executions (optimized): 1
-
-        Note that this feature is only available in :doc:`tape mode <../../code/qml_tape>`.
     """
 
     def __init__(

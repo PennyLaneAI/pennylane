@@ -49,6 +49,9 @@ class _TorchInterface(torch.autograd.Function):
         res = tape.execute_device(ctx.args, device)
         tape.set_parameters(ctx.all_params, trainable_only=False)
 
+        if hasattr(res, "numpy"):
+            res = res.numpy()
+
         # if any input tensor uses the GPU, the output should as well
         for i in input_:
             if isinstance(i, torch.Tensor):
@@ -57,6 +60,9 @@ class _TorchInterface(torch.autograd.Function):
                     return torch.as_tensor(
                         torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
                     )
+
+        if tape.is_sampled and not tape.all_sampled:
+            return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
 
         if res.dtype == np.dtype("object"):
             res = np.hstack(res)

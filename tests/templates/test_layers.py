@@ -750,44 +750,44 @@ class TestParticleConservingU2:
         with pennylane._queuing.OperationRecorder() as rec:
             ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
 
-            # number of gates
-            assert len(rec.queue) == n_gates
+        # number of gates
+        assert len(rec.queue) == n_gates
 
-            # initialization
-            assert isinstance(rec.queue[0], qml.BasisState)
+        # initialization
+        assert isinstance(rec.queue[0], qml.BasisState)
 
-            # order of gates
-            for op1, op2 in zip(rec.queue[1:], exp_gates):
-                assert isinstance(op1, op2)
+        # order of gates
+        for op1, op2 in zip(rec.queue[1:], exp_gates):
+            assert isinstance(op1, op2)
 
-            # gate parameter
-            params = np.array(
-                [
-                    rec.queue[i].parameters
-                    for i in range(1, n_gates)
-                    if rec.queue[i].parameters != []
-                ]
-            )
-            weights[:, qubits:] = weights[:, qubits:] * 2
-            assert np.allclose(params.flatten(), weights.flatten())
+        # gate parameter
+        params = np.array(
+            [
+                rec.queue[i].parameters
+                for i in range(1, n_gates)
+                if rec.queue[i].parameters != []
+            ]
+        )
+        weights[:, qubits:] = weights[:, qubits:] * 2
+        assert np.allclose(params.flatten(), weights.flatten())
 
-            # gate wires
-            wires = Wires(range(qubits))
-            nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
-            nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+        # gate wires
+        wires = Wires(range(qubits))
+        nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
 
-            exp_wires = []
-            for _ in range(layers):
-                for i in range(qubits):
-                    exp_wires.append(wires.subset([i]))
-                for j in nm_wires:
-                    exp_wires.append(j)
-                    exp_wires.append(j[::-1])
-                    exp_wires.append(j)
+        exp_wires = []
+        for _ in range(layers):
+            for i in range(qubits):
+                exp_wires.append(wires.subset([i]))
+            for j in nm_wires:
+                exp_wires.append(j)
+                exp_wires.append(j[::-1])
+                exp_wires.append(j)
 
-            res_wires = [rec.queue[i]._wires for i in range(1, n_gates)]
+        res_wires = [rec.queue[i]._wires for i in range(1, n_gates)]
 
-            assert res_wires == exp_wires
+        assert res_wires == exp_wires
 
     @pytest.mark.parametrize(
         ("weights", "wires", "msg_match"),

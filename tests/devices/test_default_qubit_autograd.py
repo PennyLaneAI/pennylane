@@ -71,7 +71,7 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -119,7 +119,7 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        assert circuit.diff_options["method"] == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -185,8 +185,8 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert isinstance(circuit1, qml.qnodes.PassthruQNode)
-        assert isinstance(circuit2, qml.qnodes.QubitQNode)
+        assert circuit1.diff_options["method"] == "backprop"
+        assert circuit2.diff_options["method"] == "analytic"
 
         res = circuit1(p)
 
@@ -194,7 +194,7 @@ class TestPassthruIntegration:
 
         grad_fn = qml.jacobian(circuit1, 0)
         res = grad_fn(p)
-        assert np.allclose(res, circuit2.jacobian([p]), atol=tol, rtol=0)
+        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
         """Test that the device state can be differentiated"""
@@ -233,7 +233,7 @@ class TestPassthruIntegration:
         b = np.array(0.12, requires_grad=True)
 
         def cost(a, b):
-            prob_wire_1 = circuit(a, b)[0]
+            prob_wire_1 = circuit(a, b)
             return prob_wire_1[1] - prob_wire_1[0]
 
         res = cost(a, b)
@@ -273,22 +273,15 @@ class TestPassthruIntegration:
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Autograd interface, using a variety of differentiation methods."""
         dev = qml.device("default.qubit.autograd", wires=1)
+        state = np.array(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
 
         @qml.qnode(dev, diff_method=diff_method, interface="autograd")
-        def circuit(x, weights, w=None):
+        def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
+            qml.QubitStateVector(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
-
-        # Check that the correct QNode type is being used.
-        if diff_method == "backprop":
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert not hasattr(circuit, "jacobian")
-        else:
-            assert not isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert hasattr(circuit, "jacobian")
 
         def cost(params):
             """Perform some classical processing"""
@@ -303,6 +296,14 @@ class TestPassthruIntegration:
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        # Check that the correct differentiation method is being used.
+        if diff_method == "backprop":
+            assert circuit.diff_options["method"] == "backprop"
+        elif diff_method == "parameter-shift":
+            assert circuit.diff_options["method"] == "analytic"
+        else:
+            assert circuit.diff_options["method"] == "numeric"
 
         res = qml.grad(cost)(params)
         expected_grad = (
@@ -329,7 +330,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliX(w))
 
         with pytest.raises(
-            ValueError,
+            qml.QuantumFunctionError,
             match="default.qubit.autograd only supports diff_method='backprop' when using the autograd interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
