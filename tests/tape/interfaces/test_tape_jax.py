@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit tests for the JAX interface"""
 import pytest
-import jax
-import jax.numpy as jnp
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 import numpy as np
 from functools import partial
 import pennylane as qml
