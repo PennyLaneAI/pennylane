@@ -224,11 +224,11 @@ class TestGroupingUtils:
     def test_are_identical_pauli_words(self):
         """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
 
-        pauli_word_0a = Tensor(PauliX(0))
-        pauli_word_0b = PauliX(0)
+        pauli_word_1 = Tensor(PauliX(0))
+        pauli_word_2 = PauliX(0)
 
-        assert are_identical_pauli_words(pauli_word_0a, pauli_word_0b)
-        assert are_identical_pauli_words(pauli_word_0b, pauli_word_0a)
+        assert are_identical_pauli_words(pauli_word_1, pauli_word_2)
+        assert are_identical_pauli_words(pauli_word_2, pauli_word_1)
 
         pauli_word_1 = PauliX(0) @ PauliY(1)
         pauli_word_2 = PauliY(1) @ PauliX(0)
