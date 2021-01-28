@@ -265,7 +265,6 @@ class JacobianTape(QuantumTape):
             # get the stored result of the original circuit
             y0 = options.get("y0", None)
 
-            # import pdb; pdb.set_trace()
             shifted = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
@@ -336,7 +335,6 @@ class JacobianTape(QuantumTape):
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
         jacobian_method = getattr(device, options.get("jacobian_method", "jacobian"))
-        # import pdb; pdb.set_trace()
 
         if params is None:
             params = np.array(self.get_parameters())
@@ -504,7 +502,6 @@ class JacobianTape(QuantumTape):
         params = np.array(params)
 
         if method == "device":
-            # import pdb; pdb.set_trace()
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)
 
