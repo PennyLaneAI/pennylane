@@ -18,7 +18,6 @@ representation of a quantum circuit from an operator and observable queue.
 # pylint: disable=too-many-arguments
 import networkx as nx
 
-import pennylane as qml
 from pennylane.circuit_graph import CircuitGraph, Layer
 
 
