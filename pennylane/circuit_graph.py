@@ -160,6 +160,14 @@ class CircuitGraph:
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
             op.queue_idx = k  # store the queue index in the Operator
+
+            if hasattr(op, "return_type") and op.return_type is qml.operation.State:
+                # State measurements contain no wires by default, but wires are
+                # required for the circuit drawer, so we recreate the state
+                # measurement with all wires
+                op = qml.tape.MeasurementProcess(qml.operation.State, wires=wires)
+                op.queue_idx = k
+
             for w in op.wires:
                 # get the index of the wire on the device
                 wire = wires.index(w)

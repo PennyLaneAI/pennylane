@@ -254,7 +254,6 @@ class QuantumTape(AnnotatedQueue):
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
 
-        self.hash = 0
         self.is_sampled = False
         self.all_sampled = False
         self.inverse = False

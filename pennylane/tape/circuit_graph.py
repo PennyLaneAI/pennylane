@@ -54,11 +54,6 @@ class TapeCircuitGraph(CircuitGraph):
 
         self._depth = None
 
-        for m in self._observables:
-            if m.return_type is qml.operation.State:
-                # state measurements are applied to all device wires
-                m._wires = wires  # pylint: disable=protected-access
-
         super().__init__(ops + obs, variable_deps={}, wires=wires)
 
         # For computing depth; want only a graph with the operations, not
