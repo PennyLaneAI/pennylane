@@ -105,3 +105,21 @@ class TestJAXQuantumTape:
         assert res.shape == (1,)
         # Easiest way to test object is a device array instead of np.array
         assert "DeviceArray" in res.__repr__()
+
+    def test_qnode_interface(self):
+
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+
+        res = circuit(a, b)
+        assert "DeviceArray" in res.__repr__()
+
+

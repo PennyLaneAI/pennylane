@@ -15,10 +15,10 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 JAX.
 """
+from functools import partial
 import jax
 import jax.experimental.host_callback as host_callback
 import jax.numpy as jnp
-from functools import partial
 from pennylane.tape.queuing import AnnotatedQueue
 from pennylane.operation import Variance, Expectation
 

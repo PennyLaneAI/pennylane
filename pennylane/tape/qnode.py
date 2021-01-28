@@ -764,15 +764,8 @@ class QNode:
             .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
         # pylint: disable=import-outside-toplevel
-        if self.diff_method != "backprop":
-            raise qml.QuantumFunctionError(
-                "The JAX interface can only be used with "
-                "diff_method='backprop' on supported devices"
-            )
         try:
-            import jax
             from pennylane.tape.interfaces.jax import JAXInterface
-
             if self.interface != "jax" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
                 self._tape, interface, self.device, diff_options = self.get_tape(
@@ -784,10 +777,9 @@ class QNode:
             else:
                 self.interface = "jax"
 
-            self.dtype = dtype or self.dtype or JAXInterface.dtype
 
             if self.qtape is not None:
-                JAXInterface.apply(self.qtape, dtype=self.dtype)
+                JAXInterface.apply(self.qtape)
 
         except ImportError as e:
             raise qml.QuantumFunctionError(
