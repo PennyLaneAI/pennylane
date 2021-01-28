@@ -202,6 +202,7 @@ class AutogradInterface(AnnotatedQueue):
             jac = self.jacobian(device, params=params, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
 
+            # only flatten g if all parameters are single values
             if all(np.ndim(p) == 0 for p in params):
                 vjp = g.flatten() @ jac
             else:
