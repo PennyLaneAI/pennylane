@@ -757,8 +757,8 @@ class QNode:
         """Apply the JAX interface to the internal quantum tape.
 
         Args:
-            dtype (tf.dtype): The dtype that the TensorFlow QNode should
-                output. If not provided, the default is ``tf.float64``.
+            dtype (tf.dtype): The dtype that the JAX QNode should
+                output. If not provided, the default is ``jnp.float64``.
 
         Raises:
             .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
