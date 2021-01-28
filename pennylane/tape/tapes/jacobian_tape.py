@@ -25,17 +25,19 @@ import pennylane as qml
 from pennylane.operation import State
 from pennylane.tape.tapes.tape import QuantumTape
 
+# CV ops still need to support state preparation operetations prior to any
+# other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
     qml.QubitStateVector,
-    qml.CatState,
-    qml.CoherentState,
-    qml.FockDensityMatrix,
-    qml.DisplacedSqueezedState,
-    qml.FockState,
-    qml.FockStateVector,
-    qml.ThermalState,
-    qml.GaussianState,
+    # qml.CatState,
+    # qml.CoherentState,
+    # qml.FockDensityMatrix,
+    # qml.DisplacedSqueezedState,
+    # qml.FockState,
+    # qml.FockStateVector,
+    # qml.ThermalState,
+    # qml.GaussianState,
 )
 
 
@@ -263,6 +265,7 @@ class JacobianTape(QuantumTape):
             # get the stored result of the original circuit
             y0 = options.get("y0", None)
 
+            # import pdb; pdb.set_trace()
             shifted = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted.set_parameters(params + shift)
 
@@ -333,6 +336,7 @@ class JacobianTape(QuantumTape):
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
         jacobian_method = getattr(device, options.get("jacobian_method", "jacobian"))
+        # import pdb; pdb.set_trace()
 
         if params is None:
             params = np.array(self.get_parameters())
@@ -500,6 +504,7 @@ class JacobianTape(QuantumTape):
         params = np.array(params)
 
         if method == "device":
+            # import pdb; pdb.set_trace()
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)
 
