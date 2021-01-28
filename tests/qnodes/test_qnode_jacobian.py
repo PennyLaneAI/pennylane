@@ -24,7 +24,7 @@ from pennylane._device import Device
 from pennylane.operation import CVObservable
 from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.qnodes.jacobian import JacobianQNode
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 @pytest.fixture(scope="function")
 def operable_mock_device_2_wires(monkeypatch):

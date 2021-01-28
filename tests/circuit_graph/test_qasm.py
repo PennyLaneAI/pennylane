@@ -234,7 +234,7 @@ class TestToQasmUnitTests:
         circuit = CircuitGraph(ops, {}, Wires([0, 1]))
 
         with pytest.raises(
-            qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"
+            ValueError, match="QubitUnitary not supported by the QASM serializer"
         ):
             res = circuit.to_openqasm()
 
@@ -292,7 +292,7 @@ class TestQNodeQasmIntegrationTests:
         # construct the qnode circuit
         qnode()
 
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
         expected = dedent(
             """\
             OPENQASM 2.0;
@@ -322,7 +322,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -386,7 +386,7 @@ class TestQNodeQasmIntegrationTests:
             """
         )
 
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
         assert res == expected
 
         # execute the QNode with new parameters, and serialize again
@@ -412,7 +412,7 @@ class TestQNodeQasmIntegrationTests:
             """
         )
 
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
         assert res == expected
 
     def test_native_inverse_gates(self):
@@ -430,7 +430,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -460,7 +460,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm(wires=dev.wires)
 
         expected = dedent(
             """\
@@ -492,7 +492,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm(wires=dev.wires)
 
         expected = dedent(
             """\
@@ -522,7 +522,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode(state=np.array([1, -1, -1, 1]) / np.sqrt(4))
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -556,7 +556,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode(state=np.array([1, 0, 1, 1]))
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -591,9 +591,9 @@ class TestQNodeQasmIntegrationTests:
         qnode()
 
         with pytest.raises(
-            qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"
+            ValueError, match="QubitUnitary not supported by the QASM serializer"
         ):
-            qnode.circuit.to_openqasm()
+            qnode.qtape.graph.to_openqasm()
 
     def test_rotations(self):
         """Test that observable rotations are correctly applied."""
@@ -610,7 +610,7 @@ class TestQNodeQasmIntegrationTests:
             ]
 
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -645,7 +645,7 @@ class TestQNodeQasmIntegrationTests:
             ]
 
         qnode()
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         expected = dedent(
             """\
@@ -696,7 +696,7 @@ class TestQASMConformanceTests:
             ]
 
         qnode([0.1, 0.2])
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm()
 
         # Note: Qiskit hardcodes in pi as a QASM constant.
         # Here, we replace it with its numerical value.
@@ -718,7 +718,7 @@ class TestQASMConformanceTests:
 
         # construct the qnode circuit
         qnode(state=np.array([1, 0, 1, 1]))
-        res = qnode.circuit.to_openqasm()
+        res = qnode.qtape.graph.to_openqasm(wires=dev.wires)
         expected = dev._circuit.qasm()
 
         assert res == expected
@@ -742,7 +742,7 @@ class TestQASMConformanceTests:
 
         params = [0.1, 0.2]
         qnode(params)
-        qasm = qnode.circuit.to_openqasm()
+        qasm = qnode.qtape.graph.to_openqasm()
         qc = self.qiskit.QuantumCircuit.from_qasm_str(qasm)
 
         gates = [g for g, _, _ in qc.data]

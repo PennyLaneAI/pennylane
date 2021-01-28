@@ -31,6 +31,7 @@ from pennylane.interfaces.torch import to_torch, unflatten_torch
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2

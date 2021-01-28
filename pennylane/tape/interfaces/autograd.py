@@ -21,7 +21,6 @@ import autograd.builtins
 from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
-
 from pennylane.tape.queuing import AnnotatedQueue
 
 
@@ -165,6 +164,9 @@ class AutogradInterface(AnnotatedQueue):
         self.set_parameters(self._all_params_unwrapped, trainable_only=False)
         res = self.execute_device(params, device=device)
         self.set_parameters(self._all_parameter_values, trainable_only=False)
+
+        if self.is_sampled:
+            return res
 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)

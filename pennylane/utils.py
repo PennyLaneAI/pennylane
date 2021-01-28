@@ -15,7 +15,7 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-branches
 from collections.abc import Iterable
 import copy
 import functools
@@ -306,6 +306,9 @@ def inv(operation_list):
             "This could happen if inversion of a template function is attempted. "
             "Please use inv on the function including its arguments, as in inv(template(args))."
         )
+    elif isinstance(operation_list, qml.tape.QuantumTape):
+        operation_list.inv()
+        return operation_list
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The provided operation_list is not iterable.")
 
@@ -322,6 +325,26 @@ def inv(operation_list):
             + "The following elements of the iterable were not Operations:"
             + ",".join(string_reps)
         )
+
+    if qml.tape_mode_active():
+        for op in operation_list:
+            try:
+                # remove the queued operation to be inverted
+                # from the existing queuing context
+                qml.tape.QueuingContext.remove(op)
+            except KeyError:
+                # operation to be inverted does not
+                # exist on the queuing context
+                pass
+
+        with qml.tape.QuantumTape() as tape:
+            for o in operation_list:
+                o.queue()
+                if o.inverse:
+                    o.inv()
+
+        tape.inv()
+        return tape
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 

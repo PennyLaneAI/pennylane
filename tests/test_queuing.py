@@ -188,13 +188,6 @@ class TestQueue:
 class TestOperationRecorder:
     """Test the OperationRecorder class."""
 
-    def test_context_adding(self, monkeypatch):
-        """Test that the OperationRecorder is added to the list of contexts."""
-        with qml._queuing.OperationRecorder() as recorder:
-            assert recorder in qml.QueuingContext._active_contexts
-
-        assert recorder not in qml.QueuingContext._active_contexts
-
     def test_circuit_integration(self):
         """Tests that the OperationRecorder integrates well with the
         core behaviour of PennyLane."""
@@ -203,8 +196,8 @@ class TestOperationRecorder:
             + "==========\n"
             + "PauliY(wires=[0])\n"
             + "PauliY(wires=[1])\n"
-            + "RZ(0.4, wires=[0])\n"
-            + "RZ(0.4, wires=[1])\n"
+            + "RZ(tensor(0.4, requires_grad=True), wires=[0])\n"
+            + "RZ(tensor(0.4, requires_grad=True), wires=[1])\n"
             + "CNOT(wires=[0, 1])\n"
             + "\n"
             + "Observables\n"

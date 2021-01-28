@@ -868,8 +868,8 @@ class TestDefaultTensorIntegration:
             return qml.expval(qml.X(0))
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Device default.tensor is a qubit device; CV operations are not allowed.",
+            qml._device.DeviceError,
+            match="not supported on device default.tensor",
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -894,8 +894,8 @@ class TestDefaultTensorIntegration:
             return qml.expval(op(*x, wires=wires))
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Device default.tensor is a qubit device; CV operations are not allowed.",
+            qml._device.DeviceError,
+            match="not supported on device default.tensor",
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
