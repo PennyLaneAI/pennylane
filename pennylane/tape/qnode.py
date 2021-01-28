@@ -754,7 +754,7 @@ class QNode:
             AutogradInterface.apply(self.qtape)
 
     def to_jax(self):
-        """Apply the TensorFlow interface to the internal quantum tape.
+        """Apply the JAX interface to the internal quantum tape.
 
         Args:
             dtype (tf.dtype): The dtype that the TensorFlow QNode should
