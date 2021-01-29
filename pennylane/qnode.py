@@ -515,6 +515,14 @@ class QNode:
         if self.device is not self._original_device:
             self._original_device._num_executions += 1  # pylint: disable=protected-access
 
+            # Update for state vector simulators that have the _pre_rotated_state attribute
+            if hasattr(self._original_device, "_pre_rotated_state"):
+                self._original_device._pre_rotated_state = self.device._pre_rotated_state
+
+            # Update for state vector simulators that have the _state attribute
+            if hasattr(self._original_device, "_state"):
+                self._original_device._state = self.device._state
+
         if isinstance(self.qfunc_output, Sequence):
             return res
 
