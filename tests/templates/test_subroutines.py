@@ -1259,12 +1259,12 @@ class TestPermute:
 
         @qml.qnode(dev)
         def identity_permutation():
-            Permute([0, 1, 2, 3], wires=dev.wires)
+            ops = Permute([0, 1, 2, 3], wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         identity_permutation()
 
-        assert len(identity_permutation.ops) == 1
+        assert len(identity_permutation.qtape.operations) == 0
 
     def test_identity_permutation_tape(self):
         """ Test that identity permutations have no effect on tapes. """
@@ -1297,8 +1297,8 @@ class TestPermute:
         two_cycle()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in two_cycle.qtape.operations[:-1])
-        assert [op.wires.labels for op in two_cycle.qtape.operations[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in two_cycle.qtape.operations)
+        assert [op.wires.labels for op in two_cycle.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         # For tape need to specify the wire labels
@@ -1343,8 +1343,8 @@ class TestPermute:
         cycle()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in cycle.qtape.operations[:-1])
-        assert [op.wires.labels for op in cycle.qtape.operations[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in cycle.qtape.operations)
+        assert [op.wires.labels for op in cycle.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "permutation_order,wire_order,expected_wires",
@@ -1385,8 +1385,8 @@ class TestPermute:
         arbitrary_perm()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in arbitrary_perm.qtape.operations[:-1])
-        assert [op.wires.labels for op in arbitrary_perm.qtape.operations[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in arbitrary_perm.qtape.operations)
+        assert [op.wires.labels for op in arbitrary_perm.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "permutation_order,wire_order,expected_wires",
@@ -1437,8 +1437,8 @@ class TestPermute:
         subset_perm()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in subset_perm.qtape.operations[:-1])
-        assert [op.wires.labels for op in subset_perm.qtape.operations[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in subset_perm.qtape.operations)
+        assert [op.wires.labels for op in subset_perm.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "wire_labels,permutation_order,wire_subset,expected_wires",

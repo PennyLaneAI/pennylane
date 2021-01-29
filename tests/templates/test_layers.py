@@ -338,6 +338,7 @@ class TestRandomLayers:
         second_call = circuit(weights)
         assert np.allclose(first_call, second_call, atol=tol)
 
+    @pytest.mark.xfail(reason="mutable qnodes are deprecated")
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
