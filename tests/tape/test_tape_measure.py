@@ -471,13 +471,17 @@ class TestState:
     @pytest.mark.parametrize(
         "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
     )
-    def test_devices(self, device, skip_if_no_tf_support):
+
+    @pytest.mark.parametrize(
+        "diff_method", ["best", "finite-diff", "parameter-shift"]
+    )
+    def test_devices(self, device, diff_method, skip_if_no_tf_support):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
         dev = qml.device(device, wires=4)
 
-        @qnode(dev, diff_method="parameter-shift")
+        @qnode(dev, diff_method=diff_method)
         def func():
             for i in range(4):
                 qml.Hadamard(i)
