@@ -23,7 +23,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
-from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
 
 
@@ -230,7 +229,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
@@ -265,7 +264,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
@@ -306,7 +305,7 @@ def sample(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 

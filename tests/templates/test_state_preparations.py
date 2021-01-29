@@ -368,7 +368,7 @@ class TestArbitraryStatePreparation:
         """Test that the correct gates are applied on a single wire."""
         weights = np.array([0, 1], dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0])
 
         assert rec.queue[0].name == "PauliRot"
@@ -386,7 +386,7 @@ class TestArbitraryStatePreparation:
         """Test that the correct gates are applied on on two wires."""
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0, 1])
 
         assert rec.queue[0].name == "PauliRot"

@@ -16,8 +16,6 @@ This module contains the template decorator.
 """
 from functools import wraps
 
-from pennylane.queuing import OperationRecorder
-
 
 def template(func):
     """Register a quantum template with PennyLane.
@@ -59,7 +57,7 @@ def template(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
-        with OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             func(*args, **kwargs)
 
         return rec.queue

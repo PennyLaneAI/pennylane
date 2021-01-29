@@ -32,7 +32,6 @@ from pennylane.operation import (
     Probability,
     Tensor,
 )
-from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
 
 
@@ -313,10 +312,10 @@ class Device(abc.ABC):
                     results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is State:
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Unsupported return type specified for observable {}".format(obs.name)
                     )
 

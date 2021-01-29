@@ -21,7 +21,7 @@ import cmath
 import functools
 import numpy as np
 
-from pennylane.templates import template
+from pennylane.templates.decorator import template
 from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import pauli_eigs, expand
