@@ -476,7 +476,6 @@
 * The `TensorN` observable is updated to support being copied without any parameters or wires passed.
   [(#1047)](https://github.com/PennyLaneAI/pennylane/pull/1047)
 
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
