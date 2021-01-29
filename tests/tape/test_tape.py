@@ -18,8 +18,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, TapeCircuitGraph
-from pennylane.tape.measure import MeasurementProcess, expval, sample, var
+from pennylane import CircuitGraph
+from pennylane.tape import QuantumTape
+from pennylane.measure import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -281,7 +282,7 @@ class TestGraph:
 
     def test_graph_creation(self, mocker):
         """Test that the circuit graph is correctly created"""
-        spy = mocker.spy(TapeCircuitGraph, "__init__")
+        spy = mocker.spy(CircuitGraph, "__init__")
 
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)

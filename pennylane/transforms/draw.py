@@ -14,6 +14,7 @@
 """
 Contains the drawing function.
 """
+from functools import wraps
 
 
 def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
@@ -80,6 +81,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
       a: ──╰C──RX(0.2)──┤
      -1: ───H───────────┤
     """
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)

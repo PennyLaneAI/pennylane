@@ -15,7 +15,6 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-import contextlib
 import copy
 from collections import Counter
 from threading import RLock
@@ -255,8 +254,6 @@ class QuantumTape(AnnotatedQueue):
         self.all_sampled = False
         self.inverse = False
 
-        self._stack = None
-
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
@@ -268,14 +265,6 @@ class QuantumTape(AnnotatedQueue):
     def __enter__(self):
         QuantumTape._lock.acquire()
         try:
-            if not QueuingContext.recording():
-                # if the tape is the first active queuing context
-                # monkeypatch the operations to support the new queuing context
-                with contextlib.ExitStack() as stack:
-                    for mock in mock_operations():
-                        stack.enter_context(mock)
-                    self._stack = stack.pop_all()
-
             QueuingContext.append(self)
             return super().__enter__()
         except Exception as _:
@@ -285,11 +274,6 @@ class QuantumTape(AnnotatedQueue):
     def __exit__(self, exception_type, exception_value, traceback):
         try:
             super().__exit__(exception_type, exception_value, traceback)
-
-            if not QueuingContext.recording():
-                # remove the monkeypatching
-                self._stack.__exit__(exception_type, exception_value, traceback)
-
             self._process_queue()
         finally:
             QuantumTape._lock.release()
@@ -961,7 +945,6 @@ class QuantumTape(AnnotatedQueue):
         """
         return self.graph.draw(
             charset=charset,
-            show_variable_names=False,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
         )

@@ -22,7 +22,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane._queuing
+import pennylane.queuing
 import pennylane.utils as pu
 
 from pennylane import Identity, PauliX, PauliY, PauliZ

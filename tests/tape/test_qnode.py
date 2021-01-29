@@ -17,7 +17,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QNodeCollection
-from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
+from pennylane import qnode, QNode
+from pennylane.transforms import draw
+from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape
 
 
 class TestValidation:
@@ -190,13 +192,13 @@ class TestValidation:
         quantum tape, interface, and diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.tape.QNode.get_best_method")
+        mock_best = mocker.patch("pennylane.QNode.get_best_method")
         mock_best.return_value = 1, 2, 3, {"method": "best"}
 
-        mock_backprop = mocker.patch("pennylane.tape.QNode._validate_backprop_method")
+        mock_backprop = mocker.patch("pennylane.QNode._validate_backprop_method")
         mock_backprop.return_value = 4, 5, 6, {"method": "backprop"}
 
-        mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
+        mock_device = mocker.patch("pennylane.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9, {"method": "device"}
 
         qn = QNode(None, dev, diff_method="best")
@@ -427,7 +429,6 @@ class TestTapeConstruction:
         assert result == expected
 
     def test_draw_transform_raises(self):
-        qml.disable_tape()
         dev = qml.device("default.qubit", wires=2)
         @qml.qnode(dev, interface="autograd")
         def circuit(p1, p2, **kwargs):
@@ -439,8 +440,6 @@ class TestTapeConstruction:
 
         with pytest.raises(ValueError, match="only works when tape mode is enabled"):
             result = draw(circuit, charset="ascii")
-
-        qml.enable_tape()
 
     def test_drawing(self):
         """Test circuit drawing"""
@@ -582,7 +581,7 @@ class TestTFInterface:
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
-        mock = mocker.patch("pennylane.tape.interfaces.tf.TFInterface.apply")
+        mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
         mock.side_effect = ImportError()
 
         def func(x, y):
@@ -635,7 +634,7 @@ class TestTorchInterface:
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
         torch = pytest.importorskip("torch", minversion="1.3")
-        mock = mocker.patch("pennylane.tape.interfaces.torch.TorchInterface.apply")
+        mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
         mock.side_effect = ImportError()
 
         def func(x, y):

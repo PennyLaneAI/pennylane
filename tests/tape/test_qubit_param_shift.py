@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QubitParamShiftTape, qnode
-from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape import QubitParamShiftTape
+from pennylane.measure import MeasurementProcess
 
 
 class TestGradMethod:

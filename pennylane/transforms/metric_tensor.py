@@ -14,6 +14,8 @@
 """
 Contains the metric tensor transform
 """
+import warnings
+
 import numpy as np
 import pennylane as qml
 
@@ -173,7 +175,6 @@ def metric_tensor_tape(tape, diag_approx=False, wrt=None):
         return qml.math.block_diag(gs)
 
     return metric_tensor_tapes, processing_fn
-
 
 
 def metric_tensor(qnode, diag_approx=False, only_construct=False):

@@ -252,6 +252,7 @@ class Operator(abc.ABC):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
+
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -635,8 +636,11 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
-        qml.QueuingContext.update_info(self, inverse=not current_inv)
+        if qml.QueuingContext.recording():
+            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
+            qml.QueuingContext.update_info(self, inverse=not current_inv)
+        else:
+            self.inverse = not self._inverse
         return self
 
     @property
@@ -1206,18 +1210,20 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
+        if qml.QueuingContext.recording():
+            owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
 
-        # update the annotated queue information
-        qml.QueuingContext.update_info(self, owns=owning_info)
-        qml.QueuingContext.update_info(other, owner=self)
+            # update the annotated queue information
+            qml.QueuingContext.update_info(self, owns=owning_info)
+            qml.QueuingContext.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            qml.QueuingContext.update_info(other, owner=self)
+            if qml.QueuingContext.recording():
+                qml.QueuingContext.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")

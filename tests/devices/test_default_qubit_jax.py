@@ -332,11 +332,6 @@ class TestPassthruIntegration:
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
-        # Check that the correct QNode type is being used.
-        if diff_method == "backprop":
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert not hasattr(circuit, "jacobian")
-
         def cost(params):
             """Perform some classical processing"""
             return (circuit(params[0], params[1:], w=0) ** 2).reshape(())

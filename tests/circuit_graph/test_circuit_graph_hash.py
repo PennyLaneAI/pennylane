@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit and integration tests for creating the :mod:`pennylane` :attr:`QNode.circuit.hash` attribute.
+Unit and integration tests for creating the :mod:`pennylane` :attr:`QNode.qtape.graph.hash` attribute.
 """
 import pytest
 import numpy as np
@@ -46,8 +46,8 @@ class TestCircuitGraphHash:
     @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_queues)
     def test_serialize_numeric_arguments(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have numeric arguments."""
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
+        circuit_graph_1 = CircuitGraph(queue, observable_queue, Wires([0, 1, 2]))
+        circuit_graph_2 = CircuitGraph(queue, observable_queue, Wires([0, 1, 2]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -83,8 +83,8 @@ class TestCircuitGraphHash:
     def test_serialize_numeric_arguments_observables(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
 
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
+        circuit_graph_1 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
+        circuit_graph_2 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -108,7 +108,7 @@ class TestQNodeCircuitHashIntegration:
 
         node1 = qml.QNode(circuit1, dev)
         node1.evaluate([], {})
-        circuit_hash_1 = node1.circuit.hash
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2():
             qml.RX(a, wires=[0])
@@ -118,7 +118,7 @@ class TestQNodeCircuitHashIntegration:
 
         node2 = qml.QNode(circuit2, dev)
         node2.evaluate([], {})
-        circuit_hash_2 = node2.circuit.hash
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -137,8 +137,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -147,8 +147,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -168,8 +168,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -179,8 +179,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -203,8 +203,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([a, b], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(a, b)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -213,8 +213,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -235,8 +235,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -246,8 +246,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -266,8 +266,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -275,7 +275,7 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
+        node2(x, y)
         circuit_hash_2 = dev.circuit_hash
 
         assert circuit_hash_1 == circuit_hash_2
@@ -294,8 +294,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -303,8 +303,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         def circuit3(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -312,8 +312,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
 
         node3 = qml.QNode(circuit1, dev)
-        node3.evaluate([x, y], {})
-        circuit_hash_3 = node3.circuit.hash
+        node3(x, y)
+        circuit_hash_3 = node3.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2 == circuit_hash_3
 
@@ -333,8 +333,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.Hermitian(matrix, wires=[0]) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -342,8 +342,8 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.Hermitian(matrix, wires=[0]) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -365,7 +365,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         node1 = qml.QNode(circuit1, dev)
         node1.evaluate([], {})
-        circuit_hash_1 = node1.circuit.hash
+        circuit_hash_1 = node1.qtape.graph.hash
 
         c = 0.6
 
@@ -377,7 +377,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         node2 = qml.QNode(circuit2, dev)
         node2.evaluate([], {})
-        circuit_hash_2 = node2.circuit.hash
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -393,7 +393,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         node1 = qml.QNode(circuit1, dev)
         node1.evaluate([], {})
-        circuit_hash_1 = node1.circuit.hash
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2():
             qml.RY(a, wires=[0])
@@ -401,7 +401,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         node2 = qml.QNode(circuit2, dev)
         node2.evaluate([], {})
-        circuit_hash_2 = node2.circuit.hash
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -422,8 +422,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -433,8 +433,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -454,8 +454,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0))                        # <------------- qml.PauliZ(0)
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -465,8 +465,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))         # <------------- qml.PauliZ(0) @ qml.PauliX(1)
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -485,8 +485,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])         # <------------- x, y, 0.3
@@ -494,8 +494,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -514,8 +514,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.5, wires=[0])         # <------------- 0.5
@@ -523,8 +523,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -543,8 +543,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -552,8 +552,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -572,8 +572,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))         # <----- (0) @ (1)
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -581,8 +581,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(2))         # <----- (0) @ (2)
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -603,8 +603,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.RX(x, wires=[0])
@@ -614,8 +614,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -638,8 +638,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.Hermitian(matrix_1, wires=[0]) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([x, y], {})
-        circuit_hash_1 = node1.circuit.hash
+        node1(x, y)
+        circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2(x, y):
             qml.Rot(x, y, 0.3, wires=[0])
@@ -647,8 +647,8 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.Hermitian(matrix_2, wires=[0]) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        node2(x, y)
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
 
@@ -668,7 +668,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         hashes = set()
         for qnode in qnodes:
-            hashes.add(qnode.circuit.hash)
+            hashes.add(qnode.qtape.graph.hash)
 
         assert len(hashes) == 1
 

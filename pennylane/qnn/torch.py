@@ -22,7 +22,6 @@ from typing import Callable, Optional
 try:
     import torch
     from torch.nn import Module
-    from pennylane.interfaces.torch import to_torch
 
     TORCH_IMPORTED = True
 except ImportError:

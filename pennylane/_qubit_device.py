@@ -378,7 +378,9 @@ class QubitDevice(Device):
             array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
-            raise qml.QuantumFunctionError("The current device is not capable of returning the state")
+            raise qml.QuantumFunctionError(
+                "The current device is not capable of returning the state"
+            )
 
         state = getattr(self, "state", None)
 
@@ -752,7 +754,7 @@ class QubitDevice(Device):
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
                     )

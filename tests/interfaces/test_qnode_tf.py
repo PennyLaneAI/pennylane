@@ -19,7 +19,8 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import JacobianTape, qnode, QNode
+from pennylane import qnode, QNode
+from pennylane.tape import JacobianTape
 
 
 @pytest.mark.parametrize(
@@ -370,8 +371,6 @@ class TestQNode:
     def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
-
         class U3(qml.U3):
             def expand(self):
                 theta, phi, lam = self.data
@@ -565,7 +564,6 @@ def qtransform(qnode, a, framework=tf):
 )
 def test_transform(dev_name, diff_method, monkeypatch, tol):
     """Test an example transform"""
-    monkeypatch.setattr(qml.operation.Operation, "do_check_domain", False)
 
     dev = qml.device(dev_name, wires=1)
 

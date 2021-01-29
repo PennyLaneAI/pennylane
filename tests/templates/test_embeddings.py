@@ -20,7 +20,6 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-import pennylane._queuing
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
@@ -419,7 +418,7 @@ class TestIQPEmbedding:
     def test_queue_default_pattern(self, n_wires, expected_queue, n_repeats):
         """Checks the queue for the default pattern."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(n_wires)), wires=range(n_wires), n_repeats=n_repeats)
 
         expected_queue = expected_queue * n_repeats
@@ -436,7 +435,7 @@ class TestIQPEmbedding:
     def test_queue_parameters(self, features, expected_params, wires):
         """Checks the queued parameters, for consecutive and non-consecutive ``wires`` argument."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=features, wires=wires)
 
         # compare all nonempty gate parameters to expected ones
@@ -454,7 +453,7 @@ class TestIQPEmbedding:
         """Checks the queued wires for a consecutive and non-consecutive sequence
            of indices in the ``wires`` argument."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(3)), wires=wires)
 
         # compare all gate wires to expected ones
@@ -466,7 +465,7 @@ class TestIQPEmbedding:
     def test_wires_custom_pattern(self, pattern):
         """Checks the queue for a custom pattern."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(4)), wires=range(4), pattern=pattern)
 
         counter = 0
@@ -521,7 +520,7 @@ class TestQAOAEmbedding:
     def test_queue(self, n_wires, weight_shape, expected_queue):
         """Checks the queue for the default settings."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             QAOAEmbedding(features=list(range(n_wires)), weights=np.zeros(shape=weight_shape), wires=range(n_wires))
 
         for gate, expected_gate in zip(rec.queue, expected_queue):

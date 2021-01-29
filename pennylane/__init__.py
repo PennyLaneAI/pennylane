@@ -36,7 +36,7 @@ from ._qubit_device import QubitDevice
 from .measure import expval, var, sample, state, density_matrix, probs
 from .ops import *
 from .optimize import *
-from .qnode import qnode, QNode, QuantumFunctionError
+from .qnode import qnode, QNode
 from .utils import inv
 from ._version import __version__
 from .io import *
@@ -58,6 +58,10 @@ from pennylane.transforms import draw, metric_tensor, measurement_grouping
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
+
+
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
 
 
 def _get_device_entrypoints():

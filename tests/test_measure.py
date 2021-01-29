@@ -16,7 +16,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane import QuantumFunctionError
 from pennylane.devices import DefaultQubit
 
 from pennylane.queuing import AnnotatedQueue
@@ -46,7 +45,7 @@ def test_no_measure(tol):
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
+    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
         res = circuit(0.65)
 
 
@@ -69,7 +68,7 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_not_an_observable(self):
-        """Test that a QuantumFunctionError is raised if the provided
+        """Test that a qml.QuantumFunctionError is raised if the provided
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -78,7 +77,7 @@ class TestExpval:
             qml.RX(0.52, wires=0)
             return qml.expval(qml.CNOT(wires=[0, 1]))
 
-        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
     def test_observable_return_type_is_expectation(self):
@@ -113,7 +112,7 @@ class TestVar:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_not_an_observable(self):
-        """Test that a QuantumFunctionError is raised if the provided
+        """Test that a qml.QuantumFunctionError is raised if the provided
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -122,7 +121,7 @@ class TestVar:
             qml.RX(0.52, wires=0)
             return qml.var(qml.CNOT(wires=[0, 1]))
 
-        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
     def test_observable_return_type_is_variance(self):
@@ -231,7 +230,7 @@ class TestSample:
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_not_an_observable(self):
-        """Test that a QuantumFunctionError is raised if the provided
+        """Test that a qml.QuantumFunctionError is raised if the provided
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -240,7 +239,7 @@ class TestSample:
             qml.RX(0.52, wires=0)
             return qml.sample(qml.CNOT(wires=[0, 1]))
 
-        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
             sample = circuit()
 
     def test_observable_return_type_is_sample(self):
@@ -361,7 +360,7 @@ class TestBetaStatisticsError:
     """Tests for errors arising for the beta statistics functions"""
 
     def test_not_an_observable(self, stat_func):
-        """Test that a QuantumFunctionError is raised if the provided
+        """Test that a qml.QuantumFunctionError is raised if the provided
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -370,7 +369,7 @@ class TestBetaStatisticsError:
             qml.RX(0.52, wires=0)
             return stat_func(qml.CNOT(wires=[0, 1]))
 
-        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
 
@@ -568,7 +567,7 @@ class TestState:
             return state(), expval(qml.PauliZ(1))
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="The state or density matrix"
             " cannot be returned in combination"
             " with other return types",
@@ -661,7 +660,7 @@ class TestState:
 
         with monkeypatch.context() as m:
             m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(QuantumFunctionError, match="The current device is not capable"):
+            with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
                 func()
 
     def test_state_not_supported(self, monkeypatch):
@@ -673,7 +672,7 @@ class TestState:
         def func():
             return state()
 
-        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -757,7 +756,7 @@ class TestState:
                 qml.CNOT(wires=[wires[i], wires[i + 1]])
             return state()
 
-        with pytest.raises(QuantumFunctionError, match="custom wire labels"):
+        with pytest.raises(qml.QuantumFunctionError, match="custom wire labels"):
             func()
 
 
@@ -943,7 +942,7 @@ class TestDensityMatrix:
             return density_matrix(0), expval(qml.PauliZ(1))
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="The state or density matrix"
             " cannot be returned in combination"
             " with other return types",
@@ -964,7 +963,7 @@ class TestDensityMatrix:
         with monkeypatch.context() as m:
             m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
-                QuantumFunctionError,
+                qml.QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",
             ):
                 func()
@@ -978,7 +977,7 @@ class TestDensityMatrix:
         def func():
             return density_matrix(0)
 
-        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
     @pytest.mark.parametrize("wires", [[0, 2, 3, 1], ["a", -1, "b", 1000]])
@@ -994,5 +993,5 @@ class TestDensityMatrix:
                 qml.CNOT(wires=[wires[i], wires[i + 1]])
             return density_matrix(0)
 
-        with pytest.raises(QuantumFunctionError, match="custom wire labels"):
+        with pytest.raises(qml.QuantumFunctionError, match="custom wire labels"):
             func()

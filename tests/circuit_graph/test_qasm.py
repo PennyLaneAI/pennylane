@@ -49,7 +49,7 @@ class TestToQasmUnitTests:
             qml.PauliX(wires=1),
         ]
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+        circuit = CircuitGraph(ops, [], Wires([0, 1, 2]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -83,7 +83,7 @@ class TestToQasmUnitTests:
             qml.T(wires=0).inv(),
         ]
 
-        circuit = CircuitGraph(ops, {}, Wires([0]))
+        circuit = CircuitGraph(ops, [], Wires([0]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -109,7 +109,7 @@ class TestToQasmUnitTests:
             qml.CNOT(wires=[1, 0]),
         ]
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2, 3, 4]))
+        circuit = CircuitGraph(ops, [], Wires([0, 1, 2, 3, 4]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -231,7 +231,7 @@ class TestToQasmUnitTests:
         U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         ops = [qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])]
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1]))
+        circuit = CircuitGraph(ops, [], Wires([0, 1]))
 
         with pytest.raises(
             ValueError, match="QubitUnitary not supported by the QASM serializer"
@@ -248,7 +248,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.Hadamard(2)),
         ]
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+        circuit = CircuitGraph(ops, [], Wires([0, 1, 2]))
         res = circuit.to_openqasm()
 
         expected = dedent(

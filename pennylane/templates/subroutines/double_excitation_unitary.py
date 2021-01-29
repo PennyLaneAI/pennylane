@@ -54,6 +54,7 @@ def _preprocess(weight, wires1, wires2):
     if shape != ():
         raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
+
 def _layer1(weight, s, r, q, p, set_cnot_wires):
     r"""Implement the first layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.

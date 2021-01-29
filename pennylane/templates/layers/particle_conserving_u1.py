@@ -61,9 +61,7 @@ def _preprocess(weights, wires, init_state):
         )
 
     if shape[2] != 2:
-        raise ValueError(
-            f"Weights tensor must have third dimension of length 2; got {shape[2]}"
-        )
+        raise ValueError(f"Weights tensor must have third dimension of length 2; got {shape[2]}")
 
     repeat = shape[0]
 

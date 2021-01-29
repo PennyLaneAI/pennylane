@@ -54,9 +54,14 @@ def _preprocess(weights, wires, ranges):
         )
 
     if shape[2] != 3:
-        raise ValueError(
-            f"Weights tensor must have third dimension of length 3; got {shape[2]}"
-        )
+        raise ValueError(f"Weights tensor must have third dimension of length 3; got {shape[2]}")
+
+    if len(wires) > 1:
+        if ranges is None:
+            # tile ranges with iterations of range(1, n_wires)
+            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+    else:
+        ranges = [0] * repeat
 
     return repeat, ranges
 
@@ -113,7 +118,6 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     Raises:
         ValueError: if inputs do not have the correct format
     """
-
     wires = Wires(wires)
     repeat, ranges = _preprocess(weights, wires, ranges)
 

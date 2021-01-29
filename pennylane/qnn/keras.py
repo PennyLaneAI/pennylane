@@ -22,7 +22,6 @@ import pennylane as qml
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
-    from pennylane.interfaces.tf import to_tf
 
     CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
 except ImportError:

@@ -22,7 +22,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane._queuing
+import pennylane.queuing
 from pennylane.operation import Tensor, operation_derivative
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
@@ -165,39 +165,6 @@ class TestOperation:
 
         if n == 0:
             return
-
-        # wrong parameter types
-        if test_class.do_check_domain:
-            if test_class.par_domain == "A":
-                # params must be arrays
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [0.0], wires=ww)
-                # params must not be Variables
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [qml.variable.Variable(0)], wires=ww)
-            elif test_class.par_domain == "N":
-                # params must be natural numbers
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [0.7], wires=ww)
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [-1], wires=ww)
-            elif test_class.par_domain == "R":
-                # params must be real numbers
-                with pytest.raises(TypeError, match="Real scalar parameter expected"):
-                    test_class(*n * [1j], wires=ww)
-            elif test_class.par_domain == "L":
-                # params must be list of numpy arrays
-                with pytest.raises(TypeError, match="List parameter"):
-                    test_class(*n * [np.eye(2)], wires=ww)
-
-            # if par_domain ever gets overridden to an unsupported value, should raise exception
-            monkeypatch.setattr(test_class, "par_domain", "junk")
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
-
-            monkeypatch.setattr(test_class, "par_domain", 7)
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
 
     @pytest.fixture(scope="function")
     def qnode_for_inverse(self, mock_device):
@@ -391,35 +358,6 @@ class TestOperationConstruction:
 
         with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
             DummyOp([[np.eye(2), "a"]], wires=[0])
-
-    def test_variable_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a variable is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
-            DummyOp(qml.variable.Variable(0), wires=[0])
-
-    def test_array_instead_of_flattened_array(self):
-        """Test that an exception is raised if an array is expected, but an array is passed
-        to check_domain when flattened=True. In the initial release of the library, this is not
-        accessible by the developer or the user, but is kept in case it will be used in the future."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Flattened array parameter expected"):
-            op = DummyOp(np.array([1]), wires=[0])
-            op.check_domain(np.array([1]), True)
 
     def test_scalar_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a scalar is passed"""

@@ -18,7 +18,6 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
-import pennylane._queuing
 from pennylane import numpy as np
 from pennylane.templates.layers import (
     CVNeuralNetLayers,
@@ -120,7 +119,7 @@ class TestCVNeuralNet:
     def test_cvneuralnet_uses_correct_weights(self, weights):
         """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             CVNeuralNetLayers(*weights, wires=range(4))
 
         # Test that gates appear in the right order for each layer:
@@ -204,7 +203,7 @@ class TestStronglyEntangling:
     @pytest.mark.parametrize("n_layers", range(1, 4))
     def test_single_qubit(self, n_layers):
         weights = np.zeros((n_layers, 1, 3))
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights, wires=range(1))
 
         assert len(rec.queue) == n_layers
@@ -219,7 +218,7 @@ class TestStronglyEntangling:
 
         weights = np.random.randn(n_layers, num_wires, 3)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights, wires=range(num_wires))
 
         # Test that gates appear in the right order
@@ -246,7 +245,7 @@ class TestStronglyEntangling:
         imprimitive = CZ
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(
                 weights=weights, wires=range(n_subsystems), imprimitive=imprimitive
             )
@@ -363,7 +362,7 @@ class TestRandomLayers:
         impr = CNOT
         weights = np.random.randn(n_layers, n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             RandomLayers(weights=weights, wires=range(n_wires))
 
         types = [type(q) for q in rec.queue]
@@ -376,7 +375,7 @@ class TestRandomLayers:
         impr = CNOT
         weights = np.random.randn(n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_wires)),
@@ -395,7 +394,7 @@ class TestRandomLayers:
         n_rots = 20
         weights = np.random.randn(n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -415,7 +414,7 @@ class TestRandomLayers:
         n_rots = 5
         weights = np.random.randn(n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -433,7 +432,7 @@ class TestRandomLayers:
         n_rots = 500
         weights = np.random.randn(n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -454,7 +453,7 @@ class TestRandomLayers:
         n_rots = 5
         weights = np.random.randn(n_rots)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -515,7 +514,7 @@ class TestSimplifiedTwoDesign:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
@@ -538,7 +537,7 @@ class TestSimplifiedTwoDesign:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # test the device parameters
@@ -620,7 +619,7 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
@@ -639,7 +638,7 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # test the device parameters
@@ -660,7 +659,7 @@ class TestBasicEntangler:
         n_wires = 4
         weights = np.ones(shape=(n_layers, n_wires))
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
 
         # assert queue contains the custom rotations and CNOTs only
@@ -734,7 +733,7 @@ class TestParticleConservingU2:
             [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
         ) * layers
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
 
         # number of gates
@@ -914,7 +913,7 @@ class TestParticleConservingU1:
         nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
         nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
 
-        with pennylane.tape.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
 
         assert gate_count == len(rec.queue)

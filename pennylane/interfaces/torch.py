@@ -21,11 +21,36 @@ import semantic_version
 import torch
 
 from pennylane import QuantumFunctionError
-from pennylane.interfaces.torch import args_to_numpy
 
 from pennylane.queuing import AnnotatedQueue
 
 COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
+
+
+def args_to_numpy(args):
+    """Converts all Torch tensors in a list to NumPy arrays
+
+    Args:
+        args (list): list containing QNode arguments, including Torch tensors
+
+    Returns:
+        list: returns the same list, with all Torch tensors converted to NumPy arrays
+    """
+    res = []
+
+    for i in args:
+        if isinstance(i, torch.Tensor):
+            if i.is_cuda:  # pragma: no cover
+                res.append(i.cpu().detach().numpy())
+            else:
+                res.append(i.detach().numpy())
+        else:
+            res.append(i)
+
+    # if NumPy array is scalar, convert to a Python float
+    res = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res]
+
+    return res
 
 
 class _TorchInterface(torch.autograd.Function):

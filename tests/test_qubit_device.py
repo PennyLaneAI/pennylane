@@ -19,14 +19,12 @@ import numpy as np
 from random import random
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError
-from pennylane.qnodes import QuantumFunctionError
-from pennylane.qnodes.base import BaseQNode
+from pennylane import QubitDevice, DeviceError, QuantumFunctionError
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.tape.measure import state
+from pennylane.measure import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -166,7 +164,7 @@ class TestOperations:
 
         observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
 
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        circuit_graph = CircuitGraph(queue, observables, Wires([0, 1, 2]))
 
         call_history = []
 
@@ -195,7 +193,7 @@ class TestOperations:
 
         observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
 
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        circuit_graph = CircuitGraph(queue, observables, Wires([0, 1, 2]))
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
@@ -224,7 +222,7 @@ class TestOperations:
                                                   monkeypatch, queue, observables):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        circuit_graph = CircuitGraph(queue, observables, Wires([0, 1, 2]))
 
         call_history = {}
 
@@ -262,7 +260,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        circuit_graph = CircuitGraph(queue, observables, Wires([0, 1, 2]))
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
@@ -280,7 +278,7 @@ class TestObservables:
         obs.return_type = "SomeUnsupportedReturnType"
         observables = [obs]
 
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0]))
+        circuit_graph = CircuitGraph(queue, observables, Wires([0]))
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
@@ -724,7 +722,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_1 = BaseQNode(circuit_1, dev_1)
+        node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
         for _ in range(num_evals_1):
@@ -739,7 +737,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_2 = BaseQNode(circuit_2, dev_2)
+        node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
         for _ in range(num_evals_2):
@@ -752,7 +750,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_3 = BaseQNode(circuit_3, dev_1)
+        node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
         for _ in range(num_evals_3):

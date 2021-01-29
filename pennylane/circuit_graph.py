@@ -155,6 +155,8 @@ class CircuitGraph:
         self.par_info = par_info
         self.trainable_params = trainable_params
 
+        queue = ops + obs
+
         self._depth = None
 
         self._grid = {}
@@ -166,7 +168,7 @@ class CircuitGraph:
         Required to translate between wires and indices of the wires on the device."""
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
-        for k, op in enumerate(ops):
+        for k, op in enumerate(queue):
             op.queue_idx = k  # store the queue index in the Operator
 
             if hasattr(op, "return_type") and op.return_type is qml.operation.State:
@@ -665,9 +667,7 @@ class CircuitGraph:
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
 
-    def draw(
-        self, charset="unicode", wire_order=None, show_all_wires=False
-    ):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:

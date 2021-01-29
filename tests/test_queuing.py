@@ -36,7 +36,8 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext, OperationRecorder
+from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext
+from pennylane.tape import OperationRecorder
 
 
 @pytest.fixture(scope="function")
@@ -390,7 +391,7 @@ class TestOperationRecorder:
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
 
-            with qml._queuing.OperationRecorder() as recorder:
+            with qml.tape.OperationRecorder() as recorder:
                 ops = [
                     qml.PauliY(0),
                     qml.PauliY(1),
@@ -426,7 +427,7 @@ class TestOperationRecorder:
             for i in range(5):
                 qml.RZ(i * x, wires=0)
 
-        with qml._queuing.OperationRecorder() as recorder:
+        with qml.tape.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output
@@ -455,7 +456,7 @@ class TestOperationRecorder:
 
             return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with qml._queuing.OperationRecorder() as recorder:
+        with qml.tape.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output

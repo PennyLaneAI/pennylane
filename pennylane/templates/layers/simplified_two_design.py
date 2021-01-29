@@ -56,9 +56,7 @@ def _preprocess(weights, initial_layer_weights, wires):
 
     shape2 = qml.math.shape(initial_layer_weights)
     if shape2 != (len(wires),):
-        raise ValueError(
-            f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
-        )
+        raise ValueError(f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}")
 
     return repeat
 

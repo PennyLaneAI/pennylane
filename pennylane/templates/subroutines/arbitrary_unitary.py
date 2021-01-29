@@ -33,9 +33,7 @@ def _preprocess(weights, wires):
     """
     shape = qml.math.shape(weights)
     if shape != (4 ** len(wires) - 1,):
-        raise ValueError(
-            f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
-        )
+        raise ValueError(f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
 
 
 def _tuple_to_word(index_tuple):

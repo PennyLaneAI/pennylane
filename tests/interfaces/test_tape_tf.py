@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape
-from pennylane.tape.interfaces.tf import TFInterface
+from pennylane.interfaces.tf import TFInterface
 
 
 class TestTFQuantumTape:
@@ -316,7 +316,6 @@ class TestTFQuantumTape:
     def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
@@ -631,7 +630,6 @@ class TestTFPassthru:
         """Test that operation and nested tapes expansion
         is differentiable"""
         spy = mocker.spy(JacobianTape, "jacobian")
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):

@@ -656,7 +656,6 @@ class TestVQE:
         assert len(circuits) == len(observables)
         assert all(callable(c) for c in circuits)
         assert all(c.device == dev for c in circuits)
-        assert all(hasattr(c, "jacobian") for c in circuits)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
@@ -734,8 +733,8 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.h == 123
-            assert qnode.order == 2
+            assert qnode.diff_options["h"] == 123
+            assert qnode.diff_options["order"] == 2
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
@@ -869,7 +868,7 @@ class TestVQE:
         qnodes = qml.ExpvalCost(ansatz, h, dev)
         mt = qml.metric_tensor(qnodes)(p)
         assert mt.shape == (3, 3)
-        assert isinstance(md, np.ndarray)
+        assert isinstance(mt, np.ndarray)
 
     def test_multiple_devices(self, mocker):
         """Test that passing multiple devices to ExpvalCost works correctly"""

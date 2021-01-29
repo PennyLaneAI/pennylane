@@ -120,7 +120,7 @@ class TestKerasLayer:
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keywordself):
+    def test_var_keyword(self):
         """Test that variable number of keyword arguments works"""
         n_qubits = 2
         output_dim = 2

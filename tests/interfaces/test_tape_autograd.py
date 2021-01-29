@@ -17,7 +17,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape
-from pennylane.tape.interfaces.autograd import AutogradInterface
+from pennylane.interfaces.autograd import AutogradInterface
 
 
 class TestAutogradQuantumTape:
@@ -254,7 +254,6 @@ class TestAutogradQuantumTape:
     def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
@@ -565,7 +564,6 @@ class TestAutogradPassthru:
         """Test that operation and nested tapes expansion
         is differentiable"""
         spy = mocker.spy(JacobianTape, "jacobian")
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):

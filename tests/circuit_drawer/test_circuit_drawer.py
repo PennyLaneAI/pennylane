@@ -667,14 +667,14 @@ class TestCircuitDrawerIntegration:
         self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values
     ):
         """Test that a parametrized qubit circuit renders correctly with values."""
-        output = parameterized_qubit_qnode.draw(show_variable_names=False)
+        output = parameterized_qubit_qnode.draw()
         assert output == drawn_parameterized_qubit_circuit_with_values
 
     def test_wide_qubit_circuit_with_values(
         self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values
     ):
         """Test that a wide parametrized qubit circuit renders correctly with values."""
-        output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
+        output = parameterized_wide_qubit_qnode.draw()
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
 
@@ -682,7 +682,7 @@ class TestCircuitDrawerIntegration:
         self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
     ):
         """Test that non-consecutive wires show correctly."""
-        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False)
+        output = qubit_circuit_with_interesting_wires.draw()
 
         assert output == drawn_qubit_circuit_with_interesting_wires
 
@@ -696,7 +696,7 @@ class TestCircuitDrawerIntegration:
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):
         """Test that a parametrized CV circuit renders correctly with values."""
-        output = parameterized_cv_qnode.draw(show_variable_names=False)
+        output = parameterized_cv_qnode.draw()
         assert output == drawn_parameterized_cv_qnode_with_values
 
     def test_qubit_circuit_with_unused_wires(

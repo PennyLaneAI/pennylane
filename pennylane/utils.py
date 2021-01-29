@@ -329,7 +329,7 @@ def inv(operation_list):
         try:
             # remove the queued operation to be inverted
             # from the existing queuing context
-            qml.tape.QueuingContext.remove(op)
+            qml.QueuingContext.remove(op)
         except KeyError:
             # operation to be inverted does not
             # exist on the queuing context

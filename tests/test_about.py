@@ -45,7 +45,6 @@ def test_about():
     assert "default.gaussian" in out
 
 
-@pytest.mark.skip(reason="This test causes tape mode to be reset")
 def test_qchem_not_installed_error(monkeypatch):
     """Test QChem causes an import error on access
     if not installed"""

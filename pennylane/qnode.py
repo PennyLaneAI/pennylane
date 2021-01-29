@@ -533,7 +533,7 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        return metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
+        return qml.metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
             *args, **kwargs
         )
 
@@ -645,7 +645,7 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         try:
             import tensorflow as tf
-            from pennylane.tape.interfaces.tf import TFInterface
+            from pennylane.interfaces.tf import TFInterface
 
             if self.interface != "tf" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
@@ -685,7 +685,7 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         try:
             import torch
-            from pennylane.tape.interfaces.torch import TorchInterface
+            from pennylane.interfaces.torch import TorchInterface
 
             if self.interface != "torch" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.

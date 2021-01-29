@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape
-from pennylane.tape.interfaces.torch import TorchInterface
+from pennylane.interfaces.torch import TorchInterface
 
 
 class TestTorchQuantumTape:
@@ -290,7 +290,6 @@ class TestTorchQuantumTape:
     def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
-        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
@@ -451,6 +450,6 @@ class TestTorchQuantumTape:
         in the apply() method"""
 
         with monkeypatch.context() as m:
-            m.setattr(qml.tape.interfaces.torch, "COMPLEX_SUPPORT", False)
+            m.setattr(qml.interfaces.torch, "COMPLEX_SUPPORT", False)
             with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
                 TorchInterface.apply(JacobianTape(), dtype=torch.complex128)

@@ -16,9 +16,10 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.tape.interfaces.autograd import AutogradInterface
-from pennylane.tape import JacobianTape, ReversibleTape, QNode, qnode
-from pennylane.tape.measure import MeasurementProcess
+from pennylane.interfaces.autograd import AutogradInterface
+from pennylane.tape import JacobianTape, ReversibleTape
+from pennylane import QNode, qnode
+from pennylane.measure import MeasurementProcess
 
 
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
