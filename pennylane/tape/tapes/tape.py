@@ -29,17 +29,19 @@ from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
+# CV ops still need to support state preparation operations prior to any
+# other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
     qml.QubitStateVector,
-    qml.CatState,
-    qml.CoherentState,
-    qml.FockDensityMatrix,
-    qml.DisplacedSqueezedState,
-    qml.FockState,
-    qml.FockStateVector,
-    qml.ThermalState,
-    qml.GaussianState,
+    # qml.CatState,
+    # qml.CoherentState,
+    # qml.FockDensityMatrix,
+    # qml.DisplacedSqueezedState,
+    # qml.FockState,
+    # qml.FockStateVector,
+    # qml.ThermalState,
+    # qml.GaussianState,
 )
 
 
