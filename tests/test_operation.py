@@ -267,19 +267,6 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
 
-    def test_incorrect_param_domain(self):
-        """Test that an exception is raised if an incorrect parameter domain is requested"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "J"
-            grad_method = "A"
-
-        with pytest.raises(ValueError, match="Unknown parameter domain"):
-            DummyOp(0.5, wires=0)
-
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -345,61 +332,6 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
-
-    def test_list_of_arrays(self):
-        """Test that an exception is raised if a list of arrays is expected
-        but a list of mixed types is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "L"
-
-        with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
-            DummyOp([[np.eye(2), "a"]], wires=[0])
-
-    def test_scalar_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a scalar is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-    def test_array_instead_of_real(self):
-        """Test that an exception is raised if a real number is expected but an array is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Real scalar parameter expected, got"):
-            DummyOp(np.array([1.0]), wires=[0])
-
-    def test_not_natural_param(self):
-        """Test that an exception is raised if a natural number is expected but not passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "N"
-            grad_method = None
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(-2, wires=[0])
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""

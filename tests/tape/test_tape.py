@@ -857,7 +857,7 @@ class TestExpand:
                 qml.T(wires=0)
                 return sample(qml.PauliZ(0))
 
-            qnode = qml.tape.QNode(circuit, dev)
+            qnode = qml.QNode(circuit, dev)
             qnode()
 
             assert qnode.qtape.is_sampled
@@ -1282,7 +1282,7 @@ class TestTapeCopying:
             qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
         # copy and cast to a JacobianTape
-        copied_tape = tape.copy(tape_cls=qml.tape.tapes.JacobianTape)
+        copied_tape = tape.copy(tape_cls=qml.tape.JacobianTape)
 
         # check that the copying worked
         assert copied_tape is not tape
@@ -1292,5 +1292,5 @@ class TestTapeCopying:
         assert copied_tape.operations[0] is tape.operations[0]
 
         # check that the casting worked
-        assert isinstance(copied_tape, qml.tape.tapes.JacobianTape)
-        assert not isinstance(tape, qml.tape.tapes.JacobianTape)
+        assert isinstance(copied_tape, qml.tape.JacobianTape)
+        assert not isinstance(tape, qml.tape.JacobianTape)

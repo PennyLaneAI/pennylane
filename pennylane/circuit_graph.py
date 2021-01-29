@@ -25,45 +25,6 @@ import pennylane as qml
 from .circuit_drawer import CHARSETS, CircuitDrawer
 
 
-OPENQASM_GATES = {
-    "CNOT": "cx",
-    "CZ": "cz",
-    "U3": "u3",
-    "U2": "u2",
-    "U1": "u1",
-    "Identity": "id",
-    "PauliX": "x",
-    "PauliY": "y",
-    "PauliZ": "z",
-    "Hadamard": "h",
-    "S": "s",
-    "S.inv": "sdg",
-    "T": "t",
-    "T.inv": "tdg",
-    "RX": "rx",
-    "RY": "ry",
-    "RZ": "rz",
-    "CRX": "crx",
-    "CRY": "cry",
-    "CRZ": "crz",
-    "SWAP": "swap",
-    "Toffoli": "ccx",
-    "CSWAP": "cswap",
-    "PhaseShift": "u1",
-}
-"""
-dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
-
-Note that QASM has two native gates:
-
-- ``U`` (equivalent to :class:`~.U3`)
-- ``CX`` (equivalent to :class:`~.CNOT`)
-
-All other gates are defined in the file qelib1.inc:
-https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
-"""
-
-
 def _by_idx(x):
     """Sorting key for Operators: queue index aka temporal order.
 
@@ -267,88 +228,6 @@ class CircuitGraph:
             int: the hash of the serialized quantum circuit graph
         """
         return hash(self.serialize())
-
-    def to_openqasm(self, wires=None, rotations=True):
-        """Serialize the circuit as an OpenQASM 2.0 program.
-
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
-
-        .. note::
-
-            The serialized OpenQASM program assumes that gate definitions
-            in ``qelib1.inc`` are available.
-
-        Args:
-            wires (Wires or None): the wires to use when serializing the circuit
-            rotations (bool): in addition to serializing user-specified
-                operations, also include the gates that diagonalize the
-                measured wires such that they are in the eigenbasis of the circuit observables.
-
-        Returns:
-            str: OpenQASM serialization of the circuit
-        """
-        # We import decompose_queue here to avoid a circular import
-        wires = wires or self.wires
-
-        # add the QASM headers
-        qasm_str = "OPENQASM 2.0;\n"
-        qasm_str += 'include "qelib1.inc";\n'
-
-        if self.num_wires == 0:
-            # empty circuit
-            return qasm_str
-
-        # create the quantum and classical registers
-        qasm_str += "qreg q[{}];\n".format(len(wires))
-        qasm_str += "creg c[{}];\n".format(len(wires))
-
-        # get the user applied circuit operations
-        operations = self.operations
-
-        if rotations:
-            # if requested, append diagonalizing gates corresponding
-            # to circuit observables
-            operations += self.diagonalizing_gates
-
-        with qml.tape.QuantumTape() as tape:
-            for op in operations:
-                op.queue()
-
-                if op.inverse:
-                    op.inv()
-
-        # decompose the queue
-        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
-
-        # create the QASM code representing the operations
-        for op in operations:
-            try:
-                gate = OPENQASM_GATES[op.name]
-            except KeyError as e:
-                raise ValueError(f"Operation {op.name} not supported by the QASM serializer") from e
-
-            wire_labels = ",".join([f"q[{wires.index(w)}]" for w in op.wires.tolist()])
-            params = ""
-
-            if op.num_params > 0:
-                # If the operation takes parameters, construct a string
-                # with parameter values.
-                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
-
-            qasm_str += "{name}{params} {wires};\n".format(
-                name=gate, params=params, wires=wire_labels
-            )
-
-        # apply computational basis measurements to each quantum register
-        # NOTE: This is not strictly necessary, we could inspect self.observables,
-        # and then only measure wires which are requested by the user. However,
-        # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
-
-        return qasm_str
 
     @property
     def observables_in_order(self):

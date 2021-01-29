@@ -428,19 +428,6 @@ class TestTapeConstruction:
 
         assert result == expected
 
-    def test_draw_transform_raises(self):
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev, interface="autograd")
-        def circuit(p1, p2, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        with pytest.raises(ValueError, match="only works when tape mode is enabled"):
-            result = draw(circuit, charset="ascii")
-
     def test_drawing(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -759,8 +746,6 @@ class TestIntegration:
 
     def test_correct_number_of_executions_autograd(self):
         """Test that number of executions are tracked in the autograd interface."""
-        qml.enable_tape()
-
         def func():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])

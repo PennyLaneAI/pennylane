@@ -310,9 +310,6 @@ class TestAngleEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 1
         dev = qml.device('default.qubit', wires=n_subsystems)
 
@@ -389,8 +386,6 @@ class TestBasisEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         n_subsystems = 2
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -489,22 +484,6 @@ class TestIQPEmbedding:
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
         with pytest.raises(ValueError, match="Features must be"):
-            circuit(f=features)
-
-    def test_exception_incorrect_pattern(self):
-        """Verifies that an exception is raised if 'pattern' has the wrong shape."""
-        if qml.tape_mode_active():
-            pytest.skip("Check only done in non-tape mode")
-
-        dev = qml.device('default.qubit', wires=3)
-        features = [1., 2., 3.]
-
-        @qml.qnode(dev)
-        def circuit(f=None):
-            qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=[0., 0.2])
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-        with pytest.raises(ValueError, match="'pattern' must be a"):
             circuit(f=features)
 
 

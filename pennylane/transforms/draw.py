@@ -16,6 +16,8 @@ Contains the drawing function.
 """
 from functools import wraps
 
+import pennylane as qml
+
 
 def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
     """Create a function that draws the given qnode.

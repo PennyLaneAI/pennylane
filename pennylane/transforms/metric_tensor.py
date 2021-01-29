@@ -142,7 +142,7 @@ def metric_tensor_tape(tape, diag_approx=False, wrt=None):
                 obs_list[-1].append(gen(w))
 
             else:
-                raise qml.qnodes.QuantumFunctionError(
+                raise qml.QuantumFunctionError(
                     "Can't generate metric tensor, generator {}"
                     "has no corresponding observable".format(gen)
                 )
