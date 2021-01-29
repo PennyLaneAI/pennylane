@@ -459,7 +459,7 @@ class Operator(abc.ABC):
     @property
     def parameters(self):
         """Current parameter values."""
-        return self.data
+        return self.data.copy()
 
     def queue(self):
         """Append the operator to the Operator queue."""
