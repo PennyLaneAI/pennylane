@@ -476,12 +476,15 @@
 * The `TensorN` observable is updated to support being copied without any parameters or wires passed.
   [(#1047)](https://github.com/PennyLaneAI/pennylane/pull/1047)
 
+* Fixed deprecation warning when importing `Sequence` from `collections` instead of `collections.abc` in `vqe/vqe.py`.
+  [(#1051)](https://github.com/PennyLaneAI/pennylane/pull/1051)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Olivia Di Matteo, Theodor Isacsson, Josh Izaac, Christina Lee, Alejandro Montanez,
-Steven Oud, Chase Roberts, Maria Schuld, Antal Száva, David Wierichs, Jiahao Yao.
+Steven Oud, Chase Roberts, Maria Schuld, Antal Száva, David Wierichs, Jiahao Yao, Sankalp Sanand.
 
 # Release 0.13.0 (current release)
 
