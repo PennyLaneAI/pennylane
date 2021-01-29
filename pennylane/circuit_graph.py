@@ -21,10 +21,8 @@ from collections import Counter, OrderedDict, namedtuple
 import networkx as nx
 
 import pennylane as qml
-from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
-from .variable import Variable
 
 
 OPENQASM_GATES = {
@@ -138,16 +136,26 @@ class CircuitGraph:
     between arbitrary quantum channels and measurements, not just unitary gates.
 
     Args:
-        ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
-        variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
-            The dictionary key is the parameter index.
-        wires (Wires): the addressable wires on the device
+        ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
+        obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
+        wires (.Wires): The addressable wire register of the device that will be executing this graph
+        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
+            parameter indices (in the order they appear on the tape), and values are a
+            dictionary containing the corresponding operation and operation parameter index.
+        trainable_params (set[int]): A set containing the indices of parameters that support
+            differentiability. The indices provided match the order of appearence in the
+            quantum circuit.
     """
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, ops, variable_deps, wires):
-        self.variable_deps = variable_deps
+    def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
+        self._operations = ops
+        self._observables = obs
+        self.par_info = par_info
+        self.trainable_params = trainable_params
+
+        self._depth = None
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
@@ -165,7 +173,7 @@ class CircuitGraph:
                 # State measurements contain no wires by default, but wires are
                 # required for the circuit drawer, so we recreate the state
                 # measurement with all wires
-                op = qml.tape.MeasurementProcess(qml.operation.State, wires=wires)
+                op = qml.measure.MeasurementProcess(qml.operation.State, wires=wires)
                 op.queue_idx = k
 
             for w in op.wires:
@@ -192,6 +200,10 @@ class CircuitGraph:
 
                 # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
+
+        # For computing depth; want only a graph with the operations, not
+        # including the observables
+        self._operation_graph = None
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
@@ -224,16 +236,9 @@ class CircuitGraph:
             serialization_string += op.name
 
             for param in op.data:
-                if isinstance(param, Variable):
-                    serialization_string += delimiter
-                    serialization_string += variable_delimiter
-                    serialization_string += str(param.idx)
-                    serialization_string += delimiter
-
-                else:
-                    serialization_string += delimiter
-                    serialization_string += str(param)
-                    serialization_string += delimiter
+                serialization_string += delimiter
+                serialization_string += str(param)
+                serialization_string += delimiter
 
             serialization_string += str(op.wires.tolist())
 
@@ -357,7 +362,10 @@ class CircuitGraph:
         nodes = [node for node in self._graph.nodes if _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
-    observables = observables_in_order
+    @property
+    def observables(self):
+        """Observables in the circuit."""
+        return self._observables
 
     @property
     def operations_in_order(self):
@@ -374,7 +382,10 @@ class CircuitGraph:
         nodes = [node for node in self._graph.nodes if not _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
-    operations = operations_in_order
+    @property
+    def operations(self):
+        """Operations in the circuit."""
+        return self._operations
 
     @property
     def graph(self):
@@ -501,18 +512,15 @@ class CircuitGraph:
         Returns:
             list[Layer]: layers of the circuit
         """
-        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0 c1], [b0, d1] and not [a0], [b0 c1], [d1]
-        # keep track of the current layer
+        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0
+        # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
         current = Layer([], [])
         layers = [current]
 
-        # sort vars by first occurrence of the var in the ops queue
-        variable_ops_sorted = sorted(self.variable_deps.items(), key=lambda x: x[1][0].op.queue_idx)
+        for idx, info in self.par_info.items():
+            if idx in self.trainable_params:
+                op = info["op"]
 
-        # iterate over all parameters
-        for param_idx, gate_param_tuple in variable_ops_sorted:
-            # iterate over ops depending on that param
-            for op, _ in gate_param_tuple:
                 # get all predecessor ops of the op
                 sub = self.ancestors((op,))
 
@@ -525,7 +533,7 @@ class CircuitGraph:
 
                 # store the parameters and ops indices for the layer
                 current.ops.append(op)
-                current.param_inds.append(param_idx)
+                current.param_inds.append(idx)
 
         return layers
 
@@ -566,7 +574,7 @@ class CircuitGraph:
             operations[wire] = list(
                 filter(
                     lambda op: not (
-                        isinstance(op, (qml.operation.Observable, qml.tape.MeasurementProcess))
+                        isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
                         and op.return_type is not None
                     ),
                     operations[wire],
@@ -596,7 +604,7 @@ class CircuitGraph:
             observables[wire] = list(
                 filter(
                     lambda op: isinstance(
-                        op, (qml.operation.Observable, qml.tape.MeasurementProcess)
+                        op, (qml.operation.Observable, qml.measure.MeasurementProcess)
                     )
                     and op.return_type is not None,
                     self._grid[wire],
@@ -654,15 +662,16 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+        self._operations = self.operations_in_order
+        self._observables = self.observables_in_order
 
     def draw(
-        self, charset="unicode", show_variable_names=False, wire_order=None, show_all_wires=False
+        self, charset="unicode", wire_order=None, show_all_wires=False
     ):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
-            show_variable_names (bool, optional): Show variable names instead of variable values.
             wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
@@ -689,37 +698,35 @@ class CircuitGraph:
             obs,
             wires=wire_order or self.wires,
             charset=CHARSETS[charset],
-            show_variable_names=show_variable_names,
             show_all_wires=show_all_wires,
         )
 
         return drawer.draw()
 
-    @property
-    def diagonalizing_gates(self):
-        """Returns the gates that diagonalize the measured wires such that they
-        are in the eigenbasis of the circuit observables.
+    def get_depth(self):
+        """Depth of the quantum circuit (longest path in the DAG)."""
+        # If there are no operations in the circuit, the depth is 0
+        if not self.operations:
+            self._depth = 0
+
+        # If there are operations but depth is uncomputed, compute the truncated graph
+        # with only the operations, and return the longest path + 1 (since the path is
+        # expressed in terms of edges, and we want it in terms of nodes).
+        if self._depth is None and self.operations:
+            if self._operation_graph is None:
+                self._operation_graph = self.graph.subgraph(self.operations)
+                self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
+
+        return self._depth
+
+    def has_path(self, a, b):
+        """Checks if a path exists between the two given nodes.
+
+        Args:
+            a (Operator): initial node
+            b (Operator): final node
 
         Returns:
-            List[~.Operation]: the operations that diagonalize the observables
+            bool: returns ``True`` if a path exists
         """
-        rotation_gates = []
-
-        for observable in self.observables_in_order:
-            rotation_gates.extend(observable.diagonalizing_gates())
-
-        return rotation_gates
-
-    @property
-    def is_sampled(self):
-        """Returns ``True`` if the circuit graph contains observables
-        which are sampled."""
-        # TODO: remove when tape is core
-        return any(obs.return_type == Sample for obs in self.observables_in_order)
-
-    @property
-    def all_sampled(self):
-        """Returns ``True`` if the circuit graph contains observables
-        which are sampled."""
-        # TODO: remove when tape is core
-        return all(obs.return_type == Sample for obs in self.observables_in_order)
+        return nx.has_path(self._graph, a, b)

@@ -486,7 +486,6 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        tape_mode = qml.tape_mode_active()
         self._optimize = optimize
 
         self.qnodes = qml.map(
@@ -494,12 +493,6 @@ class ExpvalCost:
         )
 
         if self._optimize:
-            if not tape_mode:
-                raise ValueError(
-                    "Observable optimization is only supported in tape mode. Tape "
-                    "mode can be enabled with the command:\n"
-                    "qml.enable_tape()"
-                )
 
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")

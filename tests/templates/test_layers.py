@@ -38,9 +38,6 @@ from pennylane.init import particle_conserving_u1_normal
 TOLERANCE = 1e-8
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestCVNeuralNet:
     """Tests for the CVNeuralNet from the pennylane.template module."""
 
@@ -260,8 +257,6 @@ class TestStronglyEntangling:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -347,8 +342,6 @@ class TestRandomLayers:
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
-        if qml.tape_mode_active():
-            pytest.skip("Immutable QNodes no longer exist in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1] * 100]
@@ -496,8 +489,6 @@ class TestRandomLayers:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -595,8 +586,6 @@ class TestSimplifiedTwoDesign:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=4)
         initial_layer = np.random.randn(2)
@@ -706,8 +695,6 @@ class TestBasicEntangler:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         n_wires = 1
         dev = qml.device('default.qubit', wires=n_wires)
@@ -826,9 +813,6 @@ class TestParticleConservingU2:
         init_state = np.array([1, 1, 0, 0])
 
         dev = qml.device("default.qubit", wires=N)
-
-        if not qml.tape_mode_active() and "must be 2-dimensional" in msg_match:
-            pytest.skip("Validation only performed in tape mode")
 
         @qml.qnode(dev)
         def circuit():

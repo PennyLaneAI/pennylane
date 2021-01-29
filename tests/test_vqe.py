@@ -643,7 +643,6 @@ class TestHamiltonian:
             H -= A
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
@@ -738,24 +737,10 @@ class TestVQE:
             assert qnode.h == 123
             assert qnode.order == 2
 
-    def test_optimize_outside_tape_mode(self):
-        """Test that an error is raised if observable optimization is requested outside of tape
-        mode."""
-        if qml.tape_mode_active():
-            pytest.skip("This test is only intended for non-tape mode")
-
-        dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian([1], [qml.PauliZ(0)])
-
-        with pytest.raises(ValueError, match="Observable optimization is only supported in tape"):
-            qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev, optimize=True)
-
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
         if interface == "tf" and not tf_support:
             pytest.skip("This test requires TensorFlow")
         if interface == "torch" and not torch_support:
@@ -798,9 +783,6 @@ class TestVQE:
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
-
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
@@ -827,8 +809,6 @@ class TestVQE:
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the Torch interface."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
         if not torch_support:
             pytest.skip("This test requires Torch")
 
@@ -854,8 +834,6 @@ class TestVQE:
     def test_optimize_grad_tf(self, tf_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
         if not tf_support:
             pytest.skip("This test requires TensorFlow")
 
@@ -875,11 +853,8 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor_tape_mode(self):
-        """Test that the metric tensor can be calculated in tape mode, and that it is equal to a
-        metric tensor calculated in non-tape mode."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
+    def test_metric_tensor(self):
+        """Test that the metric tensor can be calculated."""
 
         dev = qml.device("default.qubit", wires=2)
         p = np.array([1., 1., 1.])
@@ -893,24 +868,8 @@ class TestVQE:
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
         mt = qml.metric_tensor(qnodes)(p)
-        assert qml.tape_mode_active()  # Check that tape mode is still active
-
-        try:
-            qml.disable_tape()
-
-            @qml.qnode(dev)
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PhaseShift(params[2], wires=1)
-                return qml.expval(qml.PauliZ(0))
-
-            mt2 = circuit.metric_tensor([p])
-        finally:
-            qml.enable_tape()
-
-        assert np.allclose(mt, mt2)
+        assert mt.shape == (3, 3)
+        assert isinstance(md, np.ndarray)
 
     def test_multiple_devices(self, mocker):
         """Test that passing multiple devices to ExpvalCost works correctly"""
@@ -940,9 +899,6 @@ class TestVQE:
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
-        if not qml.tape_mode_active():
-            pytest.skip("This test is only intended for tape mode")
-
         dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
@@ -951,7 +907,6 @@ class TestVQE:
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestAutogradInterface:
     """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
 
@@ -996,7 +951,6 @@ class TestAutogradInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchInterface:
     """Tests for the PyTorch interface"""
@@ -1041,7 +995,6 @@ class TestTorchInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFInterface:
     """Tests for the TF interface"""
@@ -1088,7 +1041,6 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("tape_mode")
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestMultipleInterfaceIntegration:

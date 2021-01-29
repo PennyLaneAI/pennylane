@@ -16,7 +16,7 @@ This module contains the template decorator.
 """
 from functools import wraps
 
-from pennylane._queuing import OperationRecorder
+from pennylane.queuing import OperationRecorder
 
 
 def template(func):
@@ -58,14 +58,8 @@ def template(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        import pennylane as qml
 
-        recorder_class = OperationRecorder
-
-        if qml.tape_mode_active():
-            recorder_class = qml.tape.TapeOperationRecorder
-
-        with recorder_class() as rec:
+        with OperationRecorder() as rec:
             func(*args, **kwargs)
 
         return rec.queue

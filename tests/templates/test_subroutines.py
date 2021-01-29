@@ -39,9 +39,6 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
 )
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 # fmt: off
 PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),
@@ -349,9 +346,6 @@ class TestInterferometer:
 
     def test_interferometer_wrong_dim(self):
         """Integration test for the CVNeuralNetLayers method."""
-        if not qml.tape_mode_active():
-            pytest.skip("Validation only performed in tape mode")
-
         dev = qml.device("default.gaussian", wires=4)
 
         @qml.qnode(dev)
@@ -564,9 +558,6 @@ class TestArbitraryUnitary:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)

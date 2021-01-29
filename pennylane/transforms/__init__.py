@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions convert quantum tapes to interface with different machine
-learning libraries.
+This subpackage contains tape and QNode transforms.
 """
+from .classical_jacobian import classical_jacobian
+from .draw import draw
+from .measurement_grouping import measurement_grouping
+from .metric_tensor import metric_tensor

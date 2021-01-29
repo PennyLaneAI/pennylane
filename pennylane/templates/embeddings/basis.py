@@ -37,41 +37,19 @@ def _preprocess(features, wires):
     Returns:
         array: numpy array representation of the features tensor
     """
+    shape = qml.math.shape(features)
 
-    if qml.tape_mode_active():
+    if len(shape) != 1:
+        raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
 
-        shape = qml.math.shape(features)
+    n_features = shape[0]
+    if n_features != len(wires):
+        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
+    features = list(qml.math.toarray(features))
 
-        n_features = shape[0]
-        if n_features != len(wires):
-            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
-
-        features = list(qml.math.toarray(features))
-
-        if set(features) != {0, 1}:
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
-
-        return features
-
-    # non-tape mode
-    check_type(
-        features,
-        [Iterable],
-        msg="Features must be iterable; got type {}".format(type(features)),
-    )
-
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        msg="Features must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
-    )
-
-    if any([b not in [0, 1] for b in features]):
-        raise ValueError("Basis state must only consist of 0s and 1s; got {}".format(features))
+    if set(features) != {0, 1}:
+        raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
     return features
 

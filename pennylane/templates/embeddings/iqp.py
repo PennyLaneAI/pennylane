@@ -47,58 +47,21 @@ def _preprocess(features, wires, pattern, n_repeats):
     Returns:
         list[Wires]: preprocessed pattern
     """
+    shape = qml.math.shape(features)
 
-    if qml.tape_mode_active():
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        shape = qml.math.shape(features)
+    n_features = shape[0]
+    if n_features != len(wires):
+        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-        n_features = shape[0]
-        if n_features != len(wires):
-            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
-
-        if pattern is None:
-            # default is an all-to-all pattern
-            pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
-        else:
-            # convert wire pairs to Wires object
-            pattern = [Wires(wire_pair) for wire_pair in pattern]
-
+    if pattern is None:
+        # default is an all-to-all pattern
+        pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
     else:
-        expected_shape = (len(wires),)
-        check_shape(
-            features,
-            expected_shape,
-            msg="Features must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
-
-        check_type(
-            n_repeats,
-            [int],
-            msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats)),
-        )
-
-        if pattern is None:
-            # default is an all-to-all pattern
-            pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
-        else:
-            # do some checks
-            check_type(
-                pattern,
-                [Iterable, type(None)],
-                msg="'pattern' must be a list of pairs of wires; got {}".format(pattern),
-            )
-            shape = get_shape(pattern)
-            if len(shape) != 2 or shape[1] != 2:
-                raise ValueError(
-                    "'pattern' must be a list of pairs of wires; got {}".format(pattern)
-                )
-
-            # convert wire pairs to Wires object
-            pattern = [Wires(wire_pair) for wire_pair in pattern]
+        # convert wire pairs to Wires object
+        pattern = [Wires(wire_pair) for wire_pair in pattern]
 
     return pattern
 

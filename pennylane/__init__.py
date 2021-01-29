@@ -23,9 +23,11 @@ import numpy as _np
 from semantic_version import Version, Spec
 
 # QueuingContext needs to be imported before all other pennylane imports
-from ._queuing import QueuingContext  # pylint: disable=wrong-import-order
+from .queuing import QueuingContext  # pylint: disable=wrong-import-order
 import pennylane.operation
 
+import pennylane.math
+import pennylane.tape
 import pennylane.init
 import pennylane.templates
 import pennylane.qnn
@@ -33,13 +35,14 @@ import pennylane.qaoa as qaoa
 from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, ExpvalCost, VQECost
+from pennylane.transforms import draw, metric_tensor, measurement_grouping
 
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
 from .collections import apply, map, sum, dot, QNodeCollection
 from ._qubit_device import QubitDevice
-from .measure import expval, var, sample, probs
+from .measure import expval, var, sample, state, density_matrix, probs
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
@@ -47,11 +50,6 @@ from .utils import inv
 from ._version import __version__
 from .io import *
 from ._grad import jacobian, grad
-
-import pennylane.math  # pylint: disable=wrong-import-order
-import pennylane.tape  # pylint: disable=wrong-import-order
-from .tape import enable_tape, disable_tape, tape_mode_active
-from .tape.qnode import draw, metric_tensor
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -230,6 +228,3 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
-
-enable_tape()

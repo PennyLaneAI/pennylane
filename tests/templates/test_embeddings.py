@@ -31,9 +31,6 @@ from pennylane import Beamsplitter
 from pennylane.wires import Wires
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestAmplitudeEmbedding:
     """ Tests the AmplitudeEmbedding method."""
 
@@ -674,9 +671,6 @@ class TestQAOAEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
         dev = qml.device('default.qubit', wires=n_wires)
@@ -754,9 +748,6 @@ class TestDisplacementEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 2
         dev = qml.device('default.gaussian', wires=n_subsystems)
 
@@ -833,9 +824,6 @@ class TestSqueezingEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 2
         dev = qml.device('default.gaussian', wires=n_subsystems)
 

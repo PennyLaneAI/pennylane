@@ -27,9 +27,6 @@ from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires
 from pennylane.wires import Wires
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 @template
 def ConstantTemplate(wires):
     T(wires=wires)

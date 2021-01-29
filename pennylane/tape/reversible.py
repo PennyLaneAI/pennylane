@@ -212,7 +212,7 @@ class ReversibleTape(JacobianTape):
             for op in between_ops:
                 op.queue()
 
-            qml.tape.measure.state()
+            qml.state()
 
         tapes = [new_circuit]
 

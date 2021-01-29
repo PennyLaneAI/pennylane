@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import State
-from pennylane.tape.tapes.tape import QuantumTape
+from pennylane.tape import QuantumTape
 
 STATE_PREP_OPS = (
     qml.BasisState,

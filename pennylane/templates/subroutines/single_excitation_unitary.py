@@ -40,19 +40,9 @@ def _preprocess(weight, wires):
     if len(wires) < 2:
         raise ValueError("expected at least two wires; got {}".format(len(wires)))
 
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(weight)
-        if shape != ():
-            raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
-
-    else:
-        expected_shape = ()
-        check_shape(
-            weight,
-            expected_shape,
-            msg="Weight must be a scalar; got shape {}".format(expected_shape, get_shape(weight)),
-        )
+    shape = qml.math.shape(weight)
+    if shape != ():
+        raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
 
 @template

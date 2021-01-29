@@ -38,28 +38,12 @@ def _preprocess(weights):
     Returns:
         int: number of times that the ansatz is repeated
     """
+    shape = qml.math.shape(weights)
 
-    if qml.tape_mode_active():
+    if len(shape) != 2:
+        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
-        shape = qml.math.shape(weights)
-
-        if len(shape) != 2:
-            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-        repeat = shape[0]
-
-    else:
-        repeat = check_number_of_layers([weights])
-        n_rots = get_shape(weights)[1]
-
-        expected_shape = (repeat, n_rots)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(weights)),
-        )
-
+    repeat = shape[0]
     return repeat
 
 

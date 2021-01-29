@@ -22,8 +22,6 @@ from networkx import Graph
 from pennylane.wires import Wires
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 #####################################################
 

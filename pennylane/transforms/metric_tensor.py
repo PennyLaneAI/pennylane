@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the metric tensor tape transform
+Contains the metric tensor transform
 """
 import numpy as np
 import pennylane as qml
@@ -28,7 +28,7 @@ def _stopping_critera(obj):
     return False
 
 
-def metric_tensor(tape, diag_approx=False, wrt=None):
+def metric_tensor_tape(tape, diag_approx=False, wrt=None):
     """Returns a list of tapes, and a classical processing function, for computing the block
     diagronal metric tensor approximation of an input tape on hardware.
 
@@ -74,7 +74,7 @@ def metric_tensor(tape, diag_approx=False, wrt=None):
     We can use the ``metric_tensor`` transform to generate a new tapes and a classical
     processing function for computing the metric tensor.
 
-    >>> mt_tapes, fn = qml.tape.transforms.metric_tensor(tape)
+    >>> mt_tapes, fn = qml.transforms.metric_tensor_tape(tape)
     >>> print(mt_tapes)
     [<QuantumTape: wires=[0, 1, 2], params=0>, <QuantumTape: wires=[0, 1, 2], params=2>]
     >>> print(mt_tapes[0].draw())
@@ -173,3 +173,106 @@ def metric_tensor(tape, diag_approx=False, wrt=None):
         return qml.math.block_diag(gs)
 
     return metric_tensor_tapes, processing_fn
+
+
+
+def metric_tensor(qnode, diag_approx=False, only_construct=False):
+    """Returns a function that returns the value of the metric tensor
+    of a given QNode.
+
+    .. note::
+
+        Currently, only the :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`, and
+        :class:`~.PhaseShift` parametrized gates are supported.
+        All other parametrized gates will be decomposed if possible.
+
+    Args:
+        qnode (.QNode or .ExpvalCost): QNode(s) to compute the metric tensor of
+        diag_approx (bool): iff True, use the diagonal approximation
+        only_construct (bool): Iff True, construct the circuits used for computing
+            the metric tensor but do not execute them, and return the tapes.
+
+    Returns:
+        func: Function which accepts the same arguments as the QNode. When called, this
+        function will return the metric tensor.
+
+    **Example**
+
+    Consider the following QNode:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            # layer 1
+            qml.RX(weights[0, 0], wires=0)
+            qml.RX(weights[0, 1], wires=1)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            # layer 2
+            qml.RZ(weights[1, 0], wires=0)
+            qml.RZ(weights[1, 1], wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
+
+    We can use the ``metric_tensor`` function to generate a new function, that returns the
+    metric tensor of this QNode:
+
+    >>> met_fn = qml.metric_tensor(circuit)
+    >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+    >>> met_fn(weights)
+    tensor([[0.25  , 0.    , 0.    , 0.    ],
+            [0.    , 0.25  , 0.    , 0.    ],
+            [0.    , 0.    , 0.0025, 0.0024],
+            [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
+
+    The returned metric tensor is also fully differentiable, in all interfaces.
+    For example, differentiating the ``(3, 2)`` element:
+
+    >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
+    >>> grad_fn(weights)
+    array([[ 0.04867729, -0.00049502,  0.        ],
+           [ 0.        ,  0.        ,  0.        ]])
+    """
+    if qnode.__class__.__name__ == "ExpvalCost":
+        if qnode._multiple_devices:  # pylint: disable=protected-access
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
+                "will be used to evaluate the metric tensor."
+            )
+
+        qnode = qnode.qnodes.qnodes[0]
+
+    def _metric_tensor_fn(*args, **kwargs):
+        jac = qml.math.stack(qml.transforms.classical_jacobian(qnode)(*args, **kwargs))
+        jac = qml.math.reshape(jac, [qnode.qtape.num_params, -1])
+
+        wrt, perm = np.nonzero(qml.math.toarray(jac))
+        perm = np.argsort(np.argsort(perm))
+
+        qnode.construct(args, kwargs)
+
+        metric_tensor_tapes, processing_fn = metric_tensor_tape(
+            qnode.qtape,
+            diag_approx=diag_approx,
+            wrt=wrt.tolist() if qnode.diff_options["method"] == "backprop" else None,
+        )
+
+        if only_construct:
+            return metric_tensor_tapes
+
+        res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
+        mt = processing_fn(res)
+
+        # permute rows ad columns
+        mt = qml.math.gather(mt, perm)
+        mt = qml.math.gather(qml.math.T(mt), perm)
+        return mt
+
+    return _metric_tensor_fn

@@ -191,10 +191,7 @@ class QubitDevice(Device):
             self._circuit_hash = circuit.hash
 
         if self._cache:
-            try:  # TODO: Remove try/except when circuit is always QuantumTape
-                circuit_hash = circuit.graph.hash
-            except AttributeError as e:
-                raise ValueError("Caching is only available when using tape mode") from e
+            circuit_hash = circuit.graph.hash
             if circuit_hash in self._cache_execute:
                 return self._cache_execute[circuit_hash]
 

@@ -175,7 +175,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         """
         # pylint: disable=arguments-differ
         if (
-            not isinstance(qnode, (qml.tape.QNode, qml.qnodes.BaseQNode, qml.ExpvalCost))
+            not isinstance(qnode, (qml.QNode, qml.ExpvalCost))
             and metric_tensor_fn is None
         ):
             raise ValueError(

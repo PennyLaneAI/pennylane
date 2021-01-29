@@ -118,19 +118,11 @@ def _preprocess(parameters, pattern, wires):
     # check that there are enough parameters for pattern
     if parameters is not None:
 
-        if qml.tape_mode_active():
-            shape = qml.math.shape(parameters)
+        shape = qml.math.shape(parameters)
 
-            # expand dimension so that parameter sets for each unitary can be unpacked
-            if len(shape) == 1:
-                parameters = qml.math.expand_dims(parameters, 1)
-
-        else:
-            shape = get_shape(parameters)
-
-            # expand dimension so that parameter sets for each unitary can be unpacked
-            if len(shape) == 1:
-                parameters = [[p] for p in parameters]
+        # expand dimension so that parameter sets for each unitary can be unpacked
+        if len(shape) == 1:
+            parameters = qml.math.expand_dims(parameters, 1)
 
         # specific error message for ring edge case of 2 wires
         if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):

@@ -49,31 +49,17 @@ def _preprocess(weights, wires, init_state):
             "got a wire sequence with {} elements".format(len(wires))
         )
 
-    if qml.tape_mode_active():
+    shape = qml.math.shape(weights)
 
-        shape = qml.math.shape(weights)
+    if len(shape) != 2:
+        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
-        if len(shape) != 2:
-            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-        if shape[1] != 2 * len(wires) - 1:
-            raise ValueError(
-                f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
-            )
-
-        repeat = shape[0]
-
-    else:
-        repeat = weights.shape[0]
-
-        expected_shape = (repeat, 2 * len(wires) - 1)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="Weights tensor must be of shape {}; got {}".format(
-                expected_shape, get_shape(weights)
-            ),
+    if shape[1] != 2 * len(wires) - 1:
+        raise ValueError(
+            f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
         )
+
+    repeat = shape[0]
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]

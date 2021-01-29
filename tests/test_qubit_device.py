@@ -24,7 +24,6 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane.qnodes.base import BaseQNode
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.variable import Variable
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
 from pennylane.tape.measure import state
@@ -213,11 +212,6 @@ class TestOperations:
         ]
     ]
 
-    variable = Variable(1)
-    symbolic_queue = [
-        [qml.RX(variable, wires=[0])],
-    ]
-
     observables = [
         [qml.PauliZ(0)],
         [qml.PauliX(0)],
@@ -225,7 +219,7 @@ class TestOperations:
     ]
 
     @pytest.mark.parametrize("observables", observables)
-    @pytest.mark.parametrize("queue", numeric_queues + symbolic_queue)
+    @pytest.mark.parametrize("queue", numeric_queues)
     def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods,
                                                   monkeypatch, queue, observables):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()

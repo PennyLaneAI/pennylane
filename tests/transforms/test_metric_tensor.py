@@ -22,9 +22,6 @@ import pennylane as qml
 from gate_data import Y, Z
 
 
-pytestmark = pytest.mark.usefixtures("in_tape_mode")
-
-
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 

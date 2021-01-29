@@ -326,35 +326,24 @@ def inv(operation_list):
             + ",".join(string_reps)
         )
 
-    if qml.tape_mode_active():
-        for op in operation_list:
-            try:
-                # remove the queued operation to be inverted
-                # from the existing queuing context
-                qml.tape.QueuingContext.remove(op)
-            except KeyError:
-                # operation to be inverted does not
-                # exist on the queuing context
-                pass
-
-        with qml.tape.QuantumTape() as tape:
-            for o in operation_list:
-                o.queue()
-                if o.inverse:
-                    o.inv()
-
-        tape.inv()
-        return tape
-
-    inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
-
     for op in operation_list:
-        qml.QueuingContext.remove(op)
+        try:
+            # remove the queued operation to be inverted
+            # from the existing queuing context
+            qml.tape.QueuingContext.remove(op)
+        except KeyError:
+            # operation to be inverted does not
+            # exist on the queuing context
+            pass
 
-    for inv_op in inv_ops:
-        qml.QueuingContext.append(inv_op)
+    with qml.tape.QuantumTape() as tape:
+        for o in operation_list:
+            o.queue()
+            if o.inverse:
+                o.inv()
 
-    return inv_ops
+    tape.inv()
+    return tape
 
 
 def expand(matrix, original_wires, expanded_wires):

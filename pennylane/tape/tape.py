@@ -24,9 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.grouping import diagonalize_qwc_pauli_words
-from pennylane.tape.circuit_graph import TapeCircuitGraph
-from pennylane.tape.operation import mock_operations
-from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
 STATE_PREP_OPS = (
@@ -114,7 +112,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         tape._ops.extend(rotations)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+            new_m = qml.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
             tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
@@ -125,7 +123,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, qml.tape.measure.MeasurementProcess)
+                stop = stop or isinstance(obj, qml.measure.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -133,7 +131,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.tape.measure.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.measure.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -193,10 +191,10 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The :class:`~.TapeCircuitGraph` can also be accessed:
+    The :class:`~.CircuitGraph` can also be accessed:
 
     >>> tape.graph
-    <pennylane.tape.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
+    <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
     device:
@@ -350,7 +348,7 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, qml.tape.measure.MeasurementProcess):
+            elif isinstance(obj, qml.measure.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
 
@@ -849,16 +847,16 @@ class QuantumTape(AnnotatedQueue):
         quantum circuit:
 
         >>> tape.graph
-        <pennylane.tape.circuit_graph.TapeCircuitGraph object at 0x7fcc0433a690>
+        <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
         Note that the circuit graph is only constructed once, on first call to this property,
         and cached for future use.
 
         Returns:
-            .TapeCircuitGraph: the circuit graph object
+            .CircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = TapeCircuitGraph(
+            self._graph = qml.CircuitGraph(
                 self.operations, self.observables, self.wires, self._par_info, self.trainable_params
             )
 

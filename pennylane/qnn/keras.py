@@ -204,17 +204,13 @@ class KerasLayer(Layer):
             for weight, size in weight_shapes.items()
         }
 
-        if qml.tape_mode_active():
-            self._signature_validation_tape_mode(qnode, weight_shapes)
-            self.qnode = qnode
+        self._signature_validation(qnode, weight_shapes)
+        self.qnode = qnode
 
-            dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
+        dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
 
-            if self.qnode.diff_method != "backprop":
-                self.qnode.to_tf(dtype=dtype)
-        else:
-            self._signature_validation(qnode, weight_shapes)
-            self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
+        if self.qnode.diff_method != "backprop":
+            self.qnode.to_tf(dtype=dtype)
 
         # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
         self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
@@ -225,7 +221,7 @@ class KerasLayer(Layer):
 
         super().__init__(dynamic=True, **kwargs)
 
-    def _signature_validation_tape_mode(self, qnode, weight_shapes):
+    def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
 
         if self.input_arg not in sig:
@@ -250,42 +246,6 @@ class KerasLayer(Layer):
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
                 raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
-    def _signature_validation(self, qnode, weight_shapes):
-        self.sig = qnode.func.sig
-
-        if self.input_arg not in self.sig:
-            raise TypeError(
-                "QNode must include an argument with name {} for inputting data".format(
-                    self.input_arg
-                )
-            )
-
-        if self.input_arg in set(weight_shapes.keys()):
-            raise ValueError(
-                "{} argument should not have its dimension specified in "
-                "weight_shapes".format(self.input_arg)
-            )
-
-        if qnode.func.var_pos:
-            raise TypeError("Cannot have a variable number of positional arguments")
-
-        if qnode.func.var_keyword:
-            raise TypeError("Cannot have a variable number of keyword arguments")
-
-        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
-            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
-
-        defaults = {
-            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
-        }
-
-        self.input_is_default = self.input_arg in defaults
-
-        if defaults - {self.input_arg} != set():
-            raise TypeError(
-                "Only the argument {} is permitted to have a default".format(self.input_arg)
-            )
-
     def build(self, input_shape):
         """Initializes the QNode weights.
 
@@ -309,30 +269,12 @@ class KerasLayer(Layer):
         """
         outputs = []
         for x in inputs:  # iterate over batch
-
-            if qml.tape_mode_active():
-                res = self._evaluate_qnode_tape_mode(x)
-                outputs.append(res)
-            else:
-                # The QNode can require some passed arguments to be positional and others to be
-                # keyword. The following loops through input arguments in order and uses
-                # functools.partial to bind the argument to the QNode.
-                qnode = self.qnode
-
-                for arg in self.sig:
-                    if arg is not self.input_arg:  # Non-input arguments must always be positional
-                        w = self.qnode_weights[arg]
-                        qnode = functools.partial(qnode, w)
-                    else:
-                        if self.input_is_default:  # The input argument can be positional or keyword
-                            qnode = functools.partial(qnode, **{self.input_arg: x})
-                        else:
-                            qnode = functools.partial(qnode, x)
-                outputs.append(qnode())
+            res = self._evaluate_qnode(x)
+            outputs.append(res)
 
         return tf.stack(outputs)
 
-    def _evaluate_qnode_tape_mode(self, x):
+    def _evaluate_qnode(self, x):
         """Evaluates a tape-mode QNode for a single input datapoint.
 
         Args:

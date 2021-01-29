@@ -38,9 +38,6 @@ except ImportError as e:
     Variable = None
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestMap:
     """Test for mapping ansatz over observables or devices,
     to return a QNode collection"""

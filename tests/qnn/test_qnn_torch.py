@@ -24,8 +24,6 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
@@ -128,33 +126,8 @@ class TestTorchLayer:
             TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, get_circuit, monkeypatch):
-        """Test if a TypeError is raised when instantiated with a variable number of keyword
-        arguments"""
-        if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode.")
-
-        c, w = get_circuit
-
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
-
-            sig = c.func.sig
-            var_pos = False
-            var_keyword = True
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
-                TorchLayer(c, w)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword_tape_mode(self, n_qubits, output_dim):
-        """Test that variable number of keyword arguments works in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
-
+    def test_var_keyword(self, n_qubits, output_dim):
+        """Test that variable number of keyword arguments works"""
         dev = qml.device("default.qubit", wires=n_qubits)
         w = {
             "w1": (3, n_qubits, 3),
@@ -202,32 +175,9 @@ class TestTorchLayer:
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, get_circuit, n_qubits):
-        """Test if a TypeError is raised when default arguments that are not the input argument are
-        present in the QNode"""
-        if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode.")
-
-        c, w = get_circuit
-
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
-        def c_dummy(inputs, w1, w2, w3, w4, w5, w6, w7, w8=None):
-            """Dummy version of the circuit with a default argument"""
-            return c(inputs, w1, w2, w3, w4, w5, w6, w7)
-
-        with pytest.raises(
-            TypeError,
-            match="Only the argument {} is permitted".format(qml.qnn.torch.TorchLayer._input_arg),
-        ):
-            TorchLayer(c_dummy, {**w, **{"w8": 1}})
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults_tape_mode(self, n_qubits, output_dim):
+    def test_non_input_defaults(self, n_qubits, output_dim):
         """Test that everything works when default arguments that are not the input argument are
-        present in the QNode in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
-
+        present in the QNode"""
         dev = qml.device("default.qubit", wires=n_qubits)
         w = {
             "w1": (3, n_qubits, 3),
