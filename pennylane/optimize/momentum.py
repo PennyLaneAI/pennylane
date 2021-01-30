@@ -45,7 +45,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
         self.accumulation = None
 
     def apply_grad(self, grad, args):
-        r"""Update the variables args to take a single optimization step. Flattens and unflattens
+        r"""Update the trainable args to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
