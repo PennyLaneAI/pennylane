@@ -1805,7 +1805,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "DiagonalQubitUnitary",
-    "Measure"
+    "Measure",
 }
 
 
