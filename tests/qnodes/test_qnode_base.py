@@ -26,7 +26,7 @@ from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
 from pennylane.wires import Wires, WireError
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 @pytest.fixture(scope="function")
 def mock_qnode(mock_device):
@@ -1516,5 +1516,5 @@ def test_old_qnode_in_tape_mode():
         # check that tape mode is turned on again after evaluating the old QNode
         assert qml.tape_mode_active()
 
-    finally:  # always make sure we turn off tape mode to prevent disrupting the other tests
-        qml.disable_tape()
+    finally:  # always make sure we turn on tape mode to prevent disrupting the other tests
+        qml.enable_tape()

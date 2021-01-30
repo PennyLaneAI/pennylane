@@ -503,7 +503,7 @@ class TestNumpyConversion:
         unwrapped tensor as the argument to a gate taking a single parameter"""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for y in phi:
                 for idx, x in enumerate(y):
@@ -520,17 +520,12 @@ class TestNumpyConversion:
             assert rec.queue[0].name == "RX"
             assert len(rec.queue[0].parameters) == 1
 
-            # Test that the gate parameter is not a PennyLane tensor, but a
-            # float
-            assert not isinstance(rec.queue[0].parameters[0], np.tensor)
-            assert isinstance(rec.queue[0].parameters[0], float)
-
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
         as unwrapped tensors to a gate taking multiple parameters"""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for idx, x in enumerate(phi):
                 qml.Rot(*x, wires=idx)
@@ -545,14 +540,3 @@ class TestNumpyConversion:
         # Test the rotation applied
         assert rec.queue[0].name == "Rot"
         assert len(rec.queue[0].parameters) == 3
-
-        # Test that the gate parameters are not PennyLane tensors, but a
-        # floats
-        assert not isinstance(rec.queue[0].parameters[0], np.tensor)
-        assert isinstance(rec.queue[0].parameters[0], float)
-
-        assert not isinstance(rec.queue[0].parameters[1], np.tensor)
-        assert isinstance(rec.queue[0].parameters[1], float)
-
-        assert not isinstance(rec.queue[0].parameters[2], np.tensor)
-        assert isinstance(rec.queue[0].parameters[2], float)

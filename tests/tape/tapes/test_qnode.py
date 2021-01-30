@@ -440,6 +440,8 @@ class TestTapeConstruction:
         with pytest.raises(ValueError, match="only works when tape mode is enabled"):
             result = draw(circuit, charset="ascii")
 
+        qml.enable_tape()
+
     def test_drawing(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -722,13 +724,7 @@ class TestDecorator:
 class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 
-    @pytest.fixture
-    def enable_tape_mode(self):
-        qml.enable_tape()
-        yield
-        qml.disable_tape()
-
-    def test_multi_thread(self, enable_tape_mode):
+    def test_multi_thread(self):
         """Test that multi-threaded queuing in tape mode works correctly"""
         n_qubits = 4
         n_batches = 5
@@ -757,3 +753,86 @@ class TestQNodeCollection:
                 qnode(x, p, parallel=True)
         except:
             pytest.fail("Multi-threading on QuantumTape failed")
+
+
+class TestIntegration:
+    """Integration tests."""
+
+    def test_correct_number_of_executions_autograd(self):
+        """Test that number of executions are tracked in the autograd interface."""
+        qml.enable_tape()
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="autograd")
+
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="autograd")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+    def test_correct_number_of_executions_tf(self):
+        """Test that number of executions are tracked in the tf interface."""
+        tf = pytest.importorskip("tf")
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="tf")
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="tf")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+        # qubit of different interface
+        qn3 = QNode(func, dev, interface="autograd")
+        qn3()
+
+        assert dev.num_executions == 6
+
+    def test_correct_number_of_executions_torch(self):
+        """Test that number of executions are tracked in the torch interface."""
+        torch = pytest.importorskip("torch")
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="torch")
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="torch")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+        # qubit of different interface
+        qn3 = QNode(func, dev, interface="autograd")
+        qn3()
+
+        assert dev.num_executions == 6

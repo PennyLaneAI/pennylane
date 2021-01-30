@@ -895,17 +895,21 @@ class TestVQE:
         mt = qml.metric_tensor(qnodes)(p)
         assert qml.tape_mode_active()  # Check that tape mode is still active
 
-        qml.disable_tape()
+        try:
+            qml.disable_tape()
 
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(params[2], wires=1)
-            return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PhaseShift(params[2], wires=1)
+                return qml.expval(qml.PauliZ(0))
 
-        mt2 = circuit.metric_tensor([p])
+            mt2 = circuit.metric_tensor([p])
+        finally:
+            qml.enable_tape()
+
         assert np.allclose(mt, mt2)
 
     def test_multiple_devices(self, mocker):

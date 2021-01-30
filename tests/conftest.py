@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 
+
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
@@ -155,6 +156,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, '__abstractmethods__', frozenset())
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
         yield qml.Device(wires=2)
 
 
@@ -165,11 +167,16 @@ def tear_down_hermitian():
 
 
 @pytest.fixture
-def in_tape_mode():
+def non_tape_mode_only():
     """Run the test in tape mode"""
-    qml.enable_tape()
-    yield
     qml.disable_tape()
+    yield
+    qml.enable_tape()
+
+
+@pytest.fixture
+def in_tape_mode():
+    return
 
 
 @pytest.fixture(params=[False, True])
@@ -202,9 +209,9 @@ def tape_mode(request, mocker):
 
         mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
 
-        qml.enable_tape()
+    else:
+        qml.disable_tape()
 
     yield
 
-    if request.param:
-        qml.disable_tape()
+    qml.enable_tape()

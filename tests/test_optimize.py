@@ -47,7 +47,6 @@ delta = 0.8
 # function arguments in various formats
 mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
 mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
-nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
 flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
 multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 multid_list = [[0.1, 0.2], [-0.1, -0.4]]
@@ -89,19 +88,10 @@ grad_mvar_mdim_funcs = [
 
 
 @qml.qnode(qml.device("default.qubit", wires=1))
-def quant_fun(variables):
+def quant_fun(*variables):
     qml.RX(variables[0][1], wires=[0])
     qml.RY(variables[1][2], wires=[0])
     qml.RY(variables[2], wires=[0])
-    return qml.expval(qml.PauliZ(0))
-
-
-@qml.qnode(qml.device('default.qubit', wires=1))
-def quant_fun_nested(var):
-    qml.RX(var[0][0][0], wires=[0])
-    qml.RY(var[0][1], wires=[0])
-    qml.RY(var[1][0], wires=[0])
-    qml.RX(var[1][1][0], wires=[0])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -153,7 +143,7 @@ class TestOptimizer:
         for hybrid optimization tasks."""
 
         def hybrid_fun(variables):
-            return quant_fun(variables) + variables[0][1]
+            return quant_fun(*variables) + variables[0][1]
 
         hybrid_list = bunch.sgd_opt.step(hybrid_fun, mixed_list)
         hybrid_tuple = bunch.sgd_opt.step(hybrid_fun, mixed_tuple)
@@ -180,27 +170,12 @@ class TestOptimizer:
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for purely quantum optimization tasks."""
 
-        quant_list = bunch.sgd_opt.step(quant_fun, mixed_list)
-        quant_tuple = bunch.sgd_opt.step(quant_fun, mixed_tuple)
+        quant_list = bunch.sgd_opt.step(quant_fun, *mixed_list)
+        quant_tuple = bunch.sgd_opt.step(quant_fun, *mixed_tuple)
 
         assert quant_list[0] == pytest.approx(quant_tuple[0], abs=tol)
         assert quant_list[1] == pytest.approx(quant_tuple[1], abs=tol)
         assert quant_list[2] == pytest.approx(quant_tuple[2], abs=tol)
-
-    def test_nested_and_flat_returns_same_update(self, bunch, tol):
-        """Tests that gradient descent optimizer has the same output for
-         nested and flat lists."""
-
-        def hybrid_fun_flat(var):
-            return quant_fun_flat(var) + var[4]
-
-        def hybrid_fun_nested(var):
-            return quant_fun_nested(var) + var[2]
-
-        nested = bunch.sgd_opt.step(hybrid_fun_nested, nested_list)
-        flat = bunch.sgd_opt.step(hybrid_fun_flat, flat_list)
-
-        assert flat == pytest.approx(list(_flatten(nested)), abs=tol)
 
     def test_array_and_list_return_same_update(self, bunch, tol):
         """Tests that gradient descent optimizer has the same output for
@@ -217,36 +192,51 @@ class TestOptimizer:
 
         assert array == pytest.approx(np.asarray(ls), abs=tol)
 
-    @pytest.mark.parametrize(
-        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
-    )
-    def test_step_and_cost_autograd_sgd(self, bunch, circuit, var):
+    def test_step_and_cost_autograd_sgd_mixed_list(self, bunch):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
-        _, res = bunch.sgd_opt.step_and_cost(circuit, var)
-        expected = circuit(var)
+        _, res = bunch.sgd_opt.step_and_cost(quant_fun, *mixed_list)
+        expected = quant_fun(*mixed_list)
 
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize(
-        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
-    )
-    def test_step_and_cost_autograd_nesterov(self, bunch, circuit, var):
+    def test_step_and_cost_autograd_sgd_multid_array(self, bunch):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        gradient-descent optimizer"""
+        _, res = bunch.sgd_opt.step_and_cost(quant_fun_mdarr, multid_array)
+        expected = quant_fun_mdarr(multid_array)
+
+        assert np.all(res == expected)
+
+    def test_step_and_cost_autograd_nesterov_mixed_list(self, bunch):
         """Test that the correct cost is returned via the step_and_cost method for the
         Nesterov momentum optimizer"""
-        _, res = bunch.nesmom_opt.step_and_cost(circuit, var)
-        expected = circuit(var)
+        _, res = bunch.nesmom_opt.step_and_cost(quant_fun, *mixed_list)
+        expected = quant_fun(*mixed_list)
 
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize(
-        "circuit, var", [(quant_fun, mixed_list), (quant_fun_mdarr, multid_array)]
-    )
-    def test_step_and_cost_autograd_rotosolve(self, bunch, circuit, var):
+    def test_step_and_cost_autograd_nesterov_multid_array(self, bunch):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        Nesterov momentum optimizer"""
+        _, res = bunch.nesmom_opt.step_and_cost(quant_fun_mdarr, multid_array)
+        expected = quant_fun_mdarr(multid_array)
+
+        assert np.all(res == expected)
+
+    def test_step_and_cost_autograd_rotosolve_mixed_list(self, bunch):
         """Test that the correct cost is returned via the step_and_cost method for the
         Rotosolve optimizer"""
-        _, res = bunch.rotosolve_opt.step_and_cost(circuit, var)
-        expected = circuit(var)
+        _, res = bunch.rotosolve_opt.step_and_cost(quant_fun, *mixed_list)
+        expected = quant_fun(*mixed_list)
+
+        assert np.all(res == expected)
+
+    def test_step_and_cost_autograd_rotosolve_multid_array(self, bunch):
+        """Test that the correct cost is returned via the step_and_cost method for the
+        Rotosolve optimizer"""
+        _, res = bunch.rotosolve_opt.step_and_cost(quant_fun_mdarr, multid_array)
+        expected = quant_fun_mdarr(multid_array)
 
         assert np.all(res == expected)
 

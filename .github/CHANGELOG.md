@@ -8,9 +8,9 @@
   overhead and a similar memory overhead. It follows the approach provided by
   [Jones and Gacon](https://arxiv.org/abs/2009.02823). This method is only compatible with certain
   statevector-based devices such as `default.qubit`.
-  
+
   Example use:
-  
+
   ```python
   import pennylane as qml
 
@@ -34,27 +34,27 @@
   [(#1011)](https://github.com/PennyLaneAI/pennylane/pull/1011)
 
 * PennyLane now supports analytical gradients for the following noisy channels:
-  `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`. 
+  `BitFlip`, `PhaseFlip`, and `DepolarizingChannel`.
   [(#968)](https://github.com/PennyLaneAI/pennylane/pull/968)
 
 * The `qml.math` module now supports JAX.
   [(#985)](https://github.com/XanaduAI/software-docs/pull/274)
 
-* The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers 
+* The built-in PennyLane optimizers allow more flexible cost functions. The cost function passed to most optimizers
   may accept any combination of trainable arguments, non-trainable arguments, and keyword arguments.
   [(#959)](https://github.com/PennyLaneAI/pennylane/pull/959)
 
   The full changes apply to:
-  
+
   * `AdagradOptimizer`
   * `AdamOptimizer`
   * `GradientDescentOptimizer`
   * `MomentumOptimizer`
   * `NesterovMomentumOptimizer`
   * `RMSPropOptimizer`
-  * `RotosolveOptimizer` 
-  
-  The `requires_grad=False` property must mark any non-trainable constant argument. 
+  * `RotosolveOptimizer`
+
+  The `requires_grad=False` property must mark any non-trainable constant argument.
   The `RotoselectOptimizer` allows passing only keyword arguments.
 
   Example use:
@@ -68,17 +68,17 @@
   data = np.array([2.], requires_grad=False)
 
   opt = qml.GradientDescentOptimizer()
-  
+
   # the optimizer step and step_and_cost methods can
   # now update multiple parameters at once
   x_new, y_new, data = opt.step(cost, x, y, data, scale=0.5)
-  (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5) 
+  (x_new, y_new, data), value = opt.step_and_cost(cost, x, y, data, scale=0.5)
 
   # list and tuple unpacking is also supported
   params = (x, y, data)
   params = opt.step(cost, *params)
   ```
- 
+
 * Support added for calculating the Hessian of quantum tapes using the second-order
   parameter shift formula.
   [(#961)](https://github.com/PennyLaneAI/pennylane/pull/961)
@@ -189,7 +189,7 @@
       qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
       return qml.expval(qml.PauliZ(0))
   ```
-  
+
 * In tape-mode, the logic for choosing the 'best' differentiation method has been altered
   to improve performance.
   [(#1008)](https://github.com/PennyLaneAI/pennylane/pull/1008)
@@ -356,7 +356,7 @@
 
 * The `default.qubit` device has been updated so that internally it applies operations in a more
   functional style, i.e., by accepting an input state and returning an evolved state.
-  [(#1025)](https://github.com/PennyLaneAI/pennylane/pull/1025)  
+  [(#1025)](https://github.com/PennyLaneAI/pennylane/pull/1025)
 
 * A new test series, pennylane/devices/tests/test_compare_default_qubit.py, has been added, allowing to test if
   a chosen device gives the same result as the default device. Three tests are added `test_hermitian_expectation`,
@@ -368,7 +368,7 @@
   required to fully support end-to-end differentiable Mottonen and Amplitude embedding.
   [(#922)](https://github.com/PennyLaneAI/pennylane/pull/922)
 
-* Several improvements have been made to the `Wires` class to reduce overhead and simplify the logic 
+* Several improvements have been made to the `Wires` class to reduce overhead and simplify the logic
   of how wire labels are interpreted:
   [(#1019)](https://github.com/PennyLaneAI/pennylane/pull/1019)
   [(#1010)](https://github.com/PennyLaneAI/pennylane/pull/1010)
@@ -376,32 +376,32 @@
   [(#983)](https://github.com/PennyLaneAI/pennylane/pull/983)
   [(#967)](https://github.com/PennyLaneAI/pennylane/pull/967)
 
-  - If the input `wires` to a wires class instantiation `Wires(wires)` can be iterated over, 
+  - If the input `wires` to a wires class instantiation `Wires(wires)` can be iterated over,
     its elements are interpreted as wire labels. Otherwise, `wires` is interpreted as a single wire label.
-    The only exception to this are strings, which are always interpreted as a single 
-    wire label, so users can address wires with labels such as `"ancilla"`. 
-     
+    The only exception to this are strings, which are always interpreted as a single
+    wire label, so users can address wires with labels such as `"ancilla"`.
+
   - Any type can now be a wire label as long as it is hashable. The hash is used to establish
     the uniqueness of two labels.
-    
+
   - Indexing wires objects now returns a label, instead of a new `Wires` object. For example:
-    
+
     ```pycon
     >>> w = Wires([0, 1, 2])
     >>> w[1]
     >>> 1
     ```
-     
+
   - The check for uniqueness of wires moved from `Wires` instantiation to
     the `qml.wires._process` function in order to reduce overhead from repeated
     creation of `Wires` instances.
-  
-  - Calls to the `Wires` class are substantially reduced, for example by avoiding to call 
-    Wires on Wires instances on `Operation` instantiation, and by using labels instead of 
+
+  - Calls to the `Wires` class are substantially reduced, for example by avoiding to call
+    Wires on Wires instances on `Operation` instantiation, and by using labels instead of
     `Wires` objects inside the default qubit device.
-  
-* Adds the `PauliRot` generator to the `qml.operation` module. This 
-  generator is required to construct the metric tensor. 
+
+* Adds the `PauliRot` generator to the `qml.operation` module. This
+  generator is required to construct the metric tensor.
   [(#963)](https://github.com/PennyLaneAI/pennylane/pull/963)
 
 * The templates are modified to make use of the new `qml.math` module, for framework-agnostic
@@ -470,12 +470,18 @@
   contained a single probability output.
   [(#1007)](https://github.com/PennyLaneAI/pennylane/pull/1007)
 
+* Fixes an issue when using trainable parameters that are lists/arrays with `tape.vjp`.
+  [(#1042)](https://github.com/PennyLaneAI/pennylane/pull/1042)
+
+* The `TensorN` observable is updated to support being copied without any parameters or wires passed.
+  [(#1047)](https://github.com/PennyLaneAI/pennylane/pull/1047)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Josh Izaac, Christina Lee, Alejandro Montanez, Steven Oud, Chase
-Roberts, Maria Schuld, Antal Száva, David Wierichs, Jiahao Yao.
+Thomas Bromley, Olivia Di Matteo, Theodor Isacsson, Josh Izaac, Christina Lee, Alejandro Montanez,
+Steven Oud, Chase Roberts, Maria Schuld, Antal Száva, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0 (current release)
 

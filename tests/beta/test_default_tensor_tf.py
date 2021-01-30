@@ -25,8 +25,6 @@ tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 import pennylane as qml
 from pennylane.beta.devices.default_tensor_tf import DefaultTensorTF
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CNOT, Toffoli, CSWAP
-from pennylane.qnodes import qnode, QNode
-from pennylane.qnodes.decorator import ALLOWED_INTERFACES, ALLOWED_DIFF_METHODS
 
 np.random.seed(42)
 
@@ -401,19 +399,16 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == 1000
         assert dev.short_name == "default.tensor.tf"
-        assert dev.capabilities()["provides_jacobian"]
         assert dev.capabilities()["passthru_interface"] == "tf"
 
-    @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
-    def test_qubit_circuit(self, decorator, rep, tol):
+    def test_qubit_circuit(self, rep, tol):
         """Test that the tensor network plugin provides correct
-        result for a simple circuit using the old QNode.
-        This test is parametrized for both the new and old QNode decorator."""
+        result for a simple circuit."""
         p = 0.543
 
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
-        @decorator(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -458,7 +453,7 @@ class TestJacobianIntegration:
 
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit(p):
             qml.RX(3 * p[0], wires=0)
             qml.RY(p[1], wires=0)
@@ -469,7 +464,7 @@ class TestJacobianIntegration:
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = circuit.jacobian([[x, y, z]])
+        res = qml.jacobian(circuit)(np.array([x, y, z]))
         expected = np.array(
             [
                 -3 * (np.sin(3 * x) * np.cos(y) * np.cos(z / 2) + np.cos(3 * x) * np.sin(z / 2)),
@@ -489,7 +484,7 @@ class TestJacobianIntegration:
         p = np.array([x, y, z])
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
@@ -499,34 +494,47 @@ class TestJacobianIntegration:
         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = circuit.jacobian([p])
+        res = qml.jacobian(circuit)(p)
         expected = np.array(
             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0,]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "device"])
-    def test_jacobian_agrees(self, diff_method, torch_support, rep, tol):
-        """Test that qnode.jacobian applied to the tensornet.tf device
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_gradient_agrees(self, diff_method, torch_support, rep, tol):
+        """Test that gradient applied to the tensornet.tf device
         returns the same result as default.qubit."""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        import tensorflow as tf
+
+        p = tf.Variable([0.43316321, 0.2162158, 0.75110998, 0.94714242])
 
         def circuit(x):
-            for i in range(0, len(p), 2):
+            # multiply the Variable by 1.0 to make it iterable
+            for i in range(0, len(1.0 * p), 2):
                 qml.RX(x[i], wires=0)
                 qml.RY(x[i + 1], wires=1)
             for i in range(2):
                 qml.CNOT(wires=[i, i + 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+            return qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.tensor.tf", wires=3, representation=rep)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = QNode(circuit, dev1, diff_method=diff_method, h=1e-7)
-        circuit2 = QNode(circuit, dev2, diff_method="parameter-shift", h=1e-7)
+        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method, h=1e-7, interface="tf")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", h=1e-7, interface="tf")
 
-        assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
-        assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
+        with tf.GradientTape() as tape1:
+            res1 = circuit1(p)
+
+        with tf.GradientTape() as tape2:
+            res2 = circuit2(p)
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+
+        grad1 = tape1.gradient(res1, p)
+        grad2 = tape2.gradient(res2, p)
+
+        assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
@@ -555,7 +563,7 @@ class TestInterfaceDeviceIntegration:
 
         dev = qml.device("default.tensor.tf", wires=2, representation=rep)
 
-        @qnode(dev, diff_method="device", interface=interface)
+        @qml.qnode(dev, interface=interface)
         def circuit_fn(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
@@ -575,7 +583,6 @@ class TestInterfaceDeviceIntegration:
                         "returns_state": False,
                         "supports_analytic_computation": True,
                         "passthru_interface": 'tf',
-                        "provides_jacobian": True,
                         }
         assert cap == capabilities
 
@@ -660,7 +667,7 @@ class TestHybridInterfaceDeviceIntegration:
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
 
-        @qnode(dev, diff_method=diff_method, interface=interface)
+        @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x, weights, w=None):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
@@ -677,7 +684,7 @@ class TestHybridInterfaceDeviceIntegration:
         return cost_fn
 
     @pytest.mark.parametrize("interface", ["autograd"])
-    @pytest.mark.parametrize("diff_method", ["device"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift"])
     def test_autograd_interface(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the autograd interface"""
@@ -689,7 +696,7 @@ class TestHybridInterfaceDeviceIntegration:
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["torch"])
-    @pytest.mark.parametrize("diff_method", ["device"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift"])
     def test_torch_interface(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Torch interface"""
@@ -705,7 +712,7 @@ class TestHybridInterfaceDeviceIntegration:
         assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf"])
-    @pytest.mark.parametrize("diff_method", ["backprop", "device"])
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_tf_interface(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct using the
         TensorFlow interface with the allowed differentiation methods"""
@@ -743,14 +750,14 @@ class TestHybridInterfaceDeviceIntegration:
             if interface == "torch" and not torch_support:
                 pytest.skip("Skipped, no torch support")
 
-            @qnode(dev, diff_method=diff_method, interface=interface)
+            @qml.qnode(dev, diff_method=diff_method, interface=interface)
             def circuit(x, w=None):
                 qml.RZ(x, wires=w)
                 return qml.expval(qml.PauliX(w))
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
+        with pytest.raises(qml.QuantumFunctionError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
             res = cost_raising_error(params)
 
     def test_error_backprop_diff_autograd(self, tol, rep):
@@ -765,12 +772,12 @@ class TestHybridInterfaceDeviceIntegration:
             # Cost within the test case such that the error can be caught
             dev = qml.device("default.tensor.tf", wires=1)
 
-            @qnode(dev, diff_method=diff_method, interface=interface)
+            @qml.qnode(dev, diff_method=diff_method, interface=interface)
             def circuit(x, w=None):
                 qml.RZ(x, wires=w)
                 return qml.expval(qml.PauliX(w))
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
+        with pytest.raises(qml.QuantumFunctionError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
             res = cost_raising_error(params)

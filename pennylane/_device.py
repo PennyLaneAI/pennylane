@@ -21,6 +21,7 @@ from collections import OrderedDict
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
@@ -550,6 +551,8 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
+            if isinstance(o, qml.tape.MeasurementProcess) and o.obs is not None:
+                o = o.obs
 
             if isinstance(o, Tensor):
                 # TODO: update when all capabilities keys changed to "supports_tensor_observables"
@@ -569,7 +572,6 @@ class Device(abc.ABC):
                             )
                         )
             else:
-
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:

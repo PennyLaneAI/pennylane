@@ -35,6 +35,9 @@ thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
 
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
+
+
 class TestAutogradDetails:
     """Test configuration details of the autograd interface"""
 

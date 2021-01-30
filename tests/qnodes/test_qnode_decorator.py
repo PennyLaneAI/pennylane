@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.qnodes import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode, ReversibleQNode
 from pennylane.qnodes.jacobian import DEFAULT_STEP_SIZE_ANALYTIC, DEFAULT_STEP_SIZE
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 def test_create_qubit_qnode():
     """Test the decorator correctly creates Qubit QNodes"""

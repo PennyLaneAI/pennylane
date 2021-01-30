@@ -230,3 +230,6 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+enable_tape()
