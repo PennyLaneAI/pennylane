@@ -39,9 +39,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     """
 
     def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
-        r"""Compute gradient of the objective_fn at at the shifted point :math:`(x -
-        m\times\text{accumulation})` and return it along with the objective function
-        forward pass (if available).
+        r"""Compute gradient of the objective function at at the shifted point :math:`(x -
+        m\times\text{accumulation})` and return it along with the objective function forward pass
+        (if available).
 
         Args:
             objective_fn (function): the objective function for optimization.
@@ -54,8 +54,8 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         Returns:
             tuple [array]: the NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
-                objective function output. If ``grad_fn`` is provided, the objective function
-                will not be evaluted and instead ``None`` will be returned.
+            objective function output. If ``grad_fn`` is provided, the objective function
+            will not be evaluted and instead ``None`` will be returned.
         """
         shifted_args = list(args)
 
