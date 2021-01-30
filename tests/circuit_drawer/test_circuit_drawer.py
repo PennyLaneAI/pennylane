@@ -623,9 +623,9 @@ def drawn_qubit_circuit_with_probs():
 def drawn_qubit_circuit_with_state():
     """The rendered circuit representation of the above qubit circuit."""
     return (
-        " 0: ──X──╭X──┤ State \n"
-        + " 1: ─────├C──┤       \n"
-        + " 5: ──X──╰C──┤       \n"
+        " 0: ──X──╭X──╭┤ State \n"
+        + " 1: ─────├C──├┤ State \n"
+        + " 5: ──X──╰C──╰┤ State \n"
     )
 
 
@@ -721,6 +721,8 @@ class TestCircuitDrawerIntegration:
         """Test that a qubit circuit with unused wires renders correctly."""
         output = qubit_circuit_with_state.draw()
 
+        print(output)
+        print(drawn_qubit_circuit_with_state)
         assert output == drawn_qubit_circuit_with_state
 
     def test_direct_qnode_integration(self):

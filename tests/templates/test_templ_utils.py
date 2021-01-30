@@ -99,12 +99,10 @@ OPTIONS_FAIL = [("c", ["a", "b"])]
 TYPE_PASS = [(["a"], list, type(None)),
              (1, int, type(None)),
              ("a", int, str),
-             (list, str, int)
              ]
 
 TYPE_FAIL = [("a", list, type(None)),
              (type(None), int, list),
-             (1., "a", type(None))
              ]
 
 

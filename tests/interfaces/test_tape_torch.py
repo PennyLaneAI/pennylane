@@ -451,5 +451,5 @@ class TestTorchQuantumTape:
 
         with monkeypatch.context() as m:
             m.setattr(qml.interfaces.torch, "COMPLEX_SUPPORT", False)
-            with pytest.raises(qml.QuantumFunctionError, match="Version 1.6.0 or above of PyTorch"):
+            with pytest.raises(qml.QuantumFunctionError, match=r"Version 1\.6\.0 or above of PyTorch"):
                 TorchInterface.apply(JacobianTape(), dtype=torch.complex128)

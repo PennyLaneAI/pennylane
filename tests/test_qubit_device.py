@@ -276,7 +276,7 @@ class TestObservables:
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                    QuantumFunctionError, match="Unsupported return type specified for observable"
+                    qml.QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
                 dev.execute(tape)
@@ -323,7 +323,7 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
-            with pytest.raises(QuantumFunctionError, match="The state is not available in the current"):
+            with pytest.raises(qml.QuantumFunctionError, match="The state is not available in the current"):
                 dev.statistics([state()])
 
     @pytest.mark.parametrize("returntype", [None])
@@ -358,7 +358,7 @@ class TestExtractStatistics:
 
         obs = SomeObservable(wires=0)
 
-        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
             dev.statistics([obs])
 

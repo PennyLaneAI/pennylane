@@ -107,7 +107,7 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([], {})
+        node1.construct([], {})
         circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2():
@@ -117,7 +117,7 @@ class TestQNodeCircuitHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([], {})
+        node2.construct([], {})
         circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
@@ -192,6 +192,7 @@ class TestQNodeCircuitHashIntegration:
         "x,y",
         zip(np.linspace(-2 * np.pi, 0, 3), np.linspace(-2 * np.pi, 0, 3)),
     )
+    @pytest.mark.xfail(reason="This test will not work in tape mode")
     def test_evaluate_circuit_hash_symbolic_assigned_arguments_do_not_matter(self, a, b, x, y):
         """Tests that the circuit hashes of identical circuits where different values are assigned to symbolic parameters are equal"""
         dev = qml.device("default.qubit", wires=2)
@@ -276,7 +277,7 @@ class TestQNodeCircuitHashIntegration:
 
         node2 = qml.QNode(circuit2, dev)
         node2(x, y)
-        circuit_hash_2 = dev.circuit_hash
+        circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 == circuit_hash_2
 
@@ -364,7 +365,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([], {})
+        node1.construct([], {})
         circuit_hash_1 = node1.qtape.graph.hash
 
         c = 0.6
@@ -376,7 +377,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([], {})
+        node2.construct([], {})
         circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
@@ -392,7 +393,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node1 = qml.QNode(circuit1, dev)
-        node1.evaluate([], {})
+        node1.construct([], {})
         circuit_hash_1 = node1.qtape.graph.hash
 
         def circuit2():
@@ -400,7 +401,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             return qml.expval(qml.PauliZ(0))
 
         node2 = qml.QNode(circuit2, dev)
-        node2.evaluate([], {})
+        node2.construct([], {})
         circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
