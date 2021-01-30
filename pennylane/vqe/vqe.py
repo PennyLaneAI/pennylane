@@ -16,7 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
-from collections import Sequence
+from collections.abc import Sequence
 import itertools
 import warnings
 
