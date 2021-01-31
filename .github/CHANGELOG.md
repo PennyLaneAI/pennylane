@@ -46,8 +46,6 @@
   ```python
   import pennylane as qml
 
-  qml.enable_tape()
-
   wires = 1
   device = qml.device("default.qubit", wires=wires)
 
@@ -255,8 +253,6 @@
   [(#962)](https://github.com/PennyLaneAI/pennylane/pull/962)
 
   ```python
-  qml.enable_tape()
-
   @qml.qnode(dev)
   def circuit(a, w):
       qml.Hadamard(0)
@@ -329,7 +325,7 @@
     As a result of this change, quantum decompositions that require classical processing
     are fully supported and end-to-end differentiable in tape mode.
 
-  * **No more Variable wrapping**: QNode arguments no longer become `Variable`
+  - **No more Variable wrapping**: QNode arguments no longer become `Variable`
     objects within the QNode.
 
     ```python
@@ -350,7 +346,7 @@
     tensor(0.87758256, requires_grad=True)
     ```
 
-  * **Less restrictive QNode signatures**: There is no longer any restriction on the QNode signature; the QNode can be
+  - **Less restrictive QNode signatures**: There is no longer any restriction on the QNode signature; the QNode can be
     defined and called following the same rules as standard Python functions.
 
     For example, the following QNode uses positional, named, and variable
@@ -385,7 +381,7 @@
     This extends to the `qnn` module, where `KerasLayer` and `TorchLayer` modules
     can be created from QNodes with unrestricted signatures.
 
-  * **Smarter measurements:** QNodes can now measure wires more than once, as
+  - **Smarter measurements:** QNodes can now measure wires more than once, as
     long as all observables are commuting:
 
     ```python
@@ -614,7 +610,6 @@
       qml.templates.BasicEntanglerLayers(weights, wires=[0, 1, 2, 3])
       return qml.probs(wires=0)
 
-
   data = np.array(data, requires_grad=False)
   weights = np.array(weights, requires_grad=True)
   circuit(weights, data)
@@ -630,7 +625,7 @@
   (specifically the `is_sampled` tape attribute) was not preserved.
   [(#1027)](https://github.com/PennyLaneAI/pennylane/pull/1027)
 
-* In tape mode, tape expansion was not properly taking into devices that supported inverse operations,
+* Tape expansion was not properly taking into devices that supported inverse operations,
   causing inverse operations to be unnecessarily decomposed. The QNode tape expansion logic, as well
   as the `Operation.expand()` method, has been modified to fix this.
   [(#956)](https://github.com/PennyLaneAI/pennylane/pull/956)
@@ -642,7 +637,7 @@
 * `qml.vqe.Hamiltonian` prints any observable with any number of strings.
   [(#987)](https://github.com/PennyLaneAI/pennylane/pull/987)
 
-* Fixes a bug where tape-mode parameter-shift differentiation would fail if the QNode
+* Fixes a bug where parameter-shift differentiation would fail if the QNode
   contained a single probability output.
   [(#1007)](https://github.com/PennyLaneAI/pennylane/pull/1007)
 
