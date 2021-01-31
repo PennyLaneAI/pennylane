@@ -196,7 +196,7 @@
          [ 0.        ,  0.        ,  0.        ]])
   ```
 
- Differentiation is also supported using Torch, Jax, and TensorFlow.
+  Differentiation is also supported using Torch, Jax, and TensorFlow.
 
 * Adds the new function `qml.math.cov_matrix()`. This function accepts a list of commuting
   observables, and the probability distribution in the shared observable eigenbasis after the
@@ -388,6 +388,7 @@
   * **Smarter measurements:** QNodes can now measure wires more than once, as
     long as all observables are commuting:
 
+    ```python
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
