@@ -1,4 +1,4 @@
-# Release 0.14.0-dev (development release)
+# Release 0.14.0-dev (current release)
 
 <h3>New features since last release</h3>
 
@@ -658,7 +658,7 @@ Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Theodor Isacsson, Josh I
 Alejandro Montanez, Nathan Killoran, Steven Oud, Chase Roberts, Sankalp Sanand, Maria Schuld, Antal
 Száva, David Wierichs, Jiahao Yao.
 
-# Release 0.13.0 (current release)
+# Release 0.13.0
 
 <h3>New features since last release</h3>
 
