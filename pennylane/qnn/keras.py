@@ -309,7 +309,10 @@ class KerasLayer(Layer):
         """
 
         if len(tf.shape(inputs)) > 1:
-            return tf.map_fn(self.call, inputs, fn_output_signature=tf.float64)
+            reconstructor = []
+            for x in tf.unstack(inputs):
+                reconstructor.append(self.call(x))
+            return tf.stack(reconstructor)
         else:
             if qml.tape_mode_active():
                 res = self._evaluate_qnode_tape_mode(inputs)
@@ -322,6 +325,8 @@ class KerasLayer(Layer):
 
                 print(qnode)
 
+                print(inputs)
+
                 for arg in self.sig:
                     if arg is not self.input_arg:  # Non-input arguments must always be positional
                         w = self.qnode_weights[arg]
@@ -333,6 +338,40 @@ class KerasLayer(Layer):
                             qnode = functools.partial(qnode, inputs)
 
                 return qnode()
+
+    # def call(self, inputs):
+    #     """Evaluates the QNode on input data using the initialized weights.
+    #
+    #     Args:
+    #         inputs (tensor): data to be processed
+    #
+    #     Returns:
+    #         tensor: output data
+    #     """
+    #     outputs = []
+    #     for x in inputs:  # iterate over batch
+    #
+    #         if qml.tape_mode_active():
+    #             res = self._evaluate_qnode_tape_mode(x)
+    #             outputs.append(res)
+    #         else:
+    #             # The QNode can require some passed arguments to be positional and others to be
+    #             # keyword. The following loops through input arguments in order and uses
+    #             # functools.partial to bind the argument to the QNode.
+    #             qnode = self.qnode
+    #
+    #             for arg in self.sig:
+    #                 if arg is not self.input_arg:  # Non-input arguments must always be positional
+    #                     w = self.qnode_weights[arg]
+    #                     qnode = functools.partial(qnode, w)
+    #                 else:
+    #                     if self.input_is_default:  # The input argument can be positional or keyword
+    #                         qnode = functools.partial(qnode, **{self.input_arg: x})
+    #                     else:
+    #                         qnode = functools.partial(qnode, x)
+    #             outputs.append(qnode())
+    #
+    #     return tf.stack(outputs)
 
     def _evaluate_qnode_tape_mode(self, x):
         """Evaluates a tape-mode QNode for a single input datapoint.
