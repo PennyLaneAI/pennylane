@@ -432,10 +432,12 @@ class Operator(abc.ABC):
             )
 
         if len(params) != self.num_params:
-            # HOTFIX: the following line is added to support Torch and NumPy v1.20.
-            # This is required because NumPy v1.20 appears to insert an
-            # additional dimension for object arrays.
-            params = params[0]
+            if len(params) == 1 and isinstance(params[0], (list, tuple)):
+                # HOTFIX: the following line is added to support Torch and NumPy v1.20.
+                # This is required because NumPy v1.20 changes how `np.expand_dims` works
+                # for object arrays.
+                params = params[0]
+
             if len(params) != self.num_params:
                 raise ValueError(
                     "{}: wrong number of parameters. "
