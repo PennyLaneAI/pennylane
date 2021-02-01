@@ -49,7 +49,7 @@ class NumpyBox(qml.math.TensorBox):
             try:
                 tensor = np.asarray(tensor)
             except:
-                # In NumPy v1.20, there is a change in bheaviour for array-like objects that do not
+                # In NumPy v1.20, there is a change in behaviour for array-like objects that do not
                 # define `__len__` and `__getitem__`. This will affect *ragged* lists of Torch
                 # arrays, but not lists of TensorFlow nor Autograd arrays.
                 #
