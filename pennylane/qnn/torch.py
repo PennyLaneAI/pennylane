@@ -309,10 +309,14 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
-        if len(inputs.shape) == 1:
-            return self._evaluate_qnode(inputs)
 
-        return torch.stack([self._evaluate_qnode(x) for x in inputs])
+        if len(inputs.shape) > 1:
+            reconstructor = []
+            for x in torch.unbind(inputs):
+                reconstructor.append(self.forward(x))
+            return torch.stack(reconstructor)
+        else:
+            return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.

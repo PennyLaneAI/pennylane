@@ -419,6 +419,28 @@ class TestKerasLayer:
         assert np.allclose(layer_out[0], c(x[0], *weights))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    @pytest.mark.parametrize("batch_size", [2])
+    @pytest.mark.parametrize("middle_dim", [5])
+    def test_call_broadcast_input(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
+        """Test if the call() method performs correctly when the inputs argument is an arbitrary shape (that can
+        correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
+        (batch_size, dn, ... , d1, output_dim) with results that agree with directly calling the QNode on each
+        of the Tensors taken over the last dimension of the input"""
+        c, w = get_circuit
+
+
+        layer = KerasLayer(c, w, output_dim)
+        x = tf.ones((batch_size, middle_dim, n_qubits))
+
+        layer_out = layer(x)
+        weights = [w.numpy() for w in layer.qnode_weights.values()]
+
+        assert layer_out.shape == (batch_size, middle_dim, output_dim)
+        #assert np.allclose(layer_out[0], c(x[0], *weights))
+
+
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit, output_dim):
         """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
