@@ -163,14 +163,12 @@ def CVNeuralNetLayers(
 
         Interferometer(theta=theta_1[l], phi=phi_1[l], varphi=varphi_1[l], wires=wires)
 
-        r_and_phi_r = [qml.math.expand_dims(r[l], axis=1), qml.math.expand_dims(phi_r[l], axis=1)]
-        r_and_phi_r = qml.math.concatenate(r_and_phi_r, axis=1)
+        r_and_phi_r = qml.math.stack([r[l], phi_r[l]], axis=1)
         broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=r_and_phi_r)
 
         Interferometer(theta=theta_2[l], phi=phi_2[l], varphi=varphi_2[l], wires=wires)
 
-        a_and_phi_a = [qml.math.expand_dims(a[l], axis=1), qml.math.expand_dims(phi_a[l], axis=1)]
-        a_and_phi_a = qml.math.concatenate(a_and_phi_a, axis=1)
+        a_and_phi_a = qml.math.stack([a[l], phi_a[l]], axis=1)
         broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=a_and_phi_a)
 
         broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k[l])
