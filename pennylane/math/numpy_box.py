@@ -50,8 +50,12 @@ class NumpyBox(qml.math.TensorBox):
                 tensor = np.asarray(tensor)
             except:
                 # In NumPy v1.20, there is a change in bheaviour for array-like objects that do not
-                # define `__len__` and `__getitem__`. Currently this will affect lists of Torch
+                # define `__len__` and `__getitem__`. This will affect *ragged* lists of Torch
                 # arrays, but not lists of TensorFlow nor Autograd arrays.
+                #
+                # Currently this except branch will only be trigged by the `CVNeuralNetLayers` template
+                # when using the Torch interface, as this is the only template that will
+                # recieve ragged arrays.
                 #
                 # In NumPy < 1.20, the following call would result in an object array:
                 #
