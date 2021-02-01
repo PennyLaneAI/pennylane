@@ -46,7 +46,12 @@ class NumpyBox(qml.math.TensorBox):
 
     def __init__(self, tensor):
         if not isinstance(tensor, np.ndarray):
-            tensor = np.asarray(tensor)
+            try:
+                tensor = np.asarray(tensor)
+            except:
+                object_tensor = np.empty(len(tensor), dtype=object)
+                object_tensor[:] = tensor
+                tensor = object_tensor
 
         super().__init__(tensor)
 

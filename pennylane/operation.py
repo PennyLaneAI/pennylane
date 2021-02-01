@@ -432,10 +432,12 @@ class Operator(abc.ABC):
             )
 
         if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
+            params = params[0]
+            if len(params) != self.num_params:
+                raise ValueError(
+                    "{}: wrong number of parameters. "
+                    "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+                )
 
         # check the validity of the params
         if self.do_check_domain:
