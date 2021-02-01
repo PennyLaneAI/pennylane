@@ -49,6 +49,22 @@ class NumpyBox(qml.math.TensorBox):
             try:
                 tensor = np.asarray(tensor)
             except:
+                # In NumPy v1.20, there is a change in bheaviour for array-like objects that do not
+                # define `__len__` and `__getitem__`. Currently this will affect lists of Torch
+                # arrays, but not lists of TensorFlow nor Autograd arrays.
+                #
+                # In NumPy < 1.20, the following call would result in an object array:
+                #
+                # >>> np.array([array_like])
+                #
+                # However, in NumPy >= 1.20, this instead acts like so:
+                #
+                # >>> np.array([np.array(array_like)])
+                #
+                # Unfortunately, there is no way to return to the old behaviour. The below hotfix
+                # is based on a suggestion from the NumPy release notes,
+                # https://numpy.org/doc/stable/release/1.20.0-notes.html#arraylike-objects-which-do-not-define-len-and-getitem.
+
                 object_tensor = np.empty(len(tensor), dtype=object)
                 object_tensor[:] = tensor
                 tensor = object_tensor
