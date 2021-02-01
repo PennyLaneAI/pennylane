@@ -48,7 +48,7 @@ class NumpyBox(qml.math.TensorBox):
         if not isinstance(tensor, np.ndarray):
             try:
                 tensor = np.asarray(tensor)
-            except:
+            except RuntimeError:
                 # In NumPy v1.20, there is a change in behaviour for array-like objects that do not
                 # define `__len__` and `__getitem__`. This will affect *ragged* lists of Torch
                 # arrays, but not lists of TensorFlow nor Autograd arrays.
