@@ -386,15 +386,17 @@ class TestTorchLayer:
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_forward_broadcasting(self, get_circuit, output_dim, n_qubits):
+    @pytest.mark.parametrize("batch_size", [2])
+    @pytest.mark.parametrize("middle_dim", [5])
+    def test_forward_broadcasting(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting"""
         c, w = get_circuit
         layer = TorchLayer(c, w)
-        x = torch.Tensor(np.ones((2, 5, n_qubits)))
+        x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
 
         layer_out = layer.forward(x)
-        assert layer_out.shape == torch.Size((2, 5, output_dim))
+        assert layer_out.shape == torch.Size((batch_size, middle_dim, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit):
