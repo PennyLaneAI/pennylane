@@ -655,7 +655,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Theodor Isacsson, Josh Izaac, Christina Lee,
-Alejandro Montanez, Nathan Killoran, Steven Oud, Chase Roberts, Sankalp Sanand, Maria Schuld, Antal
+Alejandro Montanez, Steven Oud, Chase Roberts, Sankalp Sanand, Maria Schuld, Antal
 Száva, David Wierichs, Jiahao Yao.
 
 # Release 0.13.0
