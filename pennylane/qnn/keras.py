@@ -308,7 +308,6 @@ class KerasLayer(Layer):
             tensor: output data
         """
 
-
         if len(tf.shape(inputs)) > 1:
             # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
             # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
