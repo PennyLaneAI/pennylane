@@ -22,7 +22,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT
 
 
 # Standard observables, their matrix representation, and eigenvlaues
@@ -328,6 +328,14 @@ class TestOperations:
         op = ops(wires=range(ops.num_wires))
         res = op.matrix
         assert np.allclose(res, mat, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("inverse", [True, False])
+    def test_QFT(self, inverse):
+        """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
+        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
+        res = op.matrix
+        exp = QFT.conj().T if inverse else QFT
+        assert np.allclose(res, exp)
 
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""

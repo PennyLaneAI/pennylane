@@ -1610,23 +1610,24 @@ class QFT(Operation):
     @property
     def matrix(self):
         # Redefine the property here to allow for a custom _matrix signature
-        return self._matrix(len(self.wires), self.inverse)
+        mat = self._matrix(len(self.wires))
+        if self.inverse:
+            mat = mat.conj()
+        return mat
 
     @classmethod
-    @functools.lru_cache
-    def _matrix(cls, num_wires, inverse):
+    @functools.lru_cache()
+    def _matrix(cls, num_wires):
         dimension = 2 ** num_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)
-        if inverse:
-            omega = 1 / omega
 
         for m in range(dimension):
             for n in range(dimension):
                 mat[m, n] = omega ** (m * n)
 
-        return mat
+        return mat / np.sqrt(dimension)
 
     # @staticmethod
     # def decomposition(D, wires):
@@ -1827,6 +1828,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "DiagonalQubitUnitary",
+    "QFT",
 }
 
 
