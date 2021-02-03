@@ -50,6 +50,18 @@ def PhaseShift(phi):
     return np.array([1.0, np.exp(1j * phi)])
 
 
+def ControlledPhaseShift(phi):
+    r"""Two-qubit controlled phase shift.
+
+    Args:
+        phi (float): phase shift angle
+
+    Returns:
+        array[complex]: diagonal part of the controlled phase shift matrix
+    """
+    return np.array([1.0, 1.0, 1.0, np.exp(1j * phi)])
+
+
 def RX(theta):
     r"""One-qubit rotation about the x axis.
 
