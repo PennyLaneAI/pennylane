@@ -1862,6 +1862,7 @@ ops = {
     "RY",
     "RZ",
     "PhaseShift",
+    "ControlledPhaseShift",
     "Rot",
     "CRX",
     "CRY",

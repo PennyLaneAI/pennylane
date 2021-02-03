@@ -22,7 +22,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, ControlledPhaseShift
 
 
 # Standard observables, their matrix representation, and eigenvlaues
@@ -746,6 +746,38 @@ class TestOperations:
         U3[0, 0] += 0.5
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
+        """Tests that the ControlledPhaseShift operation calculates the correct matrix and
+        eigenvalues"""
+        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        res = op.matrix
+        exp = ControlledPhaseShift(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_controlled_phase_shift_decomp(self, phi):
+        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
+        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        decomp = op.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = ControlledPhaseShift(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [

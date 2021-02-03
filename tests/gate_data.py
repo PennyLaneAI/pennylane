@@ -221,3 +221,15 @@ def MultiRZ2(theta):
             [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * theta / 2)],
         ]
     )
+
+
+def ControlledPhaseShift(phi):
+    r"""Controlled phase shift.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-wire controlled-phase matrix
+    """
+    return np.diag([1, 1, 1, np.exp(1j * phi)])
