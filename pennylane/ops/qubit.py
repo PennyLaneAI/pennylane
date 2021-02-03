@@ -727,7 +727,7 @@ class PhaseShift(DiagonalOperation):
 
 class ControlledPhaseShift(DiagonalOperation):
     r"""ControlledPhaseShift(phi, wires)
-    A controlled phase shift
+    A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
