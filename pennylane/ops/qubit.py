@@ -1617,7 +1617,7 @@ class QFT(Operation):
     def _matrix(cls, num_wires, inverse):
         dimension = 2 ** num_wires
 
-        mat = np.zeros((dimension, dimension))
+        mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)
         if inverse:
             omega = 1 / omega
