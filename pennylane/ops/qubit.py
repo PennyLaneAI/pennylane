@@ -1684,7 +1684,7 @@ class QFT(Operation):
     @staticmethod
     def decomposition(wires):
         num_wires = len(wires)
-        shifts = [np.exp(2 * np.pi * 1j * 2 ** -i) for i in range(2, num_wires + 1)]
+        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
         ops = []
         for i, wire in enumerate(wires):
@@ -1693,6 +1693,13 @@ class QFT(Operation):
             for shift, control_wire in zip(shifts[:len(shifts) - i], wires[i + 1:]):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
                 ops.append(op)
+
+        first_half_wires = wires[:num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2):]
+
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+            swap = qml.SWAP(wires=[wire1, wire2])
+            ops.append(swap)
 
         return ops
 

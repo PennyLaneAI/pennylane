@@ -337,6 +337,26 @@ class TestOperations:
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
 
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_decomposition(self, n_qubits):
+        """Test if the QFT operation is correctly decomposed"""
+        op = qml.QFT(wires=range(n_qubits))
+        decomp = op.decomposition(wires=range(n_qubits))
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        out_states = []
+        for state in np.eye(2 ** n_qubits):
+            dev.reset()
+            ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
+            dev.apply(ops)
+            out_states.append(dev.state)
+
+        reconstructed_unitary = np.array(out_states).T
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
+
+        assert np.allclose(reconstructed_unitary, expected_unitary)
+
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
