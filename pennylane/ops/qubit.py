@@ -1580,6 +1580,61 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
 
+class QFT(Operation):
+    r"""QFT(wires)
+    Apply a quantum Fourier transform (QFT).
+
+    For the :math:`N`-qubit computational basis state :math:`|m\rangle`, the QFT performs the
+    transformation
+
+    .. math::
+
+        |m\rangle \rightarrow \frac{1}{\sqrt{2^{N}}}\sum_{n=0}^{2^{N} - 1}\omega_{N}^{mn} |n\rangle,
+
+    where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+    """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
+    grad_method = None
+
+    @property
+    def matrix(self):
+        # Redefine the property here to allow for a custom _matrix signature
+        return self._matrix(len(self.wires), self.inverse)
+
+    @classmethod
+    @functools.lru_cache
+    def _matrix(cls, num_wires, inverse):
+        dimension = 2 ** num_wires
+
+        mat = np.zeros((dimension, dimension))
+        omega = np.exp(2 * np.pi * 1j / dimension)
+        if inverse:
+            omega = 1 / omega
+
+        for i in range(dimension):
+            for j in range(dimension):
+                mat[i, j] = omega ** (i * j)
+
+        return mat
+
+    # @staticmethod
+    # def decomposition(D, wires):
+    #     return [QubitUnitary(np.diag(D), wires=wires)]
+
+
+
+
 # =============================================================================
 # State preparation
 # =============================================================================
