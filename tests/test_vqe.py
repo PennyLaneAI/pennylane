@@ -143,6 +143,16 @@ simplify_hamiltonians = [
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
         ),
     ),
+
+    # Simplifies to zero
+    (
+        qml.Hamiltonian([1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+    ),
+    (
+        qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
+        qml.Hamiltonian([0], [qml.Identity(4)]),
+    ),
 ]
 
 equal_hamiltonians = [
