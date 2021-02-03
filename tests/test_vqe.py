@@ -293,6 +293,19 @@ sub_hamiltonians = [
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
 
+    # The result is the zero Hamiltonian
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([0], [qml.Identity(4)]),
+    ),
+
+
     # Case where Hamiltonian arguments coeffs and ops are other iterables than lists
     (
         qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
@@ -324,6 +337,18 @@ mul_hamiltonians = [
             [-1.3, 0.39],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
+    ),
+
+    # The result is the zero Hamiltonian
+    (
+        0,
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([0], [qml.PauliX(0)]),
+    ),
+    (
+        0,
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
     ),
 
     # Case where Hamiltonian arguments coeffs and ops are other iterables than lists

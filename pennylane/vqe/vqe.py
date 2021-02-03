@@ -165,6 +165,13 @@ class Hamiltonian:
                 ops.append(op.prune())
                 coeffs.append(c)
 
+        if not coeffs:
+            # We have a zero Hamiltonian, add an identity as a dummy operation
+            # for a valid wire
+            coeffs = [0]
+            some_valid_wire = self.ops[0].wires[0]
+            ops = [qml.Identity(some_valid_wire)]
+
         self._coeffs = coeffs
         self._ops = ops
 
