@@ -722,6 +722,58 @@ class PhaseShift(DiagonalOperation):
         return decomp_ops
 
 
+class ControlledPhaseShift(DiagonalOperation):
+    r"""ControlledPhaseShift(phi, wires)
+    A controlled phase shift
+
+    .. math:: CR_\phi(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0 \\
+                0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & e^{i\phi}
+            \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_\phi(\phi)) = \frac{1}{2}\left[f(CR_\phi(\phi+\pi/2)) - f(CR_\phi(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_{\phi}(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+        return np.array([1, 1, 1, cmath.exp(1j * phi)])
+
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [
+            qml.PhaseShift(phi / 2, wires=wires[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(-phi / 2, wires=wires[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(phi / 2, wires=wires[1]),
+        ]
+        return decomp_ops
+
+
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
