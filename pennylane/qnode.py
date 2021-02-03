@@ -99,6 +99,14 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+        mutable (bool): If True, the underlying quantum circuit is re-constructed with
+            every evaluation. This is the recommended approach, as it allows the underlying
+            quantum structure to depend on (potentially trainable) QNode input arguments,
+            however may add some overhead at evaluation time. If this is set to False, the
+            quantum structure will only be constructed on the *first* evaluation of the QNode,
+            and is stored and re-used for further quantum evaluations. Only set this to False
+            if it is known that the underlying quantum structure is **independent of QNode input**.
+
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -116,7 +124,9 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
-    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+    def __init__(
+        self, func, device, interface="autograd", diff_method="best", mutable=True, **diff_options
+    ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
@@ -129,6 +139,7 @@ class QNode:
                 "Invalid device. Device must be a valid PennyLane device."
             )
 
+        self.mutable = mutable
         self.func = func
         self._original_device = device
         self.qtape = None
@@ -502,8 +513,9 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
-        # construct the tape
-        self.construct(args, kwargs)
+        if self.mutable or self.qtape is None:
+            # construct the tape
+            self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
@@ -753,7 +765,7 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
-def qnode(device, interface="autograd", diff_method="best", **diff_options):
+def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
@@ -822,6 +834,14 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum
               operation arguments.
 
+        mutable (bool): If True, the underlying quantum circuit is re-constructed with
+            every evaluation. This is the recommended approach, as it allows the underlying
+            quantum structure to depend on (potentially trainable) QNode input arguments,
+            however may add some overhead at evaluation time. If this is set to False, the
+            quantum structure will only be constructed on the *first* evaluation of the QNode,
+            and is stored and re-used for further quantum evaluations. Only set this to False
+            if it is known that the underlying quantum structure is **independent of QNode input**.
+
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -844,6 +864,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
             device,
             interface=interface,
             diff_method=diff_method,
+            mutable=mutable,
             **diff_options,
         )
         return update_wrapper(qn, func)

@@ -409,7 +409,9 @@ class CVParamShiftTape(QubitParamShiftTape):
         """
         device = options["device"]
         options["dev_wires"] = device.wires
-        grad_method = self._par_info[idx]["grad_method"]
+
+        t_idx = list(self.trainable_params)[idx]
+        grad_method = self._par_info[t_idx]["grad_method"]
 
         if options.get("force_order2", False) or grad_method == "A2":
 

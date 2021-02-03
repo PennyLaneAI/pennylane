@@ -89,8 +89,8 @@ class RotosolveOptimizer:
 
         Returns:
             tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
-                function output prior to the step.
-                If single arg is provided, list [array] is replaced by array.
+            function output prior to the step.
+            If single arg is provided, list [array] is replaced by array.
         """
         x_new = self.step(objective_fn, *args, **kwargs)
 
@@ -110,7 +110,7 @@ class RotosolveOptimizer:
 
         Returns:
             list [array]: the new variable values :math:`x^{(t+1)}`.
-                If single arg is provided, list [array] is replaced by array.
+            If single arg is provided, list [array] is replaced by array.
         """
         # will single out one variable to change at a time
         # these hold the arguments not getting updated
