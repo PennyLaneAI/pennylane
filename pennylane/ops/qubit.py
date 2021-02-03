@@ -15,17 +15,20 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import cmath
 import functools
+# pylint:disable=abstract-method,arguments-differ,protected-access
+import math
+
 import numpy as np
 
-from pennylane.templates import template
-from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import pauli_eigs, expand
 import pennylane as qml
+from pennylane.operation import (AnyWires, DiagonalOperation, Observable,
+                                 Operation)
+from pennylane.templates import template
+from pennylane.templates.state_preparations import (BasisStatePreparation,
+                                                    MottonenStatePreparation)
+from pennylane.utils import expand, pauli_eigs
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -957,7 +960,7 @@ class PauliRot(Operation):
     }
 
     def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=True)
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
         pauli_word = params[1]
 
@@ -1686,22 +1689,22 @@ class QFT(Operation):
         num_wires = len(wires)
         shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
-        ops = []
+        decomp_ops = []
         for i, wire in enumerate(wires):
-            ops.append(qml.Hadamard(wire))
+            decomp_ops.append(qml.Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[:len(shifts) - i], wires[i + 1:]):
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
-                ops.append(op)
+                decomp_ops.append(op)
 
-        first_half_wires = wires[:num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2):]
+        first_half_wires = wires[: num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
             swap = qml.SWAP(wires=[wire1, wire2])
-            ops.append(swap)
+            decomp_ops.append(swap)
 
-        return ops
+        return decomp_ops
 
 
 # =============================================================================
