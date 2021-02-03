@@ -1629,12 +1629,6 @@ class QFT(Operation):
 
         return mat / np.sqrt(dimension)
 
-    # @staticmethod
-    # def decomposition(D, wires):
-    #     return [QubitUnitary(np.diag(D), wires=wires)]
-
-
-
 
 # =============================================================================
 # State preparation
