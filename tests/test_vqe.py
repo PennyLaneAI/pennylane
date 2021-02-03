@@ -196,6 +196,13 @@ add_hamiltonians = [
         ),
     ),
     (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+    ),
+    (
         qml.Hamiltonian(
             [1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]
         ),
@@ -230,6 +237,15 @@ add_hamiltonians = [
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
         qml.PauliX("b") @ qml.Identity(5),
         qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+    ),
+
+    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (1.5, 1.2, 1.1, 0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
     ),
 ]
 
@@ -276,6 +292,15 @@ sub_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(1),
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
+
+    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (0.5, 1.2, -1.5, -0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
+    ),
 ]
 
 mul_hamiltonians = [
@@ -299,6 +324,13 @@ mul_hamiltonians = [
             [-1.3, 0.39],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
+    ),
+
+    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    (
+        3,
+        qml.Hamiltonian((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
     ),
 ]
 
@@ -346,6 +378,21 @@ matmul_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(2),
         qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
+    ),
+
+    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    (
+        qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.Hamiltonian(
+            (0.5, 0.5, 0.5, 0.5),
+            np.array([
+                qml.PauliX(0) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(1) @ qml.PauliZ(3),
+            ]),
+        ),
     ),
 ]
 
@@ -498,6 +545,7 @@ def mock_device(monkeypatch):
 #####################################################
 # Tests
 
+input_iterable_types = [list, tuple, np.array]
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -507,7 +555,7 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (coeffs, ops)
+        assert H.terms == (list(coeffs), list(ops))
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):

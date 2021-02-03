@@ -90,8 +90,8 @@ class Hamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = coeffs
-        self._ops = observables
+        self._coeffs = list(coeffs)
+        self._ops = list(observables)
 
         if simplify:
             self.simplify()
