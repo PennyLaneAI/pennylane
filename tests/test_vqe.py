@@ -545,7 +545,6 @@ def mock_device(monkeypatch):
 #####################################################
 # Tests
 
-input_iterable_types = [list, tuple, np.array]
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
