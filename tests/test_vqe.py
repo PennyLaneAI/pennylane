@@ -239,7 +239,7 @@ add_hamiltonians = [
         qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
 
-    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    # Case where Hamiltonian arguments coeffs and ops are other iterables than lists
     (
         qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
         qml.Hamiltonian(np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
@@ -293,7 +293,7 @@ sub_hamiltonians = [
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
 
-    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    # Case where Hamiltonian arguments coeffs and ops are other iterables than lists
     (
         qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
         qml.Hamiltonian(np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
@@ -326,7 +326,7 @@ mul_hamiltonians = [
         ),
     ),
 
-    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    # Case where Hamiltonian arguments coeffs and ops are other iterables than lists
     (
         3,
         qml.Hamiltonian((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
@@ -380,7 +380,7 @@ matmul_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
     ),
 
-    # Case where Hamiltonian arguments coeffs and ops are different iterables as lists
+    # Case where Hamiltonian arguments coeffs and ops are other iterables than lists
     (
         qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
         qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
