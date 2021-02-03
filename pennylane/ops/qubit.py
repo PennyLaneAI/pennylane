@@ -1681,6 +1681,21 @@ class QFT(Operation):
 
         return mat / np.sqrt(dimension)
 
+    @staticmethod
+    def decomposition(wires):
+        num_wires = len(wires)
+        shifts = [np.exp(2 * np.pi * 1j * 2 ** -i) for i in range(2, num_wires + 1)]
+
+        ops = []
+        for i, wire in enumerate(wires):
+            ops.append(qml.Hadamard(wire))
+
+            for shift, control_wire in zip(shifts[:len(shifts) - i], wires[i + 1:]):
+                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                ops.append(op)
+
+        return ops
+
 
 # =============================================================================
 # State preparation
