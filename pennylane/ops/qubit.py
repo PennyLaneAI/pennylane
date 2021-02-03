@@ -1622,9 +1622,9 @@ class QFT(Operation):
         if inverse:
             omega = 1 / omega
 
-        for i in range(dimension):
-            for j in range(dimension):
-                mat[i, j] = omega ** (i * j)
+        for m in range(dimension):
+            for n in range(dimension):
+                mat[m, n] = omega ** (m * n)
 
         return mat
 
