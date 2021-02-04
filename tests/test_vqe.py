@@ -154,14 +154,12 @@ simplify_hamiltonians = [
     # Simplifies to zero Hamiltonian
     (
         qml.Hamiltonian([1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]),
-        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([], []),
     ),
     (
         qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
-        qml.Hamiltonian([0], [qml.Identity(4)]),
+        qml.Hamiltonian([], []),
     ),
-
-    # Simplifies a zero Hamiltonian (no change)
     (
         qml.Hamiltonian([0], [qml.Identity(0)]),
         qml.Hamiltonian([0], [qml.Identity(0)]),
@@ -320,12 +318,12 @@ sub_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([], []),
     ),
     (
         qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
         qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
-        qml.Hamiltonian([0], [qml.Identity(4)]),
+        qml.Hamiltonian([], []),
     ),
 
 
