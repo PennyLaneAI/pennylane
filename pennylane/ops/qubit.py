@@ -1647,6 +1647,22 @@ class QFT(Operation):
 
     where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
 
+    **Example**
+
+    The quantum Fourier transform is applied by specifying the corresponding wires:
+
+    .. code-block::
+
+        wires = 3
+
+        @qml.qnode(dev)
+        def circuit_qft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.QFT(wires=range(wires))
+            return qml.state()
+
+    The inverse quantum Fourier transform is accessed using ``qml.QFT(wires).inv()``.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
