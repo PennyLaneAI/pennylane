@@ -535,6 +535,10 @@ class ExpvalCost:
             self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
+        if all(coeff == 0 for coeff in self.hamiltonian.coeffs):
+            # We have a zero Hamiltonian whose measurement statistic is zero
+            return np.array(0)
+
         return self.cost_fn(*args, **kwargs)
 
 

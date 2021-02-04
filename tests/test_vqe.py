@@ -111,6 +111,13 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
 ]
 
+
+
+zero_hamiltonians_with_expvals = [
+    ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
+    ((0,0,0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
+]
+
 simplify_hamiltonians = [
     (
         qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
@@ -791,7 +798,7 @@ class TestVQE:
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals)
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
@@ -905,6 +912,24 @@ class TestVQE:
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
+
+    def test_grad_zero_hamiltonian(self):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the autograd interface."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test is only intended for tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, diff_method="parameter-shift"
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dc = qml.grad(cost)(w)
+        assert np.allclose(dc, 0)
 
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
