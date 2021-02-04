@@ -1235,3 +1235,23 @@ def test_identity_eigvals(tol):
     res = qml.Identity._eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+
+class TestProjectors:
+    """Tests for projection-based operations"""
+
+    def test_measure_projectors(self):
+        """Tests that Measure returns the correct projectors"""
+        M = qml.Measure(wires=[0, "a"])
+
+        projectors = [
+            np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
+        ]
+
+        res = [a == b for a, b in zip(M.projectors, projectors)]
+        assert np.all(res)
+

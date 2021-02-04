@@ -1471,3 +1471,36 @@ class TestOperationDerivative:
             ]
         )
         assert np.allclose(derivative, expected_derivative)
+
+
+class TestProjector:
+    """Tests for the Projection class"""
+
+    def test_instance_made_correctly(self):
+        """Test that instance of projection class is initialized correctly"""
+
+        class DummyProjector(qml.operation.Projection):
+            num_params = 2
+            num_wires = qml.operation.AnyWires
+            par_domain = "R"
+
+            @classmethod
+            def _projectors(cls, gamma, beta, wires):
+                nr_proj = int(2 ** len(wires))
+                projectors = [np.zeros((nr_proj, nr_proj)) for i in range(nr_proj)]
+
+                for i in range(nr_proj):
+                    projectors[i][i, i] = gamma*beta
+
+                return projectors
+
+        expected = [
+            np.array([[0.15, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 0.15, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.15, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.15]])
+        ]
+        proj = DummyProjector(0.5, 0.3, wires=["a", 2])
+
+        res = [a == b for a, b in zip(expected, proj.projectors)]
+        assert np.all(res)
