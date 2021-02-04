@@ -19,8 +19,6 @@
   weights = jnp.array([0.2, 0.5, 0.1])
   print(circuit(weights)) # DeviceArray(...)
 
-  ```
-<h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
 
