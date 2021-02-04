@@ -169,7 +169,8 @@ class Hamiltonian:
             # We have a zero Hamiltonian, add an identity as a dummy operation
             # for a valid wire
             coeffs = [0]
-            some_valid_wire = self.ops[0].wires[0]
+            some_valid_wire = self.ops[0].wires[0] if self.ops else qml.wires.Wires(None)
+
             ops = [qml.Identity(some_valid_wire)]
 
         self._coeffs = coeffs
@@ -535,7 +536,8 @@ class ExpvalCost:
             self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
-        if all(coeff == 0 for coeff in self.hamiltonian.coeffs):
+        coeffs = self.hamiltonian.coeffs
+        if all(c == 0 for c in coeffs) or not coeffs:
             # We have a zero Hamiltonian whose measurement statistic is zero
             return np.array(0)
 
