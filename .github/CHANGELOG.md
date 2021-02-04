@@ -95,6 +95,10 @@
   raised an error for arithmetic operations.
   [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
 
+* Fixes a bug where `Hamiltonian` objects with no coefficients or operations
+  would return a faulty result when used with `ExpvalCost`.
+  [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
 * Fixes a bug where inverse operations could not be differentiated
   using backpropagation on `default.qubit`.
   [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
