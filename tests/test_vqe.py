@@ -160,6 +160,12 @@ simplify_hamiltonians = [
         qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
         qml.Hamiltonian([0], [qml.Identity(4)]),
     ),
+
+    # Simplifies a zero Hamiltonian (no change)
+    (
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+    ),
 ]
 
 equal_hamiltonians = [
