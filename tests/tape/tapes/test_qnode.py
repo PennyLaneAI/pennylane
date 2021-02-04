@@ -836,3 +836,82 @@ class TestIntegration:
         qn3()
 
         assert dev.num_executions == 6
+
+
+class TestMutability:
+    """Test for QNode immutability"""
+
+    def test_mutable(self, mocker, tol):
+        """Test that a QNode which has structure dependent
+        on trainable arguments is reconstructed with
+        every call, and remains differentiable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, mutable=True)
+        def circuit(x):
+            if x < 0:
+                qml.RY(x, wires=0)
+            else:
+                qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        spy = mocker.spy(circuit, "construct")
+        res = circuit(x)
+        spy.assert_called_once_with((x,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # calling the qnode with new arguments reconstructs the tape
+        x = -0.5
+        res = circuit(x)
+        spy.assert_called_with((x,), {})
+        assert len(spy.call_args_list) == 2
+        assert circuit.qtape.operations[0].name == "RY"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, np.cos(x), atol=tol, rtol=0)
+
+        # test differentiability
+        grad = qml.grad(circuit)(0.5)
+        np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
+
+        grad = qml.grad(circuit)(-0.5)
+        np.testing.assert_allclose(grad, -np.sin(-0.5), atol=tol, rtol=0)
+
+    def test_immutable(self, mocker, tol):
+        """Test that a QNode which has structure dependent
+        on trainable arguments is *not* reconstructed with
+        every call when mutable=False"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, mutable=False)
+        def circuit(x):
+            if x < 0:
+                qml.RY(x, wires=0)
+            else:
+                qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        spy = mocker.spy(circuit, "construct")
+        res = circuit(x)
+        spy.assert_called_once_with((x,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # calling the qnode with new arguments does not reconstruct the tape
+        x = -0.5
+        res = circuit(x)
+        spy.assert_called_once_with((0.5,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [0.5]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # test differentiability. The circuit will assume an RZ gate
+        grad = qml.grad(circuit)(-0.5)
+        np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)

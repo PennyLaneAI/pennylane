@@ -105,43 +105,6 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
     return repeat
 
 
-def cv_neural_net_layer(
-    theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
-):
-    r"""A single continuous-variable neural network layer.
-
-    The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
-    of :math:`K=M(M-1)/2` beamsplitters.
-
-    Args:
-        theta_1 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for first interferometer
-        phi_1 (tensor_like): shape :math:`(K, )` tensor of phase angles for first interferometer
-        varphi_1 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after first interferometer
-        r (tensor_like): shape :math:`(M, )` tensor of squeezing amounts for
-            :class:`~pennylane.ops.Squeezing` operations
-        phi_r (tensor_like): shape :math:`(M, )` tensor of squeezing angles for
-            :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (tensor_like): shape :math:`(K, )` tensor of transmittivity angles for second interferometer
-        phi_2 (tensor_like): shape :math:`(K, )` tensor of phase angles for second interferometer
-        varphi_2 (tensor_like): shape :math:`(M, )` tensor of rotation angles to apply after second interferometer
-        a (tensor_like): shape :math:`(M, )` tensor of displacement magnitudes for
-            :class:`~pennylane.ops.Displacement` operations
-        phi_a (tensor_like): shape :math:`(M, )` tensor of displacement angles for
-            :class:`~pennylane.ops.Displacement` operations
-        k (tensor_like): shape :math:`(M, )` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
-        wires (Wires): wires that the template acts on
-    """
-    Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
-
-    broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=list(zip(r, phi_r)))
-
-    Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
-
-    broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=list(zip(a, phi_a)))
-
-    broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k)
-
-
 @template
 def CVNeuralNetLayers(
     theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
@@ -191,28 +154,21 @@ def CVNeuralNetLayers(
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
     repeat = _preprocess(
         theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
     )
 
-    ###############
-
     for l in range(repeat):
-        cv_neural_net_layer(
-            theta_1=theta_1[l],
-            phi_1=phi_1[l],
-            varphi_1=varphi_1[l],
-            r=r[l],
-            phi_r=phi_r[l],
-            theta_2=theta_2[l],
-            phi_2=phi_2[l],
-            varphi_2=varphi_2[l],
-            a=a[l],
-            phi_a=phi_a[l],
-            k=k[l],
-            wires=wires,
-        )
+
+        Interferometer(theta=theta_1[l], phi=phi_1[l], varphi=varphi_1[l], wires=wires)
+
+        r_and_phi_r = qml.math.stack([r[l], phi_r[l]], axis=1)
+        broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=r_and_phi_r)
+
+        Interferometer(theta=theta_2[l], phi=phi_2[l], varphi=varphi_2[l], wires=wires)
+
+        a_and_phi_a = qml.math.stack([a[l], phi_a[l]], axis=1)
+        broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=a_and_phi_a)
+
+        broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k[l])

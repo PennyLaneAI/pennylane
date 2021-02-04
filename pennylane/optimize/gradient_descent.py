@@ -63,8 +63,8 @@ class GradientDescentOptimizer:
 
         Returns:
             tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
-                function output prior to the step.
-                If single arg is provided, list [array] is replaced by array.
+            function output prior to the step.
+            If single arg is provided, list [array] is replaced by array.
         """
 
         g, forward = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
@@ -79,7 +79,7 @@ class GradientDescentOptimizer:
         return new_args, forward
 
     def step(self, objective_fn, *args, grad_fn=None, **kwargs):
-        """Update trainable args with one step of the optimizer.
+        """Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): the objective function for optimization
@@ -92,7 +92,7 @@ class GradientDescentOptimizer:
 
         Returns:
             list [array]: the new variable values :math:`x^{(t+1)}`.
-                If single arg is provided, list [array] is replaced by array.
+            If single arg is provided, list [array] is replaced by array.
         """
 
         g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
@@ -106,8 +106,8 @@ class GradientDescentOptimizer:
 
     @staticmethod
     def compute_grad(objective_fn, args, kwargs, grad_fn=None):
-        r"""Compute gradient of the objective_fn at the point x and return it along with the
-        objective function forward pass (if available).
+        r"""Compute gradient of the objective function at the given point and return it along with
+        the objective function forward pass (if available).
 
         Args:
             objective_fn (function): the objective function for optimization
@@ -120,8 +120,8 @@ class GradientDescentOptimizer:
 
         Returns:
             tuple (array): NumPy array containing the gradient :math:`\nabla f(x^{(t)})` and the
-                objective function output. If ``grad_fn`` is provided, the objective function
-                will not be evaluted and instead ``None`` will be returned.
+            objective function output. If ``grad_fn`` is provided, the objective function
+            will not be evaluted and instead ``None`` will be returned.
         """
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*args, **kwargs)
