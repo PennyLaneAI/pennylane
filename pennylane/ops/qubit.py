@@ -17,17 +17,16 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
+
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (AnyWires, DiagonalOperation, Observable,
-                                 Operation)
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates import template
-from pennylane.templates.state_preparations import (BasisStatePreparation,
-                                                    MottonenStatePreparation)
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
 
 INV_SQRT2 = 1 / math.sqrt(2)
