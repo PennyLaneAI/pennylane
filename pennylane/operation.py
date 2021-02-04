@@ -992,7 +992,7 @@ class Projection(Operation):
     """
 
     @classmethod
-    def _projectors(cls, wires):
+    def _projectors(cls, *params, wires):
         r"""Projectors representing a projection operation, specified in the
         computational basis.
 
@@ -1030,7 +1030,7 @@ class Projection(Operation):
         Returns:
             list(array): list of projectors
         """
-        return self._projectors(self.wires)
+        return self._projectors(*self.parameters, self.wires)
 
 
 # =============================================================================

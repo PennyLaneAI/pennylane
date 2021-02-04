@@ -1772,7 +1772,6 @@ class Measure(Projection):
 
         return projectors
 
-
 ops = {
     "Hadamard",
     "PauliX",
