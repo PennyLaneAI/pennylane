@@ -781,8 +781,7 @@ class TestOperations:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_decomp(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct
-        decomposition"""
+        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
         op = qml.ControlledPhaseShift(phi, wires=[0, 1])
         decomp = op.decomposition(phi, wires=[0, 1])
 
