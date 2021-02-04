@@ -30,7 +30,7 @@ class JAXInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        class MyAutogradQuantumTape(AutogradInterface, JacobianTape):
+        class MyJAXQuantumTape(JAXInterface, JacobianTape):
 
     Alternatively, the jax interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
