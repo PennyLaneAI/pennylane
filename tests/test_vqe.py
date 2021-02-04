@@ -114,6 +114,7 @@ hamiltonians_with_expvals = [
 
 
 zero_hamiltonians_with_expvals = [
+    ([], [], [0]),
     ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
     ((0,0,0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
 ]
