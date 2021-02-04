@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Adds `Projection` and `Measurement` classes to PennyLane.
+  [(#1052)](https://github.com/PennyLaneAI/pennylane/pull/1052) 
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -14,7 +17,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-
+Jack Ceroni
 
 # Release 0.14.0 (current release)
 
