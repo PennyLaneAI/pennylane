@@ -99,8 +99,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.14"
-    version = "0.14.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     _operation_map = {
