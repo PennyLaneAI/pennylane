@@ -991,6 +991,8 @@ class Projection(Operation):
             outside of a BaseQNode context.
     """
 
+    # pylint: disable=abstract-method
+
     @classmethod
     def _projectors(cls, *params, wires):
         r"""Projectors representing a projection operation, specified in the
