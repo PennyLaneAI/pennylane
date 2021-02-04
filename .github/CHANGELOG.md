@@ -4,7 +4,7 @@
 
 <h4>JAX is now supported on all devices</h4>
 
-* JAX can nw be used as the interface to any device
+* JAX can now be used as the interface to any device
 
   Here is an example of how to use JAX with Cirq:
 
