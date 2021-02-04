@@ -4,7 +4,7 @@
 
 <h3>Improvements</h3>
 
-- Added the `ControlledPhaseShift` gate as well as the `QFT` gate for applying quantum Fourier
+- Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
