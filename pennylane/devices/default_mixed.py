@@ -77,6 +77,7 @@ class DefaultMixed(QubitDevice):
         "Toffoli",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -92,6 +93,7 @@ class DefaultMixed(QubitDevice):
         "BitFlip",
         "PhaseFlip",
         "QubitChannel",
+        "QFT",
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True, cache=0):

@@ -113,6 +113,7 @@ class DefaultQubit(QubitDevice):
         "CY",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -121,6 +122,7 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
+        "QFT",
     }
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}

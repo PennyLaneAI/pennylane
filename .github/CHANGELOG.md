@@ -2,8 +2,12 @@
 
 <h3>New features since last release</h3>
 
+- Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
+  transforms.
+  [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
+
 * Adds `Projection` and `Measurement` classes to PennyLane.
-  [(#1052)](https://github.com/PennyLaneAI/pennylane/pull/1052) 
+  [(#1052)](https://github.com/PennyLaneAI/pennylane/pull/1052)
 
 <h3>Improvements</h3>
 
@@ -17,7 +21,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Jack Ceroni
+Thomas Bromley, Jack Ceroni
 
 # Release 0.14.0 (current release)
 
