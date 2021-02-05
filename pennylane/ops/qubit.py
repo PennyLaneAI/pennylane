@@ -1968,6 +1968,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
     "QFT",
 }
