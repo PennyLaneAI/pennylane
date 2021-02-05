@@ -1632,15 +1632,11 @@ class ControlledQubitUnitary(QubitUnitary):
     grad_method = None
 
     def __init__(self, *params, wires=None, do_queue=True, control_wires=None):
-        wires = Wires(wires)
+        if control_wires is None:
+            raise ValueError("Must specify control wires")
 
-        # The control_wires can be specified as either an argument or keyword argument
-        if control_wires is not None:
-            control_wires = Wires(control_wires)
-        elif len(params) == 2:
-            control_wires = Wires(params.pop(1))
-        else:
-            raise qml.QuantumFunctionError("Must specify control wires")
+        wires = Wires(wires)
+        control_wires = Wires(control_wires)
 
         if Wires.shared_wires([wires, control_wires]):
             raise ValueError(
@@ -1650,9 +1646,12 @@ class ControlledQubitUnitary(QubitUnitary):
         wires = control_wires + wires
 
         U = params[0]
-        CU = block_diag(np.eye(2 ** len(control_wires)), U)
+        padding = 2 ** len(wires) - len(U)
+        CU = block_diag(np.eye(padding), U)
 
-        super().__init__(CU, wires=wires, do_queue=do_queue)
+        params = list(params)
+        params[0] = CU
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
 class DiagonalQubitUnitary(DiagonalOperation):

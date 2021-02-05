@@ -767,6 +767,25 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
 
+    X = np.array([[0, 1], [1, 0]])
+
+    def test_controlled_qubit_unitary(self):
+        """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
+        (Toffoli) gate"""
+        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix
+        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix
+        assert np.allclose(mat, mat2)
+
+    def test_controlled_qubit_unitary_no_control(self):
+        """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
+        with pytest.raises(ValueError, match="Must specify control wires"):
+            qml.ControlledQubitUnitary(X, wires=2)
+
+    def test_controlled_qubit_unitary_shared_control(self):
+        """Test if ControlledQubitUnitary raises an error if control wires are shared with wires"""
+        with pytest.raises(ValueError, match="The control wires must be different from the wires"):
+            qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
         """Tests that the ControlledPhaseShift operation calculates the correct matrix and
