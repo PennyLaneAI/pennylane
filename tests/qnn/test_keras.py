@@ -431,8 +431,13 @@ class TestKerasLayer:
         layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
-        layer_out = layer(x)
+        with tf.GradientTape() as tape:
+            layer_out = layer(x)
 
+        g_layer = tape.gradient(layer_out, layer.trainable_variables)
+
+        # test gradients are at least calculated
+        assert g_layer is not None
         assert layer_out.shape == (batch_size, middle_dim, output_dim)
 
 

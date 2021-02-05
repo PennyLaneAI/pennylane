@@ -383,6 +383,7 @@ class TestTorchLayer:
         x = torch.Tensor(np.ones((2, n_qubits)))
 
         layer_out = layer.forward(x)
+
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
@@ -395,7 +396,14 @@ class TestTorchLayer:
         layer = TorchLayer(c, w)
         x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
 
+        weights = layer.qnode_weights.values()
+
         layer_out = layer.forward(x)
+        layer_out.backward(torch.ones_like(layer_out))
+
+        g_layer = [w.grad for w in weights]
+
+        assert g_layer.count(None) == 0
         assert layer_out.shape == torch.Size((batch_size, middle_dim, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
