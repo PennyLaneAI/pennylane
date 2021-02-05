@@ -586,7 +586,7 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res == weights.shape
+        assert res.shape == weights.shape
 
         # check that the second arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {1}
@@ -631,7 +631,7 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res == weights.shape
+        assert res.shape == weights.shape
 
         # check that the last arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {2}
