@@ -1620,13 +1620,11 @@ class ControlledQubitUnitary(QubitUnitary):
 
     **Example**
 
-    The :class:`~.Toffoli` gate is a controlled-controlled-X gate and can be equivalently applied
-    using
+    The following shows how a single-qubit unitary can be applied to wire ``2`` with control on
+    both wires ``0`` and ``1``:
 
-    >>> X = np.array([[0, 1], [1, 0]])
+    >>> X = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2)
-
-    Note: it is better to directly use :class:`~.Toffoli`, the above is for illustration purposes.
     """
     num_params = 1
     num_wires = AnyWires
@@ -1636,6 +1634,7 @@ class ControlledQubitUnitary(QubitUnitary):
     def __init__(self, *params, wires=None, do_queue=True, control_wires=None):
         wires = Wires(wires)
 
+        # The control_wires can be specified as either an argument or keyword argument
         if control_wires is not None:
             control_wires = Wires(control_wires)
         elif len(params) == 2:
