@@ -2,11 +2,11 @@
 
 <h3>New features since last release</h3>
 
-<h3>Improvements</h3>
-
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
+
+<h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
 

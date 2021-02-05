@@ -1647,6 +1647,15 @@ class QFT(Operation):
 
     where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
 
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
     **Example**
 
     The quantum Fourier transform is applied by specifying the corresponding wires:
@@ -1662,15 +1671,6 @@ class QFT(Operation):
             return qml.state()
 
     The inverse quantum Fourier transform is accessed using ``qml.QFT(wires).inv()``.
-
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 0
-    * Gradient recipe: None
-
-    Args:
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
     """
     num_params = 0
     num_wires = AnyWires
