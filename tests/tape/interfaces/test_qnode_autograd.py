@@ -673,7 +673,7 @@ class TestQNode:
         # Set the first parameter of circuit1 as non-differentiable.
         a = np.array(0.4, requires_grad=False)
 
-        # the remaining free parameters are all differentiable
+        # The remaining free parameters are all differentiable.
         b = 0.5
         c = 0.1
         weights = np.array([0.2, 0.3])
@@ -709,8 +709,8 @@ class TestQNode:
             # for all parameters in circuit2
             assert circuit2.qtape.trainable_params == {0, 1, 2, 3}
 
-            # check that the parameter-shift rule was not applied
-            # to the first parameter of circuit1
+            # Check that the parameter-shift rule was not applied
+            # to the first parameter of circuit1.
             assert circuit1.qtape.trainable_params == {1, 2}
 
 
