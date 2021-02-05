@@ -427,7 +427,6 @@ class TestKerasLayer:
         (batch_size, dn, ... , d1, output_dim)"""
         c, w = get_circuit
 
-
         layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
