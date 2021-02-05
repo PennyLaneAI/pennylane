@@ -440,8 +440,6 @@ class TestKerasLayer:
         assert g_layer is not None
         assert layer_out.shape == (batch_size, middle_dim, output_dim)
 
-
-
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit, output_dim):
         """Test the __str__ and __repr__ representations"""
