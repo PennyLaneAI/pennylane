@@ -22,12 +22,14 @@ import functools
 import math
 
 import numpy as np
+from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
+from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -1599,6 +1601,59 @@ class QubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+
+class ControlledQubitUnitary(QubitUnitary):
+    r"""ControlledQubitUnitary(U, control_wires, wires)
+    Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        U (array[complex]): square unitary matrix
+        control_wires (Sequence[int] or int): the control wire(s)
+        wires (Sequence[int] or int): the wire(s) the unitary acts on
+
+    **Example**
+
+    The :class:`~.Toffoli` gate is a controlled-controlled-X gate and can be equivalently applied
+    using
+
+    >>> X = np.array([[0, 1], [1, 0]])
+    >>> qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2)
+
+    Note: it is better to directly use :class:`~.Toffoli`, the above is for illustration purposes.
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True, control_wires=None):
+        wires = Wires(wires)
+
+        if control_wires is not None:
+            control_wires = Wires(control_wires)
+        elif len(params) == 2:
+            control_wires = Wires(params.pop(1))
+        else:
+            raise qml.QuantumFunctionError("Must specify control wires")
+
+        if Wires.shared_wires([wires, control_wires]):
+            raise ValueError(
+                "The control wires must be different from the wires specified to apply the unitary"
+            )
+
+        wires = control_wires + wires
+
+        U = params[0]
+        CU = block_diag(np.eye(2 ** len(control_wires)), U)
+
+        super().__init__(CU, wires=wires, do_queue=do_queue)
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
