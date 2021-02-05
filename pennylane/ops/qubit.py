@@ -15,17 +15,19 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import cmath
 import functools
+
+# pylint:disable=abstract-method,arguments-differ,protected-access
+import math
+
 import numpy as np
 
-from pennylane.templates import template
-from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import pauli_eigs, expand
 import pennylane as qml
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.templates import template
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.utils import expand, pauli_eigs
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -722,6 +724,58 @@ class PhaseShift(DiagonalOperation):
         return decomp_ops
 
 
+class ControlledPhaseShift(DiagonalOperation):
+    r"""ControlledPhaseShift(phi, wires)
+    A qubit controlled phase shift.
+
+    .. math:: CR_\phi(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0 \\
+                0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & e^{i\phi}
+            \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_\phi(\phi)) = \frac{1}{2}\left[f(CR_\phi(\phi+\pi/2)) - f(CR_\phi(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_{\phi}(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+        return np.array([1, 1, 1, cmath.exp(1j * phi)])
+
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [
+            qml.PhaseShift(phi / 2, wires=wires[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(-phi / 2, wires=wires[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(phi / 2, wires=wires[1]),
+        ]
+        return decomp_ops
+
+
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
@@ -905,7 +959,7 @@ class PauliRot(Operation):
     }
 
     def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=True)
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
         pauli_word = params[1]
 
@@ -1580,6 +1634,94 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
 
+class QFT(Operation):
+    r"""QFT(wires)
+    Apply a quantum Fourier transform (QFT).
+
+    For the :math:`N`-qubit computational basis state :math:`|m\rangle`, the QFT performs the
+    transformation
+
+    .. math::
+
+        |m\rangle \rightarrow \frac{1}{\sqrt{2^{N}}}\sum_{n=0}^{2^{N} - 1}\omega_{N}^{mn} |n\rangle,
+
+    where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
+    **Example**
+
+    The quantum Fourier transform is applied by specifying the corresponding wires:
+
+    .. code-block::
+
+        wires = 3
+
+        @qml.qnode(dev)
+        def circuit_qft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.QFT(wires=range(wires))
+            return qml.state()
+
+    The inverse quantum Fourier transform is accessed using ``qml.QFT(wires).inv()``.
+    """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
+    grad_method = None
+
+    @property
+    def matrix(self):
+        # Redefine the property here to allow for a custom _matrix signature
+        mat = self._matrix(len(self.wires))
+        if self.inverse:
+            mat = mat.conj()
+        return mat
+
+    @classmethod
+    @functools.lru_cache()
+    def _matrix(cls, num_wires):
+        dimension = 2 ** num_wires
+
+        mat = np.zeros((dimension, dimension), dtype=np.complex128)
+        omega = np.exp(2 * np.pi * 1j / dimension)
+
+        for m in range(dimension):
+            for n in range(dimension):
+                mat[m, n] = omega ** (m * n)
+
+        return mat / np.sqrt(dimension)
+
+    @staticmethod
+    def decomposition(wires):
+        num_wires = len(wires)
+        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+
+        decomp_ops = []
+        for i, wire in enumerate(wires):
+            decomp_ops.append(qml.Hadamard(wire))
+
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                decomp_ops.append(op)
+
+        first_half_wires = wires[: num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2) :]
+
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+            swap = qml.SWAP(wires=[wire1, wire2])
+            decomp_ops.append(swap)
+
+        return decomp_ops
+
+
 # =============================================================================
 # State preparation
 # =============================================================================
@@ -1760,6 +1902,7 @@ ops = {
     "RY",
     "RZ",
     "PhaseShift",
+    "ControlledPhaseShift",
     "Rot",
     "CRX",
     "CRY",
@@ -1772,6 +1915,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "DiagonalQubitUnitary",
+    "QFT",
 }
 
 
