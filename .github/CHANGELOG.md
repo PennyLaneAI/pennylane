@@ -8,6 +8,9 @@
 
 <h3>Improvements</h3>
 
+- Added the `ControlledQubitUnitary` operation.
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
