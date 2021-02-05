@@ -175,7 +175,7 @@ def test_autodifferentiation():
     cost_fn = lambda a: (qml.math.TensorBox(a).T() ** 2).unbox()[0, 1]
     grad_fn = qml.grad(cost_fn)
 
-    res = grad_fn(x)[0]
+    res = grad_fn(x)
     expected = np.array([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
     assert np.all(res == expected)
 
