@@ -8,6 +8,8 @@
 
 <h3>Improvements</h3>
 
+- Tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`. [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -18,7 +20,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley
+Thomas Bromley, Sankalp Sanand
 
 # Release 0.14.0 (current release)
 
