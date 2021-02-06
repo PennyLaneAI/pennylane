@@ -216,8 +216,9 @@ class KerasLayer(Layer):
             self._signature_validation(qnode, weight_shapes)
             self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
 
-        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
-        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+        # Allows output_dim to be specified as an int, e.g., 5, or as a tuple, e.g., (5, 2)
+        # However the final output_dim type will always be a tuple, e.g., 5 will become (5,)
+        self.output_dim = tuple(output_dim) if isinstance(output_dim, Iterable) else (output_dim,)
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
