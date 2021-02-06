@@ -965,7 +965,7 @@ class Channel(Operation, abc.ABC):
 
 
 class Projection(Operation):
-    """Base class for projection operations
+    """Base class for projection operations.
 
     As with :class:`~.Operation`, the following class attributes must be
     defined for all projections:
@@ -983,7 +983,7 @@ class Projection(Operation):
         params (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
-        wires (Sequence[int]): Subsystems the projection acts on. If not given, args[-1]
+        wires (Iterable[Number, str], Number, str, Wires): Subsystems the projection acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`BaseQNode` circuit queue.
@@ -999,15 +999,14 @@ class Projection(Operation):
         computational basis.
 
         This is a class method that should be defined for all
-        new projections. It returns the projectors representing
-        the projection in the computational basis.
+        new projections.
 
         This private method allows projectors to be computed
         directly without instantiating the projection first.
 
         **Example**
 
-        >>> qml.Measure(wires=0)
+        >>> qml.Measure._projectors(wires=0)
         >>> [array([[1, 0], [0, 0]]), array([[0, 0], [0, 1]])]
 
         To return the projectors of an *instantiated* projection,
