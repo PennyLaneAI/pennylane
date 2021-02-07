@@ -37,9 +37,10 @@
   ```
 
   The output tensor has the following shape:
-
+  ```pycon
   >>> out.shape
   (5, 4, 4)
+  ```
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
