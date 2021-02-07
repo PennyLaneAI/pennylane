@@ -1920,9 +1920,12 @@ class Measure(Projection):
 
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-            >>> circuit()
-            []
+        By running this circuit, we would get an output of the form:
 
+        >>> circuit()
+        array([1., 1.])
+
+        which corresponding to a measurement of :math:`|00\rangle`.
     """
     num_params = 0
     num_wires = AnyWires
