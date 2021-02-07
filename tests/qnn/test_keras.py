@@ -418,9 +418,9 @@ class TestKerasLayer:
         assert layer_out.shape == (batch_size, output_dim)
         assert np.allclose(layer_out[0], c(x[0], *weights))
 
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    @pytest.mark.parametrize("batch_size", [2])
-    @pytest.mark.parametrize("middle_dim", [5])
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [2,4,6])
+    @pytest.mark.parametrize("middle_dim", [2,5,8])
     def test_call_broadcast(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
         """Test if the call() method performs correctly when the inputs argument is an arbitrary shape (that can
         correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
