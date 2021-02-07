@@ -422,7 +422,7 @@ class TestKerasLayer:
     @pytest.mark.parametrize("batch_size", [2,4,6])
     @pytest.mark.parametrize("middle_dim", [2,5,8])
     def test_call_broadcast(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
-        """Test if the call() method performs correctly when the inputs argument is an arbitrary shape (that can
+        """Test if the call() method performs correctly when the inputs argument has an arbitrary shape (that can
         correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly."""
         c, w = get_circuit
