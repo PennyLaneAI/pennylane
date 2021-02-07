@@ -45,9 +45,9 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order): Daniel Polatajko
+This release contains contributions from (in alphabetical order):
 
-Thomas Bromley
+Thomas Bromley, Daniel Polatajko
 
 # Release 0.14.0 (current release)
 
