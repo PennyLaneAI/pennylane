@@ -10,7 +10,10 @@
 
 <h4>Broadcasting over multi-dimensional inputs to KerasLayer and TorchLayer</h4>
 
-* Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring the last (in the case where the actual weight function of the layer operates     on one-dimensional vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer [(#1062)](https://github.com/PennyLaneAI/pennylane/pull/1062).
+* Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
+  the last (in the case where the actual weight function of the layer operates on one-dimensional 
+  vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
+  [(#1062)](https://github.com/PennyLaneAI/pennylane/pull/1062).
 
   Example use:
   
