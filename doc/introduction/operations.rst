@@ -142,6 +142,20 @@ Qubit observables
 
 :html:`</div>`
 
+.. _intro_ref_ops_measurements:
+
+Qubit measurements
+^^^^^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.Measure
+
+:html:`</div>`
+
 Grouping Pauli words
 ^^^^^^^^^^^^^^^^^^^^
 

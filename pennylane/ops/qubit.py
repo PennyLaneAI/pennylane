@@ -1899,6 +1899,30 @@ class Measure(Projection):
 
     Args:
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    .. UsageDetails::
+
+        It is important to note when using the `Measurement` operation that
+        one **applies** it to the wire one wishes to measure, and then returns
+        one of the PennyLane measurement functions.
+
+        For instance, consider the following, basic circuit:
+
+        .. code-block:: python3
+
+           dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.Measure(wires=[0, 1])
+
+                return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+            >>> circuit()
+            []
+
     """
     num_params = 0
     num_wires = AnyWires
