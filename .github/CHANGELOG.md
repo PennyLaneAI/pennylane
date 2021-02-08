@@ -2,6 +2,23 @@
 
 <h3>New features since last release</h3>
 
+- Users can overwrite the default `shots` argument of a device in each qnode function
+  call:
+  [(#10XX)](https://github.com/PennyLaneAI/pennylane/pull/10XX)
+
+  ```python
+  dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
+  
+  @qml.qnode(dev)
+  def circuit(a):
+      qml.RX(a, wires=0)
+      return qml.sample(qml.PauliZ(wires=0))
+  
+  print(circuit(0.8))  # [ 1  1  1 -1 -1  1  1  1  1  1]
+  print(circuit(0.8, shots=3))  # [ 1  1  1] -> default is changed for this call 
+  print(circuit(0.8))  # [ 1  1  1 -1 -1  1  1  1  1  1]
+  ```
+
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
