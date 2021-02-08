@@ -106,8 +106,11 @@ class JAXInterface(AnnotatedQueue):
                 return tape.jacobian(device, params=params, **tape.jacobian_options)
 
             val = g.reshape((-1,)) * host_callback.call(
-                jacobian, params, result_shape=jax.ShapeDtypeStruct((1, len(params)), JAXInterface.dtype))
-            return list(val.reshape((-1,))), # Comma is on purpose.
+                jacobian,
+                params,
+                result_shape=jax.ShapeDtypeStruct((1, len(params)), JAXInterface.dtype),
+            )
+            return (list(val.reshape((-1,))),)  # Comma is on purpose.
 
         wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
         return wrapped_exec(params)
