@@ -514,7 +514,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs):
 
-        # if shots specified with call, pop it
+        # If shots specified from call, we override the device's default shots value.
         shots = kwargs.pop("shots", None)
         if shots is not None:
             original_shots = self.device.shots  # remember device shots
