@@ -931,5 +931,5 @@ class TestShots:
 
         assert len(circuit(0.8)) == 10
         assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8), shots=3178) == 3178
+        assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
