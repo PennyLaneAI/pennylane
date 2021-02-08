@@ -4,7 +4,7 @@
 
 - Users can overwrite the default `shots` argument of a device in each qnode function
   call:
-  [(#10XX)](https://github.com/PennyLaneAI/pennylane/pull/10XX)
+  [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
   ```python
   dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
