@@ -31,3 +31,17 @@ def test_qnode_intergration():
 	weights = jnp.array([0.1, 0.2])
 	val = circuit(weights)
 	assert "DeviceArray" in val.__repr__()
+
+def test_to_jax():
+	dev = qml.device("default.qubit", wires=2) 
+
+	@qml.qnode(dev, interface="autograd")
+	def circuit(weights):
+		qml.RX(weights[0], wires=0)
+		qml.RZ(weights[0], wires=1)
+		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+	circuit.to_jax()
+	weights = jnp.array([0.1, 0.2])
+	val = circuit(weights)
+	assert "DeviceArray" in val.__repr__()

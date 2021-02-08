@@ -88,11 +88,25 @@ class JAXInterface(AnnotatedQueue):
             raise ValueError(
                 f"Only Variance and Expectation returns are support, given {return_type}"
             )
-        exec_fn = partial(self.execute_device, device=device)
 
-        return host_callback.call(
+        @jax.custom_vjp
+        def wrapped_exec(params):
+            exec_fn = partial(self.execute_device, device=device)
+            return host_callback.call(
             exec_fn, params, result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype)
-        )
+            )
+
+        def wrapped_exec_fwd(params):
+            return wrapped_exec(params), params
+
+        def wrapped_exec_bwd(params, g):
+            def jacobian(params):
+                tape = self.copy()
+                tape.set_parameters(params)
+                tape.jacobian(device, params=params, **tape.jacobian_options)
+
+        wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
+        return wrapped_exec(params)
 
     @classmethod
     def apply(cls, tape):
