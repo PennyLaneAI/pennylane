@@ -20,6 +20,10 @@ from pennylane import QNodeCollection
 from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
+def dummyfunc():
+    return None
+
+
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -33,12 +37,12 @@ class TestValidation:
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
-            QNode(None, dev, interface="something")
+            QNode(dummyfunc, dev, interface="something")
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
-            QNode(None, None)
+            QNode(dummyfunc, None)
 
     def test_validate_device_method(self, monkeypatch):
         """Test that the method for validating the device diff method
@@ -199,28 +203,28 @@ class TestValidation:
         mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9, {"method": "device"}
 
-        qn = QNode(None, dev, diff_method="best")
+        qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn._tape == mock_best.return_value[0]
         assert qn.interface == mock_best.return_value[1]
         assert qn.diff_options["method"] == mock_best.return_value[3]["method"]
 
-        qn = QNode(None, dev, diff_method="backprop")
+        qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn._tape == mock_backprop.return_value[0]
         assert qn.interface == mock_backprop.return_value[1]
         assert qn.diff_options["method"] == mock_backprop.return_value[3]["method"]
         mock_backprop.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="device")
+        qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn._tape == mock_device.return_value[0]
         assert qn.interface == mock_device.return_value[1]
         assert qn.diff_options["method"] == mock_device.return_value[3]["method"]
         mock_device.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="finite-diff")
+        qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn._tape == JacobianTape
         assert qn.diff_options["method"] == "numeric"
 
-        qn = QNode(None, dev, diff_method="parameter-shift")
+        qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn._tape == QubitParamShiftTape
         assert qn.diff_options["method"] == "analytic"
 
@@ -234,7 +238,7 @@ class TestValidation:
         with pytest.raises(
             qml.QuantumFunctionError, match="Differentiation method hello not recognized"
         ):
-            QNode(None, dev, diff_method="hello")
+            QNode(dummyfunc, dev, diff_method="hello")
 
     def test_validate_adjoint_invalid_device(self):
         """Test if a ValueError is raised when an invalid device is provided to
@@ -934,17 +938,14 @@ class TestShots:
         assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
-    def test_shots_reserved_argument(self):
+    def test_shots_reserved_qfunc_argument(self):
         """Tests that a warning is raised if the quantum function has a shots argument."""
 
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
-        def circuit(a, shots=0):
+        def circuit(a, shots=2):
             qml.RX(a, wires=shots)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.raises(ValueError, match="The shots argument is reserved"):
-            circuit(0.6, shots=0)
-
-        assert circuit(0.0) == -1
+        with pytest.raises(qml.QuantumFunctionError, match="The shots argument is reserved"):
+            qml.QNode(circuit, dev)

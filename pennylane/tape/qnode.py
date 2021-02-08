@@ -140,8 +140,10 @@ class QNode:
                 "Invalid device. Device must be a valid PennyLane device."
             )
 
-        if "shots" in inspect.signature(func):
-            warnings.warn("The shots argument is reserved and will be overwritten!", UserWarning)
+        if "shots" in inspect.signature(func).parameters:
+            raise qml.QuantumFunctionError(
+                "The shots argument is reserved and will be overwritten!"
+            )
 
         self.mutable = mutable
         self.func = func
