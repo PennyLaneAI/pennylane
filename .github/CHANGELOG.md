@@ -8,6 +8,10 @@
 
 <h3>Improvements</h3>
 
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -18,7 +22,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley
+Thomas Bromley, Josh Izaac
 
 # Release 0.14.0 (current release)
 
