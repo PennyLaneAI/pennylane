@@ -8,11 +8,17 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where inverse operations could not be differentiated
+  using backpropagation on `default.qubit`.
+  [(#)]()
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Josh Izaac
 
 
 
