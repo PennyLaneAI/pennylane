@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit tests for the JAX interface"""
 import pytest
-jax = pytest.importskip("jax")
-jnp = pytest.importskip("jax.numpy")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 import pennylane as qml
 from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 
