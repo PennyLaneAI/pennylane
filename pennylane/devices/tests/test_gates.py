@@ -53,6 +53,7 @@ ops = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
+    "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "RX": qml.RX(0, wires=[0]),
@@ -64,6 +65,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
+    "QFT": qml.QFT(wires=[0, 1, 2]),
 }
 
 all_ops = ops.keys()
