@@ -3,6 +3,7 @@
 <h3>New features since last release</h3>
 
 - The JAX interface now supports all devices.
+  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
 
    Here is an example of how to use JAX with Cirq:
 
@@ -16,7 +17,6 @@
   weights = jnp.array([0.2, 0.5, 0.1])
   print(circuit(weights)) # DeviceArray(...)
   ```
-  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
 
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
   transforms.
