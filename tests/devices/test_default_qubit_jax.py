@@ -254,15 +254,14 @@ class TestPassthruIntegration:
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
             qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
         a = jnp.array(0.54)
 
         def cost(a):
             """A function of the device quantum state, as a function
             of ijnput QNode parameters."""
-            circuit(a)
-            res = jnp.abs(dev.state) ** 2
+            res = jnp.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = jax.grad(cost)(a)
@@ -311,7 +310,7 @@ class TestPassthruIntegration:
         res = circuit(a, b)
         expected_cost = 0.5 * (jnp.cos(a) * jnp.cos(b) + jnp.cos(a) - jnp.cos(b) + 1)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
-        res = jax.grad(lambda x, y: circuit(x, y).reshape(()), argnums=(0, 1))(a, b)
+        res = jax.grad(circuit, argnums=(0, 1))(a, b)
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
         )
@@ -394,7 +393,7 @@ class TestHighLevelIntegration:
 
         weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
 
-        grad = jax.grad(lambda a: circuit(a).reshape(()))(weights)
+        grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
