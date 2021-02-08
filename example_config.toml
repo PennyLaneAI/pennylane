@@ -57,7 +57,6 @@
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
 # shots = 1000
-# analytic = true
 
     [strawberryfields.fock]
     ## Default options for the Fock simulator

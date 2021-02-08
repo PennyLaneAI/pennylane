@@ -679,7 +679,7 @@ class TestExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3, analytic=True)
+        dev = qml.device("default.qubit.tf", wires=3, shots=None)
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
         Identity = np.array([[1, 0],[0, 1]])
@@ -901,8 +901,7 @@ class TestQNodeIntegration:
         """Test that the tensor network plugin loads correctly"""
         dev = qml.device("default.qubit.tf", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots is None
         assert dev.short_name == "default.qubit.tf"
         assert dev.capabilities()["passthru_interface"] == "tf"
 
@@ -1268,8 +1267,8 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
-class TestSamplesNonAnalytic:
-    """Tests for sampling and non-analytic mode"""
+class TestSamples:
+    """Tests for sampling outputs"""
 
     def test_sample_observables(self):
         """Test that the device allows for sampling from observables."""
@@ -1307,7 +1306,7 @@ class TestSamplesNonAnalytic:
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, analytic=False, shots=1000)
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():
@@ -1323,7 +1322,7 @@ class TestSamplesNonAnalytic:
 
     def test_estimating_full_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, analytic=False, shots=1000)
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():
@@ -1341,7 +1340,7 @@ class TestSamplesNonAnalytic:
     def test_estimating_expectation_values(self, tol):
         """Test that estimating expectation values using a finite number
         of shots produces a numeric tensor"""
-        dev = qml.device("default.qubit.tf", wires=3, analytic=False, shots=1000)
+        dev = qml.device("default.qubit.tf", wires=3, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
@@ -1363,7 +1362,7 @@ class TestSamplesNonAnalytic:
 
     def test_estimating_expectation_values_not_differentiable(self, tol):
         """Test that analytic=False results in non-differentiable QNodes"""
-        dev = qml.device("default.qubit.tf", wires=3, analytic=False)
+        dev = qml.device("default.qubit.tf", wires=3, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):

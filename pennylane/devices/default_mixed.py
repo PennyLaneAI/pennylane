@@ -96,13 +96,13 @@ class DefaultMixed(QubitDevice):
         "QFT",
     }
 
-    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
         # call QubitDevice init
-        super().__init__(wires, shots, analytic, cache=cache)
+        super().__init__(wires, shots, cache=cache)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)

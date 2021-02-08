@@ -506,7 +506,7 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -596,7 +596,7 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -697,8 +697,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots == None
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
@@ -1336,7 +1335,7 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=True)
+        dev = qml.device("default.qubit", wires=3)
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
         Identity = np.array([[1, 0],[0, 1]])
@@ -1656,9 +1655,9 @@ class TestProbabilityIntegration:
 
     @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
     def test_probability(self, x, tol):
-        """Test that the probability function works when analytic=False"""
-        dev = qml.device("default.qubit", wires=2, analytic=False)
-        dev_analytic = qml.device("default.qubit", wires=2, analytic=True)
+        """Test that the probability function works for finite and infinite shots"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev_analytic = qml.device("default.qubit", wires=2, shots=None)
 
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1673,12 +1672,12 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
-    @pytest.mark.parametrize("analytic", [True, False])
-    def test_call_generate_samples(self, analytic, monkeypatch):
+    @pytest.mark.parametrize("shots", [None, 1000])
+    def test_call_generate_samples(self, shots, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
         monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
