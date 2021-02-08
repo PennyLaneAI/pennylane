@@ -18,3 +18,17 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 
+
+def test_qnode_intergration():
+	dev = qml.device("default.mixed", wires=2) # A non-JAX device
+
+	@qml.qnode(dev, interface="jax")
+	def circuit(weights):
+		qml.RX(weights[0], wires=0)
+		qml.RZ(weights[0], wires=1)
+		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+	weights = jnp.array([0.1, 0.2])
+	val = circuit(weights)
+	assert "DeviceArray" in val.__repr__()
+
