@@ -513,12 +513,22 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+
+        # if shots specified with call, pop it
+        shots = kwargs.pop("shots", None)
+        if shots is not None:
+            original_shots = self.device.shots  # remember device shots
+            self.device.shots = shots  # temporarily change shots
+
         if self.mutable or self.qtape is None:
             # construct the tape
             self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
+
+        if shots is not None:
+            self.device.shots = original_shots
 
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
         # In the long run, we should make sure that the user's device is the one

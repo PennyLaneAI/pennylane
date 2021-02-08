@@ -915,3 +915,21 @@ class TestMutability:
         # test differentiability. The circuit will assume an RZ gate
         grad = qml.grad(circuit)(-0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
+
+
+class TestShots:
+    """Unittests for specifying shots per call."""
+
+    def test_specify_shots(self):
+        """Tests that shots can be set per call."""
+        dev = qml.device('default.qubit', wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8)) == 10
+        assert len(circuit(0.8, shots=2)) == 2
+        assert len(circuit(0.8), shots=3178) == 3178
+        assert len(circuit(0.8)) == 10
