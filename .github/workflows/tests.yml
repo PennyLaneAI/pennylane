@@ -31,6 +31,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -94,6 +96,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -151,6 +155,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Setup conda
         uses: s-weigand/setup-conda@v1
