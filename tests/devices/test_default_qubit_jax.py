@@ -89,6 +89,26 @@ class TestQNodeIntegration:
         # Just test that it works and spits our the right value.
         assert jnp.isclose(circuit(p), expected, atol=tol, rtol=0)
 
+    def test_qubit_circuit_different_interface(self, tol):
+        """Test that the device provides the correct
+        result for a simple circuit with a device using a different interface."""
+        if not qml.tape_mode_active():
+            pytest.skip("Tape mode only test")
+
+        p = jnp.array(0.543)
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        expected = -jnp.sin(p)
+        # Do not test isinstance here since the @jax.jit changes the function
+        # type.
+        # Just test that it works and spits our the right value.
+        assert jnp.isclose(circuit(p), expected, atol=tol, rtol=0)
+
     def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
