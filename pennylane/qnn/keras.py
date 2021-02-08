@@ -218,7 +218,7 @@ class KerasLayer(Layer):
 
         # Allows output_dim to be specified as an int, e.g., 5, or as a tuple, e.g., (5, 2)
         # However the final output_dim type will always be a tuple, e.g., 5 will become (5,)
-        self.output_dim = tuple(output_dim) if isinstance(output_dim, Iterable) else (output_dim,)
+        self.output_dim = tuple(output_dim) if isinstance(output_dim, Iterable) else (output_dim, 1)
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
@@ -355,7 +355,7 @@ class KerasLayer(Layer):
         Returns:
             tf.TensorShape: shape of output data
         """
-        return tf.TensorShape([input_shape[0], self.output_dim])
+        return tf.TensorShape(input_shape[0]).concatenate(self.output_dim)
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"
