@@ -66,10 +66,10 @@ class JAXInterface(AnnotatedQueue):
     >>> z = jnp.array(0.3, requires_grad=True)
     >>> dev = qml.device("default.qubit", wires=2)
     >>> cost_fn(x, y, z, device=dev)
-    [0.03991951]
+    DeviceArray([ 0.03991951], dtype=float32)
     >>> jac_fn = jax.vjp(cost_fn)
     >>> jac_fn(x, y, z, device=dev)
-    DeviceArray[[ 0.39828408, -0.00045133]]
+    DeviceArray([[ 0.39828408, -0.00045133]], dtype=float32)
     """
 
     # pylint: disable=attribute-defined-outside-init
