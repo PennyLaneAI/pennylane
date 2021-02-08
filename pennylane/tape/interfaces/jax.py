@@ -36,13 +36,13 @@ class JAXInterface(AnnotatedQueue):
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
-    Once created, the autograd interface can be used to perform quantum-classical
+    Once created, the JAX interface can be used to perform quantum-classical
     differentiable programming.
 
     .. note::
 
-        If using a device that supports native autograd computation and backpropagation, such as
-        :class:`~.DefaultQubitJAX`, the Autograd interface **does not need to be applied**. It
+        If using a device that supports native JAX computation and backpropagation, such as
+        :class:`~.DefaultQubitJAX`, the JAX interface **does not need to be applied**. It
         is only applied to tapes executed on non-JAX compatible devices.
 
     **Example**
