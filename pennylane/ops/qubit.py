@@ -24,7 +24,7 @@ import math
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation, Projection
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
@@ -1882,66 +1882,6 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
-# =============================================================================
-# Measurements
-# =============================================================================
-
-
-class Measure(Projection):
-    r"""Measure(wires)
-    A measurement in the computational basis.
-
-    **Details:**
-
-    * Number of wires: Any
-    * Number of parameters: 0
-    * Gradient recipe: None
-
-    Args:
-        wires (Sequence[int] or int): the wire(s) the operation acts on
-
-    .. UsageDetails::
-
-        It is important to note when using the `Measurement` operation that
-        one **applies** it to the wire one wishes to measure, and then returns
-        one of the PennyLane measurement functions.
-
-        For instance, consider the following, basic circuit:
-
-        .. code-block:: python3
-
-           dev = qml.device('default.qubit', wires=2)
-
-            @qml.qnode(dev)
-            def circuit():
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.Measure(wires=[0, 1])
-
-                return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-
-        By running this circuit, we would get an output of the form:
-
-        >>> circuit()
-        array([1., 1.])
-
-        which corresponding to a measurement of :math:`|00\rangle`.
-    """
-    num_params = 0
-    num_wires = AnyWires
-    par_domain = None
-
-    @classmethod
-    def _projectors(cls, wires):
-        nr_proj = int(2 ** len(wires))
-        projectors = [np.zeros((nr_proj, nr_proj)) for i in range(nr_proj)]
-
-        for i in range(nr_proj):
-            projectors[i][i, i] = 1
-
-        return projectors
-
-
 ops = {
     "Hadamard",
     "PauliX",
@@ -1976,7 +1916,6 @@ ops = {
     "QubitUnitary",
     "DiagonalQubitUnitary",
     "QFT",
-    "Measure",
 }
 
 
