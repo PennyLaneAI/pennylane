@@ -16,7 +16,7 @@
   weights = jnp.array([0.2, 0.5, 0.1])
   print(circuit(weights)) # DeviceArray(...)
   ```
-  [(#1076)(https://github.com/PennyLaneAI/pennylane/pull/1076)]
+  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
 
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
   transforms.
