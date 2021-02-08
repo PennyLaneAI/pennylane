@@ -18,6 +18,7 @@ This module contains the QNode class and qnode decorator.
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 import warnings
+import inspect
 
 import numpy as np
 
@@ -138,6 +139,9 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
+
+        if "shots" in inspect.signature(func):
+            warnings.warn("The shots argument is reserved and will be overwritten!", UserWarning)
 
         self.mutable = mutable
         self.func = func

@@ -933,3 +933,18 @@ class TestShots:
         assert len(circuit(0.8, shots=2)) == 2
         assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
+
+    def test_shots_reserved_argument(self):
+        """Tests that a warning is raised if the quantum function has a shots argument."""
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, shots=0):
+            qml.RX(a, wires=shots)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with pytest.raises(ValueError, match="The shots argument is reserved"):
+            circuit(0.6, shots=0)
+
+        assert circuit(0.0) == -1
