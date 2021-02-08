@@ -777,7 +777,9 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
-def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
+def qnode(
+    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
