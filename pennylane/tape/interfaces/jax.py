@@ -32,7 +32,7 @@ class JAXInterface(AnnotatedQueue):
 
         class MyJAXQuantumTape(JAXInterface, JacobianTape):
 
-    Alternatively, the jax interface can be dynamically applied to existing
+    Alternatively, the JAX interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
