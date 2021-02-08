@@ -93,7 +93,7 @@ class JAXInterface(AnnotatedQueue):
         def wrapped_exec(params):
             exec_fn = partial(self.execute_device, device=device)
             return host_callback.call(
-            exec_fn, params, result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype)
+                exec_fn, params, result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype)
             )
 
         def wrapped_exec_fwd(params):
@@ -103,7 +103,11 @@ class JAXInterface(AnnotatedQueue):
             def jacobian(params):
                 tape = self.copy()
                 tape.set_parameters(params)
-                tape.jacobian(device, params=params, **tape.jacobian_options)
+                return tape.jacobian(device, params=params, **tape.jacobian_options)
+
+            val = g.reshape((-1,)) * host_callback.call(
+                jacobian, params, result_shape=jax.ShapeDtypeStruct((1, len(params)), JAXInterface.dtype))
+            return list(val.reshape((-1,))), # Comma is on purpose.
 
         wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
         return wrapped_exec(params)

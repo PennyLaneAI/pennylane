@@ -15,9 +15,9 @@
 import pytest
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+import numpy as np
 import pennylane as qml
 from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
-
 
 def test_qnode_intergration():
 	dev = qml.device("default.mixed", wires=2) # A non-JAX device
@@ -25,7 +25,7 @@ def test_qnode_intergration():
 	@qml.qnode(dev, interface="jax")
 	def circuit(weights):
 		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[0], wires=1)
+		qml.RZ(weights[1], wires=1)
 		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 	weights = jnp.array([0.1, 0.2])
@@ -33,15 +33,223 @@ def test_qnode_intergration():
 	assert "DeviceArray" in val.__repr__()
 
 def test_to_jax():
-	dev = qml.device("default.qubit", wires=2) 
+	dev = qml.device("default.mixed", wires=2) 
 
 	@qml.qnode(dev, interface="autograd")
 	def circuit(weights):
 		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[0], wires=1)
+		qml.RZ(weights[1], wires=1)
 		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 	circuit.to_jax()
 	weights = jnp.array([0.1, 0.2])
 	val = circuit(weights)
 	assert "DeviceArray" in val.__repr__()
+
+
+def test_simple_jacobian():
+	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
+
+	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+	def circuit(weights):
+		qml.RX(weights[0], wires=0)
+		qml.RZ(weights[1], wires=1)
+		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+	weights = jnp.array([0.1, 0.2])
+	val = jax.jacrev(circuit)(weights)
+	assert "DeviceArray" in val.__repr__()
+
+def test_simple_grad():
+	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
+	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+	def circuit(weights):
+		qml.RX(weights[0], wires=0)
+		qml.RZ(weights[1], wires=1)
+		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+	weights = jnp.array([0.1, 0.2])
+	val = jax.grad(circuit)(weights)
+	assert "DeviceArray" in val.__repr__()
+
+@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
+def test_matrix_parameter(diff_method):
+    """Test that the jax interface works correctly
+    with a matrix parameter"""
+    # TODO(chase): Fix this failing tests.
+    # The current issue is that when the the tape is executed, the gate is still
+    # defined by its JAX object and is not converted to numpy before execution.
+    pytest.skip("non-backprod diff methods for custom unitary gates causes errors.")
+    U = jnp.array([[0, 1], [1, 0]])
+    a = jnp.array(0.1)
+
+    dev = qml.device("default.mixed", wires=2)
+
+    @qnode(dev, diff_method=diff_method, interface="jax")
+    def circuit(U, a):
+        qml.QubitUnitary(U, wires=0)
+        qml.RY(a, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    res = jax.jit(circuit)(U, a)
+
+    res = jax.grad(circuit, argnums=1)(U, a)
+    assert np.allclose(res, np.sin(a), atol=1e-5, rtol=0)
+
+@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
+def test_differentiable_expand(diff_method):
+    """Test that operation and nested tapes expansion
+    is differentiable"""
+    class U3(qml.U3):
+        def expand(self):
+            theta, phi, lam = self.data
+            wires = self.wires
+
+            with JacobianTape() as tape:
+                qml.Rot(lam, theta, -lam, wires=wires)
+                qml.PhaseShift(phi + lam, wires=wires)
+
+            return tape
+
+    dev = qml.device("default.mixed", wires=1)
+    a = jnp.array(0.1)
+    p = jnp.array([0.1, 0.2, 0.3])
+
+    @qnode(dev, diff_method=diff_method, interface="jax")
+    def circuit(a, p):
+        qml.RX(a, wires=0)
+        U3(p[0], p[1], p[2], wires=0)
+        return qml.expval(qml.PauliX(0))
+
+    res = circuit(a, p)
+
+    expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+        np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+    )
+    tol = 1e-5
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    res = jax.grad(circuit, argnums=1)(a, p)
+    expected = np.array(
+        [
+            np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+            np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+            - np.sin(p[1])
+            * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+            np.sin(a)
+            * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+        ]
+    )
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
+def test_probability_differentiation(diff_method):
+    """Tests correct output shape and evaluation for a tape
+    with a single prob output"""
+    pytest.skip("JAX interface doesn't support probs yet.")
+    dev = qml.device("default.mixed", wires=2)
+    x = jnp.array(0.543)
+    y = jnp.array(-0.654)
+
+    @qnode(dev, diff_method=diff_method, interface="jax")
+    def circuit(x, y):
+        qml.RX(x, wires=[0])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        return qml.probs(wires=[1])
+
+    res = jax.jacrev(circuit)(x, y)
+
+    expected = np.array(
+        [
+            [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+            [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+        ]
+    )
+    assert np.allclose(res, expected, atol=1e-5, rtol=0)
+
+def qtransform(qnode, a, framework=jnp):
+    """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
+
+    def construct(self, args, kwargs):
+        """New quantum tape construct method, that performs
+        the transform on the tape in a define-by-run manner"""
+
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed operations
+        # for verification.
+
+        t_op = []
+
+        QNode.construct(self, args, kwargs)
+
+        new_ops = []
+        for o in self.qtape.operations:
+            # here, we loop through all tape operations, and make
+            # the transformation if a RY gate is encountered.
+            if isinstance(o, qml.RY):
+                t_op.append(qml.RX(-a * framework.cos(o.data[0]), wires=o.wires))
+                new_ops.append(t_op[-1])
+            else:
+                new_ops.append(o)
+
+        self.qtape._ops = new_ops
+        self.qtape._update()
+
+    import copy
+
+    new_qnode = copy.deepcopy(qnode)
+    new_qnode.construct = construct.__get__(new_qnode, QNode)
+    return new_qnode
+
+
+@pytest.mark.parametrize(
+    "dev_name,diff_method",
+    [("default.mixed", "finite-diff"), ("default.qubit.autograd", "parameter-shift")],
+)
+def test_transform(dev_name, diff_method, monkeypatch, tol):
+    """Test an example transform"""
+    monkeypatch.setattr(qml.operation.Operation, "do_check_domain", False)
+
+    dev = qml.device(dev_name, wires=1)
+
+    @qnode(dev, interface="jax", diff_method=diff_method)
+    def circuit(weights):
+        # the following global variables are defined simply for testing
+        # purposes, so that we can easily extract the operations for verification.
+        op1 = qml.RY(weights[0], wires=0)
+        op2 = qml.RX(weights[1], wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    weights = np.array([0.32, 0.543])
+    a = np.array(0.5)
+
+    def loss(weights, a):
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed QNode
+        # for verification.
+
+        # transform the circuit QNode with trainable weight 'a'
+        new_circuit = qtransform(circuit, a)
+
+        # evaluate the transformed QNode
+        res = new_circuit(weights)
+
+        # evaluate the original QNode with pre-processed parameters
+        res2 = circuit(jnp.sin(weights))
+
+        # return the sum of the two QNode evaluations
+        return res + res2
+
+    res = loss(weights, a)
+
+    grad = jax.grad(loss, argnums=[0, 1])(weights, a)
+    assert len(grad) == 2
+    assert grad[0].shape == weights.shape
+    assert grad[1].shape == a.shape
+
+    # compare against the expected values
+    tol = 1e-5
+    assert np.allclose(res, 1.8244501889992706, atol=tol, rtol=0)
+    assert np.allclose(grad[0], [-0.26610258, -0.47053553], atol=tol, rtol=0)
+    assert np.allclose(grad[1], 0.06486032, atol=tol, rtol=0)
