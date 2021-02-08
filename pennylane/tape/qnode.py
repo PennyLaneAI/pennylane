@@ -130,7 +130,14 @@ class QNode:
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
-        self, func, device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+        self,
+        func,
+        device,
+        interface="autograd",
+        diff_method="best",
+        mutable=True,
+        max_expansion=10,
+        **diff_options,
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
