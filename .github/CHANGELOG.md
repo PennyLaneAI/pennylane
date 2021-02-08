@@ -10,7 +10,7 @@
 
 * The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
   the internal circuit should be expanded when executed on a device.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
 
 <h3>Breaking changes</h3>
 
