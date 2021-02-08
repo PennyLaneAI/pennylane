@@ -73,30 +73,6 @@ def test_simple_grad():
 	assert "DeviceArray" in val.__repr__()
 
 @pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
-def test_matrix_parameter(diff_method):
-    """Test that the jax interface works correctly
-    with a matrix parameter"""
-    # TODO(chase): Fix this failing tests.
-    # The current issue is that when the the tape is executed, the gate is still
-    # defined by its JAX object and is not converted to numpy before execution.
-    pytest.skip("non-backprod diff methods for custom unitary gates causes errors.")
-    U = jnp.array([[0, 1], [1, 0]])
-    a = jnp.array(0.1)
-
-    dev = qml.device("default.mixed", wires=2)
-
-    @qnode(dev, diff_method=diff_method, interface="jax")
-    def circuit(U, a):
-        qml.QubitUnitary(U, wires=0)
-        qml.RY(a, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-    res = jax.jit(circuit)(U, a)
-
-    res = jax.grad(circuit, argnums=1)(U, a)
-    assert np.allclose(res, np.sin(a), atol=1e-5, rtol=0)
-
-@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
 def test_differentiable_expand(diff_method):
     """Test that operation and nested tapes expansion
     is differentiable"""
@@ -141,32 +117,6 @@ def test_differentiable_expand(diff_method):
         ]
     )
     assert np.allclose(res, expected, atol=tol, rtol=0)
-
-@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
-def test_probability_differentiation(diff_method):
-    """Tests correct output shape and evaluation for a tape
-    with a single prob output"""
-    pytest.skip("JAX interface doesn't support probs yet.")
-    dev = qml.device("default.mixed", wires=2)
-    x = jnp.array(0.543)
-    y = jnp.array(-0.654)
-
-    @qnode(dev, diff_method=diff_method, interface="jax")
-    def circuit(x, y):
-        qml.RX(x, wires=[0])
-        qml.RY(y, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        return qml.probs(wires=[1])
-
-    res = jax.jacrev(circuit)(x, y)
-
-    expected = np.array(
-        [
-            [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-            [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-        ]
-    )
-    assert np.allclose(res, expected, atol=1e-5, rtol=0)
 
 def qtransform(qnode, a, framework=jnp):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
