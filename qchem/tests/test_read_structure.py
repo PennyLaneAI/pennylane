@@ -1,5 +1,6 @@
 import pytest
 from pennylane import qchem
+import numpy as np
 import os
 import subprocess
 
@@ -32,21 +33,41 @@ def test_conversion_from_folder(names, tmpdir, requires_babel):
 def test_reading_xyz_file(tmpdir):
     r"""Test reading of the generated file 'structure.xyz'"""
 
-    ref_geometry = [
-        ["C", (0.361, -0.452, -0.551)],
-        ["C", (-0.714, 0.125, 0.327)],
-        ["N", (0.683, 0.133, 0.745)],
-        ["H", (0.442, -1.529, -0.619)],
-        ["H", (0.672, 0.102, -1.428)],
-        ["H", (-1.364, -0.56, 0.857)],
-        ["H", (-1.149, 1.08, 0.060)],
-        ["H", (1.093, 1.063, 0.636)],
-    ]
+    ref_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
+    ref_coords = np.array(
+        [
+            0.361,
+            -0.452,
+            -0.551,
+            -0.714,
+            0.125,
+            0.327,
+            0.683,
+            0.133,
+            0.745,
+            0.442,
+            -1.529,
+            -0.619,
+            0.672,
+            0.102,
+            -1.428,
+            -1.364,
+            -0.56,
+            0.857,
+            -1.149,
+            1.08,
+            0.06,
+            1.093,
+            1.063,
+            0.636,
+        ]
+    )
 
     name = os.path.join(ref_dir, "gdb3.mol5.XYZ")
-    geometry = qchem.read_structure(name, outpath=tmpdir)
+    symbols, coordinates = qchem.read_structure(name, outpath=tmpdir)
 
-    assert geometry == ref_geometry
+    assert symbols == ref_symbols
+    assert np.allclose(coordinates, ref_coords)
 
 
 def test_subprocess_run(monkeypatch, requires_babel):

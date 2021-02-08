@@ -146,8 +146,9 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the structure of the polyatomic system from a file and creates
-    a list containing the symbol and Cartesian coordinates of the atomic species.
+    r"""Reads the structure of the polyatomic system from a file and returns
+    a list with the symbols of the atoms in the molecule and a 1D array
+    with the their positions in Cartesian coordinates of atoms.
 
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
@@ -176,12 +177,14 @@ def read_structure(filepath, outpath="."):
         outpath (str): path to the output directory
 
     Returns:
-        list: for each atomic species, a list containing the symbol and the Cartesian coordinates
+        tuple[list, array: symbols of the atoms in the molecule and their positions in Cartesian
+        coordinates.
 
     **Example**
 
-    >>> read_structure('h2_ref.xyz')
-    [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
+    >>> symbols, coordinates = read_structure('h2.xyz')
+    >>> print(symbols coordinates)
+    ['H', 'H'] [ 0.    0.   -0.35  0.    0.    0.35]
     """
 
     obabel_error_message = (
@@ -214,16 +217,21 @@ def read_structure(filepath, outpath="."):
     else:
         copyfile(file_in, file_out)
 
-    geometry = []
+    symbols = []
+    coordinates = []
     with open(file_out) as f:
         for line in f.readlines()[2:]:
-            species, x, y, z = line.split()
-            geometry.append([species, (float(x), float(y), float(z))])
-    return geometry
+            symbol, x, y, z = line.split()
+            symbols.append(symbol)
+            coordinates.append(float(x))
+            coordinates.append(float(y))
+            coordinates.append(float(z))
+
+    return symbols, np.array(coordinates)
 
 
 def meanfield(
-    name, geometry, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
+    name, symbols, coordinates, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
 ):  # pylint: disable=too-many-arguments
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
@@ -248,7 +256,10 @@ def meanfield(
 
     Args:
         name (str): molecule label
-        geometry (list): list containing the symbol and Cartesian coordinates for each atom
+        symbols (list[str]): list with the symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the position of the atoms in Cartesian
+            coordinates. The coordinates must be given in Angstroms and the size of the array
+            should be ``3*N`` with ``N`` being the number of atoms.
         charge (int): net charge of the system
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -267,10 +278,16 @@ def meanfield(
     **Example**
 
     >>> name = 'h2'
-    >>> geometry = [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
-    >>> meanfield(name, geometry)
+    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> meanfield(name, symbols, coordinates)
     ./pyscf/sto-3g/h2
     """
+
+    if coordinates.size != 3 * len(symbols):
+        raise ValueError(
+            "The size of the array 'coordinates' has to be 3*len(symbols) = {};"
+            " got 'coordinates.size' = {}".format(3 * len(symbols), coordinates.size)
+        )
 
     package = package.strip().lower()
 
@@ -291,6 +308,8 @@ def meanfield(
         os.mkdir(basis_dir)
 
     path_to_file = os.path.join(basis_dir, name.strip())
+
+    geometry = [[symbol, tuple(coordinates[3 * i : 3 * i + 3])] for i, symbol in enumerate(symbols)]
 
     molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
@@ -583,9 +602,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
-        qubit_indexed_wires = _process_wires(
-            wires,
-        )
+        qubit_indexed_wires = _process_wires(wires,)
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
