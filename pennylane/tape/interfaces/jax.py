@@ -80,7 +80,7 @@ class JAXInterface(AnnotatedQueue):
         return "jax"
 
     def _execute(self, params, device):
-        # TODO(chase): Add support for this.
+        # TODO (chase): Add support for more than 1 measured observable.
         if len(self.observables) != 1:
             raise ValueError("Only one return type is supported currently")
         return_type = self.observables[0].return_type
