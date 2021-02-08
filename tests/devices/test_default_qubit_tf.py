@@ -49,6 +49,7 @@ from gate_data import (
     CRot3,
     MultiRZ1,
     MultiRZ2,
+    ControlledPhaseShift,
 )
 
 np.random.seed(42)
@@ -74,9 +75,21 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 #####################################################
 
 single_qubit = [(qml.S, S), (qml.T, T), (qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
-single_qubit_param = [(qml.PhaseShift, Rphi), (qml.RX, Rotx), (qml.RY, Roty), (qml.RZ, Rotz), (qml.MultiRZ, MultiRZ1)]
+single_qubit_param = [
+    (qml.PhaseShift, Rphi),
+    (qml.RX, Rotx),
+    (qml.RY, Roty),
+    (qml.RZ, Rotz),
+    (qml.MultiRZ, MultiRZ1),
+]
 two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP)]
-two_qubit_param = [(qml.CRX, CRotx), (qml.CRY, CRoty), (qml.CRZ, CRotz), (qml.MultiRZ, MultiRZ2)]
+two_qubit_param = [
+    (qml.CRX, CRotx),
+    (qml.CRY, CRoty),
+    (qml.CRZ, CRotz),
+    (qml.MultiRZ, MultiRZ2),
+    (qml.ControlledPhaseShift, ControlledPhaseShift),
+]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 
 

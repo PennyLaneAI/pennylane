@@ -83,7 +83,7 @@ def _preprocess(features, wires, pad_with, normalize):
                 features = features / np.sqrt(norm)
             else:
                 raise ValueError(
-                    f"Features must be a vector of length 1.0; got length {norm}."
+                    f"Features must be a vector of length 1.0; got length {norm}. "
                     "Use 'normalize=True' to automatically normalize."
                 )
 
