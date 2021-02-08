@@ -14,7 +14,7 @@
 
 * Fixes a bug where inverse operations could not be differentiated
   using backpropagation on `default.qubit`.
-  [(#)]()
+  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
 
 <h3>Documentation</h3>
 
