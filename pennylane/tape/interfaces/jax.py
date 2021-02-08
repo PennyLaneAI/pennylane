@@ -42,7 +42,7 @@ class JAXInterface(AnnotatedQueue):
     .. note::
 
         If using a device that supports native autograd computation and backpropagation, such as
-        :class:`~.DefaultQubitJAX`, the Autograd interface **does not need to be applied**. It
+        :class:`~.DefaultQubitJAX`, the JAX interface **does not need to be applied**. It
         is only applied to tapes executed on non-JAX compatible devices.
 
     **Example**
