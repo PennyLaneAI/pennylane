@@ -123,6 +123,9 @@ class TestOperation:
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
+        if test_class == qml.ControlledQubitUnitary:
+            pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
+
         n = test_class.num_params
         w = test_class.num_wires
         ww = list(range(w))
