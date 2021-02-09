@@ -148,7 +148,7 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
-    with the their positions in Cartesian coordinates of atoms.
+    with the atomic positions in Cartesian coordinates.
 
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
@@ -257,7 +257,7 @@ def meanfield(
     Args:
         name (str): molecule label
         symbols (list[str]): list with the symbols of the atomic species in the molecule
-        coordinates (array[float]): 1D array with the position of the atoms in Cartesian
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
             should be ``3*N`` with ``N`` being the number of atoms.
         charge (int): net charge of the system
