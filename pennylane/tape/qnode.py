@@ -153,8 +153,10 @@ class QNode:
             )
 
         if "shots" in inspect.signature(func).parameters:
-            warnings.warn("The shots argument is reserved and should be avoided "
-                          "in quantum functions!", DeprecationWarning)
+            warnings.warn(
+                "The shots argument is reserved and should be avoided " "in quantum functions!",
+                DeprecationWarning,
+            )
             self.qfunc_uses_shots_arg = True
         else:
             self.qfunc_uses_shots_arg = False
