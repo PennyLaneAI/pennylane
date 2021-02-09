@@ -53,12 +53,16 @@ def test_simple_jacobian():
 	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
 	def circuit(weights):
 		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[1], wires=1)
+		qml.RY(weights[1], wires=1)
 		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 	weights = jnp.array([0.1, 0.2])
-	val = jax.jacrev(circuit)(weights)
-	assert "DeviceArray" in val.__repr__()
+	grads = jax.jacrev(circuit)(weights)
+	# This is the easiest way to ensure our object is a DeviceArray instead
+	# of a numpy array.
+	assert "DeviceArray" in grads.__repr__()
+	assert grads.shape == (2,)
+	np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]))
 
 def test_simple_grad():
 	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
@@ -125,10 +129,6 @@ def qtransform(qnode, a, framework=jnp):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
 
-        # the following global variable is defined simply for testing
-        # purposes, so that we can easily extract the transformed operations
-        # for verification.
-
         t_op = []
 
         QNode.construct(self, args, kwargs)
@@ -165,8 +165,6 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="jax", diff_method=diff_method)
     def circuit(weights):
-        # the following global variables are defined simply for testing
-        # purposes, so that we can easily extract the operations for verification.
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
         return qml.expval(qml.PauliZ(wires=0))
@@ -175,10 +173,6 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
     a = np.array(0.5)
 
     def loss(weights, a):
-        # the following global variable is defined simply for testing
-        # purposes, so that we can easily extract the transformed QNode
-        # for verification.
-
         # transform the circuit QNode with trainable weight 'a'
         new_circuit = qtransform(circuit, a)
 
