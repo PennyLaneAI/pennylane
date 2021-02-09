@@ -2,6 +2,12 @@
 
 <h3>Bug fixes</h3>
 
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device. In addition, the default number
+  of max expansions has been increased from 2 to 10, allowing devices that require more than two
+  operator decompositions to be supported.
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
+
 * Fixes a bug where `Hamiltonian` objects created with non-list arguments
   raised an error for arithmetic operations.
   [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
