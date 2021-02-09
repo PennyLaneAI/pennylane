@@ -48,6 +48,11 @@
 
 <h3>Bug fixes</h3>
 
+* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+  set to True, then the returned gradient will be a NumPy array, rather than a
+  tuple of length 1.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
