@@ -34,19 +34,35 @@ def get_circuit(n_qubits, output_dim, interface, tape_mode):
         "w7": 0,
     }
 
-    @qml.qnode(dev, interface=interface)
-    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
-        """A circuit that embeds data using the AngleEmbedding and then performs a variety of
-        operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
-        parameters, w5, are specified as non-trainable."""
-        qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-        qml.RX(w2[0], wires=0 % n_qubits)
-        qml.RX(w3, wires=1 % n_qubits)
-        qml.Rot(*w4, wires=2 % n_qubits)
-        qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-        qml.Rot(*w6, wires=3 % n_qubits)
-        qml.RX(w7, wires=4 % n_qubits)
-        return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+    if isinstance(output_dim, tuple):
+        @qml.qnode(dev, interface=interface)
+        def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+            """Sample circuit to be used for testing density_matrix() return type.
+            """
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0)
+            qml.RX(w3, wires=0)
+            qml.Rot(*w4, wires=0)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=0)
+            qml.RX(w7, wires=0)
+            return qml.density_matrix(wires=[1])
+
+    else:
+        @qml.qnode(dev, interface=interface)
+        def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0 % n_qubits)
+            qml.RX(w3, wires=1 % n_qubits)
+            qml.Rot(*w4, wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=3 % n_qubits)
+            qml.RX(w7, wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
     return circuit, weight_shapes
