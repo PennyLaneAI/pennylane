@@ -23,6 +23,21 @@
   [ 1  1  1] 
   >>> circuit(0.8)  
   [ 1  1  1 -1 -1  1  1  1  1  1]
+
+- The JAX interface now supports all devices.
+  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
+
+   Here is an example of how to use JAX with Cirq:
+
+  ```python
+  dev = qml.device('cirq.simulator', wires=1)
+  @qml.qnode(dev, interface="jax")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+  weights = jnp.array([0.2, 0.5, 0.1])
+  print(circuit(weights)) # DeviceArray(...)
   ```
 
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
@@ -86,7 +101,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Daniel Polatajko, Maria Schuld
+Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld
 
 # Release 0.14.0 (current release)
 
