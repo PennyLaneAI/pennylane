@@ -790,7 +790,7 @@ class TestOperations:
     @pytest.mark.parametrize("target_wire", range(3))
     def test_controlled_qubit_unitary_toffoli(self, target_wire):
         """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
-        single-qubit X"""
+        single-qubit X. This test allows the target wire to be any of the three wires."""
         control_wires = list(range(3))
         del control_wires[target_wire]
 

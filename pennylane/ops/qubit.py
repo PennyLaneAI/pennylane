@@ -1623,8 +1623,8 @@ class ControlledQubitUnitary(QubitUnitary):
     The following shows how a single-qubit unitary can be applied to wire ``2`` with control on
     both wires ``0`` and ``1``:
 
-    >>> X = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-    >>> qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2)
+    >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
     """
     num_params = 1
     num_wires = AnyWires
