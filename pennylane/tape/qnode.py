@@ -153,7 +153,11 @@ class QNode:
             )
 
         if "shots" in inspect.signature(func).parameters:
-            warnings.warn("The shots argument is reserved and will be overwritten!", UserWarning)
+            warnings.warn("The shots argument is reserved and should be avoided "
+                          "in quantum functions!", DeprecationWarning)
+            self.qfunc_uses_shots_arg = True
+        else:
+            self.qfunc_uses_shots_arg = False
 
         self.mutable = mutable
         self.func = func
@@ -530,11 +534,14 @@ class QNode:
 
     def __call__(self, *args, **kwargs):
 
-        # If shots specified from call, we override the device's default shots value.
-        shots = kwargs.pop("shots", None)
-        if shots is not None:
+        # If shots specified in call but not in qfunc signature,
+        # interpret it as device shots value for this call.
+        # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
+        original_shots = None
+        if "shots" in kwargs and not self.qfunc_uses_shots_arg:
             original_shots = self.device.shots  # remember device shots
-            self.device.shots = shots  # temporarily change shots
+            # remove shots from kwargs and temporarily change on device
+            self.device.shots = kwargs.pop("shots", None)
 
         if self.mutable or self.qtape is None:
             # construct the tape
@@ -543,7 +550,8 @@ class QNode:
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
-        if shots is not None:
+        if original_shots is not None:
+            # reinstate default on device
             self.device.shots = original_shots
 
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.

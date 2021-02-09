@@ -938,8 +938,8 @@ class TestShots:
         assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
-    def test_shots_reserved_qfunc_argument(self):
-        """Tests that a warning is raised if the quantum function has a shots argument."""
+    def test_warning_if_user_has_shots_qfunc_argument(self):
+        """Tests that a deprecation warning is raised if the quantum function has a shots argument."""
 
         dev = qml.device('default.qubit', wires=2)
 
@@ -947,8 +947,27 @@ class TestShots:
             qml.RX(a, wires=shots)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.warns(UserWarning, match="The shots argument is reserved"):
+        with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
             qml.QNode(circuit, dev)
+
+    def test_no_overwriting_if_user_has_shots_qfunc_argument(self):
+        """Tests that the user's shots argument is used and the per-call shots overwriting suspended."""
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a, shots=0):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+        assert len(circuit(0.8, shots=1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
 
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_shots_setting_does_not_mutate_device(self, diff_method):
