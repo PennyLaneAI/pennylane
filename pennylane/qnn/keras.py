@@ -218,7 +218,7 @@ class KerasLayer(Layer):
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple
-        if (isinstance(output_dim, Iterable) and len(output_dim) > 1):
+        if isinstance(output_dim, Iterable) and len(output_dim) > 1:
             self.output_dim = tuple(output_dim)
         else:
             self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
