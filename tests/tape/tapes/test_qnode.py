@@ -949,3 +949,19 @@ class TestShots:
 
         with pytest.raises(qml.QuantumFunctionError, match="The shots argument is reserved"):
             qml.QNode(circuit, dev)
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_shots_setting_does_not_mutate_device(self, diff_method):
+        """Tests that per-call shots setting does not change the number of shots in the device."""
+
+        dev = qml.device('default.qubit', wires=1, shots=3)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert dev.shots == 3
+        res = circuit(0.8, shots=2)
+        assert res == 2
+        assert dev.shots == 3

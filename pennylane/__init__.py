@@ -171,7 +171,8 @@ def device(name, *args, **kwargs):
 
     Most devices accept a ``shots`` argument which specifies how many circuit executions
     are used to estimate stochastic return values. In particular, ``qml.sample()`` measurements
-    will return as many samples as specified in the shots argument.
+    will return as many samples as specified in the shots argument. The shots argument can be
+    changed on a per-call basis using the built-in ``shots`` keyword argument.
 
     .. code-block:: python
 
@@ -188,8 +189,6 @@ def device(name, *args, **kwargs):
         [1 1 1]
         >>> circuit(0.8)  # back to default of 10 samples
         [ 1  1  1 -1 -1  1  1  1  1  1]
-
-    The shots argument can be changed on a per-call basis using the built-in ``shots`` keyword argument.
 
     Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set
