@@ -418,6 +418,27 @@ class TestKerasLayer:
         assert layer_out.shape == (batch_size, output_dim)
         assert np.allclose(layer_out[0], c(x[0], *weights))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [2,4,6])
+    @pytest.mark.parametrize("middle_dim", [2,5,8])
+    def test_call_broadcast(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
+        """Test if the call() method performs correctly when the inputs argument has an arbitrary shape (that can
+        correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
+        (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly."""
+        c, w = get_circuit
+
+        layer = KerasLayer(c, w, output_dim)
+        x = tf.ones((batch_size, middle_dim, n_qubits))
+
+        with tf.GradientTape() as tape:
+            layer_out = layer(x)
+
+        g_layer = tape.gradient(layer_out, layer.trainable_variables)
+
+        # test gradients are at least calculated
+        assert g_layer is not None
+        assert layer_out.shape == (batch_size, middle_dim, output_dim)
+
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit, output_dim):
         """Test the __str__ and __repr__ representations"""
