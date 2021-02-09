@@ -183,7 +183,6 @@ def device(name, *args, **kwargs):
           return qml.sample(qml.PauliZ(wires=0))
 
         print(circuit(0.8))  # [ 1  1  1 -1 -1  1  1  1  1  1] -> 10 samples are returned
-       ...
 
     The shots argument can be changed on a per-call basis using the built-in ``shots`` keyword argument:
 
