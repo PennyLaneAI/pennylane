@@ -4,6 +4,12 @@
 
 <h3>Improvements</h3>
 
+* Updates `PennyLane-QChem` functions to separately take as input the
+  atomic symbols and nuclear coordinates of the molecule. This allows
+  users to build parametrized electronic Hamiltonians to perform 
+  optimization of the energy with respect to the Hamiltonian parameters. 
+  [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -13,6 +19,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Alain Delgado
 
 
 # Release 0.13.1
