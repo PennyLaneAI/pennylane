@@ -819,6 +819,60 @@ class TestOperations:
 
         assert np.allclose(state_1, state_2)
 
+    def test_controlled_qubit_unitary_arbitrary(self):
+        """Test if ControlledQubitUnitary applies correctly for a 2-qubit unitary with 2-qubit
+        control, where the control and target wires are not ordered."""
+        control_wires = [1, 3]
+        target_wires = [2, 0]
+
+        # pick some random unitaries (with a fixed seed) to make the circuit less trivial
+        U1 = unitary_group.rvs(16, random_state=1)
+        U2 = unitary_group.rvs(16, random_state=2)
+
+        # the two-qubit unitary
+        U = unitary_group.rvs(4, random_state=3)
+
+        # the 4-qubit representation of the unitary if the control wires were [0, 1] and the target
+        # wires were [2, 3]
+        U_matrix = np.eye(16, dtype=np.complex128)
+        for i in range(4):
+            for j in range(4):
+                U_matrix[i + 12, j + 12] = U[i, j]
+
+        # We now need to swap wires so that the control wires are [1, 3] and the target wires are
+        # [2, 0]
+        swap = qml.SWAP.matrix
+
+        # initial wire permutation: 0123
+        # target wire permutation: 1302
+        swap1 = np.kron(swap, np.eye(4))  # -> 1023
+        swap2 = np.kron(np.eye(4), swap)  # -> 1032
+        swap3 = np.kron(np.kron(np.eye(2), swap), np.eye(2))  # -> 1302
+        swap4 = np.kron(np.eye(4), swap)  # -> 1320
+
+        all_swap = swap4 @ swap3 @ swap2 @ swap1
+        U_matrix = all_swap.T @ U_matrix @ all_swap
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def f1():
+            qml.QubitUnitary(U1, wires=range(4))
+            qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
+            qml.QubitUnitary(U2, wires=range(4))
+            return qml.state()
+
+        @qml.qnode(dev)
+        def f2():
+            qml.QubitUnitary(U1, wires=range(4))
+            qml.QubitUnitary(U_matrix, wires=range(4))
+            qml.QubitUnitary(U2, wires=range(4))
+            return qml.state()
+
+        state_1 = f1()
+        state_2 = f2()
+
+        assert np.allclose(state_1, state_2)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
