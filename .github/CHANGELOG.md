@@ -24,7 +24,9 @@
 
 <h3>Improvements</h3>
 
-<h4>Broadcasting over multi-dimensional inputs to KerasLayer and TorchLayer</h4>
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device.
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional 
@@ -57,9 +59,15 @@
   >>> out.shape
   (5, 4, 4)
   ```
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+  set to True, then the returned gradient will be a NumPy array, rather than a
+  tuple of length 1.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 <h3>Documentation</h3>
 
@@ -67,7 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Daniel Polatajko, Chase Roberts.
+Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts
 
 # Release 0.14.0 (current release)
 
