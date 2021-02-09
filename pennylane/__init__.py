@@ -183,12 +183,12 @@ def device(name, *args, **kwargs):
           qml.RX(a, wires=0)
           return qml.sample(qml.PauliZ(wires=0))
 
-        >>> circuit(0.8)  # 10 samples are returned
-        [ 1  1  1 -1 -1  1  1  1  1  1]
-        >>> circuit(0.8, shots=3))  # default is overwritten for this call
-        [1 1 1]
-        >>> circuit(0.8)  # back to default of 10 samples
-        [ 1  1  1 -1 -1  1  1  1  1  1]
+    >>> circuit(0.8)  # 10 samples are returned
+    [ 1  1  1 -1 -1  1  1  1  1  1]
+    >>> circuit(0.8, shots=3))  # default is overwritten for this call
+    [1 1 1]
+    >>> circuit(0.8)  # back to default of 10 samples
+    [ 1  1  1 -1 -1  1  1  1  1  1]
 
     Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set
