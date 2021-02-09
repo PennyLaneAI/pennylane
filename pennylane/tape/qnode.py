@@ -766,13 +766,38 @@ class QNode:
             AutogradInterface.apply(self.qtape)
 
     def to_jax(self):
-        """Validation checks when a user expects to use the JAX interface."""
-        if self.diff_method != "backprop":
+        """Apply the JAX interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the JAX QNode should
+                output. If not provided, the default is ``jnp.float64``.
+
+        Raises:
+            .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+        """
+        # pylint: disable=import-outside-toplevel
+        try:
+            from pennylane.tape.interfaces.jax import JAXInterface
+
+            if self.interface != "jax" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "jax", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options.update(diff_options)
+            else:
+                self.interface = "jax"
+
+            if self.qtape is not None:
+                JAXInterface.apply(self.qtape)
+
+        except ImportError as e:
             raise qml.QuantumFunctionError(
-                "The JAX interface can only be used with "
-                "diff_method='backprop' on supported devices"
-            )
-        self.interface = "jax"
+                "JAX not found. Please install the latest "
+                "version of JAX to enable the 'jax' interface."
+            ) from e
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
