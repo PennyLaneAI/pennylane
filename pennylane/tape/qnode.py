@@ -141,9 +141,7 @@ class QNode:
             )
 
         if "shots" in inspect.signature(func).parameters:
-            raise qml.QuantumFunctionError(
-                "The shots argument is reserved and will be overwritten!"
-            )
+            warnings.warn("The shots argument is reserved and will be overwritten!", UserWarning)
 
         self.mutable = mutable
         self.func = func

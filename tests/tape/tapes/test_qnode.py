@@ -947,7 +947,7 @@ class TestShots:
             qml.RX(a, wires=shots)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="The shots argument is reserved"):
+        with pytest.warns(UserWarning, match="The shots argument is reserved"):
             qml.QNode(circuit, dev)
 
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
@@ -959,9 +959,9 @@ class TestShots:
         @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.sample(qml.PauliZ(wires=0))
 
         assert dev.shots == 3
         res = circuit(0.8, shots=2)
-        assert res == 2
+        assert len(res) == 2
         assert dev.shots == 3
