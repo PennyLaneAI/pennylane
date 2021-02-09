@@ -75,7 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Daniel Polatajko
+Thomas Bromley, Josh Izaac, Daniel Polatajko, Maria Schuld
 
 # Release 0.14.0 (current release)
 

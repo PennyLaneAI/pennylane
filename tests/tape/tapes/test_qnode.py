@@ -950,8 +950,9 @@ class TestShots:
         with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
             qml.QNode(circuit, dev)
 
-    def test_no_overwriting_if_user_has_shots_qfunc_argument(self):
-        """Tests that the user's shots argument is used and the per-call shots overwriting suspended."""
+    def test_no_overwriting_if_user_has_shots_qfunc_kwarg(self):
+        """Tests that a user's shots keyword argument is used
+           and the per-call shots overwriting suspended."""
 
         dev = qml.device('default.qubit', wires=2, shots=10)
 
@@ -966,6 +967,36 @@ class TestShots:
         assert len(circuit(0.8, shots=1)) == 10
         assert circuit.qtape.operations[0].wires.labels == (1,)
 
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+    def test_user_has_shots_qfunc_arg(self):
+        """Tests that a user's positional shots argument does not affect the change-shots-per-call behaviour,
+            but still raises a warning."""
+
+        # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
+        dev = qml.device('default.qubit', wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
+
+        # assert that warning is still raised
+        with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
+            circuit = qml.QNode(circuit, dev)
+
+        # interpret second argument as wire
+        assert len(circuit(0.8, 1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        # interpret second argument as wire
         assert len(circuit(0.8, shots=0)) == 10
         assert circuit.qtape.operations[0].wires.labels == (0,)
 
