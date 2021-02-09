@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
 
 def test_qnode_intergration():
+	"""Test a simple use of qnode with a JAX interface and non-JAX device"""
 	dev = qml.device("default.mixed", wires=2) # A non-JAX device
 
 	@qml.qnode(dev, interface="jax")
@@ -33,6 +34,7 @@ def test_qnode_intergration():
 	assert "DeviceArray" in val.__repr__()
 
 def test_to_jax():
+	"""Test the to_jax method"""
 	dev = qml.device("default.mixed", wires=2) 
 
 	@qml.qnode(dev, interface="autograd")
@@ -48,6 +50,7 @@ def test_to_jax():
 
 
 def test_simple_jacobian():
+	"""Test the use of jax.jaxrev"""
 	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
 
 	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
@@ -65,6 +68,7 @@ def test_simple_jacobian():
 	np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]))
 
 def test_simple_grad():
+	"""Test the use of jax.grad"""
 	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
 	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
 	def circuit(weights):
