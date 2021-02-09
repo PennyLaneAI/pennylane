@@ -18,6 +18,7 @@ import pytest
 import functools
 import numpy as np
 from numpy.linalg import multi_dot
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -785,6 +786,39 @@ class TestOperations:
         """Test if ControlledQubitUnitary raises an error if control wires are shared with wires"""
         with pytest.raises(ValueError, match="The control wires must be different from the wires"):
             qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
+
+    @pytest.mark.parametrize("target_wire", range(3))
+    def test_controlled_qubit_unitary_toffoli(self, target_wire):
+        """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
+        single-qubit X"""
+        control_wires = list(range(3))
+        del control_wires[target_wire]
+
+        # pick some random unitaries (with a fixed seed) to make the circuit less trivial
+        U1 = unitary_group.rvs(8, random_state=1)
+        U2 = unitary_group.rvs(8, random_state=2)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f1():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wire)
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        @qml.qnode(dev)
+        def f2():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.Toffoli(wires=control_wires + [target_wire])
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        state_1 = f1()
+        state_2 = f2()
+
+        assert np.allclose(state_1, state_2)
+
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
