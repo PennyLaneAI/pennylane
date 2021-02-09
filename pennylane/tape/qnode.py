@@ -107,6 +107,11 @@ class QNode:
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
 
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -125,7 +130,14 @@ class QNode:
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
-        self, func, device, interface="autograd", diff_method="best", mutable=True, **diff_options
+        self,
+        func,
+        device,
+        interface="autograd",
+        diff_method="best",
+        mutable=True,
+        max_expansion=10,
+        **diff_options,
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
@@ -156,7 +168,7 @@ class QNode:
         self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
-        self.max_expansion = 2
+        self.max_expansion = max_expansion
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -765,7 +777,9 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
-def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
+def qnode(
+    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
@@ -842,6 +856,11 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
 
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -865,6 +884,7 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
             interface=interface,
             diff_method=diff_method,
             mutable=mutable,
+            max_expansion=max_expansion,
             **diff_options,
         )
         return update_wrapper(qn, func)
