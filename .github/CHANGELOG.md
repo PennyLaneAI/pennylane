@@ -2,8 +2,7 @@
 
 <h3>New features since last release</h3>
 
-- Users can overwrite the default `shots` argument of a device in each qnode function
-  call:
+- The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
   ```python
