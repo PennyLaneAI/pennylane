@@ -924,7 +924,7 @@ class TestMutability:
 class TestShots:
     """Unittests for specifying shots per call."""
 
-    def test_specify_shots(self):
+    def test_specify_shots_per_call(self):
         """Tests that shots can be set per call."""
         dev = qml.device('default.qubit', wires=1, shots=10)
 
@@ -938,28 +938,18 @@ class TestShots:
         assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
-    def test_warning_if_user_has_shots_qfunc_argument(self):
-        """Tests that a deprecation warning is raised if the quantum function has a shots argument."""
-
-        dev = qml.device('default.qubit', wires=2)
-
-        def circuit(a, shots=2):
-            qml.RX(a, wires=shots)
-            return qml.expval(qml.PauliZ(wires=0))
-
-        with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
-            qml.QNode(circuit, dev)
-
-    def test_no_overwriting_if_user_has_shots_qfunc_kwarg(self):
-        """Tests that a user's shots keyword argument is used
-           and the per-call shots overwriting suspended."""
+    def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
+        """Tests that the per-call shots overwriting is suspended if user
+        has a shots keyword argument, but a warning is raised."""
 
         dev = qml.device('default.qubit', wires=2, shots=10)
 
-        @qml.qnode(dev)
         def circuit(a, shots=0):
             qml.RX(a, wires=shots)
             return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
+            circuit = qml.QNode(circuit, dev)
 
         assert len(circuit(0.8)) == 10
         assert circuit.qtape.operations[0].wires.labels == (0,)
@@ -970,9 +960,9 @@ class TestShots:
         assert len(circuit(0.8, shots=0)) == 10
         assert circuit.qtape.operations[0].wires.labels == (0,)
 
-    def test_user_has_shots_qfunc_arg(self):
-        """Tests that a user's positional shots argument does not affect the change-shots-per-call behaviour,
-            but still raises a warning."""
+    def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
+        """Tests that the per-call shots overwriting is suspended
+        if user has a shots argument, but a warning is raised."""
 
         # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
         dev = qml.device('default.qubit', wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
@@ -985,7 +975,6 @@ class TestShots:
         with pytest.warns(DeprecationWarning, match="The shots argument is reserved"):
             circuit = qml.QNode(circuit, dev)
 
-        # interpret second argument as wire
         assert len(circuit(0.8, 1)) == 10
         assert circuit.qtape.operations[0].wires.labels == (1,)
 
@@ -996,7 +985,6 @@ class TestShots:
             qml.RX(a, wires=shots)
             return qml.sample(qml.PauliZ(wires=0))
 
-        # interpret second argument as wire
         assert len(circuit(0.8, shots=0)) == 10
         assert circuit.qtape.operations[0].wires.labels == (0,)
 
