@@ -6,20 +6,47 @@ from pennylane import qchem
 
 from pennylane.vqe import Hamiltonian
 
-ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
+import numpy as np
+
+
+symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
+coordinates = np.array(
+    [
+        0.361,
+        -0.452,
+        -0.551,
+        -0.714,
+        0.125,
+        0.327,
+        0.683,
+        0.133,
+        0.745,
+        0.442,
+        -1.529,
+        -0.619,
+        0.672,
+        0.102,
+        -1.428,
+        -1.364,
+        -0.56,
+        0.857,
+        -1.149,
+        1.08,
+        0.06,
+        1.093,
+        1.063,
+        0.636,
+    ]
+)
 
 
 @pytest.mark.parametrize(
     ("charge", "mult", "package", "nact_els", "nact_orbs", "mapping",),
     [
         (0, 1, "psi4", 2, 2, "jordan_WIGNER"),
-        (1, 2, "psi4", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "psi4", 1, 2, "jordan_WIGNER"),
+        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
         (2, 1, "psi4", 2, 2, "BRAVYI_kitaev"),
-        (0, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
-        (1, 2, "pyscf", 3, 4, "jordan_WIGNER"),
-        (-1, 2, "pyscf", 1, 2, "BRAVYI_kitaev"),
-        (2, 1, "pyscf", 2, 2, "jordan_WIGNER"),
     ],
 )
 def test_building_hamiltonian(
@@ -30,17 +57,13 @@ def test_building_hamiltonian(
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
 
-    name = "gdb3"
-    geo_file = "gdb3.mol5.PDB"
-
     if package == "psi4" and not psi4_support:
         pytest.skip("Skipped, no Psi4 support")
 
-    geo_file = os.path.join(ref_dir, geo_file)
-
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(
-        name,
-        geo_file,
+        "gdb3_mol5",
+        symbols,
+        coordinates,
         charge=charge,
         mult=mult,
         package=package,

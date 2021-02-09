@@ -256,7 +256,7 @@ def meanfield(
 
     Args:
         name (str): molecule label
-        symbols (list[str]): list with the symbols of the atomic species in the molecule
+        symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
             should be ``3*N`` with ``N`` being the number of atoms.
@@ -696,7 +696,8 @@ def convert_observable(qubit_observable, wires=None):
 
 def molecular_hamiltonian(
     name,
-    geo_file,
+    symbols,
+    coordinates,
     charge=0,
     mult=1,
     basis="sto-3g",
@@ -711,8 +712,6 @@ def molecular_hamiltonian(
 
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
-
-    #. The process begins by reading the file containing the geometry of the molecule.
 
     #. OpenFermion-PySCF or OpenFermion-Psi4 plugins are used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
@@ -745,7 +744,10 @@ def molecular_hamiltonian(
 
     Args:
         name (str): name of the molecule
-        geo_file (str): file containing the geometry of the molecule
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in Angstroms and the size of the array
+            should be ``3*N`` with ``N`` being the number of atoms.
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
             for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -776,8 +778,8 @@ def molecular_hamiltonian(
     **Example**
 
     >>> name = "h2"
-    >>> geo_file = "h2.xyz"
-    >>> H, qubits = molecular_hamiltonian(name, geo_file)
+    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> H, qubits = molecular_hamiltonian(name, symbols, coordinates)
     >>> print(qubits)
     4
     >>> print(H)
@@ -798,9 +800,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    geometry = read_structure(geo_file, outpath)
-
-    hf_file = meanfield(name, geometry, charge, mult, basis, package, outpath)
+    hf_file = meanfield(name, symbols, coordinates, charge, mult, basis, package, outpath)
 
     molecule = MolecularData(filename=hf_file)
 
