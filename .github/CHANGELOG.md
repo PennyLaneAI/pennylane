@@ -8,6 +8,10 @@
 
 <h3>Improvements</h3>
 
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device.
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
+
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional 
   vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
@@ -39,6 +43,7 @@
   >>> out.shape
   (5, 4, 4)
   ```
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
