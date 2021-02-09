@@ -82,7 +82,7 @@ class JAXInterface(AnnotatedQueue):
     def _execute(self, params, device):
         # TODO (chase): Add support for more than 1 measured observable.
         if len(self.observables) != 1:
-            raise ValueError("Only one return type is supported currently")
+            raise ValueError("The JAX interface currently only supports quantum nodes with a single return type.")
         return_type = self.observables[0].return_type
         if return_type is not Variance and return_type is not Expectation:
             raise ValueError(
