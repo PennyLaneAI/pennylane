@@ -42,7 +42,9 @@ def skip_if_no_torch_support():
 
 
 @pytest.mark.parametrize("interface", ALLOWED_INTERFACES)
-@pytest.mark.usefixtures("skip_if_no_torch_support", "skip_if_no_tf_support")
+@pytest.mark.usefixtures(
+    "skip_if_no_torch_support", "skip_if_no_tf_support", "skip_if_no_jax_support"
+)
 class TestSquaredErrorLoss:
     def test_no_target(self, interface):
         with pytest.raises(ValueError, match="The target cannot be None"):
