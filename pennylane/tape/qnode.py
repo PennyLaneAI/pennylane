@@ -157,9 +157,9 @@ class QNode:
                 "The shots argument is reserved and should be avoided in quantum functions!",
                 DeprecationWarning,
             )
-            self.qfunc_uses_shots_arg = True
+            self._qfunc_uses_shots_arg = True
         else:
-            self.qfunc_uses_shots_arg = False
+            self._qfunc_uses_shots_arg = False
 
         self.mutable = mutable
         self.func = func
@@ -540,7 +540,7 @@ class QNode:
         # interpret it as device shots value for this call.
         # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
         original_shots = None
-        if "shots" in kwargs and not self.qfunc_uses_shots_arg:
+        if "shots" in kwargs and not self._qfunc_uses_shots_arg:
             original_shots = self.device.shots  # remember device shots
             # remove shots from kwargs and temporarily change on device
             self.device.shots = kwargs.pop("shots", None)

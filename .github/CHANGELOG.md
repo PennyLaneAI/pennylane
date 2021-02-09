@@ -12,10 +12,17 @@
   def circuit(a):
       qml.RX(a, wires=0)
       return qml.sample(qml.PauliZ(wires=0))
+  ```
   
-  print(circuit(0.8))  # [ 1  1  1 -1 -1  1  1  1  1  1]
-  print(circuit(0.8, shots=3))  # [ 1  1  1] -> default is changed for this call 
-  print(circuit(0.8))  # [ 1  1  1 -1 -1  1  1  1  1  1]
+  For this, the qnode is called with an additional `shots` keyword argument:
+  
+  ```pycon
+  >>> circuit(0.8)  
+  [ 1  1  1 -1 -1  1  1  1  1  1]
+  >>> circuit(0.8, shots=3)
+  [ 1  1  1] 
+  >>> circuit(0.8)  
+  [ 1  1  1 -1 -1  1  1  1  1  1]
   ```
 
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
@@ -62,12 +69,16 @@
 
 <h3>Breaking changes</h3>
 
+* If creating a QNode from a quantum function with an argument named `shots`,
+  a `DeprecationWarning` is raised, warning the user that this is a reserved 
+  argument to change the number of shots on a per-call basis.
+
 <h3>Bug fixes</h3>
 
 * If only one argument to the function `qml.grad` has the `requires_grad` attribute
   set to True, then the returned gradient will be a NumPy array, rather than a
   tuple of length 1.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
 
 <h3>Documentation</h3>
 
