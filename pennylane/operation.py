@@ -991,32 +991,6 @@ class Projection(Operation):
             outside of a BaseQNode context.
     """
 
-    # pylint: disable=abstract-method
-
-    @classmethod
-    def _projectors(cls, *params, wires):
-        r"""Projectors representing a projection operation, specified in the
-        computational basis.
-
-        This is a class method that should be defined for all
-        new projections.
-
-        This private method allows projectors to be computed
-        directly without instantiating the projection first.
-
-        **Example**
-
-        >>> qml.Measure._projectors(wires=0)
-        >>> [array([[1, 0], [0, 0]]), array([[0, 0], [0, 1]])]
-
-        To return the projectors of an *instantiated* projection,
-        please use the :attr:`~.Operator.projectors` property instead.
-
-        Returns:
-            list(array): list of projectors
-        """
-        raise NotImplementedError
-
     @property
     def projectors(self):
         """Projectors of an instantiated projector,
