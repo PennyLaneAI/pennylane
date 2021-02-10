@@ -352,7 +352,7 @@ class TestHighLevelIntegration:
             qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True
         )
 
-        grad = qml.grad(circuit)(weights)[0]
+        grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
@@ -374,7 +374,7 @@ class TestHighLevelIntegration:
         def cost(weights):
             return np.sum(qnodes(weights))
 
-        grad = qml.grad(cost)(weights)[0]
+        grad = qml.grad(cost)(weights)
         assert grad.shape == weights.shape
 
 class TestOps:
@@ -394,6 +394,23 @@ class TestOps:
         param = 0.3
         res = qml.jacobian(circuit)(param)
         assert np.allclose(res, np.zeros(wires **2))
+
+    def test_inverse_operation_jacobian_backprop(self, tol):
+        """Test that inverse operations work in backprop
+        mode"""
+        dev = qml.device('default.qubit.autograd', wires=1)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.RY(param, wires=0).inv()
+            return qml.expval(qml.PauliX(0))
+
+        x = 0.3
+        res = circuit(x)
+        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
+
+        grad = qml.grad(circuit)(x)
+        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
