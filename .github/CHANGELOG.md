@@ -85,11 +85,11 @@
 
 <h3>Breaking changes</h3>
 
-* The `QubitDevice` class, and all devices inheriting from it, do not have 
-  an `analytic` argument or attribute any more. Instead, the `shots` argument/attribute 
-  is the source of truth for whether a simulator estimates return values from 
-  a finite number of shots, or returns analytic results.
-  [(#10XX)](https://github.com/PennyLaneAI/pennylane/pull/10XX).
+* Devices do not have an `analytic` argument or attribute anymore. 
+  Instead, `shots` is the source of truth for whether a simulator 
+  estimates return values from a finite number of shots, or whether 
+  it returns analytic results.
+  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079).
   
   ```python  
   dev_analytic = qml.device('default.qubit', wires=1, shots=None)
@@ -119,7 +119,8 @@
   >>> circuit_finite_shots()
   0.034
   ``` 
-  The `qml.sample()` return type can only be used on devices on which the number 
+  
+  The `qml.sample()` measurement can only be used on devices on which the number 
   of shots is set. 
 
 * If creating a QNode from a quantum function with an argument named `shots`,
