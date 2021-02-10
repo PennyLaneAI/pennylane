@@ -16,6 +16,7 @@ Unit tests for the available built-in quantum projection operations.
 """
 import pytest
 import numpy as np
+import pennylane as qml
 
 
 class TestProjectors:
