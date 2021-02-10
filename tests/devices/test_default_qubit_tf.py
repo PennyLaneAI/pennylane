@@ -1381,7 +1381,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_expectation_values_not_differentiable(self, tol):
-        """Test that analytic=False results in non-differentiable QNodes"""
+        """Test that shots>0 results in non-differentiable QNodes"""
         dev = qml.device("default.qubit.tf", wires=3, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")

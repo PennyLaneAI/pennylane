@@ -178,12 +178,14 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if shots < 1:
-            raise DeviceError(
-                "The specified number of shots needs to be at least 1. Got {}.".format(shots)
-            )
+        if shots is not None:
+            shots = int(shots)
+            if shots < 1:
+                raise DeviceError(
+                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                )
 
-        self._shots = int(shots)
+        self._shots = shots
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.

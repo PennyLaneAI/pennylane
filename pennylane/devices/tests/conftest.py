@@ -43,8 +43,8 @@ def tol():
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices (yielding deterministic or stochastic test results)."""
 
-    def _tol(analytic):
-        if analytic:
+    def _tol(shots):
+        if shots is None:
             return float(os.environ.get("TOL", TOL))
         return TOL_STOCHASTIC
 

@@ -619,8 +619,7 @@ class TestDefaultGaussianIntegration:
 
         dev = qml.device('default.gaussian', wires=2, hbar=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic == True
+        assert dev.shots == None
         assert dev.hbar == 2
         assert dev.short_name == 'default.gaussian'
 

@@ -98,7 +98,7 @@ class TestExpval:
             return qml.expval(qml.Identity(wires=0)), qml.expval(qml.Identity(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.analytic))
+        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.shots))
 
     def test_pauliz_expectation(self, device, tol):
         """Test that PauliZ expectation value is correct"""
@@ -117,7 +117,7 @@ class TestExpval:
 
         res = circuit()
         assert np.allclose(
-            res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), atol=tol(dev.analytic)
+            res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), atol=tol(dev.shots)
         )
 
     def test_paulix_expectation(self, device, tol):
@@ -137,7 +137,7 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliy_expectation(self, device, tol):
         """Test that PauliY expectation value is correct"""
@@ -156,7 +156,7 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hadamard_expectation(self, device, tol):
         """Test that Hadamard expectation value is correct"""
@@ -177,7 +177,7 @@ class TestExpval:
         expected = np.array(
             [np.sin(theta) * np.sin(phi) + np.cos(theta), np.cos(theta) * np.cos(phi) + np.sin(phi)]
         ) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
@@ -206,7 +206,7 @@ class TestExpval:
         ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
         expected = np.array([ev1, ev2])
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_multi_mode_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
@@ -246,7 +246,7 @@ class TestExpval:
             - 6
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -275,7 +275,7 @@ class TestTensorExpval:
         res = circuit()
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -299,7 +299,7 @@ class TestTensorExpval:
         res = circuit()
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -340,7 +340,7 @@ class TestTensorExpval:
             + 3 * np.cos(varphi) * np.sin(phi)
             + np.sin(phi)
         )
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -387,7 +387,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
         assert np.allclose(
             np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol(False)
@@ -429,7 +429,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
 
         # make sure the mean matches the analytic mean
         expected = (
@@ -640,7 +640,7 @@ class TestVar:
         res = circuit()
 
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_var_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -676,7 +676,7 @@ class TestVar:
             )
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -712,7 +712,7 @@ class TestTensorVar:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -741,7 +741,7 @@ class TestTensorVar:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -812,4 +812,4 @@ class TestTensorVar:
             / 16
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))

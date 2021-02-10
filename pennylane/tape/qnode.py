@@ -323,7 +323,6 @@ class QNode:
                     backprop_devices[interface],
                     wires=device.wires,
                     shots=device.shots,
-                    analytic=True,
                 )
                 return JacobianTape, interface, device, {"method": "backprop"}
 

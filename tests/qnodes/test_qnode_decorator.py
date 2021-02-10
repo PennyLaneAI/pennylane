@@ -81,14 +81,14 @@ def test_torch_interface(skip_if_no_torch_support):
     assert circuit.interface == "torch"
 
 
-step_sizes = [(True, DEFAULT_STEP_SIZE_ANALYTIC), (False, DEFAULT_STEP_SIZE)]
+step_sizes = [(None, DEFAULT_STEP_SIZE_ANALYTIC), (10, DEFAULT_STEP_SIZE)]
 
 
-@pytest.mark.parametrize("analytic, step_size", step_sizes)
-def test_finite_diff_qubit_qnode(analytic, step_size):
+@pytest.mark.parametrize("shots, step_size", step_sizes)
+def test_finite_diff_qubit_qnode(shots, step_size):
     """Test that a finite-difference differentiable qubit QNode
-    is correctly created when diff_method='finite-diff' and analytic=True"""
-    dev = qml.device("default.qubit", wires=1, analytic=analytic)
+    is correctly created when diff_method='finite-diff' and shots=None"""
+    dev = qml.device("default.qubit", wires=1, shots=shots)
 
     @qnode(dev, diff_method="finite-diff")
     def circuit(a):

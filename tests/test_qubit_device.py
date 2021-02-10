@@ -473,7 +473,7 @@ class TestExpval:
         probs = [0.5, 0.5]
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
+        assert dev.shots is None
 
         call_history = []
         with monkeypatch.context() as m:
@@ -493,10 +493,7 @@ class TestExpval:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
-        dev.analytic = False
-
-        assert not dev.analytic
+        dev.shots = 1000
 
         call_history = []
         with monkeypatch.context() as m:
@@ -521,7 +518,7 @@ class TestVar:
         probs = [0.5, 0.5]
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
+        assert dev.shots is None
 
         call_history = []
         with monkeypatch.context() as m:
@@ -541,10 +538,7 @@ class TestVar:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
-        dev.analytic = False
-
-        assert not dev.analytic
+        dev.shots = 1000
 
         call_history = []
         with monkeypatch.context() as m:
