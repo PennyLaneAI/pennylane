@@ -165,9 +165,6 @@ class DefaultTensor(Device):
         self._contraction_method = contraction_method
         self.reset()
 
-        if shots is not None:
-            raise ValueError("Device can only perform analytic computations.")
-
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()

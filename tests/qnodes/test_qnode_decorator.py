@@ -81,7 +81,7 @@ def test_torch_interface(skip_if_no_torch_support):
     assert circuit.interface == "torch"
 
 
-step_sizes = [(None, DEFAULT_STEP_SIZE_ANALYTIC), (10, DEFAULT_STEP_SIZE)]
+step_sizes = [(None, DEFAULT_STEP_SIZE_ANALYTIC), (1000, DEFAULT_STEP_SIZE)]
 
 
 @pytest.mark.parametrize("shots, step_size", step_sizes)
