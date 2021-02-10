@@ -13,8 +13,8 @@
   - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
     list of atomic symbols and the array with the atomic coordinates.
 
-  - Labeling the molecule is now optional as we have made ``name`` a keyword argument
-    in ``meanfield`` and ``molecular_hamiltonian`` functions.
+  - Labelling the molecule is now optional as we have made ``name`` a keyword argument
+    in the ``meanfield`` and ``molecular_hamiltonian`` functions.
 
     For example:
 
@@ -22,8 +22,7 @@
     >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     ```
-  This allows users to build parametrized electronic Hamiltonians to perform 
-  optimization of the energy with respect to the Hamiltonian parameters.
+  This allows users to more easily build parametrized electronic Hamiltonians
   [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
 
 <h3>Breaking changes</h3>
