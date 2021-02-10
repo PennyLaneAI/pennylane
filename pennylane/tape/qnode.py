@@ -18,6 +18,7 @@ This module contains the QNode class and qnode decorator.
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 import warnings
+import inspect
 
 import numpy as np
 
@@ -150,6 +151,17 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
+
+        if "shots" in inspect.signature(func).parameters:
+            warnings.warn(
+                "Detected 'shots' as an argument to the given quantum function. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device. Its use outside of this context should be avoided.",
+                DeprecationWarning,
+            )
+            self._qfunc_uses_shots_arg = True
+        else:
+            self._qfunc_uses_shots_arg = False
 
         self.mutable = mutable
         self.func = func
@@ -525,12 +537,26 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+
+        # If shots specified in call but not in qfunc signature,
+        # interpret it as device shots value for this call.
+        # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
+        original_shots = None
+        if "shots" in kwargs and not self._qfunc_uses_shots_arg:
+            original_shots = self.device.shots  # remember device shots
+            # remove shots from kwargs and temporarily change on device
+            self.device.shots = kwargs.pop("shots", None)
+
         if self.mutable or self.qtape is None:
             # construct the tape
             self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
+
+        if original_shots is not None:
+            # reinstate default on device
+            self.device.shots = original_shots
 
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
         # In the long run, we should make sure that the user's device is the one

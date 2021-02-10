@@ -114,7 +114,9 @@ devices, the options are:
   and variances analytically. Only possible with simulator devices. Defaults to ``True``.
 
 * ``shots`` (*int*): How many times the circuit should be evaluated (or sampled) to estimate
-  the expectation values. Defaults to 1000 if not specified.
+  the expectation values. Defaults to 1000 if not specified. This argument can be temporarily overwritten
+  when a QNode is called; for example ``my_qnode(shots=3)`` will temporarily evaluate ``my_qnode``
+  using three shots.
 
 For a plugin device, refer to the plugin documentation for available device options.
 
