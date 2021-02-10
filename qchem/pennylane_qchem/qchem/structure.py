@@ -177,13 +177,13 @@ def read_structure(filepath, outpath="."):
         outpath (str): path to the output directory
 
     Returns:
-        tuple[list, array: symbols of the atoms in the molecule and their positions in Cartesian
+        tuple[list, array]: symbols of the atoms in the molecule and their positions in Cartesian
         coordinates.
 
     **Example**
 
     >>> symbols, coordinates = read_structure('h2.xyz')
-    >>> print(symbols coordinates)
+    >>> print(symbols, coordinates)
     ['H', 'H'] [ 0.    0.   -0.35  0.    0.    0.35]
     """
 
