@@ -145,7 +145,6 @@ This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld
 
-
 # Release 0.14.0 (current release)
 
 <h3>New features since last release</h3>
