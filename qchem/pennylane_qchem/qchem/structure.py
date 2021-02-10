@@ -259,7 +259,7 @@ def meanfield(
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
-            should be ``3*N`` with ``N`` being the number of atoms.
+            should be ``3*N`` where ``N`` is the number of atoms.
         charge (int): net charge of the system
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -747,7 +747,7 @@ def molecular_hamiltonian(
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
-            should be ``3*N`` with ``N`` being the number of atoms.
+            should be ``3*N`` where ``N`` is the number of atoms.
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
             for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
