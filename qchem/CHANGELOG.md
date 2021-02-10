@@ -4,9 +4,22 @@
 
 <h3>Improvements</h3>
 
-* Updates `PennyLane-QChem` functions to separately take as input the
-  atomic symbols and nuclear coordinates of the molecule. This allows
-  users to build parametrized electronic Hamiltonians to perform 
+* The molecular geometry is now stored by a list containing the atomic symbols and
+  a 1D array with the atomic positions in Cartesian coordinates.
+
+  - The ``read_structure`` function returns a list with the symbols of the atoms and
+    the array with the atomic positions. 
+
+  - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
+    list of atomic symbols and the array with the atomic coordinates.
+
+    For example:
+
+    ```pycon
+    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> H, qubits = qml.qchem.molecular_hamiltonian("h2", symbols, coordinates)
+    ```
+  This allows users to build parametrized electronic Hamiltonians to perform 
   optimization of the energy with respect to the Hamiltonian parameters. 
   [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
 
