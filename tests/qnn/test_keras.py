@@ -63,14 +63,12 @@ def indices_up_to(n_max, has_tuple=False):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
     The output dimension never exceeds the number of qubits."""
     if has_tuple:
-        # If the output_dim is to be used as a tuple, returns values like (2, (2, 2)), (3, (2, 2))
-        # first element is for n_qubits and the second is for output_dim. Since we are using the sample
-        # circuit in `conftest.py` which returns a (2, 2) matrix we keep the output_dim constant here
-        # and min value for n_qubits as 2, although it can be extended if the circuit gets changed
+        # If the output_dim is to be used as a tuple. First element is for n_qubits and
+        # the second is for output_dim. For example, for n_max = 3 it will return,
+        # [(1, (2, 2)), (2, (2, 2)), (3, (2, 2)), (3, (3, 3))]
 
-        a = np.arange(2, n_max + 1)
-        b = np.full((2, n_max - 1), 2)  # n_max + 1 - 2
-        return zip(*[a], zip(*b))
+        a, b = np.tril_indices(n_max)
+        return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
     else:
         a, b = np.tril_indices(n_max)
         return zip(*[a + 1, b + 1])

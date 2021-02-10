@@ -16,6 +16,7 @@ Common fixtures for the qnn module.
 """
 import pytest
 import pennylane as qml
+import numpy as np
 
 
 @pytest.fixture
@@ -41,13 +42,16 @@ def get_circuit(n_qubits, output_dim, interface, tape_mode):
             """
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-            qml.RX(w2[0], wires=0)
-            qml.RX(w3, wires=0)
-            qml.Rot(*w4, wires=0)
+            qml.RX(w2[0], wires=0 % n_qubits)
+            qml.RX(w3, wires=1 % n_qubits)
+            qml.Rot(*w4, wires=2 % n_qubits)
             qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-            qml.Rot(*w6, wires=0)
-            qml.RX(w7, wires=0)
-            return qml.density_matrix(wires=[1])
+            qml.Rot(*w6, wires=3 % n_qubits)
+            qml.RX(w7, wires=4 % n_qubits)
+
+            # Using np.log2() here because output_dim is sampled from varying the number of
+            # qubits(say, nq) and calculated as (2 ** nq, 2 ** nq)
+            return qml.density_matrix(wires=[i for i in range(int(np.log2(output_dim[0])))])
 
     else:
         @qml.qnode(dev, interface=interface)
