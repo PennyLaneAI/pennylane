@@ -1640,7 +1640,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         if Wires.shared_wires([wires, control_wires]):
             raise ValueError(
-                "The control wires must be different from the wires specified to apply the unitary"
+                "The control wires must be different from the wires specified to apply the unitary on"
             )
 
         wires = control_wires + wires
