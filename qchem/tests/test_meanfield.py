@@ -23,7 +23,7 @@ def test_path_to_file(package, basis, tmpdir, psi4_support):
     exp_path = os.path.join(tmpdir.strpath, package.lower(), basis.strip(), name)
 
     res_path = qchem.meanfield(
-        name, symbols, coordinates, basis=basis, package=package, outpath=tmpdir.strpath
+        symbols, coordinates, name=name, basis=basis, package=package, outpath=tmpdir.strpath
     )
 
     assert res_path == exp_path
@@ -59,7 +59,9 @@ def test_hf_calculations(package, tmpdir, psi4_support, tol):
         ]
     )
 
-    fullpath = qchem.meanfield(name, symbols, coordinates, package=package, outpath=tmpdir.strpath)
+    fullpath = qchem.meanfield(
+        symbols, coordinates, name=name, package=package, outpath=tmpdir.strpath
+    )
 
     molecule = MolecularData(filename=fullpath)
 
@@ -78,7 +80,7 @@ def test_not_available_qc_package(tmpdir):
 
     with pytest.raises(TypeError, match="Integration with quantum chemistry package"):
         qchem.meanfield(
-            name, symbols, coordinates, package="not_available_package", outpath=tmpdir.strpath
+            symbols, coordinates, name=name, package="not_available_package", outpath=tmpdir.strpath
         )
 
 
@@ -88,4 +90,4 @@ def test_dimension_consistency(tmpdir):
 
     extra_coordinate = np.array([0.0, 0.0, -0.35, 0.0, 0.0, 0.35, -0.987])
     with pytest.raises(ValueError, match="The size of the array 'coordinates' has to be"):
-        qchem.meanfield(name, symbols, extra_coordinate, outpath=tmpdir.strpath)
+        qchem.meanfield(symbols, extra_coordinate, name=name, outpath=tmpdir.strpath)

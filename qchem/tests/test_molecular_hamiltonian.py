@@ -61,7 +61,6 @@ def test_building_hamiltonian(
         pytest.skip("Skipped, no Psi4 support")
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(
-        "gdb3_mol5",
         symbols,
         coordinates,
         charge=charge,

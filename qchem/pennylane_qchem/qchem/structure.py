@@ -231,7 +231,14 @@ def read_structure(filepath, outpath="."):
 
 
 def meanfield(
-    name, symbols, coordinates, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
+    symbols,
+    coordinates,
+    name="molecule",
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    outpath=".",
 ):  # pylint: disable=too-many-arguments
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
@@ -255,11 +262,11 @@ def meanfield(
     |
 
     Args:
-        name (str): molecule label
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
+        name (str): molecule label
         charge (int): net charge of the system
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -277,9 +284,8 @@ def meanfield(
 
     **Example**
 
-    >>> name = 'h2'
     >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
-    >>> meanfield(name, symbols, coordinates)
+    >>> meanfield(symbols, coordinates, name="h2")
     ./pyscf/sto-3g/h2
     """
 
@@ -695,9 +701,9 @@ def convert_observable(qubit_observable, wires=None):
 
 
 def molecular_hamiltonian(
-    name,
     symbols,
     coordinates,
+    name="molecule",
     charge=0,
     mult=1,
     basis="sto-3g",
@@ -743,11 +749,11 @@ def molecular_hamiltonian(
     |
 
     Args:
-        name (str): name of the molecule
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
             coordinates. The coordinates must be given in Angstroms and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
+        name (str): name of the molecule
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
             for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -777,9 +783,8 @@ def molecular_hamiltonian(
 
     **Example**
 
-    >>> name = "h2"
     >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
-    >>> H, qubits = molecular_hamiltonian(name, symbols, coordinates)
+    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
     >>> print(qubits)
     4
     >>> print(H)
@@ -800,7 +805,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    hf_file = meanfield(name, symbols, coordinates, charge, mult, basis, package, outpath)
+    hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
     molecule = MolecularData(filename=hf_file)
 
