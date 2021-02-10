@@ -1643,9 +1643,12 @@ class ControlledQubitUnitary(QubitUnitary):
                 "The control wires must be different from the wires specified to apply the unitary on"
             )
 
+        U = params[0]
+        if len(U) != 2 ** len(wires):
+            raise ValueError(f"Input unitary must be of dimension {2 ** len(wires)}")
+
         wires = control_wires + wires
 
-        U = params[0]
         padding = 2 ** len(wires) - len(U)
         CU = block_diag(np.eye(padding), U)
 
