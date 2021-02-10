@@ -23,6 +23,7 @@
   [ 1  1  1] 
   >>> circuit(0.8)  
   [ 1  1  1 -1 -1  1  1  1  1  1]
+  ```
 
 - The JAX interface now supports all devices.
   [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
