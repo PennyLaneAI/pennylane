@@ -205,11 +205,18 @@ class DefaultQubitJax(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.name
+        op_name = unitary.name.split(".inv")[0]
+
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
-                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals

@@ -215,10 +215,18 @@ class DefaultQubitTF(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
             object will be returned.
         """
-        if unitary.name in self.parametric_ops:
-            if unitary.name == "MultiRZ":
-                return self.parametric_ops[unitary.name](unitary.parameters, len(unitary.wires))
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+        op_name = unitary.name.split(".inv")[0]
+
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals

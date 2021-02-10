@@ -91,6 +91,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where inverse operations could not be differentiated
+  using backpropagation on `default.qubit`.
+  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
+
 * If only one argument to the function `qml.grad` has the `requires_grad` attribute
   set to True, then the returned gradient will be a NumPy array, rather than a
   tuple of length 1.
@@ -103,6 +107,7 @@
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld
+
 
 # Release 0.14.0 (current release)
 
