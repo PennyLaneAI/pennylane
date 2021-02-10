@@ -64,12 +64,12 @@ def indices_up_to(n_max, has_tuple=False):
     The output dimension never exceeds the number of qubits."""
     if has_tuple:
         # If the output_dim is to be used as a tuple, returns values like (2, (2, 2)), (3, (2, 2))
-        # first element is for n_qubits and the second is for output_dim. Since we are using the
-        # sample circuit in `conftest.py` which returns a (2, 2) matrix we keep the output_dim
-        # constant here, although it can be extended if the circuit gets changed
+        # first element is for n_qubits and the second is for output_dim. Since we are using the sample
+        # circuit in `conftest.py` which returns a (2, 2) matrix we keep the output_dim constant here
+        # and min value for n_qubits as 2, although it can be extended if the circuit gets changed
 
         a = np.arange(2, n_max + 1)
-        b = np.full((n_max - 1, 2), 2)
+        b = np.full((2, n_max - 1), 2)  # n_max + 1 - 2
         return zip(*[a], zip(*b))
     else:
         a, b = np.tril_indices(n_max)
@@ -579,6 +579,24 @@ class TestKerasLayerIntegration:
         the model"""
         x = tf.zeros((2, n_qubits))
         y = tf.zeros((2, output_dim))
+
+        with tf.GradientTape() as tape:
+            out = model(x)
+            loss = tf.keras.losses.mean_squared_error(out, y)
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+        assert all([g.dtype == tf.keras.backend.floatx() for g in gradients])
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2, has_tuple=True))
+    def test_model_gradients_for_density_matrix(self, model, output_dim, n_qubits):
+        """Test if a gradient can be calculated with respect to all of the trainable variables in
+        the model if it is using a density_matrix() returning circuit"""
+
+        if not qml.tape_mode_active():
+            pytest.skip("This functionality is only supported in tape mode.")
+
+        x = tf.zeros((2, n_qubits))
+        y = tf.zeros((2, output_dim[0] * output_dim[1]))
 
         with tf.GradientTape() as tape:
             out = model(x)
