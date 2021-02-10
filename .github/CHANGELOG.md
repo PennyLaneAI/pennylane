@@ -10,13 +10,17 @@
   would return a faulty result when used with `ExpvalCost`.
   [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
 
+* Fixes a bug where inverse operations could not be differentiated
+  using backpropagation on `default.qubit`.
+  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Antal Száva.
+Josh Izaac, Antal Száva.
 
 # Release 0.14.0
 
