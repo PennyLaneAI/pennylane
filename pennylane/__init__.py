@@ -137,7 +137,7 @@ def device(name, *args, **kwargs):
       of qubit-based quantum circuit architectures which allows
       automatic differentiation through the simulation via python's autograd library.
 
-    In addition, additional devices are supported through plugins — see
+    Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
     details.
 
@@ -169,6 +169,26 @@ def device(name, *args, **kwargs):
            qml.CNOT(wires=['q12', -1] )
            ...
 
+    Most devices accept a ``shots`` argument which specifies how many circuit executions
+    are used to estimate stochastic return values. In particular, ``qml.sample()`` measurements
+    will return as many samples as specified in the shots argument. The shots argument can be
+    changed on a per-call basis using the built-in ``shots`` keyword argument.
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a):
+          qml.RX(a, wires=0)
+          return qml.sample(qml.PauliZ(wires=0))
+
+    >>> circuit(0.8)  # 10 samples are returned
+    [ 1  1  1 -1 -1  1  1  1  1  1]
+    >>> circuit(0.8, shots=3))  # default is overwritten for this call
+    [1 1 1]
+    >>> circuit(0.8)  # back to default of 10 samples
+    [ 1  1  1 -1 -1  1  1  1  1  1]
 
     Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set

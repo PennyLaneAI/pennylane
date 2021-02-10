@@ -1251,6 +1251,26 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
 
+    def test_inverse_operation_jacobian_backprop(self, tol):
+        """Test that inverse operations work in backprop
+        mode"""
+        dev = qml.device('default.qubit.tf', wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(param):
+            qml.RY(param, wires=0).inv()
+            return qml.expval(qml.PauliX(0))
+
+        x = tf.Variable(0.3)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+
+        assert np.allclose(res, -tf.sin(x), atol=tol, rtol=0)
+
+        grad = tape.gradient(res, x)
+        assert np.allclose(grad, -tf.cos(x), atol=tol, rtol=0)
+
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
