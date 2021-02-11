@@ -36,11 +36,13 @@ class Measure(Projection):
 
     .. UsageDetails::
 
-        It is important to note when using the `Measurement` operation that
-        one **applies** it to the wire one wishes to measure, and then returns
-        one of the PennyLane measurement functions.
+        The `Measurement` operation is applied to the wire we
+        want to measure. The return of a circuit is then evaluated on
+        the output state conditioned on the given measurement outcome.
+        This will depend on the random outcome of the measurement,
+        so expectation values should be obtained over several shots. 
 
-        For instance, consider the following, basic circuit:
+        For instance, consider the following circuit:
 
         .. code-block:: python3
 
