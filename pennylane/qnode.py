@@ -18,6 +18,7 @@ This module contains the QNode class and qnode decorator.
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 import warnings
+import inspect
 
 import numpy as np
 
@@ -107,6 +108,11 @@ class QNode:
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
 
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -125,7 +131,14 @@ class QNode:
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
     def __init__(
-        self, func, device, interface="autograd", diff_method="best", mutable=True, **diff_options
+        self,
+        func,
+        device,
+        interface="autograd",
+        diff_method="best",
+        mutable=True,
+        max_expansion=10,
+        **diff_options,
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
@@ -138,6 +151,17 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
+
+        if "shots" in inspect.signature(func).parameters:
+            warnings.warn(
+                "Detected 'shots' as an argument to the given quantum function. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device. Its use outside of this context should be avoided.",
+                DeprecationWarning,
+            )
+            self._qfunc_uses_shots_arg = True
+        else:
+            self._qfunc_uses_shots_arg = False
 
         self.mutable = mutable
         self.func = func
@@ -156,7 +180,7 @@ class QNode:
         self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
-        self.max_expansion = 2
+        self.max_expansion = max_expansion
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -513,12 +537,26 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+
+        # If shots specified in call but not in qfunc signature,
+        # interpret it as device shots value for this call.
+        # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
+        original_shots = None
+        if "shots" in kwargs and not self._qfunc_uses_shots_arg:
+            original_shots = self.device.shots  # remember device shots
+            # remove shots from kwargs and temporarily change on device
+            self.device.shots = kwargs.pop("shots", None)
+
         if self.mutable or self.qtape is None:
             # construct the tape
             self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
+
+        if original_shots is not None:
+            # reinstate default on device
+            self.device.shots = original_shots
 
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
         # In the long run, we should make sure that the user's device is the one
@@ -754,18 +792,45 @@ class QNode:
             AutogradInterface.apply(self.qtape)
 
     def to_jax(self):
-        """Validation checks when a user expects to use the JAX interface."""
-        if self.diff_method != "backprop":
+        """Apply the JAX interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the JAX QNode should
+                output. If not provided, the default is ``jnp.float64``.
+
+        Raises:
+            .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+        """
+        # pylint: disable=import-outside-toplevel
+        try:
+            from pennylane.tape.interfaces.jax import JAXInterface
+
+            if self.interface != "jax" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "jax", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options.update(diff_options)
+            else:
+                self.interface = "jax"
+
+            if self.qtape is not None:
+                JAXInterface.apply(self.qtape)
+
+        except ImportError as e:
             raise qml.QuantumFunctionError(
-                "The JAX interface can only be used with "
-                "diff_method='backprop' on supported devices"
-            )
-        self.interface = "jax"
+                "JAX not found. Please install the latest "
+                "version of JAX to enable the 'jax' interface."
+            ) from e
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
-def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
+def qnode(
+    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
@@ -842,6 +907,11 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
 
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -865,6 +935,7 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
             interface=interface,
             diff_method=diff_method,
             mutable=mutable,
+            max_expansion=max_expansion,
             **diff_options,
         )
         return update_wrapper(qn, func)

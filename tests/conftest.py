@@ -140,6 +140,11 @@ def skip_if_no_tf_support(tf_support):
         pytest.skip("Skipped, no tf support")
 
 
+@pytest.fixture
+def skip_if_no_jax_support():
+    pytest.importorskip("jax")
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):

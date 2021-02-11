@@ -266,12 +266,16 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        outputs = []
-        for x in inputs:  # iterate over batch
-            res = self._evaluate_qnode(x)
-            outputs.append(res)
+        if len(tf.shape(inputs)) > 1:
+            # If the input size is not 1-dimensional, unstack the input along its first dimension,
+            # recursively call the forward pass on each of the yielded tensors, and then stack the
+            # outputs back into the correct shape
+            reconstructor = []
+            for x in tf.unstack(inputs):
+                reconstructor.append(self.call(x))
+            return tf.stack(reconstructor)
 
-        return tf.stack(outputs)
+        return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
         """Evaluates a tape-mode QNode for a single input datapoint.
