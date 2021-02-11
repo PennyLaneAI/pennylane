@@ -40,7 +40,7 @@ class Measure(Projection):
         want to measure. The return of a circuit is then evaluated on
         the output state conditioned on the given measurement outcome.
         This will depend on the random outcome of the measurement,
-        so expectation values should be obtained over several shots. 
+        so expectation values should be obtained over several shots.
 
         For instance, consider the following circuit:
 
