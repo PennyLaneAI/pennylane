@@ -22,7 +22,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, ControlledPhaseShift
 
 
 # Standard observables, their matrix representation, and eigenvlaues
@@ -328,6 +328,34 @@ class TestOperations:
         op = ops(wires=range(ops.num_wires))
         res = op.matrix
         assert np.allclose(res, mat, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("inverse", [True, False])
+    def test_QFT(self, inverse):
+        """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
+        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
+        res = op.matrix
+        exp = QFT.conj().T if inverse else QFT
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_decomposition(self, n_qubits):
+        """Test if the QFT operation is correctly decomposed"""
+        op = qml.QFT(wires=range(n_qubits))
+        decomp = op.decomposition(wires=range(n_qubits))
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        out_states = []
+        for state in np.eye(2 ** n_qubits):
+            dev.reset()
+            ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
+            dev.apply(ops)
+            out_states.append(dev.state)
+
+        reconstructed_unitary = np.array(out_states).T
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
+
+        assert np.allclose(reconstructed_unitary, expected_unitary)
 
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -739,6 +767,38 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
 
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
+        """Tests that the ControlledPhaseShift operation calculates the correct matrix and
+        eigenvalues"""
+        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        res = op.matrix
+        exp = ControlledPhaseShift(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_controlled_phase_shift_decomp(self, phi):
+        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
+        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        decomp = op.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = ControlledPhaseShift(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
@@ -977,7 +1037,7 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle):
+    def test_differentiability(self, angle, tol):
         """Test that differentiation of PauliRot works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -989,9 +1049,9 @@ class TestPauliRot:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(angle)
-        gradient = np.squeeze(circuit.jacobian(angle))
+        gradient = np.squeeze(qml.grad(circuit)(angle))
 
-        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
+        assert gradient == pytest.approx(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_decomposition_integration(self, angle, tol):
@@ -1012,8 +1072,8 @@ class TestPauliRot:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
-            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        assert np.squeeze(qml.grad(circuit)(angle)) == pytest.approx(
+            np.squeeze(qml.grad(decomp_circuit)(angle)), abs=tol
         )
 
     def test_matrix_incorrect_pauli_word_error(self):
@@ -1152,7 +1212,7 @@ class TestMultiRZ:
         assert decomp_ops[4].wires == Wires([3, 2])
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle):
+    def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1165,9 +1225,9 @@ class TestMultiRZ:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(angle)
-        gradient = np.squeeze(circuit.jacobian(angle))
+        gradient = np.squeeze(qml.grad(circuit)(angle))
 
-        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
+        assert gradient == pytest.approx(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_decomposition_integration(self, angle, tol):
@@ -1190,8 +1250,8 @@ class TestMultiRZ:
             return qml.expval(qml.PauliX(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
-            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        assert np.squeeze(qml.jacobian(circuit)(angle)) == pytest.approx(
+            np.squeeze(qml.jacobian(decomp_circuit)(angle)), abs=tol
         )
 
     @pytest.mark.parametrize("qubits", range(3, 6))

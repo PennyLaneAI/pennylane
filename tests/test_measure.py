@@ -30,7 +30,7 @@ def test_no_measure(tol):
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(QuantumFunctionError, match="does not have the measurement"):
+    with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
         res = circuit(0.65)
 
 
@@ -146,7 +146,7 @@ class TestSample:
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -154,10 +154,10 @@ class TestSample:
 
         result = circuit()
 
-        assert np.array_equal(result.shape, (3,))
+        assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert isinstance(result[1], float)
-        assert isinstance(result[2], float)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
     def test_single_wire_sample(self, tol):
         """Test the return type and shape of sampling a single wire"""
@@ -201,18 +201,16 @@ class TestSample:
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
         result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
-        assert isinstance(result, np.ndarray)
-        assert result.dtype == np.dtype("object")
-        assert np.array_equal(result.shape, (3,))
-        assert isinstance(result[0], float)
-        assert isinstance(result[1], float)
+        assert len(result) == 3
+        assert isinstance(result[0], np.ndarray)
+        assert isinstance(result[1], np.ndarray)
         assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 

@@ -54,8 +54,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.14"
-    version = "0.14.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     operations = {
@@ -77,6 +77,7 @@ class DefaultMixed(QubitDevice):
         "Toffoli",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -92,6 +93,7 @@ class DefaultMixed(QubitDevice):
         "BitFlip",
         "PhaseFlip",
         "QubitChannel",
+        "QFT",
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
@@ -150,20 +152,17 @@ class DefaultMixed(QubitDevice):
         if wires == self.wires:
             return self.state
 
-        wires = wires.labels
-
-        traced_system = [x for x in self.wires.labels if x not in wires]
-        traced_wires = Wires(traced_system)
+        traced_wires = [x for x in self.wires if x not in wires]
 
         # Trace first subsystem by applying kraus operators of the partial trace
         tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
         tr_op = self._reshape(tr_op, (2, 1, 2))
 
-        self._apply_channel(tr_op, traced_wires[0])
+        self._apply_channel(tr_op, Wires(traced_wires[0]))
 
         # Trace next subsystem by applying kraus operators of the partial trace
         for traced_wire in traced_wires[1:]:
-            self._apply_channel(tr_op, traced_wire)
+            self._apply_channel(tr_op, Wires(traced_wire))
 
         return self._reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
 

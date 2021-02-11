@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 
+
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
@@ -139,6 +140,11 @@ def skip_if_no_tf_support(tf_support):
         pytest.skip("Skipped, no tf support")
 
 
+@pytest.fixture
+def skip_if_no_jax_support():
+    pytest.importorskip("jax")
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
@@ -155,6 +161,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, '__abstractmethods__', frozenset())
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
         yield qml.Device(wires=2)
 
 
@@ -162,6 +169,19 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+
+@pytest.fixture
+def non_tape_mode_only():
+    """Run the test in tape mode"""
+    qml.disable_tape()
+    yield
+    qml.enable_tape()
+
+
+@pytest.fixture
+def in_tape_mode():
+    return
 
 
 @pytest.fixture(params=[False, True])
@@ -176,6 +196,7 @@ def tape_mode(request, mocker):
         mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
         mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
         mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True)
 
         def patched_jacobian(self, args, **kwargs):
             method = kwargs.get("method", "best")
@@ -193,9 +214,9 @@ def tape_mode(request, mocker):
 
         mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
 
-        qml.enable_tape()
+    else:
+        qml.disable_tape()
 
     yield
 
-    if request.param:
-        qml.disable_tape()
+    qml.enable_tape()

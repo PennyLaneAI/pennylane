@@ -63,7 +63,7 @@ def operation_expand(self):
         operations decomposition, or if not implemented, simply
         the operation itself.
     """
-    tape = qml.tape.JacobianTape()
+    tape = qml.tape.QuantumTape()
 
     with tape:
         self.decomposition(*self.data, wires=self.wires)
@@ -96,6 +96,9 @@ def tensor_init(self, *args):
 
         try:
             QueuingContext.update_info(o, owner=self)
+        except ValueError:
+            o.queue()
+            qml.tape.QueuingContext.update_info(o, owner=self)
         except NotImplementedError:
             pass
 

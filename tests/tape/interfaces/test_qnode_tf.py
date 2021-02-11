@@ -23,7 +23,12 @@ from pennylane.tape import JacobianTape, qnode, QNode
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [["default.qubit", "finite-diff"], ["default.qubit.tf", "backprop"]]
+    "dev_name,diff_method", [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit", "backprop"],
+        ["default.qubit", "adjoint"]
+    ],
 )
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
@@ -36,7 +41,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev)
+        @qnode(dev, diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -68,7 +73,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -106,7 +111,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd")
+        @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -177,7 +182,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev)
+        @qnode(dev, diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -202,8 +207,8 @@ class TestQNode:
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
         """Test setting finite-difference jacobian options"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method != "finite-diff":
+            pytest.skip("Test only works with finite diff")
 
         spy = mocker.spy(JacobianTape, "numeric_pd")
 
@@ -211,7 +216,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface="tf", h=1e-8, order=2)
+        @qnode(dev, interface="tf", h=1e-8, order=2, diff_method=diff_method)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -428,6 +433,9 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
 
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -465,26 +473,15 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
-
-        def _asarray(args, dtype=tf.float64):
-            res = [tf.reshape(i, [-1]) for i in args]
-            res = tf.concat(res, axis=0)
-            return tf.cast(res, dtype=dtype)
-
-        if dev_name == "default.qubit.tf":
-            # TODO: The current DefaultQubitTF device provides an _asarray method that does
-            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
-            # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour.
-            # TODO: once the tape has moved from the beta folder, we should implement
-            # this change directly in the device.
-            monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(x, y):

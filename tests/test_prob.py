@@ -137,11 +137,13 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
         return qml.probs(wires=[1, 3])
 
-    circuit = qml.QNode(circuit, dev)
 
     params = [0.543, -0.765, -0.3]
-    res_F = circuit.jacobian(params, method="F")
-    res_A = circuit.jacobian(params, method="A")
+
+    circuit_F = qml.QNode(circuit, dev, diff_method="finite-diff")
+    circuit_A = qml.QNode(circuit, dev, diff_method="parameter-shift")
+    res_F = qml.jacobian(circuit_F)(*params)
+    res_A = qml.jacobian(circuit_A)(*params)
 
     # Both jacobians should be of shape (2**prob.wires, num_params)
     assert res_F.shape == (2**2, 3)

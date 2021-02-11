@@ -20,6 +20,10 @@ from pennylane import QNodeCollection
 from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
+def dummyfunc():
+    return None
+
+
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -33,12 +37,12 @@ class TestValidation:
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
-            QNode(None, dev, interface="something")
+            QNode(dummyfunc, dev, interface="something")
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
-            QNode(None, None)
+            QNode(dummyfunc, None)
 
     def test_validate_device_method(self, monkeypatch):
         """Test that the method for validating the device diff method
@@ -52,16 +56,18 @@ class TestValidation:
             QNode._validate_device_method(dev, None)
 
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        tape_class, interface, method = QNode._validate_device_method(dev, "interface")
+        tape_class, interface, device, diff_options = QNode._validate_device_method(dev, "interface")
+        method = diff_options["method"]
 
         assert tape_class is JacobianTape
         assert method == "device"
         assert interface == "interface"
+        assert device is dev
 
     def test_validate_backprop_method_invalid_device(self):
         """Test that the method for validating the backprop diff method
         tape raises an exception if the device does not support backprop."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.gaussian", wires=1)
 
         with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
             QNode._validate_backprop_method(dev, None)
@@ -84,11 +90,44 @@ class TestValidation:
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        tape_class, interface, method = QNode._validate_backprop_method(dev, test_interface)
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        method = diff_options["method"]
 
         assert tape_class is JacobianTape
         assert method == "backprop"
-        assert interface == None
+        assert interface == "something"
+        assert device is dev
+
+    def test_validate_backprop_child_method(self, monkeypatch):
+        """Test that the method for validating the backprop diff method
+        tape works as expected if a child device supports backprop"""
+        dev = qml.device("default.qubit", wires=1)
+        test_interface = "something"
+
+        orig_capabilities = dev.capabilities().copy()
+        orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
+        monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
+
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        method = diff_options["method"]
+
+        assert tape_class is JacobianTape
+        assert method == "backprop"
+        assert interface == "something"
+        assert isinstance(device, qml.devices.DefaultGaussian)
+
+    def test_validate_backprop_child_method_wrong_interface(self, monkeypatch):
+        """Test that the method for validating the backprop diff method
+        tape raises an error if a child device supports backprop but using a different interface"""
+        dev = qml.device("default.qubit", wires=1)
+        test_interface = "something"
+
+        orig_capabilities = dev.capabilities().copy()
+        orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
+        monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
+
+        with pytest.raises(qml.QuantumFunctionError, match=r"when using the \['something'\] interface"):
+            QNode._validate_backprop_method(dev, "another_interface")
 
     def test_parameter_shift_tape_qubit_device(self):
         """Test that the get_parameter_shift_method method correctly and
@@ -127,18 +166,18 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
-        # backprop is given priority
-        res = QNode.get_best_method(dev, "some_interface")
-        assert res == (JacobianTape, None, "backprop")
-
-        # device is the next priority
+        # device is top priority
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (JacobianTape, "another_interface", "device")
+        assert res == (JacobianTape, "another_interface", dev, {"method": "device"})
+
+        # backprop is next priority
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+        res = QNode.get_best_method(dev, "some_interface")
+        assert res == (JacobianTape, "some_interface", dev, {"method": "backprop"})
 
         # The next fallback is parameter-shift.
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QubitParamShiftTape, "another_interface", "best")
+        assert res == (QubitParamShiftTape, "another_interface", dev, {"method": "best"})
 
         # finally, if both fail, finite differences is the fallback
         def capabilities(cls):
@@ -148,7 +187,7 @@ class TestValidation:
 
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (JacobianTape, "another_interface", "numeric")
+        assert res == (JacobianTape, "another_interface", dev, {"method": "numeric"})
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff-method correctly returns the right
@@ -156,36 +195,36 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         mock_best = mocker.patch("pennylane.tape.QNode.get_best_method")
-        mock_best.return_value = 1, 2, 3
+        mock_best.return_value = 1, 2, 3, {"method": "best"}
 
         mock_backprop = mocker.patch("pennylane.tape.QNode._validate_backprop_method")
-        mock_backprop.return_value = 4, 5, 6
+        mock_backprop.return_value = 4, 5, 6, {"method": "backprop"}
 
         mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
-        mock_device.return_value = 7, 8, 9
+        mock_device.return_value = 7, 8, 9, {"method": "device"}
 
-        qn = QNode(None, dev, diff_method="best")
+        qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn._tape == mock_best.return_value[0]
         assert qn.interface == mock_best.return_value[1]
-        assert qn.diff_options["method"] == mock_best.return_value[2]
+        assert qn.diff_options["method"] == mock_best.return_value[3]["method"]
 
-        qn = QNode(None, dev, diff_method="backprop")
+        qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn._tape == mock_backprop.return_value[0]
         assert qn.interface == mock_backprop.return_value[1]
-        assert qn.diff_options["method"] == mock_backprop.return_value[2]
+        assert qn.diff_options["method"] == mock_backprop.return_value[3]["method"]
         mock_backprop.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="device")
+        qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn._tape == mock_device.return_value[0]
         assert qn.interface == mock_device.return_value[1]
-        assert qn.diff_options["method"] == mock_device.return_value[2]
+        assert qn.diff_options["method"] == mock_device.return_value[3]["method"]
         mock_device.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="finite-diff")
+        qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn._tape == JacobianTape
         assert qn.diff_options["method"] == "numeric"
 
-        qn = QNode(None, dev, diff_method="parameter-shift")
+        qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn._tape == QubitParamShiftTape
         assert qn.diff_options["method"] == "analytic"
 
@@ -199,7 +238,16 @@ class TestValidation:
         with pytest.raises(
             qml.QuantumFunctionError, match="Differentiation method hello not recognized"
         ):
-            QNode(None, dev, diff_method="hello")
+            QNode(dummyfunc, dev, diff_method="hello")
+
+    def test_validate_adjoint_invalid_device(self):
+        """Test if a ValueError is raised when an invalid device is provided to
+        _validate_adjoint_method"""
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        with pytest.raises(ValueError, match="The default.gaussian device does not"):
+            QNode._validate_adjoint_method(dev, "tf")
 
 
 class TestTapeConstruction:
@@ -396,6 +444,8 @@ class TestTapeConstruction:
         with pytest.raises(ValueError, match="only works when tape mode is enabled"):
             result = draw(circuit, charset="ascii")
 
+        qml.enable_tape()
+
     def test_drawing(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -546,7 +596,7 @@ class TestTFInterface:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="tf")
+        qn = QNode(func, dev, interface="tf", diff_method="parameter-shift")
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -678,13 +728,7 @@ class TestDecorator:
 class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 
-    @pytest.fixture
-    def enable_tape_mode(self):
-        qml.enable_tape()
-        yield
-        qml.disable_tape()
-
-    def test_multi_thread(self, enable_tape_mode):
+    def test_multi_thread(self):
         """Test that multi-threaded queuing in tape mode works correctly"""
         n_qubits = 4
         n_batches = 5
@@ -713,3 +757,249 @@ class TestQNodeCollection:
                 qnode(x, p, parallel=True)
         except:
             pytest.fail("Multi-threading on QuantumTape failed")
+
+
+class TestIntegration:
+    """Integration tests."""
+
+    def test_correct_number_of_executions_autograd(self):
+        """Test that number of executions are tracked in the autograd interface."""
+        qml.enable_tape()
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="autograd")
+
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="autograd")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+    def test_correct_number_of_executions_tf(self):
+        """Test that number of executions are tracked in the tf interface."""
+        tf = pytest.importorskip("tf")
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="tf")
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="tf")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+        # qubit of different interface
+        qn3 = QNode(func, dev, interface="autograd")
+        qn3()
+
+        assert dev.num_executions == 6
+
+    def test_correct_number_of_executions_torch(self):
+        """Test that number of executions are tracked in the torch interface."""
+        torch = pytest.importorskip("torch")
+
+        def func():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="torch")
+        for i in range(2):
+            qn()
+
+        assert dev.num_executions == 2
+
+        qn2 = QNode(func, dev, interface="torch")
+        for i in range(3):
+            qn2()
+
+        assert dev.num_executions == 5
+
+        # qubit of different interface
+        qn3 = QNode(func, dev, interface="autograd")
+        qn3()
+
+        assert dev.num_executions == 6
+
+
+class TestMutability:
+    """Test for QNode immutability"""
+
+    def test_mutable(self, mocker, tol):
+        """Test that a QNode which has structure dependent
+        on trainable arguments is reconstructed with
+        every call, and remains differentiable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, mutable=True)
+        def circuit(x):
+            if x < 0:
+                qml.RY(x, wires=0)
+            else:
+                qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        spy = mocker.spy(circuit, "construct")
+        res = circuit(x)
+        spy.assert_called_once_with((x,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # calling the qnode with new arguments reconstructs the tape
+        x = -0.5
+        res = circuit(x)
+        spy.assert_called_with((x,), {})
+        assert len(spy.call_args_list) == 2
+        assert circuit.qtape.operations[0].name == "RY"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, np.cos(x), atol=tol, rtol=0)
+
+        # test differentiability
+        grad = qml.grad(circuit)(0.5)
+        np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
+
+        grad = qml.grad(circuit)(-0.5)
+        np.testing.assert_allclose(grad, -np.sin(-0.5), atol=tol, rtol=0)
+
+    def test_immutable(self, mocker, tol):
+        """Test that a QNode which has structure dependent
+        on trainable arguments is *not* reconstructed with
+        every call when mutable=False"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, mutable=False)
+        def circuit(x):
+            if x < 0:
+                qml.RY(x, wires=0)
+            else:
+                qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        spy = mocker.spy(circuit, "construct")
+        res = circuit(x)
+        spy.assert_called_once_with((x,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [x]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # calling the qnode with new arguments does not reconstruct the tape
+        x = -0.5
+        res = circuit(x)
+        spy.assert_called_once_with((0.5,), {})
+        assert len(spy.call_args_list) == 1
+        assert circuit.qtape.operations[0].name == "RZ"
+        assert circuit.qtape.operations[0].data == [0.5]
+        np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
+
+        # test differentiability. The circuit will assume an RZ gate
+        grad = qml.grad(circuit)(-0.5)
+        np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
+
+
+class TestShots:
+    """Unittests for specifying shots per call."""
+
+    def test_specify_shots_per_call(self):
+        """Tests that shots can be set per call."""
+        dev = qml.device('default.qubit', wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8)) == 10
+        assert len(circuit(0.8, shots=2)) == 2
+        assert len(circuit(0.8, shots=3178)) == 3178
+        assert len(circuit(0.8)) == 10
+
+    def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
+        """Tests that the per-call shots overwriting is suspended if user
+        has a shots keyword argument, but a warning is raised."""
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        def circuit(a, shots=0):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+            circuit = qml.QNode(circuit, dev)
+
+        assert len(circuit(0.8)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+        assert len(circuit(0.8, shots=1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+    def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
+        """Tests that the per-call shots overwriting is suspended
+        if user has a shots argument, but a warning is raised."""
+
+        # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
+        dev = qml.device('default.qubit', wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
+
+        # assert that warning is still raised
+        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+            circuit = qml.QNode(circuit, dev)
+
+        assert len(circuit(0.8, 1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_shots_setting_does_not_mutate_device(self, diff_method):
+        """Tests that per-call shots setting does not change the number of shots in the device."""
+
+        dev = qml.device('default.qubit', wires=1, shots=3)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert dev.shots == 3
+        res = circuit(0.8, shots=2)
+        assert len(res) == 2
+        assert dev.shots == 3

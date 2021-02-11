@@ -39,8 +39,11 @@ class TensorFlowBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: tf.math.angle(self.data))
     arcsin = wrap_output(lambda self: tf.math.asin(self.data))
     cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
+    diag = staticmethod(wrap_output(lambda values, k=0: tf.linalg.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
+    gather = wrap_output(lambda self, indices: tf.gather(self.data, indices))
     ones_like = wrap_output(lambda self: tf.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: tf.reshape(self.data, shape))
     sqrt = wrap_output(
         lambda self: tf.sqrt(
             tf.cast(self.data, dtype=tf.float64)
@@ -54,6 +57,7 @@ class TensorFlowBox(qml.math.TensorBox):
         )
     )
     T = wrap_output(lambda self: tf.transpose(self.data))
+    squeeze = wrap_output(lambda self: tf.squeeze(self.data))
 
     def __len__(self):
         if isinstance(self.data, tf.Variable):
@@ -64,6 +68,26 @@ class TensorFlowBox(qml.math.TensorBox):
     @staticmethod
     def astensor(tensor):
         return tf.convert_to_tensor(tensor)
+
+    @staticmethod
+    @wrap_output
+    def block_diag(values):
+        tensors = TensorFlowBox.unbox_list(values)
+        tensors = TensorFlowBox._coerce_types(tensors)
+        int_dtype = None
+
+        if tensors[0].dtype in (tf.int32, tf.int64):
+            int_dtype = tensors[0].dtype
+            tensors = [tf.cast(t, tf.float32) for t in tensors]
+
+        linop_blocks = [tf.linalg.LinearOperatorFullMatrix(block) for block in tensors]
+        linop_block_diagonal = tf.linalg.LinearOperatorBlockDiag(linop_blocks)
+        res = linop_block_diagonal.to_dense()
+
+        if int_dtype is None:
+            return res
+
+        return tf.cast(res, int_dtype)
 
     @staticmethod
     def _coerce_types(tensors):
@@ -124,6 +148,13 @@ class TensorFlowBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return should_record_backprop([self.astensor(self.data)])
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        indices = tf.expand_dims(index, 0)
+        tensor = tf.cast(tf.expand_dims(value, 0), self.data.dtype)
+        self.data = tf.tensor_scatter_nd_add(self.data, indices, tensor)
+        return self.data
 
     @property
     def shape(self):

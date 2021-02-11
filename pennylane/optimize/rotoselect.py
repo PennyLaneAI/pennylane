@@ -94,8 +94,8 @@ class RotoselectOptimizer:
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
     def step_and_cost(self, objective_fn, x, generators, **kwargs):
-        r"""Update x with one step of the optimizer and return the corresponding objective
-        function value prior to the step.
+        """Update trainable arguments with one step of the optimizer and return the corresponding
+        objective function value prior to the step.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
@@ -109,14 +109,14 @@ class RotoselectOptimizer:
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}`, the new generators, and the objective
-                function output prior to the step
+            function output prior to the step
         """
         x_new, generators = self.step(objective_fn, x, generators, **kwargs)
 
         return x_new, generators, objective_fn(x, generators, **kwargs)
 
     def step(self, objective_fn, x, generators, **kwargs):
-        r"""Update x with one step of the optimizer.
+        r"""Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the

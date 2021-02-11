@@ -14,6 +14,8 @@
 """This module contains the AutogradBox implementation of the TensorBox API.
 """
 # pylint: disable=no-member,protected-access
+from scipy.linalg import block_diag
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -31,17 +33,26 @@ class AutogradBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: np.angle(self.data))
     arcsin = wrap_output(lambda self: np.arcsin(self.data))
     cast = wrap_output(lambda self, dtype: np.tensor(self.data, dtype=dtype))
+    diag = staticmethod(wrap_output(lambda values, k=0: np.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: np.expand_dims(self.data, axis=axis))
+    gather = wrap_output(lambda self, indices: self.data[indices])
     ones_like = wrap_output(lambda self: np.ones_like(self.data))
+    reshape = wrap_output(lambda self, shape: np.reshape(self.data, shape))
     sqrt = wrap_output(lambda self: np.sqrt(self.data))
     sum = wrap_output(
         lambda self, axis=None, keepdims=False: np.sum(self.data, axis=axis, keepdims=keepdims)
     )
     T = wrap_output(lambda self: self.data.T)
+    squeeze = wrap_output(lambda self: self.data.squeeze())
 
     @staticmethod
     def astensor(tensor):
         return np.tensor(tensor)
+
+    @staticmethod
+    @wrap_output
+    def block_diag(values):
+        return block_diag(*AutogradBox.unbox_list(values))
 
     @staticmethod
     @wrap_output
@@ -76,6 +87,15 @@ class AutogradBox(qml.math.TensorBox):
     @property
     def requires_grad(self):
         return self.data.requires_grad
+
+    @wrap_output
+    def scatter_element_add(self, index, value):
+        size = self.data.size
+        flat_index = np.ravel_multi_index(index, self.shape)
+        t = [0] * size
+        t[flat_index] = value
+        self.data = self.data + np.array(t).reshape(self.shape)
+        return self.data
 
     @property
     def shape(self):

@@ -260,6 +260,19 @@ class TensorBox(abc.ABC):
             tensor (tensor_like): array to convert
         """
 
+    @staticmethod
+    @abc.abstractmethod
+    def block_diag(values):
+        """Combine a sequence of 2D tensors to form a block diagonal tensor.
+
+        Args:
+            values (Sequence[tensor_like]): Sequence of 2D arrays/tensors to form
+                the block diagonal tensor.
+
+        Returns:
+            tensor_like: the block diagonal tensor
+        """
+
     @abc.abstractmethod
     def cast(self, dtype):
         """Cast the dtype of the TensorBox.
@@ -305,6 +318,22 @@ class TensorBox(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
+    def diag(values, k=0):
+        """Construct a diagonal tensor from a list of scalars.
+
+        Args:
+            values (Sequence[int or float or complex]): sequence of numeric values that
+                make up the diagonal
+            k (int): The diagonal in question. ``k=0`` corresponds to the main diagonal.
+                Use ``k>0`` for diagonals above the main diagonal, and ``k<0`` for
+                diagonals below the main diagonal.
+
+        Returns:
+            TensorBox: TensorBox containing the 2D diagonal tensor
+        """
+
+    @staticmethod
+    @abc.abstractmethod
     def dot(x, y):
         """Returns the matrix or dot product of two tensors.
 
@@ -333,6 +362,20 @@ class TensorBox(abc.ABC):
         Args:
             axis (int or tuple[int]): the axis or axes where the additional
                 dimensions should be inserted
+        """
+
+    @abc.abstractmethod
+    def gather(self, indices):
+        """Gather tensor values given a tuple of indices.
+
+        This is equivalent to the following NumPy fancy indexing:
+
+        ..code-block:: python
+
+            tensor[indices]
+
+        Args:
+            indices (Sequence[int]): the indices of the values to extract
         """
 
     @property
@@ -376,6 +419,20 @@ class TensorBox(abc.ABC):
          [1. 1.]], shape=(2, 2), dtype=float32)
         """
 
+    @abc.abstractmethod
+    def reshape(self, shape):
+        """Gives a new shape to a tensor without changing its data.
+
+        Args:
+            shape (tuple[int]): The new shape. The special value of -1 indicates
+                that the size of that dimension is computed so that the total size
+                remains constant. A dimension of -1 can only be specified once.
+
+        Returns:
+            TensorBox: TensorBox containing a new view into the tensor with
+            shape ``shape``
+        """
+
     @property
     @abc.abstractmethod
     def requires_grad(self):
@@ -389,6 +446,16 @@ class TensorBox(abc.ABC):
         as a property of the tensor itself. TensorFlow, on the other hand,
 
         only tracks trainability if being watched by a gradient tape.
+        """
+
+    @abc.abstractmethod
+    def scatter_element_add(self, index, value):
+        """Add a scalar value to an element of the tensor.
+
+        Args:
+            index (tuple[int]): the index of the tensor to update
+            value (int or float or complex): Scalar value to add to the
+                tensor element, in place.
         """
 
     @property

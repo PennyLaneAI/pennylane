@@ -25,17 +25,19 @@ import pennylane as qml
 from pennylane.operation import State
 from pennylane.tape.tapes.tape import QuantumTape
 
+# CV ops still need to support state preparation operations prior to any
+# other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
     qml.QubitStateVector,
-    qml.CatState,
-    qml.CoherentState,
-    qml.FockDensityMatrix,
-    qml.DisplacedSqueezedState,
-    qml.FockState,
-    qml.FockStateVector,
-    qml.ThermalState,
-    qml.GaussianState,
+    # qml.CatState,
+    # qml.CoherentState,
+    # qml.FockDensityMatrix,
+    # qml.DisplacedSqueezedState,
+    # qml.FockState,
+    # qml.FockStateVector,
+    # qml.ThermalState,
+    # qml.GaussianState,
 )
 
 
@@ -332,7 +334,8 @@ class JacobianTape(QuantumTape):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
-        # pylint:disable=unused-argument
+        jacobian_method = getattr(device, options.get("jacobian_method", "jacobian"))
+
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -343,7 +346,7 @@ class JacobianTape(QuantumTape):
 
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = device.jacobian(self)
+        jac = jacobian_method(self)
 
         # restore original parameters
         self.set_parameters(saved_parameters)
@@ -429,10 +432,10 @@ class JacobianTape(QuantumTape):
             h=1e-7 (float): finite difference method step size
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
-        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+            shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
 
         Returns:
-            array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
+            array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
 
         **Example**
 
@@ -443,7 +446,7 @@ class JacobianTape(QuantumTape):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
+                qml.probs(wires=[0, 'a'])
 
         If parameters are not provided, the existing tape parameters are used:
 
@@ -487,6 +490,11 @@ class JacobianTape(QuantumTape):
         """
         if any([m.return_type is State for m in self.measurements]):
             raise ValueError("The jacobian method does not support circuits that return the state")
+
+        if self.is_sampled:
+            raise qml.QuantumFunctionError(
+                "Circuits that include sampling can not be differentiated."
+            )
 
         method = options.get("method", "best")
 
