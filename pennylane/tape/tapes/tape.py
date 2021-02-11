@@ -684,6 +684,12 @@ class QuantumTape(AnnotatedQueue):
         tape.set_parameters(params)
         return tape
 
+    def with_operations(self, ops):
+        tape = self.copy(True)
+        tape._ops = ops
+        tape._update()
+        return tape
+
     def set_parameters(self, params, trainable_only=True):
         """Set the parameters incident on the tape operations.
 

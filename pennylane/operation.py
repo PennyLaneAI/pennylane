@@ -253,7 +253,7 @@ class Operator(abc.ABC):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
-    do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
+    do_check_domain = False  #: bool: flag: should we perform a domain check for the parameters?
 
     def __copy__(self):
         cls = self.__class__
