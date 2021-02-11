@@ -18,6 +18,7 @@ This module contains the QNode class and qnode decorator.
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 import warnings
+import inspect
 
 import numpy as np
 
@@ -150,6 +151,17 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
+
+        if "shots" in inspect.signature(func).parameters:
+            warnings.warn(
+                "Detected 'shots' as an argument to the given quantum function. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device. Its use outside of this context should be avoided.",
+                DeprecationWarning,
+            )
+            self._qfunc_uses_shots_arg = True
+        else:
+            self._qfunc_uses_shots_arg = False
 
         self.mutable = mutable
         self.func = func
@@ -525,12 +537,26 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+
+        # If shots specified in call but not in qfunc signature,
+        # interpret it as device shots value for this call.
+        # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
+        original_shots = None
+        if "shots" in kwargs and not self._qfunc_uses_shots_arg:
+            original_shots = self.device.shots  # remember device shots
+            # remove shots from kwargs and temporarily change on device
+            self.device.shots = kwargs.pop("shots", None)
+
         if self.mutable or self.qtape is None:
             # construct the tape
             self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
+
+        if original_shots is not None:
+            # reinstate default on device
+            self.device.shots = original_shots
 
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
         # In the long run, we should make sure that the user's device is the one
@@ -766,13 +792,38 @@ class QNode:
             AutogradInterface.apply(self.qtape)
 
     def to_jax(self):
-        """Validation checks when a user expects to use the JAX interface."""
-        if self.diff_method != "backprop":
+        """Apply the JAX interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the JAX QNode should
+                output. If not provided, the default is ``jnp.float64``.
+
+        Raises:
+            .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+        """
+        # pylint: disable=import-outside-toplevel
+        try:
+            from pennylane.tape.interfaces.jax import JAXInterface
+
+            if self.interface != "jax" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "jax", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options.update(diff_options)
+            else:
+                self.interface = "jax"
+
+            if self.qtape is not None:
+                JAXInterface.apply(self.qtape)
+
+        except ImportError as e:
             raise qml.QuantumFunctionError(
-                "The JAX interface can only be used with "
-                "diff_method='backprop' on supported devices"
-            )
-        self.interface = "jax"
+                "JAX not found. Please install the latest "
+                "version of JAX to enable the 'jax' interface."
+            ) from e
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
