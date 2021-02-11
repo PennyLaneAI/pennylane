@@ -352,7 +352,7 @@ class TestHighLevelIntegration:
             qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True
         )
 
-        grad = qml.grad(circuit)(weights)
+        grad = qml.grad(circuit)(weights)[0]
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
@@ -374,7 +374,7 @@ class TestHighLevelIntegration:
         def cost(weights):
             return np.sum(qnodes(weights))
 
-        grad = qml.grad(cost)(weights)
+        grad = qml.grad(cost)(weights)[0]
         assert grad.shape == weights.shape
 
 class TestOps:
