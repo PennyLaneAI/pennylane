@@ -975,7 +975,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
 
-        grad = qml.grad(lambda weights: cost(weights)[1, 2])([x, y])
+        grad = qml.grad(lambda weights: cost(weights)[1, 2])([x, y])[0]
         assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.]]))
         assert fn.allclose(grad[1], 2 * y)
 
