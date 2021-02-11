@@ -82,7 +82,4 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(args) == 1:
-            grad = (grad,)
-
         return grad, forward

@@ -541,7 +541,8 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
 
         # check that the first arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {0}
@@ -586,7 +587,8 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
 
         # check that the second arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {1}
@@ -631,7 +633,8 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
 
         # check that the last arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {2}
@@ -745,7 +748,7 @@ class TestParameterHandlingIntegration:
         grad_fn = qml.grad(cost)
         res = grad_fn(weights)
 
-        assert len(res) == 2
+        assert len(res[0]) == 2
 
     def test_gradient_value(self, tol):
         """Test that the returned gradient value for a qubit QNode is correct,

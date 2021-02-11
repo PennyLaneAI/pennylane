@@ -118,8 +118,9 @@ class TestQNode:
 
         # gradients should work
         grad = qml.grad(circuit)(a)
-        assert isinstance(grad, float)
-        assert grad.shape == tuple()
+        assert len(grad) == 1
+        assert isinstance(grad[0], np.ndarray)
+        assert grad[0].shape == tuple()
 
     def test_interface_swap(self, dev_name, diff_method, tol):
         """Test that the autograd interface can be applied to a QNode
@@ -151,9 +152,10 @@ class TestQNode:
 
         res = circuit(a)
         grad = qml.grad(circuit)(a)
+        assert len(grad) == 1
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
-        assert np.allclose(grad, grad_tf, atol=tol, rtol=0)
+        assert np.allclose(grad[0], grad_tf, atol=tol, rtol=0)
 
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
@@ -591,127 +593,6 @@ class TestQNode:
 
         assert res.shape == (2, 10)
         assert isinstance(res, np.ndarray)
-
-    def test_gradient_non_differentiable_exception(self, dev_name, diff_method):
-        """Test that an exception is raised if non-differentiable data is
-        differentiated"""
-        dev = qml.device(dev_name, wires=2)
-
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit(data1):
-            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        grad_fn = qml.grad(circuit, argnum=0)
-        data1 = np.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
-
-        with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
-            grad_fn(data1)
-
-    def test_chained_qnodes(self, dev_name, diff_method):
-        """Test that the gradient of chained QNodes works without error"""
-        dev = qml.device(dev_name, wires=2)
-
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit1(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit2(data, weights):
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
-
-        def cost(weights):
-            w1, w2 = weights
-            c1 = circuit1(w1)
-            c2 = circuit2(c1, w2)
-            return np.sum(c2) ** 2
-
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
-
-        weights = [w1, w2]
-
-        grad_fn = qml.grad(cost)
-        res = grad_fn(weights)
-
-        assert len(res) == 2
-
-    def test_chained_gradient_value(self, dev_name, diff_method, tol):
-        """Test that the returned gradient value for two chained qubit QNodes
-        is correct."""
-        dev1 = qml.device(dev_name, wires=3)
-
-        @qml.qnode(dev1, diff_method=diff_method)
-        def circuit1(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.RX(c, wires=2)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
-
-        dev2 = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev2, diff_method=diff_method)
-        def circuit2(data, weights):
-            qml.RX(data[0], wires=0)
-            qml.RX(data[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(weights[0], wires=0)
-            qml.RZ(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
-
-        def cost(a, b, c, weights):
-            return circuit2(circuit1(a, b, c), weights)
-
-        grad_fn = qml.grad(cost)
-
-        # Set the first parameter of circuit1 as non-differentiable.
-        a = np.array(0.4, requires_grad=False)
-
-        # The remaining free parameters are all differentiable.
-        b = 0.5
-        c = 0.1
-        weights = np.array([0.2, 0.3])
-
-        res = grad_fn(a, b, c, weights)
-
-        # Output should have shape [dcost/db, dcost/dc, dcost/dw],
-        # where b,c are scalars, and w is a vector of length 2.
-        assert len(res) == 3
-        assert res[0].shape == tuple() # scalar
-        assert res[1].shape == tuple() # scalar
-        assert res[2].shape == (2,)    # vector
-
-        cacbsc = np.cos(a)*np.cos(b)*np.sin(c)
-
-        expected = np.array([
-            # analytic expression for dcost/db
-            -np.cos(a)*np.sin(b)*np.sin(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dc
-            np.cos(a)*np.cos(b)*np.cos(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dw[0]
-            np.sin(cacbsc)*np.cos(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dw[1]
-            0
-        ])
-
-        # np.hstack 'flattens' the ragged gradient array allowing it
-        # to be compared with the expected result
-        assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
-
-        if diff_method != "backprop":
-            # Check that the gradient was computed
-            # for all parameters in circuit2
-            assert circuit2.qtape.trainable_params == {0, 1, 2, 3}
-
-            # Check that the parameter-shift rule was not applied
-            # to the first parameter of circuit1.
-            assert circuit1.qtape.trainable_params == {1, 2}
 
 
 def qtransform(qnode, a, framework=np):
