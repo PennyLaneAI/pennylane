@@ -42,7 +42,7 @@ class Measure(Projection):
         This will depend on the random outcome of the measurement,
         so expectation values should be obtained over several shots. 
 
-        For instance, consider the following, basic circuit:
+        For instance, consider the following circuit:
 
         .. code-block:: python3
 
