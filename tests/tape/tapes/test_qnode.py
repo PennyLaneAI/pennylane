@@ -20,6 +20,10 @@ from pennylane import QNodeCollection
 from pennylane.tape import JacobianTape, QNode, draw, qnode, QubitParamShiftTape, CVParamShiftTape
 
 
+def dummyfunc():
+    return None
+
+
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -33,12 +37,12 @@ class TestValidation:
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
-            QNode(None, dev, interface="something")
+            QNode(dummyfunc, dev, interface="something")
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
-            QNode(None, None)
+            QNode(dummyfunc, None)
 
     def test_validate_device_method(self, monkeypatch):
         """Test that the method for validating the device diff method
@@ -199,28 +203,28 @@ class TestValidation:
         mock_device = mocker.patch("pennylane.tape.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9, {"method": "device"}
 
-        qn = QNode(None, dev, diff_method="best")
+        qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn._tape == mock_best.return_value[0]
         assert qn.interface == mock_best.return_value[1]
         assert qn.diff_options["method"] == mock_best.return_value[3]["method"]
 
-        qn = QNode(None, dev, diff_method="backprop")
+        qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn._tape == mock_backprop.return_value[0]
         assert qn.interface == mock_backprop.return_value[1]
         assert qn.diff_options["method"] == mock_backprop.return_value[3]["method"]
         mock_backprop.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="device")
+        qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn._tape == mock_device.return_value[0]
         assert qn.interface == mock_device.return_value[1]
         assert qn.diff_options["method"] == mock_device.return_value[3]["method"]
         mock_device.assert_called_once()
 
-        qn = QNode(None, dev, diff_method="finite-diff")
+        qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn._tape == JacobianTape
         assert qn.diff_options["method"] == "numeric"
 
-        qn = QNode(None, dev, diff_method="parameter-shift")
+        qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn._tape == QubitParamShiftTape
         assert qn.diff_options["method"] == "analytic"
 
@@ -234,7 +238,7 @@ class TestValidation:
         with pytest.raises(
             qml.QuantumFunctionError, match="Differentiation method hello not recognized"
         ):
-            QNode(None, dev, diff_method="hello")
+            QNode(dummyfunc, dev, diff_method="hello")
 
     def test_validate_adjoint_invalid_device(self):
         """Test if a ValueError is raised when an invalid device is provided to
@@ -915,3 +919,87 @@ class TestMutability:
         # test differentiability. The circuit will assume an RZ gate
         grad = qml.grad(circuit)(-0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
+
+
+class TestShots:
+    """Unittests for specifying shots per call."""
+
+    def test_specify_shots_per_call(self):
+        """Tests that shots can be set per call."""
+        dev = qml.device('default.qubit', wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8)) == 10
+        assert len(circuit(0.8, shots=2)) == 2
+        assert len(circuit(0.8, shots=3178)) == 3178
+        assert len(circuit(0.8)) == 10
+
+    def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
+        """Tests that the per-call shots overwriting is suspended if user
+        has a shots keyword argument, but a warning is raised."""
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        def circuit(a, shots=0):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+            circuit = qml.QNode(circuit, dev)
+
+        assert len(circuit(0.8)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+        assert len(circuit(0.8, shots=1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+    def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
+        """Tests that the per-call shots overwriting is suspended
+        if user has a shots argument, but a warning is raised."""
+
+        # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
+        dev = qml.device('default.qubit', wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
+
+        # assert that warning is still raised
+        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+            circuit = qml.QNode(circuit, dev)
+
+        assert len(circuit(0.8, 1)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (1,)
+
+        dev = qml.device('default.qubit', wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(a, shots):
+            qml.RX(a, wires=shots)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert len(circuit(0.8, shots=0)) == 10
+        assert circuit.qtape.operations[0].wires.labels == (0,)
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_shots_setting_does_not_mutate_device(self, diff_method):
+        """Tests that per-call shots setting does not change the number of shots in the device."""
+
+        dev = qml.device('default.qubit', wires=1, shots=3)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(wires=0))
+
+        assert dev.shots == 3
+        res = circuit(0.8, shots=2)
+        assert len(res) == 2
+        assert dev.shots == 3
