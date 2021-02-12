@@ -1053,8 +1053,7 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 def derivative(H, x, i, delta=0.005291772):
     r"""Compute the derivative :math:`\partial H(x)/\partial x_i` of the electronic Hamiltonian
-    with respect to the :math:`i`-th nuclear coordinate using central finite difference
-    approximation.
+    with respect to the :math:`i`-th nuclear coordinate using a central difference approximation.
 
     .. math::
 
@@ -1069,7 +1068,7 @@ def derivative(H, x, i, delta=0.005291772):
             in the molecule.
         i (int): index of the nuclear coordinate involved in the derivative
             `:math:`\partial H(x)/\partial x_i`
-        delta (float): Step size used to displace the nuclear coordinate in Angstroms.
+        delta (float): Step size in Angstroms used to displace the nuclear coordinate.
             Its default value corresponds to 0.01 Bohr radius.
 
     Returns:
@@ -1080,10 +1079,23 @@ def derivative(H, x, i, delta=0.005291772):
     >>> def H(x):
     ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
 
-    >>> x = np.array([ 0., 0., 0.18897261, 0., 0., -0.94486306])
-    >>> print(derivative(H, x, i=2))
-
-
+    >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
+    >>> print(derivative(H, x, 2))
+    (-0.7763135743293005) [I0]
+    + (-0.08534360840293387) [Z0]
+    + (-0.08534360840293387) [Z1]
+    + (0.2669341092545041) [Z2]
+    + (0.26693410925450134) [Z3]
+    + (-0.025233628744274508) [Z0 Z1]
+    + (0.0072162443961340415) [Y0 X1 X2 Y3]
+    + (-0.0072162443961340415) [Y0 Y1 X2 X3]
+    + (-0.0072162443961340415) [X0 X1 Y2 Y3]
+    + (0.0072162443961340415) [X0 Y1 Y2 X3]
+    + (-0.030654287745411964) [Z0 Z2]
+    + (-0.023438043349280003) [Z0 Z3]
+    + (-0.023438043349280003) [Z1 Z2]
+    + (-0.030654287745411964) [Z1 Z3]
+    + (-0.02494407786332001) [Z2 Z3]
     """
 
     to_bohr = 1.8897261254535
@@ -1098,6 +1110,54 @@ def derivative(H, x, i, delta=0.005291772):
 
     return (H(x_plus) - H(x_minus))*(delta*to_bohr)**-1
 
+
+def gradient(H, x, delta=0.005291772):
+    r"""Compute the gradient :math:`\nabla_x \hat{H}(x)` of the electronic Hamiltonian
+    :math:`\hat{H}(x)` for a given set of nuclear coordinates :math:`x` using central
+    differences.
+
+    Args:
+        H (callable): function with signature ``H(x)`` that builds the electronic
+            Hamiltonian for a given set of coordinates ``x``
+        x (array[float]): 1D array with the coordinates in Angstroms. The size of the array
+            should be ``3*N`` where ``N`` is the number of atoms in the molecule.
+        delta (float): Step size in Angstroms used to displace the nuclear coordinates.
+            Its default value corresponds to 0.01 Bohr radius.
+
+    Returns:
+        Iterable[pennylane.Hamiltonian]: list with the observables associated with the
+        derivatives of the Hamiltonian :math:`\partial \hat{H}(x) / \partial x_i`.
+
+    **Example**
+
+    >>> def H(x):
+    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+    >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
+    >>> grad = gradient(H, x)
+    >>> print(len(grad), grad[5])
+    6 (0.7763135743293005) [I0]
+    + (0.08534360840293387) [Z0]
+    + (0.08534360840293387) [Z1]
+    + (-0.2669341092545041) [Z2]
+    + (-0.26693410925450134) [Z3]
+    + (0.025233628744274508) [Z0 Z1]
+    + (-0.0072162443961340415) [Y0 X1 X2 Y3]
+    + (0.0072162443961340415) [Y0 Y1 X2 X3]
+    + (0.0072162443961340415) [X0 X1 Y2 Y3]
+    + (-0.0072162443961340415) [X0 Y1 Y2 X3]
+    + (0.030654287745411964) [Z0 Z2]
+    + (0.023438043349280003) [Z0 Z3]
+    + (0.023438043349280003) [Z1 Z2]
+    + (0.030654287745411964) [Z1 Z3]
+    + (0.02494407786332001) [Z2 Z3]
+    """
+    
+    grad = [derivative(H, x, i, delta=delta) for i in range(x.size)]
+
+    return grad
+
+
 __all__ = [
     "read_structure",
     "meanfield",
@@ -1109,6 +1169,7 @@ __all__ = [
     "excitations",
     "excitations_to_wires",
     "derivative",
+    "gradient",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
