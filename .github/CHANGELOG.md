@@ -1,4 +1,24 @@
-# Release 0.14.0 (current release)
+# Release 0.14.1 (current release)
+
+<h3>Bug fixes</h3>
+
+* Fixes a bug where `Hamiltonian` objects created with non-list arguments
+  raised an error for arithmetic operations.
+  [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+* Fixes a bug where `Hamiltonian` objects with no coefficients or operations
+  would return a faulty result when used with `ExpvalCost`.
+  [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva.
+
+# Release 0.14.0
 
 <h3>New features since last release</h3>
 
