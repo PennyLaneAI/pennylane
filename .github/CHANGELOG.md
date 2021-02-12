@@ -7,21 +7,21 @@
 
   ```python
   dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
-  
+
   @qml.qnode(dev)
   def circuit(a):
       qml.RX(a, wires=0)
       return qml.sample(qml.PauliZ(wires=0))
   ```
-  
+
   For this, the qnode is called with an additional `shots` keyword argument:
-  
+
   ```pycon
-  >>> circuit(0.8)  
+  >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
-  [ 1  1  1] 
-  >>> circuit(0.8)  
+  [ 1  1  1]
+  >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   ```
 
@@ -47,17 +47,13 @@
 
 <h3>Improvements</h3>
 
-* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
-  the internal circuit should be expanded when executed on a device.
-  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
-
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
-  the last (in the case where the actual weight function of the layer operates on one-dimensional 
+  the last (in the case where the actual weight function of the layer operates on one-dimensional
   vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
   [(#1062)](https://github.com/PennyLaneAI/pennylane/pull/1062).
 
   Example use:
-  
+
   ```python
   dev = qml.device("default.qubit", wires=4)
 
@@ -73,7 +69,7 @@
   qlayer = qml.qnn.KerasLayer(layer, {"weights": (4, 4, 3)}, output_dim=4)
 
   out = qlayer(x)
-  
+
   print(out.shape)
   ```
 
@@ -86,22 +82,11 @@
 <h3>Breaking changes</h3>
 
 * If creating a QNode from a quantum function with an argument named `shots`,
-  a `DeprecationWarning` is raised, warning the user that this is a reserved 
+  a `DeprecationWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
+  [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
 <h3>Bug fixes</h3>
-
-* Fixes a bug where `Hamiltonian` objects created with non-list arguments
-  raised an error for arithmetic operations.
-  [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
-
-* Fixes a bug where `Hamiltonian` objects with no coefficients or operations
-  would return a faulty result when used with `ExpvalCost`.
-  [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
-
-* Fixes a bug where inverse operations could not be differentiated
-  using backpropagation on `default.qubit`.
-  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
 
 <h3>Documentation</h3>
 
@@ -109,9 +94,49 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld, Antal Száva.
+Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
 
-# Release 0.14.0 (current release)
+
+
+# Release 0.14.1 (current release)
+
+<h3>Bug fixes</h3>
+
+* Fixes a testing bug where tests that required JAX would fail if JAX was not installed.
+  The tests will now instead be skipped if JAX can not be imported.
+  [(#1066)](https://github.com/PennyLaneAI/pennylane/pull/1066)
+
+* Fixes a bug where inverse operations could not be differentiated
+  using backpropagation on `default.qubit`.
+  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
+
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device. In addition, the default number
+  of max expansions has been increased from 2 to 10, allowing devices that require more than two
+  operator decompositions to be supported.
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
+
+* Fixes a bug where `Hamiltonian` objects created with non-list arguments raised an error for
+  arithmetic operations. [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+* Fixes a bug where `Hamiltonian` objects with no coefficients or operations would return a faulty
+  result when used with `ExpvalCost`. [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+<h3>Documentation</h3>
+
+* Updates mentions of `generate_hamiltonian` to `molecular_hamiltonian` in the
+  docstrings of the `ExpvalCost` and `Hamiltonian` classes.
+  [(#1077)](https://github.com/PennyLaneAI/pennylane/pull/1077)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Thomas Bromley, Josh Izaac, Antal Száva.
+
+
+
+# Release 0.14.0
 
 <h3>New features since last release</h3>
 
