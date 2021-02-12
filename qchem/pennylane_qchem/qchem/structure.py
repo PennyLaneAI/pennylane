@@ -1051,6 +1051,53 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
+def derivative(H, x, i, delta=0.005291772):
+    r"""Compute the derivative :math:`\partial H(x)/\partial x_i` of the electronic Hamiltonian
+    with respect to the :math:`i`-th nuclear coordinate using central finite difference
+    approximation.
+
+    .. math::
+
+        \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x+\delta/2)
+        - \hat{H}(x-\delta/2)}{\delta} 
+
+    Args:
+        H (callable): function with signature ``H(x)`` that builds the electronic
+            Hamiltonian of the molecule for a given set of nuclear coordinates ``x``
+        x (array[float]): 1D array with the nuclear coordinates given in Angstroms.
+            The size of the array should be ``3*N`` where ``N`` is the number of atoms
+            in the molecule.
+        i (int): index of the nuclear coordinate involved in the derivative
+            `:math:`\partial H(x)/\partial x_i`
+        delta (float): Step size used to displace the nuclear coordinate in Angstroms.
+            Its default value corresponds to 0.01 Bohr radius.
+
+    Returns:
+        pennylane.Hamiltonian: the observable associated with the derivative of the Hamiltonian
+
+    **Example**
+
+    >>> def H(x):
+    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+    >>> x = np.array([ 0., 0., 0.18897261, 0., 0., -0.94486306])
+    >>> print(derivative(H, x, i=2))
+
+
+    """
+
+    to_bohr = 1.8897261254535
+
+    # plus
+    x_plus = x.copy()
+    x_plus[i] += delta*0.5
+
+    # minus
+    x_minus = x.copy()
+    x_minus[i] -= delta*0.5
+
+    return (H(x_plus) - H(x_minus))*(delta*to_bohr)**-1
+
 __all__ = [
     "read_structure",
     "meanfield",
@@ -1061,6 +1108,7 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
+    "derivative",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
