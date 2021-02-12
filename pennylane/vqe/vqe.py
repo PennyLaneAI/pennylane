@@ -42,7 +42,7 @@ class Hamiltonian:
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
-    .. seealso:: :class:`~.ExpvalCost`, :func:`~.generate_hamiltonian`
+    .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
 
     **Example:**
 
@@ -66,7 +66,7 @@ class Hamiltonian:
     >>> print(H)
     (0.8) [Hermitian0'1]
 
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
     """
@@ -90,8 +90,8 @@ class Hamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = coeffs
-        self._ops = observables
+        self._coeffs = list(coeffs)
+        self._ops = list(observables)
 
         if simplify:
             self.simplify()
@@ -396,7 +396,7 @@ class ExpvalCost:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
         the expectation of the Hamiltonian on the provided device(s)
 
-    .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
+    .. seealso:: :class:`~.Hamiltonian`, :func:`~.molecular_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
     **Example:**
 
@@ -485,6 +485,10 @@ class ExpvalCost:
 
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
+
+        if all(c == 0 for c in coeffs) or not coeffs:
+            self.cost_fn = lambda *args, **kwargs: np.array(0)
+            return
 
         tape_mode = qml.tape_mode_active()
         self._optimize = optimize

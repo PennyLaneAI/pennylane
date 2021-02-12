@@ -111,6 +111,14 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
 ]
 
+
+
+zero_hamiltonians_with_expvals = [
+    ([], [], [0]),
+    ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
+    ((0,0,0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
+]
+
 simplify_hamiltonians = [
     (
         qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
@@ -142,6 +150,20 @@ simplify_hamiltonians = [
             [1, 1.5],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
         ),
+    ),
+
+    # Simplifies to zero Hamiltonian
+    (
+        qml.Hamiltonian([1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
     ),
 ]
 
@@ -231,6 +253,15 @@ add_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(5),
         qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (1.5, 1.2, 1.1, 0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
+    ),
 ]
 
 sub_hamiltonians = [
@@ -276,6 +307,28 @@ sub_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(1),
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
+
+    # The result is the zero Hamiltonian
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([], []),
+    ),
+
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (0.5, 1.2, -1.5, -0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
+    ),
 ]
 
 mul_hamiltonians = [
@@ -299,6 +352,25 @@ mul_hamiltonians = [
             [-1.3, 0.39],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
+    ),
+
+    # The result is the zero Hamiltonian
+    (
+        0,
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([0], [qml.PauliX(0)]),
+    ),
+    (
+        0,
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        3,
+        qml.Hamiltonian((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
     ),
 ]
 
@@ -346,6 +418,21 @@ matmul_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(2),
         qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
+    ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.Hamiltonian(
+            (0.5, 0.5, 0.5, 0.5),
+            np.array([
+                qml.PauliX(0) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(1) @ qml.PauliZ(3),
+            ]),
+        ),
     ),
 ]
 
@@ -507,7 +594,7 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (coeffs, ops)
+        assert H.terms == (list(coeffs), list(ops))
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -709,7 +796,7 @@ class TestVQE:
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals)
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
@@ -823,6 +910,25 @@ class TestVQE:
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
+
+    @pytest.mark.parametrize('opt', [True, False])
+    def test_grad_zero_hamiltonian(self, opt):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the autograd interface with a zero Hamiltonian."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test is only intended for tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=opt, diff_method="parameter-shift"
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dc = qml.grad(cost)(w)
+        assert np.allclose(dc, 0)
 
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
