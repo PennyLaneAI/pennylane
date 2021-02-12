@@ -94,7 +94,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld, Antal Száva.
+Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
 
 
 
