@@ -12,7 +12,7 @@ from math import pi
 
 
 def test_sanity_check():
-
+    """Check that the circuits execute correctly."""
     device = qfunction.functional_device(DefaultQubitJax(wires=1))
     # Make sure it still works similarly to a qnode.
     @qfunction.qfunc(device)
@@ -25,6 +25,8 @@ def test_sanity_check():
 
 
 def test_custom_gradient_jax():
+    """This test shows how one can do a device transformation to add a custom gradient in TF.
+    """
     device = qfunction.functional_device(DefaultQubitJax(wires=1))
 
     @qfunction.device_transform
@@ -45,7 +47,6 @@ def test_custom_gradient_jax():
                 return run_device(params), params
 
             def f_bwd(params, grads):
-                # This line is cheating :-)
                 vals = jax.grad(run_device)(params)
                 return (vals[0] * 2.0 * grads,)
 
@@ -80,6 +81,8 @@ def test_custom_gradient_jax():
 
 
 def test_custom_gradient_tensorflow():
+    """This test shows how one can do a device transformation to add a custom gradient in TF.
+    """
     @qfunction.device_transform
     def const_gradient(device):
         """A custom graident that always returns 2.0"""
@@ -124,7 +127,9 @@ def test_custom_gradient_tensorflow():
 
 
 def test_tape_transform():
-
+    """This test attempts to transform a tape with CNOT operations and turn it into 
+    a tape with H and CZ operations instead.
+    """
     @qfunction.tape_transform
     def cnots_to_czs(tape):
         new_ops = []
@@ -151,10 +156,30 @@ def test_tape_transform():
     val = circuit()
     cz_val = cnots_to_czs(circuit)()
     np.testing.assert_allclose(val, cz_val, atol=1e-6, rtol=1e-6)
-    assert "H"  not in qfunction.draw(circuit)()
-    assert "H" in qfunction.draw(cnots_to_czs(circuit))()
+
+    # Here, we see that the drawing correctly takes into account the transformation.
+    assert (
+        qfunction.draw(circuit, charset='ascii')() == 
+        ' 0: --X--+C--|     \n'
+        ' 1: -----+X--| <Z> \n'
+    )
+    # Notice the added Hs and the CZ instead of CX
+    assert (
+        qfunction.draw(cnots_to_czs(circuit), charset='ascii')() == 
+        ' 0: --X--+C-----|     \n'
+        ' 1: --H--+Z--H--| <Z> \n'
+    )
 
 def test_learnable_transform():
+    """Here, the goal is to test whether could learn a tape transformation in PL.
+
+    The test is simple, just try to undo an added rotation gate after every gate. However, this
+    example is actually very powerful, and showcases how a PL simulator could theortically be used
+    to calibrate a real world QC.
+    """
+
+    # This is the angle we want to learn.
+    error_angle = 0.456045
 
     def add_rot(angle):
         """Create a tape transform function that adds `angle` of rotation after every gate"""
@@ -163,13 +188,15 @@ def test_learnable_transform():
             new_ops = []
             for o in tape.operations:
                 new_ops.append(o)
+                # Take each gate, and add an RX rotation afterwards unless the previous one
+                # was also an RX gate.
                 if not isinstance(o, qml.RX):
                     new_ops.append(qml.RX(angle, wires=o.wires[0]))
             return tape.with_operations(new_ops)
         return transform
 
-    def make_error_device(error):
-        device = qfunction.functional_device(DefaultQubitJax(wires=2))
+    def make_error_device(error, device):
+        """Create a quantum device that adds an `error` amout of RX dift after every gate."""
         return qfunction.with_preprocess(device, add_rot(error))
 
     def circuit():
@@ -178,15 +205,31 @@ def test_learnable_transform():
         qml.expval(qml.PauliZ(1))
 
     def loss(angle):
+        # Create a normal device
         real_device = qfunction.functional_device(DefaultQubitJax(wires=2))
-        error_device = make_error_device(0.456045) # Give some rotation value
 
-        real_val_fn = qfunction.qfunc(real_device)(circuit)
-        corrected_error_fn = add_rot(angle)(qfunction.qfunc(error_device)(circuit))
-        return (real_val_fn() - corrected_error_fn()) ** 2
+        # Take the real device, and create a new device that adds an error dift.
+        error_device = make_error_device(error_angle, real_device)
+
+        # This function will return the correct exepectation value
+        real_expval_fn = qfunction.qfunc(real_device)(circuit)
+
+        # This function will return the expectation value with the errors.
+        error_expval_fn = qfunction.qfunc(error_device)(circuit)
+
+        # Here, we transform our qfunc and add correcting rotation gates after every gate.
+        # This function calculates the expectation value when correcting rotations after every gate.
+        corrected_expval_fn = add_rot(angle)(error_expval_fn)
+
+        # And create some loss value between what it should be and what our correction does.
+        # One could imagine using a perfect super computing simulation to 
+        # calibrate a real QC in a similar fasion.
+        return (real_expval_fn() - corrected_expval_fn()) ** 2
 
     grad_loss = jax.grad(loss)
-    np.testing.assert_allclose(grad_loss(-0.456045),  0.0)
+    # No gradient when the error is fully corrected
+    np.testing.assert_allclose(grad_loss(-error_angle),  0.0)
+    # Gradient when the correction is off.
     np.testing.assert_allclose(grad_loss(0.001), 0.090589, atol=1e-6, rtol=1e-6)
 
 
@@ -220,5 +263,6 @@ def test_draw():
     def circuit(val):
         qml.RX(val, wires=0)
 
+    # Take the qfunc and draw the underlying
     result = qfunction.draw(circuit, charset='ascii')(0.123)
     assert result == ' 0: --RX(0.123)--|  \n'

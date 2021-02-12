@@ -1,11 +1,11 @@
 from pennylane.tape.tapes.tape import QuantumTape
 from pennylane import math as qmath
-from pennylane.tape.transforms import metric_tensor as mt
 import pennylane as qml
 import jax
 import numpy as np
 
 def single_tape(device):
+    """Transform a device from running a batch of tapes to a single tape"""
     def wrapper(tape):
         return device([tape])[0]
     return wrapper
@@ -23,6 +23,17 @@ class QFunc:
 
 
 def _get_tape(func):
+    """Get the tape from a tape generating function.
+
+    This function creates a tape context before calling
+    `func` and the created tape is then returned after
+    executing `func`.
+
+    Args:
+        func: A function that generates a tape.
+    Returns:
+        A function when called returns the generated tape.
+    """
     def wrapper(*args, **kwargs):
         tape = QuantumTape()
         with tape:
@@ -33,10 +44,22 @@ def _get_tape(func):
 
 
 def qfunc(device):
-    """A Quantum function. Used as a decorator
+    """A Quantum function. Used as a decorator similarly to `qml.qnode`.
+
+    Example:
+
+
+    device = functional_device(...)
+
+    @qfunc(device)
+    def circuit(a):
+        qml.RX(a, wires=0)
+        qml.expval(qml.PauliZ(0))
+
+    print(circuit(0.1))
 
     Args:
-        device: A device.
+        device: A functional device that executes batches of tapes.
 
     Returns:
         wrapper: A function that takes a tape generating method and 
@@ -86,12 +109,19 @@ def tape_transform(transform):
     return wrapper
 
 def functional_device(device):
-    """Transform old device to functional device"""
-    def batch_execute(circuits):
-        def execute(circuit):
+    """Transform old device to functional device
+
+    Args:
+        device: A pennylane.Device
+    Returns:
+        A function that tapes a list of tapes and executes
+        them all with the given device.
+    """
+    def batch_execute(tapes):
+        def execute(tape):
             device.reset()
-            return qmath.squeeze(device.execute(circuit))
-        return list(map(execute, circuits))
+            return qmath.squeeze(device.execute(tape))
+        return list(map(execute, tapes))
     return batch_execute
 
 def draw(qfunc, charset='unicode'):
@@ -101,9 +131,11 @@ def draw(qfunc, charset='unicode'):
 
 
 def with_preprocess(device, tape_transform):
+    """Create a device that runs `tape_transform` on every tape before execution"""
     return lambda tapes: device(list(map(tape_transform, tapes)))
 
 def with_batch_preprocess(device, tapes_transform):
+    """Create a device that runs `tapes_transform` on the batch of tapes before execution"""
     return lambda tapes: devices(tapes_transform(tapes))
 
 def _get_classical_jacobian_jax(_qfunc):
