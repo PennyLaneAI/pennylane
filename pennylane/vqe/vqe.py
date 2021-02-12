@@ -486,6 +486,10 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
+        if all(c == 0 for c in coeffs) or not coeffs:
+            self.cost_fn = lambda *args, **kwargs: np.array(0)
+            return
+
         tape_mode = qml.tape_mode_active()
         self._optimize = optimize
 
@@ -528,11 +532,6 @@ class ExpvalCost:
             self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
-        coeffs = self.hamiltonian.coeffs
-        if all(c == 0 for c in coeffs) or not coeffs:
-            # We have a zero Hamiltonian whose measurement statistic is zero
-            return np.array(0)
-
         return self.cost_fn(*args, **kwargs)
 
 
