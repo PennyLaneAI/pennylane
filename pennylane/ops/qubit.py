@@ -1650,6 +1650,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
         wires = control_wires + wires
 
+        # Given that the controlled wires are listed before the target wires, we need to create a
+        # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
+        # acts on the control wires.
         padding = 2 ** len(wires) - len(U)
         CU = block_diag(np.eye(padding), U)
 
