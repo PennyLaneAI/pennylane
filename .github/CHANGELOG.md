@@ -21,7 +21,7 @@
   [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
 
 * Fixes a testing bug where tests that required JAX would fail if JAX was not installed.
-  The tests will now instead be skipped if JAX can not be imported.
+  The tests will now instead be skipped if JAX cannot be imported.
   [(#1066)](https://github.com/PennyLaneAI/pennylane/pull/1066)
 
 <h3>Documentation</h3>

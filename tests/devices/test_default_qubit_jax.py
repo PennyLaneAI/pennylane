@@ -489,6 +489,7 @@ class TestOps:
         res = circuit(x)
         assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
 
+        # Adjust grad func to be compatible when tested with both old and new cores of PennyLane
         grad = jax.grad(lambda a: circuit(a).reshape(()))(x)
         assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
 
