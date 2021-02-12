@@ -1644,8 +1644,9 @@ class ControlledQubitUnitary(QubitUnitary):
             )
 
         U = params[0]
-        if len(U) != 2 ** len(wires):
-            raise ValueError(f"Input unitary must be of dimension {2 ** len(wires)}")
+        target_dim = 2 ** len(wires)
+        if len(U) != target_dim:
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
         wires = control_wires + wires
 

@@ -790,7 +790,7 @@ class TestOperations:
     def test_controlled_qubit_unitary_wrong_shape(self):
         """Test if ControlledQubitUnitary raises a ValueError if a unitary of shape inconsistent
         with wires is provided"""
-        with pytest.raises(ValueError, match="Input unitary must be of dimension 2"):
+        with pytest.raises(ValueError, match=r"Input unitary must be of shape \(2, 2\)"):
             qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2)
 
     @pytest.mark.parametrize("target_wire", range(3))
