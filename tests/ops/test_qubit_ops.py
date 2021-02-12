@@ -841,9 +841,7 @@ class TestOperations:
         # the 4-qubit representation of the unitary if the control wires were [0, 1] and the target
         # wires were [2, 3]
         U_matrix = np.eye(16, dtype=np.complex128)
-        for i in range(4):
-            for j in range(4):
-                U_matrix[i + 12, j + 12] = U[i, j]
+        U_matrix[12:16, 12:16] = U
 
         # We now need to swap wires so that the control wires are [1, 3] and the target wires are
         # [2, 0]

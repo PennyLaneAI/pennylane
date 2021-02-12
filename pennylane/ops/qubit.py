@@ -1615,8 +1615,8 @@ class ControlledQubitUnitary(QubitUnitary):
 
     Args:
         U (array[complex]): square unitary matrix
-        control_wires (Sequence[int] or int): the control wire(s)
-        wires (Sequence[int] or int): the wire(s) the unitary acts on
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
 
     **Example**
 
@@ -1631,7 +1631,7 @@ class ControlledQubitUnitary(QubitUnitary):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, control_wires=None):
+    def __init__(self, *params, control_wires=None, wires=None, do_queue=True):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -1640,7 +1640,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         if Wires.shared_wires([wires, control_wires]):
             raise ValueError(
-                "The control wires must be different from the wires specified to apply the unitary on"
+                "The control wires must be different from the wires specified to apply the unitary on."
             )
 
         U = params[0]
