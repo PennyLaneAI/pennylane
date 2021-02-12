@@ -116,7 +116,7 @@ class Hamiltonian:
 
     @property
     def terms(self):
-        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
+        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
 
         Returns:
             (tuple, tuple): tuples of coefficients and operations, each of length N

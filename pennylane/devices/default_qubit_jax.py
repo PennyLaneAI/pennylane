@@ -136,6 +136,7 @@ class DefaultQubitJax(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": jax_ops.PhaseShift,
+        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
         "RX": jax_ops.RX,
         "RY": jax_ops.RY,
         "RZ": jax_ops.RZ,

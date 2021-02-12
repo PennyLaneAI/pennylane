@@ -85,6 +85,7 @@ class DefaultQubitAutograd(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
+        "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
         "RX": autograd_ops.RX,
         "RY": autograd_ops.RY,
         "RZ": autograd_ops.RZ,

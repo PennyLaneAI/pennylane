@@ -54,8 +54,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.14"
-    version = "0.14.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     operations = {
@@ -77,6 +77,7 @@ class DefaultMixed(QubitDevice):
         "Toffoli",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -92,6 +93,7 @@ class DefaultMixed(QubitDevice):
         "BitFlip",
         "PhaseFlip",
         "QubitChannel",
+        "QFT",
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
