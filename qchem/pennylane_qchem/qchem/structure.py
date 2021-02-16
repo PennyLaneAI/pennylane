@@ -1102,13 +1102,13 @@ def derivative(H, x, i, delta=0.005291772):
 
     # plus
     x_plus = x.copy()
-    x_plus[i] += delta*0.5
+    x_plus[i] += delta * 0.5
 
     # minus
     x_minus = x.copy()
-    x_minus[i] -= delta*0.5
+    x_minus[i] -= delta * 0.5
 
-    return (H(x_plus) - H(x_minus))*(delta*to_bohr)**-1
+    return (H(x_plus) - H(x_minus)) * (delta * to_bohr) ** -1
 
 
 def gradient(H, x, delta=0.005291772):
@@ -1152,7 +1152,7 @@ def gradient(H, x, delta=0.005291772):
     + (0.030654287745411964) [Z1 Z3]
     + (0.02494407786332001) [Z2 Z3]
     """
-    
+
     grad = [derivative(H, x, i, delta=delta) for i in range(x.size)]
 
     return grad
