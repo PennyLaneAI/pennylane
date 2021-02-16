@@ -152,7 +152,7 @@ Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Daniel Polatajko,
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Jack Ceroni, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld
+Thomas Bromley, Josh Izaac, Antal Száva.
 
 # Release 0.14.0
 
