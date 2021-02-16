@@ -123,6 +123,9 @@ class TestOperation:
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
+        if test_class == qml.ControlledQubitUnitary:
+            pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
+
         n = test_class.num_params
         w = test_class.num_wires
         ww = list(range(w))
@@ -198,6 +201,19 @@ class TestOperation:
             monkeypatch.setattr(test_class, "par_domain", 7)
             with pytest.raises(ValueError, match="Unknown parameter domain"):
                 test_class(*pars, wires=ww)
+
+    def test_controlled_qubit_unitary_init(self):
+        """Test for the init of ControlledQubitUnitary"""
+        control_wires = [3, 2]
+        target_wires = [1, 0]
+        U = qml.CRX._matrix(0.4)
+
+        op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
+        target_data = [np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])]
+
+        assert op.name == qml.ControlledQubitUnitary.__name__
+        assert np.allclose(target_data, op.data)
+        assert op._wires == Wires(control_wires) + Wires(target_wires)
 
     @pytest.fixture(scope="function")
     def qnode_for_inverse(self, mock_device):

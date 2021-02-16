@@ -22,12 +22,14 @@ import functools
 import math
 
 import numpy as np
+from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
+from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -1601,6 +1603,64 @@ class QubitUnitary(Operation):
         return U
 
 
+class ControlledQubitUnitary(QubitUnitary):
+    r"""ControlledQubitUnitary(U, control_wires, wires)
+    Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        U (array[complex]): square unitary matrix
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+
+    **Example**
+
+    The following shows how a single-qubit unitary can be applied to wire ``2`` with control on
+    both wires ``0`` and ``1``:
+
+    >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, *params, control_wires=None, wires=None, do_queue=True):
+        if control_wires is None:
+            raise ValueError("Must specify control wires")
+
+        wires = Wires(wires)
+        control_wires = Wires(control_wires)
+
+        if Wires.shared_wires([wires, control_wires]):
+            raise ValueError(
+                "The control wires must be different from the wires specified to apply the unitary on."
+            )
+
+        U = params[0]
+        target_dim = 2 ** len(wires)
+        if len(U) != target_dim:
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        wires = control_wires + wires
+
+        # Given that the controlled wires are listed before the target wires, we need to create a
+        # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
+        # acts on the control wires.
+        padding = 2 ** len(wires) - len(U)
+        CU = block_diag(np.eye(padding), U)
+
+        params = list(params)
+        params[0] = CU
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
@@ -1914,6 +1974,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
     "QFT",
 }
