@@ -82,6 +82,10 @@
   (5, 4, 4)
   ```
 
+* An improvement has been made to how `QubitDevice` generates and post-processess samples,
+  allowing QNode measurement statistics to work on devices with more than 32 qubits.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Breaking changes</h3>
 
 * If creating a QNode from a quantum function with an argument named `shots`,
