@@ -656,10 +656,10 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))].T
+        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states.T @ powers_of_two
+        perm = basis_states @ powers_of_two
         return self._gather(prob, perm)
 
     def expval(self, observable):
