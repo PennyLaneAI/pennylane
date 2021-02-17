@@ -7,7 +7,7 @@ Gradients and training
 ======================
 
 PennyLane offers seamless integration between classical and quantum computations. Code up quantum
-circuits in PennyLane, compute :doc:`quantum gradients <glossary/quantum_gradient>`, and
+circuits in PennyLane, compute :doc:`gradients of quantum circuits <glossary/quantum_gradient>`, and
 connect them easily to the top scientific computing and machine learning libraries.
 
 Gradients
@@ -69,7 +69,7 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
 * ``"reversible"``: A form of backpropagation that takes advantage of the unitary or reversible
   nature of quantum computation.
 
-  This method is similar to the ``adjoint`` method, but has a lower time overhead and a similar
+  This method is similar to the ``adjoint`` method, but has a slightly larger time overhead and a similar
   memory overhead.
 
   Compared to the parameter-shift rule, the reversible method can be faster or slower, depending on
@@ -79,7 +79,7 @@ Forward-mode differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following methods support both quantum hardware and simulators. However, when using a simulator,
-you may notice that the computational time required to compute the gradients scales
+you may notice that the time required to compute the gradients scales
 with the number of trainable circuit parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
