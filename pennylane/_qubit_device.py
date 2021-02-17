@@ -564,8 +564,8 @@ class QubitDevice(Device):
         samples = self._samples[:, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(device_wires)
-        indices = np.ravel_multi_index(samples.T, unraveled_indices)
+        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        indices = samples @ powers_of_two
 
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
@@ -656,9 +656,10 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
-        )
+        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+
+        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        perm = basis_states @ powers_of_two
         return self._gather(prob, perm)
 
     def expval(self, observable):
@@ -696,8 +697,8 @@ class QubitDevice(Device):
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
         samples = self._samples[:, np.array(device_wires)]  # Add np.array here for Jax support.
-        unraveled_indices = [2] * len(device_wires)
-        indices = np.ravel_multi_index(samples.T, unraveled_indices)
+        powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+        indices = samples @ powers_of_two
         return observable.eigvals[indices]
 
     def adjoint_jacobian(self, tape):
