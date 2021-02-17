@@ -1058,7 +1058,7 @@ def derivative(H, x, i, delta=0.005291772):
     .. math::
 
         \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x+\delta/2)
-        - \hat{H}(x-\delta/2)}{\delta} 
+        - \hat{H}(x-\delta/2)}{\delta}
 
     Args:
         H (callable): function with signature ``H(x)`` that builds the electronic
