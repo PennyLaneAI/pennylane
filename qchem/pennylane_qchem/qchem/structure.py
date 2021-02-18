@@ -1052,13 +1052,13 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 
 def derivative(H, x, i, delta=0.005291772):
-    r"""Compute the derivative :math:`\partial H(x)/\partial x_i` of the electronic Hamiltonian
+    r"""Compute the derivative :math:`\partial \hat{H}(x)/\partial x_i` of the electronic Hamiltonian
     with respect to the :math:`i`-th nuclear coordinate using a central difference approximation.
 
     .. math::
 
-        \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x+\delta/2)
-        - \hat{H}(x-\delta/2)}{\delta}
+        \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x_i+\delta/2)
+        - \hat{H}(x_i-\delta/2)}{\delta}
 
     Args:
         H (callable): function with signature ``H(x)`` that builds the electronic
@@ -1067,12 +1067,13 @@ def derivative(H, x, i, delta=0.005291772):
             The size of the array should be ``3*N`` where ``N`` is the number of atoms
             in the molecule.
         i (int): index of the nuclear coordinate involved in the derivative
-            `:math:`\partial H(x)/\partial x_i`
+            :math:`\partial H(x)/\partial x_i`
         delta (float): Step size in Angstroms used to displace the nuclear coordinate.
             Its default value corresponds to 0.01 Bohr radius.
 
     Returns:
-        pennylane.Hamiltonian: the observable associated with the derivative of the Hamiltonian
+        pennylane.Hamiltonian: the derivative of the Hamiltonian
+        :math:`\partial \hat{H}(x)/\partial x_i`
 
     **Example**
 
@@ -1125,8 +1126,7 @@ def gradient(H, x, delta=0.005291772):
             Its default value corresponds to 0.01 Bohr radius.
 
     Returns:
-        Iterable[pennylane.Hamiltonian]: list with the observables associated with the
-        derivatives of the Hamiltonian :math:`\partial \hat{H}(x) / \partial x_i`.
+        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`
 
     **Example**
 
