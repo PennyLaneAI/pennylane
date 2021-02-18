@@ -1067,7 +1067,7 @@ def derivative(H, x, i, delta=0.005291772):
             The size of the array should be ``3*N`` where ``N`` is the number of atoms
             in the molecule.
         i (int): index of the nuclear coordinate involved in the derivative
-            :math:`\partial H(x)/\partial x_i`
+            :math:`\partial \hat{H}(x)/\partial x_i`
         delta (float): Step size in Angstroms used to displace the nuclear coordinate.
             Its default value corresponds to 0.01 Bohr radius.
 
