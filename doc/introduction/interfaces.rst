@@ -27,25 +27,14 @@ that QNode is requested.
 PennyLane currently provides the following differentiation methods for QNodes, divided into
 the following categories.
 
-.. note::
+Simulation-based differentiation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    If not specified, the default differentiation method is ``diff_method="best"``. PennyLane
-    will attempt to determine the *best* differentiation method given the device and interface.
-    Typically, PennyLane will prioritize device-provided gradients, backpropagation, parameter-shift
-    rule, and finally finite-differences, in that order.
-
-Device gradients
-~~~~~~~~~~~~~~~~
-
-* ``"device"``: Queries the device directly for the gradient.
-  Only allowed on devices that provide their own gradient computation.
-
-Reverse-mode differentiation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following methods only support state-vector simulators, they are **not** hardware compatible;
-they are only supported on *statevector* simulator devices such as :class:`default.qubit
-<~.DefaultQubit>`.
+The following methods use `reverse accumulation
+<https://en.wikipedia.org/wiki/Automatic_differentiation#Reverse_accumulation>`__ to compute
+gradients; a well-known example of this approach is backpropagation. These methods only support
+state-vector simulators, they are **not** hardware compatible; they are only supported on
+*statevector* simulator devices such as :class:`default.qubit <~.DefaultQubit>`.
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
@@ -75,12 +64,14 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
   Compared to the parameter-shift rule, the reversible method can be faster or slower, depending on
   the density and location of parametrized gates in a circuit.
 
-Forward-mode differentiation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Hardware-compatible differentiation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods support both quantum hardware and simulators. However, when using a simulator,
-you may notice that the time required to compute the gradients scales
-with the number of trainable circuit parameters.
+The following methods support both quantum hardware and simulators, and are examples of `forward
+accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__
+However, when using a simulator, you may notice that the time required to compute the gradients
+:doc:`scales quadratically <demos/tutorial_backprop>` with the number of trainable circuit
+parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
   <glossary/parameter_shift>` for all supported quantum operation arguments, with
@@ -89,13 +80,29 @@ with the number of trainable circuit parameters.
 * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation arguments.
 
 
+Device gradients
+~~~~~~~~~~~~~~~~
+
+* ``"device"``: Queries the device directly for the gradient.
+  Only allowed on devices that provide their own gradient computation.
+
+
+.. note::
+
+    If not specified, the default differentiation method is ``diff_method="best"``. PennyLane
+    will attempt to determine the *best* differentiation method given the device and interface.
+    Typically, PennyLane will prioritize device-provided gradients, backpropagation, parameter-shift
+    rule, and finally finite-differences, in that order.
+
+
 Training and interfaces
 -----------------------
 
 The bridge between the quantum and classical worlds is provided in PennyLane via *interfaces*.
-Currently, there are four built-in interfaces: NumPy, PyTorch, JAX, and TensorFlow. These interfaces
-make each of these libraries quantum-aware, allowing quantum circuits to be treated just like any
-other operation.
+Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
+<interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. These
+interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
+like any other operation.
 
 In PennyLane, an interface is declared when creating a :class:`~.QNode`, e.g.,
 
@@ -108,13 +115,6 @@ In PennyLane, an interface is declared when creating a :class:`~.QNode`, e.g.,
 .. note::
     If no interface is specified, PennyLane will default to the NumPy interface (powered by the
     `autograd <https://github.com/HIPS/autograd>`_ library).
-
-.. note::
-
-    QNodes with an interface will always incur a small overhead on evaluation. If you do not
-    need to compute quantum gradients of a QNode, specifying ``interface=None`` will remove
-    this overhead and result in a slightly faster evaluation. However, gradients will no
-    longer be available.
 
 This will allow native numerical objects of the specified library (NumPy arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
@@ -184,6 +184,15 @@ converting QNodes into both Keras and ``torch.nn`` layers:
 
     pennylane.qnn.KerasLayer
     pennylane.qnn.TorchLayer
+
+
+.. note::
+
+    QNodes with an interface will always incur a small overhead on evaluation. If you do not
+    need to compute quantum gradients of a QNode, specifying ``interface=None`` will remove
+    this overhead and result in a slightly faster evaluation. However, gradients will no
+    longer be available.
+
 
 :html:`</div>`
 
