@@ -127,9 +127,6 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(args) == 1:
-            grad = (grad,)
-
         return grad, forward
 
     def apply_grad(self, grad, args):

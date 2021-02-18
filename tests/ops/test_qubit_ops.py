@@ -18,6 +18,7 @@ import pytest
 import functools
 import numpy as np
 from numpy.linalg import multi_dot
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -1295,3 +1296,117 @@ def test_identity_eigvals(tol):
     res = qml.Identity._eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestControlledQubitUnitary:
+    """Tests for the ControlledQubitUnitary operation"""
+
+    X = np.array([[0, 1], [1, 0]])
+
+    def test_matrix(self):
+        """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
+        (Toffoli) gate"""
+        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix
+        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix
+        assert np.allclose(mat, mat2)
+
+    def test_no_control(self):
+        """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
+        with pytest.raises(ValueError, match="Must specify control wires"):
+            qml.ControlledQubitUnitary(X, wires=2)
+
+    def test_shared_control(self):
+        """Test if ControlledQubitUnitary raises an error if control wires are shared with wires"""
+        with pytest.raises(ValueError, match="The control wires must be different from the wires"):
+            qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
+
+    def test_wrong_shape(self):
+        """Test if ControlledQubitUnitary raises a ValueError if a unitary of shape inconsistent
+        with wires is provided"""
+        with pytest.raises(ValueError, match=r"Input unitary must be of shape \(2, 2\)"):
+            qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2)
+
+    @pytest.mark.parametrize("target_wire", range(3))
+    def test_toffoli(self, target_wire):
+        """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
+        single-qubit X. This test allows the target wire to be any of the three wires."""
+        control_wires = list(range(3))
+        del control_wires[target_wire]
+
+        # pick some random unitaries (with a fixed seed) to make the circuit less trivial
+        U1 = unitary_group.rvs(8, random_state=1)
+        U2 = unitary_group.rvs(8, random_state=2)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f1():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wire)
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        @qml.qnode(dev)
+        def f2():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.Toffoli(wires=control_wires + [target_wire])
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        state_1 = f1()
+        state_2 = f2()
+
+        assert np.allclose(state_1, state_2)
+
+    def test_arbitrary_multiqubit(self):
+        """Test if ControlledQubitUnitary applies correctly for a 2-qubit unitary with 2-qubit
+        control, where the control and target wires are not ordered."""
+        control_wires = [1, 3]
+        target_wires = [2, 0]
+
+        # pick some random unitaries (with a fixed seed) to make the circuit less trivial
+        U1 = unitary_group.rvs(16, random_state=1)
+        U2 = unitary_group.rvs(16, random_state=2)
+
+        # the two-qubit unitary
+        U = unitary_group.rvs(4, random_state=3)
+
+        # the 4-qubit representation of the unitary if the control wires were [0, 1] and the target
+        # wires were [2, 3]
+        U_matrix = np.eye(16, dtype=np.complex128)
+        U_matrix[12:16, 12:16] = U
+
+        # We now need to swap wires so that the control wires are [1, 3] and the target wires are
+        # [2, 0]
+        swap = qml.SWAP.matrix
+
+        # initial wire permutation: 0123
+        # target wire permutation: 1302
+        swap1 = np.kron(swap, np.eye(4))  # -> 1023
+        swap2 = np.kron(np.eye(4), swap)  # -> 1032
+        swap3 = np.kron(np.kron(np.eye(2), swap), np.eye(2))  # -> 1302
+        swap4 = np.kron(np.eye(4), swap)  # -> 1320
+
+        all_swap = swap4 @ swap3 @ swap2 @ swap1
+        U_matrix = all_swap.T @ U_matrix @ all_swap
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def f1():
+            qml.QubitUnitary(U1, wires=range(4))
+            qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
+            qml.QubitUnitary(U2, wires=range(4))
+            return qml.state()
+
+        @qml.qnode(dev)
+        def f2():
+            qml.QubitUnitary(U1, wires=range(4))
+            qml.QubitUnitary(U_matrix, wires=range(4))
+            qml.QubitUnitary(U2, wires=range(4))
+            return qml.state()
+
+        state_1 = f1()
+        state_2 = f2()
+
+        assert np.allclose(state_1, state_2)
