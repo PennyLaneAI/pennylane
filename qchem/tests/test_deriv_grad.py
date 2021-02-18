@@ -65,7 +65,7 @@ def test_deriv(i, coeffs, ops):
 
     shutil.rmtree("pyscf")
 
-    exp_obs = qml.Hamiltonian(coeffs, ops)
+    exp_obs = qml.vqe.Hamiltonian(coeffs, ops)
 
     assert exp_obs.compare(deriv)
 
