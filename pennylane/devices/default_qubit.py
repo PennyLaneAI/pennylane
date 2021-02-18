@@ -89,15 +89,14 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.15"
-    version = "0.15.0"
+    pennylane_requires = "0.14"
+    version = "0.14.0"
     author = "Xanadu Inc."
 
     operations = {
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
-        "ControlledQubitUnitary",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -114,7 +113,6 @@ class DefaultQubit(QubitDevice):
         "CY",
         "CZ",
         "PhaseShift",
-        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -123,7 +121,7 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
-        "QFT",
+        "Measure",
     }
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
@@ -212,6 +210,9 @@ class DefaultQubit(QubitDevice):
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+
+        if operation.base_name == "Measure":
+            return self._apply_measurement(state, operation.projectors, wires)
 
         matrix = self._get_unitary_matrix(operation)
 
@@ -639,6 +640,28 @@ class DefaultQubit(QubitDevice):
         )
 
         return self._einsum(einsum_indices, phases, state)
+
+    def _apply_measurement(self, state, projectors, wires):
+        r"""Apply a measurement projection to the quantum state.
+
+        Args:
+            state (array[complex]): input state
+            projectors (List[array]): projection matrices
+            wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
+        """
+
+        probs = self.analytic_probability(wires)
+
+        nr_wires = len(wires)
+        outcome = self.sample_basis_states(2 ** nr_wires, probs)
+
+        matrix = projectors[int(outcome[0])]
+        self._state = self._apply_unitary(state, matrix, wires) / np.sqrt(probs[outcome[0]])
+
+        return self._state
 
     def reset(self):
         """Reset the device"""

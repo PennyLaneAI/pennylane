@@ -428,6 +428,29 @@ class TestApply:
                 qml.BasisState(np.array([1, 1]), wires=[0, 1])
             ])
 
+    def test_qubit_measure(self, qubit_device_2_wires, tol):
+        """Tests thtat the Measurement operation is applied correctly"""
+
+        results = []
+
+        for i in range(50):
+            operations = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.Measure(wires=[0, 1])
+            ]
+
+            qubit_device_2_wires.reset()
+            qubit_device_2_wires.apply(operations)
+
+            res1 = np.allclose(qubit_device_2_wires._state.flatten(), np.array([1, 0, 0, 0]), atol=tol, rtol=0)
+            res2 = np.allclose(qubit_device_2_wires._state.flatten(), np.array([0, 0, 0, 1]), atol=tol, rtol=0)
+
+            results.append(res1 or res2)
+
+        assert np.all(results)
+
+
 class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
 
