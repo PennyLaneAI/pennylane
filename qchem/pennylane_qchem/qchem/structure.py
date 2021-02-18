@@ -1158,6 +1158,87 @@ def gradient(H, x, delta=0.005291772):
     return grad
 
 
+def second_derivative(H, x, i, j, delta=0.005291772):
+    r"""Computes the second-order derivative :math:`\partial^2 \hat{H}(x)/\partial x_i \partial x_j`
+    of the electronic Hamiltonian with respect to the nuclear coordinates :math:`x_i, x_j` using
+    a central difference approximation.
+
+    For :math:`x_i = x_j` the derivative is computed as
+
+    .. math::
+
+        \frac{\partial^2 \hat{H}(x)}{\partial x_i^2} \approx
+        \frac{\hat{H}(x_i + \delta) - 2 \hat{H}(x) + \hat{H}(x_i - \delta)}{\delta^2},
+
+    while for :math:`x_i \neq x_j` it is evaluated as follows
+
+    .. math::
+
+        \frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j} \approx
+        \frac{\hat{H}(x_i + \delta/2, x_j + \delta/2) - \hat{H}(x_i - \delta/2, x_j + \delta/2)
+        - \hat{H}(x_i + \delta/2, x_j - \delta/2) + \hat{H}(x_i + \delta/2, x_j + \delta/2)}
+        {\delta^2}.
+
+    Args:
+        H (callable): function with signature ``H(x)`` that builds the electronic
+            Hamiltonian of the molecule for a given set of nuclear coordinates ``x``
+        x (array[float]): 1D array with the nuclear coordinates given in Angstroms.
+            The size of the array should be ``3*N`` where ``N`` is the number of atoms
+            in the molecule.
+        i (int): index of the :math:`i`-th nuclear coordinate
+        j (int): index of the :math:`j`-th nuclear coordinate
+        delta (float): Step size in Angstroms used to displace the nuclear coordinates.
+            Its default value corresponds to 0.01 Bohr radius.
+
+    Returns:
+        pennylane.Hamiltonian: the second-order derivative of the Hamiltonian
+
+    **Example**
+
+    >>> def H(x):
+    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+    >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
+    >>> print(second_derivative(H, x, i=0, j=4))
+    """
+
+    to_bohr = 1.8897261254535
+
+    if i == j:
+        # plus (p)
+        x_p = x.copy()
+        x_p[i] += delta
+
+        # minus (m)
+        x_m = x.copy()
+        x_m[i] -= delta
+
+        return (H(x_p) - 2 * H(x) + H(x_m)) * (delta * to_bohr) ** -2
+
+    else:
+        # plus-plus (pp)
+        x_pp = x.copy()
+        x_pp[i] += delta * 0.5
+        x_pp[j] += delta * 0.5
+
+        # minus-plus (mp)
+        x_mp = x.copy()
+        x_mp[i] -= delta * 0.5
+        x_mp[j] += delta * 0.5
+
+        # plus-minus (pm)
+        x_pm = x.copy()
+        x_pm[i] += delta * 0.5
+        x_pm[j] -= delta * 0.5
+
+        # minus-minus (mm)
+        x_mm = x.copy()
+        x_mm[i] -= delta * 0.5
+        x_mm[j] -= delta * 0.5
+
+        return (H(x_pp) - H(x_mp) - H(x_pm) + H(x_mm)) * (delta * to_bohr) ** -2
+
+
 __all__ = [
     "read_structure",
     "meanfield",
@@ -1170,6 +1251,7 @@ __all__ = [
     "excitations_to_wires",
     "derivative",
     "gradient",
+    "second_derivative",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
