@@ -25,7 +25,7 @@ that QNode is requested.
         return qml.probs(wires=0)
 
 PennyLane currently provides the following differentiation methods for QNodes, divided into
-the following three categories.
+the following categories.
 
 .. note::
 
