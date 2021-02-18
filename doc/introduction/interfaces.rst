@@ -24,16 +24,14 @@ that QNode is requested.
         qml.RX(x, wires=0)
         return qml.probs(wires=0)
 
-PennyLane currently provides the following differentiation methods for QNodes, divided into
-the following categories.
+PennyLane currently provides the following differentiation methods for QNodes:
 
 Simulation-based differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following methods use `reverse accumulation
 <https://en.wikipedia.org/wiki/Automatic_differentiation#Reverse_accumulation>`__ to compute
-gradients; a well-known example of this approach is backpropagation. These methods only support
-state-vector simulators, they are **not** hardware compatible; they are only supported on
+gradients; a well-known example of this approach is backpropagation. These methods are **not** hardware compatible; they are only supported on
 *statevector* simulator devices such as :class:`default.qubit <~.DefaultQubit>`.
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
