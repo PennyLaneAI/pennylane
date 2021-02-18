@@ -47,6 +47,9 @@
 
 <h3>Improvements</h3>
 
+- Added the `ControlledQubitUnitary` operation.
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
+
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
   vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
@@ -78,6 +81,10 @@
   >>> out.shape
   (5, 4, 4)
   ```
+
+* An improvement has been made to how `QubitDevice` generates and post-processess samples,
+  allowing QNode measurement statistics to work on devices with more than 32 qubits.
+  [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
 
 <h3>Breaking changes</h3>
 
