@@ -1163,14 +1163,14 @@ def second_derivative(H, x, i, j, delta=0.005291772):
     of the electronic Hamiltonian with respect to the nuclear coordinates :math:`x_i, x_j` using
     a central difference approximation.
 
-    For :math:`x_i = x_j` the derivative is computed as
+    For :math:`x_i = x_j` the derivative is approximated as
 
     .. math::
 
         \frac{\partial^2 \hat{H}(x)}{\partial x_i^2} \approx
         \frac{\hat{H}(x_i + \delta) - 2 \hat{H}(x) + \hat{H}(x_i - \delta)}{\delta^2},
 
-    while for :math:`x_i \neq x_j` it is evaluated as follows
+    while for :math:`x_i \neq x_j`
 
     .. math::
 
@@ -1191,7 +1191,8 @@ def second_derivative(H, x, i, j, delta=0.005291772):
             Its default value corresponds to 0.01 Bohr radius.
 
     Returns:
-        pennylane.Hamiltonian: the second-order derivative of the Hamiltonian
+        pennylane.Hamiltonian: the second-order derivative
+        :math:`\partial^2 \hat{H}(x)/\partial x_i \partial x_j` of the Hamiltonian
 
     **Example**
 
@@ -1199,39 +1200,54 @@ def second_derivative(H, x, i, j, delta=0.005291772):
     ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
 
     >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
-    >>> print(second_derivative(H, x, i=0, j=4))
+    >>> print(second_derivative(H, x, i=0, j=3))
+    (0.5868312400858033) [I0]
+    + (0.06451525889146342) [Z0]
+    + (0.0645152588903532) [Z1]
+    + (-0.20178489157950144) [Z2]
+    + (-0.20178489157950144) [Z3]
+    + (0.019075588624199384) [Z0 Z1]
+    + (-0.005455207867846737) [Y0 X1 X2 Y3]
+    + (0.005455207867846737) [Y0 Y1 X2 X3]
+    + (0.005455207867846737) [X0 X1 Y2 Y3]
+    + (-0.005455207867846737) [X0 Y1 Y2 X3]
+    + (0.023173301436443285) [Z0 Z2]
+    + (0.017718093568596546) [Z0 Z3]
+    + (0.017718093568596546) [Z1 Z2]
+    + (0.023173301436443285) [Z1 Z3]
+    + (0.01885652779810073) [Z2 Z3]
     """
 
     to_bohr = 1.8897261254535
 
     if i == j:
-        # plus (p)
+        # plus
         x_p = x.copy()
         x_p[i] += delta
 
-        # minus (m)
+        # minus
         x_m = x.copy()
         x_m[i] -= delta
 
         return (H(x_p) - 2 * H(x) + H(x_m)) * (delta * to_bohr) ** -2
 
     else:
-        # plus-plus (pp)
+        # plus-plus
         x_pp = x.copy()
         x_pp[i] += delta * 0.5
         x_pp[j] += delta * 0.5
 
-        # minus-plus (mp)
+        # minus-plus
         x_mp = x.copy()
         x_mp[i] -= delta * 0.5
         x_mp[j] += delta * 0.5
 
-        # plus-minus (pm)
+        # plus-minus
         x_pm = x.copy()
         x_pm[i] += delta * 0.5
         x_pm[j] -= delta * 0.5
 
-        # minus-minus (mm)
+        # minus-minus
         x_mm = x.copy()
         x_mm[i] -= delta * 0.5
         x_mm[j] -= delta * 0.5
