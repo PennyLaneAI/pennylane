@@ -2,6 +2,21 @@
 
 <h3>New features since last release</h3>
 
+* The ``second_derivative()`` function has been added to compute
+  the second-order derivative of the molecular Hamiltonian with respect
+  to the nuclear coordinates using a finite-difference approximation.
+
+  For example:
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
+  >>> d2H_dxi_dxj = qml.qchem.second_derivative(H, x, i=0, j=2)
+  ```
+  [(#1096)](https://github.com/PennyLaneAI/pennylane/pull/1096)
+
 * The ``derivative()`` and ``gradient()`` functions have been added to compute
   the gradient of molecular Hamiltonians with respect to the nuclear
   coordinates using a finite-difference approximation.
