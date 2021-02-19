@@ -1229,7 +1229,7 @@ def second_derivative(H, x, i, j, delta=0.005291772):
         x_m = x.copy()
         x_m[i] -= delta
 
-        return (H(x_p) - 2 * H(x) + H(x_m)) * (delta * to_bohr) ** -2
+        return (H(x_p) - 2.0 * H(x) + H(x_m)) * (delta * to_bohr) ** -2
 
     else:
         # plus-plus
