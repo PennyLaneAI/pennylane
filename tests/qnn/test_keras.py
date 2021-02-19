@@ -60,6 +60,8 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(n_qubits),
             layer2,
+            # Optionally, adding a lambda layer to take only the real values from dm of layer2
+            tf.keras.layers.Lambda(lambda x: tf.abs(x)),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(output_dim[0] * output_dim[1])
         ]

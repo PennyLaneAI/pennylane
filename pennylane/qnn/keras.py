@@ -186,15 +186,6 @@ class KerasLayer(Layer):
         100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
 
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
-
-    **Returning a state**
-
-    If your QNode returns the state of the quantum circuit using :func:`~.state` or
-    :func:`~.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
-    that casts to reals. For example, you could use
-    `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
-    with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
-    Keras layers require a real input and are differentiated with respect to real parameters.
     """
 
     def __init__(
