@@ -35,38 +35,55 @@ def get_circuit(n_qubits, output_dim, interface, tape_mode):
         "w7": 0,
     }
 
-    if isinstance(output_dim, tuple):
-        @qml.qnode(dev, interface=interface)
-        def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
-            """Sample circuit to be used for testing density_matrix() return type.
-            """
-            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-            qml.RX(w2[0], wires=0 % n_qubits)
-            qml.RX(w3, wires=1 % n_qubits)
-            qml.Rot(*w4, wires=2 % n_qubits)
-            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-            qml.Rot(*w6, wires=3 % n_qubits)
-            qml.RX(w7, wires=4 % n_qubits)
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+        """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+        operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+        parameters, w5, are specified as non-trainable."""
+        qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+        qml.RX(w2[0], wires=0 % n_qubits)
+        qml.RX(w3, wires=1 % n_qubits)
+        qml.Rot(*w4, wires=2 % n_qubits)
+        qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+        qml.Rot(*w6, wires=3 % n_qubits)
+        qml.RX(w7, wires=4 % n_qubits)
+        return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-            # Using np.log2() here because output_dim is sampled from varying the number of
-            # qubits(say, nq) and calculated as (2 ** nq, 2 ** nq)
-            return qml.density_matrix(wires=[i for i in range(int(np.log2(output_dim[0])))])
+    return circuit, weight_shapes
 
-    else:
-        @qml.qnode(dev, interface=interface)
-        def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
-            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
-            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
-            parameters, w5, are specified as non-trainable."""
-            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-            qml.RX(w2[0], wires=0 % n_qubits)
-            qml.RX(w3, wires=1 % n_qubits)
-            qml.Rot(*w4, wires=2 % n_qubits)
-            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-            qml.Rot(*w6, wires=3 % n_qubits)
-            qml.RX(w7, wires=4 % n_qubits)
-            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+@pytest.fixture
+def get_circuit_dm(n_qubits, output_dim, interface, tape_mode):
+    """Fixture for getting a sample quantum circuit with a controllable qubit number and output
+    dimension for density matrix return type. Returns both the circuit and the shape of the weights."""
+
+    dev = qml.device("default.qubit", wires=n_qubits)
+    weight_shapes = {
+        "w1": (3, n_qubits, 3),
+        "w2": (1,),
+        "w3": 1,
+        "w4": [3],
+        "w5": (2, n_qubits, 3),
+        "w6": 3,
+        "w7": 0,
+    }
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
+        """Sample circuit to be used for testing density_matrix() return type.
+        """
+        qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+        qml.RX(w2[0], wires=0 % n_qubits)
+        qml.RX(w3, wires=1 % n_qubits)
+        qml.Rot(*w4, wires=2 % n_qubits)
+        qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+        qml.Rot(*w6, wires=3 % n_qubits)
+        qml.RX(w7, wires=4 % n_qubits)
+
+        # Using np.log2() here because output_dim is sampled from varying the number of
+        # qubits(say, nq) and calculated as (2 ** nq, 2 ** nq)
+        return qml.density_matrix(wires=[i for i in range(int(np.log2(output_dim[0])))])
 
     return circuit, weight_shapes
