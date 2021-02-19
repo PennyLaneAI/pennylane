@@ -23,6 +23,33 @@ from pennylane.wires import Wires
 
 @template
 def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
+    r"""Performs the
+    `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
+    circuit.
+
+    Given a unitary :math:`U`, this template applies the circuit for quantum phase
+    estimation. The unitary is applied to the qubits specified by ``target_wires`` and :math:`n`
+    qubits are used for phase estimation as specified by ``estimation_wires``.
+
+    .. figure:: ../../_static/templates/subroutines/qpe.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    Args:
+        unitary (array): the phase estimation unitary
+        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary
+        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+            estimation
+
+    Raises:
+        QuantumFunctionError: if the ``target_wires`` and ``estimation_wires`` share a common
+            element
+
+    .. UsageDetails::
+
+        TODO
+    """
 
     target_wires = Wires(target_wires)
     estimation_wires = Wires(estimation_wires)
