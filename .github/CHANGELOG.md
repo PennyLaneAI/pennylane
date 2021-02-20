@@ -82,8 +82,9 @@
   (5, 4, 4)
   ```
 
-* Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
-  [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
+* An improvement has been made to how `QubitDevice` generates and post-processess samples,
+  allowing QNode measurement statistics to work on devices with more than 32 qubits.
+  [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
 
 <h3>Breaking changes</h3>
 
