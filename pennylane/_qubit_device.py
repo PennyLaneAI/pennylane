@@ -404,7 +404,9 @@ class QubitDevice(Device):
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
         if self.shots is None:
-            raise ValueError("Can only generate samples if number of shots are specified on the device.")
+            raise ValueError(
+                "Can only generate samples if number of shots are specified on the device."
+            )
 
         number_of_states = 2 ** self.num_wires
 

@@ -175,6 +175,7 @@ class TestOperations:
             m.setattr(QubitDevice, "apply",
                       lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
+            m.setattr(QubitDevice, "shots", 1000)
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(circuit_graph)
 
@@ -392,6 +393,7 @@ class TestGenerateSamples:
             m.setattr(QubitDevice, "sample_basis_states", lambda self, wires, b: wires)
             m.setattr(QubitDevice, "states_to_binary", lambda a, b: (a, b))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
+            m.setattr(QubitDevice, "shots", 1000)
             dev._samples = dev.generate_samples()
 
         assert dev._samples == (number_of_states, dev.num_wires)
