@@ -30,6 +30,7 @@ from pennylane.templates.subroutines import (
     UCCSD,
     ApproxTimeEvolution,
     Permute,
+    QuantumPhaseEstimation,
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -1477,3 +1478,36 @@ class TestPermute:
         # Make sure to start comparison after the set of RZs have been applied
         assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
         assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
+
+
+class TestQuantumPhaseEstimation:
+    """Tests for the QuantumPhaseEstimation template from the pennylane.templates.subroutine
+    module."""
+
+    def test_same_wires(self):
+        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+        common element"""
+
+        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
+            QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
+
+    def test_expected_tape(self):
+        """Tests if QuantumPhaseEstimation populates the tape as expected for a fixed example"""
+
+        m = qml.RX(0.3, wires=0).matrix
+
+        with qml.tape.QuantumTape() as tape:
+            QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.Hadamard(1),
+            qml.ControlledQubitUnitary(m, control_wires=[1], wires=[0]),
+            qml.Hadamard(2),
+            qml.ControlledQubitUnitary(m @ m, control_wires=[2], wires=[0]),
+            qml.QFT(wires=[1, 2]).inv()
+
+        assert len(tape2.queue) == len(tape.queue)
+        assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
+        assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
