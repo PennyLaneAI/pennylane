@@ -175,8 +175,8 @@ class TestOperations:
             m.setattr(QubitDevice, "apply",
                       lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
-            m.setattr(QubitDevice, "shots", 1000)
             dev = mock_qubit_device_with_paulis_and_methods()
+            dev.shots = 1000  # finite shots needed for sample measurement
             dev.execute(circuit_graph)
 
         assert call_history == queue

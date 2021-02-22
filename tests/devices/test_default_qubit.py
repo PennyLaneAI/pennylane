@@ -1715,6 +1715,7 @@ class TestWiresIntegration:
     def make_circuit_expval(self, wires):
         """Factory for a qnode returning expvals using arbitrary wire labels."""
         dev = qml.device("default.qubit", wires=wires)
+        assert dev.shots is None
         n_wires = len(wires)
 
         @qml.qnode(dev, diff_method="parameter-shift")
