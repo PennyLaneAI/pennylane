@@ -14,3 +14,33 @@
 """
 Unit tests for the :mod:`pennylane` kernels module.
 """
+import pennylane as qml
+import pennylane.kernels as kern
+import pytest
+import numpy as np
+
+@qml.template
+def _simple_ansatz(x, params):
+    qml.RX(params[0], wires=[0])
+    qml.RZ(x, wires=[0])
+    qml.RX(params[1], wires=[0])
+
+class TestEmbeddingKernel:
+
+    def test_construction(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+
+        assert k.probs_qnode is not None
+
+    def test_value_range(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        val = k(0.1, 0.2, params)
+
+        assert 0 <= val
+        assert val <= 1
+
+

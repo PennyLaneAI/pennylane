@@ -18,3 +18,4 @@ This subpackage defines functions that relate to quantum kernel methods.
 .. autosummary::
     :toctree: api
 """
+from .embedding_kernel import EmbeddingKernel

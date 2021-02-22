@@ -14,8 +14,7 @@
 """
 This file contains functionalities for embedding kernels.
 """
-from .. import probs
-from ..qnodes import QNode
+import pennylane as qml
 
 class EmbeddingKernel:
     """
@@ -25,11 +24,12 @@ class EmbeddingKernel:
 
             .. code-block:: python
 
+                @qml.template
                 ansatz(x, params, **kwargs)
 
             where ``x`` represents the datapoint, ``params`` are the trainable weights of the
             variational circuit, and ``kwargs`` are any additional keyword arguments that need
-            to be passed to the template.
+            to be passed to the template. It is absolutely necessary that the ansatz is a qml.template.
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
             of devices of length matching the number of terms in the Hamiltonian.
@@ -53,11 +53,11 @@ class EmbeddingKernel:
 
         def circuit(x1, x2, params, **kwargs):
             ansatz(x1, params, **kwargs)
-            ansatz(x2, params, **kwargs).inv()
+            qml.inv(ansatz(x2, params, **kwargs))
 
-            return probs(wires=device.wires)
+            return qml.probs(wires=device.wires)
 
-        self.probs_qnode = QNode(circuit, device, interface=interface, diff_method=diff_method, **kwargs)
+        self.probs_qnode = qml.QNode(circuit, device, interface=interface, diff_method=diff_method, **kwargs)
 
     def __call__(self, x1, x2, params, **kwargs):
         """
