@@ -16,6 +16,7 @@ This file contains functionalities for embedding kernels.
 """
 import pennylane as qml
 
+
 class EmbeddingKernel:
     """
     Args:
@@ -38,8 +39,8 @@ class EmbeddingKernel:
             Supports all interfaces supported by the :func:`~.qnode` decorator.
         diff_method (str, None): The method of differentiation to use with the created cost function.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
-    """   
-    
+    """
+
     def __init__(
         self,
         ansatz,
@@ -57,7 +58,9 @@ class EmbeddingKernel:
 
             return qml.probs(wires=device.wires)
 
-        self.probs_qnode = qml.QNode(circuit, device, interface=interface, diff_method=diff_method, **kwargs)
+        self.probs_qnode = qml.QNode(
+            circuit, device, interface=interface, diff_method=diff_method, **kwargs
+        )
 
     def __call__(self, x1, x2, params, **kwargs):
         """
