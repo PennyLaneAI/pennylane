@@ -16,7 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from collections import OrderedDict
 
 import numpy as np
@@ -178,12 +178,26 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if shots < 1:
-            raise DeviceError(
-                "The specified number of shots needs to be at least 1. Got {}.".format(shots)
-            )
+        if isinstance(shots, int):
+            if shots < 1:
+                raise DeviceError(
+                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                )
 
-        self._shots = int(shots)
+            self._shots = int(shots)
+
+        elif isinstance(shots, Sequence):
+            if any(s < 1 for s in shots):
+                raise DeviceError(
+                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                )
+
+            self._shots = shots
+
+        else:
+            raise DeviceError(
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
+            )
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.

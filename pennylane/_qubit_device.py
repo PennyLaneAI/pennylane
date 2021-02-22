@@ -20,6 +20,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 import abc
 from collections import OrderedDict
+from collections.abc import Sequence
 import itertools
 
 import numpy as np
@@ -208,7 +209,13 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        results = self.statistics(circuit.observables)
+
+        if isinstance(self.shots, Sequence):
+            csum = np.cumsum(self.shots)
+            shot_ranges = np.vstack([np.hstack([[0], csum[:-1]]), csum]).T
+            results = [self.statistics(circuit.observables, shot_range=s) for s in shot_ranges]
+        else:
+            results = self.statistics(circuit.observables)
 
         if circuit.all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
@@ -317,7 +324,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables):
+    def statistics(self, observables, shot_range=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -337,16 +344,16 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                results.append(self.expval(obs))
+                results.append(self.expval(obs, shot_range=shot_range))
 
             elif obs.return_type is Variance:
-                results.append(self.var(obs))
+                results.append(self.var(obs, shot_range=shot_range))
 
             elif obs.return_type is Sample:
-                results.append(self.sample(obs))
+                results.append(self.sample(obs, shot_range=shot_range))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(self.probability(wires=obs.wires, shot_range=shot_range))
 
             elif obs.return_type is State:
                 if len(observables) > 1:
@@ -425,12 +432,13 @@ class QubitDevice(Device):
 
         Args:
             number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
 
         Returns:
             List[int]: the sampled basis states
         """
         basis_states = np.arange(number_of_states)
-        return np.random.choice(basis_states, self.shots, p=state_probability)
+        return np.random.choice(basis_states, np.sum(self.shots), p=state_probability)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
@@ -543,13 +551,15 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def estimate_probability(self, wires=None):
+    def estimate_probability(self, wires=None, shot_range=None):
         """Return the estimated probability of each computational basis state
         using the generated samples.
 
         Args:
             wires (Iterable[Number, str], Number, str, Wires): wires to calculate
                 marginal probabilities for. Wires not provided are traced out of the system.
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
 
         Returns:
             List[float]: list of the probabilities
@@ -561,7 +571,8 @@ class QubitDevice(Device):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        samples = self._samples[:, device_wires]
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        samples = self._samples[sample_slice, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
@@ -573,7 +584,7 @@ class QubitDevice(Device):
         prob[basis_states] = counts / len(samples)
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def probability(self, wires=None):
+    def probability(self, wires=None, shot_range=None):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
@@ -591,7 +602,7 @@ class QubitDevice(Device):
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
 
-        return self.estimate_probability(wires=wires)
+        return self.estimate_probability(wires=wires, shot_range=shot_range)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -662,7 +673,7 @@ class QubitDevice(Device):
         perm = basis_states @ powers_of_two
         return self._gather(prob, perm)
 
-    def expval(self, observable):
+    def expval(self, observable, shot_range=None):
 
         if self.analytic:
             # exact expectation value
@@ -671,9 +682,9 @@ class QubitDevice(Device):
             return self._dot(eigvals, prob)
 
         # estimate the ev
-        return np.mean(self.sample(observable))
+        return np.mean(self.sample(observable, shot_range=shot_range))
 
-    def var(self, observable):
+    def var(self, observable, shot_range=None):
 
         if self.analytic:
             # exact variance value
@@ -682,21 +693,24 @@ class QubitDevice(Device):
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
-        return np.var(self.sample(observable))
+        return np.var(self.sample(observable, shot_range=shot_range))
 
-    def sample(self, observable):
+    def sample(self, observable, shot_range=None):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, device_wires[0]]
+            return 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[:, np.array(device_wires)]  # Add np.array here for Jax support.
+        samples = self._samples[
+            sample_slice, np.array(device_wires)
+        ]  # Add np.array here for Jax support.
         powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
         indices = samples @ powers_of_two
         return observable.eigvals[indices]
