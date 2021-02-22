@@ -354,9 +354,6 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
-        if dev.shots is None:
-            pytest.skip("Device not in sampling mode.")
-
         @qml.qnode(dev)
         def circuit():
             qml.RX(1.5708, wires=[0])

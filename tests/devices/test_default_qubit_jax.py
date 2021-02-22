@@ -136,7 +136,7 @@ class TestQNodeIntegration:
         """Test that sampling works with a jax.jit"""
         @jax.jit
         def circuit(key):
-            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+            dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
             @qml.qnode(dev, interface="jax", diff_method="backprop")
             def inner_circuit():
                 qml.Hadamard(0)
@@ -151,7 +151,7 @@ class TestQNodeIntegration:
 
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.Hadamard(0)
@@ -163,7 +163,7 @@ class TestQNodeIntegration:
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests. """
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
@@ -174,7 +174,7 @@ class TestQNodeIntegration:
 
     def test_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)

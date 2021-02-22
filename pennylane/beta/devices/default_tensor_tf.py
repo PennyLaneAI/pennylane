@@ -76,7 +76,7 @@ class DefaultTensorTF(DefaultTensor):
     Args:
         wires (int): number of subsystems in the quantum state represented by the device
         shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
-            Defaults to 1000 if not specified.
+            Defaults to None if not specified, which means that the device returns analytical results.
         representation (str): Underlying representation used for the tensor network simulation.
             Valid options are "exact" (no approximations made) or "mps" (simulated quantum
             state is approximated as a Matrix Product State).
