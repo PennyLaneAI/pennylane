@@ -63,6 +63,6 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
         # Could we calculate the matrix power more efficiently by diagonalizing?
         u = matrix_power(unitary, 2 ** i)
 
-        qml.ControlledQubitUnitary(u, control_wires=wire, target_wires=target_wires)
+        # qml.ControlledQubitUnitary(u, control_wires=wire, target_wires=target_wires)
 
-    qml.QFT(estimation_wires).inv()
+    # qml.QFT(wires=estimation_wires).inv()
