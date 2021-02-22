@@ -1706,15 +1706,15 @@ class ControlledQubitUnitary(QubitUnitary):
 
         elif isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError(f"Length of control bit string must equal number of control wires.")
+                raise ValueError("Length of control bit string must equal number of control wires.")
 
             # If specified integer values, must make sure they are all 0/1
             if any([x not in ['0', '1'] for x in control_values]):
-                raise ValueError(f"String of control values can contain only '0' or '1'.")
+                raise ValueError("String of control values can contain only '0' or '1'.")
 
             binary_control_values = [int(x) for x in control_values]
         else:
-            raise ValueError(f"Alternative control values must be passed as integer, or binary string.")
+            raise ValueError("Alternative control values must be passed as integer, or binary string.")
 
         return binary_control_values
 
