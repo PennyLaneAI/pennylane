@@ -26,7 +26,7 @@ Subroutines
     :no-heading:
     :include-all-objects:
 
-State preperations
+State preparations
 ------------------
 
 .. automodapi:: pennylane.templates.state_preparations
