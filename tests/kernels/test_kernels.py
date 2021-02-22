@@ -18,6 +18,7 @@ import pennylane as qml
 import pennylane.kernels as kern
 import pytest
 import numpy as np
+import math
 
 
 @qml.template
@@ -117,3 +118,58 @@ class TestKernelPolarization:
 
         assert pol == 2.4
         assert pol == pol_assume
+
+
+class TestKernelTargetAlignment:
+    def test_correct_calls(self):
+        X = [0.1, 0.4]
+        Y = [1, -1]
+
+        hist = []
+
+        kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
+
+        assert len(hist) == 3
+
+        assert (0.1, 0.4) in hist
+        assert (0.1, 0.1) in hist
+        assert (0.4, 0.4) in hist
+
+    def test_correct_calls_normalized(self):
+        X = [0.1, 0.4]
+        Y = [1, -1]
+
+        hist = []
+
+        kern.kernel_target_alignment(
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
+        )
+
+        assert len(hist) == 1
+
+        assert (0.1, 0.4) in hist
+        assert (0.1, 0.1) not in hist
+        assert (0.4, 0.4) not in hist
+
+    def test_alignment_value(self):
+        X = [0.1, 0.4]
+        Y = [1, -1]
+
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        alignment_assume = kern.kernel_target_alignment(
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+        )
+
+        assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
+        assert alignment == alignment_assume
+
+    def test_polarization_value_other_labels(self):
+        X = [0.1, 0.4]
+        Y = [1, 1]
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        alignment_assume = kern.kernel_target_alignment(
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+        )
+
+        assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
+        assert alignment == alignment_assume
