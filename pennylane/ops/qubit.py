@@ -1604,7 +1604,7 @@ class QubitUnitary(Operation):
 
 
 class ControlledQubitUnitary(QubitUnitary):
-    r"""ControlledQubitUnitary(U, control_wires, wires)
+    r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
 
     **Details:**
@@ -1617,6 +1617,8 @@ class ControlledQubitUnitary(QubitUnitary):
         U (array[complex]): square unitary matrix
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+        control_values (Union[str or int]): the state of the control qubits to
+            control on (default is |11...1>)
 
     **Example**
 
@@ -1625,13 +1627,35 @@ class ControlledQubitUnitary(QubitUnitary):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+
+    Typically controlled operations apply a desired gate if the control qubits
+    are all in the state $|1\rangle$. However, there are some situations where
+    it is necessary to apply a gate conditioned on all qubits being in the
+    $|0\rangle$ state, or some mix of the two.
+
+    The state on which to control can be changed by passing a value to
+    `control_values` as either a bit string, or an integer (which is converted
+    to binary representation in Big-Endian format).
+
+    For example, if we want to apply a single-qubit unitary to wire ``3``
+    conditioned on three wires where the first is in state ``0``, the second is
+    in state ``1``, and the third in state ``1``, we can write:
+
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
+
+    Or equivalently,
+
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=3)
+
+    since ``011`` is 3 in binary.
+
     """
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, control_wires=None, wires=None, do_queue=True):
+    def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -1650,15 +1674,93 @@ class ControlledQubitUnitary(QubitUnitary):
 
         wires = control_wires + wires
 
-        # Given that the controlled wires are listed before the target wires, we need to create a
-        # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
-        # acts on the control wires.
-        padding = 2 ** len(wires) - len(U)
-        CU = block_diag(np.eye(padding), U)
+        if not control_values:
+            # Given that the controlled wires are listed before the target wires, we need to create a
+            # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
+            # acts on the control wires.
+            padding = 2 ** len(wires) - len(U)
+            CU = block_diag(np.eye(padding), U)
 
-        params = list(params)
-        params[0] = CU
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+            params = list(params)
+            params[0] = CU
+            super().__init__(*params, wires=wires, do_queue=do_queue)
+        else:
+            control_values = self._validate_control_values(control_wires, control_values)
+            # TODO - the rest of the implementation
+
+    @staticmethod
+    def _validate_control_values(control_wires, control_values):
+
+        binary_control_values = ''
+
+        if isinstance(control_values, int):
+            # Compute number of wires needed for binary representation
+            wires_needed = int(np.floor(np.log2(control_values))) + 1
+
+            if wires_needed > len(control_wires):
+                raise ValueError(f"Not enough control wires; need {wires_needed}.")
+
+            # Convert binary representation as list of wires_needed 0s and 1s
+            bin_string = format(control_values, f"#0{wires_needed+2}b")[2:]
+            binary_control_values = [int(x) for x in bin_string]
+
+        elif isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError(f"Length of control bit string must equal number of control wires.")
+
+            # If specified integer values, must make sure they are all 0/1
+            if any([x not in ['0', '1'] for x in control_values]):
+                raise ValueError(f"String of control values can contain only '0' or '1'.")
+
+            binary_control_values = [int(x) for x in control_values]
+        else:
+            raise ValueError(f"Alternative control values must be passed as integer, or binary string.")
+
+        return binary_control_values
+
+
+class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
+    r"""MixedPolarityMultiControlledToffoli(control_wires, wires, control_values)
+    Apply a Pauli X gate controlled on an arbitrary computational basis state.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+        control_values (Union[str or int]): the state of the control qubits to
+            control based on (default is |11...1>)
+
+    **Example**
+
+    The ``MixedPolarityMultiControlledToffoli`` operation is a commonly-encountered case
+    of the ``ControlledQubitUnitary`` operation wherein the applied unitary is the
+    Pauli X (NOT) gate. It can be used in the same manner as ControlledQubitUnitary, but
+    there is no need to specify a matrix argument.
+
+    The following are equivalent:
+
+    >>> qml.MixedPolarityMultiControlledToffoli(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+    >>> qml.MixedPolarityMultiControlledToffoli(control_wires=[0, 1, 2, 3], wires=4, control_values=14)
+
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
+        super().__init__(
+            np.array([[0, 1], [1, 0]]),
+            control_wires=control_wires,
+            wires=wires,
+            control_values=control_values,
+            do_queue=do_queue
+        )
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -1975,6 +2077,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "ControlledQubitUnitary",
+    "MixedPolarityMultiControlledToffoli",
     "DiagonalQubitUnitary",
     "QFT",
 }
