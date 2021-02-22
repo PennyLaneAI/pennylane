@@ -16,45 +16,37 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
-import pkg_resources
 
 import numpy as _np
-
-from semantic_version import Version, Spec
-
-# QueuingContext needs to be imported before all other pennylane imports
-from .queuing import QueuingContext  # pylint: disable=wrong-import-order
-import pennylane.operation
-
-import pennylane.templates
-
-
-from .circuit_graph import CircuitGraph
-from .configuration import Configuration
-from ._device import Device, DeviceError
-from ._qubit_device import QubitDevice
-from .measure import expval, var, sample, state, density_matrix, probs
-from .ops import *
-from .optimize import *
-from .qnode import qnode, QNode
-from .utils import inv
-from ._version import __version__
-from .io import *
-from ._grad import jacobian, grad
-
-import pennylane.math
-import pennylane.tape
+import pkg_resources
+from semantic_version import Spec, Version
 
 import pennylane.init
-import pennylane.qnn
+import pennylane.math
+import pennylane.operation
 import pennylane.qaoa as qaoa
-
-from pennylane.collections import apply, map, sum, dot, QNodeCollection
-from pennylane.templates import template, broadcast, layer
+import pennylane.qnn
+import pennylane.templates
+from pennylane._device import Device, DeviceError
+from pennylane._grad import grad, jacobian
+from pennylane._qubit_device import QubitDevice
+from pennylane._version import __version__
 from pennylane.about import about
-from pennylane.vqe import Hamiltonian, ExpvalCost, VQECost
-from pennylane.transforms import draw, metric_tensor, measurement_grouping
+from pennylane.circuit_graph import CircuitGraph
+from pennylane.configuration import Configuration
+from pennylane.io import *
+from pennylane.measure import density_matrix, expval, probs, sample, state, var
+from pennylane.ops import *
+from pennylane.optimize import *
+from pennylane.qnode import QNode, qnode
+from pennylane.templates import broadcast, layer, template
+from pennylane.transforms import draw, measurement_grouping, metric_tensor
+from pennylane.utils import inv
+from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
+# QueuingContext and collections needs to be imported after all other pennylane imports
+from .collections import QNodeCollection, apply, dot, map, sum
+from .queuing import QueuingContext
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

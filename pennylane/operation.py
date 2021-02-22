@@ -118,7 +118,6 @@ import abc
 import copy
 import itertools
 import functools
-import numbers
 from enum import Enum, IntEnum
 
 import numpy as np

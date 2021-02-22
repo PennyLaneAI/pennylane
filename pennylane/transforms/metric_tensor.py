@@ -32,7 +32,7 @@ def _stopping_critera(obj):
 
 def metric_tensor_tape(tape, diag_approx=False, wrt=None):
     """Returns a list of tapes, and a classical processing function, for computing the block
-    diagronal metric tensor approximation of an input tape on hardware.
+    diagonal metric tensor approximation of an input tape on hardware.
 
     Args:
         tape (.QuantumTape): the tape to compute the metric tensor of

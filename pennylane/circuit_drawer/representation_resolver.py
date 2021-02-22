@@ -102,7 +102,8 @@ class RepresentationResolver:
 
         return len(target_list) - 1
 
-    def single_parameter_representation(self, par):
+    @staticmethod
+    def single_parameter_representation(par):
         """Resolve the representation of an Operator's parameter.
 
         Args:

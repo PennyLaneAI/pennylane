@@ -162,10 +162,8 @@ def qtransform(qnode, a, framework=jnp):
     "dev_name,diff_method",
     [("default.mixed", "finite-diff"), ("default.qubit.autograd", "parameter-shift")],
 )
-def test_transform(dev_name, diff_method, monkeypatch, tol):
+def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""
-    monkeypatch.setattr(qml.operation.Operation, "do_check_domain", False)
-
     dev = qml.device(dev_name, wires=1)
 
     @qnode(dev, interface="jax", diff_method=diff_method)

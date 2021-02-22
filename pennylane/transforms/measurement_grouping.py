@@ -14,11 +14,27 @@
 """
 Contains the measurement grouping transform
 """
-import numpy as np
 import pennylane as qml
 
 
 def measurement_grouping(tape, obs_list, coeffs_list):
+    """Returns a list of measurement optimized tapes, and a classical processing function, for
+    evaluating the expectation value of a provided Hamiltonian.
+
+    Args:
+        tape (.QuantumTape): input tape
+        obs_list (Sequence[.Observable]): The list of observables to measure
+            the expectation values of after executing the tape.
+        coeffs_list (Sequence[float]): Coefficients of the Hamiltonian expression.
+            Must be of the same length as ``obs_list``.
+
+    Returns:
+        tuple[list[.QuantumTape], func]: Returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape results to compute the Hamiltonian expectation value.
+
+    **Example**
+    """
     obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs_list, coeffs_list)
     tapes = []
 

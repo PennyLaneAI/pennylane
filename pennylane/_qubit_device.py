@@ -186,7 +186,7 @@ class QubitDevice(Device):
         # consider merging with caching case
         try:
             self._circuit_hash = circuit.graph.hash
-        except AttributeError as e:
+        except AttributeError:
             self._circuit_hash = circuit.hash
 
         if self._cache:
