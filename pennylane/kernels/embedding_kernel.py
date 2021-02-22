@@ -46,7 +46,6 @@ class EmbeddingKernel:
         device,
         interface="autograd",
         diff_method="best",
-        optimize=False,
         **kwargs,
     ):
         self.probs_qnode = None
@@ -54,7 +53,7 @@ class EmbeddingKernel:
 
         def circuit(x1, x2, params, **kwargs):
             ansatz(x1, params, **kwargs)
-            ansatz(x1, params, **kwargs).inv()
+            ansatz(x2, params, **kwargs).inv()
 
             return probs(wires=device.wires)
 
