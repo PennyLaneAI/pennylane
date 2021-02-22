@@ -18,6 +18,7 @@ import pennylane as qml
 import itertools
 import math
 
+
 def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
     """Kernel polarization of a given kernel function.
 
@@ -29,7 +30,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
             that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
 
     Returns:
-        float: The (unnormalized) kernel polarization. 
+        float: The (unnormalized) kernel polarization.
     """
     polarization = 0
 
@@ -44,6 +45,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
             polarization += kernel(x, x)
 
     return polarization
+
 
 def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
     """Kernel target alignment of a given kernel function.
@@ -62,11 +64,11 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
     normalization = 0
 
     for (x1, y1), (x2, y2) in itertools.combinations(zip(X, Y), 2):
-        k = kernel(x1, x2) 
+        k = kernel(x1, x2)
 
         # Factor 2 accounts for symmetry of the kernel
         alignment += 2 * k * y1 * y2
-        normalization += 2 * k**2
+        normalization += 2 * k ** 2
 
     if assume_normalized_kernel:
         alignment += len(X)
@@ -75,6 +77,6 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
         for x in X:
             k = kernel(x, x)
             alignment += k
-            normalization += k**2
+            normalization += k ** 2
 
-    return alignment /(len(X)* math.sqrt(normalization))
+    return alignment / (len(X) * math.sqrt(normalization))
