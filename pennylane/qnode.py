@@ -803,7 +803,7 @@ class QNode:
         """
         # pylint: disable=import-outside-toplevel
         try:
-            from pennylane.tape.interfaces.jax import JAXInterface
+            from pennylane.interfaces.jax import JAXInterface
 
             if self.interface != "jax" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.

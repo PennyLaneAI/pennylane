@@ -17,7 +17,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
 import pennylane as qml
-from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
+from pennylane import qnode, QNode
+from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 def test_qnode_intergration():
 	"""Test a simple use of qnode with a JAX interface and non-JAX device"""
