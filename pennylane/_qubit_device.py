@@ -403,11 +403,6 @@ class QubitDevice(Device):
         Returns:
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
-        if self.shots is None:
-            raise ValueError(
-                "Can only generate samples if number of shots are specified on the device."
-            )
-
         number_of_states = 2 ** self.num_wires
 
         rotated_prob = self.analytic_probability()
@@ -427,8 +422,16 @@ class QubitDevice(Device):
         Returns:
             List[int]: the sampled basis states
         """
+        if self.shots is None:
+            raise DeprecationWarning(
+                "In future, the number of shots have to be explicitly set on the device "
+                "when using sample-based measurements."
+            )
+
+        shots = self.shots or 1000
+
         basis_states = np.arange(number_of_states)
-        return np.random.choice(basis_states, self.shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):

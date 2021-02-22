@@ -14,7 +14,7 @@
 ## the value (if desired).
 
 [main]
-# shots = None
+# shots = 1000
 
 ## =================================================================
 ##     PLUGIN AND DEVICE OPTIONS

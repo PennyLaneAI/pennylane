@@ -205,25 +205,8 @@ def pytest_generate_tests(metafunc):
     device_kwargs = {
         "name": opt.device,
         "shots": opt.shots,
-        "analytic": opt.analytic,
         **opt.device_kwargs,
     }
-
-    # ===========================================
-    # some processing of the command line options
-
-    if device_kwargs["shots"] is None:
-        # use default value of device
-        device_kwargs.pop("shots")
-    if device_kwargs["analytic"] is None:
-        # use default value of device
-        device_kwargs.pop("analytic")
-    else:
-        if device_kwargs["analytic"].lower() == "false":
-            # turn string into boolean
-            device_kwargs["analytic"] = False
-        else:
-            device_kwargs["analytic"] = True
 
     # ==============================================
 

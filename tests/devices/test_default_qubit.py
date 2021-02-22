@@ -1656,7 +1656,7 @@ class TestProbabilityIntegration:
     @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
         dev_analytic = qml.device("default.qubit", wires=2, shots=None)
 
         def circuit(x):
@@ -1715,7 +1715,6 @@ class TestWiresIntegration:
     def make_circuit_expval(self, wires):
         """Factory for a qnode returning expvals using arbitrary wire labels."""
         dev = qml.device("default.qubit", wires=wires)
-        assert dev.shots is None
         n_wires = len(wires)
 
         @qml.qnode(dev, diff_method="parameter-shift")
