@@ -1099,6 +1099,15 @@ def derivative(H, x, i, delta=0.00529):
     + (-0.02494407786332001) [Z2 Z3]
     """
 
+    if not callable(H):
+        error_message = (
+            "{} object is not callable. \n"
+            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
+                type(H)
+            )
+        )
+        raise TypeError(error_message)
+
     to_bohr = 1.8897261254535
 
     x_plus = x.copy()
@@ -1111,8 +1120,9 @@ def derivative(H, x, i, delta=0.00529):
 
 
 def gradient(H, x, delta=0.005291772):
-    r"""Uses a finite difference approximation to compute the gradient :math:`\nabla_x \hat{H}(x)` 
-    of the electronic Hamiltonian :math:`\hat{H}(x)` for a given set of nuclear coordinates :math:`x`.
+    r"""Uses a finite difference approximation to compute the gradient
+    :math:`\nabla_x \hat{H}(x)` of the electronic Hamiltonian :math:`\hat{H}(x)`
+    for a given set of nuclear coordinates :math:`x`.
 
     Args:
         H (callable): function with signature ``H(x)`` that builds the electronic
@@ -1123,7 +1133,8 @@ def gradient(H, x, delta=0.005291772):
             Its default value corresponds to 0.01 Bohr radii.
 
     Returns:
-        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`. Each entry of the gradient is an operator.
+        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`.
+        Each entry of the gradient is an operator.
 
     **Example**
 

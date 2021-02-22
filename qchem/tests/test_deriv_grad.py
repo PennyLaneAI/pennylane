@@ -121,3 +121,13 @@ def test_grad(tol):
     calc_grad_E = np.array([qml.ExpvalCost(circuit, grad, dev)(param) for grad in grad_h])
 
     assert np.allclose(exp_grad_E, calc_grad_E, **tol)
+
+
+def test_not_callable_h():
+    r"""Test that an error is raised if the input Hamiltonian 'H' is not a callable
+    object"""
+
+    with pytest.raises(
+        TypeError, match="should be a callable function to build the electronic Hamiltonian"
+    ):
+        qchem.derivative(ops, x0, 0)
