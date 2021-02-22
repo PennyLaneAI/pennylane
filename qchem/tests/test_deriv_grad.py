@@ -7,32 +7,54 @@ from pennylane import qchem
 import shutil
 
 
-non_zero_coeffs = np.array(
+delta0 = 0.00529
+x0 = np.array([-0.0211, -0.002, 0.0, 0.8345, 0.4519, 0.0, 1.4769, -0.273, 0.0])
+coeffs0 = np.array(
     [
-        -0.7763135743293005,
-        -0.08534360840293387,
-        -0.08534360840293387,
-        0.2669341092545041,
-        0.26693410925450134,
-        -0.025233628744274508,
-        0.0072162443961340415,
-        -0.0072162443961340415,
-        -0.0072162443961340415,
-        0.0072162443961340415,
-        -0.030654287745411964,
-        -0.023438043349280003,
-        -0.023438043349280003,
-        -0.030654287745411964,
-        -0.02494407786332001,
+        0.27770444969014774,
+        -0.0017650003476157269,
+        -0.0017650003476185035,
+        -0.12236476454403046,
+        -0.12236476454402768,
+        0.001633367057292669,
+        -0.001633367057292669,
+        -0.001633367057292669,
+        0.001633367057292669,
+        0.006294156274917891,
+        0.007927523332212817,
+        0.007927523332212817,
+        0.006294156274917891,
+        0.008903324791978307,
     ]
 )
-non_zero_ops = [
+
+delta1 = 0.08
+x1 = np.array([-0.028, -0.001, 0.0, 0.79, 0.43, 0.0, 1.5, -0.3, 0.0])
+coeffs1 = np.array(
+    [
+        0.07943488923762594,
+        0.000684379865657387,
+        0.0006843798656566526,
+        -0.024610457680021434,
+        -0.024610457680021066,
+        -1.745329030477912e-05,
+        1.745329030477912e-05,
+        1.745329030477912e-05,
+        -1.745329030477912e-05,
+        -0.00381901315026642,
+        -0.0038364664405712797,
+        -0.0038364664405712797,
+        -0.00381901315026642,
+        0.01401540609625499,
+    ]
+)
+
+ops = [
     qml.Identity(wires=[0]),
     qml.PauliZ(wires=[0]),
     qml.PauliZ(wires=[1]),
     qml.PauliZ(wires=[2]),
     qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
     qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
     qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
     qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
@@ -45,29 +67,29 @@ non_zero_ops = [
 ]
 
 
-x = np.array([0.0, 0.0, 0.35, 0.0, 0.0, -0.35])
-
-
-def H(x):
-    return qchem.molecular_hamiltonian(["H", "H"], x)[0]
-
-
 @pytest.mark.parametrize(
-    ("i", "coeffs", "ops"),
-    [(0, [], []), (2, non_zero_coeffs, non_zero_ops), (5, -non_zero_coeffs, non_zero_ops)],
+    ("i", "x", "delta", "coeffs", "ops"),
+    [(0, x0, delta0, coeffs0, ops), (1, x1, delta1, coeffs1, ops), (2, x0, delta0, [], [])],
 )
-def test_deriv(i, coeffs, ops):
+def test_deriv(i, x, delta, coeffs, ops, tol):
     r"""Tests the correctness of the nuclear derivative of the electronic Hamiltonian
     computed by the ``'derivative'`` function. 
     """
 
-    deriv = qchem.derivative(H, x, i)
+    def H(x):
+        return qchem.molecular_hamiltonian(
+            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2
+        )[0]
+
+    deriv = qchem.derivative(H, x, i, delta=delta)
 
     shutil.rmtree("pyscf")
 
     exp_obs = qml.vqe.Hamiltonian(coeffs, ops)
 
-    assert exp_obs.compare(deriv)
+    assert np.allclose(deriv.coeffs, exp_obs.coeffs, **tol)
+    assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(deriv.ops, exp_obs.ops))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(deriv.ops, exp_obs.ops))
 
 
 def test_grad(tol):
@@ -81,6 +103,11 @@ def test_grad(tol):
         qml.CNOT(wires=[2, 3])
         qml.CNOT(wires=[2, 0])
         qml.CNOT(wires=[3, 1])
+
+    def H(x):
+        return qchem.molecular_hamiltonian(["H", "H"], x)[0]
+
+    x = np.array([0.0, 0.0, 0.35, 0.0, 0.0, -0.35])
 
     grad_h = qchem.gradient(H, x)
 
