@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+- Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
+  unitary matrix.
+  [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
+  
+  ```python
+  TODO
+  ```
+
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
