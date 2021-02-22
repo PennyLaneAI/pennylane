@@ -20,8 +20,7 @@ import numpy as np
 import semantic_version
 import torch
 
-from pennylane import QuantumFunctionError
-
+import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
 
 COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
@@ -219,7 +218,7 @@ class TorchInterface(AnnotatedQueue):
         <TorchQuantumTape: wires=<Wires = [0]>, params=1>
         """
         if (dtype is torch.complex64 or dtype is torch.complex128) and not COMPLEX_SUPPORT:
-            raise QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "Version 1.6.0 or above of PyTorch must be installed for complex support, "
                 "which is required for quantum functions that return the state."
             )
