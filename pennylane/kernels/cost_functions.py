@@ -19,6 +19,18 @@ import itertools
 import math
 
 def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
+    """Kernel polarization of a given kernel function.
+
+    Args:
+        X (list[datapoint]): List of datapoints
+        Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
+            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+
+    Returns:
+        float: The (unnormalized) kernel polarization. 
+    """
     polarization = 0
 
     for (x1, y1), (x2, y2) in itertools.combinations(zip(X, Y), 2):
@@ -34,6 +46,18 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
     return polarization
 
 def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
+    """Kernel target alignment of a given kernel function.
+
+    Args:
+        X (list[datapoint]): List of datapoints
+        Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
+            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+
+    Returns:
+        float: The kernel target alignment.
+    """
     alignment = 0
     normalization = 0
 
@@ -53,4 +77,4 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
             alignment += k
             normalization += k**2
 
-    return alignment / math.sqrt(len(X) * normalization)
+    return alignment /(len(X)* math.sqrt(normalization))
