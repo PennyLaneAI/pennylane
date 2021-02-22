@@ -33,14 +33,25 @@ class TestEmbeddingKernel:
 
         assert k.probs_qnode is not None
 
-    def test_value_range(self):
+    @pytest.mark.parametrize("x1", np.linspace(0, 2*np.pi, 5))
+    @pytest.mark.parametrize("x2", np.linspace(0, 2*np.pi, 5))
+    def test_value_range(self, x1, x2):
         dev = qml.device("default.qubit", wires=1)
         k = kern.EmbeddingKernel(_simple_ansatz, dev)
         params = np.array([0.5, 0.9])
 
-        val = k(0.1, 0.2, params)
+        val = k(x1, x2, params)
 
         assert 0 <= val
         assert val <= 1
+
+    def test_known_values(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        val = k(0.1, 0.1, params)
+
+        assert val == pytest.approx(1.0)
 
 
