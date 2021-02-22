@@ -16,7 +16,7 @@ This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
-from functools import lru_cache, update_wrapper, wraps
+from functools import lru_cache, update_wrapper
 import warnings
 import inspect
 

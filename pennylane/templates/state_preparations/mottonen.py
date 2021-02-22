@@ -19,7 +19,6 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
@@ -37,8 +36,6 @@ def _preprocess(state_vector, wires):
     Returns:
         tensor_like, tensor_like, Wires: amplitudes a, phases omega and preprocessed wires
     """
-    n_wires = len(wires)
-
     shape = qml.math.shape(state_vector)
 
     if len(shape) != 1:

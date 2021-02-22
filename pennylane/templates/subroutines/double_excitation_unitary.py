@@ -20,10 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 

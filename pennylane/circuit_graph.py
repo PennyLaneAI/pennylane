@@ -193,7 +193,6 @@ class CircuitGraph:
         """
         serialization_string = ""
         delimiter = "!"
-        variable_delimiter = "V"
 
         for op in self.operations_in_order:
             serialization_string += op.name

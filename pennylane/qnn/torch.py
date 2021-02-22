@@ -33,9 +33,6 @@ except ImportError:
     TORCH_IMPORTED = False
 
 
-import pennylane as qml
-
-
 class TorchLayer(Module):
     r"""Converts a :func:`~.QNode` to a Torch layer.
 

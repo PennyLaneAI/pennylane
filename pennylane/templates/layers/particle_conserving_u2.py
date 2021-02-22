@@ -19,10 +19,6 @@ import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, CRX, RZ
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 

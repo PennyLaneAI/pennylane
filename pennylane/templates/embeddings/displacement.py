@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
-from pennylane.templates.utils import (
-    check_shape,
-    check_is_in_options,
-    get_shape,
-)
 
 
 def _preprocess(features, wires, method, c):

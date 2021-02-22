@@ -22,15 +22,10 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_type,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
-def _preprocess(features, wires, pattern, n_repeats):
+def _preprocess(features, wires, pattern):
     """Validate and pre-process inputs as follows:
 
     * Check that the features tensor is one-dimensional.
@@ -42,7 +37,6 @@ def _preprocess(features, wires, pattern, n_repeats):
         features (tensor_like): input features to pre-process
         wires (Wires): wires that template acts on
         pattern (list[int]): specifies the wires and features of the entanglers
-        n_repeats (int): number of times the basic embedding is repeated
 
     Returns:
         list[Wires]: preprocessed pattern
@@ -228,7 +222,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     """
 
     wires = Wires(wires)
-    pattern = _preprocess(features, wires, pattern, n_repeats)
+    pattern = _preprocess(features, wires, pattern)
 
     for i in range(n_repeats):
 

@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_number_of_layers,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 

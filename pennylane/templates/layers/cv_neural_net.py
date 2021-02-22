@@ -20,7 +20,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
-from pennylane.templates.utils import check_number_of_layers, check_shapes
 from pennylane.wires import Wires
 
 

@@ -16,7 +16,6 @@ Contains the ``ArbitraryUnitary`` template.
 """
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 _PAULIS = ["I", "X", "Y", "Z"]

@@ -13,11 +13,9 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
-import functools
 import inspect
 from collections.abc import Iterable
 from typing import Optional
-import pennylane as qml
 
 try:
     import tensorflow as tf

@@ -22,7 +22,6 @@ from threading import RLock
 import numpy as np
 
 import pennylane as qml
-import pennylane.grouping
 from pennylane.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 

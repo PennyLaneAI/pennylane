@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
 from pennylane.wires import Wires
-from pennylane.templates.utils import check_shape, get_shape, check_type
 
 # tolerance for normalization
 TOLERANCE = 1e-10
