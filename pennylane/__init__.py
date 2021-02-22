@@ -27,6 +27,7 @@ from ._queuing import QueuingContext  # pylint: disable=wrong-import-order
 import pennylane.operation
 
 import pennylane.init
+import pennylane.kernels
 import pennylane.templates
 import pennylane.qnn
 import pennylane.qaoa as qaoa
