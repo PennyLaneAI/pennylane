@@ -163,7 +163,7 @@ class TestKernelTargetAlignment:
         assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
         assert alignment == alignment_assume
 
-    def test_polarization_value_other_labels(self):
+    def test_alignment_value_other_labels(self):
         X = [0.1, 0.4]
         Y = [1, 1]
         alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
