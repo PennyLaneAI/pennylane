@@ -1051,9 +1051,9 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def derivative(H, x, i, delta=0.005291772):
-    r"""Compute the derivative :math:`\partial \hat{H}(x)/\partial x_i` of the electronic Hamiltonian
-    with respect to the :math:`i`-th nuclear coordinate using a central difference approximation.
+def derivative(H, x, i, delta=0.00529):
+    r"""Uses a finite difference approximation to compute the ``i``-th derivative :math:`\partial \hat{H}(x)/\partial x_i`
+     of the electronic Hamiltonian evaluated at the nuclear coordinates ``x``.
 
     .. math::
 
@@ -1068,8 +1068,8 @@ def derivative(H, x, i, delta=0.005291772):
             in the molecule.
         i (int): index of the nuclear coordinate involved in the derivative
             :math:`\partial \hat{H}(x)/\partial x_i`
-        delta (float): Step size in Angstroms used to displace the nuclear coordinate.
-            Its default value corresponds to 0.01 Bohr radius.
+        delta (float): Step size in Angstroms used to displace the nuclear coordinate in the finite difference approximation.
+            Its default value corresponds to 0.01 Bohr radii.
 
     Returns:
         pennylane.Hamiltonian: the derivative of the Hamiltonian
@@ -1101,11 +1101,9 @@ def derivative(H, x, i, delta=0.005291772):
 
     to_bohr = 1.8897261254535
 
-    # plus
     x_plus = x.copy()
     x_plus[i] += delta * 0.5
 
-    # minus
     x_minus = x.copy()
     x_minus[i] -= delta * 0.5
 
@@ -1113,9 +1111,8 @@ def derivative(H, x, i, delta=0.005291772):
 
 
 def gradient(H, x, delta=0.005291772):
-    r"""Compute the gradient :math:`\nabla_x \hat{H}(x)` of the electronic Hamiltonian
-    :math:`\hat{H}(x)` for a given set of nuclear coordinates :math:`x` using central
-    differences.
+    r"""Uses a finite difference approximation to compute the gradient :math:`\nabla_x \hat{H}(x)` 
+    of the electronic Hamiltonian :math:`\hat{H}(x)` for a given set of nuclear coordinates :math:`x`.
 
     Args:
         H (callable): function with signature ``H(x)`` that builds the electronic
@@ -1123,10 +1120,10 @@ def gradient(H, x, delta=0.005291772):
         x (array[float]): 1D array with the coordinates in Angstroms. The size of the array
             should be ``3*N`` where ``N`` is the number of atoms in the molecule.
         delta (float): Step size in Angstroms used to displace the nuclear coordinates.
-            Its default value corresponds to 0.01 Bohr radius.
+            Its default value corresponds to 0.01 Bohr radii.
 
     Returns:
-        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`
+        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`. Each entry of the gradient is an operator.
 
     **Example**
 
