@@ -80,4 +80,6 @@ class EmbeddingKernel:
         return self.probs_qnode(x1, x2, params, **kwargs)[0]
 
     def kernel_matrix(self, X, params, **kwargs):
-        return kernel_matrix(X, lambda x1, x2: self(x1, x2, params, **kwargs), assume_normalized_kernel=True)
+        return kernel_matrix(
+            X, lambda x1, x2: self(x1, x2, params, **kwargs), assume_normalized_kernel=True
+        )

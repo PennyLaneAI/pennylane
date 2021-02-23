@@ -20,6 +20,7 @@ import itertools
 import math
 import numpy as np
 
+
 def _matrix_inner_product(A, B):
     """Frobenius/Hilbert-Schmidt inner product between two matrices
 
@@ -31,6 +32,7 @@ def _matrix_inner_product(A, B):
         float: Inner product of A and B
     """
     return np.trace(np.dot(np.transpose(A), B))
+
 
 def kernel_matrix(X, kernel, assume_normalized_kernel=False):
     """Kernel polarization of a given kernel function.
@@ -46,7 +48,7 @@ def kernel_matrix(X, kernel, assume_normalized_kernel=False):
     """
     N = len(X)
 
-    matrix = [0] * N**2
+    matrix = [0] * N ** 2
     for i in range(N):
         for j in range(i, N):
             if assume_normalized_kernel and i == j:
@@ -56,6 +58,7 @@ def kernel_matrix(X, kernel, assume_normalized_kernel=False):
                 matrix[N * j + i] = matrix[N * i + j]
 
     return np.array(matrix).reshape((N, N))
+
 
 def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     """Kernel polarization of a given kernel function.
@@ -77,7 +80,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_cl
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
         nminus = len(Y) - nplus
-        _Y = np.array([y/nplus if y == 1 else y/nminus for y in Y])
+        _Y = np.array([y / nplus if y == 1 else y / nminus for y in Y])
     else:
         _Y = np.array(Y)
 
@@ -86,7 +89,9 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_cl
     return _matrix_inner_product(K, T)
 
 
-def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
+def kernel_target_alignment(
+    X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True
+):
     """Kernel target alignment of a given kernel function.
 
     Args:
@@ -104,7 +109,7 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescal
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
         nminus = len(Y) - nplus
-        _Y = np.array([y/nplus if y == 1 else y/nminus for y in Y])
+        _Y = np.array([y / nplus if y == 1 else y / nminus for y in Y])
     else:
         _Y = np.array(Y)
 
