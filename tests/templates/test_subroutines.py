@@ -1526,7 +1526,9 @@ class TestQuantumPhaseEstimation:
 
             with qml.tape.QuantumTape() as tape:
                 qml.Hadamard(wires=target_wires)
-                qml.templates.QuantumPhaseEstimation(m, target_wires=target_wires, estimation_wires=estimation_wires)
+                qml.templates.QuantumPhaseEstimation(
+                    m, target_wires=target_wires, estimation_wires=estimation_wires
+                )
                 qml.probs(estimation_wires)
 
             res = tape.execute(dev).flatten()
