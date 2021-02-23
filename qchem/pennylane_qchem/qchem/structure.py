@@ -1167,9 +1167,9 @@ def gradient(H, x, delta=0.005291772):
 
 
 def second_derivative(H, x, i, j, delta=0.005291772):
-    r"""Computes the second-order derivative :math:`\partial^2 \hat{H}(x)/\partial x_i \partial x_j`
-    of the electronic Hamiltonian with respect to the nuclear coordinates :math:`x_i, x_j` using
-    a central difference approximation.
+    r"""Uses a finite difference approximation to compute utes the second-order derivative
+    :math:`\frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j}` of the electronic
+    Hamiltonian evaluated at the nuclear coordinates ``x``.
 
     For :math:`x_i = x_j` the derivative is approximated as
 
@@ -1178,7 +1178,7 @@ def second_derivative(H, x, i, j, delta=0.005291772):
         \frac{\partial^2 \hat{H}(x)}{\partial x_i^2} \approx
         \frac{\hat{H}(x_i + \delta) - 2 \hat{H}(x) + \hat{H}(x_i - \delta)}{\delta^2},
 
-    while for :math:`x_i \neq x_j`
+    and for :math:`x_i \neq x_j` is given by
 
     .. math::
 
@@ -1190,17 +1190,16 @@ def second_derivative(H, x, i, j, delta=0.005291772):
     Args:
         H (callable): function with signature ``H(x)`` that builds the electronic
             Hamiltonian of the molecule for a given set of nuclear coordinates ``x``
-        x (array[float]): 1D array with the nuclear coordinates given in Angstroms.
-            The size of the array should be ``3*N`` where ``N`` is the number of atoms
-            in the molecule.
-        i (int): index of the :math:`i`-th nuclear coordinate
-        j (int): index of the :math:`j`-th nuclear coordinate
+        x (array[float]): 1D array with the coordinates in Angstroms. The size of the
+            array should be ``3*N`` where ``N`` is the number of atoms in the molecule.
+        i (int): index of the :math:`i`-th coordinate
+        j (int): index of the :math:`j`-th coordinate
         delta (float): Step size in Angstroms used to displace the nuclear coordinates.
-            Its default value corresponds to 0.01 Bohr radius.
+            Its default value corresponds to 0.01 Bohr radii.
 
     Returns:
         pennylane.Hamiltonian: the second-order derivative
-        :math:`\partial^2 \hat{H}(x)/\partial x_i \partial x_j` of the Hamiltonian
+        :math:`\frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j}` of the Hamiltonian
 
     **Example**
 
@@ -1229,33 +1228,27 @@ def second_derivative(H, x, i, j, delta=0.005291772):
     to_bohr = 1.8897261254535
 
     if i == j:
-        # plus
         x_p = x.copy()
         x_p[i] += delta
 
-        # minus
         x_m = x.copy()
         x_m[i] -= delta
 
         return (H(x_p) - 2.0 * H(x) + H(x_m)) * (delta * to_bohr) ** -2
 
     if i != j:
-        # plus-plus
         x_pp = x.copy()
         x_pp[i] += delta * 0.5
         x_pp[j] += delta * 0.5
 
-        # minus-plus
         x_mp = x.copy()
         x_mp[i] -= delta * 0.5
         x_mp[j] += delta * 0.5
 
-        # plus-minus
         x_pm = x.copy()
         x_pm[i] += delta * 0.5
         x_pm[j] -= delta * 0.5
 
-        # minus-minus
         x_mm = x.copy()
         x_mm[i] -= delta * 0.5
         x_mm[j] -= delta * 0.5
