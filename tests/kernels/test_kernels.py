@@ -100,9 +100,9 @@ class TestKernelPolarization:
     def test_polarization_value(self):
         X = [0.1, 0.4]
         Y = [1, -1]
-        pol = kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        pol = kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False)
         pol_assume = kern.kernel_polarization(
-            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=False,
         )
 
         assert pol == 1.6
@@ -111,9 +111,9 @@ class TestKernelPolarization:
     def test_polarization_value_other_labels(self):
         X = [0.1, 0.4]
         Y = [1, 1]
-        pol = kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        pol = kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False)
         pol_assume = kern.kernel_polarization(
-            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=False,
         )
 
         assert pol == 2.4
@@ -155,9 +155,9 @@ class TestKernelTargetAlignment:
         X = [0.1, 0.4]
         Y = [1, -1]
 
-        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False)
         alignment_assume = kern.kernel_target_alignment(
-            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=False,
         )
 
         assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
@@ -166,9 +166,9 @@ class TestKernelTargetAlignment:
     def test_alignment_value_other_labels(self):
         X = [0.1, 0.4]
         Y = [1, 1]
-        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []))
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False)
         alignment_assume = kern.kernel_target_alignment(
-            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=False,
         )
 
         assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))

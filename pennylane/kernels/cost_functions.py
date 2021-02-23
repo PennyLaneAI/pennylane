@@ -18,9 +18,10 @@ See 10.1007/s10462-012-9369-4 for a review.
 import pennylane as qml
 import itertools
 import math
+import numpy as np
 
 
-def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
+def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     """Kernel polarization of a given kernel function.
 
     Args:
@@ -29,13 +30,22 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
         assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
             that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+        rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
+            care of unbalanced datasets. Defaults to True.
 
     Returns:
         float: The (unnormalized) kernel polarization.
     """
     polarization = 0
 
-    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, Y), 2):
+    if rescale_class_labels:
+        nplus = np.count_nonzero(np.array(Y) == 1)
+        nminus = len(Y) - nplus
+        _Y = [y/nplus if y == 1 else y/nminus for y in Y]
+    else:
+        _Y = Y
+
+    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, _Y), 2):
         # Factor 2 accounts for symmetry of the kernel
         polarization += 2 * kernel(x1, x2) * y1 * y2
 
@@ -48,7 +58,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False):
     return polarization
 
 
-def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
+def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     """Kernel target alignment of a given kernel function.
 
     Args:
@@ -64,7 +74,14 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False):
     alignment = 0
     normalization = 0
 
-    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, Y), 2):
+    if rescale_class_labels:
+        nplus = np.count_nonzero(np.array(Y) == 1)
+        nminus = len(Y) - nplus
+        _Y = [y/nplus if y == 1 else y/nminus for y in Y]
+    else:
+        _Y = Y
+
+    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, _Y), 2):
         k = kernel(x1, x2)
 
         # Factor 2 accounts for symmetry of the kernel
