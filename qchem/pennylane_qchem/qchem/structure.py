@@ -1166,7 +1166,7 @@ def gradient(H, x, delta=0.005291772):
     return grad
 
 
-def second_derivative(H, x, i, j, delta=0.005291772):
+def second_derivative(H, x, i, j, delta=0.00529):
     r"""Uses a finite difference approximation to compute utes the second-order derivative
     :math:`\frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j}` of the electronic
     Hamiltonian evaluated at the nuclear coordinates ``x``.
