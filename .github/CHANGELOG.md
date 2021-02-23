@@ -50,6 +50,11 @@
 - Added the `ControlledQubitUnitary` operation.
   [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
 
+- Added support for mixed-polarity multi-controlled operations in
+  `ControlledQubitUnitary` for arbitrary unitary operations, and special
+  case `MixedPolarityMultiControlledToffoli` for multi-controlled `NOT`
+  gates. [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
+
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
   vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
@@ -104,7 +109,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
+Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
 
 
 
