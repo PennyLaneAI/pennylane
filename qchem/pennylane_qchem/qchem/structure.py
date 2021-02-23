@@ -1225,6 +1225,15 @@ def second_derivative(H, x, i, j, delta=0.005291772):
     + (0.01885652779810073) [Z2 Z3]
     """
 
+    if not callable(H):
+        error_message = (
+            "{} object is not callable. \n"
+            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
+                type(H)
+            )
+        )
+        raise TypeError(error_message)
+
     to_bohr = 1.8897261254535
 
     if i == j:
