@@ -209,7 +209,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        if self._shot_vector is not None:
+        if not self.analytic and self._shot_vector is not None:
 
             results = []
             min_shots = 0
@@ -223,12 +223,23 @@ class QubitDevice(Device):
                     max_shots = min_shots + shot
                     bin_size = shot
 
-                results.extend(
-                    self.statistics(
-                        circuit.observables, shot_range=[min_shots, max_shots], bin_size=bin_size
-                    )
+                r = self.statistics(
+                    circuit.observables, shot_range=[min_shots, max_shots], bin_size=bin_size
                 )
+                r = np.squeeze(r)
+
+                if isinstance(shot, tuple):
+                    results.extend(r)
+                else:
+                    results.append(np.array(r))
+
                 min_shots = max_shots
+
+            try:
+                results = np.stack(results)
+            except:
+                results = np.hstack(results)
+
         else:
             results = self.statistics(circuit.observables)
 
@@ -368,7 +379,9 @@ class QubitDevice(Device):
                 results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires, shot_range=shot_range))
+                results.append(
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                )
 
             elif obs.return_type is State:
                 if len(observables) > 1:
@@ -566,7 +579,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def estimate_probability(self, wires=None, shot_range=None):
+    def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
         using the generated samples.
 
@@ -594,12 +607,25 @@ class QubitDevice(Device):
         indices = samples @ powers_of_two
 
         # count the basis state occurrences, and construct the probability vector
-        basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
-        prob[basis_states] = counts / len(samples)
+        if bin_size is not None:
+            bins = len(samples) // bin_size
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros([bins, 2 ** len(device_wires)], dtype=np.float64)
+
+            # count the basis state occurrences, and construct the probability vector
+            for b, idx in enumerate(indices):
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[b, basis_states] = counts / bin_size
+
+        else:
+            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+            prob[basis_states] = counts / len(samples)
+
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def probability(self, wires=None, shot_range=None):
+    def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
@@ -617,7 +643,7 @@ class QubitDevice(Device):
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
 
-        return self.estimate_probability(wires=wires, shot_range=shot_range)
+        return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -709,9 +735,8 @@ class QubitDevice(Device):
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
-        return np.squeeze(
-            np.var(self.sample(observable, shot_range=shot_range, bin_size=bin_size), axis=0)
-        )
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        return np.squeeze(np.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
