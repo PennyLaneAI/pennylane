@@ -213,26 +213,21 @@ class QubitDevice(Device):
             results = []
             s1 = 0
 
-            for shot in self._shot_vector:
+            for shot_tuple in self._shot_vector:
+                s2 = s1 + np.prod(shot_tuple)
+                r = self.statistics(
+                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                )
+                r = qml.math.squeeze(r)
 
-                if isinstance(shot, tuple):
-                    s2 = s1 + np.prod(shot)
-                    bin_size = shot[0]
-                else:
-                    s2 = s1 + shot
-                    bin_size = shot
-
-                r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=bin_size)
-                r = np.squeeze(r)
-
-                if isinstance(shot, tuple):
+                if shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
-                    results.append(np.array(r))
+                    results.append(r)
 
                 s1 = s2
 
-            results = np.stack(results)
+            results = qml.math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)

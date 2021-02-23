@@ -37,6 +37,7 @@ from pennylane.wires import Wires, WireError
 
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+"""tuple[int, int]: Represents copies of a shot number."""
 
 
 def _process_shot_sequence(shot_list):
@@ -47,8 +48,8 @@ def _process_shot_sequence(shot_list):
         shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
 
     Returns:
-        tuple[int, list[int, tuple[int]]]: A tuple containing the total number
-        of shots, as well as the shot vector.
+        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+        of shots, as well as a list of shot tuples.
 
     **Example**
 
@@ -68,12 +69,17 @@ def _process_shot_sequence(shot_list):
             shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
         else:
             # Iterate through the shots, and group consecutive identical shots
-            split_at_repeated = np.split(shot_list, np.where(np.diff(shot_list) != 0)[0] + 1)
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
             shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
 
-    else:
+    elif all(isinstance(s, (int, tuple)) for s in shot_list):
         # shot_list is already a shot vector, simply compute the total number of shots
-        shot_vector = shot_list
+        shot_vector = [
+            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
+        ]
+
+    else:
+        raise ValueError(f"Unknown shot sequence format {shot_list}")
 
     total_shots = np.sum(np.prod(shot_vector, axis=1))
     return total_shots, shot_vector
