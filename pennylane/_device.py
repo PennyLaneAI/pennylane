@@ -185,14 +185,28 @@ class Device(abc.ABC):
                 )
 
             self._shots = int(shots)
+            self._shot_vector = None
 
         elif isinstance(shots, Sequence):
-            if any(s < 1 for s in shots):
-                raise DeviceError(
-                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
-                )
 
-            self._shots = shots
+            if all(isinstance(s, int) for s in shots):
+
+                if len(set(shots)) == 1:
+                    shot_vector = [(shots[0], len(shots))]
+                    total_shots = shots[0] * len(shots)
+                else:
+                    split_at_repeated = np.split(shots, np.where(np.diff(shots) != 0)[0] + 1)
+                    shot_vector = [
+                        i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated
+                    ]
+                    total_shots = np.sum(shots)
+
+            else:
+                shot_vector = shots
+                total_shots = sum(i if isinstance(i, int) else np.prod(i) for i in shots)
+
+            self._shots = total_shots
+            self._shot_vector = shot_vector
 
         else:
             raise DeviceError(
