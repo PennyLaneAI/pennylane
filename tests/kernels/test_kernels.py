@@ -173,3 +173,35 @@ class TestKernelTargetAlignment:
 
         assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
         assert alignment == alignment_assume
+
+    def test_alignment_value_three(self):
+        X = [0.1, 0.4, 0.0]
+        Y = [1, -1, 1]
+
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False)
+        alignment_assume = kern.kernel_target_alignment(
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=False,
+        )        
+
+        K1 = np.array([[1, .2, .2,], [.2, 1, .2], [.2, .2, 1]])
+        K2 = np.array([[1, -1, 1], [-1, 1, -1], [1, -1, 1]])
+        expected_alignment = np.trace(np.dot(K1, K2))/math.sqrt(np.trace(np.dot(K1, K1)) * np.trace(np.dot(K2, K2)))
+
+        assert alignment == expected_alignment
+        assert alignment == alignment_assume
+
+    def test_alignment_value_with_normalization(self):
+        X = [0.1, 0.4, 0.0]
+        Y = [1, -1, 1]
+
+        alignment = kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=True)
+        alignment_assume = kern.kernel_target_alignment(
+            X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=True,
+        )
+        
+        K1 = np.array([[1, .2, .2,], [.2, 1, .2], [.2, .2, 1]])
+        K2 = np.array([[1/4, -1/2, 1/4], [-1/2, 1/4, -1/2], [1/4, -1/2, 1/4]])
+        expected_alignment = np.trace(np.dot(K1, K2))/math.sqrt(np.trace(np.dot(K1, K1)) * np.trace(np.dot(K2, K2)))
+
+        assert alignment == expected_alignment
+        assert alignment == alignment_assume

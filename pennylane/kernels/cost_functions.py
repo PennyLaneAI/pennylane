@@ -20,6 +20,41 @@ import itertools
 import math
 import numpy as np
 
+def _matrix_inner_product(A, B):
+    """Frobenius/Hilbert-Schmidt inner product between two matrices
+
+    Args:
+        A (array[float]): First matrix, assumed to be a square array.
+        B (array[float]): Second matrix, assumed to be a square array.
+
+    Returns:
+        float: Inner product of A and B
+    """
+    return np.trace(np.dot(np.transpose(A), B))
+
+def kernel_matrix(X, kernel, assume_normalized_kernel=False):
+    """Kernel polarization of a given kernel function.
+
+    Args:
+        X (list[datapoint]): List of datapoints
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
+            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+
+    Returns:
+        array[float]: The square matrix of kernel values.
+    """
+    N = len(X)
+
+    matrix = [0] * N**2
+    for i in range(N):
+        for j in range(i, N):
+            if assume_normalized_kernel and i == j:
+                matrix[N * i + j] = 1.0
+            else:
+                matrix[N * i + j] = kernel(X[i], X[j])
+
+    return np.array(matrix).reshape((N, N))
 
 def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     """Kernel polarization of a given kernel function.
@@ -36,26 +71,18 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_cl
     Returns:
         float: The (unnormalized) kernel polarization.
     """
-    polarization = 0
+    K = kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
         nminus = len(Y) - nplus
-        _Y = [y/nplus if y == 1 else y/nminus for y in Y]
+        _Y = np.array([y/nplus if y == 1 else y/nminus for y in Y])
     else:
-        _Y = Y
+        _Y = np.array(Y)
 
-    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, _Y), 2):
-        # Factor 2 accounts for symmetry of the kernel
-        polarization += 2 * kernel(x1, x2) * y1 * y2
+    T = np.outer(_Y, _Y)
 
-    if assume_normalized_kernel:
-        polarization += len(X)
-    else:
-        for x in X:
-            polarization += kernel(x, x)
-
-    return polarization
+    return _matrix_inner_product(K, T)
 
 
 def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
@@ -71,30 +98,15 @@ def kernel_target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescal
     Returns:
         float: The kernel target alignment.
     """
-    alignment = 0
-    normalization = 0
+    K = kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
         nminus = len(Y) - nplus
-        _Y = [y/nplus if y == 1 else y/nminus for y in Y]
+        _Y = np.array([y/nplus if y == 1 else y/nminus for y in Y])
     else:
-        _Y = Y
+        _Y = np.array(Y)
 
-    for (x1, y1), (x2, y2) in itertools.combinations(zip(X, _Y), 2):
-        k = kernel(x1, x2)
+    T = np.outer(_Y, _Y)
 
-        # Factor 2 accounts for symmetry of the kernel
-        alignment += 2 * k * y1 * y2
-        normalization += 2 * k ** 2
-
-    if assume_normalized_kernel:
-        alignment += len(X)
-        normalization += len(X)
-    else:
-        for x in X:
-            k = kernel(x, x)
-            alignment += k
-            normalization += k ** 2
-
-    return alignment / (len(X) * math.sqrt(normalization))
+    return _matrix_inner_product(K, T) / (np.linalg.norm(K, "fro") * np.linalg.norm(T, "fro"))
