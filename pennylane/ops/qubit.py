@@ -1629,9 +1629,9 @@ class ControlledQubitUnitary(QubitUnitary):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
 
     Typically controlled operations apply a desired gate if the control qubits
-    are all in the state $|1\rangle$. However, there are some situations where
+    are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
-    $|0\rangle$ state, or some mix of the two.
+    :math:`\vert 0\rangle` state, or some mix of the two.
 
     The state on which to control can be changed by passing a value to
     `control_values` as either a bit string, or an integer (which is converted
@@ -1746,7 +1746,7 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
     **Example**
 
     The ``MixedPolarityMultiControlledToffoli`` operation is a commonly-encountered case
-    of the ``ControlledQubitUnitary`` operation wherein the applied unitary is the
+    of the :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied unitary is the
     Pauli X (NOT) gate. It can be used in the same manner as ControlledQubitUnitary, but
     there is no need to specify a matrix argument.
 
