@@ -17,7 +17,7 @@ This module contains the :class:`Device` abstract base class.
 # pylint: disable=too-many-format-args
 import abc
 from collections.abc import Iterable, Sequence
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 import numpy as np
 
@@ -34,6 +34,9 @@ from pennylane.operation import (
 )
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
+
+
+ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 
 
 def _process_shot_sequence(shot_list):
@@ -62,19 +65,17 @@ def _process_shot_sequence(shot_list):
         if len(set(shot_list)) == 1:
             # All shots are identical; represent the shot vector
             # in a sparse format.
-            shot_vector = [(shot_list[0], len(shot_list))]
-            total_shots = shot_list[0] * len(shot_list)
+            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
         else:
             # Iterate through the shots, and group consecutive identical shots
             split_at_repeated = np.split(shot_list, np.where(np.diff(shot_list) != 0)[0] + 1)
-            shot_vector = [i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated]
-            total_shots = np.sum(shot_list)
+            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
 
     else:
         # shot_list is already a shot vector, simply compute the total number of shots
         shot_vector = shot_list
-        total_shots = sum(i if isinstance(i, int) else np.prod(i) for i in shot_list)
 
+    total_shots = np.sum(np.prod(shot_vector, axis=1))
     return total_shots, shot_vector
 
 
