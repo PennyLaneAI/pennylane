@@ -1674,24 +1674,35 @@ class ControlledQubitUnitary(QubitUnitary):
 
         wires = control_wires + wires
 
+        # If unspecified, we control on the all-ones string
         if not control_values:
-            # Given that the controlled wires are listed before the target wires, we need to create a
-            # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
-            # acts on the control wires.
-            padding = 2 ** len(wires) - len(U)
-            CU = block_diag(np.eye(padding), U)
+            control_values = 2 ** len(control_wires) - 1
 
-            params = list(params)
-            params[0] = CU
-            super().__init__(*params, wires=wires, do_queue=do_queue)
-        else:
-            control_values = self._validate_control_values(control_wires, control_values)
-            # TODO - the rest of the implementation
+        control_int = self._parse_control_values(control_wires, control_values)
+
+        # A multi-controlled operation is a block-diagonal matrix partitioned into
+        # blocks where the operation being applied sits in the block positioned at
+        # the integer value of the control string. For example, controlling a 2x2
+        # unitary U with 2 qubits will produce matrices with block structure
+        # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
+        # etc. The positioning of the block is controlled by padding the block diagonal
+        # to the left and right with the correct amount of identity blocks.
+
+        padding_left =  control_int * len(U)
+        padding_right = 2 ** len(wires) - len(U) - padding_left
+
+        CU = block_diag(np.eye(padding_left), U, np.eye(padding_right))
+
+        params = list(params)
+        params[0] = CU
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
 
     @staticmethod
-    def _validate_control_values(control_wires, control_values):
+    def _parse_control_values(control_wires, control_values):
 
-        binary_control_values = ''
+        control_int = control_values
 
         if isinstance(control_values, int):
             # Compute number of wires needed for binary representation
@@ -1699,10 +1710,6 @@ class ControlledQubitUnitary(QubitUnitary):
 
             if wires_needed > len(control_wires):
                 raise ValueError(f"Not enough control wires; need {wires_needed}.")
-
-            # Convert binary representation as list of wires_needed 0s and 1s
-            bin_string = format(control_values, f"#0{wires_needed+2}b")[2:]
-            binary_control_values = [int(x) for x in bin_string]
 
         elif isinstance(control_values, str):
             if len(control_values) != len(control_wires):
@@ -1712,11 +1719,11 @@ class ControlledQubitUnitary(QubitUnitary):
             if any([x not in ['0', '1'] for x in control_values]):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
-            binary_control_values = [int(x) for x in control_values]
+            control_int = int(control_values, 2)
         else:
             raise ValueError("Alternative control values must be passed as integer, or binary string.")
 
-        return binary_control_values
+        return control_int
 
 
 class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
