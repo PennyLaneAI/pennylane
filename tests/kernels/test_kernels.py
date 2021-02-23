@@ -341,7 +341,6 @@ class TestKernelTargetAlignment:
 
 
 class TestPostprocessing:
-    
     @pytest.mark.parametrize(
         "input,expected_output",
         [
@@ -352,12 +351,15 @@ class TestPostprocessing:
     )
     def test_threshold(self, input, expected_output):
         assert np.allclose(kern.threshold_matrix(input), expected_output)
-    
+
     @pytest.mark.parametrize(
         "input,expected_output",
         [
             (np.diag([1, -1]), np.diag([2, 0])),
-            (np.array([[1, 1], [1, -1]]), np.array([[1 + math.sqrt(2), 1], [1, -1 + math.sqrt(2)]])),
+            (
+                np.array([[1, 1], [1, -1]]),
+                np.array([[1 + math.sqrt(2), 1], [1, -1 + math.sqrt(2)]]),
+            ),
             (np.array([[0, 1], [1, 0]]), np.array([[1, 1], [1, 1]])),
         ],
     )
