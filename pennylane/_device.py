@@ -188,13 +188,17 @@ class Device(abc.ABC):
             self._shot_vector = None
 
         elif isinstance(shots, Sequence):
+            # a sequence of shots has been provided
 
             if all(isinstance(s, int) for s in shots):
 
                 if len(set(shots)) == 1:
+                    # All shots are identical; represent the shot vector
+                    # in a sparse format.
                     shot_vector = [(shots[0], len(shots))]
                     total_shots = shots[0] * len(shots)
                 else:
+                    # Iterate through the shots, and group consecutive identical shots
                     split_at_repeated = np.split(shots, np.where(np.diff(shots) != 0)[0] + 1)
                     shot_vector = [
                         i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated

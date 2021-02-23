@@ -2,6 +2,42 @@
 
 <h3>New features since last release</h3>
 
+* Shots can now be specified as a list, allowing measurement statistics
+  to be course-grained with a single QNode evaluation.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  Consider
+
+  ```pycon
+  >>> shots_list = [5, 10, 1000]
+  >>> dev = qml.device("default.qubit", wires=2, analytic=False, shots=shots_list)
+  ```
+
+  When QNodes are executed on this device, a single execution of 1013 shots will be submitted.
+  However, three sets of measurement statistics will be returned; using the first 5 shots,
+  second set of 10 shots, and final 1000 shots, separately.
+
+  For example:
+
+  ```python
+  @qml.qnode(dev, interface="torch")
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+  ```
+
+  Executing this, we will get an output of size `(3, 2)`:
+
+  ```pycon
+  >>> circuit(0.5)
+  [[0.33333333 1.        ]
+   [0.2        1.        ]
+   [0.012      0.868     ]]
+  ```
+
+  This output remains fully differentiable.
+
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 

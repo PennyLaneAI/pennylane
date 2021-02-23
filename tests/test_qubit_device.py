@@ -45,10 +45,10 @@ def mock_qubit_device(monkeypatch):
         m.setattr(QubitDevice, "operations", ["PauliY", "RX", "Rot"])
         m.setattr(QubitDevice, "observables", ["PauliZ"])
         m.setattr(QubitDevice, "short_name", "MockDevice")
-        m.setattr(QubitDevice, "expval", lambda self, x: 0)
-        m.setattr(QubitDevice, "var", lambda self, x: 0)
-        m.setattr(QubitDevice, "sample", lambda self, x: 0)
-        m.setattr(QubitDevice, "apply", lambda self, x: None)
+        m.setattr(QubitDevice, "expval", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "var", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "apply", lambda self, *args, **kwargs: None)
 
         def get_qubit_device(wires=1):
             return QubitDevice(wires=wires)
@@ -66,13 +66,13 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "operations", ["PauliY", "RX", "Rot"])
         m.setattr(QubitDevice, "observables", ["PauliZ"])
         m.setattr(QubitDevice, "short_name", "MockDevice")
-        m.setattr(QubitDevice, "expval", lambda self, x: 0)
-        m.setattr(QubitDevice, "var", lambda self, x: 0)
-        m.setattr(QubitDevice, "sample", lambda self, x: 0)
+        m.setattr(QubitDevice, "expval", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "var", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "state", 0)
         m.setattr(QubitDevice, "density_matrix", lambda self, wires=None: 0)
         m.setattr(
-            QubitDevice, "probability", lambda self, wires=None: 0
+            QubitDevice, "probability", lambda self, wires=None, *args, **kwargs: 0
         )
         m.setattr(QubitDevice, "apply", lambda self, x: x)
 
@@ -115,9 +115,9 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
         m.setattr(QubitDevice, "operations", mock_qubit_device_paulis)
         m.setattr(QubitDevice, "observables", mock_qubit_device_paulis)
         m.setattr(QubitDevice, "short_name", "MockDevice")
-        m.setattr(QubitDevice, "expval", lambda self, x: 0)
-        m.setattr(QubitDevice, "var", lambda self, x: 0)
-        m.setattr(QubitDevice, "sample", lambda self, x: 0)
+        m.setattr(QubitDevice, "expval", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "var", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "apply", lambda self, x, rotations: None)
 
         def get_qubit_device(wires=1):
@@ -135,9 +135,9 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         m.setattr(QubitDevice, "operations", mock_qubit_device_paulis + mock_qubit_device_rotations)
         m.setattr(QubitDevice, "observables", mock_qubit_device_paulis)
         m.setattr(QubitDevice, "short_name", "MockDevice")
-        m.setattr(QubitDevice, "expval", lambda self, x: 0)
-        m.setattr(QubitDevice, "var", lambda self, x: 0)
-        m.setattr(QubitDevice, "sample", lambda self, x: 0)
+        m.setattr(QubitDevice, "expval", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "var", lambda self, *args, **kwargs: 0)
+        m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "apply", lambda self, x: None)
 
         def get_qubit_device(wires=1):
@@ -500,8 +500,8 @@ class TestExpval:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "sample", lambda self, obs: obs)
-            m.setattr("numpy.mean", lambda obs: obs)
+            m.setattr(QubitDevice, "sample", lambda self, obs, *args, **kwargs: obs)
+            m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
         assert res == obs
@@ -548,8 +548,8 @@ class TestVar:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "sample", lambda self, obs: obs)
-            m.setattr("numpy.var", lambda obs: obs)
+            m.setattr(QubitDevice, "sample", lambda self, obs, *args, **kwargs: obs)
+            m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
         assert res == obs

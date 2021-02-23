@@ -17,10 +17,9 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches
 import abc
 from collections import OrderedDict
-from collections.abc import Sequence
 import itertools
 
 import numpy as np
@@ -237,7 +236,7 @@ class QubitDevice(Device):
 
             try:
                 results = np.stack(results)
-            except:
+            except ValueError:
                 results = np.hstack(results)
 
         else:
