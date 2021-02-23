@@ -15,8 +15,7 @@
 This file contains functionalities for kernel related costs.
 See 10.1007/s10462-012-9369-4 for a review.
 """
-import numpy as np
-
+from pennylane import numpy as np
 
 def _matrix_inner_product(A, B):
     """Frobenius/Hilbert-Schmidt inner product between two matrices
