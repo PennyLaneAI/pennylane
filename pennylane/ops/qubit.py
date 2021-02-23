@@ -1618,7 +1618,7 @@ class ControlledQubitUnitary(QubitUnitary):
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
         control_values (Union[str or int]): the state of the control qubits to
-            control on (default is |11...1>)
+            control on (default is the all 1s state)
 
     **Example**
 
@@ -1708,7 +1708,7 @@ class ControlledQubitUnitary(QubitUnitary):
             wires_needed = int(np.floor(np.log2(control_values))) + 1
 
             if wires_needed > len(control_wires):
-                raise ValueError(f"Not enough control wires; need {wires_needed}.")
+                raise ValueError(f"Not enough control wires. Need {wires_needed}.")
 
         elif isinstance(control_values, str):
             if len(control_values) != len(control_wires):
@@ -1739,9 +1739,9 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
 
     Args:
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+        wires (Union[Wires or int]): a single target wire the operation acts on
         control_values (Union[str or int]): the state of the control qubits to
-            control based on (default is |11...1>)
+            control based on (default is the all 1s state)
 
     **Example**
 
@@ -1762,6 +1762,9 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
     grad_method = None
 
     def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
+        if len(Wires(wires)) != 1:
+            raise ValueError("MixedPolarityMultiControlledToffoli accepts a single target wire.")
+
         super().__init__(
             np.array([[0, 1], [1, 0]]),
             control_wires=control_wires,
