@@ -1688,7 +1688,7 @@ class ControlledQubitUnitary(QubitUnitary):
         # etc. The positioning of the block is controlled by padding the block diagonal
         # to the left and right with the correct amount of identity blocks.
 
-        padding_left =  control_int * len(U)
+        padding_left = control_int * len(U)
         padding_right = 2 ** len(wires) - len(U) - padding_left
 
         CU = block_diag(np.eye(padding_left), U, np.eye(padding_right))
@@ -1697,7 +1697,6 @@ class ControlledQubitUnitary(QubitUnitary):
         params[0] = CU
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):
@@ -1716,12 +1715,14 @@ class ControlledQubitUnitary(QubitUnitary):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # If specified integer values, must make sure they are all 0/1
-            if any([x not in ['0', '1'] for x in control_values]):
+            if any([x not in ["0", "1"] for x in control_values]):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError("Alternative control values must be passed as integer, or binary string.")
+            raise ValueError(
+                "Alternative control values must be passed as integer, or binary string."
+            )
 
         return control_int
 
@@ -1766,7 +1767,7 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
             control_wires=control_wires,
             wires=wires,
             control_values=control_values,
-            do_queue=do_queue
+            do_queue=do_queue,
         )
 
 
