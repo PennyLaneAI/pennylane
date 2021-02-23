@@ -234,10 +234,7 @@ class QubitDevice(Device):
 
                 min_shots = max_shots
 
-            try:
-                results = np.stack(results)
-            except ValueError:
-                results = np.hstack(results)
+            results = np.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
@@ -357,6 +354,11 @@ class QubitDevice(Device):
 
         Args:
             observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -587,6 +589,9 @@ class QubitDevice(Device):
                 marginal probabilities for. Wires not provided are traced out of the system.
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
 
         Returns:
             List[float]: list of the probabilities

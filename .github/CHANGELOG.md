@@ -13,7 +13,7 @@
   >>> dev = qml.device("default.qubit", wires=2, analytic=False, shots=shots_list)
   ```
 
-  When QNodes are executed on this device, a single execution of 1013 shots will be submitted.
+  When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
   However, three sets of measurement statistics will be returned; using the first 5 shots,
   second set of 10 shots, and final 1000 shots, separately.
 
