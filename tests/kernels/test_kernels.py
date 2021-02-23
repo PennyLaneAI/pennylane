@@ -56,6 +56,18 @@ class TestEmbeddingKernel:
 
         assert val == pytest.approx(1.0)
 
+    def test_kernel_matrix(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        K = k.kernel_matrix([0.1, 0.2, 0.4], params)
+
+        # TODO: Add value tests
+
+        assert np.allclose(K, np.transpose(K))
+        assert np.allclose(np.diag(K), np.array([1,1,1]))
+
 
 def _mock_kernel(x1, x2, history):
     history.append((x1, x2))
