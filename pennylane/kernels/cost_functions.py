@@ -15,9 +15,6 @@
 This file contains functionalities for kernel related costs.
 See 10.1007/s10462-012-9369-4 for a review.
 """
-import pennylane as qml
-import itertools
-import math
 import numpy as np
 
 
