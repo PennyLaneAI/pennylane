@@ -1512,18 +1512,37 @@ class TestQuantumPhaseEstimation:
         assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
         assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
 
-    # def test_expected(self):
-    #     """TODO"""
-    #     wires = 10
-    #     dev = qml.device("default.qubit", wires=wires)
-    #     m = qml.RX(0.3, wires=0).matrix
-    #     target_wires = [0]
-    #     estimation_wires = range(1, wires)
-    #
-    #     with qml.tape.QuantumTape() as tape:
-    #         QuantumPhaseEstimation(m, target_wires=target_wires, estimation_wires=estimation_wires)
-    #         qml.probs(estimation_wires)
-    #
-    #     res = tape.execute(dev)
-    #
-    #     print(np.argmax(res))
+    def test_expected(self):
+        """TODO"""
+        phase = 6
+        estimates = []
+        wire_range = range(2, 10)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+            m = qml.RX(phase, wires=0).matrix
+            target_wires = [0]
+            estimation_wires = range(1, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=target_wires)
+                qml.templates.QuantumPhaseEstimation(m, target_wires=target_wires, estimation_wires=estimation_wires)
+                qml.probs(estimation_wires)
+
+            res = tape.execute(dev).flatten()
+            initial_estimate = np.argmax(res) / 2 ** (wires - 1)
+
+            # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
+            # form exp(2 pi i theta X)
+            rescaled_estimate = (1 - initial_estimate) * np.pi * 4
+            estimates.append(rescaled_estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)
