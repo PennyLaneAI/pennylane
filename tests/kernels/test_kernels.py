@@ -65,6 +65,9 @@ def _mock_kernel(x1, x2, history):
     else:
         return 0.2
 
+def _laplace_kernel(x1, x2):
+    return np.exp(-math.fabs(x1 - x2))
+
 
 class TestKernelMatrix:
 
@@ -74,6 +77,15 @@ class TestKernelMatrix:
         K_expected = np.array([[1, .2], [.2, 1]])
 
         K = kern.kernel_matrix(X, lambda x1, x2: _mock_kernel(x1, x2, []))
+
+        assert np.array_equal(K, K_expected)
+
+    def test_laplace_kernel(self):
+        X = [0.1, 0.4, 0.2]
+
+        K_expected = np.exp(-np.array([[0.0, 0.3, 0.1], [0.3, 0.0, 0.2], [0.1, 0.2, 0.0]]))
+
+        K = kern.kernel_matrix(X, _laplace_kernel, assume_normalized_kernel=False)
 
         assert np.array_equal(K, K_expected)
 
@@ -209,7 +221,7 @@ class TestKernelTargetAlignment:
         alignment_assume = kern.kernel_target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), assume_normalized_kernel=True, rescale_class_labels=True,
         )
-        
+
         K1 = np.array([[1, .2, .2,], [.2, 1, .2], [.2, .2, 1]])
         _Y = np.array([1/2, -1, 1/2])
         K2 = np.outer(_Y, _Y)
