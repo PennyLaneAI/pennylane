@@ -38,6 +38,8 @@ def threshold_matrix(K):
 def displace_matrix(K):
     """Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
 
+    This method has the advantage that it keeps the eigenvectors intact.
+
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric
 
