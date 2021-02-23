@@ -71,8 +71,9 @@ class QubitDevice(Device):
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables
+        shots (int, list[int]): Number of circuit evaluations/random samples used to estimate
+            expectation values of observables. If a list of integers is passed, the circuit
+            evaluations are batched over the list of shots.
         analytic (bool): If ``True``, the device calculates probability, expectation values,
             and variances analytically. If ``False``, a finite number of samples set by
             the argument ``shots`` are used to estimate these quantities.

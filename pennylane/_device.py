@@ -55,7 +55,15 @@ def _process_shot_sequence(shot_list):
 
     >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
     >>> _process_shot_sequence(shot_list)
-    (57, [3, 1, (2, 4), 6, (1, 2), 5, 12, (10, 2)])
+    (57,
+     [ShotTuple(shots=3, copies=1),
+      ShotTuple(shots=1, copies=1),
+      ShotTuple(shots=2, copies=4),
+      ShotTuple(shots=6, copies=1),
+      ShotTuple(shots=1, copies=2),
+      ShotTuple(shots=5, copies=1),
+      ShotTuple(shots=12, copies=1),
+      ShotTuple(shots=10, copies=2)])
 
     The total number of shots (57), and a sparse representation of the shot
     sequence is returned, where tuples indicate the number of times a shot
