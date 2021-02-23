@@ -66,7 +66,30 @@ class TestEmbeddingKernel:
         # TODO: Add value tests
 
         assert np.allclose(K, np.transpose(K))
-        assert np.allclose(np.diag(K), np.array([1,1,1]))
+        assert np.allclose(np.diag(K), np.array([1, 1, 1]))
+
+    def test_kernel_target_alignment(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        alignment = k.target_alignment([0.1, 0.2, 0.4], [1, -1, 1], params)
+
+        # TODO: Add value tests
+
+        assert 0 <= alignment
+        assert alignment <= 1
+
+    def test_kernel_polarization(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        polarization = k.polarization([0.1, 0.2, 0.4], [1, -1, 1], params)
+
+        # TODO: Add value tests
+
+        assert 0 <= polarization
 
 
 def _mock_kernel(x1, x2, history):
