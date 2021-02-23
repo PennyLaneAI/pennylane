@@ -52,6 +52,7 @@
     >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     ```
+
   This allows users to more easily build parametrized electronic Hamiltonians
   [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
 
