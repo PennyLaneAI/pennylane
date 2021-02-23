@@ -72,8 +72,7 @@ def _process_shot_sequence(shot_list):
     if all(isinstance(s, int) for s in shot_list):
 
         if len(set(shot_list)) == 1:
-            # All shots are identical; represent the shot vector
-            # in a sparse format.
+            # All shots are identical, only require a single shot tuple
             shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
         else:
             # Iterate through the shots, and group consecutive identical shots
@@ -81,7 +80,7 @@ def _process_shot_sequence(shot_list):
             shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
 
     elif all(isinstance(s, (int, tuple)) for s in shot_list):
-        # shot_list is already a shot vector, simply compute the total number of shots
+        # shot list contains tuples; assume it is already in a sparse representation
         shot_vector = [
             ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
         ]
