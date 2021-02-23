@@ -66,7 +66,7 @@ def _process_shot_sequence(shot_list):
             total_shots = shot_list[0] * len(shot_list)
         else:
             # Iterate through the shots, and group consecutive identical shots
-            split_at_repeated = np.split(shot_list, np.where(np.diff(shot_list) != 0)[0] + 1)
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
             shot_vector = [i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated]
             total_shots = np.sum(shot_list)
 
