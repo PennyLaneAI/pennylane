@@ -20,7 +20,7 @@
   For example:
 
   ```python
-  @qml.qnode(dev, interface="torch")
+  @qml.qnode(dev)
   def circuit(x):
       qml.RX(x, wires=0)
       qml.CNOT(wires=[0, 1])

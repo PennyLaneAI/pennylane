@@ -228,7 +228,7 @@ class QubitDevice(Device):
                 r = np.squeeze(r)
 
                 if isinstance(shot, tuple):
-                    results.extend(r)
+                    results.extend(r.T)
                 else:
                     results.append(np.array(r))
 
@@ -608,16 +608,16 @@ class QubitDevice(Device):
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
             bins = len(samples) // bin_size
+
             indices = indices.reshape((bins, -1))
-            prob = np.zeros([bins, 2 ** len(device_wires)], dtype=np.float64)
+            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
-                prob[b, basis_states] = counts / bin_size
+                prob[basis_states, b] = counts / bin_size
 
         else:
-            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
             basis_states, counts = np.unique(indices, return_counts=True)
             prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
