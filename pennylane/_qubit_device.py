@@ -211,20 +211,18 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
 
             results = []
-            min_shots = 0
+            s1 = 0
 
             for shot in self._shot_vector:
 
                 if isinstance(shot, tuple):
-                    max_shots = min_shots + np.prod(shot)
+                    s2 = s1 + np.prod(shot)
                     bin_size = shot[0]
                 else:
-                    max_shots = min_shots + shot
+                    s2 = s1 + shot
                     bin_size = shot
 
-                r = self.statistics(
-                    circuit.observables, shot_range=[min_shots, max_shots], bin_size=bin_size
-                )
+                r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=bin_size)
                 r = np.squeeze(r)
 
                 if isinstance(shot, tuple):
@@ -232,7 +230,7 @@ class QubitDevice(Device):
                 else:
                     results.append(np.array(r))
 
-                min_shots = max_shots
+                s1 = s2
 
             results = np.stack(results)
 

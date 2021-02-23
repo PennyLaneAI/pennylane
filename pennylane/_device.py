@@ -36,6 +36,48 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
 
 
+def _process_shot_sequence(shot_list):
+    """Process the shot sequence, to determine the total
+    number of shots and the shot vector.
+
+    Args:
+        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+
+    Returns:
+        tuple[int, list[int, tuple[int]]]: A tuple containing the total number
+        of shots, as well as the shot vector.
+
+    **Example**
+
+    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
+    >>> _process_shot_sequence(shot_list)
+    (57, [3, 1, (2, 4), 6, (1, 2), 5, 12, (10, 2)])
+
+    The total number of shots (57), and a sparse representation of the shot
+    sequence is returned, where tuples indicate the number of times a shot
+    integer is repeated.
+    """
+    if all(isinstance(s, int) for s in shot_list):
+
+        if len(set(shot_list)) == 1:
+            # All shots are identical; represent the shot vector
+            # in a sparse format.
+            shot_vector = [(shot_list[0], len(shot_list))]
+            total_shots = shot_list[0] * len(shot_list)
+        else:
+            # Iterate through the shots, and group consecutive identical shots
+            split_at_repeated = np.split(shot_list, np.where(np.diff(shot_list) != 0)[0] + 1)
+            shot_vector = [i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated]
+            total_shots = np.sum(shot_list)
+
+    else:
+        # shot_list is already a shot vector, simply compute the total number of shots
+        shot_vector = shot_list
+        total_shots = sum(i if isinstance(i, int) else np.prod(i) for i in shot_list)
+
+    return total_shots, shot_vector
+
+
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
@@ -187,30 +229,8 @@ class Device(abc.ABC):
             self._shots = int(shots)
             self._shot_vector = None
 
-        elif isinstance(shots, Sequence):
-            # a sequence of shots has been provided
-
-            if all(isinstance(s, int) for s in shots):
-
-                if len(set(shots)) == 1:
-                    # All shots are identical; represent the shot vector
-                    # in a sparse format.
-                    shot_vector = [(shots[0], len(shots))]
-                    total_shots = shots[0] * len(shots)
-                else:
-                    # Iterate through the shots, and group consecutive identical shots
-                    split_at_repeated = np.split(shots, np.where(np.diff(shots) != 0)[0] + 1)
-                    shot_vector = [
-                        i.item() if len(i) == 1 else (i[0], len(i)) for i in split_at_repeated
-                    ]
-                    total_shots = np.sum(shots)
-
-            else:
-                shot_vector = shots
-                total_shots = sum(i if isinstance(i, int) else np.prod(i) for i in shots)
-
-            self._shots = total_shots
-            self._shot_vector = shot_vector
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
 
         else:
             raise DeviceError(
