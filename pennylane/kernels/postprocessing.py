@@ -28,15 +28,26 @@ def threshold_matrix(K):
     """
     w, v = np.linalg.eigh(K)
 
-    print("K = ", K)
-    print("w = ", w)
-    print("v = ", v)
-    print("vwvt = ", v @ np.diag(w) @ np.transpose(v))
-    print("vtwv = ", np.transpose(v) @ np.diag(w) @ v)
+    if np.min(w) < 0:
+        w0 = np.clip(w, 0, None)
 
-    w0 = np.clip(w, 0, None)
+        return v @ np.diag(w0) @ np.transpose(v)
 
-    print("vw0vt = ", v @ np.diag(w0) @ np.transpose(v))
-    print("vtw0v = ", np.transpose(v) @ np.diag(w0) @ v)
+    return K
 
-    return v @ np.diag(w0) @ np.transpose(v)
+def displace_matrix(K):
+    """Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
+
+    Args:
+        K (array[float]): Kernel matrix assumed to be symmetric
+
+    Returns:
+        array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
+    """
+    wmin = np.min(np.linalg.eigvals(K))
+
+    if wmin < 0:
+        return K - np.eye(K.shape[0]) * wmin
+
+    return K
+
