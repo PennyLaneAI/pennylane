@@ -53,6 +53,7 @@ def kernel_matrix(X, kernel, assume_normalized_kernel=False):
                 matrix[N * i + j] = 1.0
             else:
                 matrix[N * i + j] = kernel(X[i], X[j])
+                matrix[N * j + i] = matrix[N * i + j]
 
     return np.array(matrix).reshape((N, N))
 

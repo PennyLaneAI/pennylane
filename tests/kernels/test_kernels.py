@@ -66,6 +66,17 @@ def _mock_kernel(x1, x2, history):
         return 0.2
 
 
+class TestKernelMatrix:
+
+    def test_simple_kernel(self):
+        X = [0.1, 0.4]
+
+        K_expected = np.array([[1, .2], [.2, 1]])
+
+        K = kern.kernel_matrix(X, lambda x1, x2: _mock_kernel(x1, x2, []))
+
+        assert np.array_equal(K, K_expected)
+
 class TestKernelPolarization:
     def test_correct_calls(self):
         X = [0.1, 0.4]
