@@ -15,7 +15,7 @@
 This file contains functionalities for embedding kernels.
 """
 import pennylane as qml
-from .cost_functions import kernel_matrix
+from .cost_functions import kernel_matrix, kernel_polarization, kernel_target_alignment
 
 
 class EmbeddingKernel:
@@ -80,6 +80,63 @@ class EmbeddingKernel:
         return self.probs_qnode(x1, x2, params, **kwargs)[0]
 
     def kernel_matrix(self, X, params, **kwargs):
+        """Return the kernel matrix for a given set of datapoints.
+
+        Args:
+            X (list[datapoint]): List of datapoints
+            params (array[float]): Circuit parameters
+
+        Returns:
+            array[float]: Kernel matrix for the given datapoints
+        """
         return kernel_matrix(
             X, lambda x1, x2: self(x1, x2, params, **kwargs), assume_normalized_kernel=True
+        )
+
+    def polarization(self, X, Y, params, **kwargs):
+        """Kernel polarization relative to a given set of labels.
+
+        Args:
+            X (list[datapoint]): List of datapoints
+            Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
+            kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+
+        Keyword Args:
+            rescale_class_labels (bool, optional): Rescale the class labels during the computation
+                of the polarization. This is important to take care of unbalanced datasets.
+                Defaults to True.
+
+        Returns:
+            float: The kernel polarization.
+        """
+        return kernel_polarization(
+            X,
+            Y,
+            lambda x1, x2: self(x1, x2, params, **kwargs),
+            assume_normalized_kernel=True,
+            rescale_class_labels=kwargs.get("rescale_class_labels", True),
+        )
+
+    def target_alignment(self, X, Y, params, **kwargs):
+        """Kernel target alignment relative to a given set of labels.
+
+        Args:
+            X (list[datapoint]): List of datapoints
+            Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
+            kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+
+        Keyword Args:
+            rescale_class_labels (bool, optional): Rescale the class labels during the computation
+                of the polarization. This is important to take care of unbalanced datasets.
+                Defaults to True.
+
+        Returns:
+            float: The kernel target alignment.
+        """
+        return kernel_target_alignment(
+            X,
+            Y,
+            lambda x1, x2: self(x1, x2, params, **kwargs),
+            assume_normalized_kernel=True,
+            rescale_class_labels=kwargs.get("rescale_class_labels", True),
         )

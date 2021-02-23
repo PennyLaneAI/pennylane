@@ -70,7 +70,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_cl
             care of unbalanced datasets. Defaults to True.
 
     Returns:
-        float: The (unnormalized) kernel polarization.
+        float: The kernel polarization.
     """
     K = kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
