@@ -474,7 +474,7 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
-        if kwargs.get("measure", "expval") is not "expval":
+        if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
         coeffs, observables = hamiltonian.terms
