@@ -211,7 +211,8 @@ class TestKernelTargetAlignment:
         )
         
         K1 = np.array([[1, .2, .2,], [.2, 1, .2], [.2, .2, 1]])
-        K2 = np.array([[1/4, -1/2, 1/4], [-1/2, 1/4, -1/2], [1/4, -1/2, 1/4]])
+        _Y = np.array([1/2, -1, 1/2])
+        K2 = np.outer(_Y, _Y)
         expected_alignment = np.trace(np.dot(K1, K2))/math.sqrt(np.trace(np.dot(K1, K1)) * np.trace(np.dot(K2, K2)))
 
         assert alignment == expected_alignment
