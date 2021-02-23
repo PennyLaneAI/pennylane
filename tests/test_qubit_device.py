@@ -979,3 +979,6 @@ class TestShotList:
         """Test exception raised if the shot list is the wrong type"""
         with pytest.raises(qml.DeviceError, match="Shots must be"):
             qml.device("default.qubit", wires=2, analytic=False, shots=0.5)
+
+        with pytest.raises(ValueError, match="Unknown shot sequence"):
+            qml.device("default.qubit", wires=2, analytic=False, shots=["a", "b", "c"])
