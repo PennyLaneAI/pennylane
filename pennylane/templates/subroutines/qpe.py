@@ -57,11 +57,13 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     if len(Wires.shared_wires([target_wires, estimation_wires])) != 0:
         raise qml.QuantumFunctionError("The target wires and estimation wires must be different")
 
+    num_estimation_wires = len(estimation_wires)
+
     for i, wire in enumerate(estimation_wires):
         qml.Hadamard(wire)
 
         # Could we calculate the matrix power more efficiently by diagonalizing?
-        u = matrix_power(unitary, 2 ** i)
+        u = matrix_power(unitary, 2 ** (num_estimation_wires - i - 1))
 
         qml.ControlledQubitUnitary(u, control_wires=wire, wires=target_wires)
 

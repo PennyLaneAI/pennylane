@@ -1501,9 +1501,9 @@ class TestQuantumPhaseEstimation:
 
         with qml.tape.QuantumTape() as tape2:
             qml.Hadamard(1),
-            qml.ControlledQubitUnitary(m, control_wires=[1], wires=[0]),
+            qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
             qml.Hadamard(2),
-            qml.ControlledQubitUnitary(m @ m, control_wires=[2], wires=[0]),
+            qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
             qml.QFT(wires=[1, 2]).inv()
 
         assert len(tape2.queue) == len(tape.queue)
@@ -1511,3 +1511,19 @@ class TestQuantumPhaseEstimation:
         assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
         assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
         assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
+
+    # def test_expected(self):
+    #     """TODO"""
+    #     wires = 10
+    #     dev = qml.device("default.qubit", wires=wires)
+    #     m = qml.RX(0.3, wires=0).matrix
+    #     target_wires = [0]
+    #     estimation_wires = range(1, wires)
+    #
+    #     with qml.tape.QuantumTape() as tape:
+    #         QuantumPhaseEstimation(m, target_wires=target_wires, estimation_wires=estimation_wires)
+    #         qml.probs(estimation_wires)
+    #
+    #     res = tape.execute(dev)
+    #
+    #     print(np.argmax(res))
