@@ -56,12 +56,12 @@ class TestEmbeddingKernel:
 
         assert val == pytest.approx(1.0)
 
-    def test_kernel_matrix(self):
+    def test_square_kernel_matrix(self):
         dev = qml.device("default.qubit", wires=1)
         k = kern.EmbeddingKernel(_simple_ansatz, dev)
         params = np.array([0.5, 0.9])
 
-        K = k.kernel_matrix([0.1, 0.2, 0.4], params)
+        K = k.square_kernel_matrix([0.1, 0.2, 0.4], params)
 
         # TODO: Add value tests
 
@@ -124,7 +124,7 @@ class TestKernelMatrix:
 
         K_expected = np.array([[1, 0.2], [0.2, 1]])
 
-        K = kern.kernel_matrix(X, lambda x1, x2: _mock_kernel(x1, x2, []))
+        K = kern.square_kernel_matrix(X, lambda x1, x2: _mock_kernel(x1, x2, []))
 
         assert np.array_equal(K, K_expected)
 
@@ -133,7 +133,7 @@ class TestKernelMatrix:
 
         K_expected = np.exp(-np.array([[0.0, 0.3, 0.1], [0.3, 0.0, 0.2], [0.1, 0.2, 0.0]]))
 
-        K = kern.kernel_matrix(X, _laplace_kernel, assume_normalized_kernel=False)
+        K = kern.square_kernel_matrix(X, _laplace_kernel, assume_normalized_kernel=False)
 
         assert np.array_equal(K, K_expected)
 
