@@ -1167,9 +1167,9 @@ def gradient(H, x, delta=0.005291772):
 
 
 def second_derivative(H, x, i, j, delta=0.00529):
-    r"""Uses a finite difference approximation to compute utes the second-order derivative
+    r"""Uses a finite difference approximation to compute the second-order derivative
     :math:`\frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j}` of the electronic
-    Hamiltonian evaluated at the nuclear coordinates ``x``.
+    Hamiltonian evaluated at the nuclear coordinates :math:`x`.
 
     For :math:`x_i = x_j` the derivative is approximated as
 
@@ -1184,7 +1184,7 @@ def second_derivative(H, x, i, j, delta=0.00529):
 
         \frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j} \approx
         \frac{\hat{H}(x_i + \delta/2, x_j + \delta/2) - \hat{H}(x_i - \delta/2, x_j + \delta/2)
-        - \hat{H}(x_i + \delta/2, x_j - \delta/2) + \hat{H}(x_i + \delta/2, x_j + \delta/2)}
+        - \hat{H}(x_i + \delta/2, x_j - \delta/2) + \hat{H}(x_i - \delta/2, x_j - \delta/2)}
         {\delta^2}.
 
     Args:
@@ -1208,21 +1208,21 @@ def second_derivative(H, x, i, j, delta=0.00529):
 
     >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
     >>> print(second_derivative(H, x, i=0, j=3))
-    (0.5868312400858033) [I0]
-    + (0.06451525889146342) [Z0]
-    + (0.0645152588903532) [Z1]
-    + (-0.20178489157950144) [Z2]
-    + (-0.20178489157950144) [Z3]
-    + (0.019075588624199384) [Z0 Z1]
-    + (-0.005455207867846737) [Y0 X1 X2 Y3]
-    + (0.005455207867846737) [Y0 Y1 X2 X3]
-    + (0.005455207867846737) [X0 X1 Y2 Y3]
-    + (-0.005455207867846737) [X0 Y1 Y2 X3]
-    + (0.023173301436443285) [Z0 Z2]
-    + (0.017718093568596546) [Z0 Z3]
-    + (0.017718093568596546) [Z1 Z2]
-    + (0.023173301436443285) [Z1 Z3]
-    + (0.01885652779810073) [Z2 Z3]
+    (0.5868312587039344) [I0]
+    + (0.06451526002110404) [Z0]
+    + (0.06451526002054855) [Z1]
+    + (-0.20178489650810605) [Z2]
+    + (-0.20178489650810605) [Z3]
+    + (0.019075588799274536) [Z0 Z1]
+    + (-0.0054552078951808965) [Y0 X1 X2 Y3]
+    + (0.0054552078951808965) [Y0 Y1 X2 X3]
+    + (0.0054552078951808965) [X0 X1 Y2 Y3]
+    + (-0.0054552078951808965) [X0 Y1 Y2 X3]
+    + (0.02317330168492995) [Z0 Z2]
+    + (0.017718093789749055) [Z0 Z3]
+    + (0.017718093789749055) [Z1 Z2]
+    + (0.02317330168492995) [Z1 Z3]
+    + (0.018856528057322967) [Z2 Z3]
     """
 
     if not callable(H):
