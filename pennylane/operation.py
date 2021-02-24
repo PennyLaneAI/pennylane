@@ -713,7 +713,6 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    @abc.abstractmethod
     def adjoint(self, do_queue=False):
         """Create an operation that is the adjoint of this one.
 
@@ -723,6 +722,7 @@ class Operation(Operator):
         Returns:
             The adjointed operation.
         """
+        raise NotImplementedError
 
     @inverse.setter
     def inverse(self, boolean):
