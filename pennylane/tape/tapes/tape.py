@@ -168,6 +168,7 @@ class QuantumTape(AnnotatedQueue):
 
     Args:
         name (str): a name given to the quantum tape
+        embed (bool): Whether to embed this tape in a parent tape context.
 
     **Example**
 
@@ -229,10 +230,10 @@ class QuantumTape(AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, embed=True):
         super().__init__()
         self.name = name
-
+        self.embed = embed
         self._prep = []
         """list[.Operation]: Tape state preparations."""
 
@@ -280,8 +281,8 @@ class QuantumTape(AnnotatedQueue):
                     for mock in mock_operations():
                         stack.enter_context(mock)
                     self._stack = stack.pop_all()
-
-            QueuingContext.append(self)
+            if self.embed:
+                QueuingContext.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()

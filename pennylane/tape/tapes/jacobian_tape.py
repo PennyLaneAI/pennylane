@@ -53,6 +53,7 @@ class JacobianTape(QuantumTape):
 
     Args:
         name (str): a name given to the quantum tape
+        embed (bool): Whether to embed this tape in a parent tape context.
 
     **Example**
 
@@ -87,8 +88,8 @@ class JacobianTape(QuantumTape):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None):
-        super().__init__(name=name)
+    def __init__(self, name=None, embed=True):
+        super().__init__(name=name, embed=embed)
         self.jacobian_options = {}
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):

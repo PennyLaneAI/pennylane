@@ -713,6 +713,17 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
+    @abc.abstractmethod
+    def adjoint(self, do_queue=False):
+        """Create an operation that is the adjoint of this one.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
