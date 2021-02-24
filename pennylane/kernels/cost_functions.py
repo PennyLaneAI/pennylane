@@ -30,7 +30,7 @@ def _matrix_inner_product(A, B):
     return np.trace(np.dot(np.transpose(A), B))
 
 
-def kernel_matrix(X, kernel, assume_normalized_kernel=False):
+def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     """Kernel polarization of a given kernel function.
 
     Args:
@@ -56,6 +56,28 @@ def kernel_matrix(X, kernel, assume_normalized_kernel=False):
     return np.array(matrix).reshape((N, N))
 
 
+def kernel_matrix(X1, X2, kernel):
+    """Kernel polarization of a given kernel function.
+
+    Args:
+        X1 (list[datapoint]): List of datapoints (first argument)
+        X2 (list[datapoint]): List of datapoints (second argument)
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+
+    Returns:
+        array[float]: The square matrix of kernel values.
+    """
+    N = len(X1)
+    M = len(X2)
+
+    matrix = [0] * N * M
+    for i in range(N):
+        for j in range(M):
+            matrix[N * i + j] = kernel(X1[i], X2[j])
+
+    return np.array(matrix).reshape((N, M))
+
+
 def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
     """Kernel polarization of a given kernel function.
 
@@ -71,7 +93,7 @@ def kernel_polarization(X, Y, kernel, assume_normalized_kernel=False, rescale_cl
     Returns:
         float: The kernel polarization.
     """
-    K = kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
+    K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
@@ -100,7 +122,7 @@ def kernel_target_alignment(
     Returns:
         float: The kernel target alignment.
     """
-    K = kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
+    K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:
         nplus = np.count_nonzero(np.array(Y) == 1)
