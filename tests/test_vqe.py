@@ -1008,6 +1008,20 @@ class TestVQE:
         with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
 
+    def test_variance_error(self):
+        """Test that an error is raised if attempting to use ExpvalCost to measure
+        variances"""
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        with pytest.raises(ValueError, match="sums of expectation values"):
+            qml.ExpvalCost(
+                qml.templates.StronglyEntanglingLayers,
+                hamiltonian,
+                dev,
+                measure="var"
+            )
+
 
 class TestAutogradInterface:
     """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""

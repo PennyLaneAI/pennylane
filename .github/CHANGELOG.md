@@ -95,6 +95,10 @@
 
 <h3>Bug fixes</h3>
 
+* The `ExpvalCost` class raises an error if instantiated
+  with non-expectation measurement statistics.
+  [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
