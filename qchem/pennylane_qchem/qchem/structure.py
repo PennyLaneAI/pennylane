@@ -1052,8 +1052,9 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 
 def derivative(H, x, i, delta=0.00529):
-    r"""Uses a finite difference approximation to compute the ``i``-th derivative :math:`\partial \hat{H}(x)/\partial x_i`
-     of the electronic Hamiltonian evaluated at the nuclear coordinates ``x``.
+    r"""Uses a finite difference approximation to compute the ``i``-th derivative
+    :math:`\frac{\partial \hat{H}(x)}{\partial x_i}` of the electronic Hamiltonian
+    evaluated at the nuclear coordinates ``x``.
 
     .. math::
 
@@ -1073,7 +1074,7 @@ def derivative(H, x, i, delta=0.00529):
 
     Returns:
         pennylane.Hamiltonian: the derivative of the Hamiltonian
-        :math:`\partial \hat{H}(x)/\partial x_i`
+        :math:`\frac{\partial \hat{H}(x)}{\partial x_i}`
 
     **Example**
 
@@ -1082,21 +1083,21 @@ def derivative(H, x, i, delta=0.00529):
 
     >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
     >>> print(derivative(H, x, 2))
-    (-0.7763135743293005) [I0]
-    + (-0.08534360840293387) [Z0]
-    + (-0.08534360840293387) [Z1]
-    + (0.2669341092545041) [Z2]
-    + (0.26693410925450134) [Z3]
-    + (-0.025233628744274508) [Z0 Z1]
-    + (0.0072162443961340415) [Y0 X1 X2 Y3]
-    + (-0.0072162443961340415) [Y0 Y1 X2 X3]
-    + (-0.0072162443961340415) [X0 X1 Y2 Y3]
-    + (0.0072162443961340415) [X0 Y1 Y2 X3]
-    + (-0.030654287745411964) [Z0 Z2]
-    + (-0.023438043349280003) [Z0 Z3]
-    + (-0.023438043349280003) [Z1 Z2]
-    + (-0.030654287745411964) [Z1 Z3]
-    + (-0.02494407786332001) [Z2 Z3]
+    (-0.7763135665896025) [I0]
+    + (-0.08534360836029752) [Z0]
+    + (-0.08534360836029196) [Z1]
+    + (0.26693410814904256) [Z2]
+    + (0.2669341081490398) [Z3]
+    + (-0.025233628787494015) [Z0 Z1]
+    + (0.007216244400096865) [Y0 X1 X2 Y3]
+    + (-0.007216244400096865) [Y0 Y1 X2 X3]
+    + (-0.007216244400096865) [X0 X1 Y2 Y3]
+    + (0.007216244400096865) [X0 Y1 Y2 X3]
+    + (-0.03065428777395116) [Z0 Z2]
+    + (-0.023438043373856375) [Z0 Z3]
+    + (-0.023438043373856375) [Z1 Z2]
+    + (-0.03065428777395116) [Z1 Z3]
+    + (-0.024944077860444742) [Z2 Z3]
     """
 
     if not callable(H):
@@ -1119,7 +1120,7 @@ def derivative(H, x, i, delta=0.00529):
     return (H(x_plus) - H(x_minus)) * (delta * to_bohr) ** -1
 
 
-def gradient(H, x, delta=0.005291772):
+def gradient(H, x, delta=0.00529):
     r"""Uses a finite difference approximation to compute the gradient
     :math:`\nabla_x \hat{H}(x)` of the electronic Hamiltonian :math:`\hat{H}(x)`
     for a given set of nuclear coordinates :math:`x`.
@@ -1144,24 +1145,24 @@ def gradient(H, x, delta=0.005291772):
     >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
     >>> grad = gradient(H, x)
     >>> print(len(grad), grad[5])
-    6 (0.7763135743293005) [I0]
-    + (0.08534360840293387) [Z0]
-    + (0.08534360840293387) [Z1]
-    + (-0.2669341092545041) [Z2]
-    + (-0.26693410925450134) [Z3]
-    + (0.025233628744274508) [Z0 Z1]
-    + (-0.0072162443961340415) [Y0 X1 X2 Y3]
-    + (0.0072162443961340415) [Y0 Y1 X2 X3]
-    + (0.0072162443961340415) [X0 X1 Y2 Y3]
-    + (-0.0072162443961340415) [X0 Y1 Y2 X3]
-    + (0.030654287745411964) [Z0 Z2]
-    + (0.023438043349280003) [Z0 Z3]
-    + (0.023438043349280003) [Z1 Z2]
-    + (0.030654287745411964) [Z1 Z3]
-    + (0.02494407786332001) [Z2 Z3]
+    6 (0.7763135665895081) [I0]
+    + (0.08534360836030584) [Z0]
+    + (0.08534360836030307) [Z1]
+    + (-0.26693410814900365) [Z2]
+    + (-0.26693410814900087) [Z3]
+    + (0.025233628787494015) [Z0 Z1]
+    + (-0.007216244400096171) [Y0 X1 X2 Y3]
+    + (0.007216244400096171) [Y0 Y1 X2 X3]
+    + (0.007216244400096171) [X0 X1 Y2 Y3]
+    + (-0.007216244400096171) [X0 Y1 Y2 X3]
+    + (0.03065428777395116) [Z0 Z2]
+    + (0.02343804337385915) [Z0 Z3]
+    + (0.02343804337385915) [Z1 Z2]
+    + (0.03065428777395116) [Z1 Z3]
+    + (0.024944077860433636) [Z2 Z3]
     """
 
-    grad = [derivative(H, x, i, delta=delta) for i in range(x.size)]
+    grad = [derivative(H, x, i, delta=delta) for i in range(len(x))]
 
     return grad
 

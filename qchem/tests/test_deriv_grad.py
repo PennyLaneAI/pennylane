@@ -113,10 +113,10 @@ def test_grad(tol):
 
     shutil.rmtree("pyscf")
 
-    assert len(grad_h) == x.size
+    assert len(grad_h) == len(x)
 
     param = 6.07230111451844
-    exp_grad_E = np.array([0.0, 0.0, -0.03540190344912991, 0.0, 0.0, 0.03540190344912991])
+    exp_grad_E = np.array([0.0, 0.0, -0.03540189789219489, 0.0, 0.0, 0.03540189789214032])
 
     calc_grad_E = np.array([qml.ExpvalCost(circuit, grad, dev)(param) for grad in grad_h])
 
