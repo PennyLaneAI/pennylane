@@ -91,7 +91,7 @@
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
-  it returns analytic results.
+  it returns analytic results (`shots=None`).
   [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079).
   
   ```python  
@@ -105,6 +105,7 @@
   circuit_analytic = qml.QNode(circuit, dev_analytic)
   circuit_finite_shots = qml.QNode(circuit, dev_finite_shots)
   ```
+  
   Devices with `shots=None` return deterministic, exact results:
   
   ```pycon
@@ -124,7 +125,7 @@
   ``` 
   
   The `qml.sample()` measurement can only be used on devices on which the number 
-  of shots is set. 
+  of shots is set explicitly. 
 
 * If creating a QNode from a quantum function with an argument named `shots`,
   a `DeprecationWarning` is raised, warning the user that this is a reserved

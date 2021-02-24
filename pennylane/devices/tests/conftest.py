@@ -208,6 +208,10 @@ def pytest_generate_tests(metafunc):
         **opt.device_kwargs,
     }
 
+    if device_kwargs["shots"] is None:
+        # use default value of device
+        device_kwargs.pop("shots")
+
     # ==============================================
 
     # parametrize all functions that take device_kwargs as an argument

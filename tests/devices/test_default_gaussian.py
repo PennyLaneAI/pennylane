@@ -542,7 +542,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('P', Wires([0]), [])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
@@ -556,7 +558,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('QuadOperator', Wires([0]), [np.pi/2])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
     def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi, monkeypatch):
@@ -570,7 +574,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('P', Wires([0]), [])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):

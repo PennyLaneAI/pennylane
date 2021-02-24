@@ -622,7 +622,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device('default.qubit', wires=2, samples=1000)
+        dev = qml.device('default.qubit', wires=2, shots=1000)
         dev.reset()
 
         dev.apply(
@@ -657,7 +657,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device('default.qubit', wires=2, samples=1000)
+        dev = qml.device('default.qubit', wires=2, shots=1000)
         dev.reset()
 
         dev.apply([qml.RX(1.5708, wires=[0])])
@@ -1120,7 +1120,7 @@ class TestDefaultQubitIntegration:
         the correct dimensions
         """
 
-        dev = qml.device('default.qubit', wires=2, samples=1000)
+        dev = qml.device('default.qubit', wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1576,7 +1576,7 @@ class TestTensorSample:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=None)
 
         A = np.array(
             [
