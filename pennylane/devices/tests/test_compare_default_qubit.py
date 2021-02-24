@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 
-pytestmark = [pytest.mark.skip_unsupported, pytest.mark.usefixtures("tape_mode")]
+pytestmark = pytest.mark.skip_unsupported
 
 
 @flaky(max_runs=10)

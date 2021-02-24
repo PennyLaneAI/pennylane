@@ -33,7 +33,6 @@ from pennylane.operation import (
     State,
     operation_derivative,
 )
-from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
@@ -180,14 +179,11 @@ class QubitDevice(Device):
         # consider merging with caching case
         try:
             self._circuit_hash = circuit.graph.hash
-        except AttributeError as e:
+        except AttributeError:
             self._circuit_hash = circuit.hash
 
         if self._cache:
-            try:  # TODO: Remove try/except when circuit is always QuantumTape
-                circuit_hash = circuit.graph.hash
-            except AttributeError as e:
-                raise ValueError("Caching is only available when using tape mode") from e
+            circuit_hash = circuit.graph.hash
             if circuit_hash in self._cache_execute:
                 return self._cache_execute[circuit_hash]
 
@@ -343,12 +339,12 @@ class QubitDevice(Device):
 
             elif obs.return_type is State:
                 if len(observables) > 1:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
                     )
                 if self.wires.labels != tuple(range(self.num_wires)):
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Returning the state is not supported when using custom wire labels"
                     )
                 # Check if the state is accessible and decide to return the state or the density
@@ -356,7 +352,7 @@ class QubitDevice(Device):
                 results.append(self.access_state(wires=obs.wires))
 
             elif obs.return_type is not None:
-                raise QuantumFunctionError(
+                raise qml.QuantumFunctionError(
                     "Unsupported return type specified for observable {}".format(obs.name)
                 )
 
@@ -375,12 +371,14 @@ class QubitDevice(Device):
             array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
-            raise QuantumFunctionError("The current device is not capable of returning the state")
+            raise qml.QuantumFunctionError(
+                "The current device is not capable of returning the state"
+            )
 
         state = getattr(self, "state", None)
 
         if state is None:
-            raise QuantumFunctionError("The state is not available in the current device")
+            raise qml.QuantumFunctionError("The state is not available in the current device")
 
         if wires:
             density_matrix = self.density_matrix(wires)
@@ -758,7 +756,7 @@ class QubitDevice(Device):
                     ops = op.decomposition(*op.parameters, wires=op.wires)
                     expanded_ops.extend(reversed(ops))
                 else:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
                     )

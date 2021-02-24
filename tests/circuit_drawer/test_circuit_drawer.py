@@ -24,10 +24,7 @@ from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
 from pennylane.wires import Wires
 
-from pennylane.tape.measure import state
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
+from pennylane.measure import state
 
 
 class TestFunctions:
@@ -626,9 +623,9 @@ def drawn_qubit_circuit_with_probs():
 def drawn_qubit_circuit_with_state():
     """The rendered circuit representation of the above qubit circuit."""
     return (
-        " 0: ──X──╭X──┤ State \n"
-        + " 1: ─────├C──┤       \n"
-        + " 5: ──X──╰C──┤       \n"
+        " 0: ──X──╭X──╭┤ State \n"
+        + " 1: ─────├C──├┤ State \n"
+        + " 5: ──X──╰C──╰┤ State \n"
     )
 
 
@@ -666,41 +663,18 @@ def drawn_qubit_circuit_with_interesting_wires():
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
 
-    def test_qubit_circuit_with_variable_names(
-        self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names
-    ):
-        """Test that a parametrized qubit circuit renders correctly with variable names."""
-        if qml.tape_mode_active():
-            pytest.skip("show_variable_names not supported in tape mode")
-
-        output = parameterized_qubit_qnode.draw(show_variable_names=True)
-        assert output == drawn_parameterized_qubit_circuit_with_variable_names
-
     def test_qubit_circuit_with_values(
         self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values
     ):
         """Test that a parametrized qubit circuit renders correctly with values."""
-        output = parameterized_qubit_qnode.draw(show_variable_names=False)
+        output = parameterized_qubit_qnode.draw()
         assert output == drawn_parameterized_qubit_circuit_with_values
-
-    def test_wide_qubit_circuit_with_variable_names(
-        self,
-        parameterized_wide_qubit_qnode,
-        drawn_parameterized_wide_qubit_qnode_with_variable_names,
-    ):
-        """Test that a wide parametrized qubit circuit renders correctly with variable names."""
-        if qml.tape_mode_active():
-            pytest.skip("show_variable_names not supported in tape mode")
-
-        output = parameterized_wide_qubit_qnode.draw(show_variable_names=True)
-
-        assert output == drawn_parameterized_wide_qubit_qnode_with_variable_names
 
     def test_wide_qubit_circuit_with_values(
         self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values
     ):
         """Test that a wide parametrized qubit circuit renders correctly with values."""
-        output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
+        output = parameterized_wide_qubit_qnode.draw()
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
 
@@ -708,7 +682,7 @@ class TestCircuitDrawerIntegration:
         self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
     ):
         """Test that non-consecutive wires show correctly."""
-        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False)
+        output = qubit_circuit_with_interesting_wires.draw()
 
         assert output == drawn_qubit_circuit_with_interesting_wires
 
@@ -718,22 +692,11 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_wide_cv_qnode
 
-    def test_cv_circuit_with_variable_names(
-        self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_variable_names
-    ):
-        """Test that a parametrized CV circuit renders correctly with variable names."""
-        if qml.tape_mode_active():
-            pytest.skip("show_variable_names not supported in tape mode")
-
-        output = parameterized_cv_qnode.draw(show_variable_names=True)
-
-        assert output == drawn_parameterized_cv_qnode_with_variable_names
-
     def test_cv_circuit_with_values(
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):
         """Test that a parametrized CV circuit renders correctly with values."""
-        output = parameterized_cv_qnode.draw(show_variable_names=False)
+        output = parameterized_cv_qnode.draw()
         assert output == drawn_parameterized_cv_qnode_with_values
 
     def test_qubit_circuit_with_unused_wires(
@@ -752,14 +715,14 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_qubit_circuit_with_probs
 
-    # This test is expected to fail until the new quantum-tape core has been fully merged
-    @pytest.mark.xfail
     def test_qubit_circuit_with_state(
         self, qubit_circuit_with_state, drawn_qubit_circuit_with_state
     ):
         """Test that a qubit circuit with unused wires renders correctly."""
         output = qubit_circuit_with_state.draw()
 
+        print(output)
+        print(drawn_qubit_circuit_with_state)
         assert output == drawn_qubit_circuit_with_state
 
     def test_direct_qnode_integration(self):
@@ -787,23 +750,11 @@ class TestCircuitDrawerIntegration:
             + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
         )
 
-        if not qml.tape_mode_active():
-            assert qfunc.draw(show_variable_names=True) == (
-                " 0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
-                + " 1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩ \n"
-            )
-
 
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
 
-    @pytest.fixture
-    def tape_only(self):
-        """Ensures tests only run in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("Tests only run in tape mode")
-
-    def test_default_ordering(self, tape_only):
+    def test_default_ordering(self):
         """Test that the default wire ordering matches the device"""
 
         dev = qml.device('default.qubit', wires=["a", -1, "q2"])
@@ -825,7 +776,7 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
-    def test_wire_reordering(self, tape_only):
+    def test_wire_reordering(self):
         """Test that wires are correctly reordered"""
 
         dev = qml.device('default.qubit', wires=["a", -1, "q2"])
@@ -847,7 +798,7 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
-    def test_include_empty_wires(self, tape_only):
+    def test_include_empty_wires(self):
         """Test that empty wires are correctly included"""
 
         dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
@@ -869,7 +820,7 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
-    def test_show_all_wires_error(self, tape_only):
+    def test_show_all_wires_error(self):
         """Test that show_all_wires will raise an error if the provided wire
         order does not contain all wires on the device"""
 
@@ -886,7 +837,7 @@ class TestWireOrdering:
         with pytest.raises(ValueError, match="must contain all wires"):
             circuit.draw(show_all_wires=True, wire_order=[-1, "a"])
 
-    def test_missing_wire(self, tape_only):
+    def test_missing_wire(self):
         """Test that wires not specifically mentioned in the wire
         reordering are appended at the bottom of the circuit drawing"""
 
@@ -931,7 +882,7 @@ class TestWireOrdering:
 
         assert res == "\n".join(expected)
 
-    def test_invalid_wires(self, tape_only):
+    def test_invalid_wires(self):
         """Test that an exception is raised if a wire in the wire
         ordering does not exist on the device"""
         dev = qml.device('default.qubit', wires=["a", -1, "q2"])

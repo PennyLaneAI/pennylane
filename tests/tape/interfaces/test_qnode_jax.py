@@ -17,7 +17,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
 import pennylane as qml
-from pennylane.tape import JacobianTape, qnode, QNode, QubitParamShiftTape
+from pennylane import qnode, QNode
+from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 def test_qnode_intergration():
 	"""Test a simple use of qnode with a JAX interface and non-JAX device"""
@@ -161,10 +162,8 @@ def qtransform(qnode, a, framework=jnp):
     "dev_name,diff_method",
     [("default.mixed", "finite-diff"), ("default.qubit.autograd", "parameter-shift")],
 )
-def test_transform(dev_name, diff_method, monkeypatch, tol):
+def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""
-    monkeypatch.setattr(qml.operation.Operation, "do_check_domain", False)
-
     dev = qml.device(dev_name, wires=1)
 
     @qnode(dev, interface="jax", diff_method=diff_method)

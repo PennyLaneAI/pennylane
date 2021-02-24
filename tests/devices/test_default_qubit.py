@@ -1908,7 +1908,6 @@ class TestStateVector:
         spy.assert_called()
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestInverseDecomposition:
     """Integration tests for decompositions of inverse gates"""
 
@@ -1925,7 +1924,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s()
-        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        operations = test_s.qtape.operations
         assert "S" in [i.name for i in operations]
 
         expected = np.array([1., 1.j]) / np.sqrt(2)
@@ -1938,7 +1937,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s_inverse()
-        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        operations = test_s_inverse.qtape.operations
         assert "S.inv" in [i.name for i in operations]
 
         expected = np.array([1., -1.j]) / np.sqrt(2)
@@ -1960,7 +1959,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s()
-        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        operations = test_s.qtape.operations
         assert "S" not in [i.name for i in operations]
         assert "PhaseShift" in [i.name for i in operations]
 
@@ -1974,7 +1973,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s_inverse()
-        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        operations = test_s_inverse.qtape.operations
         assert "S.inv" not in [i.name for i in operations]
         assert "PhaseShift.inv" in [i.name for i in operations]
 

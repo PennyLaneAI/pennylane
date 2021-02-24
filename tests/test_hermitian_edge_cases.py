@@ -4,8 +4,6 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.qnodes.qubit import QubitQNode
-from pennylane.qnodes.base import QuantumFunctionError
 from gate_data import Y, Z
 
 
