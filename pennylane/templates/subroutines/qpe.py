@@ -65,6 +65,22 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
 
     .. UsageDetails::
 
+        An example of how to use this template is shown below:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import QuantumPhaseEstimation
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(weight, wires=None):
+                SingleExcitationUnitary(weight, wires=wires)
+                return qml.expval(qml.PauliZ(0))
+
+            weight = 0.56
+            print(circuit(weight, wires=[0, 1, 2]))
         TODO
     """
 
