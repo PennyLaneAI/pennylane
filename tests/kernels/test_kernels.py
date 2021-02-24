@@ -65,8 +65,27 @@ class TestEmbeddingKernel:
 
         # TODO: Add value tests
 
+        assert K.shape == (3, 3)
         assert np.allclose(K, np.transpose(K))
         assert np.allclose(np.diag(K), np.array([1, 1, 1]))
+
+    def test_kernel_matrix(self):
+        dev = qml.device("default.qubit", wires=1)
+        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+        params = np.array([0.5, 0.9])
+
+        X1 = [0.1, 0.2, 0.4]
+        X2 = [1.0, 2.1]
+
+        K = k.kernel_matrix(X1, X2, params)
+
+        # TODO: Add value tests
+
+        assert K.shape == (3, 2)
+
+        for i in range(3):
+            for j in range(2):
+                assert K[i, j] == k(X1[i], X2[j], params)
 
     def test_kernel_target_alignment(self):
         dev = qml.device("default.qubit", wires=1)

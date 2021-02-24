@@ -73,7 +73,7 @@ def kernel_matrix(X1, X2, kernel):
     matrix = [0] * N * M
     for i in range(N):
         for j in range(M):
-            matrix[N * i + j] = kernel(X1[i], X2[j])
+            matrix[M * i + j] = kernel(X1[i], X2[j])
 
     return np.array(matrix).reshape((N, M))
 
