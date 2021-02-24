@@ -1565,6 +1565,182 @@ class U3(Operation):
         ]
         return decomp_ops
 
+# =============================================================================
+# Quantum chemistry
+# =============================================================================
+
+
+class G1Yminus(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = math.exp(-1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+class G1Yplus(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = math.exp(1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+class G1Y(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [G1Yplus(theta / 2, wires=wires), G1Yminus(theta / 2, wires=wires)]
+        return decomp_ops
+
+
+class G2Yminus(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    A = np.eye(16, dtype=np.complex64)
+    A[3] = A[12] = np.zeros(16, dtype=np.complex64)
+    A[3, 12] = -1j
+    A[12, 3] = 1j
+    generator = [A, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = math.exp(-1j * theta / 2)
+
+        B = e * np.eye(16, dtype=np.complex64)
+        B[3] = B[12] = np.zeros(16, dtype=np.complex64)
+        B[3, 3] = c
+        B[3, 12] = -s
+        B[12, 3] = s
+        B[12, 12] = c
+
+        return B
+
+
+class G2Yplus(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    A = np.eye(16, dtype=np.complex64)
+    A[3] = A[12] = np.zeros(16, dtype=np.complex64)
+    A[3, 12] = -1j
+    A[12, 3] = 1j
+    generator = [A, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = math.exp(1j * theta / 2)
+
+        B = e * np.eye(16, dtype=np.complex64)
+        B[3] = B[12] = np.zeros(16, dtype=np.complex64)
+        B[3, 3] = c
+        B[3, 12] = -s
+        B[12, 3] = s
+        B[12, 12] = c
+
+        return B
+
+
+class G2Y(Operation):
+    r"""
+    """
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    A = np.zeros((16, 16), dtype=np.complex64)
+    A[3, 12] = -1j
+    A[12, 3] = 1j
+    generator = [A, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        # B = np.eye(16, dtype=np.complex64)
+        # B[3] = B[12] = np.zeros(16, dtype=np.complex64)  # 3 = 0011, # 12 = 1100
+        # B[3, 3] = c
+        # B[3, 12] = -s
+        # B[12, 3] = s
+        # B[12, 12] = c
+
+        return np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+                        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
+                        )
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [G2Yplus(theta / 2, wires=wires), G2Yminus(theta / 2, wires=wires)]
+        return decomp_ops
 
 # =============================================================================
 # Arbitrary operations
@@ -1977,6 +2153,12 @@ ops = {
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
     "QFT",
+    "G1Y",
+    "G1Yplus",
+    "G1Yminus",
+    "G2Y",
+    "G2Yplus",
+    "G2Yminus"
 }
 
 
