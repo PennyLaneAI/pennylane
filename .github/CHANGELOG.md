@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+- The TensorFlow interface supports calculating the Hessian. 
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev, interface='tf', diff_method='parameter-shift')
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+  with tf.GradientTape() as tape1:
+      with tf.GradientTape() as tape2:
+          y = circuit(x)
+      grad = tape2.gradient(res, x)
+
+  hessian = tape1.jacobian(grad, x)
+  ```
+  You can also compute just the diagonal components by changing that last line to
+
+  ```python
+  hessian_diagonals = tape1.gradient(grad, x)
+  ```
+
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
