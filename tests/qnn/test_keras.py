@@ -25,7 +25,6 @@ tf = pytest.importorskip("tensorflow", minversion="2")
 pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
-@pytest.mark.usefixtures("get_circuit")
 @pytest.fixture
 def model(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Keras model. The model is composed of KerasLayers sandwiched
@@ -57,10 +56,12 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
         [
             tf.keras.layers.Dense(n_qubits),
             layer1,
+            # Adding a lambda layer to take only the real values from density matrix
+            tf.keras.layers.Lambda(lambda x: tf.abs(x)),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(n_qubits),
             layer2,
-            # Optionally, adding a lambda layer to take only the real values from dm of layer2
+            # Adding a lambda layer to take only the real values from density matrix
             tf.keras.layers.Lambda(lambda x: tf.abs(x)),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(output_dim[0] * output_dim[1])

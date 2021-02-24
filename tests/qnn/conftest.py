@@ -83,7 +83,7 @@ def get_circuit_dm(n_qubits, output_dim, interface, tape_mode):
         qml.RX(w7, wires=4 % n_qubits)
 
         # Using np.log2() here because output_dim is sampled from varying the number of
-        # qubits(say, nq) and calculated as (2 ** nq, 2 ** nq)
+        # qubits (say, nq) and calculated as (2 ** nq, 2 ** nq)
         return qml.density_matrix(wires=[i for i in range(int(np.log2(output_dim[0])))])
 
     return circuit, weight_shapes
