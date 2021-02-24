@@ -15,7 +15,7 @@
 This file contains functionalities for embedding kernels.
 """
 import pennylane as qml
-from .cost_functions import kernel_matrix, kernel_polarization, kernel_target_alignment
+from .cost_functions import square_kernel_matrix, kernel_matrix, kernel_polarization, kernel_target_alignment
 
 
 class EmbeddingKernel:
@@ -79,7 +79,22 @@ class EmbeddingKernel:
 
         return self.probs_qnode(x1, x2, params, **kwargs)[0]
 
-    def kernel_matrix(self, X, params, **kwargs):
+    def kernel_matrix(self, X1, X2, params, **kwargs):
+        """Return the kernel matrix for two given sets of datapoints.
+
+        Args:
+            X1 (list[datapoint]): List of datapoints (first argument)
+            X2 (list[datapoint]): List of datapoints (second argument)
+            params (array[float]): Circuit parameters
+
+        Returns:
+            array[float]: Kernel matrix for the given datapoints
+        """
+        return kernel_matrix(
+            X1, X2, lambda x1, x2: self(x1, x2, params, **kwargs),
+        )
+
+    def square_kernel_matrix(self, X, params, **kwargs):
         """Return the kernel matrix for a given set of datapoints.
 
         Args:
@@ -89,7 +104,7 @@ class EmbeddingKernel:
         Returns:
             array[float]: Kernel matrix for the given datapoints
         """
-        return kernel_matrix(
+        return square_kernel_matrix(
             X, lambda x1, x2: self(x1, x2, params, **kwargs), assume_normalized_kernel=True
         )
 
