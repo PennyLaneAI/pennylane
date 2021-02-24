@@ -127,6 +127,7 @@ class TFInterface(AnnotatedQueue):
 
     @tf.custom_gradient
     def _execute(self, params, **input_kwargs):
+        print("params: ", params)
         # unwrap free parameters
         args = self.convert_to_numpy(params)
 
@@ -138,21 +139,55 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
-        def grad(grad_output, **tfkwargs):
-            variables = tfkwargs.get("variables", None)
+        @tf.custom_gradient
+        def grad_processing(params_inner):
+            print("params_inner: ", params_inner)
+            args_inner = self.convert_to_numpy(params_inner)
 
             self.set_parameters(all_params_unwrapped, trainable_only=False)
-            jacobian = self.jacobian(input_kwargs["device"], params=args, **self.jacobian_options)
+            jacobian = self.jacobian(input_kwargs["device"], params=args_inner, **self.jacobian_options)
             self.set_parameters(all_params, trainable_only=False)
 
-            jacobian = tf.constant(jacobian, dtype=self.dtype)
+            jacobian = tf.constant(jacobian, dtype = self.dtype)
+
+            def grad2(upstream):
+                
+                print("calculating hessian")
+                self.set_parameters(all_params_unwrapped, trainable_only=False)
+                hessian = self.hessian(input_kwargs['device'], params=args_inner, **self.hessian_options) 
+                self.set_parameters(all_params, trainable_only=False)
+
+                hessian = tf.constant(hessian, dtype = self.dtype)
+
+                upstream_row = tf.reshape(upstream, [1,-1])
+
+                hessian_product = tf.matmul(upstream_row, hessian)
+                hessian_product_flattened = tf.unstack(tf.reshape(hessian_product, [-1]))
+
+                # variables not none something?
+
+                return hessian_product_flattened
+
+            return jacobian, grad2
+        
+
+        def grad(grad_output, **tfkwargs):
+            print("grad_output: ",grad_output)
+    
+            variables = tfkwargs.get("variables", None)
+            print("variables: ", variables)
+
+            jacobian = grad_processing(params)
+            print("jacobian: ", jacobian)
 
             # Reshape gradient output array as a 2D row-vector.
             grad_output_row = tf.reshape(grad_output, [1, -1])
+            print("grad_output_row: ", grad_output_row)
 
             # Calculate the vector-Jacobian matrix product, and unstack the output.
             grad_input = tf.matmul(grad_output_row, jacobian)
             grad_input = tf.unstack(tf.reshape(grad_input, [-1]))
+            print("grad_input: ", grad_input)
 
             if variables is not None:
                 return grad_input, variables
