@@ -145,6 +145,7 @@ class PauliX(Observable, Operation):
     def adjoint(self, do_queue=False):
         return PauliX(wires=self.wires, do_queue=do_queue)
 
+
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
     The Pauli Y operator
@@ -201,6 +202,7 @@ class PauliY(Observable, Operation):
     def adjoint(self, do_queue=False):
         return PauliY(wires=self.wires, do_queue=do_queue)
 
+
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
     The Pauli Z operator
@@ -240,6 +242,7 @@ class PauliZ(Observable, DiagonalOperation):
     def adjoint(self, do_queue=False):
         return PauliZ(wires=self.wires, do_queue=do_queue)
 
+
 class S(DiagonalOperation):
     r"""S(wires)
     The single-qubit phase gate
@@ -273,9 +276,9 @@ class S(DiagonalOperation):
     def decomposition(wires):
         decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
-    
+
     def adjoint(self, do_queue=False):
-        return PhaseShift(cmath.exp(-1j * np.pi/2.0), wires=self.wires, do_queue=do_queue)
+        return PhaseShift(cmath.exp(-1j * np.pi / 2.0), wires=self.wires, do_queue=do_queue)
 
 
 class T(DiagonalOperation):
@@ -313,7 +316,7 @@ class T(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        return PhaseShift(cmath.exp(-1j * np.pi/4.0), wires=self.wires, do_queue=do_queue)
+        return PhaseShift(cmath.exp(-1j * np.pi / 4.0), wires=self.wires, do_queue=do_queue)
 
 
 class SX(Operation):
@@ -358,6 +361,7 @@ class SX(Operation):
     def adjoint(self, do_queue=False):
         raise NotImplementedError
 
+
 class CNOT(Operation):
     r"""CNOT(wires)
     The controlled-NOT operator
@@ -390,6 +394,7 @@ class CNOT(Operation):
 
     def adjoint(self, do_queue=False):
         return CNOT(wires=self.wires, do_queue=do_queue)
+
 
 class CZ(DiagonalOperation):
     r"""CZ(wires)
@@ -428,6 +433,7 @@ class CZ(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return CZ(wires=self.wires, do_queue=do_queue)
+
 
 class CY(Operation):
     r"""CY(wires)
@@ -506,6 +512,7 @@ class SWAP(Operation):
     def adjoint(self, do_queue=False):
         return SWAP(wires=self.wires, do_queue=do_queue)
 
+
 class CSWAP(Operation):
     r"""CSWAP(wires)
     The controlled-swap operator
@@ -553,7 +560,6 @@ class CSWAP(Operation):
 
     def adjoint(self, do_queue=False):
         return CSWAP(wires=self.wires, do_queue=do_queue)
-
 
 
 class Toffoli(Operation):
@@ -725,6 +731,7 @@ class RZ(DiagonalOperation):
     def adjoint(self, do_queue=False):
         return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
 
+
 class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
@@ -768,6 +775,7 @@ class PhaseShift(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class ControlledPhaseShift(DiagonalOperation):
     r"""ControlledPhaseShift(phi, wires)
@@ -822,6 +830,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return ControlledPhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
@@ -878,6 +887,7 @@ class Rot(Operation):
 
     def adjoint(self, do_queue=False):
         return Rot(*[-x for x in self.data], wires=self.wires, do_queue=do_queue)
+
 
 class MultiRZ(DiagonalOperation):
     r"""MultiRZ(theta, wires)
@@ -1155,6 +1165,7 @@ class PauliRot(Operation):
     def adjoint(self, do_queue=False):
         raise NotImplementedError
 
+
 # Four term gradient recipe for controlled rotations
 c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
 c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
@@ -1305,6 +1316,7 @@ class CRY(Operation):
 
     def adjoint(self, do_queue=False):
         return CRY(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class CRZ(DiagonalOperation):
     r"""CRZ(phi, wires)
@@ -1773,6 +1785,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         raise NotImplementedError
+
 
 class QFT(Operation):
     r"""QFT(wires)
