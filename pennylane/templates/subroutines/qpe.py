@@ -14,7 +14,7 @@
 """
 Contains the ``QuantumPhaseEstimation`` template.
 """
-from numpy.linalg import matrix_power
+from numpy.linalg import eig
 
 import pennylane as qml
 from pennylane.templates.decorator import template
@@ -112,14 +112,14 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     if len(Wires.shared_wires([target_wires, estimation_wires])) != 0:
         raise qml.QuantumFunctionError("The target wires and estimation wires must be different")
 
-    num_estimation_wires = len(estimation_wires)
+    unitary_powers = [unitary]
 
-    for i, wire in enumerate(estimation_wires):
+    for i in range(len(estimation_wires) - 1):
+        new_power = unitary_powers[0] @ unitary_powers[0]
+        unitary_powers.insert(0, new_power)
+
+    for wire, unitary in zip(estimation_wires, unitary_powers):
         qml.Hadamard(wire)
-
-        # Could we calculate the matrix power more efficiently by diagonalizing?
-        u = matrix_power(unitary, 2 ** (num_estimation_wires - i - 1))
-
-        qml.ControlledQubitUnitary(u, control_wires=wire, wires=target_wires)
+        qml.ControlledQubitUnitary(unitary, control_wires=wire, wires=target_wires)
 
     qml.QFT(wires=estimation_wires).inv()
