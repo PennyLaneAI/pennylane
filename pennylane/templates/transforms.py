@@ -3,7 +3,7 @@ from pennylane.tape.tapes import QuantumTape
 
 
 def adjoint(fn):
-    """ "Create a new method that applies the adjoint tape of `fn`.
+    """Create a function that applies the adjoint of the provided operation or template.
 
     Example:
             `adjoint(fn)(args)` will apply all of the operations executed during fn(args),
