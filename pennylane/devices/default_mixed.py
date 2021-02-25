@@ -63,7 +63,7 @@ class DefaultMixed(QubitDevice):
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
-        "MixedPolarityMultiControlledToffoli",
+        "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",

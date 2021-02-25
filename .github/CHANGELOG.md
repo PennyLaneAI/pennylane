@@ -52,7 +52,7 @@
 
 - Added support for mixed-polarity multi-controlled operations in
   `ControlledQubitUnitary` for arbitrary unitary operations, and special
-  case `MixedPolarityMultiControlledToffoli` for multi-controlled `NOT`
+  case `MultiControlledX` for multi-controlled `NOT`
   gates. [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring

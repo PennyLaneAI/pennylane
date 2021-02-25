@@ -1727,8 +1727,8 @@ class ControlledQubitUnitary(QubitUnitary):
         return control_int
 
 
-class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
-    r"""MixedPolarityMultiControlledToffoli(control_wires, wires, control_values)
+class MultiControlledX(ControlledQubitUnitary):
+    r"""MultiControlledX(control_wires, wires, control_values)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
     **Details:**
@@ -1745,15 +1745,17 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
 
     **Example**
 
-    The ``MixedPolarityMultiControlledToffoli`` operation is a commonly-encountered case
-    of the :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied unitary is the
-    Pauli X (NOT) gate. It can be used in the same manner as ``ControlledQubitUnitary``, but
-    there is no need to specify a matrix argument.
+    The ``MultiControlledX`` operation (sometimes also termed a mixed-polarity
+    multi-controlled Toffoli) is a commonly-encountered case of the
+    :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
+    unitary is the Pauli X (NOT) gate. It can be used in the same manner as
+    ``ControlledQubitUnitary``, but there is no need to specify a matrix
+    argument.
 
     The following are equivalent:
 
-    >>> qml.MixedPolarityMultiControlledToffoli(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
-    >>> qml.MixedPolarityMultiControlledToffoli(control_wires=[0, 1, 2, 3], wires=4, control_values=14)
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values=14)
 
     """
     num_params = 1
@@ -1763,7 +1765,7 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
 
     def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
         if len(Wires(wires)) != 1:
-            raise ValueError("MixedPolarityMultiControlledToffoli accepts a single target wire.")
+            raise ValueError("MultiControlledX accepts a single target wire.")
 
         super().__init__(
             np.array([[0, 1], [1, 0]]),
@@ -2088,7 +2090,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "ControlledQubitUnitary",
-    "MixedPolarityMultiControlledToffoli",
+    "MultiControlledX",
     "DiagonalQubitUnitary",
     "QFT",
 }

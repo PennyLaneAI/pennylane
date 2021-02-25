@@ -1499,7 +1499,7 @@ class TestControlledQubitUnitary:
 
 
 class TestMixedPolarityMultiControlledToffoli:
-    """Tests for the MixedPolarityMultiControlledToffoli"""
+    """Tests for the MultiControlledX"""
 
     X = np.array([[0, 1], [1, 0]])
 
@@ -1514,14 +1514,14 @@ class TestMixedPolarityMultiControlledToffoli:
                 [0, 1],
                 [2, 3],
                 "10",
-                "MixedPolarityMultiControlledToffoli accepts a single target wire.",
+                "MultiControlledX accepts a single target wire.",
             ),
         ],
     )
     def test_invalid_mixed_polarity_controls(
         self, control_wires, wires, control_values, expected_error_message
     ):
-        """Test if MixedPolarityMultiControlledToffoli properly handles invalid mixed-polarity
+        """Test if MultiControlledX properly handles invalid mixed-polarity
         control values."""
         target_wires = Wires(wires)
 
@@ -1529,7 +1529,7 @@ class TestMixedPolarityMultiControlledToffoli:
 
         @qml.qnode(dev)
         def circuit():
-            qml.MixedPolarityMultiControlledToffoli(
+            qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
@@ -1555,7 +1555,7 @@ class TestMixedPolarityMultiControlledToffoli:
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
-        """Test if MixedPolarityMultiControlledToffoli properly applies mixed-polarity
+        """Test if MultiControlledX properly applies mixed-polarity
         control values."""
         target_wires = Wires(wires)
 
@@ -1566,7 +1566,7 @@ class TestMixedPolarityMultiControlledToffoli:
 
         @qml.qnode(dev)
         def circuit_mpmct():
-            qml.MixedPolarityMultiControlledToffoli(
+            qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
