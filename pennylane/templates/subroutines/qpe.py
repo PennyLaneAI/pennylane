@@ -14,8 +14,6 @@
 """
 Contains the ``QuantumPhaseEstimation`` template.
 """
-from numpy.linalg import eig
-
 import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.wires import Wires
@@ -114,7 +112,7 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
 
     unitary_powers = [unitary]
 
-    for i in range(len(estimation_wires) - 1):
+    for _ in range(len(estimation_wires) - 1):
         new_power = unitary_powers[-1] @ unitary_powers[-1]
         unitary_powers.append(new_power)
 
