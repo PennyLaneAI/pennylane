@@ -354,6 +354,9 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         @qml.qnode(dev)
         def circuit():
             qml.RX(1.5708, wires=[0])
@@ -370,6 +373,9 @@ class TestSample:
         """
         n_wires = 1
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if dev.shots is None:
             pytest.skip("Device not in sampling mode.")
@@ -405,6 +411,9 @@ class TestSample:
         """
         n_wires = 2
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
@@ -454,6 +463,10 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -493,6 +506,10 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -532,6 +549,9 @@ class TestTensorSample:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")

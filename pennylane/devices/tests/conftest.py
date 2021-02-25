@@ -31,17 +31,16 @@ TOL = 1e-6
 # Tolerance for non-analytic tests
 TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
-N_SHOTS = 10000
+N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
-# TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
-# do not return probabilities.
 
 
 @pytest.fixture(scope="function")
 def tol():
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
-    probing analytic or non-analytic devices (yielding deterministic or stochastic test results)."""
+    probing analytic or non-analytic devices, which allows us to define the
+    standard for deterministic or stochastic test results dynamically."""
 
     def _tol(shots):
         if shots is None:
@@ -199,36 +198,41 @@ def pytest_addoption(parser):
 
 
 def pytest_generate_tests(metafunc):
-    """Set up fixtures from command line options. """
+    """Set up device_kwargs fixture from command line options.
+
+    The fixture defines a dictionary of keyword argument that can be used to instantiate
+    a device via `qml.device(**device_kwargs)` in the test. This allows us to potentially
+    change kwargs in the test before creating the device.
+    """
+
     opt = metafunc.config.option
 
-    device_kwargs = {
-        "name": opt.device,
-        "shots": opt.shots,
-        **opt.device_kwargs,
-    }
+    list_of_device_kwargs = []
 
-    if device_kwargs["shots"] is None:
-        # use default value of device
-        device_kwargs.pop("shots")
+    if opt.device is None:
+        devices_to_test = LIST_CORE_DEVICES
+    else:
+        devices_to_test = [opt.device]
 
-    # ==============================================
+    for device in devices_to_test:
 
-    # parametrize all functions that take device_kwargs as an argument
-    # this is needed for the "device" fixture
+        device_kwargs = {
+            "name": device
+        }
+
+        # if shots specified in command line,
+        # add to the device kwargs
+        if opt.shots is not None:
+            # translate command line string to None if necessary
+            device_kwargs["shots"] = None if (opt.shots == 'None') else opt.shots
+
+        list_of_device_kwargs.append(device_kwargs)
+
+    # define the device_kwargs parametrization:
+    # all tests that take device_kwargs as an argument will be
+    # run on the different fixtures
     if "device_kwargs" in metafunc.fixturenames:
-        if opt.device is None:
-            # if no command line argument for device given, run tests on core devices
-            list_device_kwargs = []
-            for dev_name in LIST_CORE_DEVICES:
-                core_dev_kwargs = device_kwargs.copy()
-                core_dev_kwargs["name"] = dev_name
-                list_device_kwargs.append(core_dev_kwargs)
-            metafunc.parametrize("device_kwargs", list_device_kwargs)
-
-        else:
-            # run tests on specified device
-            metafunc.parametrize("device_kwargs", [device_kwargs])
+         metafunc.parametrize("device_kwargs", list_of_device_kwargs)
 
 
 def pytest_runtest_makereport(item, call):

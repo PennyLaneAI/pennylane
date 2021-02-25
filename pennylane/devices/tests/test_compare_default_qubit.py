@@ -37,7 +37,7 @@ class TestComparison:
             pytest.skip("Device is in non-analytical mode.")
 
         if "Hermitian" not in dev.observables:
-            pytest.skip("Skipped because device does not support the Hermitian observable.")
+            pytest.skip("Device does not support the Hermitian observable.")
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
