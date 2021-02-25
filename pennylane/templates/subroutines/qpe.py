@@ -27,7 +27,7 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
 
-    Given a unitary :math:`U`, this template applies the circuit for quantum phase
+    Given a unitary matrix :math:`U`, this template applies the circuit for quantum phase
     estimation. The unitary is applied to the qubits specified by ``target_wires`` and :math:`n`
     qubits are used for phase estimation as specified by ``estimation_wires``.
 
@@ -39,7 +39,7 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
     of the following steps:
 
-    #. Prepare ``target_wires`` in an eigenstate of ``unitary``. If that eigenstate has a
+    #. Prepare ``target_wires`` in an eigenstate of :math:`U`. If that eigenstate has a
        corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase :math:`\theta \in [0, 1)`,
        this algorithm will measure :math:`\theta`.
     #. Apply the ``QuantumPhaseEstimation`` circuit.
@@ -54,7 +54,7 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     usage details below give an example of this case.
 
     Args:
-        unitary (array): the phase estimation unitary
+        unitary (array): the phase estimation unitary, specified as a matrix
         target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary
         estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
             estimation
@@ -65,36 +65,46 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
 
     .. UsageDetails::
 
-        An example of how to use this template is shown below:
+        Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
         .. code-block:: python
-            
+
             import pennylane as qml
             from pennylane.templates import QuantumPhaseEstimation
             from pennylane import numpy as np
 
-            # We initialize a qubit to the |+> state and determine the phase after applying qml.RX
-            
             phase = 5
             target_wires = [0]
-            u = qml.RX(phase,wires=0).matrix
+            u = qml.RX(phase, wires=0).matrix
+
+        The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. An example is
+        shown below using a register of five phase-estimation qubits:
+
+        .. code-block:: python
 
             n_estimation_wires = 5
-            estimation_wires = range(1,n_estimation_wires+1)
+            estimation_wires = range(1, n_estimation_wires + 1)
 
-            dev = qml.device("default.qubit",wires=n_estimation_wires+1)
-            
+            dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
             @qml.qnode(dev)
             def circuit():
+                # Start in the |+> eigenstate of the unitary
                 qml.Hadamard(wires=target_wires)
 
-                QuantumPhaseEstimation(u,target_wires=target_wires,estimation_wires=estimation_wires)
+                QuantumPhaseEstimation(
+                    u,
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
+                )
 
-                return qml.expval(qml.Hermitian(np.diag(range(2**n_estimation_wires)),wires=range(1,n_estimation_wires+1)))
-            
-            resultphase = 4*np.pi*(1-circuit()/2**n_estimation_wires)
-            print(resultphase)
-        TODO
+                return qml.probs(estimation_wires)
+
+
+            phase = np.argmax(circuit()) / 2 ** n_estimation_wires
+
+            # Need to rescale phase due to convention of RX gate
+            phase = 4 * np.pi * (1 - phase)
     """
 
     target_wires = Wires(target_wires)
