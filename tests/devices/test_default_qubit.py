@@ -1494,7 +1494,7 @@ class TestTensorVar:
 class TestTensorSample:
     """Test tensor expectation values"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+    def test_paulix_pauliy(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -1519,11 +1519,11 @@ class TestTensorSample:
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
         expected = (
@@ -1534,9 +1534,9 @@ class TestTensorSample:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+    def test_pauliz_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
@@ -1559,11 +1559,11 @@ class TestTensorSample:
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
         expected = (
@@ -1572,13 +1572,13 @@ class TestTensorSample:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=None)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
-        A = np.array(
+        A = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -1613,17 +1613,16 @@ class TestTensorSample:
         assert set(np.round(s1, 8).tolist()).issubset(set(np.round(eigvals, 8).tolist()))
 
         mean = s1 @ p
-        expected = 0.5 * (
+        expected = 0.1 * 0.5 * (
             -6 * np.cos(theta) * (np.cos(varphi) + 1)
             - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
             + 3 * np.cos(varphi) * np.sin(phi)
             + np.sin(phi)
         )
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
-        expected = (
-            1057
+        expected = 0.01 * (1057
             - np.cos(2 * phi)
             + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
             - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
@@ -1652,7 +1651,7 @@ class TestTensorSample:
                 )
             )
         ) / 16
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
 
 class TestProbabilityIntegration:

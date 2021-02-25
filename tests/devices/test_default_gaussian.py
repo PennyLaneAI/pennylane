@@ -663,7 +663,7 @@ class TestDefaultGaussianIntegration:
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
-    def test_nonzero_shots(self, tol):
+    def test_nonzero_shots(self, tol_stochastic):
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
         shots = 10**4
@@ -681,7 +681,7 @@ class TestDefaultGaussianIntegration:
         for _ in range(100):
             runs.append(circuit(p))
 
-        assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol)
+        assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol_stochastic)
 
     @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
     def test_supported_gates(self, g, qop, gaussian_dev):

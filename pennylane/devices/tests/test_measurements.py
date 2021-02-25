@@ -443,7 +443,7 @@ class TestSample:
             + 27 * np.cos(3 * theta)
             + 6
         ) / 32
-        assert np.allclose(np.mean(res), expected, atol=tol(False))
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
