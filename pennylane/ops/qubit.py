@@ -1682,7 +1682,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
-        # the integer value of the control string. For example, controlling a 2x2
+        # the integer value of the control string. For example, controlling a
         # unitary U with 2 qubits will produce matrices with block structure
         # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
         # etc. The positioning of the block is controlled by padding the block diagonal
@@ -1747,7 +1747,7 @@ class MixedPolarityMultiControlledToffoli(ControlledQubitUnitary):
 
     The ``MixedPolarityMultiControlledToffoli`` operation is a commonly-encountered case
     of the :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied unitary is the
-    Pauli X (NOT) gate. It can be used in the same manner as ControlledQubitUnitary, but
+    Pauli X (NOT) gate. It can be used in the same manner as ``ControlledQubitUnitary``, but
     there is no need to specify a matrix argument.
 
     The following are equivalent:

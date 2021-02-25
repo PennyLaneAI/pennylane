@@ -1462,7 +1462,7 @@ class TestControlledQubitUnitary:
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
         # Pick a random unitary
-        U = unitary_group.rvs(2 ** len(target_wires), random_state=3)
+        U = unitary_group.rvs(2 ** len(target_wires), random_state=1967)
 
         @qml.qnode(dev)
         def circuit_mixed_polarity():
