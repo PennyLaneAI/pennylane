@@ -115,11 +115,11 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     unitary_powers = [unitary]
 
     for i in range(len(estimation_wires) - 1):
-        new_power = unitary_powers[0] @ unitary_powers[0]
-        unitary_powers.insert(0, new_power)
+        new_power = unitary_powers[-1] @ unitary_powers[-1]
+        unitary_powers.append(new_power)
 
-    for wire, u in zip(estimation_wires, unitary_powers):
+    for wire in estimation_wires:
         qml.Hadamard(wire)
-        qml.ControlledQubitUnitary(u, control_wires=wire, wires=target_wires)
+        qml.ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
 
     qml.QFT(wires=estimation_wires).inv()
