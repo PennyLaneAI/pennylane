@@ -1464,8 +1464,15 @@ class TestControlledQubitUnitary:
         # Pick a random unitary
         U = unitary_group.rvs(2 ** len(target_wires), random_state=1967)
 
+        # Pick random starting state for the control and target qubits
+        control_state_weights = np.random.normal(size=(2**(len(control_wires)+1) - 2))
+        target_state_weights = np.random.normal(size=(2**(len(target_wires)+1) - 2))
+
         @qml.qnode(dev)
         def circuit_mixed_polarity():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
             qml.ControlledQubitUnitary(
                 U, control_wires=control_wires, wires=target_wires, control_values=control_values
             )
@@ -1482,13 +1489,16 @@ class TestControlledQubitUnitary:
 
         @qml.qnode(dev)
         def circuit_pauli_x():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
             for wire in x_locations:
-                qml.PauliX(wires=wire)
+                qml.PauliX(wires=control_wires[wire])
 
             qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=wires)
 
             for wire in x_locations:
-                qml.PauliX(wires=wire)
+                qml.PauliX(wires=control_wires[wire])
 
             return qml.state()
 
@@ -1498,7 +1508,7 @@ class TestControlledQubitUnitary:
         assert np.allclose(mixed_polarity_state, pauli_x_state)
 
 
-class TestMixedPolarityMultiControlledToffoli:
+class TestMultiControlledX:
     """Tests for the MultiControlledX"""
 
     X = np.array([[0, 1], [1, 0]])
@@ -1561,7 +1571,7 @@ class TestMixedPolarityMultiControlledToffoli:
 
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
-        # Pick random unitary starting state for the control and target qubits
+        # Pick random starting state for the control and target qubits
         control_state_weights = np.random.normal(size=(2**(len(control_wires)+1) - 2))
         target_state_weights = np.random.normal(size=(2**(len(target_wires)+1) - 2))
 
