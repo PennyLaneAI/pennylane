@@ -1750,12 +1750,9 @@ class MultiControlledX(ControlledQubitUnitary):
     :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
     unitary is the Pauli X (NOT) gate. It can be used in the same manner as
     ``ControlledQubitUnitary``, but there is no need to specify a matrix
-    argument.
-
-    The following are equivalent:
+    argument:
 
     >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values=14)
 
     """
     num_params = 1
