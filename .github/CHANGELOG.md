@@ -6,9 +6,45 @@
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
   
+  Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
+  
+  >>> phase = 5
+  >>> target_wires = [0]
+  >>> u = qml.RX(phase, wires=0).matrix
+  
+  The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
+  phase-estimation qubits:
+  
   ```python
-  TODO
+  n_estimation_wires = 5
+  estimation_wires = range(1, n_estimation_wires + 1)
+
+  dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
+  @qml.qnode(dev)
+  def circuit():
+      # Start in the |+> eigenstate of the unitary
+      qml.Hadamard(wires=target_wires)
+
+      QuantumPhaseEstimation(
+          u,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+
+      return qml.probs(estimation_wires)
+
+
+  phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
+
+  # Need to rescale phase due to convention of RX gate
+  phase_estimated = 4 * np.pi * (1 - phase)
   ```
+
+  The resulting phase is a close approximation to the true value:
+  
+  >>> phase_estimated
+  >>> 5.105088062083414
 
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
