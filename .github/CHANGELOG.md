@@ -8,9 +8,11 @@
   
   Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
   
+  ```pycon
   >>> phase = 5
   >>> target_wires = [0]
   >>> u = qml.RX(phase, wires=0).matrix
+  ```
   
   The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
   phase-estimation qubits:
@@ -43,8 +45,10 @@
 
   The resulting phase is a close approximation to the true value:
   
+  ```pycon
   >>> phase_estimated
   >>> 5.105088062083414
+  ```
 
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
