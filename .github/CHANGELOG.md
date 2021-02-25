@@ -109,7 +109,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
+Chase Roberts, Daniel Polatajko, Josh Izaac, Kyle Godbey, Maria Schuld, Pritish Sehzpaul, Thomas Bromley.
 
 
 
