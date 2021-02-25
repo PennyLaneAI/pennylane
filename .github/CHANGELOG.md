@@ -6,7 +6,7 @@
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
   
-  Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
+  Consider the matrix corresponding to a rotation from an `RX` gate:
   
   ```pycon
   >>> phase = 5
@@ -36,7 +36,6 @@
 
       return qml.probs(estimation_wires)
 
-
   phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
   # Need to rescale phase due to convention of RX gate
@@ -47,7 +46,7 @@
   
   ```pycon
   >>> phase_estimated
-  >>> 5.105088062083414
+  5.105088062083414
   ```
 
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.

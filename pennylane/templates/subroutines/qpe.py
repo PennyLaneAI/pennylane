@@ -100,7 +100,6 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
 
                 return qml.probs(estimation_wires)
 
-
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
             # Need to rescale phase due to convention of RX gate
