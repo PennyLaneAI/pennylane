@@ -1784,7 +1784,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return QubitUnitary(np.diag(self.data[0] ** (-1)), wires=wires)
 
 
 class QFT(Operation):
