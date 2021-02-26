@@ -216,15 +216,13 @@ def pytest_generate_tests(metafunc):
 
     for device in devices_to_test:
 
-        device_kwargs = {
-            "name": device
-        }
+        device_kwargs = {"name": device}
 
         # if shots specified in command line,
         # add to the device kwargs
         if opt.shots is not None:
             # translate command line string to None if necessary
-            device_kwargs["shots"] = None if (opt.shots == 'None') else opt.shots
+            device_kwargs["shots"] = None if (opt.shots == "None") else opt.shots
 
         list_of_device_kwargs.append(device_kwargs)
 
@@ -232,7 +230,7 @@ def pytest_generate_tests(metafunc):
     # all tests that take device_kwargs as an argument will be
     # run on the different fixtures
     if "device_kwargs" in metafunc.fixturenames:
-         metafunc.parametrize("device_kwargs", list_of_device_kwargs)
+        metafunc.parametrize("device_kwargs", list_of_device_kwargs)
 
 
 def pytest_runtest_makereport(item, call):

@@ -245,4 +245,3 @@ class TestCapabilities:
         else:
             with pytest.raises(NotImplementedError):
                 qnode()
-
