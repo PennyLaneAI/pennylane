@@ -99,7 +99,6 @@
    or all zeros. 
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
 
-
 * The `ExpvalCost` class raises an error if instantiated
   with non-expectation measurement statistics.
   [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
