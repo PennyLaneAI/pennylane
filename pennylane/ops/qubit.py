@@ -1667,7 +1667,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # If control values unspecified, we control on the all-ones string
         if not control_values:
-            control_values = '1' * len(control_wires)
+            control_values = "1" * len(control_wires)
 
         control_int = self._parse_control_values(control_wires, control_values)
 
@@ -1702,9 +1702,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError(
-                "Alternative control values must be passed as a binary string."
-            )
+            raise ValueError("Alternative control values must be passed as a binary string.")
 
         return control_int
 
