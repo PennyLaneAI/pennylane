@@ -1617,8 +1617,8 @@ class ControlledQubitUnitary(QubitUnitary):
         U (array[complex]): square unitary matrix
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
-        control_values (Union[str or int]): the state of the control qubits to
-            control on (default is the all 1s state)
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
 
     **Example**
 
@@ -1633,21 +1633,12 @@ class ControlledQubitUnitary(QubitUnitary):
     it is necessary to apply a gate conditioned on all qubits being in the
     :math:`\vert 0\rangle` state, or a mix of the two.
 
-    The state on which to control can be changed by passing a value to
-    `control_values` as either a bit string, or an integer (which is converted
-    to binary representation in Big-Endian format).
-
-    For example, if we want to apply a single-qubit unitary to wire ``3``
-    conditioned on three wires where the first is in state ``0``, the second is
-    in state ``1``, and the third in state ``1``, we can write:
+    The state on which to control can be changed by passing a string of bits to
+    `control_values`. For example, if we want to apply a single-qubit unitary to
+    wire ``3`` conditioned on three wires where the first is in state ``0``, the
+    second is in state ``1``, and the third in state ``1``, we can write:
 
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
-
-    Or equivalently,
-
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=3)
-
-    since ``011`` is 3 in binary.
 
     """
     num_params = 1
@@ -1674,9 +1665,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
         wires = control_wires + wires
 
-        # If unspecified, we control on the all-ones string
+        # If control values unspecified, we control on the all-ones string
         if not control_values:
-            control_values = 2 ** len(control_wires) - 1
+            control_values = '1' * len(control_wires)
 
         control_int = self._parse_control_values(control_wires, control_values)
 
@@ -1701,26 +1692,18 @@ class ControlledQubitUnitary(QubitUnitary):
     @staticmethod
     def _parse_control_values(control_wires, control_values):
         """Ensure any user-specified control strings have the right format."""
-        if isinstance(control_values, int):
-            # Compute number of wires needed for binary representation
-            wires_needed = int(np.floor(np.log2(control_values))) + 1
-
-            if wires_needed > len(control_wires):
-                raise ValueError(f"Not enough control wires. Need {wires_needed}.")
-
-            control_int = control_values
-        elif isinstance(control_values, str):
+        if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
-            # If specified integer values, must make sure they are all 0/1
+            # Make sure all values are either 0 or 1
             if any([x not in ["0", "1"] for x in control_values]):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
             raise ValueError(
-                "Alternative control values must be passed as integer, or binary string."
+                "Alternative control values must be passed as a binary string."
             )
 
         return control_int
@@ -1739,8 +1722,8 @@ class MultiControlledX(ControlledQubitUnitary):
     Args:
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires or int]): a single target wire the operation acts on
-        control_values (Union[str or int]): the state of the control qubits to
-            control based on (default is the all 1s state)
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
 
     **Example**
 

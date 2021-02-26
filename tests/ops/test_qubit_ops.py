@@ -1414,10 +1414,9 @@ class TestControlledQubitUnitary:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values,expected_error_message",
         [
-            ([0, 1], 2, 4, "Not enough control wires."),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
-            ([0, 1], 2, [0, 1], "Alternative control values must be passed as integer"),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
         ],
     )
     def test_invalid_mixed_polarity_controls(
@@ -1435,16 +1434,15 @@ class TestControlledQubitUnitary:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, 0),
-            ([0, 1], 2, 0),
-            ([0, 1], 2, "01"),
-            ([0, 1], 2, 2),
+            ([0], 1, '0'),
+            ([0, 1], 2, '00'),
+            ([0, 1], 2, '10'),
             ([0, 1], 2, "11"),
-            ([1, 0], 2, "10"),
-            ([0, 1], [2, 3], 3),
-            ([0, 2], [3, 1], 2),
+            ([1, 0], 2, "01"),
+            ([0, 1], [2, 3], '11'),
+            ([0, 2], [3, 1], '10'),
             ([1, 2, 0], [3, 4], "100"),
-            ([1, 0, 2], [4, 3], 6),
+            ([1, 0, 2], [4, 3], '110'),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
@@ -1470,9 +1468,6 @@ class TestControlledQubitUnitary:
                 U, control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
-
-        if not isinstance(control_values, str):
-            control_values = format(control_values, f"#0{len(control_wires)+2}b")[2:]
 
         # The result of applying the mixed-polarity gate should be the same as
         # if we conjugated the specified control wires with Pauli X and applied the
@@ -1509,10 +1504,9 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values,expected_error_message",
         [
-            ([0, 1], 2, 4, "Not enough control wires."),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
-            ([0, 1], 2, [0, 1], "Alternative control values must be passed as integer"),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
             (
                 [0, 1],
                 [2, 3],
@@ -1536,18 +1530,16 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, 0),
-            ([0, 1], 2, 0),
-            ([0, 1], 2, "01"),
-            ([0, 1], 2, 2),
-            ([0, 1], 2, "11"),
+            ([0], 1, '0'),
+            ([0, 1], 2, '00'),
+            ([0, 1], 2, '10'),
             ([1, 0], 2, "10"),
-            ([0, 1], 2, 3),
-            ([0, 2], 1, 2),
+            ([0, 1], 2, '11'),
+            ([0, 2], 1, '10'),
             ([1, 2, 0], 3, "100"),
-            ([1, 0, 2, 4], 3, 9),
-            ([0, 1, 2, 5, 3, 6], 4, 17),
-            ([0, 1, 2, 3, 4, 5, 6, 7], 8, 34),
+            ([1, 0, 2, 4], 3, '1001'),
+            ([0, 1, 2, 5, 3, 6], 4, '100001'),
+            ([0, 1, 2, 3, 4, 5, 6, 7], 8, '10110010'),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
@@ -1570,9 +1562,6 @@ class TestMultiControlledX:
                 control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
-
-        if not isinstance(control_values, str):
-            control_values = format(control_values, f"#0{len(control_wires)+2}b")[2:]
 
         # The result of applying the mixed-polarity gate should be the same as
         # if we conjugated the specified control wires with Pauli X and applied the
