@@ -1725,7 +1725,7 @@ class MultiControlledX(ControlledQubitUnitary):
 
     **Example**
 
-    The ``MultiControlledX`` operation (sometimes also termed a mixed-polarity
+    The ``MultiControlledX`` operation (sometimes called a mixed-polarity
     multi-controlled Toffoli) is a commonly-encountered case of the
     :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
     unitary is the Pauli X (NOT) gate. It can be used in the same manner as
