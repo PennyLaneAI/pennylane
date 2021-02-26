@@ -1708,7 +1708,7 @@ class ControlledQubitUnitary(QubitUnitary):
             if wires_needed > len(control_wires):
                 raise ValueError(f"Not enough control wires. Need {wires_needed}.")
 
-           control_int = control_values
+            control_int = control_values
         elif isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
