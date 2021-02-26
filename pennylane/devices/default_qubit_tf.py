@@ -120,7 +120,7 @@ class DefaultQubitTF(DefaultQubit):
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored
-            in the calcifulation of expectation values and variances, and only controls the number
+            in the calculation of expectation values and variances, and only controls the number
             of samples returned by ``sample``.
         analytic (bool): Indicates if the device should calculate expectations
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
