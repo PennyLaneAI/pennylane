@@ -1434,15 +1434,15 @@ class TestControlledQubitUnitary:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, '0'),
-            ([0, 1], 2, '00'),
-            ([0, 1], 2, '10'),
+            ([0], 1, "0"),
+            ([0, 1], 2, "00"),
+            ([0, 1], 2, "10"),
             ([0, 1], 2, "11"),
             ([1, 0], 2, "01"),
-            ([0, 1], [2, 3], '11'),
-            ([0, 2], [3, 1], '10'),
+            ([0, 1], [2, 3], "11"),
+            ([0, 2], [3, 1], "10"),
             ([1, 2, 0], [3, 4], "100"),
-            ([1, 0, 2], [4, 3], '110'),
+            ([1, 0, 2], [4, 3], "110"),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
@@ -1456,8 +1456,8 @@ class TestControlledQubitUnitary:
         U = unitary_group.rvs(2 ** len(target_wires), random_state=1967)
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2**(len(control_wires)+1) - 2))
-        target_state_weights = np.random.normal(size=(2**(len(target_wires)+1) - 2))
+        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
+        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
 
         @qml.qnode(dev)
         def circuit_mixed_polarity():
@@ -1530,16 +1530,16 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, '0'),
-            ([0, 1], 2, '00'),
-            ([0, 1], 2, '10'),
+            ([0], 1, "0"),
+            ([0, 1], 2, "00"),
+            ([0, 1], 2, "10"),
             ([1, 0], 2, "10"),
-            ([0, 1], 2, '11'),
-            ([0, 2], 1, '10'),
+            ([0, 1], 2, "11"),
+            ([0, 2], 1, "10"),
             ([1, 2, 0], 3, "100"),
-            ([1, 0, 2, 4], 3, '1001'),
-            ([0, 1, 2, 5, 3, 6], 4, '100001'),
-            ([0, 1, 2, 3, 4, 5, 6, 7], 8, '10110010'),
+            ([1, 0, 2, 4], 3, "1001"),
+            ([0, 1, 2, 5, 3, 6], 4, "100001"),
+            ([0, 1, 2, 3, 4, 5, 6, 7], 8, "10110010"),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
@@ -1550,8 +1550,8 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2**(len(control_wires)+1) - 2))
-        target_state_weights = np.random.normal(size=(2**(len(target_wires)+1) - 2))
+        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
+        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
 
         @qml.qnode(dev)
         def circuit_mpmct():
