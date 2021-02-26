@@ -1631,7 +1631,7 @@ class ControlledQubitUnitary(QubitUnitary):
     Typically controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
     it is necessary to apply a gate conditioned on all qubits being in the
-    :math:`\vert 0\rangle` state, or some mix of the two.
+    :math:`\vert 0\rangle` state, or a mix of the two.
 
     The state on which to control can be changed by passing a value to
     `control_values` as either a bit string, or an integer (which is converted
