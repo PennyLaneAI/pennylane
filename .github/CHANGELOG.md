@@ -47,14 +47,14 @@
 
 <h3>Improvements</h3>
 
-- Added the `ControlledQubitUnitary` operation
-  ([#1069](https://github.com/PennyLaneAI/pennylane/pull/1069), and
-  [#1104](https://github.com/PennyLaneAI/pennylane/pull/1104)). This
+- Added the `ControlledQubitUnitary` operation. This
   enables implementation of multi-qubit gates with a variable number of
   control qubits. It is also possible to specify a different state for the
   control qubits using the `control_values` argument (also known as a
-  mixed-polarity multi-controlled operation). For example, we can
-  create a multi-controlled T gate using:
+  mixed-polarity multi-controlled operation).
+  [#1069](https://github.com/PennyLaneAI/pennylane/pull/1069) [#1104](https://github.com/PennyLaneAI/pennylane/pull/1104)
+  
+  For example, we can  create a multi-controlled T gate using:
 
   ```python
   T = qml.T._matrix()
@@ -67,10 +67,10 @@
   the `1` state.
 
 - Added `MultiControlledX` for multi-controlled `NOT` gates.
-  [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
   This is a special case of `ControlledQubitUnitary` that applies a
   Pauli X gate conditioned on the state of an arbitrary number of
   control qubits.
+  [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
