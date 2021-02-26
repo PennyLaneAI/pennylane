@@ -1427,17 +1427,10 @@ class TestControlledQubitUnitary:
         control values."""
         target_wires = Wires(wires)
 
-        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
-
-        @qml.qnode(dev)
-        def circuit():
+        with pytest.raises(ValueError, match=expected_error_message):
             qml.ControlledQubitUnitary(
                 X, control_wires=control_wires, wires=target_wires, control_values=control_values
             )
-            return qml.state()
-
-        with pytest.raises(ValueError, match=expected_error_message):
-            circuit()
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
@@ -1535,17 +1528,10 @@ class TestMultiControlledX:
         control values."""
         target_wires = Wires(wires)
 
-        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
-
-        @qml.qnode(dev)
-        def circuit():
+        with pytest.raises(ValueError, match=expected_error_message):
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wires, control_values=control_values
             )
-            return qml.state()
-
-        with pytest.raises(ValueError, match=expected_error_message):
-            circuit()
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
