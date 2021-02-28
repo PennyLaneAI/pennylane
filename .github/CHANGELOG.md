@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Shots can now be specified as a list, allowing measurement statistics
+* Batches of shots can now be specified as a list, allowing measurement statistics
   to be course-grained with a single QNode evaluation.
   [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
 
@@ -128,6 +128,34 @@
   a `DeprecationWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
+
+* For devices inheriting from `QubitDevice`, the methods `expval`, `var`, `sample`
+  accept two new keyword arguments --- `shot_range` and `bin_size`.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  These new arguments allow for the statistics to be performed on only a subset of device samples.
+  This finer level of control is accessible from the main UI by instantiating a device with a batch
+  of shots.
+
+  For example, consider the following device:
+
+  ```pycon
+  >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+  ```
+
+  This device will execute QNodes using 135 shots, however
+  measurement statistics will be **course grained** across these 135
+  shots:
+
+  * All measurement statistics will first be computed using the
+    first 5 shots --- that is, `shots_range=[0, 5]`, `bin_size=5`.
+
+  * Next, the tuple `(10, 3)` indicates 10 shots, repeated 3 times. We will want to use
+    `shot_range=[5, 35]`, performing the expectation value in bins of size 10
+    (`bin_size=10`).
+
+  * Finally, we repeat the measurement statistics for the final 100 shots,
+    `shot_range=[35, 135]`, `bin_size=100`.
 
 <h3>Bug fixes</h3>
 
