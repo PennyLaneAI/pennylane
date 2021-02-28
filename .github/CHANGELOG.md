@@ -165,7 +165,7 @@
 
 * Fixes a bug where decompositions would reset the differentiation method
   of a QNode.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
 <h3>Documentation</h3>
 
