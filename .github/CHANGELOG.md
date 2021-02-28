@@ -163,6 +163,10 @@
   with non-expectation measurement statistics.
   [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
 
+* Fixes a bug where decompositions would reset the differentiation method
+  of a QNode.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
