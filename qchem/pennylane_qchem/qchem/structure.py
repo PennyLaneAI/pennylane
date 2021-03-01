@@ -152,7 +152,7 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
-    with their positions :math:`x_1, y_1, z_1, x_2, y_2, z_2, \dots` in
+    with their positions :math:`[x_1, y_1, z_1, x_2, y_2, z_2, \dots]` in
     atomic units (Bohr).
 
     The atomic coordinates in the file must be in Angstroms.
@@ -189,7 +189,7 @@ def read_structure(filepath, outpath="."):
 
     >>> symbols, coordinates = read_structure('h2.xyz')
     >>> print(symbols, coordinates)
-    ['H', 'H'] [ 0.    0.   -0.66140414    0.    0.    0.66140414]
+    ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
     """
 
     obabel_error_message = (
