@@ -159,10 +159,9 @@
 
 <h3>Bug fixes</h3>
 
-* `BasisEmbedding` does now accept inputs whose bits are all ones 
-   or all zeros. 
+* Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
+  or all zeros. 
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
-
 
 * The `ExpvalCost` class raises an error if instantiated
   with non-expectation measurement statistics.
