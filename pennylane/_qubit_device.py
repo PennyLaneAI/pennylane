@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches
 import abc
 from collections import OrderedDict
 import itertools
@@ -71,8 +71,9 @@ class QubitDevice(Device):
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables
+        shots (int, list[int]): Number of circuit evaluations/random samples used to estimate
+            expectation values of observables. If a list of integers is passed, the circuit
+            evaluations are batched over the list of shots.
         analytic (bool): If ``True``, the device calculates probability, expectation values,
             and variances analytically. If ``False``, a finite number of samples set by
             the argument ``shots`` are used to estimate these quantities.
@@ -208,7 +209,29 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        results = self.statistics(circuit.observables)
+        if not self.analytic and self._shot_vector is not None:
+
+            results = []
+            s1 = 0
+
+            for shot_tuple in self._shot_vector:
+                s2 = s1 + np.prod(shot_tuple)
+                r = self.statistics(
+                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                )
+                r = qml.math.squeeze(r)
+
+                if shot_tuple.copies > 1:
+                    results.extend(r.T)
+                else:
+                    results.append(r)
+
+                s1 = s2
+
+            results = qml.math.stack(results)
+
+        else:
+            results = self.statistics(circuit.observables)
 
         if circuit.all_sampled or not circuit.is_sampled:
             results = self._asarray(results)
@@ -317,7 +340,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables):
+    def statistics(self, observables, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -325,28 +348,60 @@ class QubitDevice(Device):
 
         Args:
             observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
             Union[float, List[float]]: the corresponding statistics
+
+        .. UsageDetails::
+
+            The ``shot_range`` and ``bin_size`` arguments allow for the statistics
+            to be performed on only a subset of device samples. This finer level
+            of control is accessible from the main UI by instantiating a device
+            with a batch of shots.
+
+            For example, consider the following device:
+
+            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+
+            This device will execute QNodes using 135 shots, however
+            measurement statistics will be **course grained** across these 135
+            shots:
+
+            * All measurement statistics will first be computed using the
+              first 5 shots --- that is, ``shots_range=[0, 5]``, ``bin_size=5``.
+
+            * Next, the tuple ``(10, 3)`` indicates 10 shots, repeated 3 times. We will want to use
+              ``shot_range=[5, 35]``, performing the expectation value in bins of size 10
+              (``bin_size=10``).
+
+            * Finally, we repeat the measurement statistics for the final 100 shots,
+              ``shot_range=[35, 135]``, ``bin_size=100``.
         """
         results = []
 
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                results.append(self.expval(obs))
+                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Variance:
-                results.append(self.var(obs))
+                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                results.append(self.sample(obs))
+                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                )
 
             elif obs.return_type is State:
                 if len(observables) > 1:
@@ -425,6 +480,7 @@ class QubitDevice(Device):
 
         Args:
             number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
 
         Returns:
             List[int]: the sampled basis states
@@ -543,13 +599,18 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def estimate_probability(self, wires=None):
+    def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
         using the generated samples.
 
         Args:
             wires (Iterable[Number, str], Number, str, Wires): wires to calculate
                 marginal probabilities for. Wires not provided are traced out of the system.
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
 
         Returns:
             List[float]: list of the probabilities
@@ -561,19 +622,33 @@ class QubitDevice(Device):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        samples = self._samples[:, device_wires]
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        samples = self._samples[sample_slice, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_two
 
         # count the basis state occurrences, and construct the probability vector
-        basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
-        prob[basis_states] = counts / len(samples)
+        if bin_size is not None:
+            bins = len(samples) // bin_size
+
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
+
+            # count the basis state occurrences, and construct the probability vector
+            for b, idx in enumerate(indices):
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[basis_states, b] = counts / bin_size
+
+        else:
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+            prob[basis_states] = counts / len(samples)
+
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def probability(self, wires=None):
+    def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
@@ -591,7 +666,7 @@ class QubitDevice(Device):
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
 
-        return self.estimate_probability(wires=wires)
+        return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -662,7 +737,7 @@ class QubitDevice(Device):
         perm = basis_states @ powers_of_two
         return self._gather(prob, perm)
 
-    def expval(self, observable):
+    def expval(self, observable, shot_range=None, bin_size=None):
 
         if self.analytic:
             # exact expectation value
@@ -671,9 +746,10 @@ class QubitDevice(Device):
             return self._dot(eigvals, prob)
 
         # estimate the ev
-        return np.mean(self.sample(observable))
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        return np.squeeze(np.mean(samples, axis=0))
 
-    def var(self, observable):
+    def var(self, observable, shot_range=None, bin_size=None):
 
         if self.analytic:
             # exact variance value
@@ -682,24 +758,34 @@ class QubitDevice(Device):
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
-        return np.var(self.sample(observable))
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        return np.squeeze(np.var(samples, axis=0))
 
-    def sample(self, observable):
+    def sample(self, observable, shot_range=None, bin_size=None):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, device_wires[0]]
+            samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        # Replace the basis state in the computational basis with the correct eigenvalue.
-        # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[:, np.array(device_wires)]  # Add np.array here for Jax support.
-        powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
-        indices = samples @ powers_of_two
-        return observable.eigvals[indices]
+        else:
+            # Replace the basis state in the computational basis with the correct eigenvalue.
+            # Extract only the columns of the basis samples required based on ``wires``.
+            samples = self._samples[
+                sample_slice, np.array(device_wires)
+            ]  # Add np.array here for Jax support.
+            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_two
+            samples = observable.eigvals[indices]
+
+        if bin_size is None:
+            return samples
+
+        return samples.reshape((bin_size, -1))
 
     def adjoint_jacobian(self, tape):
         """Implements the adjoint method outlined in
