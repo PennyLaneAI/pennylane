@@ -37,9 +37,10 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
     This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
     of the following steps:
 
-    #. Prepare ``target_wires`` in an eigenstate of :math:`U`. If that eigenstate has a
-       corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase :math:`\theta \in [0, 1)`,
-       this algorithm will measure :math:`\theta`.
+    #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
+       of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
+       :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
+       be prepared more generally.
     #. Apply the ``QuantumPhaseEstimation`` circuit.
     #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
        measurement outcomes in the computational basis.
