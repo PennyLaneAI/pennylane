@@ -152,7 +152,8 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
-    with their positions ``x, y, z`` in atomic units (Bohr). 
+    with their positions :math:`x_1, y_1, z_1, x_2, y_2, z_2, \dots` in
+    atomic units (Bohr).
 
     The atomic coordinates in the file must be in Angstroms.
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
@@ -182,7 +183,7 @@ def read_structure(filepath, outpath="."):
 
     Returns:
         tuple[list, array]: symbols of the atoms in the molecule and a 1D array with their
-        positions ``x, y, z`` in atomic units.
+        positions in atomic units.
 
     **Example**
 
