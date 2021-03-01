@@ -1051,30 +1051,26 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def derivative(H, x, i, delta=0.00529):
-    r"""Uses a finite difference approximation to compute the ``i``-th derivative
-    :math:`\frac{\partial \hat{H}(x)}{\partial x_i}` of the electronic Hamiltonian
-    evaluated at the nuclear coordinates ``x``.
+def derivative(F, x, i, delta=0.00529):
+    r"""Uses a finite difference approximation to evaluate the ``i``-th derivative
+    :math:`\frac{\partial \hat{F}(x)}{\partial x_i}` of the function ``F`` at point ``x``.
 
     .. math::
 
-        \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x_i+\delta/2)
-        - \hat{H}(x_i-\delta/2)}{\delta}
+        \frac{\partial F(x)}{\partial x_i} \approx \frac{F(x_i+\delta/2)
+        - F(x_i-\delta/2)}{\delta}
 
     Args:
-        H (callable): function with signature ``H(x)`` that builds the electronic
-            Hamiltonian of the molecule for a given set of nuclear coordinates ``x``
-        x (array[float]): 1D array with the nuclear coordinates given in Angstroms.
-            The size of the array should be ``3*N`` where ``N`` is the number of atoms
-            in the molecule.
-        i (int): index of the nuclear coordinate involved in the derivative
-            :math:`\partial \hat{H}(x)/\partial x_i`
-        delta (float): Step size in Angstroms used to displace the nuclear coordinate in the finite difference approximation.
-            Its default value corresponds to 0.01 Bohr radii.
+        F (callable): function with signature ``F(x)``
+        x (array[float]): 1D array with the values of ``x``
+        i (int): index of the variable ``x_i``
+        delta (float): Step size used to evaluate the finite difference. Its default value
+            has be chosen for the particular case of evaluating the derivative of the molecular
+            Hamiltonian with respect to the nuclear coordinates ``x``.    
+
 
     Returns:
-        pennylane.Hamiltonian: the derivative of the Hamiltonian
-        :math:`\frac{\partial \hat{H}(x)}{\partial x_i}`
+        type(F(x)): derivative of the function ``F(x)``
 
     **Example**
 
@@ -1100,11 +1096,11 @@ def derivative(H, x, i, delta=0.00529):
     + (-0.024944077860444742) [Z2 Z3]
     """
 
-    if not callable(H):
+    if not callable(F):
         error_message = (
             "{} object is not callable. \n"
-            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
-                type(H)
+            "'F' should be a callable function".format(
+                type(F)
             )
         )
         raise TypeError(error_message)
