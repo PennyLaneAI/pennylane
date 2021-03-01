@@ -5,10 +5,11 @@
 <h3>Improvements</h3>
 
 * The molecular geometry is now stored by a list containing the atomic symbols and
-  a 1D array with the atomic positions in Cartesian coordinates.
+  a 1D array with the position of the atoms in atomic units.
 
   - The ``read_structure`` function returns a list with the symbols of the atoms and
-    the array with the atomic positions. 
+    the array with the atomic positions. The size of the array should be ``3*N`` where
+    ``N`` is the number of atoms. 
 
   - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
     list of atomic symbols and the array with the atomic coordinates.
@@ -19,7 +20,7 @@
     For example:
 
     ```pycon
-    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.661, 0., 0., 0.661]))
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     ```
 

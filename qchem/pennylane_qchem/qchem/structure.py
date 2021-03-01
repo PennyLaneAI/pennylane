@@ -28,6 +28,10 @@ from pennylane import Hamiltonian
 from pennylane.wires import Wires
 
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
+
 def _process_wires(wires, n_wires=None):
     r"""
     Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
@@ -148,14 +152,14 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
-    with the atomic positions in Cartesian coordinates.
+    with their positions ``x, y, z`` in atomic units (Bohr). 
 
+    The atomic coordinates in the file must be in Angstroms.
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
     `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
     is also supported. Additionally, the new file ``structure.xyz``,
-    containing the input geometry, is created in a directory with path given by
-    ``outpath``.
+    containing the input geometry, is created in a directory with path given by ``outpath``.
 
     Open Babel can be installed using ``apt`` if on Ubuntu:
 
@@ -177,14 +181,14 @@ def read_structure(filepath, outpath="."):
         outpath (str): path to the output directory
 
     Returns:
-        tuple[list, array]: symbols of the atoms in the molecule and their positions in Cartesian
-        coordinates.
+        tuple[list, array]: symbols of the atoms in the molecule and a 1D array with their
+        positions ``x, y, z`` in atomic units.
 
     **Example**
 
     >>> symbols, coordinates = read_structure('h2.xyz')
     >>> print(symbols, coordinates)
-    ['H', 'H'] [ 0.    0.   -0.35  0.    0.    0.35]
+    ['H', 'H'] [ 0.    0.   -0.66140414    0.    0.    0.66140414]
     """
 
     obabel_error_message = (
@@ -227,7 +231,7 @@ def read_structure(filepath, outpath="."):
             coordinates.append(float(y))
             coordinates.append(float(z))
 
-    return symbols, np.array(coordinates)
+    return symbols, np.array(coordinates) / bohr_angs
 
 
 def meanfield(
@@ -264,7 +268,7 @@ def meanfield(
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
-            coordinates. The coordinates must be given in Angstroms and the size of the array
+            coordinates. The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
         name (str): molecule label
         charge (int): net charge of the system
@@ -284,7 +288,7 @@ def meanfield(
 
     **Example**
 
-    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> meanfield(symbols, coordinates, name="h2")
     ./pyscf/sto-3g/h2
     """
@@ -315,7 +319,10 @@ def meanfield(
 
     path_to_file = os.path.join(basis_dir, name.strip())
 
-    geometry = [[symbol, tuple(coordinates[3 * i : 3 * i + 3])] for i, symbol in enumerate(symbols)]
+    geometry = [
+        [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
 
     molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
@@ -751,7 +758,7 @@ def molecular_hamiltonian(
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
-            coordinates. The coordinates must be given in Angstroms and the size of the array
+            coordinates. The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
         name (str): name of the molecule
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
@@ -783,7 +790,7 @@ def molecular_hamiltonian(
 
     **Example**
 
-    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
     >>> print(qubits)
     4
