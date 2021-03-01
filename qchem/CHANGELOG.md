@@ -8,8 +8,7 @@
   a 1D array with the position of the atoms in atomic units.
 
   - The ``read_structure`` function returns a list with the symbols of the atoms and
-    the array with the atomic positions. The size of the array should be ``3*N`` where
-    ``N`` is the number of atoms. 
+    the array with the atomic positions. 
 
   - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
     list of atomic symbols and the array with the atomic coordinates.
