@@ -102,7 +102,7 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
             # Need to rescale phase due to convention of RX gate
-            phase_estimated = 4 * np.pi * (1 - phase)
+            phase_estimated = 4 * np.pi * (1 - phase_estimated)
     """
 
     target_wires = Wires(target_wires)
