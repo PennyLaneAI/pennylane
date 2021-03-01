@@ -17,6 +17,7 @@ Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
+from scipy.stats import unitary_group
 import pennylane as qml
 import pennylane._queuing
 from pennylane import numpy as np
@@ -1540,6 +1541,53 @@ class TestQuantumPhaseEstimation:
             # form exp(2 pi i theta X)
             rescaled_estimate = (1 - initial_estimate) * np.pi * 4
             estimates.append(rescaled_estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)
+
+    def test_phase_estimated_two_qubit(self):
+        """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
+        unitary."""
+
+        unitary = unitary_group.rvs(4, random_state=1967)
+        eigvals, eigvecs = np.linalg.eig(unitary)
+
+        state = eigvecs[:, 0]
+        eigval = eigvals[0]
+        phase = np.real_if_close(np.log(eigval) / (2 * np.pi * 1j))
+
+        estimates = []
+        wire_range = range(3, 11)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+
+            target_wires = [0, 1]
+            estimation_wires = range(2, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                # We want to prepare an eigenstate of RX, in this case |+>
+                qml.QubitStateVector(state, wires=target_wires)
+
+                qml.templates.QuantumPhaseEstimation(
+                    unitary, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                qml.probs(estimation_wires)
+
+            res = tape.execute(dev).flatten()
+
+            if phase < 0:
+                estimate = np.argmax(res) / 2 ** (wires - 2) - 1
+            else:
+                estimate = np.argmax(res) / 2 ** (wires - 2)
+            estimates.append(estimate)
 
         # Check that the error is monotonically decreasing
         for i in range(len(estimates) - 1):
