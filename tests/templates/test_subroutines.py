@@ -1512,9 +1512,9 @@ class TestQuantumPhaseEstimation:
         assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
         assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
 
-    def test_phase_estimated(self):
+    @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
+    def test_phase_estimated(self, phase):
         """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
-        phase = 6
         estimates = []
         wire_range = range(2, 10)
 
@@ -1525,7 +1525,7 @@ class TestQuantumPhaseEstimation:
             estimation_wires = range(1, wires)
 
             with qml.tape.QuantumTape() as tape:
-                # We want to prepare ourselves in an eigenstate of RX, in this case |+>
+                # We want to prepare an eigenstate of RX, in this case |+>
                 qml.Hadamard(wires=target_wires)
 
                 qml.templates.QuantumPhaseEstimation(
