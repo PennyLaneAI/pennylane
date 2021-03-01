@@ -52,7 +52,7 @@
   control qubits. It is also possible to specify a different state for the
   control qubits using the `control_values` argument (also known as a
   mixed-polarity multi-controlled operation).
-  [#1069](https://github.com/PennyLaneAI/pennylane/pull/1069) [#1104](https://github.com/PennyLaneAI/pennylane/pull/1104)
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069) [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
   
   For example, we can  create a multi-controlled T gate using:
 
