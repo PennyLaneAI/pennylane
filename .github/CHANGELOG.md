@@ -11,7 +11,7 @@
   ```pycon
   >>> phase = 5
   >>> target_wires = [0]
-  >>> u = qml.RX(phase, wires=0).matrix
+  >>> unitary = qml.RX(phase, wires=0).matrix
   ```
   
   The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
@@ -29,7 +29,7 @@
       qml.Hadamard(wires=target_wires)
 
       QuantumPhaseEstimation(
-          u,
+          unitary,
           target_wires=target_wires,
           estimation_wires=estimation_wires,
       )
