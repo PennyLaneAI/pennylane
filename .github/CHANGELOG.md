@@ -2,26 +2,62 @@
 
 <h3>New features since last release</h3>
 
+* Batches of shots can now be specified as a list, allowing measurement statistics
+  to be course-grained with a single QNode evaluation.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  Consider
+
+  ```pycon
+  >>> shots_list = [5, 10, 1000]
+  >>> dev = qml.device("default.qubit", wires=2, analytic=False, shots=shots_list)
+  ```
+
+  When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
+  However, three sets of measurement statistics will be returned; using the first 5 shots,
+  second set of 10 shots, and final 1000 shots, separately.
+
+  For example:
+
+  ```python
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+  ```
+
+  Executing this, we will get an output of size `(3, 2)`:
+
+  ```pycon
+  >>> circuit(0.5)
+  [[0.33333333 1.        ]
+   [0.2        1.        ]
+   [0.012      0.868     ]]
+  ```
+
+  This output remains fully differentiable.
+
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
   ```python
   dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
-  
+
   @qml.qnode(dev)
   def circuit(a):
       qml.RX(a, wires=0)
       return qml.sample(qml.PauliZ(wires=0))
   ```
-  
+
   For this, the qnode is called with an additional `shots` keyword argument:
-  
+
   ```pycon
-  >>> circuit(0.8)  
+  >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
-  [ 1  1  1] 
-  >>> circuit(0.8)  
+  [ 1  1  1]
+  >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   ```
 
@@ -47,17 +83,16 @@
 
 <h3>Improvements</h3>
 
-* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
-  the internal circuit should be expanded when executed on a device.
-  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
+- Added the `ControlledQubitUnitary` operation.
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
-  the last (in the case where the actual weight function of the layer operates on one-dimensional 
+  the last (in the case where the actual weight function of the layer operates on one-dimensional
   vectors) is broadcast over. This is now also supported by KerasLayer and TorchLayer.
   [(#1062)](https://github.com/PennyLaneAI/pennylane/pull/1062).
 
   Example use:
-  
+
   ```python
   dev = qml.device("default.qubit", wires=4)
 
@@ -73,7 +108,7 @@
   qlayer = qml.qnn.KerasLayer(layer, {"weights": (4, 4, 3)}, output_dim=4)
 
   out = qlayer(x)
-  
+
   print(out.shape)
   ```
 
@@ -89,27 +124,103 @@
   [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
   [(#1081)](https://github.com/PennyLaneAI/pennylane/pull/1081)
 
+* An improvement has been made to how `QubitDevice` generates and post-processess samples,
+  allowing QNode measurement statistics to work on devices with more than 32 qubits.
+  [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
+
 <h3>Breaking changes</h3>
 
 * If creating a QNode from a quantum function with an argument named `shots`,
-  a `DeprecationWarning` is raised, warning the user that this is a reserved 
+  a `DeprecationWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
+  [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
+
+* For devices inheriting from `QubitDevice`, the methods `expval`, `var`, `sample`
+  accept two new keyword arguments --- `shot_range` and `bin_size`.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  These new arguments allow for the statistics to be performed on only a subset of device samples.
+  This finer level of control is accessible from the main UI by instantiating a device with a batch
+  of shots.
+
+  For example, consider the following device:
+
+  ```pycon
+  >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+  ```
+
+  This device will execute QNodes using 135 shots, however
+  measurement statistics will be **course grained** across these 135
+  shots:
+
+  * All measurement statistics will first be computed using the
+    first 5 shots --- that is, `shots_range=[0, 5]`, `bin_size=5`.
+
+  * Next, the tuple `(10, 3)` indicates 10 shots, repeated 3 times. We will want to use
+    `shot_range=[5, 35]`, performing the expectation value in bins of size 10
+    (`bin_size=10`).
+
+  * Finally, we repeat the measurement statistics for the final 100 shots,
+    `shot_range=[35, 135]`, `bin_size=100`.
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where inverse operations could not be differentiated
-  using backpropagation on `default.qubit`.
-  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
+* The `ExpvalCost` class raises an error if instantiated
+  with non-expectation measurement statistics.
+  [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
 
 <h3>Documentation</h3>
+
+- Typos addressed in templates documentation.
+  [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld
+Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
 
-# Release 0.14.0 (current release)
+
+
+# Release 0.14.1 (current release)
+
+<h3>Bug fixes</h3>
+
+* Fixes a testing bug where tests that required JAX would fail if JAX was not installed.
+  The tests will now instead be skipped if JAX can not be imported.
+  [(#1066)](https://github.com/PennyLaneAI/pennylane/pull/1066)
+
+* Fixes a bug where inverse operations could not be differentiated
+  using backpropagation on `default.qubit`.
+  [(#1072)](https://github.com/PennyLaneAI/pennylane/pull/1072)
+
+* The QNode has a new keyword argument, `max_expansion`, that determines the maximum number of times
+  the internal circuit should be expanded when executed on a device. In addition, the default number
+  of max expansions has been increased from 2 to 10, allowing devices that require more than two
+  operator decompositions to be supported.
+  [(#1074)](https://github.com/PennyLaneAI/pennylane/pull/1074)
+
+* Fixes a bug where `Hamiltonian` objects created with non-list arguments raised an error for
+  arithmetic operations. [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+* Fixes a bug where `Hamiltonian` objects with no coefficients or operations would return a faulty
+  result when used with `ExpvalCost`. [(#1082)](https://github.com/PennyLaneAI/pennylane/pull/1082)
+
+<h3>Documentation</h3>
+
+* Updates mentions of `generate_hamiltonian` to `molecular_hamiltonian` in the
+  docstrings of the `ExpvalCost` and `Hamiltonian` classes.
+  [(#1077)](https://github.com/PennyLaneAI/pennylane/pull/1077)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Thomas Bromley, Josh Izaac, Antal Száva.
+
+
+
+# Release 0.14.0
 
 <h3>New features since last release</h3>
 

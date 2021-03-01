@@ -90,8 +90,8 @@ class Hamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = coeffs
-        self._ops = observables
+        self._coeffs = list(coeffs)
+        self._ops = list(observables)
 
         if simplify:
             self.simplify()
@@ -474,6 +474,9 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        if kwargs.get("measure", "expval") != "expval":
+            raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
+
         coeffs, observables = hamiltonian.terms
 
         self.hamiltonian = hamiltonian
@@ -485,6 +488,10 @@ class ExpvalCost:
 
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
+
+        if all(c == 0 for c in coeffs) or not coeffs:
+            self.cost_fn = lambda *args, **kwargs: np.array(0)
+            return
 
         tape_mode = qml.tape_mode_active()
         self._optimize = optimize
