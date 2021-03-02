@@ -1163,7 +1163,7 @@ class PauliRot(Operation):
                 RX(-np.pi / 2, wires=[wire])
 
     def adjoint(self, do_queue=False):
-        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
+        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires, do_queue=do_queue)
 
 
 # Four term gradient recipe for controlled rotations
@@ -1753,7 +1753,7 @@ class ControlledQubitUnitary(QubitUnitary):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return ControlledQubitUnitary(self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
