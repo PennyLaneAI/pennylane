@@ -62,6 +62,7 @@ class AmplitudeDamping(Channel):
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         return [K0, K1]
 
+
 class GeneralizedAmplitudeDamping(Channel):
     r"""GeneralizedAmplitudeDamping(gamma, p, wires)
     Single-qubit generalized amplitude damping error channel.
@@ -120,6 +121,7 @@ class GeneralizedAmplitudeDamping(Channel):
         K3 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
         return [K0, K1, K2, K3]
 
+
 class PhaseDamping(Channel):
     r"""PhaseDamping(gamma, wires)
     Single-qubit phase damping error channel.
@@ -162,6 +164,7 @@ class PhaseDamping(Channel):
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
         return [K0, K1]
+
 
 class DepolarizingChannel(Channel):
     r"""DepolarizingChannel(p, wires)
@@ -220,6 +223,7 @@ class DepolarizingChannel(Channel):
         K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
         return [K0, K1, K2, K3]
 
+
 class BitFlip(Channel):
     r"""BitFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`X`) error channel.
@@ -262,6 +266,7 @@ class BitFlip(Channel):
         K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
         return [K0, K1]
 
+
 class PhaseFlip(Channel):
     r"""PhaseFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
@@ -303,6 +308,7 @@ class PhaseFlip(Channel):
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
         return [K0, K1]
+
 
 class QubitChannel(Channel):
     r"""QubitChannel(K_list, wires)
@@ -356,6 +362,7 @@ class QubitChannel(Channel):
     def _kraus_matrices(cls, *params):
         K_list = params[0]
         return K_list
+
 
 __qubit_channels__ = {
     "AmplitudeDamping",
