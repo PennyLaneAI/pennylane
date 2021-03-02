@@ -46,27 +46,25 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
   that estimate measurement statistics using a finite number of shots; please use
   the ``parameter-shift`` rule instead.
 
-* ``"adjoint"``: A form of backpropagation that takes advantage of the unitary or reversible
+* ``"adjoint"``: Use a form of backpropagation that takes advantage of the unitary or reversible
   nature of quantum computation.
 
   The `adjoint method <https://arxiv.org/abs/2009.02823>`__  reverses through the circuit after a
   forward pass by iteratively applying the inverse (adjoint) gate. This method is similar to
   ``"backprop"``, but trades off increased runtime with significantly lower memory usage.
 
-* ``"reversible"``: A form of backpropagation that takes advantage of the unitary or reversible
+* ``"reversible"``: Use a form of backpropagation that takes advantage of the unitary or reversible
   nature of quantum computation.
 
   This method is similar to the ``adjoint`` method, but has a slightly larger time overhead and a similar
-  memory overhead.
-
-  Compared to the parameter-shift rule, the reversible method can be faster or slower, depending on
-  the density and location of parametrized gates in a circuit.
+  memory overhead. Compared to the parameter-shift rule, the reversible method can be faster or slower,
+  depending on the density and location of parametrized gates in a circuit.
 
 Hardware-compatible differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following methods support both quantum hardware and simulators, and are examples of `forward
-accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__
+accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
 However, when using a simulator, you may notice that the time required to compute the gradients
 :doc:`scales quadratically <demos/tutorial_backprop>` with the number of trainable circuit
 parameters.
@@ -75,7 +73,7 @@ parameters.
   <glossary/parameter_shift>` for all supported quantum operation arguments, with
   finite-difference as a fallback.
 
-* ``"finite-diff"``: Uses numerical finite-differences for all quantum operation arguments.
+* ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.
 
 
 Device gradients
