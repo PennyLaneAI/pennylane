@@ -1061,7 +1061,7 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 def derivative(F, x, i, delta=0.01):
     r"""Uses a finite difference approximation to evaluate the derivative
-    :math:`\frac{\partial \hat{F}(x)}{\partial x_i}` of the function ``F`` at point ``x``.
+    :math:`\frac{\partial F(x)}{\partial x_i}` of the function ``F`` at point ``x``.
 
     .. math::
 
