@@ -7,7 +7,7 @@ from openfermion import MolecularData
 from pennylane import qchem
 
 name = "h2"
-geometry = [("H", [0.0, 0.0, -0.35]), ("H", [0.0, 0.0, 0.35])]
+symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
 @pytest.mark.parametrize(
@@ -22,7 +22,9 @@ def test_path_to_file(package, basis, tmpdir, psi4_support):
 
     exp_path = os.path.join(tmpdir.strpath, package.lower(), basis.strip(), name)
 
-    res_path = qchem.meanfield(name, geometry, basis=basis, package=package, outpath=tmpdir.strpath)
+    res_path = qchem.meanfield(
+        symbols, coordinates, name=name, basis=basis, package=package, outpath=tmpdir.strpath
+    )
 
     assert res_path == exp_path
 
@@ -57,7 +59,9 @@ def test_hf_calculations(package, tmpdir, psi4_support, tol):
         ]
     )
 
-    fullpath = qchem.meanfield(name, geometry, package=package, outpath=tmpdir.strpath)
+    fullpath = qchem.meanfield(
+        symbols, coordinates, name=name, package=package, outpath=tmpdir.strpath
+    )
 
     molecule = MolecularData(filename=fullpath)
 
@@ -70,10 +74,20 @@ def test_hf_calculations(package, tmpdir, psi4_support, tol):
     assert np.allclose(molecule.two_body_integrals, two_body_integrals, **tol)
 
 
-@pytest.mark.parametrize("package", ["not_available_package"])
-def test_not_available_qc_package(package, tmpdir):
+def test_not_available_qc_package(tmpdir):
     r"""Test that an error is raised if the input quantum chemistry package
     is neither Psi4 nor PySCF"""
 
     with pytest.raises(TypeError, match="Integration with quantum chemistry package"):
-        qchem.meanfield(name, geometry, package=package, outpath=tmpdir.strpath)
+        qchem.meanfield(
+            symbols, coordinates, name=name, package="not_available_package", outpath=tmpdir.strpath
+        )
+
+
+def test_dimension_consistency(tmpdir):
+    r"""Test that an error is raised if the size of the 'coordinates' array is
+    not equal to ``3*len(symbols)``"""
+
+    extra_coordinate = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414, -0.987])
+    with pytest.raises(ValueError, match="The size of the array 'coordinates' has to be"):
+        qchem.meanfield(symbols, extra_coordinate, name=name, outpath=tmpdir.strpath)
