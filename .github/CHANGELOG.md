@@ -2,6 +2,53 @@
 
 <h3>New features since last release</h3>
 
+- Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
+  unitary matrix.
+  [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
+  
+  Consider the matrix corresponding to a rotation from an `RX` gate:
+  
+  ```pycon
+  >>> phase = 5
+  >>> target_wires = [0]
+  >>> unitary = qml.RX(phase, wires=0).matrix
+  ```
+  
+  The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
+  phase-estimation qubits:
+  
+  ```python
+  n_estimation_wires = 5
+  estimation_wires = range(1, n_estimation_wires + 1)
+
+  dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
+  @qml.qnode(dev)
+  def circuit():
+      # Start in the |+> eigenstate of the unitary
+      qml.Hadamard(wires=target_wires)
+
+      QuantumPhaseEstimation(
+          unitary,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
+
+  # Need to rescale phase due to convention of RX gate
+  phase_estimated = 4 * np.pi * (1 - phase)
+  ```
+
+  The resulting phase is a close approximation to the true value:
+  
+  ```pycon
+  >>> phase_estimated
+  5.105088062083414
+  ```
+
 * Batches of shots can now be specified as a list, allowing measurement statistics
   to be course-grained with a single QNode evaluation.
   [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
@@ -118,9 +165,18 @@
   (5, 4, 4)
   ```
 
+* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+  set to True, then the returned gradient will be a NumPy array, rather than a
+  tuple of length 1.
+  [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
+  [(#1081)](https://github.com/PennyLaneAI/pennylane/pull/1081)
+
 * An improvement has been made to how `QubitDevice` generates and post-processess samples,
   allowing QNode measurement statistics to work on devices with more than 32 qubits.
   [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
+
+* Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
+  [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
 <h3>Breaking changes</h3>
 
@@ -159,9 +215,17 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
+  or all zeros. 
+  [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
+
 * The `ExpvalCost` class raises an error if instantiated
   with non-expectation measurement statistics.
   [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
+
+* Fixes a bug where decompositions would reset the differentiation method
+  of a QNode.
+  [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
 <h3>Documentation</h3>
 
@@ -172,9 +236,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
-
-
+Thomas Bromley, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
+Sankalp Sanand, Maria Schuld.
 
 # Release 0.14.1 (current release)
 
