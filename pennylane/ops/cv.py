@@ -102,9 +102,6 @@ class Rotation(CVOperation):
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
-    def adjoint(self, do_queue=False):
-        return Rotation(-self.parameters[0], self.wires, do_queue=do_queue)
-
 
 class Squeezing(CVOperation):
     r"""pennylane.Squeezing(r, phi, wires)
@@ -149,9 +146,6 @@ class Squeezing(CVOperation):
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
-
-    def adjoint(self, do_queue=False):
-        return Squeezing(-self.parameters[0], self.parameters[1], self.wires, do_queue=do_queue)
 
 
 class Displacement(CVOperation):
@@ -198,10 +192,6 @@ class Displacement(CVOperation):
         s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
-
-    def adjoint(self, do_queue=False):
-        # Is this correct?
-        return Displacement(-self.parameters[0], self.parameters[1], self.wires, do_queue=do_queue)
 
 
 class Beamsplitter(CVOperation):
@@ -252,11 +242,6 @@ class Beamsplitter(CVOperation):
         U[1:3, 3:5] = -s * R.T
         U[3:5, 1:3] = s * R
         return U
-
-    def adjoint(self, do_queue=False):
-        return Beamsplitter(
-            -self.parameters[0], -self.parameters[1], wires=self.wires, do_queue=do_queue
-        )
 
 
 class TwoModeSqueezing(CVOperation):
@@ -315,9 +300,6 @@ class TwoModeSqueezing(CVOperation):
         U[3:5, 1:3] = S @ R.T
         return U
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class QuadraticPhase(CVOperation):
     r"""pennylane.QuadraticPhase(s, wires)
@@ -362,9 +344,6 @@ class QuadraticPhase(CVOperation):
         U = np.identity(3)
         U[2, 1] = p[0]
         return U
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class ControlledAddition(CVOperation):
@@ -415,9 +394,6 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class ControlledPhase(CVOperation):
     r"""pennylane.ControlledPhase(s, wires)
@@ -467,9 +443,6 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class Kerr(CVOperation):
     r"""pennylane.Kerr(kappa, wires)
@@ -492,9 +465,6 @@ class Kerr(CVOperation):
     num_wires = 1
     par_domain = "R"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class CrossKerr(CVOperation):
@@ -519,9 +489,6 @@ class CrossKerr(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class CubicPhase(CVOperation):
     r"""pennylane.CubicPhase(gamma, wires)
@@ -544,9 +511,6 @@ class CubicPhase(CVOperation):
     num_wires = 1
     par_domain = "R"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class Interferometer(CVOperation):
@@ -602,9 +566,6 @@ class Interferometer(CVOperation):
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 # =============================================================================
 # State preparation
@@ -633,9 +594,6 @@ class CoherentState(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class SqueezedState(CVOperation):
     r"""pennylane.SqueezedState(r, phi, wires)
@@ -656,9 +614,6 @@ class SqueezedState(CVOperation):
     num_params = 2
     par_domain = "R"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -691,9 +646,6 @@ class DisplacedSqueezedState(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class ThermalState(CVOperation):
     r"""pennylane.ThermalState(nbar, wires)
@@ -713,9 +665,6 @@ class ThermalState(CVOperation):
     num_params = 1
     par_domain = "R"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class GaussianState(CVOperation):
@@ -738,9 +687,6 @@ class GaussianState(CVOperation):
     par_domain = "A"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class FockState(CVOperation):
     r"""pennylane.FockState(n, wires)
@@ -760,9 +706,6 @@ class FockState(CVOperation):
     num_params = 1
     par_domain = "N"
     grad_method = None
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class FockStateVector(CVOperation):
@@ -784,9 +727,6 @@ class FockStateVector(CVOperation):
     par_domain = "A"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 class FockDensityMatrix(CVOperation):
     r"""pennylane.FockDensityMatrix(state, wires)
@@ -806,9 +746,6 @@ class FockDensityMatrix(CVOperation):
     num_params = 1
     par_domain = "A"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 class CatState(CVOperation):
@@ -841,9 +778,6 @@ class CatState(CVOperation):
     num_params = 3
     par_domain = "R"
     grad_method = "F"
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
 
 
 # =============================================================================

@@ -161,11 +161,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
-    .. note::
-
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
-
     Args:
         name (str): a name given to the quantum tape
         embed (bool): Whether to embed this tape in a parent tape context.
@@ -225,6 +220,25 @@ class QuantumTape(AnnotatedQueue):
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
+
+
+    When using a tape with ``embed=False``, that tape will not be embedded in a parent tape context.
+    
+    .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape1:
+        with qml.tape.QuantumTape(embed=False) as tape2:
+            qml.RX(0.123, wires=0)
+    
+    Here, tape2 recods the RX gate, but tape1 doesn't record tape2.
+
+    >>> tape1.operations
+    []
+    >>> tape2.operations
+    [RX(0.123, wires=[0])]
+    >>>
+
+    This is useful for when you want to transform a tape first before applying it.
     """
 
     _lock = RLock()

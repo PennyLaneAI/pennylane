@@ -1703,6 +1703,10 @@ class CVOperation(CV, Operation):
 
         return self.heisenberg_expand(U, wires)
 
+    def adjoint(self, do_queue=False):
+        # TODO(chase): Add the CV adjointed ops.
+        raise NotImplementedError
+
 
 class CVObservable(CV, Observable):
     r"""Base class for continuous-variable observables.
