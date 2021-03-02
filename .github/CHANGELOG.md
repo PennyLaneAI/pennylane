@@ -118,9 +118,18 @@
   (5, 4, 4)
   ```
 
+* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+  set to True, then the returned gradient will be a NumPy array, rather than a
+  tuple of length 1.
+  [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
+  [(#1081)](https://github.com/PennyLaneAI/pennylane/pull/1081)
+
 * An improvement has been made to how `QubitDevice` generates and post-processess samples,
   allowing QNode measurement statistics to work on devices with more than 32 qubits.
   [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
+
+* Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
+  [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
 <h3>Breaking changes</h3>
 
@@ -163,6 +172,10 @@
   with non-expectation measurement statistics.
   [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
 
+* Fixes a bug where decompositions would reset the differentiation method
+  of a QNode.
+  [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
@@ -172,7 +185,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
+Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Maria Schuld.
 
 
 
