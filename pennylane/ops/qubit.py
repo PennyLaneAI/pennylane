@@ -1755,6 +1755,7 @@ class ControlledQubitUnitary(QubitUnitary):
     def adjoint(self, do_queue=False):
         raise NotImplementedError
 
+
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
