@@ -30,3 +30,13 @@ def test_adjoint_directly_on_op():
 		return qml.state()
 
 	np.testing.assert_allclose(my_circuit(), np.array([1.0, 0.0]))
+
+def test_nested_adjoint():
+	dev = qml.device("default.qubit", wires=1)
+	@qml.qnode(dev)
+	def my_circuit():
+		adjoint(qml.RX)(0.123, wires=0)
+		adjoint(adjoint(qml.RX))(0.123, wires=0)
+		return qml.state()
+
+	np.testing.assert_allclose(my_circuit(), np.array([1.0, 0.0]))
