@@ -1569,9 +1569,90 @@ class U3(Operation):
 # Quantum chemistry
 # =============================================================================
 
-
-class G1Yminus(Operation):
+class SingleExcitation(Operation):
     r"""
+    Single excitation rotation.
+
+    .. math:: U(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
+    |10\rangle\}`.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: Obtained from its decomposition in terms of the ``SingleExcitationPlus`` and
+    ``SingleExcitationMinus`` operations
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|10>\rightarrow \cos(
+    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:
+
+    .. code-block::
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.SingleExcitation(phi, wires=[0, 1])
+    """
+
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [SingleExcitationPlus(theta / 2, wires=wires),
+                      SingleExcitationMinus(theta / 2, wires=wires)]
+        return decomp_ops
+
+
+class SingleExcitationMinus(Operation):
+    r"""
+    Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{-i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_-\frac{1}{2}\left[f(U_+(\phi+\pi/2)) -
+    f(U_-(\phi-\pi/2))\right]` where :math:`f` is an expectation value depending on :math:`U_-(
+    \phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
     """
     num_params = 1
     num_wires = 2
@@ -1589,8 +1670,29 @@ class G1Yminus(Operation):
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
 
-class G1Yplus(Operation):
+class SingleExcitationPlus(Operation):
     r"""
+    Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(\phi+\pi/2)) -
+    f(U_+(\phi-\pi/2))\right]` where :math:`f` is an expectation value depending on
+    :math:`U_+(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
     """
     num_params = 1
     num_wires = 2
@@ -1607,140 +1709,6 @@ class G1Yplus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
-
-class G1Y(Operation):
-    r"""
-    """
-    num_params = 1
-    num_wires = 2
-    par_domain = "R"
-    grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-
-        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
-
-    @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [G1Yplus(theta / 2, wires=wires), G1Yminus(theta / 2, wires=wires)]
-        return decomp_ops
-
-
-class G2Yminus(Operation):
-    r"""
-    """
-    num_params = 1
-    num_wires = 4
-    par_domain = "R"
-    grad_method = "A"
-
-    A = np.eye(16, dtype=np.complex64)
-    A[3] = A[12] = np.zeros(16, dtype=np.complex64)
-    A[3, 12] = -1j
-    A[12, 3] = 1j
-    generator = [A, -1 / 2]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = math.exp(-1j * theta / 2)
-
-        B = e * np.eye(16, dtype=np.complex64)
-        B[3] = B[12] = np.zeros(16, dtype=np.complex64)
-        B[3, 3] = c
-        B[3, 12] = -s
-        B[12, 3] = s
-        B[12, 12] = c
-
-        return B
-
-
-class G2Yplus(Operation):
-    r"""
-    """
-    num_params = 1
-    num_wires = 4
-    par_domain = "R"
-    grad_method = "A"
-
-    A = np.eye(16, dtype=np.complex64)
-    A[3] = A[12] = np.zeros(16, dtype=np.complex64)
-    A[3, 12] = -1j
-    A[12, 3] = 1j
-    generator = [A, -1 / 2]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = math.exp(1j * theta / 2)
-
-        B = e * np.eye(16, dtype=np.complex64)
-        B[3] = B[12] = np.zeros(16, dtype=np.complex64)
-        B[3, 3] = c
-        B[3, 12] = -s
-        B[12, 3] = s
-        B[12, 12] = c
-
-        return B
-
-
-class G2Y(Operation):
-    r"""
-    """
-    num_params = 1
-    num_wires = 4
-    par_domain = "R"
-    grad_method = "A"
-
-    A = np.zeros((16, 16), dtype=np.complex64)
-    A[3, 12] = -1j
-    A[12, 3] = 1j
-    generator = [A, -1 / 2]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-
-        # B = np.eye(16, dtype=np.complex64)
-        # B[3] = B[12] = np.zeros(16, dtype=np.complex64)  # 3 = 0011, # 12 = 1100
-        # B[3, 3] = c
-        # B[3, 12] = -s
-        # B[12, 3] = s
-        # B[12, 12] = c
-
-        return np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
-                        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
-                        )
-
-    @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [G2Yplus(theta / 2, wires=wires), G2Yminus(theta / 2, wires=wires)]
-        return decomp_ops
 
 # =============================================================================
 # Arbitrary operations
