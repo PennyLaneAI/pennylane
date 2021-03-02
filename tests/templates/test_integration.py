@@ -155,6 +155,14 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                {'weights': [[[ 0.17586701, -0.20382066]]]},
                                {'wires': [0, 1], 'init_state': np.array([1, 0], requires_grad=False)},
                                2),
+                              (qml.templates.QuantumPhaseEstimation,
+                               {},
+                               {
+                                   "unitary": np.array([[0, 1], [1, 0]]),
+                                   "target_wires": [0],
+                                   "estimation_wires": [1, 2],
+                               },
+                               3),
                               ]
 
 CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
@@ -706,6 +714,9 @@ class TestNonConsecutiveWires:
         if template.__name__ == 'UCCSD':
              kwargs2['s_wires'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
              kwargs2['d_wires'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
+        if template.__name__ == "QuantumPhaseEstimation":
+            kwargs2["target_wires"] = [nonconsecutive_wires[0]]
+            kwargs2["estimation_wires"] = nonconsecutive_wires[1:3]
 
         dev_nonconsec = qml.device('default.qubit', wires=nonconsecutive_wires)
 

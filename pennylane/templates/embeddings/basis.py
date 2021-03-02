@@ -51,7 +51,7 @@ def _preprocess(features, wires):
 
         features = list(qml.math.toarray(features))
 
-        if set(features) != {0, 1}:
+        if not set(features).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
         return features
