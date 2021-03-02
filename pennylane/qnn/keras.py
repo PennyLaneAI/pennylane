@@ -185,8 +185,6 @@ class KerasLayer(Layer):
         Epoch 8/8
         100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
 
-    .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
-
         **Returning a state**
 
         If your QNode returns the state of the quantum circuit using :func:`~.state` or
@@ -196,6 +194,7 @@ class KerasLayer(Layer):
         with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
         Keras layers require a real input and are differentiated with respect to real parameters.
 
+    .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
     def __init__(
