@@ -344,6 +344,7 @@ class TestOperations:
             qml.CY(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
             qml.CSWAP(wires=[0, 1, 2]),
+            qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
             qml.ControlledPhaseShift(1.777, wires=[0, 2]),
@@ -354,7 +355,14 @@ class TestOperations:
             qml.U1(0.123, wires=0),
             qml.U2(3.556, 2.134, wires=0),
             qml.U3(2.009, 1.894, 0.7789, wires=0),
-
+            qml.Hadamard(wires=0),
+            qml.PauliX(wires=0),
+            qml.PauliZ(wires=0),
+            qml.PauliY(wires=0),
+            qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
+            qml.QubitUnitary(np.eye(2) * 1j, wires=0),
+            qml.DiagonalQubitUnitary(np.array([1.0, 1.j]), wires=1),
+            qml.QFT(wires=[1, 2, 3]),
         ])
     def test_adjoint(self, op, tol):
         op_d = op.adjoint()

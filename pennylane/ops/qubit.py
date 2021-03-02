@@ -885,7 +885,8 @@ class Rot(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        return Rot(*[-x for x in self.data], wires=self.wires, do_queue=do_queue)
+        phi, theta, omega = self.parameters
+        return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
 
 class MultiRZ(DiagonalOperation):
@@ -1478,7 +1479,11 @@ class CRot(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        return Rot(*[-x for x in self.data], wires=self.wires, do_queue=do_queue)
+        # TODO(chase): Replacing this with a CRot with the parameters
+        # negated fails the consistency check. We should remove the `inv()` when that
+        # is fixed.
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
 
 class U1(Operation):
@@ -1735,7 +1740,6 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-        self._control_wires = control_wires
         wires = control_wires + wires
 
         # Given that the controlled wires are listed before the target wires, we need to create a
@@ -1749,13 +1753,7 @@ class ControlledQubitUnitary(QubitUnitary):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def adjoint(self, do_queue=False):
-        return ControlledQubitUnitary(
-            np.conj(self.parameters[0]).T,
-            control_wires=self.control_wires,
-            wires=self.wires,
-            do_queue=do_queue,
-        )
-
+        raise NotImplementedError
 
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)
@@ -1790,7 +1788,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self, do_queue=False):
-        return DiagonalQubitUnitary(self.parameters[0].conj(), self.wires, do_queue=do_queue)
+        return DiagonalQubitUnitary(self.parameters[0].conj(), wires=self.wires, do_queue=do_queue)
 
 
 class QFT(Operation):
