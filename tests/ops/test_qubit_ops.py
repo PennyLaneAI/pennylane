@@ -330,6 +330,41 @@ class TestOperations:
         res = op.matrix
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op", 
+        [
+            qml.RX(0.123, wires=0),
+            qml.RY(1.434, wires=0),
+            qml.RZ(2.774, wires=0),
+            qml.S(wires=0),
+            qml.SX(wires=0),
+            qml.T(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.CZ(wires=[0, 1]),
+            qml.CY(wires=[0, 1]),
+            qml.SWAP(wires=[0, 1]),
+            qml.CSWAP(wires=[0, 1, 2]),
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.PhaseShift(2.133, wires=0),
+            qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+            qml.MultiRZ(0.112, wires=[1, 2, 3]),
+            qml.CRX(0.836, wires=[2, 3]),
+            qml.CRY(0.721, wires=[2, 3]),
+            qml.CRZ(0.554, wires=[2, 3]),
+            qml.U1(0.123, wires=0),
+            qml.U2(3.556, 2.134, wires=0),
+            qml.U3(2.009, 1.894, 0.7789, wires=0),
+
+        ])
+    def test_adjoint(self, op, tol):
+        op_d = op.adjoint()
+        res1 = np.dot(op.matrix, op_d.matrix)
+        res2 = np.dot(op_d.matrix, op.matrix)
+        np.testing.assert_allclose(res1, np.eye(2 ** len(op.wires)), atol=tol)
+        np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
+        assert op.wires == op_d.wires
+
+
     @pytest.mark.parametrize("inverse", [True, False])
     def test_QFT(self, inverse):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""

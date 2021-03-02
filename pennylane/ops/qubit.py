@@ -278,7 +278,7 @@ class S(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        return PhaseShift(cmath.exp(-1j * np.pi / 2.0), wires=self.wires, do_queue=do_queue)
+        return S(wires=self.wires, do_queue=do_queue).inv()
 
 
 class T(DiagonalOperation):
@@ -316,7 +316,7 @@ class T(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        return PhaseShift(cmath.exp(-1j * np.pi / 4.0), wires=self.wires, do_queue=do_queue)
+        return T(wires=self.wires, do_queue=do_queue).inv()
 
 
 class SX(Operation):
@@ -359,7 +359,7 @@ class SX(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return SX(wires=self.wires, do_queue=do_queue).inv()
 
 
 class CNOT(Operation):
@@ -977,7 +977,7 @@ class MultiRZ(DiagonalOperation):
             CNOT(wires=[wires[i + 1], wires[i]])
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return MultiRZ(-self.parameters[0], wires=self.wires)
 
 
 class PauliRot(Operation):
@@ -1163,7 +1163,7 @@ class PauliRot(Operation):
                 RX(-np.pi / 2, wires=[wire])
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return PauliRot(-self.parameters[0], self.parameters[1], self.wires)
 
 
 # Four term gradient recipe for controlled rotations
@@ -1581,7 +1581,8 @@ class U2(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
+        return U2(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
 
 
 class U3(Operation):
@@ -1647,7 +1648,8 @@ class U3(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
+        return U3(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
 
 
 # =============================================================================
@@ -1734,7 +1736,7 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-
+        self._control_wires = control_wires
         wires = control_wires + wires
 
         # Given that the controlled wires are listed before the target wires, we need to create a
@@ -1748,7 +1750,12 @@ class ControlledQubitUnitary(QubitUnitary):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return ControlledQubitUnitary(
+            np.conj(self.parameters[0]).T,
+            control_wires=self.control_wires,
+            wires=self.wires,
+            do_queue=do_queue,
+        )
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -1784,7 +1791,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return DiagonalQubitUnitary(self.parameters[0].conj(), self.wires, do_queue=do_queue)
 
 
 class QFT(Operation):

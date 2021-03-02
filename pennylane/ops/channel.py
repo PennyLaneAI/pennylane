@@ -62,6 +62,9 @@ class AmplitudeDamping(Channel):
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         return [K0, K1]
 
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
+
 
 class GeneralizedAmplitudeDamping(Channel):
     r"""GeneralizedAmplitudeDamping(gamma, p, wires)
@@ -121,6 +124,9 @@ class GeneralizedAmplitudeDamping(Channel):
         K3 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
         return [K0, K1, K2, K3]
 
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
+
 
 class PhaseDamping(Channel):
     r"""PhaseDamping(gamma, wires)
@@ -164,6 +170,9 @@ class PhaseDamping(Channel):
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
         return [K0, K1]
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
 
 
 class DepolarizingChannel(Channel):
@@ -223,6 +232,9 @@ class DepolarizingChannel(Channel):
         K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
         return [K0, K1, K2, K3]
 
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
+
 
 class BitFlip(Channel):
     r"""BitFlip(p, wires)
@@ -266,6 +278,9 @@ class BitFlip(Channel):
         K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
         return [K0, K1]
 
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
+
 
 class PhaseFlip(Channel):
     r"""PhaseFlip(p, wires)
@@ -308,6 +323,9 @@ class PhaseFlip(Channel):
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
         return [K0, K1]
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
 
 
 class QubitChannel(Channel):
@@ -362,6 +380,9 @@ class QubitChannel(Channel):
     def _kraus_matrices(cls, *params):
         K_list = params[0]
         return K_list
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
 
 
 __qubit_channels__ = {
