@@ -1163,7 +1163,9 @@ class PauliRot(Operation):
                 RX(-np.pi / 2, wires=[wire])
 
     def adjoint(self, do_queue=False):
-        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires, do_queue=do_queue)
+        return PauliRot(
+            -self.parameters[0], self.parameters[1], wires=self.wires, do_queue=do_queue
+        )
 
 
 # Four term gradient recipe for controlled rotations
