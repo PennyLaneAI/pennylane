@@ -328,7 +328,7 @@ class TestTapeConstruction:
         dev = MyDev(wires=2)
 
         def func(x, y):
-            # the U2 operation is not support on default.qubit
+            # the U2 operation is not supported on default.qubit
             # and is decomposed.
             qml.U2(x, y, wires=0)
             qml.CNOT(wires=[0, 1])
