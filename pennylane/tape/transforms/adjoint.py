@@ -69,7 +69,7 @@ def adjoint(fn):
 
 
     Args:
-        fn: Any python function that applies pennylane operations. 
+        fn: Any python function that applies pennylane operations.
 
     Returns:
         A new function that will apply the same operations but adjointed and in reverse order.
@@ -82,4 +82,5 @@ def adjoint(fn):
             fn(*args, **kwargs)
         for op in reversed(tape.queue):
             op.adjoint(do_queue=True)
+
     return wrapper

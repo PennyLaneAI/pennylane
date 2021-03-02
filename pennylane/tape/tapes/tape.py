@@ -223,13 +223,13 @@ class QuantumTape(AnnotatedQueue):
 
 
     When using a tape with ``embed=False``, that tape will not be embedded in a parent tape context.
-    
+
     .. code-block:: python
 
     with qml.tape.QuantumTape() as tape1:
         with qml.tape.QuantumTape(embed=False) as tape2:
             qml.RX(0.123, wires=0)
-    
+
     Here, tape2 recods the RX gate, but tape1 doesn't record tape2.
 
     >>> tape1.operations
