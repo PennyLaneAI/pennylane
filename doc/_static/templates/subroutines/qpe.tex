@@ -1,0 +1,25 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+
+\begin{document}
+\Qcircuit @C=1em @R=0.5em {
+& & & & & & & & &\\
+& & & & \hspace{-0.5cm}\mbox{target wires} & &\\
+\\
+& \qw & \multigate{3}{U^{2^{n - 1}}} & \multigate{3}{U^{2^{n - 2}}} & \qw & \cdots & & \multigate{3}{U} & \qw & \qw  \\
+& \qw & \ghost{U^{2^{n - 1}}} & \ghost{U^{2^{n - 2}}} & \qw & \cdots & & \ghost{U} & \qw & \qw  \\
+& \qw & \ghost{U^{2^{n - 1}}} & \ghost{U^{2^{n - 2}}} & \qw & \cdots & & \ghost{U} & \qw & \qw  \\
+& \qw & \ghost{U^{2^{n - 1}}} & \ghost{U^{2^{n - 2}}} & \qw & \cdots & & \ghost{U} & \qw & \qw \\
+& & & & & & & & &\\
+& & & & & & & & &\\
+& & & & & & & & &\\
+& \gate{H} & \ctrl{-4} & \qw & \qw & \cdots & & \qw & \multigate{4}{QFT^{-1}} & \qw \\
+& \gate{H} & \qw & \ctrl{-5} & \qw & \cdots & & \qw & \ghost{QFT^{-1}} & \qw\\
+& \vdots & & & & \ddots & & & \\
+& & & & & & & &\\
+& \gate{H} \gategroup{10}{1}{17}{10}{.8em}{--}\gategroup{1}{1}{8}{10}{.8em}{--} & \qw & \qw & \qw & \cdots & & \ctrl{-8} & \ghost{QFT^{-1}} & \qw
+ \\
+ & & & \hspace{1.6cm}\mbox{estimation wires} & & & & & & \\
+  & & & & & & & & & \\
+}
+\end{document}
