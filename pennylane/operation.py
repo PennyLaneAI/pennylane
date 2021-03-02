@@ -1181,6 +1181,7 @@ class Observable(Operator):
         raise NotImplementedError
 
     def adjoint(self, do_queue=False):
+        """Overriding of Operation.adjoint"""
         raise NotImplementedError
 
 
