@@ -1881,7 +1881,7 @@ class QFT(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        return QFT(wires=self.wires, do_queue=do_queue).inv()
 
 
 # =============================================================================
