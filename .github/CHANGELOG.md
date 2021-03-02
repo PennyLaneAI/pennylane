@@ -122,6 +122,9 @@
   allowing QNode measurement statistics to work on devices with more than 32 qubits.
   [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
 
+* Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
+  [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
+
 <h3>Breaking changes</h3>
 
 * If creating a QNode from a quantum function with an argument named `shots`,
@@ -172,7 +175,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
+Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Maria Schuld.
 
 
 
