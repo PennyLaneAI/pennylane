@@ -20,7 +20,6 @@ import functools
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
-import copy
 import numpy as np
 from scipy.linalg import block_diag
 
