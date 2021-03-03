@@ -30,18 +30,24 @@ delta4 = 0.004
 dg4 = np.array([[0.0, -0.39328647], [0.0, -0.25636943]])
 
 
-# parametrized Hamiltonian of the water molecule
-def hamilt(x):
-    return qml.qchem.molecular_hamiltonian(
-        ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
-    )[0]
-
-
-x5 = np.array(
-    [-0.03987322, -0.00377945, 0.0, 1.57697645, 0.85396724, 0.0, 2.79093651, -0.51589523, 0.0]
+@pytest.mark.parametrize(
+    ("func", "x", "i", "delta", "deriv_ref"),
+    [
+        (f, x1, None, delta1, df1),
+        (f, x2, 0, delta2, df2),
+        (g, x3, None, delta3, dg3),
+        (g, x4, 1, delta4, dg4),
+    ],
 )
-delta5 = 0.01
-coeffs5 = np.array(
+def test_finit_diff(func, x, i, delta, deriv_ref, fd_tol):
+    r"""Tests the correctness of the derivative evaluated by the 'finite_diff' function."""
+
+    deriv = qml.finite_diff(func, x, i, delta)
+
+    assert np.allclose(deriv_ref, deriv, **fd_tol)
+
+
+coeffs_nonzero = np.array(
     [
         0.2777044490017033,
         -0.0017650045675554615,
@@ -60,7 +66,7 @@ coeffs5 = np.array(
     ]
 )
 
-ops5 = [
+ops_nonzero = [
     qml.Identity(wires=[0]),
     qml.PauliZ(wires=[0]),
     qml.PauliZ(wires=[1]),
@@ -77,37 +83,39 @@ ops5 = [
     qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
 ]
 
+coeffs_zero, ops_zero = ([], [])
+
 
 @pytest.mark.parametrize(
-    ("func", "x", "i", "delta", "deriv_ref"),
-    [
-        (f, x1, None, delta1, df1),
-        (f, x2, 0, delta2, df2),
-        (g, x3, None, delta3, dg3),
-        (g, x4, 1, delta4, dg4),
-        # (hamilt, x5, 0, delta5, [coeffs5, ops5]),
-        # (hamilt, x5, 2, delta5, [[], []]),
-    ],
+    ("i", "coeffs", "ops"), [(0, coeffs_nonzero, ops_nonzero), (2, coeffs_zero, ops_zero),],
 )
-def test_finit_diff(func, x, i, delta, deriv_ref, fd_tol):
-    r"""Tests the correctness of the derivative evaluated by the 'finite_diff' function."""
+def test_finit_diff_hamilt(i, coeffs, ops, fd_tol, tmpdir):
+    r"""Tests the correctness of the derivative of a ``Hamiltonian`` object
+    calculated by the 'finite_diff' function."""
 
-    deriv = qml.finite_diff(func, x, i, delta)
+    # parametrized Hamiltonian of the water molecule
+    def hamilt(x):
+        return qml.qchem.molecular_hamiltonian(
+            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
+        )[0]
 
-    if isinstance(deriv, qml.vqe.vqe.Hamiltonian):
-        assert np.allclose(deriv.coeffs, deriv_ref[0], **fd_tol)
-        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(deriv.ops, deriv_ref[1]))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(deriv.ops, deriv_ref[1]))
-    else:
-        assert np.allclose(deriv_ref, deriv, **fd_tol)
+    x = np.array(
+        [-0.03987322, -0.00377945, 0.0, 1.57697645, 0.85396724, 0.0, 2.79093651, -0.51589523, 0.0]
+    )
+
+    deriv = qml.finite_diff(hamilt, x, i, delta=0.01)
+
+    assert np.allclose(deriv.coeffs, coeffs, **fd_tol)
+    assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(deriv.ops, ops))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(deriv.ops, ops))
 
 
-# def test_not_callable_func():
-#     r"""Test that an error is raised if the function to be differentiated
-#     is not a callable object"""
+def test_not_callable_func():
+    r"""Test that an error is raised if the function to be differentiated
+    is not a callable object"""
 
-#     with pytest.raises(TypeError, match="'F' should be a callable function"):
-#         qml.finite_diff(hamilt(x5), x5, 0)
+    with pytest.raises(TypeError, match="'F' should be a callable function"):
+        qml.finite_diff(f(x1), x1, 0)
 
 
 @pytest.mark.parametrize(
