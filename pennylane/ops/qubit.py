@@ -2125,12 +2125,9 @@ ops = {
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
     "QFT",
-    "G1Y",
-    "G1Yplus",
-    "G1Yminus",
-    "G2Y",
-    "G2Yplus",
-    "G2Yminus",
+    "SingleExcitation",
+    "SingleExcitationPlus",
+    "SingleExcitationMinus",
 }
 
 
