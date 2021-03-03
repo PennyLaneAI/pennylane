@@ -2,7 +2,8 @@
 
 <h3>New features since last release</h3>
 
-- The TensorFlow interface supports calculating the Hessian. 
+- The TensorFlow interface supports calculating the Hessian. The Hessian
+  currently only works with `diff_method='parameter-shift`.
   [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
 
   ```python

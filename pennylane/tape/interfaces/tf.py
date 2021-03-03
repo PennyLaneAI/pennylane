@@ -127,7 +127,6 @@ class TFInterface(AnnotatedQueue):
 
     @tf.custom_gradient
     def _execute(self, params, **input_kwargs):
-        print("params: ", params)
         # unwrap free parameters
         args = self.convert_to_numpy(params)
 
@@ -140,59 +139,59 @@ class TFInterface(AnnotatedQueue):
         self.set_parameters(all_params, trainable_only=False)
 
         @tf.custom_gradient
-        def grad_processing(params_inner):
-            print("params_inner: ", params_inner)
-            args_inner = self.convert_to_numpy(params_inner)
+        def grad_inside(params_inner):
+            """ Computes the jacobian before multiplication with upstream terms
+            and defines it's derivative.
+            """
 
             self.set_parameters(all_params_unwrapped, trainable_only=False)
-            jacobian = self.jacobian(input_kwargs["device"], params=args_inner, **self.jacobian_options)
+            jacobian = self.jacobian(input_kwargs["device"], params=args, **self.jacobian_options)
             self.set_parameters(all_params, trainable_only=False)
 
             jacobian = tf.constant(jacobian, dtype = self.dtype)
 
-            def grad2(upstream):
-                
-                print("calculating hessian")
-                self.set_parameters(all_params_unwrapped, trainable_only=False)
-                hessian = self.hessian(input_kwargs['device'], params=args_inner, **self.hessian_options) 
-                self.set_parameters(all_params, trainable_only=False)
+            def grad2(upstream2, **tfkwargs):
+                if self.output_dim <=1:
+                    variables = tfkwargs.get("variables", None)
+                    
+                    self.set_parameters(all_params_unwrapped, trainable_only=False)
+                    print("calculating hessian now \n")
+                    hessian = self.hessian(input_kwargs['device'], params=args, **self.hessian_options) 
+                    self.set_parameters(all_params, trainable_only=False)
 
-                hessian = tf.constant(hessian, dtype = self.dtype)
+                    hessian = tf.constant(hessian, dtype = self.dtype)
 
-                upstream_row = tf.reshape(upstream, [1,-1])
+                    upstream2_row = tf.reshape(upstream2, [1,-1])
 
-                hessian_product = tf.matmul(upstream_row, hessian)
-                hessian_product_flattened = tf.unstack(tf.reshape(hessian_product, [-1]))
+                    hessian_product = tf.matmul(upstream2_row, hessian)
+                    hessian_product_flattened = tf.unstack(tf.reshape(hessian_product, [-1]))
 
-                # variables not none something?
+                    if variables is not None:
+                        return hessian_product_flattened, variables
 
-                return hessian_product_flattened
-
+                    return hessian_product_flattened
+                else:
+                    return (None, )
+            
             return jacobian, grad2
         
-
-        def grad(grad_output, **tfkwargs):
-            print("grad_output: ",grad_output)
+        def grad(upstream, **tfkwargs):
     
             variables = tfkwargs.get("variables", None)
-            print("variables: ", variables)
 
-            jacobian = grad_processing(params)
-            print("jacobian: ", jacobian)
+            jacobian = grad_inside(params)
 
             # Reshape gradient output array as a 2D row-vector.
-            grad_output_row = tf.reshape(grad_output, [1, -1])
-            print("grad_output_row: ", grad_output_row)
+            upstream_row = tf.reshape(upstream, [1, -1])
 
             # Calculate the vector-Jacobian matrix product, and unstack the output.
-            grad_input = tf.matmul(grad_output_row, jacobian)
-            grad_input = tf.unstack(tf.reshape(grad_input, [-1]))
-            print("grad_input: ", grad_input)
+            vjp = tf.matmul(upstream_row, jacobian)
+            unstacked_vjp = tf.unstack(tf.reshape(vjp, [-1]))
 
             if variables is not None:
-                return grad_input, variables
+                return unstacked_vjp, variables
 
-            return grad_input
+            return unstacked_vjp
 
         if self.is_sampled:
             return res, grad
