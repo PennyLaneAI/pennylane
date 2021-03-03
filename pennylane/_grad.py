@@ -199,7 +199,7 @@ def finite_diff(F, x, i=None, delta=0.01):
 
     Returns:
         (any): the derivative :math:`\frac{\partial F(x)}{\partial x_i}` of the
-        function ``F`` at point ``x`` 
+        function ``F`` at point ``x``
 
     **Example**
 
@@ -232,7 +232,7 @@ def finite_diff(F, x, i=None, delta=0.01):
         raise TypeError(error_message)
 
     if isinstance(x, _np.ndarray):
-        if i == None or i not in range(0, x.size):
+        if i is None or i not in range(0, x.size):
             raise ValueError(
                 "'i' must be an integer between {} and {}; got {}".format(0, x.size - 1, i)
             )
