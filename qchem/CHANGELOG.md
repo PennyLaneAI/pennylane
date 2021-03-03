@@ -2,21 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* The ``derivative()`` and ``gradient()`` functions have been added to compute
-  the gradient of molecular Hamiltonians with respect to the nuclear
-  coordinates using a finite-difference approximation.
-
-  For example:
-
-  ```pycon
-  >>> def H(x):
-  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
-  >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
-  >>> grad = qml.qchem.gradient(H, x)
-  ```
-  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
-
 <h3>Improvements</h3>
 
 * The molecular geometry is now stored by a list containing the atomic symbols and
