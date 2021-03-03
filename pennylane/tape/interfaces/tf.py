@@ -151,27 +151,23 @@ class TFInterface(AnnotatedQueue):
             jacobian = tf.constant(jacobian, dtype = self.dtype)
 
             def grad2(upstream2, **tfkwargs):
-                if self.output_dim <=1:
-                    variables = tfkwargs.get("variables", None)
-                    
-                    self.set_parameters(all_params_unwrapped, trainable_only=False)
-                    print("calculating hessian now \n")
-                    hessian = self.hessian(input_kwargs['device'], params=args, **self.hessian_options) 
-                    self.set_parameters(all_params, trainable_only=False)
+                variables = tfkwargs.get("variables", None)
+                
+                self.set_parameters(all_params_unwrapped, trainable_only=False)
+                hessian = self.hessian(input_kwargs['device'], params=args, **self.hessian_options) 
+                self.set_parameters(all_params, trainable_only=False)
 
-                    hessian = tf.constant(hessian, dtype = self.dtype)
+                hessian = tf.constant(hessian, dtype = self.dtype)
 
-                    upstream2_row = tf.reshape(upstream2, [1,-1])
+                upstream2_row = tf.reshape(upstream2, [1,-1])
 
-                    hessian_product = tf.matmul(upstream2_row, hessian)
-                    hessian_product_flattened = tf.unstack(tf.reshape(hessian_product, [-1]))
+                hessian_product = tf.matmul(upstream2_row, hessian)
+                hessian_product_flattened = tf.unstack(tf.reshape(hessian_product, [-1]))
 
-                    if variables is not None:
-                        return hessian_product_flattened, variables
+                if variables is not None:
+                    return hessian_product_flattened, variables
 
-                    return hessian_product_flattened
-                else:
-                    return (None, )
+                return hessian_product_flattened
             
             return jacobian, grad2
         

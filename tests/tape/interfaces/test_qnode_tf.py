@@ -31,7 +31,7 @@ from pennylane.tape import JacobianTape, qnode, QNode
     ],
 )
 class TestQNode:
-    """Same tests as above, but this time via the QNode interface!"""
+    """Tests the tensorflow interface used with a QNode."""
 
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface, and that trainable parameters
@@ -522,6 +522,22 @@ class TestQNode:
 
         assert res.shape == (2, 10)
         assert isinstance(res, tf.Tensor)
+
+    def test_hessian(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation"""
+        spy = mocker.spy(JacobianTape, "hessian")
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0,1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
 
 
 def qtransform(qnode, a, framework=tf):

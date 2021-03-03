@@ -606,12 +606,22 @@ class TestHessian:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
 
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
+            tape.hessian(None)
+
+    def test_output_dim_error(self):
+        """Test NotImplementedError raised for output_dim != 1
+        """
+
+        with JacobianTape() as tape:
+            qml.probs(0)
+
+        with pytest.raises(NotImplementedError):
             tape.hessian(None)
 
     def test_unknown_hessian_method_error(self):

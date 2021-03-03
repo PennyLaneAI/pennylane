@@ -666,6 +666,9 @@ class JacobianTape(QuantumTape):
         if any([m.return_type is State for m in self.measurements]):
             raise ValueError("The Hessian method does not support circuits that return the state")
 
+        if self.output_dim != 1:
+            raise NotImplementedError
+
         method = options.get("method", "analytic")
 
         if method != "analytic":
