@@ -88,7 +88,10 @@ class grad:
         if len(argnum) == 1:
             argnum = argnum[0]
 
-        return self._grad_with_forward(self._fun, argnum=argnum,)
+        return self._grad_with_forward(
+            self._fun,
+            argnum=argnum,
+        )
 
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
