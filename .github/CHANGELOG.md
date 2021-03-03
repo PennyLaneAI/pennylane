@@ -2,6 +2,20 @@
 
 <h3>New features since last release</h3>
 
+- Added the function ``finite_diff()`` to compute the first-order derivative
+  of parametrized Hamiltonians using a finite-difference approximation.
+
+  For example,
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> dH_dxi = qml.finite_diff(H, x, i)
+  ```
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
