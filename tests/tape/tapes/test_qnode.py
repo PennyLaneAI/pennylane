@@ -307,6 +307,55 @@ class TestTapeConstruction:
 
         assert jac.shape == (4, 2)
 
+    def test_diff_method_expansion(self, monkeypatch, mocker):
+        """Test that a QNode with tape expansion during construction
+        preserves the differentiation method."""
+
+        class MyDev(qml.devices.DefaultQubit):
+            """Dummy device that supports device Jacobians"""
+
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    provides_jacobian=True,
+                )
+                return capabilities
+
+            def jacobian(self, *args, **kwargs):
+                return np.zeros((2, 4))
+
+        dev = MyDev(wires=2)
+
+        def func(x, y):
+            # the U2 operation is not supported on default.qubit
+            # and is decomposed.
+            qml.U2(x, y, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0)
+
+        qn = QNode(func, dev, diff_method="device", h=1e-8, order=2)
+
+        assert qn.diff_options["method"] == "device"
+        assert qn.diff_options["h"] == 1e-8
+        assert qn.diff_options["order"] == 2
+
+        x = 0.12
+        y = 0.54
+
+        spy = mocker.spy(JacobianTape, "expand")
+        res = qn(x, y)
+
+        spy.assert_called_once()
+        assert qn.qtape.jacobian_options["method"] == "device"
+        assert qn.qtape.jacobian_options["h"] == 1e-8
+        assert qn.qtape.jacobian_options["order"] == 2
+
+        spy = mocker.spy(JacobianTape, "jacobian")
+        jac = qml.jacobian(qn)(x, y)
+
+        assert spy.call_args_list[0][1]["method"] == "device"
+
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
         is returned from the QNode."""

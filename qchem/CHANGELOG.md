@@ -4,6 +4,28 @@
 
 <h3>Improvements</h3>
 
+* The molecular geometry is now stored by a list containing the atomic symbols and
+  a 1D array with the position of the atoms in atomic units.
+
+  - The ``read_structure`` function returns a list with the symbols of the atoms and
+    the array with the atomic positions. 
+
+  - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
+    list of atomic symbols and the array with the atomic coordinates.
+
+  - Labelling the molecule is now optional as we have made ``name`` a keyword argument
+    in the ``meanfield`` and ``molecular_hamiltonian`` functions.
+
+    For example:
+
+    ```pycon
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.661, 0., 0., 0.661]))
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+    ```
+
+  This allows users to more easily build parametrized electronic Hamiltonians
+  [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -13,6 +35,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Alain Delgado
 
 
 # Release 0.13.1
