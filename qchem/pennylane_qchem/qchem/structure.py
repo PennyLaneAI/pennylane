@@ -1059,108 +1059,6 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def derivative(F, x, i, delta=0.01):
-    r"""Uses a finite difference approximation to evaluate the derivative
-    :math:`\frac{\partial F(x)}{\partial x_i}` of the function ``F`` at point ``x``.
-
-    .. math::
-
-        \frac{\partial F(x)}{\partial x_i} \approx \frac{F(x_i + \delta/2)
-        - F(x_i - \delta/2)}{\delta}
-
-    Args:
-        F (callable): function with signature ``F(x)``
-        x (array[float]): 1D array with the values of ``x``
-        i (int): index of the variable ``x_i``
-        delta (float): Step size used to evaluate the finite difference. Its default value
-            has be chosen for the particular case of the derivative of the molecular
-            Hamiltonian with respect to the nuclear coordinates ``x``.    
-
-
-    Returns:
-        type(F(x)): derivative of the function ``F(x)``
-
-    **Example**
-
-    >>> def H(x):
-    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
-    >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-    >>> print(derivative(H, x, 2))
-    (0.7763135746699901) [I0]
-    + (0.0853436084402831) [Z0]
-    + (0.0853436084402831) [Z1]
-    + (-0.2669341093715999) [Z2]
-    + (-0.2669341093715999) [Z3]
-    + (0.02523362875533064) [Z0 Z1]
-    + (-0.007216244399306515) [Y0 X1 X2 Y3]
-    + (0.007216244399306515) [Y0 Y1 X2 X3]
-    + (0.007216244399306515) [X0 X1 Y2 Y3]
-    + (-0.007216244399306515) [X0 Y1 Y2 X3]
-    + (0.030654287758868914) [Z0 Z2]
-    + (0.02343804335956101) [Z0 Z3]
-    + (0.02343804335956101) [Z1 Z2]
-    + (0.030654287758868914) [Z1 Z3]
-    + (0.024944077874217152) [Z2 Z3]
-    """
-
-    if not callable(F):
-        error_message = "{} object is not callable. \n" "'F' should be a callable function".format(
-            type(F)
-        )
-        raise TypeError(error_message)
-
-    d = np.zeros_like(x)
-
-    d[i] = 0.5 * delta
-
-    return (F(x + d) - F(x - d)) * delta ** -1
-
-
-def gradient(F, x, delta=0.01):
-    r"""Uses a finite difference approximation to compute the gradient
-    :math:`\nabla_x F(x)` of the function ``F`` at ``x``.
-
-    Args:
-        F (callable): function with signature ``F(x)``
-        x (array[float]): 1D array with the values of ``x``
-        delta (float): Step size used to evaluate the finite difference. Its default value
-            has be chosen for the particular case of the derivative of the molecular
-            Hamiltonian with respect to the nuclear coordinates ``x``.
-
-    Returns:
-        Iterable[type(F(x))]: list with the gradient vector :math:`\nabla_x F(x)`
-
-    **Example**
-
-    >>> def H(x):
-    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
-    >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-    >>> grad = gradient(H, x)
-    >>> print(len(grad), grad[5])
-    6 (-0.7763135746699595) [I0]
-    + (-0.08534360844031086) [Z0]
-    + (-0.08534360844030253) [Z1]
-    + (0.2669341093715888) [Z2]
-    + (0.2669341093715888) [Z3]
-    + (-0.02523362875531676) [Z0 Z1]
-    + (0.007216244399310678) [Y0 X1 X2 Y3]
-    + (-0.007216244399310678) [Y0 Y1 X2 X3]
-    + (-0.007216244399310678) [X0 X1 Y2 Y3]
-    + (0.007216244399310678) [X0 Y1 Y2 X3]
-    + (-0.030654287758857812) [Z0 Z2]
-    + (-0.023438043359547134) [Z0 Z3]
-    + (-0.023438043359547134) [Z1 Z2]
-    + (-0.030654287758857812) [Z1 Z3]
-    + (-0.0249440778742116) [Z2 Z3]
-    """
-
-    grad = [derivative(F, x, i, delta=delta) for i in range(x.size)]
-
-    return grad
-
-
 __all__ = [
     "read_structure",
     "meanfield",
@@ -1171,8 +1069,6 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
-    "derivative",
-    "gradient",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
