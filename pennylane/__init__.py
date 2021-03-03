@@ -46,7 +46,7 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
-from ._grad import jacobian, grad
+from ._grad import jacobian, grad, finite_diff
 
 import pennylane.math  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
