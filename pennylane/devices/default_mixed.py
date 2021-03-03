@@ -95,6 +95,9 @@ class DefaultMixed(QubitDevice):
         "PhaseFlip",
         "QubitChannel",
         "QFT",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True, cache=0):

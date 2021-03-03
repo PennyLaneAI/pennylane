@@ -2,6 +2,28 @@
 
 <h3>New features since last release</h3>
 
+- Added the `SingleExcitation` two-qubit operation, which is particularly useful for quantum 
+  chemistry applications. [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
+  It can be used to perform an :math:`SO(2)` rotation in the subspace 
+  spanned by the states :math:`|01\rangle, |10\rangle`. For example, the following circuit 
+  performs the transformation :math:`|10>\rightarrow \cos(\phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:   
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.SingleExcitation(phi, wires=[0, 1])
+  ```
+  
+  The `SingleExcitation` operation supports analytical gradients via its decomposition
+  in terms of the `SingleExcitationPlus` and `SingleExcitationMinus` operations, whose
+  gradients are given by the standard parameter-shift rule. These are also now supported.
+  Instead of acting as the identity on the subspace :math:`|00\rangle, |11\rangle`, the
+  `SingleExcitationPlus` and `SingleExcitationMinus` operations respectively apply a 
+  positive/negative phase-shift on this subspace. 
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
