@@ -2,8 +2,9 @@
 
 <h3>New features since last release</h3>
 
-- Added the function ``finite_diff()`` to compute the first-order derivative
-  of parametrized Hamiltonians using a finite-difference approximation.
+- Added the function ``finite_diff()`` to compute the first-order derivatives.
+  This is particularly useful to compute the derivative of parametrized
+  ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
 
   For example,
 
@@ -12,7 +13,7 @@
   ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
 
   >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-  >>> dH_dxi = qml.finite_diff(H, x, i)
+  >>> dH_dxi = qml.finite_diff(H, x, i=2)
   ```
   [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
 
