@@ -1565,9 +1565,11 @@ class U3(Operation):
         ]
         return decomp_ops
 
+
 # =============================================================================
 # Quantum chemistry
 # =============================================================================
+
 
 class SingleExcitation(Operation):
     r"""
@@ -1625,8 +1627,10 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def decomposition(theta, wires):
-        decomp_ops = [SingleExcitationPlus(theta / 2, wires=wires),
-                      SingleExcitationMinus(theta / 2, wires=wires)]
+        decomp_ops = [
+            SingleExcitationPlus(theta / 2, wires=wires),
+            SingleExcitationMinus(theta / 2, wires=wires),
+        ]
         return decomp_ops
 
 
@@ -2126,7 +2130,7 @@ ops = {
     "G1Yminus",
     "G2Y",
     "G2Yplus",
-    "G2Yminus"
+    "G2Yminus",
 }
 
 
