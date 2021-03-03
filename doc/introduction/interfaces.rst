@@ -51,7 +51,7 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
 
   The `adjoint method <https://arxiv.org/abs/2009.02823>`__  reverses through the circuit after a
   forward pass by iteratively applying the inverse (adjoint) gate. This method is similar to
-  ``"backprop"``, but trades off increased runtime with significantly lower memory usage.
+  ``"backprop"``, but has significantly lower memory usage and a similar runtime.
 
 * ``"reversible"``: Use a form of backpropagation that takes advantage of the unitary or reversible
   nature of quantum computation.
