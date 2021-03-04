@@ -203,8 +203,8 @@ def finite_diff(F, x, i=None, delta=0.01):
     Returns:
         (any): the derivative :math:`\frac{\partial F(x)}{\partial x_i}` of the
         function ``F`` at point ``x``. The output of the function can be a float,
-        a Numpy array or a ``pennylane.Hamiltonian`` object if ``F(x)`` is a parametrized
-        observable.
+        a Numpy array or in a more general case a ``pennylane.Hamiltonian`` object
+        if ``F(x)`` is a parametrized observable.
 
     **Example**
 
@@ -216,7 +216,6 @@ def finite_diff(F, x, i=None, delta=0.01):
 
     >>> def H(x):
     ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
     >>> x = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414])
     >>> print(finite_diff(H, x, i=2))
     (0.7763135746699901) [I0]
