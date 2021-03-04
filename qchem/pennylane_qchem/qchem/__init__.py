@@ -26,8 +26,6 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
-    "derivative",
-    "gradient",
     "second_derivative",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",

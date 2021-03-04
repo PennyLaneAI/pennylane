@@ -28,6 +28,10 @@ from pennylane import Hamiltonian
 from pennylane.wires import Wires
 
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
+
 def _process_wires(wires, n_wires=None):
     r"""
     Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
@@ -148,14 +152,15 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
-    with the atomic positions in Cartesian coordinates.
+    with their positions :math:`[x_1, y_1, z_1, x_2, y_2, z_2, \dots]` in
+    atomic units (Bohr radius = 1).
 
+    The atomic coordinates in the file must be in Angstroms.
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
     `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
     is also supported. Additionally, the new file ``structure.xyz``,
-    containing the input geometry, is created in a directory with path given by
-    ``outpath``.
+    containing the input geometry, is created in a directory with path given by ``outpath``.
 
     Open Babel can be installed using ``apt`` if on Ubuntu:
 
@@ -177,14 +182,14 @@ def read_structure(filepath, outpath="."):
         outpath (str): path to the output directory
 
     Returns:
-        tuple[list, array]: symbols of the atoms in the molecule and their positions in Cartesian
-        coordinates.
+        tuple[list, array]: symbols of the atoms in the molecule and a 1D array with their
+        positions in atomic units.
 
     **Example**
 
     >>> symbols, coordinates = read_structure('h2.xyz')
     >>> print(symbols, coordinates)
-    ['H', 'H'] [ 0.    0.   -0.35  0.    0.    0.35]
+    ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
     """
 
     obabel_error_message = (
@@ -227,7 +232,7 @@ def read_structure(filepath, outpath="."):
             coordinates.append(float(y))
             coordinates.append(float(z))
 
-    return symbols, np.array(coordinates)
+    return symbols, np.array(coordinates) / bohr_angs
 
 
 def meanfield(
@@ -264,7 +269,7 @@ def meanfield(
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
-            coordinates. The coordinates must be given in Angstroms and the size of the array
+            coordinates. The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
         name (str): molecule label
         charge (int): net charge of the system
@@ -284,7 +289,7 @@ def meanfield(
 
     **Example**
 
-    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> meanfield(symbols, coordinates, name="h2")
     ./pyscf/sto-3g/h2
     """
@@ -315,7 +320,10 @@ def meanfield(
 
     path_to_file = os.path.join(basis_dir, name.strip())
 
-    geometry = [[symbol, tuple(coordinates[3 * i : 3 * i + 3])] for i, symbol in enumerate(symbols)]
+    geometry = [
+        [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
 
     molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
@@ -751,7 +759,7 @@ def molecular_hamiltonian(
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): 1D array with the atomic positions in Cartesian
-            coordinates. The coordinates must be given in Angstroms and the size of the array
+            coordinates. The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
         name (str): name of the molecule
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
@@ -783,7 +791,7 @@ def molecular_hamiltonian(
 
     **Example**
 
-    >>> symbols, coordinates = (['H', 'H'], np.array([ 0., 0., -0.35, 0., 0., 0.35]))
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
     >>> print(qubits)
     4
@@ -1051,122 +1059,6 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def derivative(H, x, i, delta=0.00529):
-    r"""Uses a finite difference approximation to compute the ``i``-th derivative
-    :math:`\frac{\partial \hat{H}(x)}{\partial x_i}` of the electronic Hamiltonian
-    evaluated at the nuclear coordinates ``x``.
-
-    .. math::
-
-        \frac{\partial \hat{H}(x)}{\partial x_i} \approx \frac{\hat{H}(x_i+\delta/2)
-        - \hat{H}(x_i-\delta/2)}{\delta}
-
-    Args:
-        H (callable): function with signature ``H(x)`` that builds the electronic
-            Hamiltonian of the molecule for a given set of nuclear coordinates ``x``
-        x (array[float]): 1D array with the nuclear coordinates given in Angstroms.
-            The size of the array should be ``3*N`` where ``N`` is the number of atoms
-            in the molecule.
-        i (int): index of the nuclear coordinate involved in the derivative
-            :math:`\partial \hat{H}(x)/\partial x_i`
-        delta (float): Step size in Angstroms used to displace the nuclear coordinate in the finite difference approximation.
-            Its default value corresponds to 0.01 Bohr radii.
-
-    Returns:
-        pennylane.Hamiltonian: the derivative of the Hamiltonian
-        :math:`\frac{\partial \hat{H}(x)}{\partial x_i}`
-
-    **Example**
-
-    >>> def H(x):
-    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
-    >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
-    >>> print(derivative(H, x, 2))
-    (-0.7763135665896025) [I0]
-    + (-0.08534360836029752) [Z0]
-    + (-0.08534360836029196) [Z1]
-    + (0.26693410814904256) [Z2]
-    + (0.2669341081490398) [Z3]
-    + (-0.025233628787494015) [Z0 Z1]
-    + (0.007216244400096865) [Y0 X1 X2 Y3]
-    + (-0.007216244400096865) [Y0 Y1 X2 X3]
-    + (-0.007216244400096865) [X0 X1 Y2 Y3]
-    + (0.007216244400096865) [X0 Y1 Y2 X3]
-    + (-0.03065428777395116) [Z0 Z2]
-    + (-0.023438043373856375) [Z0 Z3]
-    + (-0.023438043373856375) [Z1 Z2]
-    + (-0.03065428777395116) [Z1 Z3]
-    + (-0.024944077860444742) [Z2 Z3]
-    """
-
-    if not callable(H):
-        error_message = (
-            "{} object is not callable. \n"
-            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
-                type(H)
-            )
-        )
-        raise TypeError(error_message)
-
-    to_bohr = 1.8897261254535
-
-    x_plus = x.copy()
-    x_plus[i] += delta * 0.5
-
-    x_minus = x.copy()
-    x_minus[i] -= delta * 0.5
-
-    return (H(x_plus) - H(x_minus)) * (delta * to_bohr) ** -1
-
-
-def gradient(H, x, delta=0.00529):
-    r"""Uses a finite difference approximation to compute the gradient
-    :math:`\nabla_x \hat{H}(x)` of the electronic Hamiltonian :math:`\hat{H}(x)`
-    for a given set of nuclear coordinates :math:`x`.
-
-    Args:
-        H (callable): function with signature ``H(x)`` that builds the electronic
-            Hamiltonian for a given set of coordinates ``x``
-        x (array[float]): 1D array with the coordinates in Angstroms. The size of the array
-            should be ``3*N`` where ``N`` is the number of atoms in the molecule.
-        delta (float): Step size in Angstroms used to displace the nuclear coordinates.
-            Its default value corresponds to 0.01 Bohr radii.
-
-    Returns:
-        Iterable[pennylane.Hamiltonian]: list with the gradient vector :math:`\nabla_x \hat{H}(x)`.
-        Each entry of the gradient is an operator.
-
-    **Example**
-
-    >>> def H(x):
-    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-
-    >>> x = np.array([0., 0., 0.35, 0., 0., -0.35])
-    >>> grad = gradient(H, x)
-    >>> print(len(grad), grad[5])
-    6 (0.7763135665895081) [I0]
-    + (0.08534360836030584) [Z0]
-    + (0.08534360836030307) [Z1]
-    + (-0.26693410814900365) [Z2]
-    + (-0.26693410814900087) [Z3]
-    + (0.025233628787494015) [Z0 Z1]
-    + (-0.007216244400096171) [Y0 X1 X2 Y3]
-    + (0.007216244400096171) [Y0 Y1 X2 X3]
-    + (0.007216244400096171) [X0 X1 Y2 Y3]
-    + (-0.007216244400096171) [X0 Y1 Y2 X3]
-    + (0.03065428777395116) [Z0 Z2]
-    + (0.02343804337385915) [Z0 Z3]
-    + (0.02343804337385915) [Z1 Z2]
-    + (0.03065428777395116) [Z1 Z3]
-    + (0.024944077860433636) [Z2 Z3]
-    """
-
-    grad = [derivative(H, x, i, delta=delta) for i in range(len(x))]
-
-    return grad
-
-
 def second_derivative(H, x, i, j, delta=0.00529):
     r"""Uses a finite difference approximation to compute the second-order derivative
     :math:`\frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j}` of the electronic
@@ -1276,8 +1168,6 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
-    "derivative",
-    "gradient",
     "second_derivative",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",

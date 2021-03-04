@@ -7,7 +7,7 @@ from openfermion import MolecularData
 from pennylane import qchem
 
 name = "h2"
-symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.35, 0.0, 0.0, 0.35]))
+symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
 @pytest.mark.parametrize(
@@ -88,6 +88,6 @@ def test_dimension_consistency(tmpdir):
     r"""Test that an error is raised if the size of the 'coordinates' array is
     not equal to ``3*len(symbols)``"""
 
-    extra_coordinate = np.array([0.0, 0.0, -0.35, 0.0, 0.0, 0.35, -0.987])
+    extra_coordinate = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414, -0.987])
     with pytest.raises(ValueError, match="The size of the array 'coordinates' has to be"):
         qchem.meanfield(symbols, extra_coordinate, name=name, outpath=tmpdir.strpath)

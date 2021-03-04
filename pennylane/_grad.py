@@ -85,6 +85,9 @@ class grad:
             if getattr(arg, "requires_grad", True):
                 argnum.append(idx)
 
+        if len(argnum) == 1:
+            argnum = argnum[0]
+
         return self._grad_with_forward(
             self._fun,
             argnum=argnum,
@@ -178,3 +181,74 @@ def jacobian(func, argnum=None):
         return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
 
     return _jacobian_function
+
+
+def finite_diff(F, x, i=None, delta=0.01):
+    r"""Uses a central finite difference approximation to evaluate the derivative
+    :math:`\frac{\partial F(x)}{\partial x_i}` of the function ``F(x)``
+    at point ``x``.
+
+    .. math::
+
+        \frac{\partial F(x)}{\partial x_i} \approx \frac{F(x_i + \delta/2)
+        - F(x_i - \delta/2)}{\delta}
+
+    Args:
+        F (callable): function with signature ``F(x)``
+        x (float or array[float]): single-value or 1D array with the values of ``x``
+        i (int): which argument ``x_i`` to take the derivative with respect to if ``x``
+            is a 1D array
+        delta (float): Step size used to evaluate the finite difference
+
+    Returns:
+        (any): the derivative :math:`\frac{\partial F(x)}{\partial x_i}` of the
+        function ``F`` at point ``x``. The output of the function can be a float,
+        a Numpy array or in a more general case a ``pennylane.Hamiltonian`` object
+        if ``F(x)`` is a parametrized observable.
+
+    **Example**
+
+    >>> def g(x):
+    ...     return np.array([np.sin(x), 1/x])
+    >>> x = -0.25
+    >>> print(finite_diff(g, x))
+    [0.96890838 -16.00640256]
+
+    >>> def H(x):
+    ...     return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+    >>> x = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414])
+    >>> print(finite_diff(H, x, i=2))
+    (0.7763135746699901) [I0]
+    + (0.0853436084402831) [Z0]
+    + (0.0853436084402831) [Z1]
+    + (-0.2669341093715999) [Z2]
+    + (-0.2669341093715999) [Z3]
+    + (0.02523362875533064) [Z0 Z1]
+    + (-0.007216244399306515) [Y0 X1 X2 Y3]
+    + (0.007216244399306515) [Y0 Y1 X2 X3]
+    + (0.007216244399306515) [X0 X1 Y2 Y3]
+    + (-0.007216244399306515) [X0 Y1 Y2 X3]
+    + (0.030654287758868914) [Z0 Z2]
+    + (0.02343804335956101) [Z0 Z3]
+    + (0.02343804335956101) [Z1 Z2]
+    + (0.030654287758868914) [Z1 Z3]
+    + (0.024944077874217152) [Z2 Z3]
+    """
+
+    if not callable(F):
+        error_message = "{} object is not callable. \n" "'F' should be a callable function".format(
+            type(F)
+        )
+        raise TypeError(error_message)
+
+    if isinstance(x, _np.ndarray):
+        if i is None or i not in range(0, x.size):
+            raise ValueError(
+                "'i' must be an integer between {} and {}; got {}".format(0, x.size - 1, i)
+            )
+        d = _np.zeros_like(x)
+        d[i] = 0.5 * delta
+    else:
+        d = delta * 0.5
+
+    return (F(x + d) - F(x - d)) * delta ** -1

@@ -516,9 +516,6 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
-        # provide the jacobian options
-        self.qtape.jacobian_options = self.diff_options
-
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
@@ -535,6 +532,9 @@ class QNode:
                 stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
                 and self.device.supports_operation(obj.name),
             )
+
+        # provide the jacobian options
+        self.qtape.jacobian_options = self.diff_options
 
     def __call__(self, *args, **kwargs):
 
