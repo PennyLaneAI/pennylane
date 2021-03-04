@@ -190,7 +190,8 @@ def SingleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        jnp.Tensor[complex]: Single excitation rotation matrix
+        array[complex]: Single excitation rotation matrix
+
 
     """
     c = np.cos(phi / 2)
@@ -206,7 +207,8 @@ def SingleExcitationPlus(phi):
         phi (float): rotation angle
 
     Returns:
-        jnp.Tensor[complex]: Single excitation rotation matrix with positive phase-shift
+        array[complex]: Single excitation rotation matrix with positive phase-shift
+
 
     """
     c = np.cos(phi / 2)
@@ -223,7 +225,8 @@ def SingleExcitationMinus(phi):
         phi (float): rotation angle
 
     Returns:
-        tf.Tensor[complex]: Single excitation rotation matrix with negative phase-shift
+       array[complex]: Single excitation rotation matrix with negative phase-shift
+
 
     """
     c = np.cos(phi / 2)
