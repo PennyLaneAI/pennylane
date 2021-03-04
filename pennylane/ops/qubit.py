@@ -1572,7 +1572,7 @@ class U3(Operation):
 
 
 class SingleExcitation(Operation):
-    r"""
+    r"""SingleExcitation(phi, wires)
     Single excitation rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -1635,7 +1635,7 @@ class SingleExcitation(Operation):
 
 
 class SingleExcitationMinus(Operation):
-    r"""
+    r"""SingleExcitationMinus(phi, wires)
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     .. math:: U_-(\phi) = \begin{bmatrix}
@@ -1674,7 +1674,7 @@ class SingleExcitationMinus(Operation):
 
 
 class SingleExcitationPlus(Operation):
-    r"""
+    r"""SingleExcitationPlus(phi, wires)
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
     .. math:: U_+(\phi) = \begin{bmatrix}
