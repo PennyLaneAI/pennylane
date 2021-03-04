@@ -17,7 +17,17 @@ Contains the ``QuantumMonteCarlo`` template.
 from pennylane.templates.decorator import template
 
 
+def distribution_to_unitary(distribution):
+    """TODO"""
+    ...
+
+def random_variable_to_unitary(random_variable):
+    """TODO"""
+    ...
+
+
 @template
-def QuantumMonteCarlo(unitary, target_wires, estimation_wires):
-    r"""TODO
+def QuantumMonteCarlo(distributions, random_variable, target_wires, estimation_wires):
+    """TODO
     """
+    ...
