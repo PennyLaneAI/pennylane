@@ -140,26 +140,30 @@ class TFInterface(AnnotatedQueue):
 
         def _evaluate_grad_matrix(grad_matrix_fn):
             self.set_parameters(all_params_unwrapped, trainable_only=False)
-            grad_matrix = grad_matrix_fn(input_kwargs["device"], params=args, **self.jacobian_options)
+            grad_matrix = grad_matrix_fn(
+                input_kwargs["device"], params=args, **self.jacobian_options
+            )
             self.set_parameters(all_params, trainable_only=False)
             return tf.constant(grad_matrix, dtype=self.dtype)
 
         def _evaluate_vector_grad_product(dy, grad_matrix):
             # Reshape gradient output array as a 2D row-vector.
-            if tf.rank(grad_matrix).numpy() > 2:
-                grad_matrix = tf.reshape(grad_matrix, [-1, len(dy)])
+            grad_matrix = tf.cond(
+                tf.rank(grad_matrix) > 2,
+                lambda: tf.reshape(grad_matrix, [-1, dy.shape[0]]),
+                lambda: grad_matrix,
+            )
 
             dy_row = tf.reshape(dy, [1, -1])
             # Calculate the vector-Gradient matrix product, and unstack the output.
             vgp = tf.matmul(dy_row, grad_matrix)
-            return tf.unstack(tf.reshape(vgp, [-1]))
+            return tf.unstack(tf.reshape(vgp, [-1]), num=dy.shape[1])
 
         def jacobian_product(dy, **tfkwargs):
             variables = tfkwargs.get("variables", None)
 
             @tf.custom_gradient
             def jacobian(p):
-
                 def hessian_product(ddy, **tfkwargs):
                     variables = tfkwargs.get("variables", None)
                     hessian = _evaluate_grad_matrix(self.hessian)

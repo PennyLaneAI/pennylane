@@ -731,7 +731,9 @@ class JacobianTape(QuantumTape):
             if hessian is None:
                 # create the Hessian matrix
                 if self.output_dim is not None:
-                    hessian = np.zeros((len(params), len(params), np.prod(self.output_dim)), dtype=float)
+                    hessian = np.zeros(
+                        (len(params), len(params), np.prod(self.output_dim)), dtype=float
+                    )
                 else:
                     hessian = np.zeros((len(params), len(params)), dtype=float)
 
