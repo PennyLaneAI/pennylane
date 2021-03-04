@@ -201,8 +201,8 @@ def finite_diff(F, x, i=None, delta=0.01):
 
     Returns:
         (any): the derivative :math:`\frac{\partial F(x)}{\partial x_i}` of the
-        function ``F`` at point ``x``. The output of the same type as the
-        output of ``F(x)``.
+        function ``F`` at point ``x``. The output of the function is the same type as
+        the output of ``F(x)``.
 
     **Examples**
 
