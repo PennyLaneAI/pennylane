@@ -84,6 +84,9 @@ Qubit gates
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
     ~pennylane.QFT
+    ~pennylane.DoubleExcitation
+    ~pennylane.DoubleExcitationPlus
+    ~pennylane.DoubleExcitationMinus
 
 :html:`</div>`
 

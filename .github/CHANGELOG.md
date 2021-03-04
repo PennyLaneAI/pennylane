@@ -2,6 +2,27 @@
 
 <h3>New features since last release</h3>
 
+- Added the `DoubleExcitation` four-qubit operation, which is particularly useful for quantum
+  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+
+  It can be used to perform an :math:`SO(2)` rotation in the subspace 
+  spanned by the states :math:`|1100\rangle, |0011\rangle`. For example, the following circuit 
+  performs the transformation :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle -\sin(\phi/2)
+  |00111\rangle)`:   
+
+  ```python
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.PauliX(wires=1)
+      qml.SingleExcitation(phi, wires=[0, 1, 2, 3])
+  ```
+
+  The `DoubleExcitation` operation supports analytical gradients via its decomposition
+  in terms of the `DoubleExcitationPlus` and `DoubleExcitationMinus` operations, whose
+  gradients are given by the standard parameter-shift rule. These are also now supported.
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)

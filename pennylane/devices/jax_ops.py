@@ -180,3 +180,65 @@ def MultiRZ(theta, n):
         array[complex]: diagonal part of the multi-qubit rotation matrix
     """
     return jnp.exp(-1j * theta / 2 * pauli_eigs(n))
+
+
+def DoubleExcitation(phi):
+    r"""
+    Double excitation rotation.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        jnp.Tensor[complex]: Double excitation rotation matrix
+    """
+    c = jnp.cos(phi / 2)
+    s = jnp.sin(phi / 2)
+
+    U = jnp.zeros((16, 16))
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U
+
+
+def DoubleExcitationPlus(phi):
+    r"""
+    Double excitation rotation with positive phase-shift.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        jnp.Tensor[complex]: rotation matrix
+    """
+    c = jnp.cos(phi / 2)
+    s = jnp.sin(phi / 2)
+    e = jnp.exp(1j * phi /2)
+
+    U = e * jnp.eye(16)
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U
+
+
+def DoubleExcitationMinus(phi):
+    r"""
+    Double excitation rotation with negative phase-shift.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        jnp.Tensor[complex]: rotation matrix
+    """
+    c = jnp.cos(phi / 2)
+    s = jnp.sin(phi / 2)
+    e = jnp.exp(-1j * phi /2)
+
+    U = e * jnp.eye(16)
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U

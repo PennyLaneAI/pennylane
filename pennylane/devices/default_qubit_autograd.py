@@ -95,6 +95,9 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRZ": autograd_ops.CRZ,
         "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
+        "DoubleExcitation": autograd_ops.DoubleExcitation,
+        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = np.complex128
