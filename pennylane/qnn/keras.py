@@ -290,7 +290,7 @@ class KerasLayer(Layer):
         return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
-        """Evaluates a tape-mode QNode for a single input datapoint.
+        """Evaluates a QNode for a single input datapoint.
 
         Args:
             x (tensor): the datapoint
