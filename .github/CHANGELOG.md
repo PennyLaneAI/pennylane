@@ -7,7 +7,7 @@
   
   It can be used to perform an :math:`SO(2)` rotation in the subspace 
   spanned by the states :math:`|01\rangle, |10\rangle`. For example, the following circuit 
-  performs the transformation :math:`|10>\rightarrow \cos(\phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:   
+  performs the transformation :math:`|10\rangle\rightarrow \cos(\phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:   
   
   ```python
   dev = qml.device('default.qubit', wires=2)
