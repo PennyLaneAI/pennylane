@@ -35,12 +35,6 @@ class DummyDevice(DefaultGaussian):
 
 
 @pytest.fixture(scope="session")
-def fd_tol():
-    """Numerical tolerance for the equality tests in 'test_finite_diff'."""
-    return {"rtol": 0, "atol": 1e-8}
-
-
-@pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TOL", TOL))

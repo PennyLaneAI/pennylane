@@ -39,12 +39,12 @@ dg4 = np.array([[0.0, -0.39328647], [0.0, -0.25636943]])
         (g, x4, 1, delta4, dg4),
     ],
 )
-def test_finit_diff(func, x, i, delta, deriv_ref, fd_tol):
+def test_finit_diff(func, x, i, delta, deriv_ref):    
     r"""Tests the correctness of the derivative evaluated by the 'finite_diff' function."""
 
     deriv = qml.finite_diff(func, x, i, delta)
 
-    assert np.allclose(deriv_ref, deriv, **fd_tol)
+    assert np.allclose(deriv_ref, deriv)
 
 
 def test_not_callable_func():
