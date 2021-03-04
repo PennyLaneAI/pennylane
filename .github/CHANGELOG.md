@@ -13,7 +13,7 @@
   ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
 
   >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-  >>> dH_dxi = qml.finite_diff(H, x, i=2)
+  >>> derivative = qml.finite_diff(H, x, i=2)
   ```
   [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
 
