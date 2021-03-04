@@ -47,69 +47,6 @@ def test_finit_diff(func, x, i, delta, deriv_ref, fd_tol):
     assert np.allclose(deriv_ref, deriv, **fd_tol)
 
 
-coeffs_nonzero = np.array(
-    [
-        0.2777044490017033,
-        -0.0017650045675554615,
-        -0.0017650045675499104,
-        -0.1223647641789366,
-        -0.1223647641789366,
-        0.0016333664189948152,
-        -0.0016333664189948152,
-        -0.0016333664189948152,
-        0.0016333664189948152,
-        0.006294159636022201,
-        0.007927526055015455,
-        0.007927526055015455,
-        0.006294159636022201,
-        0.008903332246626428,
-    ]
-)
-
-ops_nonzero = [
-    qml.Identity(wires=[0]),
-    qml.PauliZ(wires=[0]),
-    qml.PauliZ(wires=[1]),
-    qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[3]),
-    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
-    qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
-    qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
-    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-]
-
-coeffs_zero, ops_zero = ([], [])
-
-
-@pytest.mark.parametrize(
-    ("i", "coeffs", "ops"), [(0, coeffs_nonzero, ops_nonzero), (2, coeffs_zero, ops_zero),],
-)
-def test_finit_diff_hamilt(i, coeffs, ops, fd_tol, tmpdir):
-    r"""Tests the correctness of the derivative of a ``Hamiltonian`` object
-    calculated by the 'finite_diff' function."""
-
-    # parametrized Hamiltonian of the water molecule
-    def hamilt(x):
-        return qml.qchem.molecular_hamiltonian(
-            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
-        )[0]
-
-    x = np.array(
-        [-0.03987322, -0.00377945, 0.0, 1.57697645, 0.85396724, 0.0, 2.79093651, -0.51589523, 0.0]
-    )
-
-    deriv = qml.finite_diff(hamilt, x, i, delta=0.01)
-
-    assert np.allclose(deriv.coeffs, coeffs, **fd_tol)
-    assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(deriv.ops, ops))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(deriv.ops, ops))
-
-
 def test_not_callable_func():
     r"""Test that an error is raised if the function to be differentiated
     is not a callable object"""
@@ -119,7 +56,8 @@ def test_not_callable_func():
 
 
 @pytest.mark.parametrize(
-    ("x", "i"), [(x2, None), (x2, 4)],
+    ("x", "i"),
+    [(x2, None), (x2, 4)],
 )
 def test_exceptions(x, i):
     r"""Test that an error is raised if the index 'i' of the variable we are differentiating
