@@ -195,18 +195,16 @@ def finite_diff(F, x, i=None, delta=0.01):
 
     Args:
         F (callable): function with signature ``F(x)``
-        x (float or array[float]): single-value or 1D array with the values of ``x``
-        i (int): which argument ``x_i`` to take the derivative with respect to if ``x``
-            is a 1D array
+        x (float or array[float]): single-value or 1D array with the values of the variable ``x``
+        i (int): index denoting the variable ``x_i`` with respect to which the derivative is calculated
         delta (float): Step size used to evaluate the finite difference
 
     Returns:
         (any): the derivative :math:`\frac{\partial F(x)}{\partial x_i}` of the
-        function ``F`` at point ``x``. The output of the function can be a float,
-        a Numpy array or in a more general case a ``pennylane.Hamiltonian`` object
-        if ``F(x)`` is a parametrized observable.
+        function ``F`` at point ``x``. The output of the same type as the
+        output of ``F(x)``.
 
-    **Example**
+    **Examples**
 
     >>> def g(x):
     ...     return np.array([np.sin(x), 1/x])
