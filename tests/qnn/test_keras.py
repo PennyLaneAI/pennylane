@@ -560,10 +560,6 @@ class TestKerasLayerIntegrationDM:
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
-
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim[0] * output_dim[1]))
 
@@ -575,10 +571,6 @@ class TestKerasLayerIntegrationDM:
     def test_model_gradients_dm(self, model_dm, output_dim, n_qubits):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model."""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
-
         x = tf.zeros((2, n_qubits))
         y = tf.zeros((2, output_dim[0] * output_dim[1]))
 
@@ -593,9 +585,6 @@ class TestKerasLayerIntegrationDM:
     def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
 
         prediction = model_dm.predict(np.ones(n_qubits))
         weights = model_dm.get_weights()
