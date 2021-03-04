@@ -19,14 +19,16 @@ import functools
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
+from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, ControlledPhaseShift
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, \
+    ControlledPhaseShift, SingleExcitation, SingleExcitationPlus, SingleExcitationMinus
 
 
-# Standard observables, their matrix representation, and eigenvlaues
+# Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
     (qml.PauliX, X, [1, -1]),
     (qml.PauliY, Y, [1, -1]),
@@ -799,6 +801,82 @@ class TestOperations:
         exp = ControlledPhaseShift(phi)
 
         assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_matrix(self, phi):
+        """Tests that the SingleExcitation operation calculates the correct matrix"""
+        op = qml.SingleExcitation(phi, wires=[0, 1])
+        res = op.matrix
+        exp = SingleExcitation(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_decomp(self, phi):
+        """Tests that the SingleExcitation operation calculates the correct decomposition"""
+        op = qml.SingleExcitation(phi, wires=[0, 1])
+        decomp = op.decomposition(phi, wires=[0, 1])
+
+        mats = [m.matrix for m in decomp]
+
+        decomposed_matrix = mats[0] @ mats[1]
+        exp = SingleExcitation(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_generator(self, phi):
+        """Tests that the SingleExcitation operation calculates the correct generator"""
+        op = qml.SingleExcitation(phi, wires=[0, 1])
+        g, a = op.generator
+        print('g= ', g)
+        print('a= ', a)
+        res = expm(1j * a * g * phi)
+        exp = SingleExcitation(phi)
+        print('res=', res)
+        print('exp=', exp)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_plus_matrix(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
+        op = qml.SingleExcitationPlus(phi, wires=[0, 1])
+        res = op.matrix
+        exp = SingleExcitationPlus(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_plus_generator(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct generator"""
+        op = qml.SingleExcitationPlus(phi, wires=[0, 1])
+        g, a = op.generator
+        print('g= ', g)
+        print('a= ', a)
+        res = expm(1j * a * g * phi)
+        exp = SingleExcitationPlus(phi)
+        print('res=', res)
+        print('exp=', exp)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_minus_matrix(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
+        op = qml.SingleExcitationMinus(phi, wires=[0, 1])
+        res = op.matrix
+        exp = SingleExcitationMinus(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
+    def test_single_excitation_minus_generator(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct generator"""
+        op = qml.SingleExcitationMinus(phi, wires=[0, 1])
+        g, a = op.generator
+        print('g= ', g)
+        print('a= ', a)
+        res = expm(1j * a * g * phi)
+        exp = SingleExcitationMinus(phi)
+        print('res=', res)
+        print('exp=', exp)
+        assert np.allclose(res, exp)
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [

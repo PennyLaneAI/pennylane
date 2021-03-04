@@ -1583,27 +1583,27 @@ class SingleExcitation(Operation):
             \end{bmatrix}.
 
     This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
-    |10\rangle\}`.
+    |10\rangle\}`. The name originates from a fermionic interpretation, where the transformation
+    from :math:`|10\rangle` to `:math:`|01\rangle` is interpreted as "exciting" a particle from
+    the first qubit to the second.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: Obtained from its decomposition in terms of the ``SingleExcitationPlus`` and
-    ``SingleExcitationMinus`` operations
+    * Gradient recipe: Obtained from its decomposition in terms of the
+    :class:`~.SingleExcitationPlus` and `:class:`~.SingleExcitationMinus` operations
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
 
     **Example**
 
-    The following circuit performs the transformation :math:`|10>\rightarrow \cos(
+    The following circuit performs the transformation :math:`|10\rangle\rightarrow \cos(
     \phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:
 
     .. code-block::
-
-        dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -1649,9 +1649,8 @@ class SingleExcitationMinus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_-\frac{1}{2}\left[f(U_+(\phi+\pi/2)) -
-    f(U_-(\phi-\pi/2))\right]` where :math:`f` is an expectation value depending on :math:`U_-(
-    \phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_-\frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+    where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1669,7 +1668,7 @@ class SingleExcitationMinus(Operation):
         theta = params[0]
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = math.exp(-1j * theta / 2)
+        e = cmath.exp(-1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
@@ -1689,9 +1688,8 @@ class SingleExcitationPlus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(\phi+\pi/2)) -
-    f(U_+(\phi-\pi/2))\right]` where :math:`f` is an expectation value depending on
-    :math:`U_+(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+    where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1709,7 +1707,7 @@ class SingleExcitationPlus(Operation):
         theta = params[0]
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = math.exp(1j * theta / 2)
+        e = cmath.exp(1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
