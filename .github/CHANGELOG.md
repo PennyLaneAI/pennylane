@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+- TODO.
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
