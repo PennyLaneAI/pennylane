@@ -4,6 +4,7 @@
 
 - Added the `SingleExcitation` two-qubit operation, which is particularly useful for quantum 
   chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+  
   It can be used to perform an :math:`SO(2)` rotation in the subspace 
   spanned by the states :math:`|01\rangle, |10\rangle`. For example, the following circuit 
   performs the transformation :math:`|10>\rightarrow \cos(\phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:   
