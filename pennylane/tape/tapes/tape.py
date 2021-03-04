@@ -262,6 +262,8 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
+        self._batch = False
+
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
@@ -351,6 +353,9 @@ class QuantumTape(AnnotatedQueue):
                     self._prep.append(obj)
                 else:
                     self._ops.append(obj)
+
+            elif isinstance(obj, qml.Hamiltonian):
+                self._batch = True
 
             elif isinstance(obj, qml.tape.measure.MeasurementProcess):
                 # measurement process

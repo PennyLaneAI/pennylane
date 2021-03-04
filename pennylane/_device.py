@@ -318,7 +318,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observables, parameters={}, **kwargs):
+    def execute(self, queue, observables, parameters={}, batch=False, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -346,6 +346,13 @@ class Device(abc.ABC):
         self._obs_queue = observables
         self._parameters = {}
         self._parameters.update(parameters)
+
+        if len(self._obs_queue) == 1 and isinstance(observables[0], qml.Hamiltonian):
+
+            res_func = lambda x: sum([c * x[i] for i, c in enumerate(observables[0].coeffs)])
+            obs = [[ob] for ob in observables[0].ops]
+
+            return self.batch_execute_rule(queue, obs, res_func)
 
         results = []
 
@@ -429,6 +436,18 @@ class Device(abc.ABC):
             results.append(res)
 
         return results
+
+    def batch_execute_rule(self, operations, observables, rule):
+        results = []
+        for ob in observables:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(operations, ob)
+            results.append(res)
+
+        return rule(results)
 
     @property
     def op_queue(self):
