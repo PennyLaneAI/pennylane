@@ -73,13 +73,13 @@ def probs_to_unitary(probs):
 
     return unitary
 
-def func_to_unitary(func, xs):
+def func_to_unitary(xs, func):
     """
 
     Args:
+        xs (list[array]): A list of arrays
         func (callable): A random variable with dimension equal to ``len(xs)``. This function must
             evaluate within :math:`[0, 1]` for the range of input values specified by ``xs``.
-        xs (list[array]): A list of arrays
 
     Returns:
         array: unitary
