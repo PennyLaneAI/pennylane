@@ -14,12 +14,62 @@
 """
 Contains the ``QuantumMonteCarlo`` template.
 """
+import numpy as np
+
 from pennylane.templates.decorator import template
 
 
-def distribution_to_unitary(distribution):
-    """TODO"""
-    ...
+def probs_to_unitary(probs):
+    """Calculates the unitary matrix corresponding to an input probability distribution.
+
+    For a given distribution :math:`p_{i}`, this function returns the unitary :math:`U` that
+    transforms the :math:`|0\rangle` state as
+
+    .. math::
+
+        U |0\rangle = \sum_{i} \sqrt{p_{i}} |i\rangle,
+
+    so that measuring the resulting state in the computational basis will give the state
+    :math:`|i\rangle` with probability :math:`p_{i}`.
+
+    Args:
+        probs (array): input probability distribution as a flat array
+
+    Returns:
+        array: corresponding unitary
+
+    Raises:
+        ValueError: if the input array is not flat or does not correspond to a probability
+            distribution
+
+    **Example:**
+
+    >>> p = np.ones(4) / 4
+    >>> probs_to_unitary(p)
+    array([[ 0.5       ,  0.5       ,  0.5       ,  0.5       ],
+           [ 0.5       , -0.83333333,  0.16666667,  0.16666667],
+           [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
+           [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
+    """
+    if isinstance(probs, np.ndarray) and probs.ndim != 1:
+        raise ValueError("The probability distribution must be specified as a flat array")
+    if not np.allclose(sum(probs), 1) or min(probs) < 0:
+        raise ValueError("A valid probability distribution of non-negative numbers that sum to one"
+                         "must be input")
+
+    dim = len(probs)
+    unitary = np.zeros((dim, dim))
+
+    unitary[:, 0] = np.sqrt(probs)
+    unitary = np.linalg.qr(unitary)[0]
+
+    # The QR decomposition can introduce a phase of -1. We remove this so that we are preparing
+    # sqrt(p_{i}) rather than -sqrt(p_{i}). Even though both options are valid, it may be surprising
+    # to prepare the negative version.
+    if unitary[0, 0] < 0:
+        unitary *= -1
+
+    return unitary
 
 def random_variable_to_unitary(random_variable):
     """TODO"""
