@@ -30,7 +30,8 @@ def probs_to_unitary(probs):
         U |0\rangle = \sum_{i} \sqrt{p_{i}} |i\rangle,
 
     so that measuring the resulting state in the computational basis will give the state
-    :math:`|i\rangle` with probability :math:`p_{i}`.
+    :math:`|i\rangle` with probability :math:`p_{i}`. Note that the returned unitary matrix is
+    real and hence an orthogonal matrix.
 
     Args:
         probs (array): input probability distribution as a flat array
@@ -63,11 +64,10 @@ def probs_to_unitary(probs):
     unitary[:, 0] = np.sqrt(probs)
     unitary = np.linalg.qr(unitary)[0]
 
-    # The QR decomposition can introduce a phase of -1. We remove this so that we are preparing
+    # The QR decomposition introduces a phase of -1. We remove this so that we are preparing
     # sqrt(p_{i}) rather than -sqrt(p_{i}). Even though both options are valid, it may be surprising
     # to prepare the negative version.
-    if unitary[0, 0] < 0:
-        unitary *= -1
+    unitary *= -1
 
     return unitary
 
