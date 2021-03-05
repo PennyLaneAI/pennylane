@@ -39,7 +39,7 @@ def probs_to_unitary(probs):
         probs (array): input probability distribution as a flat array
 
     Returns:
-        array: corresponding unitary
+        array: unitary
 
     Raises:
         ValueError: if the input array is not flat or does not correspond to a probability
@@ -74,8 +74,20 @@ def probs_to_unitary(probs):
     return unitary
 
 def func_to_unitary(func, xs):
-    """TODO"""
+    """
 
+    Args:
+        func (callable): A random variable with dimension equal to ``len(xs)``. This function must
+            evaluate within :math:`[0, 1]` for the range of input values specified by ``xs``.
+        xs (list[array]): A list of arrays
+
+    Returns:
+        array: unitary
+
+    Raises:
+        ValueError: if func is not bounded with :math:`[0, 1]` for the range of input values
+            specified by ``xs``
+    """
     dim = np.prod([len(x) for x in xs])
     unitary = np.zeros((2 * dim, 2 * dim))
 
@@ -83,7 +95,8 @@ def func_to_unitary(func, xs):
         f = func(*args)
 
         if not 0 <= f <= 1:
-            raise ValueError("func must be bounded within the interval [0, 1]")
+            raise ValueError("func must be bounded within the interval [0, 1] for the range of"
+                             "input values")
 
         unitary[i, i] = np.sqrt(1 - f)
         unitary[i + dim, i] = np.sqrt(f)
