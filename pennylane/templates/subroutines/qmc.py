@@ -14,6 +14,8 @@
 """
 Contains the ``QuantumMonteCarlo`` template.
 """
+import itertools
+
 import numpy as np
 
 from pennylane.templates.decorator import template
@@ -71,9 +73,26 @@ def probs_to_unitary(probs):
 
     return unitary
 
-def random_variable_to_unitary(random_variable):
+def func_to_unitary(func, xs):
     """TODO"""
-    ...
+
+    dim = np.prod([len(x) for x in xs])
+    unitary = np.zeros((2 * dim, 2 * dim))
+
+    for i, args in itertools.product(*reversed(xs)):
+        f = func(*args)
+
+        if not 0 <= f <= 1:
+            raise ValueError("func must be bounded within the interval [0, 1]")
+
+        unitary[i, i] = np.sqrt(1 - f)
+        unitary[i + dim, i] = np.sqrt(f)
+        unitary[i, i + dim] = np.sqrt(f)
+        unitary[i + dim, i + dim] = - np.sqrt(1 - f)
+
+    return unitary
+
+
 
 
 @template
