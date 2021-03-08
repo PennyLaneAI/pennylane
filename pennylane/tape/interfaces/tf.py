@@ -138,34 +138,43 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
+        saved_grad_matrices = {}
+
         def _evaluate_grad_matrix(grad_matrix_fn):
+            if grad_matrix_fn in saved_grad_matrices:
+                return saved_grad_matrices[grad_matrix_fn]
+
             self.set_parameters(all_params_unwrapped, trainable_only=False)
-            grad_matrix = grad_matrix_fn(
+            grad_matrix = getattr(self, grad_matrix_fn)(
                 input_kwargs["device"], params=args, **self.jacobian_options
             )
             self.set_parameters(all_params, trainable_only=False)
-            return tf.constant(grad_matrix, dtype=self.dtype)
 
-        def _evaluate_vector_grad_product(dy, grad_matrix):
-            # Calculate the vector-Gradient matrix product, and unstack the output.
-            dy_row = tf.reshape(dy, [-1] + [grad_matrix.shape[-2]])
-            vgp = tf.matmul(dy_row, grad_matrix)
-            return tf.unstack(tf.reshape(vgp, [-1]))
+            grad_matrix = tf.constant(grad_matrix, dtype=self.dtype)
+            saved_grad_matrices[grad_matrix_fn] = grad_matrix
+
+            return grad_matrix
 
         def jacobian_product(dy, **tfkwargs):
             variables = tfkwargs.get("variables", None)
+            dy_row = tf.reshape(dy, [1, -1])
 
             @tf.custom_gradient
             def jacobian(p):
                 def hessian_product(ddy, **tfkwargs):
                     variables = tfkwargs.get("variables", None)
-                    hessian = _evaluate_grad_matrix(self.hessian)
-                    vhp = _evaluate_vector_grad_product(ddy, hessian)
+                    hessian = _evaluate_grad_matrix("hessian")
+
+                    vhp = tf.matmul(ddy, hessian)
+                    vhp = tf.matmul(tf.matmul(dy_row, vhp), tf.transpose(dy_row))
+
+                    vhp = tf.unstack(tf.reshape(vhp, [-1]))
                     return (vhp, variables) if variables is not None else vhp
 
-                return _evaluate_grad_matrix(self.jacobian), hessian_product
+                return _evaluate_grad_matrix("jacobian"), hessian_product
 
-            vjp = _evaluate_vector_grad_product(dy, jacobian(params))
+            vjp = tf.matmul(dy_row, jacobian(params))
+            vjp = tf.unstack(tf.reshape(vjp, [-1]))
             return (vjp, variables) if variables is not None else vjp
 
         if self.is_sampled:
