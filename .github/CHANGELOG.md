@@ -232,12 +232,14 @@
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
+- Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Maria Schuld.
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld.
 
 # Release 0.14.1 (current release)
 
