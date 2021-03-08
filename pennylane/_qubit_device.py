@@ -478,8 +478,11 @@ class QubitDevice(Device):
             List[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn("In future, the number of shots have to be explicitly set on the device "
-                "when using sample-based measurements.", DeprecationWarning)
+            warnings.warn(
+                "In future, the number of shots have to be explicitly set on the device "
+                "when using sample-based measurements.",
+                DeprecationWarning,
+            )
 
         shots = self.shots or 1000
 
