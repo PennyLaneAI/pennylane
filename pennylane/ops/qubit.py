@@ -1604,7 +1604,7 @@ class QubitUnitary(Operation):
 
 
 class ControlledQubitUnitary(QubitUnitary):
-    r"""ControlledQubitUnitary(U, control_wires, wires)
+    r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
 
     **Details:**
@@ -1617,6 +1617,8 @@ class ControlledQubitUnitary(QubitUnitary):
         U (array[complex]): square unitary matrix
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
 
     **Example**
 
@@ -1625,13 +1627,26 @@ class ControlledQubitUnitary(QubitUnitary):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+
+    Typically controlled operations apply a desired gate if the control qubits
+    are all in the state :math:`\vert 1\rangle`. However, there are some situations where
+    it is necessary to apply a gate conditioned on all qubits being in the
+    :math:`\vert 0\rangle` state, or a mix of the two.
+
+    The state on which to control can be changed by passing a string of bits to
+    `control_values`. For example, if we want to apply a single-qubit unitary to
+    wire ``3`` conditioned on three wires where the first is in state ``0``, the
+    second is in state ``1``, and the third in state ``1``, we can write:
+
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
+
     """
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, control_wires=None, wires=None, do_queue=True):
+    def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -1650,15 +1665,92 @@ class ControlledQubitUnitary(QubitUnitary):
 
         wires = control_wires + wires
 
-        # Given that the controlled wires are listed before the target wires, we need to create a
-        # block-diagonal matrix of shape ((I, 0), (0, U)) where U acts on the target wires and I
-        # acts on the control wires.
-        padding = 2 ** len(wires) - len(U)
-        CU = block_diag(np.eye(padding), U)
+        # If control values unspecified, we control on the all-ones string
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        control_int = self._parse_control_values(control_wires, control_values)
+
+        # A multi-controlled operation is a block-diagonal matrix partitioned into
+        # blocks where the operation being applied sits in the block positioned at
+        # the integer value of the control string. For example, controlling a
+        # unitary U with 2 qubits will produce matrices with block structure
+        # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
+        # etc. The positioning of the block is controlled by padding the block diagonal
+        # to the left and right with the correct amount of identity blocks.
+
+        padding_left = control_int * len(U)
+        padding_right = 2 ** len(wires) - len(U) - padding_left
+
+        CU = block_diag(np.eye(padding_left), U, np.eye(padding_right))
 
         params = list(params)
         params[0] = CU
+
         super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    @staticmethod
+    def _parse_control_values(control_wires, control_values):
+        """Ensure any user-specified control strings have the right format."""
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any([x not in ["0", "1"] for x in control_values]):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
+        return control_int
+
+
+class MultiControlledX(ControlledQubitUnitary):
+    r"""MultiControlledX(control_wires, wires, control_values)
+    Apply a Pauli X gate controlled on an arbitrary computational basis state.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires or int]): a single target wire the operation acts on
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
+
+    **Example**
+
+    The ``MultiControlledX`` operation (sometimes called a mixed-polarity
+    multi-controlled Toffoli) is a commonly-encountered case of the
+    :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
+    unitary is the Pauli X (NOT) gate. It can be used in the same manner as
+    ``ControlledQubitUnitary``, but there is no need to specify a matrix
+    argument:
+
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
+        if len(Wires(wires)) != 1:
+            raise ValueError("MultiControlledX accepts a single target wire.")
+
+        super().__init__(
+            np.array([[0, 1], [1, 0]]),
+            control_wires=control_wires,
+            wires=wires,
+            control_values=control_values,
+            do_queue=do_queue,
+        )
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -1975,6 +2067,7 @@ ops = {
     "QubitStateVector",
     "QubitUnitary",
     "ControlledQubitUnitary",
+    "MultiControlledX",
     "DiagonalQubitUnitary",
     "QFT",
 }
