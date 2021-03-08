@@ -202,6 +202,11 @@ class Device(abc.ABC):
         return self._shots
 
     @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        return self._analytic
+
+    @property
     def wires(self):
         """All wires that can be addressed on this device"""
         return self._wires
@@ -237,7 +242,7 @@ class Device(abc.ABC):
             # device is in analytic mode
             self._shots = shots
             self._shot_vector = None
-            self.analytic = True  # attribute kept for backwards compatibility
+            self._analytic = True  # attribute kept for backwards compatibility
 
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
@@ -248,10 +253,12 @@ class Device(abc.ABC):
 
             self._shots = shots
             self._shot_vector = None
+            self._analytic = False
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
+            self._analytic = False
 
         else:
             raise DeviceError(
