@@ -178,7 +178,7 @@ class TFInterface(AnnotatedQueue):
             return (vjp, variables) if variables is not None else vjp
 
         if self.is_sampled:
-            return res, grad
+            return res, jacobian_product
 
         if res.dtype == np.dtype("object"):
             res = np.hstack(res)
