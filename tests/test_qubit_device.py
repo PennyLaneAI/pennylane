@@ -405,6 +405,16 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
+    def test_raises_deprecation_warning(self):
+        """Test that sampling basis states on a device with shots=None produces a warning."""
+
+        dev = mock_qubit_device()
+        dev.shots = None
+        state_probs = [0.1, 0.2, 0.3, 0.4]
+
+        with pytest.raises(DeprecationWarning, match="In future, the number of shots"):
+            dev.sample_basis_states(number_of_states, state_probs)
+
 
 class TestStatesToBinary:
     """Test the states_to_binary method"""
