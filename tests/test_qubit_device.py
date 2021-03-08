@@ -856,7 +856,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_single_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a single expectation value"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -880,7 +880,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple expectation values"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -909,7 +909,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a probability return"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -937,7 +937,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple probability returns"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -958,7 +958,7 @@ class TestShotList:
     def test_invalid_shot_list(self):
         """Test exception raised if the shot list is the wrong type"""
         with pytest.raises(qml.DeviceError, match="Shots must be"):
-            qml.device("default.qubit", wires=2, analytic=False, shots=0.5)
+            qml.device("default.qubit", wires=2, shots=0.5)
 
         with pytest.raises(ValueError, match="Unknown shot sequence"):
-            qml.device("default.qubit", wires=2, analytic=False, shots=["a", "b", "c"])
+            qml.device("default.qubit", wires=2, shots=["a", "b", "c"])

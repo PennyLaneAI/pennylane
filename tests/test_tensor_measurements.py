@@ -345,7 +345,7 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
-    def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol):
+    def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qml.device("default.qubit", wires=2, shots=int(1e6))
 
@@ -357,9 +357,9 @@ class TestTensorSample:
         s1 = circuit()
 
         # s1 should only contain 1
-        assert np.allclose(s1, 1, atol=tol, rtol=0)
+        assert np.allclose(s1, 1, atol=tol_stochastic, rtol=0)
 
-    def test_paulix_tensor_pauliy(self, theta, phi, varphi, tol):
+    def test_paulix_tensor_pauliy(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -371,7 +371,7 @@ class TestTensorSample:
         s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
@@ -390,9 +390,9 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
-    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol):
+    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -420,12 +420,12 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
-    def test_tensor_hermitian(self, theta, phi, varphi, tol):
+    def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -465,4 +465,4 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
