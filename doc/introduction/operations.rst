@@ -82,6 +82,7 @@ Qubit gates
     ~pennylane.CSWAP
     ~pennylane.QubitUnitary
     ~pennylane.ControlledQubitUnitary
+    ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
     ~pennylane.QFT
 
