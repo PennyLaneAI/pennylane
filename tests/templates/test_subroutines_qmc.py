@@ -13,7 +13,8 @@
 # limitations under the License.
 import numpy as np
 import pytest
-from pennylane.templates.subroutines.qmc import probs_to_unitary
+import pennylane as qml
+from pennylane.templates.subroutines.qmc import probs_to_unitary, func_to_unitary
 
 class TestProbsToUnitary:
     """Tests for the probs_to_unitary function"""
@@ -52,3 +53,59 @@ class TestProbsToUnitary:
         assert np.allclose(np.sqrt(p), unitary[:, 0])
         assert np.allclose(unitary @ unitary.T, np.eye(len(unitary)))
         assert np.allclose(unitary.T @ unitary, np.eye(len(unitary)))
+
+
+class TestFuncToUnitary:
+    """Tests for the func_to_unitary function"""
+
+    def test_not_bounded_func(self):
+        """Test if a ValueError is raised if a function that evaluates outside of the [0, 1]
+        interval is provided"""
+        func = lambda x: np.sin(x)
+        xs = [np.linspace(-1, 1, 8)]
+
+        with pytest.raises(ValueError, match="func must be bounded within the interval"):
+            func_to_unitary(xs, func)
+
+    def test_one_dimensional(self):
+        """Test for a one-dimensional example if the returned unitary maps input states to the
+        expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
+        M = 8
+        func = lambda x: np.sin(x) ** 2
+        xs = [np.linspace(-1, 1, M)]
+
+        r = func_to_unitary(xs, func)
+
+        for i, x in enumerate(xs[0]):
+            # The control qubit is the last qubit, so we often have to look at every other term
+            # using [::2].
+            output_state = r[::2][i]
+            output_0 = output_state[::2]
+            output_1 = output_state[1::2]
+            assert np.allclose(output_0[i], np.sqrt(1 - func(x)))
+            assert np.allclose(output_1[i], np.sqrt(func(x)))
+
+        assert np.allclose(r @ r.T, np.eye(2 * M))
+        assert np.allclose(r.T @ r, np.eye(2 * M))
+
+    def test_one_dimensional_with_pl(self):
+        """Test for a one-dimensional example if the returned unitary maps input states to the
+        expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
+        wires = 3
+        M = 2 ** wires
+        func = lambda x: np.sin(x) ** 2
+        xs = [np.linspace(-1, 1, M)]
+
+        r = func_to_unitary(xs, func)
+
+        dev = qml.device("default.qubit", wires=(wires + 1))
+
+        @qml.qnode(dev)
+        def apply_r(input_state):
+            qml.QubitStateVector(input_state, wires=range(wires))
+            qml.QubitUnitary(r, wires=range(wires + 1))
+            return qml.probs(wires)
+
+        for x, state in zip(xs[0], np.eye(M)):
+            p = apply_r(state)[1]
+            assert np.allclose(p, func(x))
