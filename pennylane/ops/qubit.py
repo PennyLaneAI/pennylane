@@ -854,7 +854,7 @@ class MultiRZ(DiagonalOperation):
 
     Args:
         theta (float): rotation angle :math:`\theta`
-        wires (Sequence[int]): the wires the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 1
     num_wires = AnyWires
