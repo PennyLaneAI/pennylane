@@ -768,6 +768,15 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
 
+    @pytest.mark.parametrize("U", [np.array([0]), np.array([1,0,0,1]), np.array([[[1,0],[0,1]]])])
+    def test_qubit_unitary_not_matrix_exception(self, U):
+        """Tests that the unitary operator raises the proper errors for arrays
+        that are not two-dimensional."""
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            qml.QubitUnitary(U, wires=0).matrix
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
         """Tests that the ControlledPhaseShift operation calculates the correct matrix and
