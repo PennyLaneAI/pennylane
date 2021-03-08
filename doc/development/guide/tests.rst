@@ -5,7 +5,7 @@ Running the test suite
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
-for test coverage, ``pytest-mock`` for mocking and ``flaky`` for automatically rerunning flaky tests; these can be installed via ``pip``:
+for test coverage, ``pytest-mock`` for mocking, and ``flaky`` for automatically rerunning flaky tests; these can be installed via ``pip``:
 
 .. code-block:: bash
 
