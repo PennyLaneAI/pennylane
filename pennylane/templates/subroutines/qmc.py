@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the ``QuantumMonteCarlo`` template.
+Contains the ``QuantumMonteCarlo`` template and utility functions.
 """
 import itertools
 
@@ -155,8 +155,10 @@ def func_to_unitary(xs, func):
     return unitary
 
 
+
+
 @template
-def QuantumMonteCarlo(distributions, random_variable, target_wires, estimation_wires):
+def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires):
     """TODO
     """
-    ...
+
