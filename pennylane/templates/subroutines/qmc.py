@@ -114,11 +114,33 @@ def func_to_unitary(xs, func):
     Raises:
         ValueError: if func is not bounded with :math:`[0, 1]` for the range of input values
             specified by ``xs``
+
+    **Example:**
+
+    >>> M = 8
+    >>> x = np.linspace(-np.pi, np.pi, M)
+    >>> d = 2
+    >>> xs = [x] * d
+    >>> func = lambda x1, x2: np.sin(x1 - x2) ** 2
+    >>> func_to_unitary(xs, func)
+    array([[ 1.        ,  0.        ,  0.        , ...,  0.        ,
+             0.        ,  0.        ],
+           [ 0.        ,  0.6234898 ,  0.        , ...,  0.        ,
+             0.        ,  0.        ],
+           [ 0.        ,  0.        ,  0.22252093, ...,  0.        ,
+             0.        ,  0.        ],
+           ...,
+           [ 0.        ,  0.        ,  0.        , ..., -0.22252093,
+             0.        ,  0.        ],
+           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+            -0.6234898 ,  0.        ],
+           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+             0.        , -1.        ]])
     """
     dim = np.prod([len(x) for x in xs])
     unitary = np.zeros((2 * dim, 2 * dim))
 
-    for i, args in itertools.product(*reversed(xs)):
+    for i, args in enumerate(itertools.product(*reversed(xs))):
         f = func(*args)
 
         if not 0 <= f <= 1:
