@@ -524,9 +524,9 @@ class TestQNode:
         assert isinstance(res, tf.Tensor)
 
     def test_hessian(self, dev_name, diff_method, mocker, tol):
-        """Test hessian calculation"""
-        if diff_method != "parameter-shift":
-            pytest.skip("Test only supports parameter-shift")
+        """Test hessian calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
 
         spy = mocker.spy(JacobianTape, "hessian")
         dev = qml.device(dev_name, wires=1)
@@ -545,16 +545,68 @@ class TestQNode:
             g = tape2.gradient(res, x)
         hess = tape1.jacobian(g, x)
 
-        expected_res = tf.cos(x[0])*tf.cos(x[1])
-        assert np.allclose(res, expected_res)
+        a, b = x * 1.0
 
-        expected_g = [-tf.sin(x[0])*tf.cos(x[1]), -tf.cos(x[0])* tf.sin(x[1])]
-        assert np.allclose(g, expected_g)
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        expected_hess = [[-tf.cos(x[0])*tf.cos(x[1]), tf.sin(x[0])*tf.sin(x[1])],
-                         [tf.sin(x[0])*tf.sin(x[1]), -tf.cos(x[0])*tf.cos(x[1])]]
-        assert np.allclose(hess, expected_hess)
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
+        expected_hess = [
+            [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)],
+            [tf.sin(a) * tf.sin(b), -tf.cos(a) * tf.cos(b)]
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_vector_valued(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.probs(wires=0)
+
+        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(x)
+
+            g = tape2.jacobian(res, x)
+
+        hess = tape1.jacobian(g, x)
+
+        a, b = x * 1.0
+
+        expected_res = [
+            0.5 + 0.5 * tf.cos(a) * tf.cos(b),
+            0.5 - 0.5 * tf.cos(a) * tf.cos(b)
+        ]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [
+            [-0.5 * tf.sin(a) * tf.cos(b), -0.5 * tf.cos(a) * tf.sin(b)],
+            [0.5 * tf.sin(a) * tf.cos(b), 0.5 * tf.cos(a) * tf.sin(b)]
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [
+                [-0.5 * tf.cos(a) * tf.cos(b), 0.5 * tf.sin(a) * tf.sin(b)],
+                [0.5 * tf.sin(a) * tf.sin(b), -0.5 * tf.cos(a) * tf.cos(b)]
+            ],
+            [
+                [0.5 * tf.cos(a) * tf.cos(b), -0.5 * tf.sin(a) * tf.sin(b)],
+                [-0.5 * tf.sin(a) * tf.sin(b), 0.5 * tf.cos(a) * tf.cos(b)]
+            ]
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
 
 def qtransform(qnode, a, framework=tf):

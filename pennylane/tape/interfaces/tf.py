@@ -147,17 +147,10 @@ class TFInterface(AnnotatedQueue):
             return tf.constant(grad_matrix, dtype=self.dtype)
 
         def _evaluate_vector_grad_product(dy, grad_matrix):
-            # Reshape gradient output array as a 2D row-vector.
-            grad_matrix = tf.cond(
-                tf.rank(grad_matrix) > 2,
-                lambda: tf.reshape(grad_matrix, [-1, dy.shape[0]]),
-                lambda: grad_matrix,
-            )
-
-            dy_row = tf.reshape(dy, [1, -1])
             # Calculate the vector-Gradient matrix product, and unstack the output.
+            dy_row = tf.reshape(dy, [-1] + [grad_matrix.shape[-2]])
             vgp = tf.matmul(dy_row, grad_matrix)
-            return tf.unstack(tf.reshape(vgp, [-1]), num=dy.shape[1])
+            return tf.unstack(tf.reshape(vgp, [-1]))
 
         def jacobian_product(dy, **tfkwargs):
             variables = tfkwargs.get("variables", None)
