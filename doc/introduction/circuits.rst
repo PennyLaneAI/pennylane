@@ -120,6 +120,38 @@ devices, the options are:
 
 For a plugin device, refer to the plugin documentation for available device options.
 
+Shot batches
+^^^^^^^^^^^^
+
+Batches of shots can be specified by passing a list, allowing measurement statistics
+to be course-grained with a single QNode evaluation.
+
+Consider
+
+>>> shots_list = [5, 10, 1000]
+>>> dev = qml.device("default.qubit", wires=2, analytic=False, shots=shots_list)
+
+When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
+However, three sets of measurement statistics will be returned; using the first 5 shots,
+second set of 10 shots, and final 1000 shots, separately.
+
+For example:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+Executing this, we will get an output of size ``(3, 2)``:
+
+>>> circuit(0.5)
+[[0.33333333 1.        ]
+[0.2        1.        ]
+[0.012      0.868     ]]
+
 Custom wire labels
 ^^^^^^^^^^^^^^^^^^
 

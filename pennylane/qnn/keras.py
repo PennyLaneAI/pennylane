@@ -182,6 +182,15 @@ class KerasLayer(Layer):
         Epoch 8/8
         100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
 
+        **Returning a state**
+
+        If your QNode returns the state of the quantum circuit using :func:`~.state` or
+        :func:`~.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
+        that casts to reals. For example, you could use
+        `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
+        with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
+        Keras layers require a real input and are differentiated with respect to real parameters.
+
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
@@ -209,8 +218,13 @@ class KerasLayer(Layer):
         if self.qnode.diff_method != "backprop":
             self.qnode.to_tf(dtype=dtype)
 
-        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
-        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+        # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
+        # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
+        # are passed as integer 5 and [5, 2] will be passes as tuple (5, 2)
+        if isinstance(output_dim, Iterable) and len(output_dim) > 1:
+            self.output_dim = tuple(output_dim)
+        else:
+            self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
@@ -276,7 +290,7 @@ class KerasLayer(Layer):
         return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
-        """Evaluates a tape-mode QNode for a single input datapoint.
+        """Evaluates a QNode for a single input datapoint.
 
         Args:
             x (tensor): the datapoint
@@ -297,7 +311,7 @@ class KerasLayer(Layer):
         Returns:
             tf.TensorShape: shape of output data
         """
-        return tf.TensorShape([input_shape[0], self.output_dim])
+        return tf.TensorShape(input_shape[0]).concatenate(self.output_dim)
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"
