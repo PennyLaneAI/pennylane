@@ -237,6 +237,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
+  being updated.
+  [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
+
 * Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
   or all zeros. 
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
@@ -261,7 +265,7 @@
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld.
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
