@@ -61,43 +61,40 @@ class TestFuncToUnitary:
     def test_not_bounded_func(self):
         """Test if a ValueError is raised if a function that evaluates outside of the [0, 1]
         interval is provided"""
-        func = lambda x: np.sin(x)
-        xs = [np.linspace(-1, 1, 8)]
+        func = lambda i: np.sin(i)
 
         with pytest.raises(ValueError, match="func must be bounded within the interval"):
-            func_to_unitary(xs, func)
+            func_to_unitary(func, 8)
 
     def test_one_dimensional(self):
         """Test for a one-dimensional example if the returned unitary maps input states to the
         expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
         M = 8
-        func = lambda x: np.sin(x) ** 2
-        xs = [np.linspace(-1, 1, M)]
+        func = lambda i: np.sin(i) ** 2
 
-        r = func_to_unitary(xs, func)
+        r = func_to_unitary(func, M)
 
-        for i, x in enumerate(xs[0]):
-            # The control qubit is the last qubit, so we often have to look at every other term
+        for i in range(M):
+            # The control qubit is the last qubit, so we have to look at every other term
             # using [::2].
             output_state = r[::2][i]
             output_0 = output_state[::2]
             output_1 = output_state[1::2]
-            assert np.allclose(output_0[i], np.sqrt(1 - func(x)))
-            assert np.allclose(output_1[i], np.sqrt(func(x)))
+            assert np.allclose(output_0[i], np.sqrt(1 - func(i)))
+            assert np.allclose(output_1[i], np.sqrt(func(i)))
 
         assert np.allclose(r @ r.T, np.eye(2 * M))
         assert np.allclose(r.T @ r, np.eye(2 * M))
 
     def test_one_dimensional_with_pl(self):
-        """Test for a one-dimensional example if the returned unitary maps behaves as expected
+        """Test for a one-dimensional example if the returned unitary behaves as expected
         when used within a PennyLane circuit, i.e., so that the probability of the final control
         wire encodes the function."""
         wires = 3
         M = 2 ** wires
-        func = lambda x: np.sin(x) ** 2
-        xs = [np.linspace(-1, 1, M)]
+        func = lambda i: np.sin(i) ** 2
 
-        r = func_to_unitary(xs, func)
+        r = func_to_unitary(func, M)
 
         dev = qml.device("default.qubit", wires=(wires + 1))
 
@@ -107,30 +104,6 @@ class TestFuncToUnitary:
             qml.QubitUnitary(r, wires=range(wires + 1))
             return qml.probs(wires)
 
-        for x, state in zip(xs[0], np.eye(M)):
+        for i, state in enumerate(np.eye(M)):
             p = apply_r(state)[1]
-            assert np.allclose(p, func(x))
-
-    def test_two_dimensional(self):
-        """Test for a one-dimensional example if the returned unitary maps input states to the
-        expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
-        M = 8
-        func = lambda x1, x2: np.sin(x1 - x2) ** 2
-        xs = [np.linspace(-1, 1, M), np.linspace(-1, 1, M)]
-
-        r = func_to_unitary(xs, func)
-
-        # for output_state in r[::2]:
-
-
-        # for i, x in enumerate(xs[0]):
-        #     # The control qubit is the last qubit, so we often have to look at every other term
-        #     # using [::2].
-        #     output_state = r[::2][i]
-        #     output_0 = output_state[::2]
-        #     output_1 = output_state[1::2]
-        #     assert np.allclose(output_0[i], np.sqrt(1 - func(x)))
-        #     assert np.allclose(output_1[i], np.sqrt(func(x)))
-        #
-        # assert np.allclose(r @ r.T, np.eye(2 * M))
-        # assert np.allclose(r.T @ r, np.eye(2 * M))
+            assert np.allclose(p, func(i))

@@ -14,8 +14,6 @@
 """
 Contains the ``QuantumMonteCarlo`` template and utility functions.
 """
-import itertools
-
 import numpy as np
 
 from pennylane.templates.decorator import template
