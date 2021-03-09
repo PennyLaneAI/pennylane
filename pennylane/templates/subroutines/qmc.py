@@ -74,74 +74,58 @@ def probs_to_unitary(probs):
     return unitary
 
 
-def func_to_unitary(xs, func):
+def func_to_unitary(func, M):
     r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
 
-    Consider the set of :math:`M` points :math:`X = \{x_{0}, x_{1}, \ldots, x_{M - 1}\}` and the
-    corresponding :math:`d`-dimensional discrete space :math:`X^{d}`. Also, consider the function
-    :math:`f: X^{d} \rightarrow \mathbb{R}` such that :math:`0 \leq f(x) \leq 1` for all
-    :math:`x \in X`.
+    Consider a function defined on a set of integers :math:`X = [0, 1, \ldots, M - 1]` whose output
+    is bounded in the interval :math:`[0, 1]`, i.e., :math:`f: X \rightarrow [0, 1]`.
 
     This function returns a unitary :math:`\mathcal{R}` that performs the transformation:
 
     .. math::
 
-        \mathcal{R} |i_{d - 1}i_{d - 2}\ldots i_{0}\rangle \otimes |0\rangle
-         = |i_{d - 1}i_{d - 2}\ldots i_{0}\rangle\otimes
-         \left(\sqrt{1 - f(x_{i_{0}}, \ldots, x_{i_{d - 2}}, x_{i_{d - 1}})}|0\rangle +
-        \sqrt{f(x_{i_{0}}, \ldots, x_{i_{d - 2}}, x_{i_{d - 1}})} |1\rangle\right),
+        \mathcal{R} |i\rangle \otimes |0\rangle = |i\rangle\otimes \left(\sqrt{1 - f(i)}|0\rangle +
+        \sqrt{f(i)} |1\rangle\right),
 
-    where :math:`i_{j} \in \{0, 1, \ldots , M - 1\}` for all :math:`j`. For a given input state
-    :math:`|i_{d - 1}i_{d - 2}\ldots i_{0}\rangle \otimes |0\rangle`, this unitary encodes the
-    amplitude :math:`\sqrt{f(x_{i_{0}}, \ldots, x_{i_{d - 2}}, x_{i_{d - 1}})}` onto the
-    :math:`|1\rangle` state of the ancilla qubit. Hence, measuring the ancilla qubit will result
-    in the :math:`|1\rangle` state with probability
-    :math:`f(x_{i_{0}}, \ldots, x_{i_{d - 2}}, x_{i_{d - 1}})`.
-
-    More generally, one can consider a :math:`d`-dimensional discrete product space
-    :math:`X_{0} \times X_{1} \times \ldots \times X_{d - 1}` with each :math:`X_{i}` composed of
-    an independent set of :math:`x`-values of varying length.
+    In other words, for a given input state :math:`|i\rangle \otimes |0\rangle`, this unitary
+    encodes the amplitude :math:`\sqrt{f(i)}` onto the :math:`|1\rangle` state of the ancilla qubit.
+    Hence, measuring the ancilla qubit will result in the :math:`|1\rangle` state with probability
+    :math:`f(i)`.
 
     Args:
-        xs (list[array]): a list of arrays containing the values for each :math:`X_{i}`
-        func (callable): A random variable that can be called with :math:`d` arguments.
-            It must evaluate within :math:`[0, 1]` for the range of input values specified by
-            ``xs``.
+        func (callable): A function defined on the set of integers :math:`X = [0, 1, \ldots, M - 1]`
+            with output value inside :math:`[0, 1]`
+        M (int): the number of integers that the function is defined on
 
     Returns:
         array: the :math:`\mathcal{R}` unitary
 
     Raises:
-        ValueError: if func is not bounded with :math:`[0, 1]` for the range of input values
-            specified by ``xs``
+        ValueError: if func is not bounded with :math:`[0, 1]` for all :math:`X`
 
     **Example:**
 
-    >>> M = 8
-    >>> x = np.linspace(-np.pi, np.pi, M)
-    >>> d = 2
-    >>> xs = [x] * d
-    >>> func = lambda x1, x2: np.sin(x1 - x2) ** 2
-    >>> func_to_unitary(xs, func)
-    array([[ 1.       ,  0.       ,  0.       , ...,  0.       ,  0.       ,
-             0.       ],
-           [ 0.       , -1.       ,  0.       , ...,  0.       ,  0.       ,
-             0.       ],
-           [ 0.       ,  0.       ,  0.6234898, ...,  0.       ,  0.       ,
-             0.       ],
+    >>> func = lambda i: np.sin(i) ** 2
+    >>> M = 16
+    >>> func_to_unitary(func, M)
+    array([[ 1.        ,  0.        ,  0.        , ...,  0.        ,
+             0.        ,  0.        ],
+           [ 0.        , -1.        ,  0.        , ...,  0.        ,
+             0.        ,  0.        ],
+           [ 0.        ,  0.        ,  0.54030231, ...,  0.        ,
+             0.        ,  0.        ],
            ...,
-           [ 0.       ,  0.       ,  0.       , ..., -0.6234898,  0.       ,
-             0.       ],
-           [ 0.       ,  0.       ,  0.       , ...,  0.       ,  1.       ,
-             0.       ],
-           [ 0.       ,  0.       ,  0.       , ...,  0.       ,  0.       ,
-            -1.       ]])
+           [ 0.        ,  0.        ,  0.        , ..., -0.13673722,
+             0.        ,  0.        ],
+           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+             0.75968791,  0.65028784],
+           [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+             0.65028784, -0.75968791]])
     """
-    dim = np.prod([len(x) for x in xs])
-    unitary = np.zeros((2 * dim, 2 * dim))
+    unitary = np.zeros((2 * M, 2 * M))
 
-    for i, args in enumerate(itertools.product(*reversed(xs))):
-        f = func(*args)
+    for i in range(M):
+        f = func(i)
 
         if not 0 <= f <= 1:
             raise ValueError("func must be bounded within the interval [0, 1] for the range of"
@@ -153,8 +137,6 @@ def func_to_unitary(xs, func):
         unitary[2 * i + 1, 2 * i + 1] = - np.sqrt(1 - f)
 
     return unitary
-
-
 
 
 @template
