@@ -72,6 +72,44 @@ def probs_to_unitary(probs):
     return unitary
 
 
+def make_Q_matrix(A, R):
+    A_big = np.kron(A, np.eye(2))
+    F = R @ A_big
+
+
+def _make_V(dim):
+    r"""Calculates the :math:`\mathcal{V}` unitary which performs a reflection along the
+    :math:`|1\rangle` state of the end ancilla qubit.
+
+    Args:
+        dim (int): dimension of :math:`\mathcal{V}`
+
+    Returns:
+        array: the :math:`\mathcal{V}` unitary
+    """
+    assert dim % 2 == 0, "dimension for _make_V() must be even"
+
+    one = np.array([[0, 0], [0, 1]])
+    dim_without_qubit = int(dim / 2)
+
+    return 2 * np.kron(np.eye(dim_without_qubit), one) - np.eye(dim)
+
+
+def _make_Z(dim):
+    r"""Calculates the :math:`\mathcal{Z}` unitary which performs a reflection along the all
+    :math:`|0\rangle` state.
+
+    Args:
+        dim (int): dimension of :math:`\mathcal{Z}`
+
+    Returns:
+        array: the :math:`\mathcal{Z}` unitary
+    """
+    Z = -np.eye(dim)
+    Z[0, 0] = 1
+    return Z
+
+
 def func_to_unitary(func, M):
     r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
 

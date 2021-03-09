@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 import pennylane as qml
-from pennylane.templates.subroutines.qmc import probs_to_unitary, func_to_unitary
+from pennylane.templates.subroutines.qmc import probs_to_unitary, func_to_unitary, _make_V, _make_Z
 
 class TestProbsToUnitary:
     """Tests for the probs_to_unitary function"""
@@ -107,3 +107,25 @@ class TestFuncToUnitary:
         for i, state in enumerate(np.eye(M)):
             p = apply_r(state)[1]
             assert np.allclose(p, func(i))
+
+
+def test_V():
+    """Tests for the _make_V function"""
+    dim = 4
+
+    V_expected = - np.eye(dim)
+    V_expected[1, 1] = V_expected[3, 3] = 1
+    V = _make_V(dim)
+
+    assert np.allclose(V, V_expected)
+
+
+def test_Z():
+    """Tests for the _make_Z function"""
+    dim = 4
+
+    Z_expected = - np.eye(dim)
+    Z_expected[0, 0] = 1
+    Z = _make_Z(dim)
+
+    assert np.allclose(Z, Z_expected)
