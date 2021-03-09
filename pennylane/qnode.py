@@ -313,7 +313,8 @@ class QNode:
                 f"{backprop_interface} interface."
             )
 
-        if (getattr(device, "shots", 0) is None) and backprop_devices is not None:
+        if device.shots is None and backprop_devices is not None:
+
             # device is analytic and has child devices that support backpropagation natively
 
             if interface in backprop_devices:
