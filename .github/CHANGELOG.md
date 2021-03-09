@@ -130,7 +130,7 @@
 
 <h3>Improvements</h3>
 
-- Improved the input matrix check of ``QubitUnitary``.
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
 
 - Added the `ControlledQubitUnitary` operation. This
