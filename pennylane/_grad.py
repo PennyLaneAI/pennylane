@@ -176,7 +176,6 @@ def jacobian(func, argnum=None):
             return tuple()
 
         if len(argnum) == 1:
-            print(argnum[0], args)
             return _jacobian(func, argnum[0])(*args, **kwargs)
 
         return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
