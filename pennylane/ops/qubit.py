@@ -1594,7 +1594,7 @@ class QubitUnitary(Operation):
     def _matrix(cls, *params):
         U = np.asarray(params[0])
 
-        if U.shape[0] != U.shape[1]:
+        if U.ndim != 2 or U.shape[0] != U.shape[1]:
             raise ValueError("Operator must be a square matrix.")
 
         if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):

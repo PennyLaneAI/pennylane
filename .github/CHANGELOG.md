@@ -130,6 +130,9 @@
 
 <h3>Improvements</h3>
 
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
+
 - Added the `ControlledQubitUnitary` operation. This
   enables implementation of multi-qubit gates with a variable number of
   control qubits. It is also possible to specify a different state for the
