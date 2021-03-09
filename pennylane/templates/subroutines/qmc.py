@@ -16,7 +16,9 @@ Contains the ``QuantumMonteCarlo`` template and utility functions.
 """
 import numpy as np
 
+import pennylane as qml
 from pennylane.templates.decorator import template
+from pennylane.wires import Wires
 
 
 def probs_to_unitary(probs):
@@ -52,8 +54,6 @@ def probs_to_unitary(probs):
            [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
            [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
     """
-    if isinstance(probs, np.ndarray) and probs.ndim != 1:
-        raise ValueError("The probability distribution must be specified as a flat array")
     if not np.allclose(sum(probs), 1) or min(probs) < 0:
         raise ValueError(
             "A valid probability distribution of non-negative numbers that sum to one"
@@ -202,18 +202,30 @@ def make_Q(A, R):
 
 
 @template
-def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires, timesteps=None):
+def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
     """TODO"""
-    if timesteps is not None:
-        if isinstance(probs, list) or isinstance(xs, list):
-            raise ValueError("...")
-        d = timesteps
+    if isinstance(probs, np.ndarray) and probs.ndim != 1:
+        raise ValueError("The probability distribution must be specified as a flat array")
 
-    if isinstance(probs, list):
-        if timesteps is not None:
-            raise ValueError("...")
-        d = len(probs)
-        if not isinstance(xs, list):
-            xs = [xs] * d
-        elif len(xs) != len(probs):
-            raise ValueError("...")
+    dim_p = len(probs)
+    num_target_wires = np.log2(2 * dim_p)
+
+    if not num_target_wires.isinteger():
+        raise ValueError("The probability distribution must have a length that is a power of two")
+
+    num_target_wires = int(num_target_wires)
+
+    target_wires = Wires(target_wires)
+    estimation_wires = Wires(estimation_wires)
+
+    if num_target_wires != len(target_wires):
+        raise ValueError(f"The probability distribution of dimension {dim_p} requires"
+                         f" {num_target_wires} target wires")
+
+    A = probs_to_unitary(probs)
+    R = func_to_unitary(func, dim_p)
+    Q = make_Q(A, R)
+
+    qml.QubitUnitary(A, wires=target_wires[:-1])
+    qml.QubitUnitary(R, wires=target_wires)
+    qml.templates.QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)

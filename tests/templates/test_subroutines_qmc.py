@@ -27,11 +27,11 @@ from pennylane.templates.subroutines.qmc import (
 class TestProbsToUnitary:
     """Tests for the probs_to_unitary function"""
 
-    def test_non_flat(self):
-        """Test if a ValueError is raised when a non-flat array is input"""
-        p = np.ones((4, 1))
-        with pytest.raises(ValueError, match="The probability distribution must be specified as a"):
-            probs_to_unitary(p)
+    # def test_non_flat(self):
+    #     """Test if a ValueError is raised when a non-flat array is input"""
+    #     p = np.ones((4, 1))
+    #     with pytest.raises(ValueError, match="The probability distribution must be specified as a"):
+    #         probs_to_unitary(p)
 
     def test_invalid_distribution_sum_to_not_one(self):
         """Test if a ValueError is raised when a distribution that does not sum to one is input"""
