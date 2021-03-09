@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 import pennylane as qml
-from pennylane.templates.subroutines.qmc import probs_to_unitary, func_to_unitary, _make_V, _make_Z
+from pennylane.templates.subroutines.qmc import probs_to_unitary, func_to_unitary, _make_V, _make_Z, make_Q
 
 class TestProbsToUnitary:
     """Tests for the probs_to_unitary function"""
@@ -110,7 +110,7 @@ class TestFuncToUnitary:
 
 
 def test_V():
-    """Tests for the _make_V function"""
+    """Test for the _make_V function"""
     dim = 4
 
     V_expected = - np.eye(dim)
@@ -121,7 +121,7 @@ def test_V():
 
 
 def test_Z():
-    """Tests for the _make_Z function"""
+    """Test for the _make_Z function"""
     dim = 4
 
     Z_expected = - np.eye(dim)
@@ -129,3 +129,31 @@ def test_Z():
     Z = _make_Z(dim)
 
     assert np.allclose(Z, Z_expected)
+
+
+def test_Q():
+    """Test for the make_Q function using a fixed example"""
+
+    A = np.array([[ 0.85358423-0.32239299j, -0.12753659+0.38883306j],
+       [ 0.39148136-0.11915985j,  0.34064316-0.84646648j]])
+    R = np.array([[ 0.45885289+0.03972856j,  0.2798685 -0.05981098j,
+         0.64514642-0.51555038j,  0.11015177-0.10877695j],
+       [ 0.19407005-0.35483005j,  0.29756077+0.80153453j,
+        -0.19147104+0.0507968j ,  0.15553799-0.20493631j],
+       [ 0.35083011-0.20807392j, -0.27602911-0.13934692j,
+         0.11874165+0.34532609j, -0.45945242-0.62734969j],
+       [-0.11379919-0.66706921j, -0.21120956-0.2165113j ,
+         0.30133006+0.23367271j,  0.54593491+0.08446372j]])
+
+    Q_expected = np.array([[-0.46513201-1.38777878e-17j, -0.13035515-2.23341802e-01j,
+        -0.74047856+7.08652160e-02j, -0.0990036 -3.91977176e-01j],
+       [ 0.13035515-2.23341802e-01j,  0.46494302+0.00000000e+00j,
+         0.05507901-1.19182067e-01j, -0.80370146-2.31904873e-01j],
+       [-0.74047856-7.08652160e-02j, -0.05507901-1.19182067e-01j,
+         0.62233412-2.77555756e-17j, -0.0310774 -2.02894077e-01j],
+       [ 0.0990036 -3.91977176e-01j, -0.80370146+2.31904873e-01j,
+         0.0310774 -2.02894077e-01j, -0.30774091+2.77555756e-17j]])
+
+    Q = make_Q(A, R)
+
+    assert np.allclose(Q, Q_expected)
