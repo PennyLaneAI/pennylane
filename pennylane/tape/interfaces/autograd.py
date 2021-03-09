@@ -195,18 +195,67 @@ class AutogradInterface(AnnotatedQueue):
             gradient output vector, and computes the vector-Jacobian product
         """
 
-        def gradient_product(g):
-            # In autograd, the forward pass is always performed prior to the backwards
-            # pass, so we do not need to re-unwrap the parameters.
+        saved_grad_matrices = {}
+
+        def _evaluate_grad_matrix(p, grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the saved_grad_matrices attribute, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because Autograd requests the vector-GradMatrix product,
+              and *not* the full GradMatrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+            """
+            if grad_matrix_fn in saved_grad_matrices:
+                return saved_grad_matrices[grad_matrix_fn]
+
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
-            jac = self.jacobian(device, params=params, **self.jacobian_options)
+            grad_matrix = getattr(self, grad_matrix_fn)(device, params=p, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
 
-            # only flatten g if all parameters are single values
+            saved_grad_matrices[grad_matrix_fn] = grad_matrix
+            return grad_matrix
+
+        def gradient_product(dy):
+            # In autograd, the forward pass is always performed prior to the backwards
+            # pass, so we do not need to re-unwrap the parameters.
+
+            @autograd.extend.primitive
+            def jacobian(p):
+                jacobian = _evaluate_grad_matrix(p, "jacobian")
+                return jacobian
+
+            def vhp(ans, p):
+                def hessian_product(ddy):
+                    hessian = _evaluate_grad_matrix(p, "hessian")
+
+                    if dy.size > 1:
+                        if all(np.ndim(p) == 0 for p in params):
+                            vhp = dy.flatten() @ ddy @ hessian @ dy.flatten()
+                        else:
+                            vhp = dy @ ddy @ hessian @ dy.T
+                    else:
+                        vhp = np.squeeze(ddy @ hessian)
+
+                    return vhp
+
+                return hessian_product
+
+            autograd.extend.defvjp(jacobian, vhp, argnums=[0])
+
+            # only flatten dy if all parameters are single values
             if all(np.ndim(p) == 0 for p in params):
-                vjp = g.flatten() @ jac
+                vjp = dy.flatten() @ jacobian(params)
             else:
-                vjp = g @ jac
+                vjp = dy @ jac
             return vjp
 
         return gradient_product
