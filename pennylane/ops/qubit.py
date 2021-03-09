@@ -360,7 +360,7 @@ class CNOT(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -391,7 +391,7 @@ class CZ(DiagonalOperation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -427,7 +427,7 @@ class CY(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -468,7 +468,7 @@ class SWAP(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -503,7 +503,7 @@ class CSWAP(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 3
@@ -550,7 +550,7 @@ class Toffoli(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (int): the subsystem the gate acts on
+        wires (Sequence[int]): the subsystem the gate acts on
     """
     num_params = 0
     num_wires = 3
@@ -748,7 +748,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1151,7 +1151,7 @@ class CRX(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1220,7 +1220,7 @@ class CRY(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1287,7 +1287,7 @@ class CRZ(DiagonalOperation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1357,7 +1357,7 @@ class CRot(Operation):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 3
     num_wires = 2
