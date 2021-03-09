@@ -379,6 +379,8 @@ class QuantumTape(AnnotatedQueue):
             [op.wires for op in self.operations + self.observables]
         )
         self.num_wires = len(self.wires)
+
+        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
 
     def _update_observables(self):
