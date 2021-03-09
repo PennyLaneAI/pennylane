@@ -79,5 +79,5 @@ def test_nested_adjoint_on_function():
 
     np.testing.assert_allclose(
         my_circuit(), 
-        np.array([-0.995707+1.110223e-16j,  0.068644+6.209710e-02j]), 
+        np.array([-0.995707,  0.068644+6.209710e-02j]), 
         atol=1e-6, rtol=1e-6)
