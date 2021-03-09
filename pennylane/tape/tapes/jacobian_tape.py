@@ -742,4 +742,4 @@ class JacobianTape(QuantumTape):
             else:
                 hessian[i, j] = hessian[j, i] = g
 
-        return hessian
+        return np.squeeze(hessian)

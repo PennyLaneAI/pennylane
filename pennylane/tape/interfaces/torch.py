@@ -98,7 +98,12 @@ class _TorchInterface(torch.autograd.Function):
             def backward(ctx_, ddy):  # pragma: no cover
                 """Implements the backward pass QNode vector-Hessian product"""
                 hessian = _evaluate_grad_matrix("hessian")
-                vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+
+                if torch.squeeze(ddy).ndim > 1:
+                    vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                else:
+                    vhp = ddy @ hessian
+
                 vhp = torch.unbind(vhp.view(-1))
 
                 grad_input = []
