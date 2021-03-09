@@ -55,8 +55,10 @@ def probs_to_unitary(probs):
     if isinstance(probs, np.ndarray) and probs.ndim != 1:
         raise ValueError("The probability distribution must be specified as a flat array")
     if not np.allclose(sum(probs), 1) or min(probs) < 0:
-        raise ValueError("A valid probability distribution of non-negative numbers that sum to one"
-                         "must be input")
+        raise ValueError(
+            "A valid probability distribution of non-negative numbers that sum to one"
+            "must be input"
+        )
 
     dim = len(probs)
     unitary = np.zeros((dim, dim))
@@ -126,13 +128,14 @@ def func_to_unitary(func, M):
         f = func(i)
 
         if not 0 <= f <= 1:
-            raise ValueError("func must be bounded within the interval [0, 1] for the range of"
-                             "input values")
+            raise ValueError(
+                "func must be bounded within the interval [0, 1] for the range of" "input values"
+            )
 
         unitary[2 * i, 2 * i] = np.sqrt(1 - f)
         unitary[2 * i + 1, 2 * i] = np.sqrt(f)
         unitary[2 * i, 2 * i + 1] = np.sqrt(f)
-        unitary[2 * i + 1, 2 * i + 1] = - np.sqrt(1 - f)
+        unitary[2 * i + 1, 2 * i + 1] = -np.sqrt(1 - f)
 
     return unitary
 
@@ -200,15 +203,11 @@ def make_Q(A, R):
 
 @template
 def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires, timesteps=None):
-    """TODO
-    """
+    """TODO"""
     if timesteps is not None:
         if isinstance(probs, list) or isinstance(xs, list):
             raise ValueError("...")
         d = timesteps
-
-
-
 
     if isinstance(probs, list):
         if timesteps is not None:
@@ -218,4 +217,3 @@ def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires, timesteps
             xs = [xs] * d
         elif len(xs) != len(probs):
             raise ValueError("...")
-
