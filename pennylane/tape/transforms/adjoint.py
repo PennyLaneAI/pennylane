@@ -26,8 +26,8 @@ def adjoint(fn):
 
         **Adjoint of a function**
 
-        Here, we apply the ``subroutine`` function, and then apply it's inverse.
-        Notice that in addition of adjointing all of the operations, they are also
+        Here, we apply the ``subroutine`` function, and then apply its inverse.
+        Notice that in addition to adjointing all of the operations, they are also
         applied in reverse construction order.
 
         .. code-block:: python3
@@ -53,7 +53,6 @@ def adjoint(fn):
         You can also easily adjoint a single operation just by wrapping it with ``adjoint``
 
         .. code-block:: python3
-
 
             dev = qml.device('default.qubit', wires=1)
             @qml.qnode(dev)

@@ -367,7 +367,7 @@ class TestOperations:
             qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
             qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values='01'),
         ])
-    def test_adjoint(self, op, tol):
+    def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix, op_d.matrix)
         res2 = np.dot(op_d.matrix, op.matrix)

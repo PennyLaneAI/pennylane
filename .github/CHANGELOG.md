@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new adjoint tape transform has been added. 
+* A new adjoint transform has been added. 
   [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111/files)
 
   This new method allows users to apply the adjoint of an arbitrary sequence of operations.
@@ -30,7 +30,7 @@
   Directly applying to a gate also works as expected.
 
   ```python
-  qml.adjoint(qml.RX)(0.123, wires=0) # Really applys RX(-0.123).
+  qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
   ```
 
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input

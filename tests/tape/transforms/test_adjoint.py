@@ -16,8 +16,9 @@ import numpy as np
 from pennylane.tape.transforms.adjoint import adjoint
 import pennylane as qml
 
-def test_adjoint_sanity_check():
-    """Test that adjoint works for a simple circuit"""
+def test_adjoint_on_function():
+    """Test that adjoint works when applied to a function"""
+
     dev = qml.device("default.qubit", wires=1)
 
     def my_op():
@@ -37,7 +38,7 @@ def test_adjoint_sanity_check():
     np.testing.assert_allclose(my_circuit(), np.array([1.0j, 0.0]), atol=1e-6, rtol=1e-6)
 
 def test_adjoint_directly_on_op():
-    """Test that adjoint works when directly applyed to an op constructor"""
+    """Test that adjoint works when directly applyed to an op"""
 
     dev = qml.device("default.qubit", wires=1)
     @qml.qnode(dev)

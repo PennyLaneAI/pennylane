@@ -230,13 +230,12 @@ class QuantumTape(AnnotatedQueue):
         with qml.tape.QuantumTape(embed=False) as tape2:
             qml.RX(0.123, wires=0)
 
-    Here, tape2 recods the RX gate, but tape1 doesn't record tape2.
+    Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 
     >>> tape1.operations
     []
     >>> tape2.operations
     [RX(0.123, wires=[0])]
-    >>>
 
     This is useful for when you want to transform a tape first before applying it.
     """
