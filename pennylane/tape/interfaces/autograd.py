@@ -255,7 +255,7 @@ class AutogradInterface(AnnotatedQueue):
             if all(np.ndim(p) == 0 for p in params):
                 vjp = dy.flatten() @ jacobian(params)
             else:
-                vjp = dy @ jac
+                vjp = dy @ jacobian(params)
             return vjp
 
         return gradient_product
