@@ -206,8 +206,7 @@ class Device(abc.ABC):
         """Whether shots is None or not. Kept for backwards compatability."""
         if self._shots is None:
             return True
-        else:
-            return False
+        return False
 
     @property
     def wires(self):
