@@ -55,6 +55,22 @@ class _TorchInterface(torch.autograd.Function):
         ctx.saved_grad_matrices = {}
 
         def _evaluate_grad_matrix(grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the ctx.saved_grad_matrices attribute, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because PyTorch requests the vector-GradMatrix product,
+              and *not* the full GradMatrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+            """
             if grad_matrix_fn in ctx.saved_grad_matrices:
                 return ctx.saved_grad_matrices[grad_matrix_fn]
 
@@ -72,17 +88,30 @@ class _TorchInterface(torch.autograd.Function):
         class _Jacobian(torch.autograd.Function):
             @staticmethod
             def forward(ctx_, parent_ctx, *input_):
+                """Implements the forward pass QNode Jacobian evaluation"""
                 ctx_.dy = parent_ctx.dy
                 ctx_.save_for_backward(*input_)
                 jacobian = _evaluate_grad_matrix("jacobian")
                 return jacobian
 
             @staticmethod
-            def backward(ctx_, ddy):
+            def backward(ctx_, ddy):  # pragma: no cover
+                """Implements the backward pass QNode vector-Hessian product"""
                 hessian = _evaluate_grad_matrix("hessian")
                 vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
                 vhp = torch.unbind(vhp.view(-1))
-                return (None,) + tuple(vhp)
+
+                grad_input = []
+
+                # match the type and device of the input tensors
+                for i, j in zip(vhp, ctx_.saved_tensors):
+                    res = torch.as_tensor(i, dtype=tape.dtype)
+                    if j.is_cuda:  # pragma: no cover
+                        cuda_device = j.get_device()
+                        res = torch.as_tensor(res, device=cuda_device)
+                    grad_input.append(res)
+
+                return (None,) + tuple(grad_input)
 
         ctx.jacobian = _Jacobian
 
