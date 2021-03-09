@@ -1410,3 +1410,180 @@ class TestControlledQubitUnitary:
         state_2 = f2()
 
         assert np.allclose(state_1, state_2)
+
+    @pytest.mark.parametrize(
+        "control_wires,wires,control_values,expected_error_message",
+        [
+            ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
+            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
+        ],
+    )
+    def test_invalid_mixed_polarity_controls(
+        self, control_wires, wires, control_values, expected_error_message
+    ):
+        """Test if ControlledQubitUnitary properly handles invalid mixed-polarity
+        control values."""
+        target_wires = Wires(wires)
+
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.ControlledQubitUnitary(
+                X, control_wires=control_wires, wires=target_wires, control_values=control_values
+            )
+
+    @pytest.mark.parametrize(
+        "control_wires,wires,control_values",
+        [
+            ([0], 1, "0"),
+            ([0, 1], 2, "00"),
+            ([0, 1], 2, "10"),
+            ([0, 1], 2, "11"),
+            ([1, 0], 2, "01"),
+            ([0, 1], [2, 3], "11"),
+            ([0, 2], [3, 1], "10"),
+            ([1, 2, 0], [3, 4], "100"),
+            ([1, 0, 2], [4, 3], "110"),
+        ],
+    )
+    def test_mixed_polarity_controls(self, control_wires, wires, control_values):
+        """Test if ControlledQubitUnitary properly applies mixed-polarity
+        control values."""
+        target_wires = Wires(wires)
+
+        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
+
+        # Pick a random unitary
+        U = unitary_group.rvs(2 ** len(target_wires), random_state=1967)
+
+        # Pick random starting state for the control and target qubits
+        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
+        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+
+        @qml.qnode(dev)
+        def circuit_mixed_polarity():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
+            qml.ControlledQubitUnitary(
+                U, control_wires=control_wires, wires=target_wires, control_values=control_values
+            )
+            return qml.state()
+
+        # The result of applying the mixed-polarity gate should be the same as
+        # if we conjugated the specified control wires with Pauli X and applied the
+        # "regular" ControlledQubitUnitary in between.
+
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+
+        @qml.qnode(dev)
+        def circuit_pauli_x():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
+            for wire in x_locations:
+                qml.PauliX(wires=control_wires[wire])
+
+            qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=wires)
+
+            for wire in x_locations:
+                qml.PauliX(wires=control_wires[wire])
+
+            return qml.state()
+
+        mixed_polarity_state = circuit_mixed_polarity()
+        pauli_x_state = circuit_pauli_x()
+
+        assert np.allclose(mixed_polarity_state, pauli_x_state)
+
+
+class TestMultiControlledX:
+    """Tests for the MultiControlledX"""
+
+    X = np.array([[0, 1], [1, 0]])
+
+    @pytest.mark.parametrize(
+        "control_wires,wires,control_values,expected_error_message",
+        [
+            ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
+            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
+            (
+                [0, 1],
+                [2, 3],
+                "10",
+                "MultiControlledX accepts a single target wire.",
+            ),
+        ],
+    )
+    def test_invalid_mixed_polarity_controls(
+        self, control_wires, wires, control_values, expected_error_message
+    ):
+        """Test if MultiControlledX properly handles invalid mixed-polarity
+        control values."""
+        target_wires = Wires(wires)
+
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wires, control_values=control_values
+            )
+
+    @pytest.mark.parametrize(
+        "control_wires,wires,control_values",
+        [
+            ([0], 1, "0"),
+            ([0, 1], 2, "00"),
+            ([0, 1], 2, "10"),
+            ([1, 0], 2, "10"),
+            ([0, 1], 2, "11"),
+            ([0, 2], 1, "10"),
+            ([1, 2, 0], 3, "100"),
+            ([1, 0, 2, 4], 3, "1001"),
+            ([0, 1, 2, 5, 3, 6], 4, "100001"),
+        ],
+    )
+    def test_mixed_polarity_controls(self, control_wires, wires, control_values):
+        """Test if MultiControlledX properly applies mixed-polarity
+        control values."""
+        target_wires = Wires(wires)
+
+        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
+
+        # Pick random starting state for the control and target qubits
+        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
+        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+
+        @qml.qnode(dev)
+        def circuit_mpmct():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wires, control_values=control_values
+            )
+            return qml.state()
+
+        # The result of applying the mixed-polarity gate should be the same as
+        # if we conjugated the specified control wires with Pauli X and applied the
+        # "regular" ControlledQubitUnitary in between.
+
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+
+        @qml.qnode(dev)
+        def circuit_pauli_x():
+            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
+            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
+
+            for wire in x_locations:
+                qml.PauliX(wires=control_wires[wire])
+
+            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
+
+            for wire in x_locations:
+                qml.PauliX(wires=control_wires[wire])
+
+            return qml.state()
+
+        mpmct_state = circuit_mpmct()
+        pauli_x_state = circuit_pauli_x()
+
+        assert np.allclose(mpmct_state, pauli_x_state)
