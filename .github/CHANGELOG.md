@@ -184,7 +184,7 @@
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
   it returns analytic results (`shots=None`).
-  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079).
+  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079)
   
   ```python  
   dev_analytic = qml.device('default.qubit', wires=1, shots=None)
