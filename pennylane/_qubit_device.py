@@ -201,23 +201,58 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
-        check_no_hamiltonian = np.all([False if isinstance(o, qml.Hamiltonian) else True for o in circuit.observables])
+        combined_obs = []
+        ham_check = []
+        meas = []
+
+        for m in circuit.measurements:
+
+            if isinstance(m.obs, qml.Hamiltonian):
+                combined_obs.extend(m.obs.ops)
+                ham_check.append(False)
+                meas.extend([m.return_type for i in range(len(m.obs.ops))])
+
+            else:
+                combined_obs.append(m.obs)
+                ham_check.append(True)
+                meas.append(m.return_type)
+
+        check_no_hamiltonian = np.all(ham_check)
 
         if not check_no_hamiltonian:
 
             tape_log = []
-            H = circuit.observables[0]
 
-            for u in H.ops:
+            # Generates the partitioned sets of observables
+            new_obs, numbering = qml.grouping.group_observables(combined_obs, list(range(len(combined_obs))), grouping_type='commuting')
+
+            merge_numbering = list(itertools.chain.from_iterable(numbering))
+
+            for num, u in zip(numbering, new_obs):
                 new_tape = qml.tape.QuantumTape()
                 with new_tape:
                     [o.queue() for o in circuit.operations]
-                    qml.expval(u)
+                    [qml.tape.MeasurementProcess(meas[c], obs=i).queue() for c, i in zip(num, u)]
 
                 tape_log.append(new_tape)
 
             results = self.batch_execute(tape_log)
-            return sum([c * r for c, r in zip(H.coeffs, results)])
+
+            # Merges the list and turns them into dictionaries
+            results = list(itertools.chain.from_iterable(results))
+
+            new_obs_id = [frozenset(combined_obs[i]._obs_data()) for i in merge_numbering]
+            lookup = dict(zip(new_obs_id, results))
+
+            # Reconstructs each of the observables to be returned
+            res = []
+            for o in circuit.observables:
+                if isinstance(o, qml.Hamiltonian):
+                    res.append(sum([c * lookup[frozenset(op._obs_data())] for c, op in zip(o.coeffs, o.ops)]))
+                else:
+                    res.append(lookup[frozenset(o._obs_data())])
+
+            return res
 
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)

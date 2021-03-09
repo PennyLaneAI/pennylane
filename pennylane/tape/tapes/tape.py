@@ -383,11 +383,9 @@ class QuantumTape(AnnotatedQueue):
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
         identifying any observables that share wires"""
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None and not isinstance(m.obs, qml.Hamiltonian)]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
-
-        print(self._obs_sharing_wires)
 
         if len(obs_wires) != len(set(obs_wires)):
             c = Counter(obs_wires)
@@ -396,8 +394,9 @@ class QuantumTape(AnnotatedQueue):
             for i, m in enumerate(self.measurements):
                 if m.obs is not None:
                     if len(set(m.wires) & repeated_wires) > 0:
-                        self._obs_sharing_wires.append(m.obs)
-                        self._obs_sharing_wires_id.append(i)
+                        if not isinstance(m.obs, qml.Hamiltonian):
+                            self._obs_sharing_wires.append(m.obs)
+                            self._obs_sharing_wires_id.append(i)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
