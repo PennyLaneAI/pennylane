@@ -130,6 +130,9 @@
 
 <h3>Improvements</h3>
 
+- Improved the input matrix check of ``QubitUnitary``.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
+
 - Added the `ControlledQubitUnitary` operation. This
   enables implementation of multi-qubit gates with a variable number of
   control qubits. It is also possible to specify a different state for the
@@ -261,7 +264,7 @@
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld.
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
