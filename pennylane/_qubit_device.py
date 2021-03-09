@@ -224,7 +224,9 @@ class QubitDevice(Device):
             tape_log = []
 
             # Generates the partitioned sets of observables
-            new_obs, numbering = qml.grouping.group_observables(combined_obs, list(range(len(combined_obs))), grouping_type='commuting')
+            new_obs, numbering = qml.grouping.group_observables(
+                combined_obs, list(range(len(combined_obs))), grouping_type="commuting"
+            )
 
             merge_numbering = list(itertools.chain.from_iterable(numbering))
 
@@ -248,7 +250,14 @@ class QubitDevice(Device):
             res = []
             for o in circuit.observables:
                 if isinstance(o, qml.Hamiltonian):
-                    res.append(sum([c * lookup[frozenset(op._obs_data())] for c, op in zip(o.coeffs, o.ops)]))
+                    res.append(
+                        sum(
+                            [
+                                c * lookup[frozenset(op._obs_data())]
+                                for c, op in zip(o.coeffs, o.ops)
+                            ]
+                        )
+                    )
                 else:
                     res.append(lookup[frozenset(o._obs_data())])
 

@@ -79,7 +79,9 @@ def operation_expand(self):
 
 
 def hamiltonian_queue(self):
-    """Allows for queueing of Hamiltonians in tape mode"""
+    """Monkeypatched :meth:`~.Operation.queue` method, allowing
+    Hamiltonians to queue themselves to the beta :class:`~.QueuingContext`.
+    """
     for o in self.ops:
         try:
             QueuingContext.update_info(o, owner=self)

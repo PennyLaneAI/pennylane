@@ -382,6 +382,7 @@ class Hamiltonian:
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
     def queue(self):
+        """Queues a qml.Hamiltonian instance"""
         qml.QueuingContext.append(self)
         return self
 
