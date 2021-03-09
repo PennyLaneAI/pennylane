@@ -364,6 +364,7 @@ class TestOperations:
             qml.QubitUnitary(np.eye(2) * 1j, wires=0),
             qml.DiagonalQubitUnitary(np.array([1.0, 1.j]), wires=1),
             qml.QFT(wires=[1, 2, 3]),
+            qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
         ])
     def test_adjoint(self, op, tol):
         op_d = op.adjoint()

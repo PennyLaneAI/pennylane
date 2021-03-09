@@ -1481,9 +1481,6 @@ class CRot(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        # TODO(chase): Replacing this with a CRot with the parameters
-        # negated fails the consistency check. We should remove the `inv()` when that
-        # is fixed.
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
@@ -1742,6 +1739,7 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+        # Need to keep track if separate 
         wires = control_wires + wires
 
         # Given that the controlled wires are listed before the target wires, we need to create a
@@ -1753,9 +1751,6 @@ class ControlledQubitUnitary(QubitUnitary):
         params = list(params)
         params[0] = CU
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
-    def adjoint(self, do_queue=False):
-        return ControlledQubitUnitary(self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
