@@ -170,6 +170,7 @@ def pytest_addoption(parser):
         "--shots",
         action="store",
         default=None,
+
         help="Number of shots to use in stochastic mode.",
     )
     addoption(
@@ -221,7 +222,7 @@ def pytest_generate_tests(metafunc):
         # add to the device kwargs
         if opt.shots is not None:
             # translate command line string to None if necessary
-            device_kwargs["shots"] = None if (opt.shots == "None") else opt.shots
+            device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
 
         list_of_device_kwargs.append(device_kwargs)
 
