@@ -210,7 +210,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
     dim_p = len(probs)
     num_target_wires = np.log2(2 * dim_p)
 
-    if not num_target_wires.isinteger():
+    if not num_target_wires.is_integer():
         raise ValueError("The probability distribution must have a length that is a power of two")
 
     num_target_wires = int(num_target_wires)
