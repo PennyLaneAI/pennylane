@@ -1754,7 +1754,7 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-        # Need to keep track if separate 
+        # Need to keep track if separate
         wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
@@ -1843,6 +1843,7 @@ class MultiControlledX(ControlledQubitUnitary):
             control_values=control_values,
             do_queue=do_queue,
         )
+
 
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)

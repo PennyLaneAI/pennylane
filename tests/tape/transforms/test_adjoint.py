@@ -28,11 +28,13 @@ def test_adjoint_sanity_check():
     @qml.qnode(dev)
     def my_circuit():
         qml.PauliX(wires=0)
+        qml.PauliZ(wires=0)
         my_op()
         adjoint(my_op)()
+        qml.PauliY(wires=0)
         return qml.state()
 
-    np.testing.assert_allclose(my_circuit(), np.array([0.0, 1.0]), atol=1e-6, rtol=1e-6)
+    np.testing.assert_allclose(my_circuit(), np.array([1.0j, 0.0]), atol=1e-6, rtol=1e-6)
 
 def test_adjoint_directly_on_op():
     """Test that adjoint works when directly applyed to an op constructor"""
@@ -40,19 +42,41 @@ def test_adjoint_directly_on_op():
     dev = qml.device("default.qubit", wires=1)
     @qml.qnode(dev)
     def my_circuit():
-        qml.RX(0.123, wires=0)
-        adjoint(qml.RX)(0.123, wires=0)
+        adjoint(qml.RX)(np.pi/4.0, wires=0)
         return qml.state()
 
-    np.testing.assert_allclose(my_circuit(), np.array([1.0, 0.0]))
+    np.testing.assert_allclose(my_circuit(), np.array([0.92388, 0.382683j]), atol=1e-6, rtol=1e-6)
 
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)
     @qml.qnode(dev)
     def my_circuit():
-        adjoint(qml.RX)(0.123, wires=0)
-        adjoint(adjoint(qml.RX))(0.123, wires=0)
+        adjoint(adjoint(qml.RX))(np.pi/4.0, wires=0)
         return qml.state()
 
-    np.testing.assert_allclose(my_circuit(), np.array([1.0, 0.0]))
+    np.testing.assert_allclose(
+        my_circuit(), 
+        np.array([0.92388, -0.382683j]), 
+        atol=1e-6, rtol=1e-6)
+
+def test_nested_adjoint_on_function():
+    """Test that adjoint works when nested with other adjoints"""
+
+    def my_op():
+        qml.RX(0.123, wires=0)
+        qml.RY(2.32, wires=0)
+        qml.RZ(1.95, wires=0)
+
+    dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev)
+    def my_circuit():
+        adjoint(my_op)()
+        qml.Hadamard(wires=0)
+        adjoint(adjoint(my_op))()
+        return qml.state()
+
+    np.testing.assert_allclose(
+        my_circuit(), 
+        np.array([-0.995707+1.110223e-16j,  0.068644+6.209710e-02j]), 
+        atol=1e-6, rtol=1e-6)
