@@ -39,8 +39,8 @@ class DefaultMixed(QubitDevice):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers
             (i.e., ``[-1, 0, 2]``) or strings (``['ancilla', 'q1', 'q2']``).
-        shots (int): Number of times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to None if not specified, which means that
+        shots (None, int): Number of times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that
             outputs are computed exactly.
         cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,

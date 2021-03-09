@@ -479,8 +479,9 @@ class QubitDevice(Device):
         """
         if self.shots is None:
             warnings.warn(
-                "In future, the number of shots have to be explicitly set on the device "
-                "when using sample-based measurements.",
+                "The number of shots have to be explicitly set on the device "
+                "when using sample-based measurements. Since no shots were specified, "
+                "a default of 1000 samples was used.",
                 DeprecationWarning,
             )
 

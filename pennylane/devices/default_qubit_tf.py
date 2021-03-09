@@ -117,8 +117,8 @@ class DefaultQubitTF(DefaultQubit):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to None if not specified, which means
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means
             that the device returns analytical results.
             If ``shots > 0`` is used, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider

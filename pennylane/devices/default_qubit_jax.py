@@ -117,11 +117,9 @@ class DefaultQubitJax(DefaultQubit):
 
     Args:
         wires (int): The number of wires to initialize the device with.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that the device
+            returns analytical results.
         analytic (bool): Indicates if the device should calculate expectations
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider

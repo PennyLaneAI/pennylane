@@ -377,8 +377,6 @@ class TestSample:
         if dev.shots is None:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if dev.shots is None:
-            pytest.skip("Device not in sampling mode.")
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 

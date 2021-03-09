@@ -54,8 +54,7 @@
 ## Set the default value of hbar
 # hbar = 2
 
-## set the default number of shots/runs used
-## to determine expectation value statistics
+## set the device to analytic mode by default
 # shots = None
 
     [strawberryfields.fock]
