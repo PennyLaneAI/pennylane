@@ -548,7 +548,7 @@ class TestQNode:
         g = x.grad
 
         spy = mocker.spy(JacobianTape, "hessian")
-        hess = hessian(circuit, x, vectorize=True)
+        hess = hessian(circuit, x)
         spy.assert_called_once()
 
         a, b = x.detach().numpy()
