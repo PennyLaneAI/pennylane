@@ -943,27 +943,6 @@ def qnode(
     return qfunc_decorator
 
 
-def qnodes(
-    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
-):
-
-    @lru_cache()
-    def qfunc_decorator(func):
-        """The actual decorator"""
-        qn = QNode(
-            func,
-            device,
-            interface=interface,
-            diff_method=diff_method,
-            mutable=mutable,
-            max_expansion=max_expansion,
-            **diff_options,
-        )
-        return update_wrapper(qn, func)
-
-    return qfunc_decorator
-
-
 def _get_classical_jacobian(_qnode):
     """Helper function to extract the Jacobian
     matrix of the classical part of a QNode"""
