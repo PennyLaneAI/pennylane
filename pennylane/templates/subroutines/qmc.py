@@ -158,7 +158,23 @@ def func_to_unitary(xs, func):
 
 
 @template
-def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires):
+def QuantumMonteCarlo(probs, xs, func, target_wires, estimation_wires, timesteps=None):
     """TODO
     """
+    if timesteps is not None:
+        if isinstance(probs, list) or isinstance(xs, list):
+            raise ValueError("...")
+        d = timesteps
+
+
+
+
+    if isinstance(probs, list):
+        if timesteps is not None:
+            raise ValueError("...")
+        d = len(probs)
+        if not isinstance(xs, list):
+            xs = [xs] * d
+        elif len(xs) != len(probs):
+            raise ValueError("...")
 
