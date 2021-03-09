@@ -196,6 +196,17 @@ class Hamiltonian:
 
         return "\n+ ".join(terms_ls)
 
+    def __repr__(self):
+        """Constructor-call-like representation."""
+
+        s = "coeffs=" + str(self._coeffs) + ", ops=["
+        for op in self._ops:
+            s += op.__repr__()
+            s += ", "
+        s = s[:-2]
+        s += "]"
+        return "Hamiltonian(" + s + ")"
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 

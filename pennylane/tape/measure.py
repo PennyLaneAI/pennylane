@@ -190,6 +190,8 @@ class MeasurementProcess:
 
     def queue(self):
         """Append the measurement process to an annotated queue."""
+        if isinstance(self.obs, qml.Hamiltonian) and self.return_type is not Expectation:
+            raise ValueError("Cannot compute {} of qml.Hamiltonian, only Expectation is supported".format(self.return_type))
         if self.obs is not None:
             try:
                 qml.tape.QueuingContext.update_info(self.obs, owner=self)
@@ -264,7 +266,7 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, (qml.Hamiltonian, Observable)):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with var".format(op.name)
         )
@@ -305,7 +307,7 @@ def sample(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, (qml.Hamiltonian, Observable)):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )

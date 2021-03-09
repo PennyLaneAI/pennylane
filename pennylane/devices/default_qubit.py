@@ -126,7 +126,7 @@ class DefaultQubit(QubitDevice):
         "QFT",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Hamiltonian"}
 
     def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
         # call QubitDevice init

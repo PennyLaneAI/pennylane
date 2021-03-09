@@ -262,8 +262,6 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._batch = False
-
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
@@ -354,9 +352,6 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, qml.Hamiltonian):
-                self._batch = True
-
             elif isinstance(obj, qml.tape.measure.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
@@ -375,7 +370,6 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
-
         self._update()
 
     def _update_circuit_info(self):
@@ -392,6 +386,8 @@ class QuantumTape(AnnotatedQueue):
         obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
+
+        print(self._obs_sharing_wires)
 
         if len(obs_wires) != len(set(obs_wires)):
             c = Counter(obs_wires)
@@ -846,7 +842,10 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            rotation_gates.extend(observable.diagonalizing_gates())
+            if isinstance(observable, qml.Hamiltonian):
+                rotation_gates.extend([o.diagonalizing_gates() for o in observable.ops])
+            else:
+                rotation_gates.extend(observable.diagonalizing_gates())
 
         return rotation_gates
 

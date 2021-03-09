@@ -201,6 +201,24 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
+        check_no_hamiltonian = np.all([False if isinstance(o, qml.Hamiltonian) else True for o in circuit.observables])
+
+        if not check_no_hamiltonian:
+
+            tape_log = []
+            H = circuit.observables[0]
+
+            for u in H.ops:
+                new_tape = qml.tape.QuantumTape()
+                with new_tape:
+                    [o.queue() for o in circuit.operations]
+                    qml.expval(u)
+
+                tape_log.append(new_tape)
+
+            results = self.batch_execute(tape_log)
+            return sum([c * r for c, r in zip(H.coeffs, results)])
+
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 

@@ -349,6 +349,8 @@ class Device(abc.ABC):
 
         if len(self._obs_queue) == 1 and isinstance(observables[0], qml.Hamiltonian):
 
+            print("Ye")
+
             res_func = lambda x: sum([c * x[i] for i, c in enumerate(observables[0].coeffs)])
             obs = [[ob] for ob in observables[0].ops]
 
