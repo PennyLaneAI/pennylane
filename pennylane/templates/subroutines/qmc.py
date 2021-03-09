@@ -72,44 +72,6 @@ def probs_to_unitary(probs):
     return unitary
 
 
-def make_Q_matrix(A, R):
-    A_big = np.kron(A, np.eye(2))
-    F = R @ A_big
-
-
-def _make_V(dim):
-    r"""Calculates the :math:`\mathcal{V}` unitary which performs a reflection along the
-    :math:`|1\rangle` state of the end ancilla qubit.
-
-    Args:
-        dim (int): dimension of :math:`\mathcal{V}`
-
-    Returns:
-        array: the :math:`\mathcal{V}` unitary
-    """
-    assert dim % 2 == 0, "dimension for _make_V() must be even"
-
-    one = np.array([[0, 0], [0, 1]])
-    dim_without_qubit = int(dim / 2)
-
-    return 2 * np.kron(np.eye(dim_without_qubit), one) - np.eye(dim)
-
-
-def _make_Z(dim):
-    r"""Calculates the :math:`\mathcal{Z}` unitary which performs a reflection along the all
-    :math:`|0\rangle` state.
-
-    Args:
-        dim (int): dimension of :math:`\mathcal{Z}`
-
-    Returns:
-        array: the :math:`\mathcal{Z}` unitary
-    """
-    Z = -np.eye(dim)
-    Z[0, 0] = 1
-    return Z
-
-
 def func_to_unitary(func, M):
     r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
 
@@ -173,6 +135,66 @@ def func_to_unitary(func, M):
         unitary[2 * i + 1, 2 * i + 1] = - np.sqrt(1 - f)
 
     return unitary
+
+
+def make_Q_matrix(A, R):
+    """Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to the
+    probability unitary :math:`\mathcal{A}` and the random variable unitary :math:`\mathcal{R}`.
+
+    Following `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper,
+    the expectation value is encoded as the phase of an eigenvalue of :math:`\mathcal{Q}`. This
+    phase can be estimated using quantum phase estimation, see :func:`~.QuantumPhaseEstimation`.
+
+    Args:
+        A (array): The unitary matrix of :math:`\mathcal{A}` which encodes the probability
+            distribution
+        R (array): The unitary matrix of :math:`\mathcal{R}` which encodes the function
+
+    Returns:
+        array: the :math:`\mathcal{Q}` unitary
+    """
+    A_big = np.kron(A, np.eye(2))
+    F = R @ A_big
+    F_dagger = F.conj().T
+
+    dim = len(R)
+    V = _make_V(dim)
+    Z = _make_Z(dim)
+
+    return F @ Z @ F_dagger @ V @ F @ Z @ F_dagger @ V
+
+
+def _make_V(dim):
+    r"""Calculates the :math:`\mathcal{V}` unitary which performs a reflection along the
+    :math:`|1\rangle` state of the end ancilla qubit.
+
+    Args:
+        dim (int): dimension of :math:`\mathcal{V}`
+
+    Returns:
+        array: the :math:`\mathcal{V}` unitary
+    """
+    assert dim % 2 == 0, "dimension for _make_V() must be even"
+
+    one = np.array([[0, 0], [0, 1]])
+    dim_without_qubit = int(dim / 2)
+
+    return 2 * np.kron(np.eye(dim_without_qubit), one) - np.eye(dim)
+
+
+def _make_Z(dim):
+    r"""Calculates the :math:`\mathcal{Z}` unitary which performs a reflection along the all
+    :math:`|0\rangle` state.
+
+    Args:
+        dim (int): dimension of :math:`\mathcal{Z}`
+
+    Returns:
+        array: the :math:`\mathcal{Z}` unitary
+    """
+    Z = -np.eye(dim)
+    Z[0, 0] = 1
+    return Z
 
 
 @template
