@@ -73,7 +73,7 @@ class QubitDevice(Device):
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If None, the device calculates probability, expectation values,
-            and variances analytically. If int, it specifies the number of samples to estimate these quantities.
+            and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
             If a list of integers is passed, the circuit evaluations are batched over the list of shots.
         cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
