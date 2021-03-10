@@ -77,7 +77,7 @@ def probs_to_unitary(probs):
 def func_to_unitary(func, M):
     r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
 
-    Consider a function defined on a set of integers :math:`X = [0, 1, \ldots, M - 1]` whose output
+    Consider a function defined on a set of integers :math:`X = \{0, 1, \ldots, M - 1\}` whose output
     is bounded in the interval :math:`[0, 1]`, i.e., :math:`f: X \rightarrow [0, 1]`.
 
     This function returns a unitary :math:`\mathcal{R}` that performs the transformation:
@@ -93,8 +93,8 @@ def func_to_unitary(func, M):
     :math:`f(i)`.
 
     Args:
-        func (callable): A function defined on the set of integers :math:`X = [0, 1, \ldots, M - 1]`
-            with output value inside :math:`[0, 1]`
+        func (callable): A function defined on the set of integers
+            :math:`X = \{0, 1, \ldots, M - 1\}` with output value inside :math:`[0, 1]`
         M (int): the number of integers that the function is defined on
 
     Returns:
@@ -203,7 +203,67 @@ def make_Q(A, R):
 
 @template
 def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
-    """TODO"""
+    r"""Performs the `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__
+    algorithm.
+
+    Given a probability distribution :math:`p_{i}` of dimension :math:`M = 2^{m}` for some
+    :math:`m \geq 1` and a random variable :math:`f: X \rightarrow [0, 1]` defined on the set of
+    integers :math:`X = \{0, 1, \ldots, M - 1\}`, this allows the expectation value
+
+    .. math::
+
+        \mu = \sum_{i \in X} p_{i} f(i)
+
+    to be estimated.
+
+    .. figure:: ../../_static/templates/subroutines/qmc.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    The algorithm proceeds as follows:
+
+    #. The probability distribution is encoded using a unitary :math:`\mathcal{A}` applied to the
+       first :math:`m` qubits specified by ``target_wires``.
+    #. The random variable is encoded onto the last qubit of ``target_wires`` using a unitary
+       :math:`\mathcal{R}`.
+    #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
+       :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
+       value using :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1 and 2 prepares
+       an equal superposition over the two states corresponding to the eigenvalues
+       :math:`e^{\pm 2 \pi i \theta}`.
+    #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
+       estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
+       for the estimation of :math:`\mu`.
+
+    Visit `Rebentrost et al. (2018) <https://arxiv.org/abs/1805.00109>`__ for further details. In
+    this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary scales
+    as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
+    :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
+
+    .. math::
+
+        N = \mathcal{O}(\frac{1}{\epsilon}).
+
+    This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
+    generated from the probability distribution and the average over :math:`f` is taken. In that
+    case,
+
+    .. math::
+
+        N =  \mathcal{O}(\frac{1}{\epsilon^{2}}).
+
+    Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
+    :math:`N`.
+
+    Args:
+        probs (array): input probability distribution as a flat array
+        func (callable): A function defined on the set of integers :math:`X = [0, 1, \ldots, M - 1]`
+            with output value inside :math:`[0, 1]`
+        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary
+        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+            estimation
+    """
     if isinstance(probs, np.ndarray) and probs.ndim != 1:
         raise ValueError("The probability distribution must be specified as a flat array")
 
