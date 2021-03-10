@@ -233,3 +233,65 @@ def ControlledPhaseShift(phi):
         array: the two-wire controlled-phase matrix
     """
     return np.diag([1, 1, 1, np.exp(1j * phi)])
+
+
+def DoubleExcitation(phi):
+    r"""Double excitation rotation.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array: the four-qubit Givens rotation describing the double excitation
+    """
+
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
+
+    U = np.zeros((16, 16))
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U
+
+
+def DoubleExcitationPlus(phi):
+    r"""Double excitation rotation with positive phase shift.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array: the four-qubit matrix describing the operation
+    """
+
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
+    e = cmath.exp(1j * phi / 2)
+
+    U = e * np.eye(16, dtype=np.complex64)
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U
+
+
+def DoubleExcitationMinus(phi):
+    r"""Double excitation rotation with negative phase shift.
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array: the four-qubit matrix describing the operation
+    """
+
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
+    e = cmath.exp(-1j * phi / 2)
+
+    U = e * np.eye(16, dtype=np.complex64)
+    U[3, 3] = c  # 3 (dec) = 0011 (bin)
+    U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+    U[12, 3] = s
+    U[12, 12] = c
+
+    return U
