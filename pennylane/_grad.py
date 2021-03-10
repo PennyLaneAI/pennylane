@@ -205,7 +205,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     """
 
     x = _np.array(args[argnum])
-    grad = _np.zeros_like(x, dtype="O")
+    gradient = _np.zeros_like(x, dtype="O")
 
     if idx is None:
         idx = list(_np.ndindex(*x.shape))
@@ -230,12 +230,12 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     for i in idx:
         shift = _np.zeros_like(x)
         shift[i] += 0.5 * delta
-        grad[i] = (
+        gradient[i] = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
             - f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
         ) * delta ** -1
 
-    return grad
+    return gradient
 
 
 def finite_diff(F, x, i=None, delta=0.01):
