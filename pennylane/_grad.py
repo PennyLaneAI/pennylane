@@ -204,13 +204,13 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         (float or array): the gradient of the function ``f``
     """
 
-    x = np.array(args[argnum])
-    grad = np.zeros_like(x, dtype="O")
+    x = _np.array(args[argnum])
+    grad = _np.zeros_like(x, dtype="O")
 
     if idx is None:
-        idx = list(np.ndindex(*x.shape))
+        idx = list(_np.ndindex(*x.shape))
     else:
-        bounds = np.array(x.shape) - 1
+        bounds = _np.array(x.shape) - 1
         for _idx in idx:
 
             if len(_idx) != x.ndim:
@@ -220,7 +220,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
                     )
                 )
 
-            if (np.array(_idx) > bounds).any():
+            if (_np.array(_idx) > bounds).any():
                 raise ValueError(
                     "Indices in 'idx' can not be greater than {}; got {}".format(
                         tuple(bounds), _idx
@@ -228,7 +228,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
                 )
 
     for i in idx:
-        shift = np.zeros_like(x)
+        shift = _np.zeros_like(x)
         shift[i] += 0.5 * delta
         grad[i] = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
