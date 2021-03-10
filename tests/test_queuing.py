@@ -381,7 +381,7 @@ class TestOperationRecorder:
             + "CNOT(wires=[0, 1])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
         )
 
         dev = qml.device("default.qubit", wires=2)
@@ -420,7 +420,7 @@ class TestOperationRecorder:
             + "RZ(12, wires=[0])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
         )
 
         def template(x):
@@ -445,7 +445,7 @@ class TestOperationRecorder:
             + "RZ(12, wires=[0])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
             + "var(PauliZ(wires=[0]))\n"
             + "sample(PauliX(wires=[1]))\n"
         )
