@@ -72,7 +72,7 @@ class QubitDevice(Device):
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
-            expectation values of observables. If None, the device calculates probability, expectation values,
+            expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
             If a list of integers is passed, the circuit evaluations are batched over the list of shots.
         cache (int): Number of device executions to store in a cache to speed up subsequent
@@ -479,9 +479,9 @@ class QubitDevice(Device):
         """
         if self.shots is None:
             warnings.warn(
-                "The number of shots have to be explicitly set on the device "
-                "when using sample-based measurements. Since no shots were specified, "
-                "a default of 1000 samples was used.",
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements. Since no shots are specified, "
+                "a default of 1000 shots is used.",
                 DeprecationWarning,
             )
 

@@ -623,7 +623,6 @@ class TestSample:
         # state is set to None in __init__ and only properly
         # initialized during reset
         dev = qml.device('default.qubit', wires=2, shots=1000)
-        dev.reset()
 
         dev.apply(
             [qml.RX(1.5708, wires=[0]), qml.RX(1.5708, wires=[1])]
@@ -658,7 +657,6 @@ class TestSample:
         # state is set to None in __init__ and only properly
         # initialized during reset
         dev = qml.device('default.qubit', wires=2, shots=1000)
-        dev.reset()
 
         dev.apply([qml.RX(1.5708, wires=[0])])
         dev._wires_measured = {0}
