@@ -20,7 +20,6 @@ import numpy as np
 from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
 from scipy.linalg import expm
-import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.wires import Wires
