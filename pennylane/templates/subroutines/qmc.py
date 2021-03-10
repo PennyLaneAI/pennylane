@@ -243,7 +243,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     .. math::
 
-        N = \mathcal{O}(\frac{1}{\epsilon}).
+        N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
 
     This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
     generated from the probability distribution and the average over :math:`f` is taken. In that
@@ -251,7 +251,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     .. math::
 
-        N =  \mathcal{O}(\frac{1}{\epsilon^{2}}).
+        N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
 
     Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
     :math:`N`.
@@ -262,6 +262,65 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
             :math:`X = [0, 1, \ldots, M - 1]` with output value inside :math:`[0, 1]`
         target_wires (Union[Wires, Sequence[int], or int]): the target wires
         estimation_wires (Union[Wires, Sequence[int], or int]): the estimation wires
+
+    Raises:
+        ValueError: if ``probs`` is not flat or has a length that is not compatible with
+            ``target_wires``
+
+    .. UsageDetails::
+
+        Consider a standard normal distribution :math:`p(x)` and a random variable
+        :math:`f(x) = \cos ^{2} (x)`. The expectation value of :math:`f(x)` is
+        :math:`\int_{-\infty}^{\infty}f(x)p(x) \approx 0.432332`. This number can be approximated by
+        discretizing the problem and using the quantum Monte Carlo algorithm.
+
+        First, the problem is discretized:
+
+        .. code-block:: python
+
+            from scipy.stats import norm
+
+            m = 5
+            M = 2 ** m
+
+            xmax = np.pi  # bound to region [-pi, pi]
+            xs = np.linspace(-xmax, xmax, M)
+
+            probs = np.array([norm().pdf(x) for x in xs])
+            probs /= np.sum(probs)
+
+            func = lambda i: np.sin(xs[i]) ** 2
+
+        The ``QuantumMonteCarlo`` template can then be used:
+
+        .. code-block::
+
+            n = 10
+            N = 2 ** n
+
+            target_wires = range(m + 1)
+            estimation_wires = range(m + 1, n + m + 1)
+
+            dev = qml.device("default.qubit", wires=(n + m + 1))
+
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.templates.QuantumMonteCarlo(
+                    probs,
+                    func,
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
+                )
+                return qml.probs(estimation_wires)
+
+
+            phase_estimated = np.argmax(circuit()) / N
+
+        The estimated value can be read-out as
+
+        >>> (1 - np.cos(np.pi * phase_estimated)) / 2
+        0.4327096457464369
     """
     if isinstance(probs, np.ndarray) and probs.ndim != 1:
         raise ValueError("The probability distribution must be specified as a flat array")
