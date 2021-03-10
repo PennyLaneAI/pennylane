@@ -1687,11 +1687,12 @@ class SingleExcitation(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: Obtained from its decomposition in terms of the
-    :class:`~.SingleExcitationPlus` and `:class:`~.SingleExcitationMinus` operations
+        :class:`~.SingleExcitationPlus` and `:class:`~.SingleExcitationMinus` operations
 
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+
 
     **Example**
 
@@ -1745,7 +1746,7 @@ class SingleExcitationMinus(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_-\frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
-    where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+        where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1784,7 +1785,7 @@ class SingleExcitationPlus(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
-    where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+        where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
