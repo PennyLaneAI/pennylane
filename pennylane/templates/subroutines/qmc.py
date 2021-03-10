@@ -93,7 +93,7 @@ def func_to_unitary(func, M):
     :math:`f(i)`.
 
     Args:
-        func (callable): A function defined on the set of integers
+        func (callable): a function defined on the set of integers
             :math:`X = \{0, 1, \ldots, M - 1\}` with output value inside :math:`[0, 1]`
         M (int): the number of integers that the function is defined on
 
@@ -258,11 +258,10 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     Args:
         probs (array): input probability distribution as a flat array
-        func (callable): A function defined on the set of integers :math:`X = [0, 1, \ldots, M - 1]`
-            with output value inside :math:`[0, 1]`
-        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary
-        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
-            estimation
+        func (callable): input random variable defined on the set of integers
+            :math:`X = [0, 1, \ldots, M - 1]` with output value inside :math:`[0, 1]`
+        target_wires (Union[Wires, Sequence[int], or int]): the target wires
+        estimation_wires (Union[Wires, Sequence[int], or int]): the estimation wires
     """
     if isinstance(probs, np.ndarray) and probs.ndim != 1:
         raise ValueError("The probability distribution must be specified as a flat array")
