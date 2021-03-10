@@ -22,6 +22,8 @@ import numpy as np
 import jax.numpy as np
 import pytest
 
+# pylint: disable=R0201
+
 
 class TestJaxOps:
     """
@@ -30,7 +32,7 @@ class TestJaxOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation(self, phi):
-
+        """Test correctness of SingleExcitation"""
         jx_mat = jax_ops.SingleExcitation(phi)
         m = qml.SingleExcitation(phi, wires=[0, 1])
 
@@ -38,6 +40,7 @@ class TestJaxOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus(self, phi):
+        """Test correctness of SingleExcitationPlus"""
         jx_mat = jax_ops.SingleExcitationPlus(phi)
         m = qml.SingleExcitationPlus(phi, wires=[0, 1])
 
@@ -45,6 +48,7 @@ class TestJaxOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_minus(self, phi):
+        """Test correctness of SingleExcitationMinus"""
         jx_mat = jax_ops.SingleExcitationMinus(phi)
         m = qml.SingleExcitationMinus(phi, wires=[0, 1])
 
@@ -58,7 +62,7 @@ class TestAutogradOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation(self, phi):
-
+        """Test correctness of SingleExcitation"""
         a_mat = autograd_ops.SingleExcitation(phi)
         m = qml.SingleExcitation(phi, wires=[0, 1])
 
@@ -66,6 +70,7 @@ class TestAutogradOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus(self, phi):
+        """Test correctness of SingleExcitationPlus"""
         a_mat = autograd_ops.SingleExcitationPlus(phi)
         m = qml.SingleExcitationPlus(phi, wires=[0, 1])
 
@@ -73,6 +78,7 @@ class TestAutogradOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_minus(self, phi):
+        """Test correctness of SingleExcitationMinus"""
         a_mat = autograd_ops.SingleExcitationMinus(phi)
         m = qml.SingleExcitationMinus(phi, wires=[0, 1])
 
@@ -86,7 +92,7 @@ class TestTFOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation(self, phi):
-
+        """Test correctness of SingleExcitation"""
         tf_mat = tf_ops.SingleExcitation(phi)
         m = qml.SingleExcitation(phi, wires=[0, 1])
 
@@ -94,6 +100,7 @@ class TestTFOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus(self, phi):
+        """Test correctness of SingleExcitationPlus"""
         tf_mat = tf_ops.SingleExcitationPlus(phi)
         m = qml.SingleExcitationPlus(phi, wires=[0, 1])
 
@@ -101,6 +108,7 @@ class TestTFOps:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_minus(self, phi):
+        """Test correctness of SingleExcitationMinus"""
         tf_mat = tf_ops.SingleExcitationMinus(phi)
         m = qml.SingleExcitationMinus(phi, wires=[0, 1])
 
