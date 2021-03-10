@@ -257,7 +257,6 @@ def DoubleExcitationPlus(phi):
 
     return tf.convert_to_tensor(U)
 
-    return U
 
 
 def DoubleExcitationMinus(phi):
