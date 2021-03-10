@@ -183,6 +183,61 @@ def jacobian(func, argnum=None):
     return _jacobian_function
 
 
+def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
+
+    r"""Uses a central finite difference approximation to compute the gradient
+    of the function ``f`` with respect to the argument ``argnum``.
+
+    .. math::
+
+        \frac{\partial f(x)}{\partial x_i} \approx \frac{f(x_i + \delta/2)
+        - f(x_i - \delta/2)}{\delta}
+
+    Args:
+        f (function): function with signature ``f(*args, **kwargs)``
+        argnum (int): which argument to take a gradient with respect to
+        delta (float): step size used to evaluate the finite difference
+        idx (list(int) or list[tuple(int)]): for multivariable functions it contains
+            the Indices of the arguments ``argnum`` to differentiate
+
+    Returns:
+        (float or array): the gradient of the function ``f``
+    """
+
+    x = np.array(args[argnum])
+    grad = np.zeros_like(x, dtype="O")
+
+    if idx is None:
+        idx = list(np.ndindex(*x.shape))
+    else:
+        bounds = np.array(x.shape) - 1
+        for _idx in idx:
+
+            if len(_idx) != x.ndim:
+                raise ValueError(
+                    "Elements of 'idx' must be of lenght {}; got element {} with lenght {}".format(
+                        x.ndim, _idx, len(_idx)
+                    )
+                )
+
+            if (np.array(_idx) > bounds).any():
+                raise ValueError(
+                    "Indices in 'idx' can not be greater than {}; got {}".format(
+                        tuple(bounds), _idx
+                    )
+                )
+
+    for i in idx:
+        shift = np.zeros_like(x)
+        shift[i] += 0.5 * delta
+        grad[i] = (
+            f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
+            - f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
+        ) * delta ** -1
+
+    return grad
+
+
 def finite_diff(F, x, i=None, delta=0.01):
     r"""Uses a central finite difference approximation to evaluate the derivative
     :math:`\frac{\partial F(x)}{\partial x_i}` of the function ``F(x)``
