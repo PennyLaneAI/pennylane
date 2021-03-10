@@ -17,6 +17,7 @@ Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
+from scipy.stats import unitary_group
 import pennylane as qml
 import pennylane._queuing
 from pennylane import numpy as np
@@ -29,6 +30,8 @@ from pennylane.templates.subroutines import (
     DoubleExcitationUnitary,
     UCCSD,
     ApproxTimeEvolution,
+    Permute,
+    QuantumPhaseEstimation,
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -36,6 +39,10 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _tuple_to_word,
     _n_k_gray_code,
 )
+
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
 
 # fmt: off
 PAULI_WORD_TEST_DATA = [
@@ -112,28 +119,29 @@ class TestInterferometer:
 
     def test_invalid_mesh_exception(self):
         """Test that Interferometer() raises correct exception when mesh not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="Mesh option"):
+        with pytest.raises(ValueError, match="did not recognize mesh"):
             circuit(varphi, mesh="a")
 
-    def test_invalid_mesh_exception(self):
+    @pytest.mark.parametrize("mesh", ["rectangular", "triangular"])
+    def test_invalid_beamsplitter_exception(self, mesh):
         """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
-        dev = qml.device("default.gaussian", wires=1)
-        varphi = [0.42342]
+        dev = qml.device("default.gaussian", wires=2)
+        varphi = [0.42342, 0.234]
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
+            Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="did not recognize option"):
+        with pytest.raises(ValueError, match="did not recognize beamsplitter"):
             circuit(varphi, bs="a")
 
     def test_clements_beamsplitter_convention(self, tol):
@@ -341,10 +349,33 @@ class TestInterferometer:
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
-        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
+    def test_interferometer_wrong_dim(self):
+        """Integration test for the CVNeuralNetLayers method."""
+        if not qml.tape_mode_active():
+            pytest.skip("Validation only performed in tape mode")
+
+        dev = qml.device("default.gaussian", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi, varphi):
+            Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
+        phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
+        varphi = np.array([0.4134863, 6.17555778, 0.80334114, 2.02400747])
+
+        with pytest.raises(ValueError, match=r"Theta must be of shape \(6,\)"):
+            wrong_theta = np.array([0.1, 0.2])
+            circuit(wrong_theta, phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Phi must be of shape \(6,\)"):
+            wrong_phi = np.array([0.1, 0.2])
+            circuit(theta, wrong_phi, varphi)
+
+        with pytest.raises(ValueError, match=r"Varphi must be of shape \(4,\)"):
+            wrong_varphi = np.array([0.1, 0.2])
+            circuit(theta, phi, wrong_varphi)
 
 
 class TestSingleExcitationUnitary:
@@ -441,7 +472,7 @@ class TestSingleExcitationUnitary:
         [
             (0.2, [0], "expected at least two wires"),
             (0.2, [], "expected at least two wires"),
-            ([0.2, 1.1], [0, 1, 2], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 1, 2], "Weight must be a scalar"),
         ],
     )
     def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
@@ -474,19 +505,13 @@ class TestSingleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0]))
+            init_state = np.array([0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=wires)
             SingleExcitationUnitary(weight, wires=single_wires)
-
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestArbitraryUnitary:
@@ -537,6 +562,23 @@ class TestArbitraryUnitary:
         for i, op in enumerate(rec.queue):
             assert op.data[0] == weights[i]
             assert op.data[1] == pauli_words[i]
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ArbitraryUnitary(weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must be of shape"):
+            weights = np.array([0, 1])
+            circuit(weights)
 
 
 class TestDoubleExcitationUnitary:
@@ -738,7 +780,7 @@ class TestDoubleExcitationUnitary:
             (0.2, [0], [1, 2], "expected at least two wires representing the occupied"),
             (0.2, [0, 1], [2], "expected at least two wires representing the unoccupied"),
             (0.2, [0], [1], "expected at least two wires representing the occupied"),
-            ([0.2, 1.1], [0, 2], [4, 6], "'weight' must be of shape"),
+            ([0.2, 1.1], [0, 2], [4, 6], "Weight must be a scalar"),
         ],
     )
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
@@ -770,19 +812,13 @@ class TestDoubleExcitationUnitary:
 
         @qml.qnode(dev)
         def circuit(weight):
-            init_state = np.flip(np.array([1, 1, 0, 0, 0]))
+            init_state = np.array([0, 0, 0, 1, 1], requires_grad=False)
             qml.BasisState(init_state, wires=range(N))
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
-
             return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
-
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((weight), method="A")
-        jac_F = circuit.jacobian((weight), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
 class TestUCCSDUnitary:
@@ -906,8 +942,6 @@ class TestUCCSDUnitary:
     @pytest.mark.parametrize(
         ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
         [
-            (np.array([-2.8]), [[0, 1, 2]], [], [1, 1, 0, 0], "'init_state' must be a Numpy array"),
-            (np.array([-2.8]), [[0, 1, 2]], [], (1, 1, 0, 0), "'init_state' must be a Numpy array"),
             (
                 np.array([-2.8]),
                 [[0, 1, 2]],
@@ -920,7 +954,7 @@ class TestUCCSDUnitary:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'s_wires' and 'd_wires' lists can not be both empty",
+                "s_wires and d_wires lists can not be both empty",
             ),
             (
                 np.array([-2.8]),
@@ -934,28 +968,28 @@ class TestUCCSDUnitary:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
-                "'init_state' must be of shape",
+                "BasisState parameter and wires",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "'weights' must be of shape",
+                "Weights tensor must be of",
             ),
         ],
     )
@@ -1025,11 +1059,6 @@ class TestUCCSDUnitary:
         res = circuit(w0, w1, w2)
         assert np.allclose(res, np.array(expected), atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((w0, w1, w2), method="A")
-        jac_F = circuit.jacobian((w0, w1, w2), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
-
 
 class TestApproxTimeEvolution:
     """Tests for the ApproxTimeEvolution template from the pennylane.templates.subroutine module."""
@@ -1048,23 +1077,6 @@ class TestApproxTimeEvolution:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
-            circuit()
-
-    def test_n_error(self):
-        """Tests if the correct error is thrown when n is not an integer"""
-
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
-        n = 1.37
-
-        @qml.qnode(dev)
-        def circuit():
-            ApproxTimeEvolution(hamiltonian, 2, n)
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="n must be of type int"):
             circuit()
 
     @pytest.mark.parametrize(
@@ -1207,3 +1219,382 @@ class TestApproxTimeEvolution:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         assert np.allclose(circuit(), expectation)
+
+
+class TestPermute:
+    """Tests for the Permute template from the pennylane.templates.subroutine module."""
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_error_message",
+        [
+            ([0], "Permutations must involve at least 2 qubits."),
+            ([0, 1, 2], "Permutation must specify outcome of all wires."),
+            ([0, 1, 1, 3], "Values in a permutation must all be unique"),
+            ([4, 3, 2, 1], "not present in wire set"),
+        ],
+    )
+    def test_invalid_inputs_qnodes(self, permutation_order, expected_error_message):
+        """Tests if errors are thrown for invalid permutations with QNodes."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def permute_qubits():
+            Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=expected_error_message):
+            permute_qubits()
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_error_message",
+        [
+            ([0], "Permutations must involve at least 2 qubits."),
+            ([2, "c", "a", 0], "Permutation must specify outcome of all wires."),
+            ([2, "a", "c", "c", 1], "Values in a permutation must all be unique"),
+            ([2, "a", "d", "c", 1], r"not present in wire set"),
+        ],
+    )
+    def test_invalid_inputs_tape(self, permutation_order, expected_error_message):
+        """Tests if errors are thrown for invalid permutations with tapes."""
+
+        wire_labels = [0, 2, "a", "c", 1]
+
+        with qml.tape.QuantumTape() as tape:
+            with pytest.raises(ValueError, match=expected_error_message):
+                Permute(permutation_order, wires=wire_labels)
+
+    def test_identity_permutation_qnode(self):
+        """ Test that identity permutations have no effect on QNodes. """
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def identity_permutation():
+            Permute([0, 1, 2, 3], wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        identity_permutation()
+
+        assert len(identity_permutation.ops) == 1
+
+    def test_identity_permutation_tape(self):
+        """ Test that identity permutations have no effect on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
+
+        assert len(tape.operations) == 0
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([1, 0], [(0, 1)]),
+            ([1, 0, 2], [(0, 1)]),
+            ([1, 0, 2, 3], [(0, 1)]),
+            ([0, 2, 1, 3], [(1, 2)]),
+            ([2, 3, 0, 1], [(0, 2), (1, 3)]),
+        ],
+    )
+    def test_two_cycle_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test some two-cycles on QNodes. """
+
+        dev = qml.device("default.qubit", wires=len(permutation_order))
+
+        @qml.qnode(dev)
+        def two_cycle():
+            Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        two_cycle()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in two_cycle.ops[:-1])
+        assert [op.wires.labels for op in two_cycle.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        # For tape need to specify the wire labels
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 0], [0, 1], [(0, 1)]),
+            ([1, 0, 2], [0, 1, 2], [(0, 1)]),
+            ([1, 0, 2, 3], [0, 1, 2, 3], [(0, 1)]),
+            ([0, 2, 1, 3], [0, 1, 2, 3], [(1, 2)]),
+            ([2, 3, 0, 1], [0, 1, 2, 3], [(0, 2), (1, 3)]),
+            (["a", "b", 0, 1], [0, 1, "a", "b"], [(0, "a"), (1, "b")]),
+        ],
+    )
+    def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test some two-cycles on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            Permute(permutation_order, wire_order)
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([1, 2, 0], [(0, 1), (1, 2)]),
+            ([3, 0, 1, 2], [(0, 3), (1, 3), (2, 3)]),
+            ([1, 2, 3, 0], [(0, 1), (1, 2), (2, 3)]),
+        ],
+    )
+    def test_cyclic_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test more general cycles on QNodes. """
+
+        dev = qml.device("default.qubit", wires=len(permutation_order))
+
+        @qml.qnode(dev)
+        def cycle():
+            Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        cycle()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in cycle.ops[:-1])
+        assert [op.wires.labels for op in cycle.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 2, 0], [0, 1, 2], [(0, 1), (1, 2)]),
+            (["d", "a", "b", "c"], ["a", "b", "c", "d"], [("a", "d"), ("b", "d"), ("c", "d")]),
+            (["b", 0, "d", "a"], ["a", "b", 0, "d"], [("a", "b"), ("b", 0), (0, "d")]),
+        ],
+    )
+    def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test more general cycles on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            Permute(permutation_order, wire_order)
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,expected_wires",
+        [
+            ([3, 0, 2, 1], [(0, 3), (1, 3)]),
+            ([1, 3, 0, 4, 2], [(0, 1), (1, 3), (2, 3), (3, 4)]),
+            ([5, 1, 4, 2, 3, 0], [(0, 5), (2, 4), (3, 4)]),
+        ],
+    )
+    def test_arbitrary_permutations_qnode(self, permutation_order, expected_wires):
+        """ Test arbitrarily generated permutations on QNodes. """
+
+        dev = qml.device("default.qubit", wires=len(permutation_order))
+
+        @qml.qnode(dev)
+        def arbitrary_perm():
+            Permute(permutation_order, wires=dev.wires)
+            return qml.expval(qml.PauliZ(0))
+
+        arbitrary_perm()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in arbitrary_perm.ops[:-1])
+        assert [op.wires.labels for op in arbitrary_perm.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order,expected_wires",
+        [
+            ([1, 3, 0, 2], [0, 1, 2, 3], [(0, 1), (1, 3), (2, 3)]),
+            (
+                ["d", "a", "e", "b", "c"],
+                ["a", "b", "c", "d", "e"],
+                [("a", "d"), ("b", "d"), ("c", "e")],
+            ),
+            (
+                ["p", "f", 4, "q", "z", 0, "c", "d"],
+                ["z", 0, "d", "c", 4, "f", "q", "p"],
+                [("z", "p"), (0, "f"), ("d", 4), ("c", "q"), (4, "p")],
+            ),
+        ],
+    )
+    def test_arbitrary_permutations_tape(self, permutation_order, wire_order, expected_wires):
+        """ Test arbitrarily generated permutations on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            Permute(permutation_order, wire_order)
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in tape.operations)
+        assert [op.wires.labels for op in tape.operations] == expected_wires
+
+    @pytest.mark.parametrize(
+        "num_wires,permutation_order,wire_subset,expected_wires",
+        [
+            (3, [1, 0], [0, 1], [(0, 1)]),
+            (4, [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
+            (6, [4, 2, 1, 3], [1, 2, 3, 4], [(1, 4), (3, 4)]),
+        ],
+    )
+    def test_subset_permutations_qnode(
+        self, num_wires, permutation_order, wire_subset, expected_wires
+    ):
+        """ Test permutation of wire subsets on QNodes. """
+
+        dev = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def subset_perm():
+            Permute(permutation_order, wires=wire_subset)
+            return qml.expval(qml.PauliZ(0))
+
+        subset_perm()
+
+        # Ensure all operations are SWAPs, and that the wires are the same
+        assert all(op.name == "SWAP" for op in subset_perm.ops[:-1])
+        assert [op.wires.labels for op in subset_perm.ops[:-1]] == expected_wires
+
+    @pytest.mark.parametrize(
+        "wire_labels,permutation_order,wire_subset,expected_wires",
+        [
+            ([0, 1, 2], [1, 0], [0, 1], [(0, 1)]),
+            ([0, 1, 2, 3], [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
+            (
+                [0, 2, "a", "c", 1, 4],
+                [4, "c", 2, "a"],
+                [2, "a", "c", 4],
+                [(2, 4), ("a", "c"), ("c", 4)],
+            ),
+        ],
+    )
+    def test_subset_permutations_tape(
+        self, wire_labels, permutation_order, wire_subset, expected_wires
+    ):
+        """ Test permutation of wire subsets on tapes. """
+
+        with qml.tape.QuantumTape() as tape:
+            # Make sure all the wires are actually there
+            for wire in wire_labels:
+                qml.RZ(0, wires=wire)
+            Permute(permutation_order, wire_subset)
+
+        # Make sure to start comparison after the set of RZs have been applied
+        assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
+        assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
+
+
+class TestQuantumPhaseEstimation:
+    """Tests for the QuantumPhaseEstimation template from the pennylane.templates.subroutine
+    module."""
+
+    def test_same_wires(self):
+        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+        common element"""
+
+        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
+            QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
+
+    def test_expected_tape(self):
+        """Tests if QuantumPhaseEstimation populates the tape as expected for a fixed example"""
+
+        m = qml.RX(0.3, wires=0).matrix
+
+        with qml.tape.QuantumTape() as tape:
+            QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.Hadamard(1),
+            qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
+            qml.Hadamard(2),
+            qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
+            qml.QFT(wires=[1, 2]).inv()
+
+        assert len(tape2.queue) == len(tape.queue)
+        assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
+        assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
+
+    @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
+    def test_phase_estimated(self, phase):
+        """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
+        estimates = []
+        wire_range = range(2, 10)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+            m = qml.RX(phase, wires=0).matrix
+            target_wires = [0]
+            estimation_wires = range(1, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                # We want to prepare an eigenstate of RX, in this case |+>
+                qml.Hadamard(wires=target_wires)
+
+                qml.templates.QuantumPhaseEstimation(
+                    m, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                qml.probs(estimation_wires)
+
+            res = tape.execute(dev).flatten()
+            initial_estimate = np.argmax(res) / 2 ** (wires - 1)
+
+            # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
+            # form exp(2 pi i theta X)
+            rescaled_estimate = (1 - initial_estimate) * np.pi * 4
+            estimates.append(rescaled_estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)
+
+    def test_phase_estimated_two_qubit(self):
+        """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
+        unitary."""
+
+        unitary = unitary_group.rvs(4, random_state=1967)
+        eigvals, eigvecs = np.linalg.eig(unitary)
+
+        state = eigvecs[:, 0]
+        eigval = eigvals[0]
+        phase = np.real_if_close(np.log(eigval) / (2 * np.pi * 1j))
+
+        estimates = []
+        wire_range = range(3, 11)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+
+            target_wires = [0, 1]
+            estimation_wires = range(2, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                # We want to prepare an eigenstate of RX, in this case |+>
+                qml.QubitStateVector(state, wires=target_wires)
+
+                qml.templates.QuantumPhaseEstimation(
+                    unitary, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                qml.probs(estimation_wires)
+
+            res = tape.execute(dev).flatten()
+
+            if phase < 0:
+                estimate = np.argmax(res) / 2 ** (wires - 2) - 1
+            else:
+                estimate = np.argmax(res) / 2 ** (wires - 2)
+            estimates.append(estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)

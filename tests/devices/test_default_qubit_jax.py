@@ -28,6 +28,11 @@ class TestQNodeIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "passthru_interface": "jax",
+            "passthru_devices": {
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
         }
         assert cap == capabilities
 
@@ -431,24 +436,6 @@ class TestHighLevelIntegration:
         grad = jax.grad(cost)(weights)
         assert grad.shape == weights.shape
 
-    def test_non_backprop_error(self):
-        """Test that an error is raised in tape mode if the diff method is not backprop"""
-        if not qml.tape_mode_active():
-            pytest.skip("Test only applies in tape mode")
-
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev, interface="jax", diff_method="parameter-shift")
-        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
-
-        with pytest.raises(qml.QuantumFunctionError, match="The JAX interface can only be used with"):
-            qnode(weights)
-
-
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""
 
@@ -467,6 +454,23 @@ class TestOps:
         param = 0.3
         res = jacobian_transform(circuit)(param)
         assert jnp.allclose(res, jnp.zeros(wires ** 2))
+
+    def test_inverse_operation_jacobian_backprop(self, tol):
+        """Test that inverse operations work in backprop
+        mode"""
+        dev = qml.device('default.qubit.jax', wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit(param):
+            qml.RY(param, wires=0).inv()
+            return qml.expval(qml.PauliX(0))
+
+        x = 0.3
+        res = circuit(x)
+        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
+
+        grad = jax.grad(lambda a: circuit(a).reshape(()))(x)
+        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""

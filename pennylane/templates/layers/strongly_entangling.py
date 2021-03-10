@@ -15,6 +15,7 @@ r"""
 Contains the ``StronglyEntanglingLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
 from pennylane.templates import broadcast
@@ -27,11 +28,66 @@ from pennylane.templates.utils import (
 from pennylane.wires import Wires
 
 
+def _preprocess(weights, wires, ranges):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+    * If ranges is None, define a default.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+        ranges (Sequence[int]): range for each subsequent layer
+
+    Returns:
+        int, list[int]: number of times that the ansatz is repeated and preprocessed ranges
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
+
+        if len(shape) != 3:
+            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
+
+        if shape[1] != len(wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
+
+        if shape[2] != 3:
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 3; got {shape[2]}"
+            )
+
+    else:
+
+        repeat = check_number_of_layers([weights])
+
+        expected_shape = (repeat, len(wires), 3)
+        check_shape(
+            weights,
+            expected_shape,
+            msg="Weights tensor must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(weights)),
+        )
+
+    if len(wires) > 1:
+        if ranges is None:
+            # tile ranges with iterations of range(1, n_wires)
+            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
+    else:
+        ranges = [0] * repeat
+
+    return repeat, ranges
+
+
 def strongly_entangling_layer(weights, wires, r, imprimitive):
     r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     Args:
-        weights (array[float]): array of weights of shape ``(len(wires), 3)``
+        weights (tensor_like): weight tensor of shape ``(len(wires), 3)``
         wires (Wires): wires that the template acts on
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
@@ -69,7 +125,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(L, M, 3)``
+        weights (tensor_like): weight tensor of shape ``(L, M, 3)``
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
@@ -80,47 +136,8 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         ValueError: if inputs do not have the correct format
     """
 
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    repeat = check_number_of_layers([weights])
-
-    expected_shape = (repeat, len(wires), 3)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    if len(wires) > 1:
-        if ranges is None:
-            # tile ranges with iterations of range(1, n_wires)
-            ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
-
-        expected_shape = (repeat,)
-        check_shape(
-            ranges,
-            expected_shape,
-            msg="'ranges' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(weights)),
-        )
-
-        check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
-        for r in ranges:
-            check_type(
-                r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges)
-            )
-        if any((r >= len(wires) or r == 0) for r in ranges):
-            raise ValueError(
-                "the range for all layers needs to be smaller than the number of "
-                "qubits; got ranges {}.".format(ranges)
-            )
-    else:
-        ranges = [0] * repeat
-
-    ###############
+    repeat, ranges = _preprocess(weights, wires, ranges)
 
     for l in range(repeat):
 

@@ -15,6 +15,7 @@ r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
@@ -24,6 +25,47 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weights, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor, making sure that the second dimension
+      has length :math:`n`, where :math:`n` is the number of qubits.
+
+    Args:
+        weights (tensor_like): trainable parameters of the template
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of times that the ansatz is repeated
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
+
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+
+        if shape[1] != len(wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
+
+    else:
+
+        repeat = check_number_of_layers([weights])
+
+        expected_shape = (repeat, len(wires))
+        check_shape(
+            weights,
+            expected_shape,
+            msg=f"Weights tensor must have second dimension of length {len(wires)}; got {get_shape(weights)[1]}",
+        )
+
+    return repeat
 
 
 @template
@@ -55,8 +97,8 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
             :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
-                                for the rotation
+        weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
+                                for the rotation.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
@@ -134,24 +176,12 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         ``ValueError: Wrong number of parameters``.
     """
 
-    #############
-    # Input checks
-
     if rotation is None:
         rotation = RX
 
     wires = Wires(wires)
 
-    repeat = check_number_of_layers([weights])
-
-    expected_shape = (repeat, len(wires))
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
-
-    ###############
+    repeat = _preprocess(weights, wires)
 
     for layer in range(repeat):
 

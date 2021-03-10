@@ -211,5 +211,5 @@ class TestInputChecks:
     @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
     def test_check_num_layers_exception(self, inpt, repeat):
         """Tests that layer check throws exception if number of layers not consistent."""
-        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="The first dimension of all parameters"):
             check_number_of_layers(inpt)

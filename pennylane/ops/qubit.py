@@ -15,18 +15,21 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import cmath
 import functools
-import numpy as np
 
-from pennylane.templates import template
-from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import pauli_eigs, expand
-from pennylane._queuing import OperationRecorder
+# pylint:disable=abstract-method,arguments-differ,protected-access
+import math
+
+import numpy as np
+from scipy.linalg import block_diag
+
 import pennylane as qml
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.templates import template
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.utils import expand, pauli_eigs
+from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -357,7 +360,7 @@ class CNOT(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -388,7 +391,7 @@ class CZ(DiagonalOperation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -424,7 +427,7 @@ class CY(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -465,7 +468,7 @@ class SWAP(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 2
@@ -500,7 +503,7 @@ class CSWAP(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
     num_wires = 3
@@ -547,7 +550,7 @@ class Toffoli(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (int): the subsystem the gate acts on
+        wires (Sequence[int]): the subsystem the gate acts on
     """
     num_params = 0
     num_wires = 3
@@ -720,6 +723,58 @@ class PhaseShift(DiagonalOperation):
     @staticmethod
     def decomposition(phi, wires):
         decomp_ops = [RZ(phi, wires=wires)]
+        return decomp_ops
+
+
+class ControlledPhaseShift(DiagonalOperation):
+    r"""ControlledPhaseShift(phi, wires)
+    A qubit controlled phase shift.
+
+    .. math:: CR_\phi(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0 \\
+                0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & e^{i\phi}
+            \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_\phi(\phi)) = \frac{1}{2}\left[f(CR_\phi(\phi+\pi/2)) - f(CR_\phi(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_{\phi}(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+        return np.array([1, 1, 1, cmath.exp(1j * phi)])
+
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [
+            qml.PhaseShift(phi / 2, wires=wires[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(-phi / 2, wires=wires[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PhaseShift(phi / 2, wires=wires[1]),
+        ]
         return decomp_ops
 
 
@@ -906,7 +961,7 @@ class PauliRot(Operation):
     }
 
     def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=True)
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
         pauli_word = params[1]
 
@@ -971,6 +1026,44 @@ class PauliRot(Operation):
             non_identity_wires,
             list(range(len(pauli_word))),
         )
+
+    _generator = None
+
+    @property
+    def generator(self):
+        if self._generator is None:
+            pauli_word = self.parameters[1]
+
+            # Simplest case is if the Pauli is the identity matrix
+            if pauli_word == "I" * len(pauli_word):
+                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
+                return self._generator
+
+            # We first generate the matrix excluding the identity parts and expand it afterwards.
+            # To this end, we have to store on which wires the non-identity parts act
+            non_identity_wires, non_identity_gates = zip(
+                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+            )
+
+            # get MultiRZ's generator
+            multi_Z_rot_generator = np.diag(pauli_eigs(len(non_identity_gates)))
+
+            # now we conjugate with Hadamard and RX to create the Pauli string
+            conjugation_matrix = functools.reduce(
+                np.kron,
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            )
+
+            self._generator = [
+                expand(
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    non_identity_wires,
+                    list(range(len(pauli_word))),
+                ),
+                -1 / 2,
+            ]
+
+        return self._generator
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
@@ -1058,7 +1151,7 @@ class CRX(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1127,7 +1220,7 @@ class CRY(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1194,7 +1287,7 @@ class CRZ(DiagonalOperation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -1264,7 +1357,7 @@ class CRot(Operation):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
     """
     num_params = 3
     num_wires = 2
@@ -1501,13 +1594,163 @@ class QubitUnitary(Operation):
     def _matrix(cls, *params):
         U = np.asarray(params[0])
 
-        if U.shape[0] != U.shape[1]:
+        if U.ndim != 2 or U.shape[0] != U.shape[1]:
             raise ValueError("Operator must be a square matrix.")
 
         if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+
+class ControlledQubitUnitary(QubitUnitary):
+    r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
+    Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        U (array[complex]): square unitary matrix
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
+
+    **Example**
+
+    The following shows how a single-qubit unitary can be applied to wire ``2`` with control on
+    both wires ``0`` and ``1``:
+
+    >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+
+    Typically controlled operations apply a desired gate if the control qubits
+    are all in the state :math:`\vert 1\rangle`. However, there are some situations where
+    it is necessary to apply a gate conditioned on all qubits being in the
+    :math:`\vert 0\rangle` state, or a mix of the two.
+
+    The state on which to control can be changed by passing a string of bits to
+    `control_values`. For example, if we want to apply a single-qubit unitary to
+    wire ``3`` conditioned on three wires where the first is in state ``0``, the
+    second is in state ``1``, and the third in state ``1``, we can write:
+
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
+
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
+        if control_wires is None:
+            raise ValueError("Must specify control wires")
+
+        wires = Wires(wires)
+        control_wires = Wires(control_wires)
+
+        if Wires.shared_wires([wires, control_wires]):
+            raise ValueError(
+                "The control wires must be different from the wires specified to apply the unitary on."
+            )
+
+        U = params[0]
+        target_dim = 2 ** len(wires)
+        if len(U) != target_dim:
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        wires = control_wires + wires
+
+        # If control values unspecified, we control on the all-ones string
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        control_int = self._parse_control_values(control_wires, control_values)
+
+        # A multi-controlled operation is a block-diagonal matrix partitioned into
+        # blocks where the operation being applied sits in the block positioned at
+        # the integer value of the control string. For example, controlling a
+        # unitary U with 2 qubits will produce matrices with block structure
+        # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
+        # etc. The positioning of the block is controlled by padding the block diagonal
+        # to the left and right with the correct amount of identity blocks.
+
+        padding_left = control_int * len(U)
+        padding_right = 2 ** len(wires) - len(U) - padding_left
+
+        CU = block_diag(np.eye(padding_left), U, np.eye(padding_right))
+
+        params = list(params)
+        params[0] = CU
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    @staticmethod
+    def _parse_control_values(control_wires, control_values):
+        """Ensure any user-specified control strings have the right format."""
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any([x not in ["0", "1"] for x in control_values]):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
+        return control_int
+
+
+class MultiControlledX(ControlledQubitUnitary):
+    r"""MultiControlledX(control_wires, wires, control_values)
+    Apply a Pauli X gate controlled on an arbitrary computational basis state.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
+        wires (Union[Wires or int]): a single target wire the operation acts on
+        control_values (str): a string of bits representing the state of the control
+            qubits to control on (default is the all 1s state)
+
+    **Example**
+
+    The ``MultiControlledX`` operation (sometimes called a mixed-polarity
+    multi-controlled Toffoli) is a commonly-encountered case of the
+    :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
+    unitary is the Pauli X (NOT) gate. It can be used in the same manner as
+    ``ControlledQubitUnitary``, but there is no need to specify a matrix
+    argument:
+
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
+        if len(Wires(wires)) != 1:
+            raise ValueError("MultiControlledX accepts a single target wire.")
+
+        super().__init__(
+            np.array([[0, 1], [1, 0]]),
+            control_wires=control_wires,
+            wires=wires,
+            control_values=control_values,
+            do_queue=do_queue,
+        )
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -1541,6 +1784,94 @@ class DiagonalQubitUnitary(DiagonalOperation):
     @staticmethod
     def decomposition(D, wires):
         return [QubitUnitary(np.diag(D), wires=wires)]
+
+
+class QFT(Operation):
+    r"""QFT(wires)
+    Apply a quantum Fourier transform (QFT).
+
+    For the :math:`N`-qubit computational basis state :math:`|m\rangle`, the QFT performs the
+    transformation
+
+    .. math::
+
+        |m\rangle \rightarrow \frac{1}{\sqrt{2^{N}}}\sum_{n=0}^{2^{N} - 1}\omega_{N}^{mn} |n\rangle,
+
+    where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
+    **Example**
+
+    The quantum Fourier transform is applied by specifying the corresponding wires:
+
+    .. code-block::
+
+        wires = 3
+
+        @qml.qnode(dev)
+        def circuit_qft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.QFT(wires=range(wires))
+            return qml.state()
+
+    The inverse quantum Fourier transform is accessed using ``qml.QFT(wires).inv()``.
+    """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
+    grad_method = None
+
+    @property
+    def matrix(self):
+        # Redefine the property here to allow for a custom _matrix signature
+        mat = self._matrix(len(self.wires))
+        if self.inverse:
+            mat = mat.conj()
+        return mat
+
+    @classmethod
+    @functools.lru_cache()
+    def _matrix(cls, num_wires):
+        dimension = 2 ** num_wires
+
+        mat = np.zeros((dimension, dimension), dtype=np.complex128)
+        omega = np.exp(2 * np.pi * 1j / dimension)
+
+        for m in range(dimension):
+            for n in range(dimension):
+                mat[m, n] = omega ** (m * n)
+
+        return mat / np.sqrt(dimension)
+
+    @staticmethod
+    def decomposition(wires):
+        num_wires = len(wires)
+        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+
+        decomp_ops = []
+        for i, wire in enumerate(wires):
+            decomp_ops.append(qml.Hadamard(wire))
+
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                decomp_ops.append(op)
+
+        first_half_wires = wires[: num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2) :]
+
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+            swap = qml.SWAP(wires=[wire1, wire2])
+            decomp_ops.append(swap)
+
+        return decomp_ops
 
 
 # =============================================================================
@@ -1577,10 +1908,7 @@ class BasisState(Operation):
 
     @staticmethod
     def decomposition(n, wires):
-        with OperationRecorder() as rec:
-            BasisStatePreparation(n, wires)
-
-        return rec.queue
+        return BasisStatePreparation(n, wires)
 
 
 class QubitStateVector(Operation):
@@ -1611,10 +1939,7 @@ class QubitStateVector(Operation):
 
     @staticmethod
     def decomposition(state, wires):
-        with OperationRecorder() as rec:
-            MottonenStatePreparation(state, wires)
-
-        return rec.queue
+        return MottonenStatePreparation(state, wires)
 
 
 # =============================================================================
@@ -1729,6 +2054,7 @@ ops = {
     "RY",
     "RZ",
     "PhaseShift",
+    "ControlledPhaseShift",
     "Rot",
     "CRX",
     "CRY",
@@ -1740,7 +2066,10 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "ControlledQubitUnitary",
+    "MultiControlledX",
     "DiagonalQubitUnitary",
+    "QFT",
 }
 
 

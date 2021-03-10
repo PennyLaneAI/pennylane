@@ -188,6 +188,16 @@ of other templates.
   :description: ApproxTimeEvolution
   :figure: ../_static/templates/subroutines/approx_time_evolution.png
 
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.Permute.html
+  :description: Permute
+  :figure: ../_static/templates/subroutines/permute.png
+
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.QuantumPhaseEstimation.html
+  :description: QuantumPhaseEstimation
+  :figure: ../_static/templates/subroutines/qpe.svg
+
 .. raw:: html
 
         <div style='clear:both'></div>

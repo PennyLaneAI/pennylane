@@ -21,7 +21,6 @@ import autograd.builtins
 from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
-
 from pennylane.tape.queuing import AnnotatedQueue
 
 
@@ -166,6 +165,9 @@ class AutogradInterface(AnnotatedQueue):
         res = self.execute_device(params, device=device)
         self.set_parameters(self._all_parameter_values, trainable_only=False)
 
+        if self.is_sampled:
+            return res
+
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
@@ -199,7 +201,12 @@ class AutogradInterface(AnnotatedQueue):
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
             jac = self.jacobian(device, params=params, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
-            vjp = g.flatten() @ jac
+
+            # only flatten g if all parameters are single values
+            if all(np.ndim(p) == 0 for p in params):
+                vjp = g.flatten() @ jac
+            else:
+                vjp = g @ jac
             return vjp
 
         return gradient_product

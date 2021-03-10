@@ -21,6 +21,9 @@ from pennylane.circuit_drawer import Grid
 from pennylane.circuit_drawer.grid import _transpose
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestFunctions:
     """Test the helper functions."""
 
@@ -71,6 +74,22 @@ class TestGrid:
 
         assert np.array_equal(grid.raw_grid, raw_grid)
         assert np.array_equal(grid.raw_grid.T, [[0, 1, 2], [3, 4, 5]])
+
+    @pytest.mark.parametrize(
+            "raw_grid", 
+            [
+                [0, 3, 1, 4, 2, 5],
+                [[[0,3],[1,6]],[[2,5],[4,7]]],
+                [],
+            ]
+            )
+    def test_error_init_with_wrong_grid_shape(self, raw_grid):
+        """Test that the Grid class is initialized correctly."""
+
+        with pytest.raises(
+            ValueError, match="The entered raw grid was not parsed as two-dimensional array"
+        ):
+            grid = Grid(raw_grid)
 
     @pytest.mark.parametrize(
         "idx,expected_transposed_grid",

@@ -67,6 +67,7 @@ JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 valid_hamiltonians = [
     ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
     ((-0.8,), (qml.PauliZ(0),)),
+    ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
     ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX("a"), qml.PauliY("b"))),
@@ -75,6 +76,20 @@ valid_hamiltonians = [
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+]
+
+valid_hamiltonians_str = [
+    "(1.0) [Hermitian0'1]",
+    "(-0.8) [Z0]",
+    "(0.6) [X0 X1]",
+    "(0.5) [X0]\n+ (-1.6) [Y1]",
+    "(0.5) [X1]\n+ (-1.6) [Y1]",
+    "(0.5) [Xa]\n+ (-1.6) [Yb]",
+    "(1.1) [X0]\n+ (-0.4) [Hermitian2]\n+ (0.333) [Z2]",
+    "(-0.4) [Hermitian0'2]\n+ (0.15) [Z1]",
+    "(1.5) [Z0]\n+ (2.0) [Y2]",
+    "(-0.1) [Hermitian0'1]\n+ (0.5) [Y0]",
+    "(0.5) [X0]\n+ (1.2) [X0 X1]",
 ]
 
 invalid_hamiltonians = [
@@ -94,6 +109,14 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), [0.5 * 1.0, 0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), [0.5 * 1.0, 1.2 * 1.0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
+]
+
+
+
+zero_hamiltonians_with_expvals = [
+    ([], [], [0]),
+    ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
+    ((0,0,0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
 ]
 
 simplify_hamiltonians = [
@@ -127,6 +150,20 @@ simplify_hamiltonians = [
             [1, 1.5],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
         ),
+    ),
+
+    # Simplifies to zero Hamiltonian
+    (
+        qml.Hamiltonian([1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
     ),
 ]
 
@@ -216,6 +253,15 @@ add_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(5),
         qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (1.5, 1.2, 1.1, 0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
+    ),
 ]
 
 sub_hamiltonians = [
@@ -261,6 +307,28 @@ sub_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(1),
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
+
+    # The result is the zero Hamiltonian
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([], []),
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
+        qml.Hamiltonian([], []),
+    ),
+
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
+        qml.Hamiltonian(np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
+        qml.Hamiltonian(
+            (0.5, 1.2, -1.5, -0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        ),
+    ),
 ]
 
 mul_hamiltonians = [
@@ -284,6 +352,25 @@ mul_hamiltonians = [
             [-1.3, 0.39],
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
+    ),
+
+    # The result is the zero Hamiltonian
+    (
+        0,
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([0], [qml.PauliX(0)]),
+    ),
+    (
+        0,
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        3,
+        qml.Hamiltonian((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
     ),
 ]
 
@@ -331,6 +418,21 @@ matmul_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(2),
         qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
+    ),
+
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.Hamiltonian(
+            (0.5, 0.5, 0.5, 0.5),
+            np.array([
+                qml.PauliX(0) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(1) @ qml.PauliZ(3),
+            ]),
+        ),
     ),
 ]
 
@@ -492,7 +594,7 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (coeffs, ops)
+        assert H.terms == (list(coeffs), list(ops))
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -526,6 +628,12 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object has correct wires."""
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
+    def test_hamiltonian_str(self, terms, string):
+        """Tests that the __str__ function for printing is correct"""
+        H = qml.vqe.Hamiltonian(*terms)
+        assert H.__str__() == string
 
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
     def test_simplify(self, old_H, new_H):
@@ -688,7 +796,7 @@ class TestVQE:
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals)
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
@@ -749,6 +857,7 @@ class TestVQE:
             dev,
             optimize=True,
             interface=interface,
+            diff_method="parameter-shift"
         )
         cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
@@ -756,6 +865,7 @@ class TestVQE:
             dev,
             optimize=False,
             interface=interface,
+            diff_method="parameter-shift"
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -781,9 +891,11 @@ class TestVQE:
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
 
-        cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True)
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, diff_method="parameter-shift"
+        )
         cost2 = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False, diff_method="parameter-shift"
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -798,6 +910,25 @@ class TestVQE:
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
+
+    @pytest.mark.parametrize('opt', [True, False])
+    def test_grad_zero_hamiltonian(self, opt):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the autograd interface with a zero Hamiltonian."""
+        if not qml.tape_mode_active():
+            pytest.skip("This test is only intended for tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=opt, diff_method="parameter-shift"
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dc = qml.grad(cost)(w)
+        assert np.allclose(dc, 0)
 
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -857,7 +988,7 @@ class TestVQE:
             pytest.skip("This test is only intended for tape mode")
 
         dev = qml.device("default.qubit", wires=2)
-        p = [1, 1, 1]
+        p = np.array([1., 1., 1.])
 
         def ansatz(params, **kwargs):
             qml.RX(params[0], wires=0)
@@ -867,24 +998,24 @@ class TestVQE:
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
-
-        qn = qnodes._qnode_for_metric_tensor_in_tape_mode
-        mt = qnodes.metric_tensor([p])
-
-        assert isinstance(qn, qml.qnodes.BaseQNode)
+        mt = qml.metric_tensor(qnodes)(p)
         assert qml.tape_mode_active()  # Check that tape mode is still active
 
-        qml.disable_tape()
+        try:
+            qml.disable_tape()
 
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(params[2], wires=1)
-            return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PhaseShift(params[2], wires=1)
+                return qml.expval(qml.PauliZ(0))
 
-        mt2 = circuit.metric_tensor([p])
+            mt2 = circuit.metric_tensor([p])
+        finally:
+            qml.enable_tape()
+
         assert np.allclose(mt, mt2)
 
     def test_multiple_devices(self, mocker):
@@ -911,7 +1042,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qnodes.metric_tensor([w])
+            qml.metric_tensor(qnodes)(w)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
@@ -924,6 +1055,20 @@ class TestVQE:
 
         with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
+
+    def test_variance_error(self):
+        """Test that an error is raised if attempting to use ExpvalCost to measure
+        variances"""
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        with pytest.raises(ValueError, match="sums of expectation values"):
+            qml.ExpvalCost(
+                qml.templates.StronglyEntanglingLayers,
+                hamiltonian,
+                dev,
+                measure="var"
+            )
 
 
 @pytest.mark.usefixtures("tape_mode")

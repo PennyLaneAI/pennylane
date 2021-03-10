@@ -306,7 +306,7 @@ class TestGrad:
         res = grad_fn(x, y)
         expected = np.array([np.cos(x) * np.cos(y) + y ** 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
-        assert spy.call_args_list[0][1]["argnum"] == [0]
+        assert spy.call_args_list[0][1]["argnum"] == 0
 
 
 class TestJacobian:

@@ -840,6 +840,31 @@ class TestExpand:
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
 
+    def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
+        """Test that the is_sampled property is correctly set when tape
+        expansion happens."""
+        dev = qml.device('default.qubit', wires=1, analytic=True)
+
+        # Remove support for an op to enforce decomposition & tape expansion
+        mock_ops = copy.copy(dev.operations)
+        mock_ops.remove("T")
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "operations", mock_ops)
+
+            def circuit():
+                qml.T(wires=0)
+                return sample(qml.PauliZ(0))
+
+            # Choosing parameter-shift not to swap the device under the hood
+            qnode = qml.tape.QNode(circuit, dev, diff_method="parameter-shift")
+            qnode()
+
+            # Double-checking that the T gate is not supported
+            assert "T" not in qnode.device.operations
+            assert "T" not in qnode._original_device.operations
+
+            assert qnode.qtape.is_sampled
 
 class TestExecution:
     """Tests for tape execution"""
@@ -1070,7 +1095,7 @@ class TestExecution:
 
         res = tape.execute(dev)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], float)
+        assert isinstance(res[1], np.ndarray)
 
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""

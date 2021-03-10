@@ -44,12 +44,13 @@ class RotoselectOptimizer:
     with their respective parameters :math:`\theta` for the circuit and its gates. Note that the
     number of generators should match the number of parameters.
 
-    The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
+    The algorithm is described in further detail in
+    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
     Args:
-        possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit``
-            operators that are allowed in the circuit. Default is the set of Pauli rotations
-            :math:`\{R_x, R_y, R_z\}`.
+        possible_generators (list[~.Operation]): List containing the possible
+            ``pennylane.ops.qubit`` operators that are allowed in the circuit.
+            Default is the set of Pauli rotations :math:`\{R_x, R_y, R_z\}`.
 
     **Example:**
 
@@ -92,9 +93,9 @@ class RotoselectOptimizer:
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
-    def step_and_cost(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer and return the corresponding objective
-        function value prior to the step.
+    def step_and_cost(self, objective_fn, x, generators, **kwargs):
+        """Update trainable arguments with one step of the optimizer and return the corresponding
+        objective function value prior to the step.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
@@ -104,17 +105,18 @@ class RotoselectOptimizer:
                 variables to be optimized over or a single float with the initial value
             generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over
+            **kwargs : variable length of keyword arguments for the objective function.
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}`, the new generators, and the objective
-                function output prior to the step
+            function output prior to the step
         """
-        x_new, generators = self.step(objective_fn, x, generators)
+        x_new, generators = self.step(objective_fn, x, generators, **kwargs)
 
-        return x_new, generators, objective_fn(x, generators)
+        return x_new, generators, objective_fn(x, generators, **kwargs)
 
-    def step(self, objective_fn, x, generators):
-        r"""Update x with one step of the optimizer.
+    def step(self, objective_fn, x, generators, **kwargs):
+        r"""Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
@@ -124,13 +126,16 @@ class RotoselectOptimizer:
                 variables to be optimized over or a single float with the initial value
             generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over
+            **kwargs : variable length of keyword arguments for the objective function.
 
         Returns:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
-        objective_fn_flat = lambda x_flat, gen: objective_fn(unflatten(x_flat, x), generators=gen)
+        objective_fn_flat = lambda x_flat, gen: objective_fn(
+            unflatten(x_flat, x), generators=gen, **kwargs
+        )
 
         try:
             assert len(x_flat) == len(generators)

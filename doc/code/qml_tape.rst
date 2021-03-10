@@ -134,15 +134,6 @@ Tape mode provides several advantages over the standard PennyLane QNode.
 * **Optimizations**: Tape mode provides various performance optimizations, reducing pre- and post-processing
   overhead, and reduces the number of quantum evaluations in certain cases.
 
-.. warning::
-
-    In tape-mode, the QNode does not yet have feature-parity with the standard PennyLane
-    QNode. Features currently not available in tape mode include:
-
-    * Metric tensor computation
-
-    * The ability to automatically extract the layer structure of variational circuits
-
 
 Quantum tapes
 -------------
@@ -175,7 +166,11 @@ TensorFlow, and PyTorch:
 
 For more details and examples, please see the tape documentation.
 
+
+.. automodapi:: pennylane.tape.transforms
+    :include-all-objects:
+
 .. automodapi:: pennylane.tape
     :no-main-docstr:
     :include-all-objects:
-    :skip: enable_tape, disable_tape
+    :skip: QNode, qnode, enable_tape, disable_tape

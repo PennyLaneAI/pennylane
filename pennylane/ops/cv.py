@@ -869,13 +869,12 @@ class TensorN(CVObservable):
         # Custom definition for __new__ needed such that a NumberOperator can
         # be returned when a single mode is defined
 
-        if wires is None:
+        if wires is None and len(params) != 0:
             wires = params[-1]
             params = params[:-1]
 
-        if isinstance(wires, int) or len(wires) == 1:
+        if wires is not None and (isinstance(wires, int) or len(wires) == 1):
             return NumberOperator(*params, wires=wires, do_queue=do_queue)
-
         return super().__new__(cls)
 
 
