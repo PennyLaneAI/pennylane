@@ -13,6 +13,7 @@
 # limitations under the License.
 import numpy as np
 import pytest
+from scipy.stats import norm
 
 import pennylane as qml
 from pennylane.templates.subroutines.qmc import (
@@ -269,3 +270,46 @@ class TestQuantumMonteCarlo:
         assert all(np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
         assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
 
+    def test_expected_value(self):
+        """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
+        following the example in the usage details"""
+        m = 5
+        M = 2 ** m
+
+        xmax = np.pi
+        xs = np.linspace(-xmax, xmax, M)
+
+        probs = np.array([norm().pdf(x) for x in xs])
+        probs /= np.sum(probs)
+
+        func = lambda i: np.cos(xs[i]) ** 2
+
+        estimates = []
+
+        for n in range(4, 11):
+            N = 2 ** n
+
+            target_wires = range(m + 1)
+            estimation_wires = range(m + 1, n + m + 1)
+
+            dev = qml.device("default.qubit", wires=(n + m + 1))
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.templates.QuantumMonteCarlo(probs, func, target_wires=target_wires,
+                                                estimation_wires=estimation_wires)
+                return qml.probs(estimation_wires)
+
+            phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+            mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+            estimates.append(mu_estimated)
+
+        exact = 0.432332358381693654
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - exact)
+            err2 = np.abs(estimates[i + 1] - exact)
+            assert err1 >= err2
+
+        assert np.allclose(estimates[-1], exact, rtol=1e-3)
