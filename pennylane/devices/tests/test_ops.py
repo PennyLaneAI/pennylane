@@ -19,7 +19,7 @@ Tests operations defined across different interfaces
 import pennylane as qml
 from pennylane.devices import jax_ops, tf_ops, autograd_ops
 import numpy as np
-import jax.numpy as np
+import jax.numpy as jnp
 import pytest
 
 # pylint: disable=R0201
