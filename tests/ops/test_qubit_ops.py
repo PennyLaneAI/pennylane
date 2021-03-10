@@ -23,7 +23,7 @@ from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.devices import jax_ops, tf_ops, autograd_ops
+from pennylane.devices import tf_ops, autograd_ops
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, \
     ControlledPhaseShift, SingleExcitation, SingleExcitationPlus, SingleExcitationMinus
@@ -933,30 +933,6 @@ class TestSingleExcitation:
         res = expm(1j * a * g * phi)
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_jax(self, phi):
-        """Test correctness of SingleExcitation jax operation"""
-        jx_mat = jax_ops.SingleExcitation(phi)
-        m = qml.SingleExcitation(phi, wires=[0, 1])
-
-        assert np.allclose(jx_mat, m.matrix)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_plus_jax(self, phi):
-        """Test correctness of SingleExcitationPlus jax operation"""
-        jx_mat = jax_ops.SingleExcitationPlus(phi)
-        m = qml.SingleExcitationPlus(phi, wires=[0, 1])
-
-        assert np.allclose(jx_mat, m.matrix)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_minus_jax(self, phi):
-        """Test correctness of SingleExcitationMinus jax operation"""
-        jx_mat = jax_ops.SingleExcitationMinus(phi)
-        m = qml.SingleExcitationMinus(phi, wires=[0, 1])
-
-        assert np.allclose(jx_mat, m.matrix)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_ad(self, phi):
