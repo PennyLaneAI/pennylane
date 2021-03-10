@@ -50,7 +50,7 @@ def adjoint(fn):
 
         **Single operation**
 
-        You can also easily adjoint a single operation just by wrapping it with ``adjoint``
+        You can also easily adjoint a single operation just by wrapping it with ``adjoint``:
 
         .. code-block:: python3
 
