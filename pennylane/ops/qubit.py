@@ -35,6 +35,7 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 class AdjointError(Exception):
     """Exception for non-adjointable operations."""
+
     pass
 
 
