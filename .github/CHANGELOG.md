@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-- Added the `DoubleExcitation` four-qubit operation, which is particularly useful for quantum
+- Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
   chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
 
   It can be used to perform an :math:`SO(2)` rotation in the subspace 
