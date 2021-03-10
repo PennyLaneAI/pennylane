@@ -14,7 +14,7 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
-import numpy as _np
+from pennylane import numpy as np
 
 from autograd.core import make_vjp as _make_vjp
 from autograd.wrap_util import unary_to_nary
@@ -152,7 +152,7 @@ def jacobian(func, argnum=None):
         if isinstance(argnum, int):
             return _jacobian(func, argnum)
 
-        return lambda *args, **kwargs: _np.stack(
+        return lambda *args, **kwargs: np.stack(
             [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
         ).T
 
@@ -178,6 +178,6 @@ def jacobian(func, argnum=None):
         if len(argnum) == 1:
             return _jacobian(func, argnum[0])(*args, **kwargs)
 
-        return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+        return np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
 
     return _jacobian_function

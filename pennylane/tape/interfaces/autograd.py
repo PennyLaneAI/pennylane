@@ -210,8 +210,8 @@ class AutogradInterface(AnnotatedQueue):
               computed multiple redundant times.
 
               This is particularly useful when differentiating vector-valued QNodes.
-              Because Autograd requests the vector-GradMatrix product,
-              and *not* the full GradMatrix, differentiating vector-valued
+              Because Autograd requests the vector-grad matrix product,
+              and *not* the full grad matrix, differentiating vector-valued
               functions will result in multiple backward passes.
             """
             if grad_matrix_fn in saved_grad_matrices:
@@ -225,20 +225,24 @@ class AutogradInterface(AnnotatedQueue):
             return grad_matrix
 
         def gradient_product(dy):
-            # In autograd, the forward pass is always performed prior to the backwards
-            # pass, so we do not need to re-unwrap the parameters.
+            """Returns the vector-Jacobian product with given
+            parameter values p and output gradient dy"""
 
             @autograd.extend.primitive
             def jacobian(p):
-                jacobian = _evaluate_grad_matrix(p, "jacobian")
-                return jacobian
+                """Returns the Jacobian for parameters p"""
+                return _evaluate_grad_matrix(p, "jacobian")
 
             def vhp(ans, p):
                 def hessian_product(ddy):
+                    """Returns the vector-Hessian product with given
+                    parameter values p, output gradient dy, and output
+                    second-order gradient ddy"""
                     hessian = _evaluate_grad_matrix(p, "hessian")
 
                     if dy.size > 1:
                         if all(np.ndim(p) == 0 for p in params):
+                            # only flatten dy if all parameters are single values
                             vhp = dy.flatten() @ ddy @ hessian @ dy.flatten()
                         else:
                             vhp = dy @ ddy @ hessian @ dy.T
@@ -249,6 +253,7 @@ class AutogradInterface(AnnotatedQueue):
 
                 return hessian_product
 
+            # register vhp as the backward method of the jacobian function
             autograd.extend.defvjp(jacobian, vhp, argnums=[0])
 
             # only flatten dy if all parameters are single values
@@ -256,6 +261,7 @@ class AutogradInterface(AnnotatedQueue):
                 vjp = dy.flatten() @ jacobian(params)
             else:
                 vjp = dy @ jacobian(params)
+
             return vjp
 
         return gradient_product
