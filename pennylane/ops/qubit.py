@@ -1857,7 +1857,7 @@ class DoubleExcitation(Operation):
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        U = np.zeros((16, 16))
+        U = np.eye(16)
         U[3, 3] = c  # 3 (dec) = 0011 (bin)
         U[3, 12] = -s  # 12 (dec) = 1100 (bin)
         U[12, 3] = s

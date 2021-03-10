@@ -19,11 +19,13 @@ import functools
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
+from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, ControlledPhaseShift
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, \
+    ControlledPhaseShift, DoubleExcitation, DoubleExcitationPlus, DoubleExcitationMinus
 
 
 # Standard observables, their matrix representation, and eigenvlaues
@@ -875,6 +877,77 @@ PAULI_ROT_MATRIX_TEST_DATA = [
         ),
     ),
 ]
+
+
+class TestDoubleExcitation:
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_matrix(self, phi):
+        """Tests that the DoubleExcitation operation calculates the correct matrix"""
+        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+        res = op.matrix
+        exp = DoubleExcitation(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_decomp(self, phi):
+        """Tests that the DoubleExcitation operation calculates the correct decomposition"""
+        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+        decomp = op.decomposition(phi, wires=[0, 1, 2, 3])
+
+        mats = [m.matrix for m in decomp]
+        decomposed_matrix = mats[0] @ mats[1]
+        exp = DoubleExcitation(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_generator(self, phi):
+        """Tests that the DoubleExcitation operation calculates the correct generator"""
+        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+        g, a = op.generator
+
+        res = expm(1j * a * g * phi)
+        exp = DoubleExcitation(phi)
+
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_plus_matrix(self, phi):
+        """Tests that the DoubleExcitationPlus operation calculates the correct matrix"""
+        op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
+        res = op.matrix
+        exp = DoubleExcitationPlus(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_plus_generator(self, phi):
+        """Tests that the DoubleExcitationPlus operation calculates the correct generator"""
+        op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
+        g, a = op.generator
+
+        res = expm(1j * a * g * phi)
+        exp = DoubleExcitationPlus(phi)
+
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_minus_matrix(self, phi):
+        """Tests that the DoubleExcitationMinus operation calculates the correct matrix"""
+        op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
+        res = op.matrix
+        exp = DoubleExcitationMinus(phi)
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_double_excitation_minus_generator(self, phi):
+        """Tests that the DoubleExcitationMinus operation calculates the correct generator"""
+        op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
+        g, a = op.generator
+
+        res = expm(1j * a * g * phi)
+        exp = DoubleExcitationMinus(phi)
+
+        assert np.allclose(res, exp)
 
 
 class TestPauliRot:
