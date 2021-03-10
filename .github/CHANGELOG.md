@@ -4,6 +4,38 @@
 
 - TODO.
 
+* A new adjoint transform has been added. 
+  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
+
+  This new method allows users to apply the adjoint of an arbitrary sequence of operations.
+
+  ```python
+  def subroutine(wire):
+      qml.RX(0.123, wires=wire)
+      qml.RY(0.456, wires=wire)
+
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev)
+  def circuit():
+      subroutine(0)
+      qml.adjoint(subroutine)(0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  This creates the following circuit:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+  ```
+
+  Directly applying to a gate also works as expected.
+
+  ```python
+  qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
+  ```
+>>>>>>> master
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
@@ -131,6 +163,9 @@
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
 <h3>Improvements</h3>
+
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
 
 - Added the `ControlledQubitUnitary` operation. This
   enables implementation of multi-qubit gates with a variable number of

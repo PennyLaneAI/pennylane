@@ -161,13 +161,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
-    .. note::
-
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
-
     Args:
         name (str): a name given to the quantum tape
+        do_queue (bool): Whether to queue this tape in a parent tape context.
 
     **Example**
 
@@ -224,15 +220,33 @@ class QuantumTape(AnnotatedQueue):
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
+
+
+    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+
+    .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape1:
+        with qml.tape.QuantumTape(do_queue=False) as tape2:
+            qml.RX(0.123, wires=0)
+
+    Here, tape2 records the RX gate, but tape1 doesn't record tape2.
+
+    >>> tape1.operations
+    []
+    >>> tape2.operations
+    [RX(0.123, wires=[0])]
+
+    This is useful for when you want to transform a tape first before applying it.
     """
 
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, do_queue=True):
         super().__init__()
         self.name = name
-
+        self.do_queue = do_queue
         self._prep = []
         """list[.Operation]: Tape state preparations."""
 
@@ -280,8 +294,8 @@ class QuantumTape(AnnotatedQueue):
                     for mock in mock_operations():
                         stack.enter_context(mock)
                     self._stack = stack.pop_all()
-
-            QueuingContext.append(self)
+            if self.do_queue:
+                QueuingContext.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
