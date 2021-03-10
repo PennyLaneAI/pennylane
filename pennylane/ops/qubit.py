@@ -1822,7 +1822,8 @@ class DoubleExcitation(Operation):
     * Number of wires: 4
     * Number of parameters: 1
     * Gradient recipe: Obtained from its decomposition in terms of the
-    :class:`~.DoubleExcitationPlus` and `:class:`~.DoubleExcitationMinus` operations
+        :class:`~.DoubleExcitationPlus` and `:class:`~.DoubleExcitationMinus` operations
+
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
@@ -1902,9 +1903,9 @@ class DoubleExcitationPlus(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(
-    \phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
-    where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_+\frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+        where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
+
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
@@ -1968,7 +1969,7 @@ class DoubleExcitationMinus(Operation):
     * Number of wires: 4
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = U_-\frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
-    where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
+        where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
