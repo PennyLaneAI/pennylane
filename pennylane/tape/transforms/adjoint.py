@@ -87,7 +87,7 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with QuantumTape(embed=False) as tape:
+        with QuantumTape(do_queue=False) as tape:
             fn(*args, **kwargs)
         for op in reversed(tape.queue):
             op.adjoint(do_queue=True)
