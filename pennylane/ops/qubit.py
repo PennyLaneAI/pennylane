@@ -33,6 +33,10 @@ from pennylane.wires import Wires
 INV_SQRT2 = 1 / math.sqrt(2)
 
 
+class AdjointError(Exception):
+    pass
+
+
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
@@ -2009,7 +2013,7 @@ class BasisState(Operation):
         return BasisStatePreparation(n, wires)
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        raise AdjointError("No adjoint exists for BasisState operations.")
 
 
 class QubitStateVector(Operation):
@@ -2043,7 +2047,7 @@ class QubitStateVector(Operation):
         return MottonenStatePreparation(state, wires)
 
     def adjoint(self, do_queue=False):
-        raise NotImplementedError
+        raise AdjointError("No adjoint exists for QubitStateVector operations.")
 
 
 # =============================================================================

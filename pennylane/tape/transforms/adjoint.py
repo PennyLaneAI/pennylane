@@ -22,6 +22,23 @@ def adjoint(fn):
 
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
 
+    Args:
+        fn: Any python function that applies pennylane operations.
+
+    Returns:
+        A new function that will apply the same operations but adjointed and in reverse order.
+
+    **Example**
+
+    .. code-block:: python3
+
+        def my_ops():
+            qml.RX(0.123, wires=0)
+            qml.RY(0.456, wires=0)
+
+        adj_my_ops = qml.adjoint(my_ops)
+        adj_my_ops() # This will queue ops [qml.RY(-0.456), qml.RX(-0.123)]
+
     .. UsageDetails::
 
         **Adjoint of a function**
@@ -65,13 +82,6 @@ def adjoint(fn):
 
         >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RX(-0.123)--| <Z>
-
-
-    Args:
-        fn: Any python function that applies pennylane operations.
-
-    Returns:
-        A new function that will apply the same operations but adjointed and in reverse order.
 
     """
 

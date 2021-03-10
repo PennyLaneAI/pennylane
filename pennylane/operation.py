@@ -978,9 +978,6 @@ class Channel(Operation, abc.ABC):
         """
         return self._kraus_matrices(*self.parameters)
 
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
-
 
 # =============================================================================
 # Base Observable class
@@ -1182,10 +1179,6 @@ class Observable(Operator):
             list(qml.Operation): A list of gates that diagonalize
             the observable in the computational basis.
         """
-        raise NotImplementedError
-
-    def adjoint(self, do_queue=False):
-        """Overriding of Operation.adjoint"""
         raise NotImplementedError
 
 
@@ -1707,10 +1700,6 @@ class CVOperation(CV, Operation):
             )
 
         return self.heisenberg_expand(U, wires)
-
-    def adjoint(self, do_queue=False):
-        # TODO(chase): Add the CV adjointed ops.
-        raise NotImplementedError
 
 
 class CVObservable(CV, Observable):

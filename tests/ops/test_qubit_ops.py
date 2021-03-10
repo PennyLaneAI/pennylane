@@ -375,6 +375,15 @@ class TestOperations:
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
 
+    @pytest.mark.parametrize(
+        "op", 
+        [
+            qml.BasisState(np.array([0, 1]), wires=0), 
+            qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
+        ])
+    def test_adjoint_error_exception(self, op, tol):
+        with pytest.raises(qml.ops.qubit.AdjointError):
+            op.adjoint()
 
     @pytest.mark.parametrize("inverse", [True, False])
     def test_QFT(self, inverse):

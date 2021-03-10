@@ -163,7 +163,7 @@ class QuantumTape(AnnotatedQueue):
 
     Args:
         name (str): a name given to the quantum tape
-        embed (bool): Whether to embed this tape in a parent tape context.
+        do_queue (bool): Whether to queue this tape in a parent tape context.
 
     **Example**
 
@@ -222,12 +222,12 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``embed=False``, that tape will not be embedded in a parent tape context.
+    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
 
     .. code-block:: python
 
     with qml.tape.QuantumTape() as tape1:
-        with qml.tape.QuantumTape(embed=False) as tape2:
+        with qml.tape.QuantumTape(do_queue=False) as tape2:
             qml.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
@@ -243,10 +243,10 @@ class QuantumTape(AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None, embed=True):
+    def __init__(self, name=None, do_queue=True):
         super().__init__()
         self.name = name
-        self.embed = embed
+        self.do_queue = do_queue
         self._prep = []
         """list[.Operation]: Tape state preparations."""
 
@@ -294,7 +294,7 @@ class QuantumTape(AnnotatedQueue):
                     for mock in mock_operations():
                         stack.enter_context(mock)
                     self._stack = stack.pop_all()
-            if self.embed:
+            if self.do_queue:
                 QueuingContext.append(self)
             return super().__enter__()
         except Exception as _:
