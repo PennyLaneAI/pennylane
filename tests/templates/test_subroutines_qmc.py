@@ -21,17 +21,13 @@ from pennylane.templates.subroutines.qmc import (
     func_to_unitary,
     make_Q,
     probs_to_unitary,
+    QuantumMonteCarlo,
 )
+from pennylane.wires import Wires
 
 
 class TestProbsToUnitary:
     """Tests for the probs_to_unitary function"""
-
-    # def test_non_flat(self):
-    #     """Test if a ValueError is raised when a non-flat array is input"""
-    #     p = np.ones((4, 1))
-    #     with pytest.raises(ValueError, match="The probability distribution must be specified as a"):
-    #         probs_to_unitary(p)
 
     def test_invalid_distribution_sum_to_not_one(self):
         """Test if a ValueError is raised when a distribution that does not sum to one is input"""
@@ -209,3 +205,67 @@ def test_Q():
     Q = make_Q(A, R)
 
     assert np.allclose(Q, Q_expected)
+
+
+class TestQuantumMonteCarlo:
+    """Tests for the QuantumMonteCarlo template"""
+
+    @staticmethod
+    def func(i):
+        return np.sin(i) ** 2
+
+    def test_non_flat(self):
+        """Test if a ValueError is raised when a non-flat array is input"""
+        p = np.ones((4, 1)) / 4
+        with pytest.raises(ValueError, match="The probability distribution must be specified as a"):
+            QuantumMonteCarlo(p, self.func, range(3), range(3, 5))
+
+    def test_wrong_size_p(self):
+        """Test if a ValueError is raised when a probability distribution is passed whose length
+        cannot be mapped to qubits"""
+        p = np.ones(5) / 5
+        with pytest.raises(ValueError, match="The probability distribution must have a length"):
+            QuantumMonteCarlo(p, self.func, range(3), range(3, 5))
+
+    def test_unexpected_target_wires_number(self):
+        """Test if a ValueError is raised when the number of target wires is incompatible with the
+        expected number of target wires inferred from the length of the input probability
+        distribution"""
+        p = np.ones(4) / 4
+        with pytest.raises(ValueError, match="The probability distribution of dimension 4 requires"
+                                             " 3 target wires"):
+            QuantumMonteCarlo(p, self.func, range(4), range(4, 6))
+
+    def test_expected_circuit(self):
+        """Test if the circuit applied when using the QMC template is the same as the expected
+        circuit for a fixed example"""
+        p = np.ones(4) / 4
+        target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
+
+        with qml.tape.tapes.QuantumTape() as tape:
+            QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+
+        queue_before_qpe = tape.queue[:2]
+        queue_after_qpe = tape.queue[2:]
+
+        A = probs_to_unitary(p)
+        R = func_to_unitary(self.func, 4)
+
+        assert len(queue_before_qpe) == 2
+        assert queue_before_qpe[0].name == "QubitUnitary"
+        assert queue_before_qpe[1].name == "QubitUnitary"
+        assert np.allclose(queue_before_qpe[0].matrix, A)
+        assert np.allclose(queue_before_qpe[1].matrix, R)
+        assert queue_before_qpe[0].wires == target_wires[:-1]
+        assert queue_before_qpe[1].wires == target_wires
+
+        Q = make_Q(A, R)
+
+        with qml.tape.tapes.QuantumTape() as qpe_tape:
+            qml.templates.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+
+        assert len(queue_after_qpe) == len(qpe_tape.queue)
+        assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+        assert all(np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+
