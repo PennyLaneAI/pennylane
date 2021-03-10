@@ -858,7 +858,7 @@ class TestExpand:
                 return sample(qml.PauliZ(0))
 
             # Choosing parameter-shift not to swap the device under the hood
-            qnode = qml.tape.QNode(circuit, dev, diff_method="parameter-shift")
+            qnode = qml.QNode(circuit, dev, diff_method="parameter-shift")
             qnode()
 
             # Double-checking that the T gate is not supported
