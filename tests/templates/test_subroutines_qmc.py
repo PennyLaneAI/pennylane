@@ -313,3 +313,37 @@ class TestQuantumMonteCarlo:
             assert err1 >= err2
 
         assert np.allclose(estimates[-1], exact, rtol=1e-3)
+
+    def test_expected_value_custom_wires(self):
+        """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
+        following the example in the usage details when the wires have custom labels"""
+        m = 5
+        M = 2 ** m
+
+        xmax = np.pi
+        xs = np.linspace(-xmax, xmax, M)
+
+        probs = np.array([norm().pdf(x) for x in xs])
+        probs /= np.sum(probs)
+
+        func = lambda i: np.cos(xs[i]) ** 2
+
+        n = 10
+        N = 2 ** n
+
+        target_wires = [0, "a", -1.1, -10, "bbb", 1000]
+        estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
+
+        dev = qml.device("default.qubit", wires=target_wires + estimation_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.QuantumMonteCarlo(probs, func, target_wires=target_wires,
+                                            estimation_wires=estimation_wires)
+            return qml.probs(estimation_wires)
+
+        phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+        mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+
+        exact = 0.432332358381693654
+        assert np.allclose(mu_estimated, exact, rtol=1e-3)
