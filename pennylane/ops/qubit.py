@@ -20,7 +20,6 @@ import functools
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
-
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -32,6 +31,12 @@ from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
+
+
+class AdjointError(Exception):
+    """Exception for non-adjointable operations."""
+
+    pass
 
 
 class Hadamard(Observable, Operation):
@@ -87,6 +92,9 @@ class Hadamard(Observable, Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return Hadamard(wires=self.wires, do_queue=do_queue)
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -138,6 +146,9 @@ class PauliX(Observable, Operation):
             PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        return PauliX(wires=self.wires, do_queue=do_queue)
 
 
 class PauliY(Observable, Operation):
@@ -193,6 +204,9 @@ class PauliY(Observable, Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return PauliY(wires=self.wires, do_queue=do_queue)
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -230,6 +244,9 @@ class PauliZ(Observable, DiagonalOperation):
         decomp_ops = [PhaseShift(np.pi, wires=wires)]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return PauliZ(wires=self.wires, do_queue=do_queue)
+
 
 class S(DiagonalOperation):
     r"""S(wires)
@@ -265,6 +282,9 @@ class S(DiagonalOperation):
         decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return S(wires=self.wires, do_queue=do_queue).inv()
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -299,6 +319,9 @@ class T(DiagonalOperation):
     def decomposition(wires):
         decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        return T(wires=self.wires, do_queue=do_queue).inv()
 
 
 class SX(Operation):
@@ -340,6 +363,9 @@ class SX(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return SX(wires=self.wires, do_queue=do_queue).inv()
+
 
 class CNOT(Operation):
     r"""CNOT(wires)
@@ -370,6 +396,9 @@ class CNOT(Operation):
     @classmethod
     def _matrix(cls, *params):
         return CNOT.matrix
+
+    def adjoint(self, do_queue=False):
+        return CNOT(wires=self.wires, do_queue=do_queue)
 
 
 class CZ(DiagonalOperation):
@@ -406,6 +435,9 @@ class CZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         return cls.eigvals
+
+    def adjoint(self, do_queue=False):
+        return CZ(wires=self.wires, do_queue=do_queue)
 
 
 class CY(Operation):
@@ -450,6 +482,9 @@ class CY(Operation):
         decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return CY(wires=self.wires, do_queue=do_queue)
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -478,6 +513,9 @@ class SWAP(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
+
+    def adjoint(self, do_queue=False):
+        return SWAP(wires=self.wires, do_queue=do_queue)
 
 
 class CSWAP(Operation):
@@ -524,6 +562,9 @@ class CSWAP(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
+
+    def adjoint(self, do_queue=False):
+        return CSWAP(wires=self.wires, do_queue=do_queue)
 
 
 class Toffoli(Operation):
@@ -572,6 +613,9 @@ class Toffoli(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
+    def adjoint(self, do_queue=False):
+        return Toffoli(wires=self.wires, do_queue=do_queue)
+
 
 class RX(Operation):
     r"""RX(phi, wires)
@@ -607,6 +651,9 @@ class RX(Operation):
 
         return np.array([[c, js], [js, c]])
 
+    def adjoint(self, do_queue=False):
+        return RX(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class RY(Operation):
     r"""RY(phi, wires)
@@ -641,6 +688,9 @@ class RY(Operation):
         s = math.sin(theta / 2)
 
         return np.array([[c, -s], [s, c]])
+
+    def adjoint(self, do_queue=False):
+        return RY(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
 class RZ(DiagonalOperation):
@@ -683,6 +733,9 @@ class RZ(DiagonalOperation):
 
         return np.array([p, p.conjugate()])
 
+    def adjoint(self, do_queue=False):
+        return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
@@ -724,6 +777,9 @@ class PhaseShift(DiagonalOperation):
     def decomposition(phi, wires):
         decomp_ops = [RZ(phi, wires=wires)]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -776,6 +832,9 @@ class ControlledPhaseShift(DiagonalOperation):
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
 class Rot(Operation):
@@ -830,6 +889,10 @@ class Rot(Operation):
     def decomposition(phi, theta, omega, wires):
         decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        phi, theta, omega = self.parameters
+        return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
 
 class MultiRZ(DiagonalOperation):
@@ -918,6 +981,9 @@ class MultiRZ(DiagonalOperation):
 
         for i in range(len(wires) - 1):
             CNOT(wires=[wires[i + 1], wires[i]])
+
+    def adjoint(self, do_queue=False):
+        return MultiRZ(-self.parameters[0], wires=self.wires)
 
 
 class PauliRot(Operation):
@@ -1102,6 +1168,11 @@ class PauliRot(Operation):
             elif gate == "Y":
                 RX(-np.pi / 2, wires=[wire])
 
+    def adjoint(self, do_queue=False):
+        return PauliRot(
+            -self.parameters[0], self.parameters[1], wires=self.wires, do_queue=do_queue
+        )
+
 
 # Four term gradient recipe for controlled rotations
 c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
@@ -1181,6 +1252,9 @@ class CRX(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return CRX(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class CRY(Operation):
     r"""CRY(phi, wires)
@@ -1247,6 +1321,9 @@ class CRY(Operation):
             CNOT(wires=wires),
         ]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        return CRY(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
 class CRZ(DiagonalOperation):
@@ -1331,6 +1408,9 @@ class CRZ(DiagonalOperation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return CRZ(-self.data[0], wires=self.wires, do_queue=do_queue)
+
 
 class CRot(Operation):
     r"""CRot(phi, theta, omega, wires)
@@ -1406,6 +1486,10 @@ class CRot(Operation):
             ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
+
 
 class U1(Operation):
     r"""U1(phi)
@@ -1445,6 +1529,9 @@ class U1(Operation):
     @staticmethod
     def decomposition(phi, wires):
         return [PhaseShift(phi, wires=wires)]
+
+    def adjoint(self, do_queue=False):
+        return U1(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
 class U2(Operation):
@@ -1501,6 +1588,10 @@ class U2(Operation):
             PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
+        return U2(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
 
 
 class U3(Operation):
@@ -1565,6 +1656,10 @@ class U3(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
+        return U3(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+
 
 # =============================================================================
 # Arbitrary operations
@@ -1601,6 +1696,9 @@ class QubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+    def adjoint(self, do_queue=False):
+        return QubitUnitary(self.data[0].conj().T, wires=self.wires, do_queue=do_queue)
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -1662,7 +1760,6 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-
         wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
@@ -1785,6 +1882,9 @@ class DiagonalQubitUnitary(DiagonalOperation):
     def decomposition(D, wires):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
+    def adjoint(self, do_queue=False):
+        return DiagonalQubitUnitary(self.parameters[0].conj(), wires=self.wires, do_queue=do_queue)
+
 
 class QFT(Operation):
     r"""QFT(wires)
@@ -1873,6 +1973,9 @@ class QFT(Operation):
 
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        return QFT(wires=self.wires, do_queue=do_queue).inv()
+
 
 # =============================================================================
 # State preparation
@@ -1910,6 +2013,9 @@ class BasisState(Operation):
     def decomposition(n, wires):
         return BasisStatePreparation(n, wires)
 
+    def adjoint(self, do_queue=False):
+        raise AdjointError("No adjoint exists for BasisState operations.")
+
 
 class QubitStateVector(Operation):
     r"""QubitStateVector(state, wires)
@@ -1940,6 +2046,9 @@ class QubitStateVector(Operation):
     @staticmethod
     def decomposition(state, wires):
         return MottonenStatePreparation(state, wires)
+
+    def adjoint(self, do_queue=False):
+        raise AdjointError("No adjoint exists for QubitStateVector operations.")
 
 
 # =============================================================================
