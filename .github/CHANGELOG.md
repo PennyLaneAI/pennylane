@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * A new adjoint transform has been added. 
-  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111/files)
+  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
 
   This new method allows users to apply the adjoint of an arbitrary sequence of operations.
 
