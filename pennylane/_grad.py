@@ -209,6 +209,11 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
         )
 
+    if delta <= 0.0:
+        raise ValueError(
+            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
+        )
+
     x = _np.array(args[argnum])
     gradient = _np.zeros_like(x, dtype="O")
 
@@ -262,6 +267,11 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     if argnum > len(args) - 1:
         raise ValueError(
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+        )
+
+    if delta <= 0.0:
+        raise ValueError(
+            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
         )
 
     x = np.array(args[argnum])
