@@ -934,23 +934,6 @@ class TestSingleExcitation:
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("plugin", ['autograd', 'tf', 'jax'])
-    def test_autograd(self, plugin):
-        """Tests that gradients and operations are computed correctly using the
-        autograd interface"""
-
-        dev = qml.device('default.qubit.' + plugin, wires=2)
-        state = np.array([0, -1/np.sqrt(2), 1/np.sqrt(2), 0])
-
-        @qml.qnode(dev)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.SingleExcitation(phi, wires=[0, 1])
-
-            return qml.state()
-
-        assert np.allclose(state, circuit(np.pi/2))
-
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
