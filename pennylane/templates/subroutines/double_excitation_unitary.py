@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.ops import CNOT, RX, RZ, Hadamard
-from pennylane.templates.decorator import template
+from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 
@@ -395,8 +395,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@template
-def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
+class DoubleExcitationUnitary(Operation):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -508,45 +507,54 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
 
     """
 
-    ##############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires1 = Wires(wires1)
-    wires2 = Wires(wires2)
+    def __init__(self, weight, wires1=None, wires2=None, do_queue=True):
+        self.wires1 = Wires(wires1)
+        self.wires2 = Wires(wires2)
+        _preprocess(weight, wires1, wires2)
+        # remember so we can split wires in decomposition method
+        self.len_wires1 = len(wires1)
+        wires = self.wires1 + self.wires2
+        super().__init__(weight, wires=wires, do_queue=do_queue)
 
-    _preprocess(weight, wires1, wires2)
+    def decomposition(self, weight, wires):
+        # split wires back into two sets
+        wires1 = wires[:self.len_wires1]
+        wires2 = wires[self.len_wires1:]
+        s = wires1[0]
+        r = wires1[-1]
+        q = wires2[0]
+        p = wires2[-1]
 
-    s = wires1[0]
-    r = wires1[-1]
-    q = wires2[0]
-    p = wires2[-1]
+        # Sequence of the wires entering the CNOTs
+        cnots_occ = [wires1.subset([l, l + 1]) for l in range(len(wires1) - 1)]
+        cnots_unocc = [wires2.subset([l, l + 1]) for l in range(len(wires2) - 1)]
 
-    # Sequence of the wires entering the CNOTs
-    cnots_occ = [wires1.subset([l, l + 1]) for l in range(len(wires1) - 1)]
-    cnots_unocc = [wires2.subset([l, l + 1]) for l in range(len(wires2) - 1)]
+        set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
 
-    set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
+        # Apply the first layer
+        _layer1(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the first layer
-    _layer1(weight, s, r, q, p, set_cnot_wires)
+        # Apply the second layer
+        _layer2(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the second layer
-    _layer2(weight, s, r, q, p, set_cnot_wires)
+        # Apply the third layer
+        _layer3(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the third layer
-    _layer3(weight, s, r, q, p, set_cnot_wires)
+        # Apply the fourth layer
+        _layer4(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the fourth layer
-    _layer4(weight, s, r, q, p, set_cnot_wires)
+        # Apply the fifth layer
+        _layer5(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the fifth layer
-    _layer5(weight, s, r, q, p, set_cnot_wires)
+        # Apply the sixth layer
+        _layer6(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the sixth layer
-    _layer6(weight, s, r, q, p, set_cnot_wires)
+        # Apply the seventh layer
+        _layer7(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the seventh layer
-    _layer7(weight, s, r, q, p, set_cnot_wires)
-
-    # Apply the eighth layer
-    _layer8(weight, s, r, q, p, set_cnot_wires)
+        # Apply the eighth layer
+        _layer8(weight, s, r, q, p, set_cnot_wires)

@@ -16,7 +16,7 @@ Contains the ``QAOAEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
+from pennylane.operation import Operation, AnyWires
 from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
@@ -119,8 +119,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     broadcast(unitary=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
 
-@template
-def QAOAEmbedding(features, weights, wires, local_field="Y"):
+class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
     circuit that is inspired by the QAOA ansatz.
@@ -260,22 +259,38 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         1-dimensional Ising model.
 
     """
-    wires = Wires(wires)
-    repeat = _preprocess(features, wires, weights)
 
-    if local_field == "Z":
-        local_fields = RZ
-    elif local_field == "X":
-        local_fields = RX
-    elif local_field == "Y":
-        local_fields = RY
-    else:
-        raise ValueError(f"did not recognize local field {local_field}")
+    num_params = 2
+    num_wires = AnyWires
+    par_domain = "A"
 
-    for l in range(repeat):
-        # apply alternating Hamiltonians
+    def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
+
+        wires = Wires(wires)
+
+        _preprocess(features, wires, weights)
+
+        if local_field == "Z":
+            self.local_fields = RZ
+        elif local_field == "X":
+            self.local_fields = RX
+        elif local_field == "Y":
+            self.local_fields = RY
+        else:
+            raise ValueError(f"did not recognize local field {local_field}")
+
+        super().__init__(features, weights, wires=wires, do_queue=do_queue)
+
+    def decomposition(self, features, weights, wires):
+
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
+
+        for l in range(repeat):
+            # apply alternating Hamiltonians
+            qaoa_feature_encoding_hamiltonian(features, wires)
+            qaoa_ising_hamiltonian(weights[l], wires, self.local_fields)
+
+        # repeat the feature encoding once more at the end
         qaoa_feature_encoding_hamiltonian(features, wires)
-        qaoa_ising_hamiltonian(weights[l], wires, local_fields)
-
-    # repeat the feature encoding once more at the end
-    qaoa_feature_encoding_hamiltonian(features, wires)

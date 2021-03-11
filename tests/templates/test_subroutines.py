@@ -21,6 +21,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
+from pennylane.tape import QuantumTape
 
 from pennylane.templates.subroutines import (
     Interferometer,
@@ -744,24 +745,29 @@ class TestDoubleExcitationUnitary:
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        with qml.tape.OperationRecorder() as rec:
-            DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
-        assert len(rec.queue) == sqg + cnots
+        op = DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
+
+        with QuantumTape() as tape:
+            op.decomposition(weight, wires=Wires(wires1+wires2))
+
+        queue = tape.operations
+
+        assert len(queue) == sqg + cnots
 
         for gate in ref_gates:
             idx = gate[0]
 
             exp_gate = gate[1]
-            res_gate = rec.queue[idx]
-            assert isinstance(res_gate, exp_gate)
+            res_gate = queue[idx]
+            assert type(res_gate) == exp_gate
 
             exp_wires = gate[2]
-            res_wires = rec.queue[idx]._wires
+            res_wires = queue[idx]._wires
             assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
-            res_weight = rec.queue[idx].parameters
+            res_weight = queue[idx].parameters
             assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
@@ -906,24 +912,36 @@ class TestUCCSDUnitary:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        with qml.tape.OperationRecorder() as rec:
+        with QuantumTape() as tape:
             UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
 
-        assert len(rec.queue) == sqg + cnots + 1
+        mixed_queue = tape.operations
+
+        # hack: replace DoubleExcitationUnitary with list of gates
+        queue = []
+        for g in mixed_queue:
+            if type(g) == DoubleExcitationUnitary:
+                with QuantumTape() as tape2:
+                    g.decomposition(*g.parameters, g.wires)
+                queue.extend(tape2.operations)
+            else:
+                queue.append(g)
+
+        assert len(queue) == sqg + cnots + 1
 
         for gate in ref_gates:
             idx = gate[0]
 
             exp_gate = gate[1]
-            res_gate = rec.queue[idx]
+            res_gate = queue[idx]
             assert isinstance(res_gate, exp_gate)
 
             exp_wires = gate[2]
-            res_wires = rec.queue[idx]._wires
+            res_wires = queue[idx]._wires
             assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
-            res_weight = rec.queue[idx].parameters
+            res_weight = queue[idx].parameters
             if exp_gate != qml.BasisState:
                 assert res_weight == exp_weight
             else:

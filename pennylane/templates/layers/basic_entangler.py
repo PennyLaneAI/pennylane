@@ -158,16 +158,12 @@ class BasicEntanglerLayers(Operation):
     par_domain = "A"
 
     def __init__(self, weights, wires=None, rotation=None, do_queue=True):
-
+        wires = Wires(wires)
         _preprocess(weights, wires)
-
         self.rotation = rotation or RX
-
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
-    def decomposition(self, *params, wires):
-
-        weights = params[0]
+    def decomposition(self, weights, wires):
 
         # first dimension of the weights tensor determines
         # the number of layers

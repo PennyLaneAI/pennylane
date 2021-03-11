@@ -28,6 +28,7 @@ from pennylane.templates.embeddings import (AngleEmbedding,
                                             SqueezingEmbedding)
 from pennylane import Beamsplitter
 from pennylane.wires import Wires
+from pennylane.tape import QuantumTape
 
 
 class TestAmplitudeEmbedding:
@@ -503,11 +504,17 @@ class TestQAOAEmbedding:
     def test_queue(self, n_wires, weight_shape, expected_queue):
         """Checks the queue for the default settings."""
 
-        with qml.tape.OperationRecorder() as rec:
-            QAOAEmbedding(features=list(range(n_wires)), weights=np.zeros(shape=weight_shape), wires=range(n_wires))
+        features = list(range(n_wires))
+        weights = np.zeros(shape=weight_shape)
+        op = QAOAEmbedding(features, weights, wires=range(n_wires))
 
-        for gate, expected_gate in zip(rec.queue, expected_queue):
-            assert isinstance(gate, expected_gate)
+        with QuantumTape() as tape:
+            op.decomposition(features, weights, wires=range(n_wires))
+
+        res_gates = [type(op) for op in tape.operations]
+
+        for gate, expected_gate in zip(res_gates, expected_queue):
+            assert gate == expected_gate
 
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
