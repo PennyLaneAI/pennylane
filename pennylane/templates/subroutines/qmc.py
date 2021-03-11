@@ -321,7 +321,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
                 return qml.probs(estimation_wires)
 
 
-            phase_estimated = np.argmax(circuit()) / N
+            phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
 
         The estimated value can be read-out as
 

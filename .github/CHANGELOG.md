@@ -39,7 +39,7 @@
       )
       return qml.probs(estimation_wires)
 
-  phase_estimated = np.argmax(circuit()) / N
+  phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
   expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
   ```
   
