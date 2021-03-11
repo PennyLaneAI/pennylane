@@ -66,8 +66,8 @@ class TestFuncToUnitary:
         with pytest.raises(ValueError, match="func must be bounded within the interval"):
             func_to_unitary(func, 8)
 
-    def test_one_dimensional(self):
-        """Test for a one-dimensional example if the returned unitary maps input states to the
+    def test_example(self):
+        """Test for a fixed example if the returned unitary maps input states to the
         expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
         M = 8
         func = lambda i: np.sin(i) ** 2
@@ -86,8 +86,8 @@ class TestFuncToUnitary:
         assert np.allclose(r @ r.T, np.eye(2 * M))
         assert np.allclose(r.T @ r, np.eye(2 * M))
 
-    def test_one_dimensional_with_pl(self):
-        """Test for a one-dimensional example if the returned unitary behaves as expected
+    def test_example_with_pl(self):
+        """Test for a fixed example if the returned unitary behaves as expected
         when used within a PennyLane circuit, i.e., so that the probability of the final control
         wire encodes the function."""
         wires = 3
