@@ -497,6 +497,7 @@ class Kerr(CVOperation):
     def adjoint(self, do_queue=False):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
+
 class CrossKerr(CVOperation):
     r"""pennylane.CrossKerr(kappa, wires)
     Cross-Kerr interaction.
