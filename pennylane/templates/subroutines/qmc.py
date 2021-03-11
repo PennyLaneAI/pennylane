@@ -267,6 +267,12 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
         ValueError: if ``probs`` is not flat or has a length that is not compatible with
             ``target_wires``
 
+    .. note::
+
+        This template is only compatible with simulators because the algorithm is performed using
+        unitary matrices. To implement the quantum Monte Carlo algorithm on hardware requires
+        breaking down the unitary matrices into hardware-compatible gates.
+
     .. UsageDetails::
 
         Consider a standard normal distribution :math:`p(x)` and a random variable
