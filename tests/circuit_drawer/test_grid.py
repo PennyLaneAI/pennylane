@@ -21,9 +21,6 @@ from pennylane.circuit_drawer import Grid
 from pennylane.circuit_drawer.grid import _transpose
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestFunctions:
     """Test the helper functions."""
 

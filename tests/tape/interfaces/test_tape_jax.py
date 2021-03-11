@@ -19,7 +19,7 @@ import numpy as np
 from functools import partial
 import pennylane as qml
 from pennylane.tape import JacobianTape
-from pennylane.tape.interfaces.jax import JAXInterface
+from pennylane.interfaces.jax import JAXInterface
 
 
 class TestJAXQuantumTape:
