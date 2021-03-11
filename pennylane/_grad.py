@@ -21,6 +21,8 @@ from autograd.wrap_util import unary_to_nary
 from autograd.extend import vspace
 from autograd import jacobian as _jacobian
 
+from functools import partial
+
 make_vjp = unary_to_nary(_make_vjp)
 
 
