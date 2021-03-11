@@ -23,6 +23,38 @@
   in terms of the `DoubleExcitationPlus` and `DoubleExcitationMinus` operations, whose
   gradients are given by the standard parameter-shift rule. These are also now supported.
 
+
+* A new adjoint transform has been added. 
+  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
+
+  This new method allows users to apply the adjoint of an arbitrary sequence of operations.
+
+  ```python
+  def subroutine(wire):
+      qml.RX(0.123, wires=wire)
+      qml.RY(0.456, wires=wire)
+
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev)
+  def circuit():
+      subroutine(0)
+      qml.adjoint(subroutine)(0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  This creates the following circuit:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+  ```
+
+  Directly applying to a gate also works as expected.
+
+  ```python
+  qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
+  ```
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
@@ -151,8 +183,33 @@
 
 <h3>Improvements</h3>
 
-- Added the `ControlledQubitUnitary` operation.
-  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
+
+- Added the `ControlledQubitUnitary` operation. This
+  enables implementation of multi-qubit gates with a variable number of
+  control qubits. It is also possible to specify a different state for the
+  control qubits using the `control_values` argument (also known as a
+  mixed-polarity multi-controlled operation).
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069) [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
+  
+  For example, we can  create a multi-controlled T gate using:
+
+  ```python
+  T = qml.T._matrix()
+  qml.ControlledQubitUnitary(T, control_wires=[0, 1, 3], wires=2, control_values="110")
+  ```
+
+  Here, the T gate will be applied to wire `2` if control wires `0` and `1` are in
+  state `1`, and control wire `3` is in state `0`. If no value is passed to
+  `control_values`, the gate will be applied if all control wires are in
+  the `1` state.
+
+- Added `MultiControlledX` for multi-controlled `NOT` gates.
+  This is a special case of `ControlledQubitUnitary` that applies a
+  Pauli X gate conditioned on the state of an arbitrary number of
+  control qubits.
+  [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
@@ -236,6 +293,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
+  being updated.
+  [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
+
 * Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
   or all zeros. 
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
@@ -253,12 +314,14 @@
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
+- Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Maria Schuld.
+Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
