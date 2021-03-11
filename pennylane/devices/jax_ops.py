@@ -212,7 +212,7 @@ def DoubleExcitationPlus(phi):
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)
-    e = jnp.exp(1j * phi /2)
+    e = jnp.exp(1j * phi / 2)
 
     U = e * jnp.eye(16)
     U[3, 3] = c  # 3 (dec) = 0011 (bin)
@@ -233,7 +233,7 @@ def DoubleExcitationMinus(phi):
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)
-    e = jnp.exp(-1j * phi /2)
+    e = jnp.exp(-1j * phi / 2)
 
     U = e * jnp.eye(16)
     U[3, 3] = c  # 3 (dec) = 0011 (bin)
