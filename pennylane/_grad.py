@@ -308,8 +308,6 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             + f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
         ) * delta ** -2
 
-        return deriv2
-
     # off-diagonal
     if i != j:
         shift_i = _np.zeros_like(x)
@@ -325,7 +323,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             + f(*args[:argnum], x - shift_i - shift_j, *args[argnum + 1 :], **kwargs)
         ) * delta ** -2
 
-        return deriv2
+    return deriv2
 
 
 def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
