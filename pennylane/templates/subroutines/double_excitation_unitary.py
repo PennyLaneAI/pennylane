@@ -522,8 +522,8 @@ class DoubleExcitationUnitary(Operation):
 
     def decomposition(self, weight, wires):
         # split wires back into two sets
-        wires1 = wires[:self.len_wires1]
-        wires2 = wires[self.len_wires1:]
+        wires1 = wires[: self.len_wires1]
+        wires2 = wires[self.len_wires1 :]
         s = wires1[0]
         r = wires1[-1]
         q = wires2[0]

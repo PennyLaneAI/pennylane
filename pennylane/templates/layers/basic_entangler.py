@@ -170,5 +170,7 @@ class BasicEntanglerLayers(Operation):
         repeat = qml.math.shape(weights)[0]
         for layer in range(repeat):
 
-            broadcast(unitary=self.rotation, pattern="single", wires=wires, parameters=weights[layer])
+            broadcast(
+                unitary=self.rotation, pattern="single", wires=wires, parameters=weights[layer]
+            )
             broadcast(unitary=CNOT, pattern="ring", wires=wires)
