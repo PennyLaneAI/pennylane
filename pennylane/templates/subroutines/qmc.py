@@ -77,15 +77,16 @@ def probs_to_unitary(probs):
 def func_to_unitary(func, M):
     r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
 
-    Consider a function defined on a set of integers :math:`X = \{0, 1, \ldots, M - 1\}` whose output
-    is bounded in the interval :math:`[0, 1]`, i.e., :math:`f: X \rightarrow [0, 1]`.
+    Consider a function defined on the set of integers :math:`X = \{0, 1, \ldots, M - 1\}` whose
+    output is bounded in the interval :math:`[0, 1]`, i.e., :math:`f: X \rightarrow [0, 1]`.
 
-    This function returns a unitary :math:`\mathcal{R}` that performs the transformation:
+    The ``func_to_unitary`` function returns a unitary :math:`\mathcal{R}` that performs the
+    transformation:
 
     .. math::
 
         \mathcal{R} |i\rangle \otimes |0\rangle = |i\rangle\otimes \left(\sqrt{1 - f(i)}|0\rangle +
-        \sqrt{f(i)} |1\rangle\right),
+        \sqrt{f(i)} |1\rangle\right).
 
     In other words, for a given input state :math:`|i\rangle \otimes |0\rangle`, this unitary
     encodes the amplitude :math:`\sqrt{f(i)}` onto the :math:`|1\rangle` state of the ancilla qubit.
@@ -179,7 +180,8 @@ def make_Q(A, R):
 
     Following `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper,
     the expectation value is encoded as the phase of an eigenvalue of :math:`\mathcal{Q}`. This
-    phase can be estimated using quantum phase estimation, see :func:`~.QuantumPhaseEstimation`.
+    phase can be estimated using quantum phase estimation, see :func:`~.QuantumMonteCarlo` for
+    more details.
 
     Args:
         A (array): The unitary matrix of :math:`\mathcal{A}` which encodes the probability
@@ -208,13 +210,12 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     Given a probability distribution :math:`p_{i}` of dimension :math:`M = 2^{m}` for some
     :math:`m \geq 1` and a random variable :math:`f: X \rightarrow [0, 1]` defined on the set of
-    integers :math:`X = \{0, 1, \ldots, M - 1\}`, this allows the expectation value
+    integers :math:`X = \{0, 1, \ldots, M - 1\}`, this function implements the algorithm that
+    allows the following expectation value to be estimated:
 
     .. math::
 
-        \mu = \sum_{i \in X} p_{i} f(i)
-
-    to be estimated.
+        \mu = \sum_{i \in X} p_{i} f(i).
 
     .. figure:: ../../_static/templates/subroutines/qmc.svg
         :align: center
@@ -276,7 +277,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
     .. UsageDetails::
 
         Consider a standard normal distribution :math:`p(x)` and a random variable
-        :math:`f(x) = \cos ^{2} (x)`. The expectation value of :math:`f(x)` is
+        :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is
         :math:`\int_{-\infty}^{\infty}f(x)p(x) \approx 0.432332`. This number can be approximated by
         discretizing the problem and using the quantum Monte Carlo algorithm.
 
@@ -309,7 +310,6 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
             dev = qml.device("default.qubit", wires=(n + m + 1))
 
-
             @qml.qnode(dev)
             def circuit():
                 qml.templates.QuantumMonteCarlo(
@@ -319,7 +319,6 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
                     estimation_wires=estimation_wires,
                 )
                 return qml.probs(estimation_wires)
-
 
             phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
 
