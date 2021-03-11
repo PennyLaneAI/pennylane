@@ -309,7 +309,8 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         ) * delta ** -2
 
     # off-diagonal
-    if i != j:
+    # if i != j:
+    else:        
         shift_i = _np.zeros_like(x)
         shift_i[i] += 0.5 * delta
 
