@@ -197,12 +197,17 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): which argument to take a gradient with respect to
         delta (float): step size used to evaluate the finite difference
-        idx (list[int]): for multivariable functions it specifies the indices
-            of the arguments ``argnum`` to differentiate
+        idx (list[int]): if argument ``args[argnum]`` is an array, ``idx`` specifies
+            the indices of the arguments to differentiate
 
     Returns:
         (float or array): the gradient of the function ``f``
     """
+
+    if argnum > len(args) - 1:
+        raise ValueError(
+            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+        )
 
     x = _np.array(args[argnum])
     gradient = _np.zeros_like(x, dtype="O")
@@ -247,12 +252,17 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): which argument to take the derivative with respect to
         delta (float): step size used to evaluate the finite differences
-        idx (list[int]): for multivariable functions it specifies the indices
-            ``i, j`` of the arguments ``argnum`` to differentiate
+        idx (list[int]): if argument ``args[argnum]`` is an array, `idx`` specifies
+            the indices ``i, j`` of the arguments to differentiate
 
     Returns:
         (float): the second-order derivative of the function ``f``
     """
+
+    if argnum > len(args) - 1:
+        raise ValueError(
+            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+        )
 
     x = np.array(args[argnum])
 
