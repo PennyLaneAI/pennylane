@@ -416,6 +416,9 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
+    def adjoint(self, do_queue=False):
+        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class ControlledPhase(CVOperation):
     r"""pennylane.ControlledPhase(s, wires)
@@ -465,6 +468,9 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
+    def adjoint(self, do_queue=False):
+        return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class Kerr(CVOperation):
     r"""pennylane.Kerr(kappa, wires)
@@ -488,6 +494,8 @@ class Kerr(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
+    def adjoint(self, do_queue=False):
+        return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 class CrossKerr(CVOperation):
     r"""pennylane.CrossKerr(kappa, wires)
@@ -511,6 +519,9 @@ class CrossKerr(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
+    def adjoint(self, do_queue=False):
+        return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class CubicPhase(CVOperation):
     r"""pennylane.CubicPhase(gamma, wires)
@@ -533,6 +544,9 @@ class CubicPhase(CVOperation):
     num_wires = 1
     par_domain = "R"
     grad_method = "F"
+
+    def adjoint(self, do_queue=False):
+        return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class Interferometer(CVOperation):
