@@ -197,21 +197,17 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): which argument to take a gradient with respect to
         delta (float): step size used to evaluate the finite difference
-        idx (list[int]): if argument ``args[argnum]`` is an array, ``idx`` specifies
-            the indices of the arguments to differentiate
+        idx (list[int]): if argument ``args[argnum]`` is an array, ``idx`` can
+            be used specify the indices of the arguments to differentiate
 
     Returns:
-        (float or array): the gradient of the function ``f``
+        (float or array): the gradient of the input function with respect
+        to the arguments in ``argnum``
     """
 
     if argnum > len(args) - 1:
         raise ValueError(
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
-        )
-
-    if delta <= 0.0:
-        raise ValueError(
-            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
         )
 
     x = _np.array(args[argnum])
@@ -261,17 +257,13 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             the indices ``i, j`` of the arguments to differentiate
 
     Returns:
-        (float): the second-order derivative of the function ``f``
+        (float): the second-order derivative of the input function with respect
+        to the arguments in ``argnum``
     """
 
     if argnum > len(args) - 1:
         raise ValueError(
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
-        )
-
-    if delta <= 0.0:
-        raise ValueError(
-            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
         )
 
     x = _np.array(args[argnum])
@@ -331,6 +323,78 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         ) * delta ** -2
 
     return deriv2
+
+
+def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
+    r"""Returns a function that can be evaluated to compute the gradient or the
+    second-order derivative of the callable function ``f`` using a centered finite
+    difference approximation.
+
+    The first-order derivatives :math:`\frac{\partial f(x)}{\partial x_i}` entering
+    the gradient of :math:`f(x)` are given by,
+
+    .. math::
+
+        \frac{\partial f(x)}{\partial x_i} \approx \frac{f(x_i + \delta/2)
+        - f(x_i - \delta/2)}{\delta}
+
+    On the other hand, the second-order derivative
+    :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}` are evaluated using the
+    following expressions:
+
+    For :math:`x_i = x_j`
+
+    .. math::
+        \frac{\partial^2 f(x)}{\partial x_i^2} \approx
+        \frac{f(x_i + \delta) - 2 f(x) + f(x_i - \delta)}{\delta^2},
+
+    and for :math:`x_i \neq x_j`
+
+    .. math::
+        \frac{\partial^2 f(x)}{\partial x_i \partial x_j} \approx
+        \frac{f(x_i + \delta/2, x_j + \delta/2) - f(x_i - \delta/2, x_j + \delta/2)
+        - f(x_i + \delta/2, x_j - \delta/2) + f(x_i - \delta/2, x_j - \delta/2)}
+        {\delta^2}.
+
+    Args:
+        f (function): function with signature ``f(*args, **kwargs)``
+        N (int): specifies the order of the finite difference approximation
+        argnum (int): the argument of function ``f`` to differentiate
+        idx (list[int]): If argument ``args[argnum]`` is an array, `idx`` can be used
+            to specify the indices of the argument ``argnum`` to differentiate.
+            For ``N=1`` it can be given to specify the gradient components to be computed.
+            For ``N=2``, it specifies the indices ``i, j`` of the variables involved in the
+            second derivative :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}`.
+        delta (float): step size used to evaluate the finite differences
+
+    Returns:
+        function: the function to compute the gradient (``N=1``) or the
+        second-order derivative (``N=2``) of the input function ``f`` with respect
+        to the arguments in ``argnum``
+    """
+
+    if not callable(f):
+        error_message = "{} object is not callable. \n" "'f' should be a callable function".format(
+            type(f)
+        )
+        raise TypeError(error_message)
+
+    if N > 2:
+        raise ValueError(
+            "At present, finite-difference approximations are supported up to second-order."
+            " The value of 'N' can be 1 or 2; got {}".format(N)
+        )
+
+    if delta <= 0.0:
+        raise ValueError(
+            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
+        )
+
+    if N == 1:
+        return partial(_fd_first_order_centered, f, argnum, delta, idx=idx)
+
+    if N == 2:
+        return partial(_fd_second_order_centered, f, argnum, delta, idx=idx)
 
 
 def finite_diff(F, x, i=None, delta=0.01):
