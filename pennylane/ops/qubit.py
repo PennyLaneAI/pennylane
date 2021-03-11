@@ -2030,11 +2030,13 @@ class DoubleExcitation(Operation):
     \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.SingleExcitation(phi, wires=[0, 1, 2, 3])
+            qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+
     """
 
     num_params = 1
