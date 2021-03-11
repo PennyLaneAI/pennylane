@@ -197,8 +197,8 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): which argument to take a gradient with respect to
         delta (float): step size used to evaluate the finite difference
-        idx (list(int) or list[tuple(int)]): for multivariable functions it contains
-            the Indices of the arguments ``argnum`` to differentiate
+        idx (list[int]): for multivariable functions it specifies the indices
+            of the arguments ``argnum`` to differentiate
 
     Returns:
         (float or array): the gradient of the function ``f``
