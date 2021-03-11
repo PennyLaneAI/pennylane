@@ -174,7 +174,7 @@ def _make_Z(dim):
 
 
 def make_Q(A, R):
-    """Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to the
+    r"""Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to the
     probability unitary :math:`\mathcal{A}` and the random variable unitary :math:`\mathcal{R}`.
 
     Following `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper,
@@ -332,7 +332,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
         raise ValueError("The probability distribution must be specified as a flat array")
 
     dim_p = len(probs)
-    num_target_wires = np.log2(2 * dim_p)
+    num_target_wires = float(np.log2(2 * dim_p))
 
     if not num_target_wires.is_integer():
         raise ValueError("The probability distribution must have a length that is a power of two")
