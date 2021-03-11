@@ -65,11 +65,8 @@ def _preprocess(weights, wires):
             msg=f"Weights tensor must have second dimension of length {len(wires)}; got {get_shape(weights)[1]}",
         )
 
-    return repeat
 
-
-@template
-def BasicEntanglerLayers(weights, wires, rotation=None):
+class BasicEntanglerLayers:
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
@@ -176,14 +173,20 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         ``ValueError: Wrong number of parameters``.
     """
 
-    if rotation is None:
-        rotation = RX
+    def __init__(self, weights, wires, rotation=None, do_queue=True):
 
-    wires = Wires(wires)
+        self.rotation = rotation or RX
+        _preprocess(weights, wires)
 
-    repeat = _preprocess(weights, wires)
+        super().__init__(weights, wires=wires, do_queue=do_queue)
 
-    for layer in range(repeat):
+    @staticmethod
+    def decomposition(weights, wires):
 
-        broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        broadcast(unitary=CNOT, pattern="ring", wires=wires)
+
+        #wires = Wires(wires)
+
+        for layer in range(repeat):
+
+            broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
+            broadcast(unitary=CNOT, pattern="ring", wires=wires)
