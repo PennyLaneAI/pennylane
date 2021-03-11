@@ -43,11 +43,13 @@ class TestCV:
 
     @pytest.mark.parametrize("op,size", [
             (cv.Squeezing(0.123, -0.456, wires=1), 3),
-            (cv.Squeezing(0.668, -10.0, wires=0), 3), # phi > 2pi
+            (cv.Squeezing(0.668, 10.0, wires=0), 3), # phi > 2pi
+            (cv.Squeezing(1.992, -9.782, wires=0), 3), # phi < -2pi
             (cv.Rotation(2.005, wires=1), 3),
             (cv.Rotation(-1.365, wires=1), 3),
             (cv.Displacement(2.841, 0.456, wires=0), 3),
-            (cv.Displacement(3.142, -7.0, wires=0), 3), # phi < -2pi
+            (cv.Displacement(3.142, -7.221, wires=0), 3), # phi < -2pi
+            (cv.Displacement(2.004, 8.673, wires=0), 3), # phi > -2pi
             (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
             (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
             (cv.Interferometer(
