@@ -49,7 +49,7 @@ class TestCV:
             (cv.Rotation(-1.365, wires=1), 3),
             (cv.Displacement(2.841, 0.456, wires=0), 3),
             (cv.Displacement(3.142, -7.221, wires=0), 3), # phi < -2pi
-            (cv.Displacement(2.004, 8.673, wires=0), 3), # phi > -2pi
+            (cv.Displacement(2.004, 8.673, wires=0), 3), # phi > 2pi
             (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
             (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
             (cv.Interferometer(
