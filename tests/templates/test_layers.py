@@ -33,6 +33,7 @@ from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
 from pennylane.numpy import tensor
 from pennylane.init import particle_conserving_u1_normal
+from pennylane.tape import QuantumTape
 
 TOLERANCE = 1e-8
 
@@ -620,16 +621,19 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires))
+        op = BasicEntanglerLayers(weights, wires=range(n_wires))
+
+        with QuantumTape() as tape:
+            op.decomposition(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
         exp_gates = [qml.RX] * n_wires + [qml.CNOT] * n_cnots
         exp_gates *= n_layers
-        res_gates = rec.queue
+
+        res_gates = [type(op) for op in tape.operations]
 
         for op1, op2 in zip(res_gates, exp_gates):
-            assert isinstance(op1, op2)
+            assert op1 == op2
 
     @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
     def test_circuit_parameters(self, n_wires, n_cnots):
@@ -639,13 +643,15 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires))
+        op = BasicEntanglerLayers(weights, wires=range(n_wires))
+
+        with QuantumTape() as tape:
+            op.decomposition(weights, wires=range(n_wires))
 
         # test the device parameters
         for l in range(n_layers):
             # only select the rotation gates
-            layer_ops = rec.queue[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
+            layer_ops = tape.operations[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
 
             # check each rotation gate parameter
             for n in range(n_wires):
@@ -660,14 +666,16 @@ class TestBasicEntangler:
         n_wires = 4
         weights = np.ones(shape=(n_layers, n_wires))
 
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
+        op = BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
+
+        with QuantumTape() as tape:
+            op.decomposition(weights, wires=range(n_wires))
 
         # assert queue contains the custom rotations and CNOTs only
-        gates = rec.queue
+        gates = tape.operations
         for op in gates:
-            if not isinstance(op, CNOT):
-                assert isinstance(op, rotation)
+            if not type(op) == CNOT:
+                assert type(op) == rotation
 
     @pytest.mark.parametrize(
         "weights, n_wires, target",

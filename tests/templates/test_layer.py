@@ -63,7 +63,8 @@ def MultiCircuit(parameters1, parameters2, var1, wires, var2):
             qml.RY(parameters1[i], wires=w)
 
     if var1 == True:
-        qml.templates.BasicEntanglerLayers([parameters2], wires=wires)
+        op = qml.templates.BasicEntanglerLayers([parameters2], wires=wires, do_queue=False)
+        op.decomposition([parameters2], wires=wires)
 
 UNITARIES = [
     ConstantCircuit,

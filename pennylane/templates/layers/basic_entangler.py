@@ -16,7 +16,7 @@ Contains the ``BasicEntanglerLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
+from pennylane.operation import Operation, AnyWires
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
@@ -36,7 +36,6 @@ def _preprocess(weights, wires):
         int: number of times that the ansatz is repeated
     """
     shape = qml.math.shape(weights)
-    repeat = shape[0]
 
     if len(shape) != 2:
         raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
@@ -47,7 +46,7 @@ def _preprocess(weights, wires):
         )
 
 
-class BasicEntanglerLayers:
+class BasicEntanglerLayers(Operation):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
@@ -154,20 +153,26 @@ class BasicEntanglerLayers:
         ``ValueError: Wrong number of parameters``.
     """
 
-    def __init__(self, weights, wires, rotation=None, do_queue=True):
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+
+    def __init__(self, weights, wires=None, rotation=None, do_queue=True):
+
+        _preprocess(weights, wires)
 
         self.rotation = rotation or RX
-        _preprocess(weights, wires)
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
-    @staticmethod
-    def decomposition(weights, wires):
+    def decomposition(self, *params, wires):
 
+        weights = params[0]
 
-        #wires = Wires(wires)
-
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
         for layer in range(repeat):
 
-            broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
+            broadcast(unitary=self.rotation, pattern="single", wires=wires, parameters=weights[layer])
             broadcast(unitary=CNOT, pattern="ring", wires=wires)
