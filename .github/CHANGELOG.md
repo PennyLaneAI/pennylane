@@ -41,7 +41,13 @@
 
   phase_estimated = np.argmax(circuit()) / N
   expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
-  print(expectation_estimated)
+  ```
+  
+  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
+  
+  ```pycon
+  >>> expectation_estimated
+  0.4327096457464369
   ```
 
 * A new adjoint transform has been added. 
