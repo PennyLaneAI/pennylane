@@ -274,7 +274,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
         )
 
-    x = np.array(args[argnum])
+    x = _np.array(args[argnum])
 
     if idx is None:
         idx = [(), ()]
@@ -307,7 +307,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     # diagonal
     if i == j:
-        shift = np.zeros_like(x)
+        shift = _np.zeros_like(x)
         shift[i] += delta
         deriv2 = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
@@ -317,10 +317,10 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     # off-diagonal
     if i != j:
-        shift_i = np.zeros_like(x)
+        shift_i = _np.zeros_like(x)
         shift_i[i] += 0.5 * delta
 
-        shift_j = np.zeros_like(x)
+        shift_j = _np.zeros_like(x)
         shift_j[j] += 0.5 * delta
 
         deriv2 = (
