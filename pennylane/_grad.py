@@ -238,6 +238,81 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     return gradient
 
 
+def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
+    r"""Uses a central finite difference approximation to compute the second-order
+    derivative :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}` of the function ``f``
+    with respect to the argument ``argnum``.
+
+    Args:
+        f (function): function with signature ``f(*args, **kwargs)``
+        argnum (int): which argument to take the derivative with respect to
+        delta (float): step size used to evaluate the finite differences
+        idx (list[int]): for multivariable functions it specifies the indices
+            ``i, j`` of the arguments ``argnum`` to differentiate
+
+    Returns:
+        (float): the second-order derivative of the function ``f``
+    """
+
+    x = np.array(args[argnum])
+
+    if idx is None:
+        idx = [(), ()]
+    else:
+        if len(idx) > 2:
+            raise ValueError(
+                "The number of indices in 'idx' can not be greater than 2; got {} indices".format(
+                    len(idx)
+                )
+            )
+
+        bounds = _np.array(x.shape) - 1
+        for _idx in idx:
+
+            if len(_idx) != x.ndim:
+                raise ValueError(
+                    "Elements of 'idx' must be of lenght {}; got element {} with lenght {}".format(
+                        x.ndim, _idx, len(_idx)
+                    )
+                )
+
+            if (_np.array(_idx) > bounds).any():
+                raise ValueError(
+                    "Indices in 'idx' can not be greater than {}; got {}".format(
+                        tuple(bounds), _idx
+                    )
+                )
+
+    i, j = idx
+
+    # diagonal
+    if i == j:
+        shift = np.zeros_like(x)
+        shift[i] += delta
+        deriv2 = (
+            f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
+            - 2 * f(*args[:argnum], x, *args[argnum + 1 :], **kwargs)
+            + f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
+        ) * delta ** -2
+
+    # off-diagonal
+    if i != j:
+        shift_i = np.zeros_like(x)
+        shift_i[i] += 0.5 * delta
+
+        shift_j = np.zeros_like(x)
+        shift_j[j] += 0.5 * delta
+
+        deriv2 = (
+            f(*args[:argnum], x + shift_i + shift_j, *args[argnum + 1 :], **kwargs)
+            - f(*args[:argnum], x - shift_i + shift_j, *args[argnum + 1 :], **kwargs)
+            - f(*args[:argnum], x + shift_i - shift_j, *args[argnum + 1 :], **kwargs)
+            + f(*args[:argnum], x - shift_i - shift_j, *args[argnum + 1 :], **kwargs)
+        ) * delta ** -2
+
+    return deriv2
+
+
 def finite_diff(F, x, i=None, delta=0.01):
     r"""Uses a central finite difference approximation to evaluate the derivative
     :math:`\frac{\partial F(x)}{\partial x_i}` of the function ``F(x)``
