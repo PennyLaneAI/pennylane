@@ -23,7 +23,6 @@ from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.devices import tf_ops, autograd_ops
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli, QFT, \
     ControlledPhaseShift, SingleExcitation, SingleExcitationPlus, SingleExcitationMinus
