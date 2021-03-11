@@ -934,53 +934,22 @@ class TestSingleExcitation:
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_ad(self, phi):
-        """Test correctness of SingleExcitation autograd operation"""
-        a_mat = autograd_ops.SingleExcitation(phi)
-        m = qml.SingleExcitation(phi, wires=[0, 1])
+    @pytest.mark.parametrize("plugin", ['autograd', 'tf', 'jax'])
+    def test_autograd(self, plugin):
+        """Tests that gradients and operations are computed correctly using the
+        autograd interface"""
 
-        assert np.allclose(a_mat, m.matrix)
+        dev = qml.device('default.qubit.' + plugin, wires=2)
+        state = np.array([0, -1/np.sqrt(2), 1/np.sqrt(2), 0])
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_plus_ad(self, phi):
-        """Test correctness of SingleExcitationPlus autograd operation"""
-        a_mat = autograd_ops.SingleExcitationPlus(phi)
-        m = qml.SingleExcitationPlus(phi, wires=[0, 1])
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.SingleExcitation(phi, wires=[0, 1])
 
-        assert np.allclose(a_mat, m.matrix)
+            return qml.state()
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_minus_ad(self, phi):
-        """Test correctness of SingleExcitationMinus autograd operation"""
-        a_mat = autograd_ops.SingleExcitationMinus(phi)
-        m = qml.SingleExcitationMinus(phi, wires=[0, 1])
-
-        assert np.allclose(a_mat, m.matrix)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_tf(self, phi):
-        """Test correctness of SingleExcitation tensorflow operation"""
-        tf_mat = tf_ops.SingleExcitation(phi)
-        m = qml.SingleExcitation(phi, wires=[0, 1])
-
-        assert np.allclose(tf_mat, m.matrix)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_plus_tf(self, phi):
-        """Test correctness of SingleExcitationPlus tensorflow operation"""
-        tf_mat = tf_ops.SingleExcitationPlus(phi)
-        m = qml.SingleExcitationPlus(phi, wires=[0, 1])
-
-        assert np.allclose(tf_mat, m.matrix)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_minus_tf(self, phi):
-        """Test correctness of SingleExcitationMinus tensorflow operation"""
-        tf_mat = tf_ops.SingleExcitationMinus(phi)
-        m = qml.SingleExcitationMinus(phi, wires=[0, 1])
-
-        assert np.allclose(tf_mat, m.matrix)
+        assert np.allclose(state, circuit(np.pi/2))
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
