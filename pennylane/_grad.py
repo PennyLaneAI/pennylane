@@ -331,7 +331,7 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     difference approximation.
 
     The first-order derivatives :math:`\frac{\partial f(x)}{\partial x_i}` entering
-    the gradient of :math:`f(x)` are given by,
+    the gradient of the input function are given by,
 
     .. math::
 
@@ -342,13 +342,13 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}` are evaluated using the
     following expressions:
 
-    For :math:`x_i = x_j`
+    For :math:`i = j`
 
     .. math::
         \frac{\partial^2 f(x)}{\partial x_i^2} \approx
         \frac{f(x_i + \delta) - 2 f(x) + f(x_i - \delta)}{\delta^2},
 
-    and for :math:`x_i \neq x_j`
+    and for :math:`i \neq j`
 
     .. math::
         \frac{\partial^2 f(x)}{\partial x_i \partial x_j} \approx
@@ -364,7 +364,7 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
             to specify the indices of the argument ``argnum`` to differentiate.
             For ``N=1`` it can be given to specify the gradient components to be computed.
             For ``N=2``, it specifies the indices ``i, j`` of the variables involved in the
-            second derivative :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}`.
+            derivative :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}`.
         delta (float): step size used to evaluate the finite differences
 
     Returns:
