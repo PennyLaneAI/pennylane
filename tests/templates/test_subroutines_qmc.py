@@ -16,14 +16,9 @@ import pytest
 from scipy.stats import norm
 
 import pennylane as qml
-from pennylane.templates.subroutines.qmc import (
-    _make_V,
-    _make_Z,
-    func_to_unitary,
-    make_Q,
-    probs_to_unitary,
-    QuantumMonteCarlo,
-)
+from pennylane.templates.subroutines.qmc import (QuantumMonteCarlo, _make_V,
+                                                 _make_Z, func_to_unitary,
+                                                 make_Q, probs_to_unitary)
 from pennylane.wires import Wires
 
 
@@ -233,8 +228,10 @@ class TestQuantumMonteCarlo:
         expected number of target wires inferred from the length of the input probability
         distribution"""
         p = np.ones(4) / 4
-        with pytest.raises(ValueError, match="The probability distribution of dimension 4 requires"
-                                             " 3 target wires"):
+        with pytest.raises(
+            ValueError,
+            match="The probability distribution of dimension 4 requires" " 3 target wires",
+        ):
             QuantumMonteCarlo(p, self.func, range(4), range(4, 6))
 
     def test_expected_circuit(self):
@@ -267,7 +264,9 @@ class TestQuantumMonteCarlo:
 
         assert len(queue_after_qpe) == len(qpe_tape.queue)
         assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
-        assert all(np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+        assert all(
+            np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.queue)
+        )
         assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
 
     def test_expected_value(self):
@@ -296,11 +295,12 @@ class TestQuantumMonteCarlo:
 
             @qml.qnode(dev)
             def circuit():
-                qml.templates.QuantumMonteCarlo(probs, func, target_wires=target_wires,
-                                                estimation_wires=estimation_wires)
+                qml.templates.QuantumMonteCarlo(
+                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                )
                 return qml.probs(estimation_wires)
 
-            phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+            phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
             estimates.append(mu_estimated)
 
@@ -338,11 +338,12 @@ class TestQuantumMonteCarlo:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QuantumMonteCarlo(probs, func, target_wires=target_wires,
-                                            estimation_wires=estimation_wires)
+            qml.templates.QuantumMonteCarlo(
+                probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+            )
             return qml.probs(estimation_wires)
 
-        phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+        phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
 
         exact = 0.432332358381693654

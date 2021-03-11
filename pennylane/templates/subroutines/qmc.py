@@ -343,8 +343,10 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
     estimation_wires = Wires(estimation_wires)
 
     if num_target_wires != len(target_wires):
-        raise ValueError(f"The probability distribution of dimension {dim_p} requires"
-                         f" {num_target_wires} target wires")
+        raise ValueError(
+            f"The probability distribution of dimension {dim_p} requires"
+            f" {num_target_wires} target wires"
+        )
 
     A = probs_to_unitary(probs)
     R = func_to_unitary(func, dim_p)
@@ -352,4 +354,6 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     qml.QubitUnitary(A, wires=target_wires[:-1])
     qml.QubitUnitary(R, wires=target_wires)
-    qml.templates.QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
+    qml.templates.QuantumPhaseEstimation(
+        Q, target_wires=target_wires, estimation_wires=estimation_wires
+    )
