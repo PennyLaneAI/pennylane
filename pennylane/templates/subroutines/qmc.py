@@ -174,13 +174,14 @@ def _make_Z(dim):
 
 
 def make_Q(A, R):
-    r"""Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to the
-    probability unitary :math:`\mathcal{A}` and the random variable unitary :math:`\mathcal{R}`.
+    r"""Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to
+    the probability unitary :math:`\mathcal{A}` and the random variable unitary :math:`\mathcal{R}`.
 
     Following `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper,
     the expectation value is encoded as the phase of an eigenvalue of :math:`\mathcal{Q}`. This
-    phase can be estimated using quantum phase estimation, see :func:`~.QuantumMonteCarlo` for
-    more details.
+    phase can be estimated using quantum phase estimation using the
+    :func:`~.QuantumPhaseEstimation` template. See :func:`~.QuantumMonteCarlo` for more details,
+    which loads ``make_Q()`` internally and applies phase estimation.
 
     Args:
         A (array): The unitary matrix of :math:`\mathcal{A}` which encodes the probability
