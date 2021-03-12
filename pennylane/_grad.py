@@ -380,12 +380,6 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
         )
         raise TypeError(error_message)
 
-    if N > 2:
-        raise ValueError(
-            "At present, finite-difference approximations are supported up to second-order."
-            " The value of 'N' can be 1 or 2; got {}".format(N)
-        )
-
     if delta <= 0.0:
         raise ValueError(
             "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
@@ -396,3 +390,9 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
 
     if N == 2:
         return partial(_fd_second_order_centered, f, argnum, delta, idx=idx)
+
+    if N > 2:
+        raise ValueError(
+            "At present, finite-difference approximations are supported up to second-order."
+            " The value of 'N' can be 1 or 2; got {}".format(N)
+        )
