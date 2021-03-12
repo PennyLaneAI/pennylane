@@ -257,7 +257,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             the indices ``i, j`` of the arguments to differentiate
 
     Returns:
-        (float): the second-order derivative of the input function with respect
+        (float or array): the second-order derivative of the input function with respect
         to the arguments in ``argnum``
     """
 
