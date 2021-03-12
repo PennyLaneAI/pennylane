@@ -158,6 +158,8 @@ class AutogradInterface(AnnotatedQueue):
         """
         if isinstance(params, autograd.extend.Box):
             self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = True
+        else:
+            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = False
         return self.actual_execute(params, device)
 
     @autograd.extend.primitive
