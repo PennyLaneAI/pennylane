@@ -230,7 +230,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
        :math:`\mathcal{R}`.
     #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
        :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
-       value using :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1 and 2 prepares
+       value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1 and 2 prepares
        an equal superposition over the two states corresponding to the eigenvalues
        :math:`e^{\pm 2 \pi i \theta}`.
     #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
