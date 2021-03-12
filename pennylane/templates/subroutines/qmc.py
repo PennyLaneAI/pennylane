@@ -61,7 +61,7 @@ def probs_to_unitary(probs):
         )
 
     dim = len(probs)
-    unitary = np.zeros((dim, dim))
+    unitary = np.eye(dim)
 
     unitary[:, 0] = np.sqrt(probs)
     unitary = np.linalg.qr(unitary)[0]
