@@ -189,11 +189,6 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     r"""Uses a central finite difference approximation to compute the gradient
     of the function ``f`` with respect to the argument ``argnum``.
 
-    .. math::
-
-        \frac{\partial f(x)}{\partial x_i} \approx \frac{f(x_i + \delta/2)
-        - f(x_i - \delta/2)}{\delta}
-
     Args:
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): which argument to take a gradient with respect to
