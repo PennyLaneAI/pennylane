@@ -125,14 +125,13 @@ def func_to_unitary(func, M):
     """
     unitary = np.zeros((2 * M, 2 * M))
 
-    for i in range(M):
-        f = func(i)
+    fs = [func(i) for i in range(M)]
+    if min(fs) < 0 or max(fs) > 1:
+        raise ValueError(
+            "func must be bounded within the interval [0, 1] for the range of input values"
+        )
 
-        if not 0 <= f <= 1:
-            raise ValueError(
-                "func must be bounded within the interval [0, 1] for the range of input values"
-            )
-
+    for i, f in enumerate(fs):
         unitary[2 * i, 2 * i] = np.sqrt(1 - f)
         unitary[2 * i + 1, 2 * i] = np.sqrt(f)
         unitary[2 * i, 2 * i + 1] = np.sqrt(f)
