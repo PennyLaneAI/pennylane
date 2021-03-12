@@ -130,7 +130,7 @@ def func_to_unitary(func, M):
 
         if not 0 <= f <= 1:
             raise ValueError(
-                "func must be bounded within the interval [0, 1] for the range of" "input values"
+                "func must be bounded within the interval [0, 1] for the range of input values"
             )
 
         unitary[2 * i, 2 * i] = np.sqrt(1 - f)
