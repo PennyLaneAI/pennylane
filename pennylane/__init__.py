@@ -40,13 +40,14 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
-from pennylane.transforms import draw, measurement_grouping, metric_tensor
+from pennylane.transforms import adjoint, draw, measurement_grouping, metric_tensor
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, apply, dot, map, sum
 from .queuing import QueuingContext
+
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
