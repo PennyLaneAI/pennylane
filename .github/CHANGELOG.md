@@ -2,19 +2,28 @@
 
 <h3>New features since last release</h3>
 
-* Added the function ``finite_diff()`` to compute the first-order derivatives.
+* Added the function ``finite_diff()`` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  callable functions.
   [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
   This is particularly useful to compute the derivative of parametrized
   ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
 
-  For example,
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates
 
   ```pycon
   >>> def H(x):
   ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
 
   >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-  >>> derivative = qml.finite_diff(H, x, i=2)
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2 = deriv2_fn(x)
   ```
 
 * A new adjoint transform has been added. 
@@ -47,7 +56,6 @@
   ```python
   qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
   ```
->>>>>>> master
 
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
