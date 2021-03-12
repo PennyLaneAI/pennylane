@@ -76,7 +76,7 @@ Note that QASM has two native gates:
 - ``CX`` (equivalent to :class:`~.CNOT`)
 
 All other gates are defined in the file qelib1.inc:
-https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
+https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
