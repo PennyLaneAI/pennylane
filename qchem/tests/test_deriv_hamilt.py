@@ -219,3 +219,70 @@ def test_grad_components(idx, tmpdir):
             assert isinstance(_deriv, qml.vqe.Hamiltonian)
         else:
             assert _deriv == 0
+
+
+coeffs_00 = [
+    0.3477257797612765,
+    -0.030524309531099192,
+    -0.030524309529433857,
+    -0.1771190461385963,
+    -0.1771190461385963,
+    -0.03147624232327506,
+    0.03147624232327506,
+    0.03147624232327506,
+    -0.03147624232327506,
+    0.045618439534766964,
+    0.014142197210798013,
+    0.014142197210798013,
+    0.045618439534766964,
+    0.6647460733938404,
+]
+coeffs_34 = [
+    0.09246463918088921,
+    0.02856614438190297,
+    0.02856614438190297,
+    0.10700948302716506,
+    0.10700948302744262,
+    0.017922142783628747,
+    -0.017922142783628747,
+    -0.017922142783628747,
+    0.017922142783628747,
+    -0.028381602737159728,
+    -0.010459459953426897,
+    -0.010459459953426897,
+    -0.028381602737159728,
+    -0.37581963724941936,
+]
+
+
+@pytest.mark.parametrize(
+    ("idx", "coeffs", "ops"),
+    [
+        ([0, 0], coeffs_00, ops),
+        ([3, 4], coeffs_34, ops),
+        ([4, 3], coeffs_34, ops),
+        ([1, 2], [], []),
+    ],
+)
+def test_second_derivative_hamilt(idx, coeffs, ops, tol, tmpdir):
+    r"""Tests the correctness of the second-order derivative of a molecular Hamiltonian calculated
+    by the 'finite_diff' function."""
+
+    # parametrized Hamiltonian of the water molecule
+    def hamilt(x):
+        return qml.qchem.molecular_hamiltonian(
+            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
+        )[0]
+
+    x = np.array(
+        [-0.03987322, -0.00377945, 0.0, 1.57697645, 0.85396724, 0.0, 2.79093651, -0.51589523, 0.0]
+    )
+
+    deriv2 = qml.finite_diff(hamilt, N=2, argnum=0, idx=idx)(x)
+
+    calc_coeffs = np.array(deriv2.coeffs)
+    exp_coeffs = np.array(coeffs)
+
+    assert np.allclose(calc_coeffs, exp_coeffs, **tol)
+    assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(deriv2.ops, ops))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(deriv2.ops, ops))
