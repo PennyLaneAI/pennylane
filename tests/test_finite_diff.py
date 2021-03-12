@@ -4,34 +4,30 @@ import pytest
 import pennylane as qml
 
 
-# x1 = 0.5
-# grad1 = 0.8775789053009353
+x1 = 0.5
+y1 = -0.3
 
-# x2 = np.array([0.5, 0.25])
-# grad2 = np.array([np.array([0.87757891, 0.        ]), np.array([0.        , 0.96890838])])
+x2 = np.array([0.5, -0.1975])
+y2 = -0.3
 
 
-# @pytest.mark.parametrize(
-#     ("argnum", "idx", "delta", "x", "exp_grad"),
-#     [
-#         # (0, None, 0.01, x1, grad1),
-#         (0, None, 0.01, x2, grad2),
-#     ],
-# )
-# def test_first_finit_diff(argnum, idx, delta, x, exp_grad):
-#     r"""Tests the correctness of the first-order finite difference function."""
+@pytest.mark.parametrize(
+    ("x", "y", "argnum", "idx", "delta", "exp_grad"),
+    [
+        (x1, y1, 0, None, 0.01, -47.341084643123565),
+        (x1, y1, 1, None, 0.02, -371.7453193214464),
+        # (x2, y2, 0, [0], 0.01, np.array([np.array([-47.34108464, 0.0]), 0])),
+    ],
+)
+def test_first_finit_diff(x, y, argnum, idx, delta, exp_grad):
+    r"""Tests the correctness of the first-order finite difference function."""
 
-#     def f(x):
-#         return np.sin(x)
+    def f(x, y):
+        return np.sin(x) / x ** 4 + y ** -3
 
-#     grad = qml.finite_diff(f, N=1, argnum=argnum, idx=idx, delta=delta)(x)
-#     for i, _grad in enumerate(grad):
-#         grad[i] = np.array(_grad, dtype=float)
+    grad = qml.finite_diff(f, argnum=argnum, idx=idx, delta=delta)(x, y)
 
-#     print("computed", grad, type(grad))
-#     print("expected", exp_grad, type(exp_grad))
-
-#     assert np.allclose(grad, exp_grad)
+    assert np.allclose(np.array(grad, dtype=float), exp_grad)
 
 
 x1 = 1.975
