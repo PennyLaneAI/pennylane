@@ -193,7 +193,6 @@ def test_arcsin(t):
 
 test_conj_data = [
     [1.0, 1.0j, 1+1j],
-    [1.0, 1.0j, 1+1j],
     onp.array([1.0, 1.0j, 1+1j]),
     np.array([1.0, 1.0j, 1+1j]),
     jnp.array([1.0, 1.0j, 1+1j]),
