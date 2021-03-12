@@ -214,18 +214,17 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     x = _np.array(args[argnum])
     gradient = _np.zeros_like(x, dtype="O")
 
+    if x.ndim == 0 and idx is not None:
+        raise ValueError(
+            "Argument {} is not an array, 'idx' should be set to 'None';"
+            " got {}".format(argnum, idx)
+        )
+
     if idx is None:
         idx = list(_np.ndindex(*x.shape))
     else:
         bounds = _np.array(x.shape) - 1
         for _idx in idx:
-
-            if len(_idx) != x.ndim:
-                raise ValueError(
-                    "Elements of 'idx' must be of lenght {}; got element {} with lenght {}".format(
-                        x.ndim, _idx, len(_idx)
-                    )
-                )
 
             if (_np.array(_idx) > bounds).any():
                 raise ValueError(
@@ -269,32 +268,27 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     x = _np.array(args[argnum])
 
+    if x.ndim == 0 and idx is not None:
+        raise ValueError(
+            "Argument {} is not an array, 'idx' should be set to 'None';"
+            " got {}".format(argnum, idx)
+        )
+
     if idx is None:
         idx = [(), ()]
     else:
+        bounds = _np.array(x.shape) - 1
         if len(idx) > 2:
             raise ValueError(
-                "The number of indices in 'idx' can not be greater than 2; got {} indices".format(
+                "The number of indices given in 'idx' can not be greater than two; got {} indices".format(
                     len(idx)
                 )
             )
 
-        bounds = _np.array(x.shape) - 1
-        for _idx in idx:
-
-            if len(_idx) != x.ndim:
-                raise ValueError(
-                    "Elements of 'idx' must be of lenght {}; got element {} with lenght {}".format(
-                        x.ndim, _idx, len(_idx)
-                    )
-                )
-
-            if (_np.array(_idx) > bounds).any():
-                raise ValueError(
-                    "Indices in 'idx' can not be greater than {}; got {}".format(
-                        tuple(bounds), _idx
-                    )
-                )
+        if (_np.array(idx) > bounds).any():
+            raise ValueError(
+                "Indices in 'idx' can not be greater than {}; got {}".format(tuple(bounds), idx)
+            )
 
     i, j = idx
 
