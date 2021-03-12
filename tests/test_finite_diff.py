@@ -34,6 +34,36 @@ import pennylane as qml
 #     assert np.allclose(grad, exp_grad)
 
 
+x1 = 1.975
+y1 = 0.33
+
+x2 = np.array([1.975, 0.33])
+y2 = 0.376
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "argnum", "idx", "delta", "exp_deriv2"),
+    [
+        (x1, y1, 0, None, 0.01, 0.3541412270280375),
+        (x1, y1, 1, None, 0.02, 3094.62916408922),
+        (x2, y2, 0, [0, 0], 0.01, np.array([0.35414123, 0.0])),
+        (x2, y2, 0, [1, 1], 0.01, np.array([0.0, 3064.04502087])),
+        (x2, y2, 0, [0, 1], 0.01, np.array([0.0, 0.0])),
+        (x2, y2, 1, None, 0.02, np.array([1608.12314415, 1608.12314415])),
+    ],
+)
+def test_second_order_finite_diff(x, y, argnum, idx, delta, exp_deriv2):
+    r"""Test correctness of the second derivative calculated with the
+    function '_fd_second_order_centered'"""
+
+    def f(x, y):
+        return np.sin(x) / x ** 4 + y ** -3
+
+    deriv2 = qml.finite_diff(f, N=2, argnum=argnum, idx=idx, delta=delta)(x, y)
+
+    assert np.allclose(deriv2, exp_deriv2)
+
+
 def f(x):
     return np.sin(x)
 
