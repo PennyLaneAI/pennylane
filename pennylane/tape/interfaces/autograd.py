@@ -18,7 +18,7 @@ Autograd.
 # pylint: disable=protected-access
 import autograd.extend
 import autograd.builtins
-from autograd.numpy.numpy_boxes import ArrayBox
+from autograd.numpy.numpy_boxes import ArrayBox, Box
 
 from pennylane import numpy as np
 from pennylane.tape.queuing import AnnotatedQueue
@@ -149,8 +149,20 @@ class AutogradInterface(AnnotatedQueue):
 
         return params if return_arraybox else autograd.builtins.list(params)
 
-    @autograd.extend.primitive
     def _execute(self, params, device):
+        """Wrapper to cath the needless autograd forward pass
+
+        This function is not primitive to autograd so when params
+        is a autograd box we know that the following call to
+        the primitve wrapped function is
+        """
+        if isinstance(params, autograd.extend.Box):
+            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = True
+        return self.actual_execute(params, device)
+
+    @autograd.extend.primitive
+    def actual_execute(self, params, device):
+
         # unwrap all NumPy scalar arrays to Python literals
         params = [p.item() if p.shape == tuple() else p for p in params]
         params = autograd.builtins.tuple(params)
@@ -159,6 +171,13 @@ class AutogradInterface(AnnotatedQueue):
         self._all_params_unwrapped = [
             p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
         ]
+
+        if self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass:
+            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = False
+            # all that counts here is that we return somthing that has the right shape
+            # and that we return only after setting self._all_params_unwrapped as this
+            # is needed in the subsequent call to self.vjp() by autograd
+            return np.zeros(len(self.observables))
 
         # evaluate the tape
         self.set_parameters(self._all_params_unwrapped, trainable_only=False)
@@ -289,4 +308,4 @@ class AutogradInterface(AnnotatedQueue):
         return tape
 
 
-autograd.extend.defvjp(AutogradInterface._execute, AutogradInterface.vjp, argnums=[1])
+autograd.extend.defvjp(AutogradInterface.actual_execute, AutogradInterface.vjp, argnums=[1])
