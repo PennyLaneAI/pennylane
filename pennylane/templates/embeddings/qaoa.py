@@ -22,52 +22,6 @@ from pennylane.templates import broadcast
 from pennylane.wires import Wires
 
 
-def _preprocess(features, wires, weights):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n` or less, where :math:`n` is the number of qubits.
-    * Check that the shape of the weights tensor is correct for the number of qubits.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-        weights (tensor_like): weights of the embedding
-
-    Returns:
-        int: number of times that embedding is repeated
-    """
-    shape = qml.math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features > len(wires):
-        raise ValueError(
-            f"Features must be of length {len(wires)} or less; got length {n_features}."
-        )
-
-    shape = qml.math.shape(weights)
-    repeat = shape[0]
-
-    if len(wires) == 1:
-        if shape != (repeat, 1):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
-
-    elif len(wires) == 2:
-        if shape != (repeat, 3):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
-    else:
-        if shape != (repeat, 2 * len(wires)):
-            raise ValueError(
-                f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
-            )
-
-    return repeat
-
-
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
@@ -266,10 +220,6 @@ class QAOAEmbedding(Operation):
 
     def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
 
-        wires = Wires(wires)
-
-        _preprocess(features, wires, weights)
-
         if local_field == "Z":
             self.local_fields = RZ
         elif local_field == "X":
@@ -281,16 +231,64 @@ class QAOAEmbedding(Operation):
 
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
 
-    def decomposition(self, features, weights, wires):
+        self._preprocess()
+
+    def expand(self):
+
+        features = self.data[0]
+        weights = self.data[1]
 
         # first dimension of the weights tensor determines
         # the number of layers
         repeat = qml.math.shape(weights)[0]
 
-        for l in range(repeat):
-            # apply alternating Hamiltonians
-            qaoa_feature_encoding_hamiltonian(features, wires)
-            qaoa_ising_hamiltonian(weights[l], wires, self.local_fields)
+        with qml.tape.QuantumTape() as tape:
 
-        # repeat the feature encoding once more at the end
-        qaoa_feature_encoding_hamiltonian(features, wires)
+            for l in range(repeat):
+                # apply alternating Hamiltonians
+                qaoa_feature_encoding_hamiltonian(features, self.wires)
+                qaoa_ising_hamiltonian(weights[l], self.wires, self.local_fields)
+
+            # repeat the feature encoding once more at the end
+            qaoa_feature_encoding_hamiltonian(features, self.wires)
+
+        return tape
+
+    def _preprocess(self):
+        """Validate and pre-process inputs as follows:
+
+        * Check that the features tensor is one-dimensional.
+        * Check that the first dimension of the features tensor
+          has length :math:`n` or less, where :math:`n` is the number of qubits.
+        * Check that the shape of the weights tensor is correct for the number of qubits.
+        """
+
+        features = self.data[0]
+        weights = self.data[1]
+
+        shape = qml.math.shape(features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features > len(self.wires):
+            raise ValueError(
+                f"Features must be of length {len(self.wires)} or less; got length {n_features}."
+            )
+
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
+
+        if len(self.wires) == 1:
+            if shape != (repeat, 1):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
+
+        elif len(self.wires) == 2:
+            if shape != (repeat, 3):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
+        else:
+            if shape != (repeat, 2 * len(self.wires)):
+                raise ValueError(
+                    f"Weights tensor must be of shape {(repeat, 2*len(self.wires))}; got {shape}"
+                )
