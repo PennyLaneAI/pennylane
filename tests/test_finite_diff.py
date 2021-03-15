@@ -36,6 +36,9 @@ y1 = 0.33
 x2 = np.array([1.975, 0.33])
 y2 = 0.376
 
+x3 = np.array([[1.1, 2.2], [3.3, 4.4]])
+y3 = -0.54
+
 
 @pytest.mark.parametrize(
     ("x", "y", "argnum", "idx", "delta", "exp_deriv2"),
@@ -46,6 +49,7 @@ y2 = 0.376
         (x2, y2, 0, [1, 1], 0.01, np.array([0.0, 3064.04502087])),
         (x2, y2, 0, [0, 1], 0.01, np.array([0.0, 0.0])),
         (x2, y2, 1, None, 0.02, np.array([1608.12314415, 1608.12314415])),
+        (x3, y3, 0, [[0, 1], [1, 1]], 0.01, np.array([[0.0, 0.0], [0.0190738, 0.001407]])),
     ],
 )
 def test_second_order_finite_diff(x, y, argnum, idx, delta, exp_deriv2):
@@ -86,7 +90,7 @@ def test_exceptions_finite_diff(N, delta, func, msg_match):
 @pytest.mark.parametrize(
     ("which", "argnum", "idx", "msg_match"),
     [
-        ("both", 2, None, "The value of 'argnum' has to be between 0 and"),
+        ("both", 2, None, "The value of 'argnum' has to be between 0 and "),
         ("both", 1, [0, 1], "is not an array, 'idx' should be set to 'None'"),
         ("both", 0, [0, 2], "Indices in 'idx' can not be greater than"),
         (

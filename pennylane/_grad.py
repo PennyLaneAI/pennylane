@@ -203,7 +203,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if argnum > len(args) - 1:
         raise ValueError(
-            "The value of 'argnum' must be between 0 and {}; got {}".format(len(args) - 1, argnum)
+            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
         )
 
     x = _np.array(args[argnum])
