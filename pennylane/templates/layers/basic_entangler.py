@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,36 +14,11 @@
 r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
-
-
-def _preprocess(weights, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the weights tensor, making sure that the second dimension
-      has length :math:`n`, where :math:`n` is the number of qubits.
-
-    Args:
-        weights (tensor_like): trainable parameters of the template
-        wires (Wires): wires that template acts on
-
-    Returns:
-        int: number of times that the ansatz is repeated
-    """
-    shape = qml.math.shape(weights)
-
-    if len(shape) != 2:
-        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-    if shape[1] != len(wires):
-        raise ValueError(
-            f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-        )
 
 
 class BasicEntanglerLayers(Operation):
@@ -106,18 +81,12 @@ class BasicEntanglerLayers(Operation):
 
         **Parameter initialization function**
 
-        The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
-        and ``basic_entangler_layers_uniform``.
+        A random numpy weights array can be generated using the static methods
+        `BasicEntanglerLayers.weights_normal` and `BasicEntanglerLayers.weights_uniform`.
 
         .. code-block:: python
 
-            from pennylane.init import basic_entangler_layers_normal
-
-            n_layers = 4
-            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
-
-            circuit(weights)
-
+            weights = BasicEntanglerLayers.weights_normal(n_layers=2, n_wires=2, mean=0, std=0.2)
 
         **No periodic boundary for two wires**
 
@@ -158,19 +127,90 @@ class BasicEntanglerLayers(Operation):
     par_domain = "A"
 
     def __init__(self, weights, wires=None, rotation=None, do_queue=True):
-        wires = Wires(wires)
-        _preprocess(weights, wires)
-        self.rotation = rotation or RX
-        super().__init__(weights, wires=wires, do_queue=do_queue)
 
-    def decomposition(self, weights, wires):
+        self.rotation = rotation or qml.RX
+
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+        self._preprocess()
+
+    def expand(self):
+
+        weights = self.data[0]
 
         # first dimension of the weights tensor determines
         # the number of layers
         repeat = qml.math.shape(weights)[0]
-        for layer in range(repeat):
 
-            broadcast(
-                unitary=self.rotation, pattern="single", wires=wires, parameters=weights[layer]
+        with qml.tape.QuantumTape() as tape:
+
+            for layer in range(repeat):
+                for i in range(len(self.wires)):
+                    self.rotation(weights[layer, i], wires=self.wires[i:i+1])
+
+                broadcast(unitary=qml.CNOT, pattern="ring", wires=self.wires)
+
+        return tape
+
+    def _preprocess(self):
+        """Validate and pre-process inputs as follows:
+
+        * Check the shape of the weights tensor, making sure that the second dimension
+          has length :math:`n`, where :math:`n` is the number of qubits.
+
+        Args:
+            weights (tensor_like): trainable parameters of the template
+            wires (Wires): wires that template acts on
+        """
+        shape = qml.math.shape(self.parameters[0])
+
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+
+        if shape[1] != len(self.wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(self.wires)}; got {shape[1]}"
             )
-            broadcast(unitary=CNOT, pattern="ring", wires=wires)
+
+    @staticmethod
+    def weights_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+        r"""Creates a standard numpy weights array whose entries are drawn from a normal
+        distribution.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+            mean (float): mean of parameters
+            std (float): standard deviation of parameters
+            seed (int): seed used in sampling the parameters, makes function call deterministic
+
+        Returns:
+            array: weights array
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+
+        return params
+
+    @staticmethod
+    def weights_uniform(n_layers, n_wires, low=0, high=2 * np.pi, seed=None):
+        r"""Creates a standard numpy weights array whose entries are drawn from a uniform
+        distribution.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+            low (float): minimum value of uniform distribution
+            high (float): maximum value of uniform distribution
+            seed (int): seed used in sampling the parameters, makes function call deterministic
+
+        Returns:
+            array: weights array
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
+
+        return params

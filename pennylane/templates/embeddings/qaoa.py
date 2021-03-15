@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``QAOAEmbedding`` template.
+Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
@@ -139,7 +139,7 @@ class QAOAEmbedding(Operation):
 
         **Using parameter initialization functions**
 
-        The initial weight parameters can alternatively be generated using the static methods
+        A random numpy weights array can be generated using the static methods
         `QAOAEmbedding.weights_normal` and `QAOAEmbedding.weights_uniform`.
 
         .. code-block:: python
@@ -208,16 +208,15 @@ class QAOAEmbedding(Operation):
     def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
 
         if local_field == "Z":
-            self.local_fields = qml.RZ
+            self.local_field = qml.RZ
         elif local_field == "X":
-            self.local_fields = qml.RX
+            self.local_field = qml.RX
         elif local_field == "Y":
-            self.local_fields = qml.RY
+            self.local_field = qml.RY
         else:
             raise ValueError(f"did not recognize local field {local_field}")
 
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
-
         self._preprocess()
 
     def expand(self):
@@ -234,7 +233,7 @@ class QAOAEmbedding(Operation):
             for l in range(repeat):
                 # apply alternating Hamiltonians
                 qaoa_feature_encoding_hamiltonian(features, self.wires)
-                qaoa_ising_hamiltonian(weights[l], self.wires, self.local_fields)
+                qaoa_ising_hamiltonian(weights[l], self.wires, self.local_field)
 
             # repeat the feature encoding once more at the end
             qaoa_feature_encoding_hamiltonian(features, self.wires)
@@ -250,8 +249,8 @@ class QAOAEmbedding(Operation):
         * Check that the shape of the weights tensor is correct for the number of qubits.
         """
 
-        features = self.data[0]
-        weights = self.data[1]
+        features = self.parameters[0]
+        weights = self.parameters[1]
 
         shape = qml.math.shape(features)
 

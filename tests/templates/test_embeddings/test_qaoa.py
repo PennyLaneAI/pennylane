@@ -19,6 +19,22 @@ import numpy as np
 import pennylane as qml
 
 
+def circuit_template(features, weights):
+    qml.templates.QAOAEmbedding(features, weights, range(2))
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_decomposed(features, weights):
+    qml.RX(features[0], wires=0)
+    qml.RX(features[1], wires=1)
+    qml.MultiRZ(weights[0, 0], wires=[0, 1])
+    qml.RY(weights[0, 1], wires=0)
+    qml.RY(weights[0, 2], wires=1)
+    qml.RX(features[0], wires=0)
+    qml.RX(features[1], wires=1)
+    return qml.expval(qml.PauliZ(0))
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -132,6 +148,29 @@ class TestDecomposition:
         res = circuit(x=features)
         assert np.allclose(res, target, atol=tol, rtol=0)
 
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        weights = np.random.random(size=(1, 6))
+        features = np.random.random(size=(3, ))
+
+        dev = qml.device('default.qubit', wires=3)
+        dev2 = qml.device('default.qubit', wires=['z', 'a', 'k'])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.QAOAEmbedding(features, weights, wires=range(3))
+            return qml.expval(qml.Identity(0))
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.templates.QAOAEmbedding(features, weights, wires=['z', 'a', 'k'])
+            return qml.expval(qml.Identity('z'))
+
+        circuit()
+        circuit2()
+
+        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+
 
 class TestParameters:
 
@@ -199,22 +238,6 @@ class TestParameters:
 class TestGradients:
     """Tests that the gradient is computed correctly in all three interfaces."""
 
-    @staticmethod
-    def circuit(features, weights):
-        qml.templates.QAOAEmbedding(features, weights, range(2))
-        return qml.expval(qml.PauliZ(0))
-
-    @staticmethod
-    def circuit_decomposed(features, weights):
-        qml.RX(features[0], wires=0)
-        qml.RX(features[1], wires=1)
-        qml.MultiRZ(weights[0, 0], wires=[0, 1])
-        qml.RY(weights[0, 1], wires=0)
-        qml.RY(weights[0, 2], wires=1)
-        qml.RX(features[0], wires=0)
-        qml.RX(features[1], wires=1)
-        return qml.expval(qml.PauliZ(0))
-
     def test_autograd(self, tol):
         """Tests that gradients of template and decomposed circuit
         are the same in the autograd interface."""
@@ -224,8 +247,8 @@ class TestGradients:
 
         dev = qml.device('default.qubit', wires=2)
 
-        circuit = qml.QNode(self.circuit, dev)
-        circuit2 = qml.QNode(self.circuit_decomposed, dev)
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         grad_fn = qml.grad(circuit)
         grads = grad_fn(features, weights)
@@ -248,8 +271,8 @@ class TestGradients:
 
         dev = qml.device('default.qubit', wires=2)
 
-        circuit = qml.QNode(self.circuit, dev, interface='jax')
-        circuit2 = qml.QNode(self.circuit_decomposed, dev, interface='jax')
+        circuit = qml.QNode(circuit_template, dev, interface='jax')
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface='jax')
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features, weights)
@@ -271,8 +294,8 @@ class TestGradients:
 
         dev = qml.device('default.qubit', wires=2)
 
-        circuit = qml.QNode(self.circuit, dev, interface='tf')
-        circuit2 = qml.QNode(self.circuit_decomposed, dev, interface='tf')
+        circuit = qml.QNode(circuit_template, dev, interface='tf')
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface='tf')
 
         with tf.GradientTape() as tape:
             res = circuit(features, weights)
@@ -296,8 +319,8 @@ class TestGradients:
 
         dev = qml.device('default.qubit', wires=2)
 
-        circuit = qml.QNode(self.circuit, dev, interface='torch')
-        circuit2 = qml.QNode(self.circuit_decomposed, dev, interface='torch')
+        circuit = qml.QNode(circuit_template, dev, interface='torch')
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface='torch')
 
         res = circuit(features, weights)
         res.backward()
