@@ -4,10 +4,10 @@
 
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
-  callable functions.
+  arbitrary callable functions.
   [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
 
-  This is particularly useful to compute the derivative of parametrized
+  This is useful to compute the derivative of parametrized
   ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
 
   For example, in quantum chemistry simulations it can be used to evaluate

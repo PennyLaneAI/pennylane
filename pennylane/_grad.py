@@ -191,10 +191,10 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     Args:
         f (function): function with signature ``f(*args, **kwargs)``
-        argnum (int): which argument to take a gradient with respect to
+        argnum (int): the argument with respect to which the gradient is taken
         delta (float): step size used to evaluate the finite difference
         idx (list[int]): if argument ``args[argnum]`` is an array, ``idx`` can
-            be used specify the indices of the arguments to differentiate
+            be used to specify the indices of the arguments to differentiate
 
     Returns:
         (float or array): the gradient of the input function with respect
@@ -203,7 +203,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if argnum > len(args) - 1:
         raise ValueError(
-            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+            "The value of 'argnum' must be between 0 and {}; got {}".format(len(args) - 1, argnum)
         )
 
     x = _np.array(args[argnum])
@@ -246,8 +246,8 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     Args:
         f (function): function with signature ``f(*args, **kwargs)``
-        argnum (int): which argument to take the derivative with respect to
-        delta (float): step size used to evaluate the finite differences
+        argnum (int): the argument with respect to which the gradient is taken
+        delta (float): step size used to evaluate the finite difference
         idx (list[int]): if argument ``args[argnum]`` is an array, `idx`` specifies
             the indices ``i, j`` of the arguments to differentiate
 
