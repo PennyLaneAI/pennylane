@@ -10,13 +10,35 @@ y1 = -0.3
 x2 = np.array([0.5, -0.1975])
 y2 = -0.3
 
+x3 = np.array([[1.1, 2.2], [3.3, 4.4]])
+y3 = -0.54
+grad3 = np.array(
+    [
+        np.array(
+            [np.array([[-1.90380464, 0.0], [0.0, 0.0]]), np.array([[0.0, -0.08787575], [0.0, 0.0]])]
+        ),
+        np.array(
+            [np.array([[0.0, 0.0], [-0.00671454, 0.0]]), np.array([[0.0, 0.0], [0.0, 0.00148809]])]
+        ),
+    ]
+)
+
 
 @pytest.mark.parametrize(
     ("x", "y", "argnum", "idx", "delta", "exp_grad"),
     [
         (x1, y1, 0, None, 0.01, -47.341084643123565),
         (x1, y1, 1, None, 0.02, -371.7453193214464),
-        # (x2, y2, 0, [0], 0.01, np.array([np.array([-47.34108464, 0.0]), 0])),
+        (x2, y2, 0, [0], 0.01, np.array([np.array([-47.34108464, 0.0]), 0])),
+        (
+            x2,
+            y2,
+            0,
+            None,
+            0.01,
+            np.array([np.array([-47.34108464, 0.0]), np.array([0.0, -1971.68884622])]),
+        ),
+        (x3, y3, 0, None, 0.01, grad3),
     ],
 )
 def test_first_finit_diff(x, y, argnum, idx, delta, exp_grad):
@@ -27,7 +49,12 @@ def test_first_finit_diff(x, y, argnum, idx, delta, exp_grad):
 
     grad = qml.finite_diff(f, argnum=argnum, idx=idx, delta=delta)(x, y)
 
-    assert np.allclose(np.array(grad, dtype=float), exp_grad)
+    if grad.ndim != 0:
+        idx = list(np.ndindex(*grad.shape))
+        for i in idx:
+            assert np.allclose(grad[i], exp_grad[i])
+    else:
+        np.allclose(np.array(grad, dtype=float), exp_grad)
 
 
 x1 = 1.975
