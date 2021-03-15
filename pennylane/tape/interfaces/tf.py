@@ -141,6 +141,22 @@ class TFInterface(AnnotatedQueue):
         saved_grad_matrices = {}
 
         def _evaluate_grad_matrix(grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              saved_grad_matrices, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because TensorFlow requests the vector-GradMatrix product,
+              and *not* the full GradMatrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+            """
             if grad_matrix_fn in saved_grad_matrices:
                 return saved_grad_matrices[grad_matrix_fn]
 
@@ -165,8 +181,15 @@ class TFInterface(AnnotatedQueue):
                     variables = tfkwargs.get("variables", None)
                     hessian = _evaluate_grad_matrix("hessian")
 
-                    vhp = tf.matmul(ddy, hessian)
-                    vhp = tf.matmul(tf.matmul(dy_row, vhp), tf.transpose(dy_row))
+                    # vhp = tf.tensordot(ddy, hessian, axes=1)
+                    # vhp = tf.tensordot(tf.tensordot(dy_row, vhp, axes=1), tf.transpose(dy_row), axes=1)
+                    # vhp = tf.unstack(tf.reshape(vhp, [-1]))
+
+                    vhp = tf.cond(
+                        tf.rank(tf.squeeze(ddy)) > 1,
+                        lambda: dy_row @ ddy @ hessian @ tf.transpose(dy_row),
+                        lambda: ddy @ hessian,
+                    )
 
                     vhp = tf.unstack(tf.reshape(vhp, [-1]))
                     return (vhp, variables) if variables is not None else vhp
