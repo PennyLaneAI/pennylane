@@ -154,7 +154,7 @@ class AutogradInterface(AnnotatedQueue):
 
         This function is not primitive to autograd so when params
         is a autograd box we know that the following call to
-        the primitve wrapped function is
+        the primitve wrapped function is the autograd forward pass.
         """
         if isinstance(params, autograd.extend.Box):
             self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = True
