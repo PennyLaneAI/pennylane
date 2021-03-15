@@ -227,7 +227,7 @@ class QAOAEmbedding(Operation):
         elif local_field == "Y":
             self.local_fields = RY
         else:
-            raise ValueError(f"did not recognize local field {local_field}")
+            raise ValueError(f"Did not recognize local field {local_field}")
 
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
 
