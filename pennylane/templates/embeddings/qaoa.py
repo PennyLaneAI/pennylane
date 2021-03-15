@@ -17,8 +17,6 @@ Contains the ``QAOAEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
-from pennylane.templates import broadcast
 from pennylane.wires import Wires
 
 
@@ -30,18 +28,12 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (Wires): wires that the template acts on
     """
 
-    try:
-        # works for tensors
-        n_features = features.shape[0]
-    except AttributeError:
-        # works for lists and tuples
-        n_features = len(features)
+    n_features = qml.math.shape(features)[0]
 
-    feature_encoding_wires = wires[:n_features]
-    remaining_wires = wires[n_features:]
-
-    broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
-    broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
+    for i in range(n_features):
+        qml.RX(features[i], wires=wires[i])
+    for i in range(n_features, len(wires)):
+        qml.Hadamard(wires=wires[i])
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields):
@@ -54,23 +46,20 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """
 
     if len(wires) == 1:
-        weights_zz = []
-        weights_fields = weights
+        local_fields(weights[0], wires=wires)
 
     elif len(wires) == 2:
-        # for 2 wires the periodic boundary condition is dropped in broadcast's "ring" pattern
-        # only feed in 1 parameter
-        weights_zz = weights[:1]
-        weights_fields = weights[1:]
+        # deviation for 2 wires: we do not connect last to first qubit
+        # with the entangling gates
+        qml.MultiRZ(weights[0], wires=wires.subset([0, 1]))
+        local_fields(weights[1], wires=wires[0:1])
+        local_fields(weights[1], wires=wires[1:2])
 
     else:
-        weights_zz = weights[: len(wires)]
-        weights_fields = weights[len(wires) :]
-
-    # zz couplings
-    broadcast(unitary=MultiRZ, pattern="ring", wires=wires, parameters=weights_zz)
-    # local fields
-    broadcast(unitary=local_fields, pattern="single", wires=wires, parameters=weights_fields)
+        for i in range(len(wires)):
+            qml.MultiRZ(weights[i], wires=wires.subset([i, i + 1], periodic_boundary=True))
+        for i in range(len(wires)):
+            local_fields(weights[len(wires)+i], wires=wires[i])
 
 
 class QAOAEmbedding(Operation):
@@ -221,13 +210,13 @@ class QAOAEmbedding(Operation):
     def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
 
         if local_field == "Z":
-            self.local_fields = RZ
+            self.local_fields = qml.RZ
         elif local_field == "X":
-            self.local_fields = RX
+            self.local_fields = qml.RX
         elif local_field == "Y":
-            self.local_fields = RY
+            self.local_fields = qml.RY
         else:
-            raise ValueError(f"Did not recognize local field {local_field}")
+            raise ValueError(f"did not recognize local field {local_field}")
 
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
 
