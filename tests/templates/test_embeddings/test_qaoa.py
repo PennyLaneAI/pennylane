@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for QAOAEmbedding template.
+Unit tests for the QAOAEmbedding template.
 """
 import pytest
-
 import numpy as np
 import pennylane as qml
 
@@ -23,15 +22,15 @@ import pennylane as qml
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    QUEUES = [(1, (1, 1), [qml.RX, qml.RY, qml.RX]),
-              (2, (1, 3), [qml.RX, qml.RX, qml.MultiRZ, qml.RY, qml.RY, qml.RX, qml.RX]),
-              (2, (2, 3), [qml.RX, qml.RX, qml.MultiRZ, qml.RY, qml.RY, qml.RX, qml.RX,
-                           qml.MultiRZ, qml.RY, qml.RY, qml.RX, qml.RX]),
-              (3, (1, 6), [qml.RX, qml.RX, qml.RX, qml.MultiRZ, qml.MultiRZ, qml.MultiRZ,
-                           qml.RY, qml.RY, qml.RY, qml.RX, qml.RX, qml.RX])]
+    QUEUES = [(1, (1, 1), ['RX', 'RY', 'RX']),
+              (2, (1, 3), ['RX', 'RX', 'MultiRZ', 'RY', 'RY', 'RX', 'RX']),
+              (2, (2, 3), ['RX', 'RX', 'MultiRZ', 'RY', 'RY', 'RX', 'RX',
+                           'MultiRZ', 'RY', 'RY', 'RX', 'RX']),
+              (3, (1, 6), ['RX', 'RX', 'RX', 'MultiRZ', 'MultiRZ', 'MultiRZ',
+                           'RY', 'RY', 'RY', 'RX', 'RX', 'RX'])]
 
-    @pytest.mark.parametrize('n_wires, weight_shape, expected_types', QUEUES)
-    def test_queue(self, n_wires, weight_shape, expected_types):
+    @pytest.mark.parametrize('n_wires, weight_shape, expected_names', QUEUES)
+    def test_expansion(self, n_wires, weight_shape, expected_names):
         """Checks the queue for the default settings."""
 
         features = list(range(n_wires))
@@ -41,7 +40,41 @@ class TestDecomposition:
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
-            assert type(gate) == expected_types[i]
+            assert gate.name == expected_names[i]
+
+    @pytest.mark.parametrize('local_field', ['X', 'Y', 'Z'])
+    def test_local_field(self, local_field):
+        """Checks that custom local field is used."""
+
+        get_name = {'X': 'RX',
+                    'Y': 'RY',
+                    'Z': 'RZ'}
+
+        features = list(range(2))
+        weights = np.zeros(shape=(1, 3))
+
+        op = qml.templates.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
+        tape = op.expand()
+        gate_names = [gate.name for gate in tape.operations]
+
+        assert gate_names[3] == get_name[local_field]
+        assert gate_names[4] == get_name[local_field]
+
+    def test_exception_wrongrot(self):
+        """Verifies exception raised if the
+        rotation strategy is unknown."""
+
+        n_wires = 1
+        weights = np.zeros(shape=(1, 1))
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="did not recognize"):
+            circuit(x=[1])
 
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state is correct if the weights are zero."""
@@ -83,63 +116,6 @@ class TestDecomposition:
 
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-
-class TestHyperparameters:
-    """Tests that the template's hyperparameters have the desired effect."""
-
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[np.pi / 2]], [0]),
-                                                               (2, [[1, np.pi / 2, np.pi / 4]], [0, 1 / np.sqrt(2)]),
-                                                               (3, [[0, 0, 0, np.pi, np.pi / 2, np.pi / 4]],
-                                                                [-1, 0, 1 / np.sqrt(2)])])
-    def test_output_local_field_ry(self, n_subsystems, weights, target, tol):
-        """Checks the output if the features are zero for RY local fields."""
-
-        features = np.zeros(shape=(n_subsystems,))
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Y')
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
-
-        res = circuit(x=features[:n_subsystems])
-        assert np.allclose(res, target, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[np.pi / 2]], [0]),
-                                                               (2, [[1, np.pi / 2, np.pi / 4]], [0, 1 / np.sqrt(2)]),
-                                                               (3, [[0, 0, 0, np.pi, np.pi / 2, np.pi / 4]],
-                                                                [-1, 0, 1 / np.sqrt(2)])])
-    def test_output_local_field_rx(self, n_subsystems, weights, target, tol):
-        """Checks the output if the features are zero for RX local fields."""
-
-        features = np.zeros(shape=(n_subsystems,))
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='X')
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
-
-        res = circuit(x=features[:n_subsystems])
-        assert np.allclose(res, target, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[np.pi / 2]], [1]),
-                                                               (2, [[1, np.pi / 2, np.pi / 4]], [1, 1]),
-                                                               (3, [[0, 0, 0, np.pi, np.pi / 2, np.pi / 4]], [1, 1, 1])])
-    def test_output_local_field_rz(self, n_subsystems, weights, target, tol):
-        """Checks the output if the features are zero for RZ local fields."""
-
-        features = np.zeros(shape=(n_subsystems,))
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Z')
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
-
-        res = circuit(x=features[:n_subsystems])
-        assert np.allclose(res, target, atol=tol, rtol=0)
-
     @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi / 2]], [1, 0]),
                                                                     (3, [0, 0], [[0, 0, 0, 0, 0, np.pi / 2]],
                                                                      [1, 1, 0])])
@@ -156,7 +132,7 @@ class TestHyperparameters:
         res = circuit(x=features)
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    def test_exception_fewer_wires_than_features(self, ):
+    def test_exception_fewer_qubits_than_features(self, ):
         """Verifies that exception raised if there are fewer
            wires than features."""
 
@@ -172,22 +148,6 @@ class TestHyperparameters:
 
         with pytest.raises(ValueError, match="Features must be of "):
             circuit(x=features)
-
-    def test_exception_wrongrot(self):
-        """Verifies exception raised if the
-        rotation strategy is unknown."""
-
-        n_wires = 1
-        weights = np.zeros(shape=(1, 1))
-        dev = qml.device('default.qubit', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="did not recognize"):
-            circuit(x=[1])
 
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
