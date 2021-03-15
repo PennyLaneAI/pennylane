@@ -24,6 +24,7 @@ from .momentum import MomentumOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .rms_prop import RMSPropOptimizer
 from .qng import QNGOptimizer
+from .rosalin import RosalinOptimizer
 from .rotosolve import RotosolveOptimizer
 from .rotoselect import RotoselectOptimizer
 
@@ -37,6 +38,7 @@ __all__ = [
     "NesterovMomentumOptimizer",
     "RMSPropOptimizer",
     "QNGOptimizer",
+    "RosalinOptimizer",
     "RotosolveOptimizer",
     "RotoselectOptimizer",
 ]
