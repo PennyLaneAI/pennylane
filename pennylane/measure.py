@@ -65,7 +65,7 @@ class MeasurementProcess:
         # measurement processes rather than specific observables.
 
         # The following lines are only applicable for measurement processes
-        # that do no have corresponding observables (e.g., Probability). We use
+        # that do not have corresponding observables (e.g., Probability). We use
         # them to 'trick' the device into thinking it has recieved an observable.
 
         # Below, we imitate an identity observable, so that the
