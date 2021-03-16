@@ -368,7 +368,7 @@ class TestQNode:
         res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
         class U3(qml.U3):
