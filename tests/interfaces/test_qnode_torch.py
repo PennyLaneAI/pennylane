@@ -564,7 +564,7 @@ def qtransform(qnode, a, framework=torch):
     return new_qnode
 
 
-def test_transform(monkeypatch, tol):
+def test_transform(tol):
     """Test an example transform"""
 
     dev = qml.device("default.qubit", wires=1)
