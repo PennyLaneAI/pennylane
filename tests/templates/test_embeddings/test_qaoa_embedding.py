@@ -209,7 +209,7 @@ class TestParameters:
         with pytest.raises(ValueError, match="Features must be of "):
             circuit(x=features)
 
-    def test_exception_wrong_feauture_shape(self):
+    def test_exception_wrong_feature_shape(self):
         """Verifies that exception is raised if the shape of features is incorrect."""
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
@@ -224,17 +224,20 @@ class TestParameters:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit()
 
-    def test_exception_wrong_weight_shape(self):
+    @pytest.mark.parametrize('weights, n_wires', [
+        (np.zeros(shape=(1, 2)), 1),
+        (np.zeros(shape=(1, 4)), 2),
+        (np.zeros(shape=(1, 3)), 3)
+    ])
+    def test_exception_wrong_weight_shape(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
-        n_wires = 2
-        weights = np.zeros(shape=(1, 4))
-        features = np.zeros(shape=(2,))
+        features = np.zeros(shape=(n_wires,))
         dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
             qml.templates.QAOAEmbedding(features, weights, wires=range(n_wires))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
             circuit()
@@ -248,12 +251,21 @@ class TestParameters:
         ],
     )
     def test_shape_random_weights(self, n_layers, n_wires, expected_shape):
-
-        weights1 = qml.templates.QAOAEmbedding.weights_uniform(n_layers, n_wires)
-        weights2 = qml.templates.QAOAEmbedding.weights_normal(n_layers, n_wires)
-
+        """Test that the random weights have the correct shape"""
+        weights1 = qml.templates.QAOAEmbedding.weights_uniform(n_layers, n_wires, seed=42)
+        weights2 = qml.templates.QAOAEmbedding.weights_normal(n_layers, n_wires, seed=42)
         assert weights1.shape == expected_shape
         assert weights2.shape == expected_shape
+
+    @pytest.mark.parametrize("func", [qml.templates.QAOAEmbedding.weights_uniform,
+                                      qml.templates.QAOAEmbedding.weights_normal])
+    def test_seed_random_weights(self, func, tol):
+        """Test that the random weights are made deterministic by using a seed"""
+
+        w_42 = func(3, 4, seed=42)
+        w_41 = func(3, 4, seed=41)
+        assert np.allclose(w_42, w_42, atol=tol, rtol=0)
+        assert not np.allclose(w_42, w_41, atol=tol, rtol=0)
 
 
 class TestGradients:
