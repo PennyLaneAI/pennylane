@@ -119,13 +119,13 @@ def test_exceptions_finite_diff(N, delta, func, msg_match):
     [
         ("both", 2, None, "The value of 'argnum' has to be between 0 and "),
         ("both", 1, [0, 1], "is not an array, 'idx' should be set to 'None'"),
-        # ("both", 0, [0, 2], "Indices in 'idx' can not be greater than"),
         (
             "second",
             0,
             [0, 2, 3],
             "The number of indices given in 'idx' can not be greater than two",
         ),
+        ("second", 0, None, "'idx' should contain the indices of the arguments"),
     ],
 )
 def test_exceptions(which, argnum, idx, msg_match):

@@ -266,6 +266,11 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         )
 
     if idx is None:
+        if x.ndim != 0:
+            raise ValueError(
+                "Argument {} is an array, 'idx' should contain the indices of the arguments"
+                " to differentiate; got idx = {}".format(argnum, idx)
+            )
         idx = [(), ()]
     else:
         if len(idx) > 2:
