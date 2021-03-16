@@ -217,16 +217,6 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if idx is None:
         idx = list(_np.ndindex(*x.shape))
-    else:
-        bounds = _np.array(x.shape) - 1
-        for _idx in idx:
-
-            if (_np.array(_idx) > bounds).any():
-                raise ValueError(
-                    "Indices in 'idx' can not be greater than {}; got {}".format(
-                        tuple(bounds), _idx
-                    )
-                )
 
     for i in idx:
         shift = _np.zeros_like(x)
@@ -272,17 +262,11 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
     if idx is None:
         idx = [(), ()]
     else:
-        bounds = _np.array(x.shape) - 1
         if len(idx) > 2:
             raise ValueError(
                 "The number of indices given in 'idx' can not be greater than two; got {} indices".format(
                     len(idx)
                 )
-            )
-
-        if (_np.array(idx) > bounds).any():
-            raise ValueError(
-                "Indices in 'idx' can not be greater than {}; got {}".format(tuple(bounds), idx)
             )
 
     i, j = idx

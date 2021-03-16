@@ -119,7 +119,7 @@ def test_exceptions_finite_diff(N, delta, func, msg_match):
     [
         ("both", 2, None, "The value of 'argnum' has to be between 0 and "),
         ("both", 1, [0, 1], "is not an array, 'idx' should be set to 'None'"),
-        ("both", 0, [0, 2], "Indices in 'idx' can not be greater than"),
+        # ("both", 0, [0, 2], "Indices in 'idx' can not be greater than"),
         (
             "second",
             0,
