@@ -59,7 +59,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
         for i in range(len(wires)):
             qml.MultiRZ(weights[i], wires=wires.subset([i, i + 1], periodic_boundary=True))
         for i in range(len(wires)):
-            local_fields(weights[len(wires)+i], wires=wires[i])
+            local_fields(weights[len(wires) + i], wires=wires[i])
 
 
 class QAOAEmbedding(Operation):
