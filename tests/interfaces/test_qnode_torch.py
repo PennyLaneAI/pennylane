@@ -351,7 +351,7 @@ class TestQNode:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
