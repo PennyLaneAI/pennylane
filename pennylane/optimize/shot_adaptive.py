@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Rosalin optimizer"""
+"""Shot adaptive optimizer"""
 # pylint: disable=too-many-instance-attributes
 from scipy.stats import multinomial
 
@@ -23,127 +23,147 @@ from .gradient_descent import GradientDescentOptimizer
 
 
 class ShotAdaptiveOptimizer(GradientDescentOptimizer):
-    r"""Optimizer with adaptive shot rate, via calculation
-    of the variances of the parameter-shift gradient.
+    r"""Optimizer with adaptive shot rate, via calculation of the variances of the parameter-shift
+    gradient.
 
-    Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta`
-        diag_approx (bool): If ``True``, forces a diagonal approximation
-            where the calculated metric tensor only contains diagonal
-            elements :math:`G_{ii}`. In some cases, this may reduce the
-            time taken per optimization step.
-        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
+    By keeping a running average of the parameter-shift gradient and the *variance*
+    of the parameter-shift gradient, this optimizer frugally distributes a shot
+    budget across the partial derivatives of each parameter.
 
-    The QNG optimizer uses a step- and parameter-dependent learning rate,
-    with the learning rate dependent on the pseudo-inverse
-    of the Fubini-Study metric tensor :math:`g`:
-
-    .. math::
-        x^{(t+1)} = x^{(t)} - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
-
-    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
-    is an expectation value of some observable measured on the variational
-    quantum circuit :math:`U(x^{(t)})`.
-
-    Consider a quantum node represented by the variational quantum circuit
-
-    .. math::
-
-        U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
-        V(\theta_1, \dots, \theta_{i-1}),
-
-    where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`.
-    That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
-    corresponding to the :math:`i`-th parameter.
-
-    For each parametric layer :math:`\ell` in the variational quantum circuit
-    containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
-    of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated directly on the
-    quantum device in a single evaluation:
-
-    .. math::
-
-        g_{ij}^{(\ell)} = \langle \psi_\ell | K_i K_j | \psi_\ell \rangle
-        - \langle \psi_\ell | K_i | \psi_\ell\rangle
-        \langle \psi_\ell |K_j | \psi_\ell\rangle
-
-    where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
-    (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-    of parameterized layer :math:`\ell`).
-
-    Combining the quantum natural gradient optimizer with the analytic parameter-shift
-    rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
-    a total of :math:`2d+L` quantum evaluations are required per optimization step.
-
-    For more details, see:
-
-        James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
-        "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
+    In addition, if computing the expectation value of a Hamiltonian using
+    :class:`~.ExpvalCost`, weighted random sampling can be used to further
+    distribute the shot budget across the terms in the Hamiltonian.
 
     .. note::
 
-        The QNG optimizer supports single QNodes or :class:`~.ExpvalCost` objects as objective functions.
-        Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
-        using the ``metric_tensor_fn`` argument.
+        The shot adaptive optimizer only supports single QNodes or :class:`~.ExpvalCost` objects as
+        objective functions.
 
-        For the following cases, providing metric_tensor_fn may be useful:
+    Args:
+        min_shots (int): the minimum number of shots used to estimate the expectations
+            of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
+            of the gradients to be computed.
+        mu (float): The running average constant :math:`\mu\in[0, 1]`. Used to control how quickly the
+            number of shots recommended for each gradient component changes.
+        b (float): Regularization bias. The bias should be kept small, but non-zero.
+        weighted_random_sampling (bool): Whether to use the weighted random sampling algorithm
+            to multinomially distribute the shot budget across terms in the Hamiltonian expectation value.
+            Only takes effect if the objective function provided is an instance of :class:`~.ExpvalCost`.
+        stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
+            that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
 
-        * For hybrid classical-quantum models, the "mixed geometry" of the model
-          makes it unclear which metric should be used for which parameter.
-          For example, parameters of quantum nodes are better suited to
-          one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
-          are likely better suited to another metric.
+            * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant
+              <https://en.wikipedia.org/wiki/Lipschitz_continuity>`__ of the variational quantum
+              algorithm objective function, and
 
-        * For multi-QNode models, we don't know what geometry is appropriate
-          if a parameter is shared amongst several QNodes.
+            * :math:`c_i` are the coefficients of the Hamiltonian used in the objective function.
 
-        If the objective function is VQE/VQE-like, i.e., a function of a group
-        of QNodes that share an ansatz, there are two ways to use the optimizer:
+    The shot adaptive optimizer is based on the iCANS1 optimizer by
+    `Kübler et al. (2020) <https://quantum-journal.org/papers/q-2020-05-11-263/>`__, and works
+    as follows:
 
-        * Realize the objective function as an :class:`~.ExpvalCost` object, which has
-          a ``metric_tensor`` method.
+    1. The initial step of the optimizer is performed with some specified minimum
+       number of shots, :math:`s_{min}`, for all partial derivatives.
 
-        * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
-          of the QNode(s) involved in the objective function.
+    2. The parameter-shift rule is then used to estimate the gradient :math:`g_i`
+       for each parameter :math:`\theta_i`, parameters, as well as the *variances*
+       :math:`v_i` of the estimated gradients.
 
-    **Examples:**
+    3. Gradient descent is performed for each parameter :math:`\theta_i`, using
+       the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
+       :math:`\theta_i = \theta_i - \eta g_i`.
+
+    4. The improvement in the cost function per shot, for a specific parameter value,
+       is then calculated via
+
+       .. math::
+           \gamma_i = \frac{1}{s_i} \left[ \left(\eta - \frac{1}{2} L\eta^2\right)
+                       g_i^2 - \frac{L\eta^2}{2s_i}v_i \right],
+
+       where:
+
+       * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant
+         <https://en.wikipedia.org/wiki/Lipschitz_continuity>`__ of the variational quantum algorithm objective function,
+
+       * :math:`c_i` are the coefficients of the Hamiltonian, and
+
+       * :math:`\eta` is the learning rate, and *must* be bound such that :math:`\eta < 2/L`
+         for the above expression to hold.
+
+    5. Finally, the new values of :math:`s_i` (shots for partial derivative of parameter
+       :math:`\theta_i`) is given by:
+
+       .. math::
+
+           s_i = \frac{2L\eta}{2-L\eta}\left(\frac{v_i}{g_i^2}\right)\propto
+                 \frac{v_i}{g_i^2}.
+
+    In addition to the above, to counteract the presence of noise in the system, a
+    running average of :math:`g_i` and :math:`s_i` (:math:`\chi_i` and :math:`\xi_i` respectively)
+    are used when computing :math:`\gamma_i` and :math:`s_i`.
+
+    For more details, see:
+
+    * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "Operator Sampling
+      for Shot-frugal Optimization in Variational Algorithms." `arXiv:2004.06252
+      <https://arxiv.org/abs/2004.06252>`__ (2020).
+
+    * Jonas M. Kübler, Andrew Arrasmith, Lukasz Cincio, and Patrick J. Coles. "An Adaptive Optimizer
+      for Measurement-Frugal Variational Algorithms." `Quantum 4, 263
+      <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
+
+    **Example**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as an ExpvalCost object.
+    realized as an :class:`~.ExpvalCost` object, constructed using a :class:`~.Hamiltonian`.
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> def circuit(params, wires=0):
-    ...     qml.RX(params[0], wires=wires)
-    ...     qml.RY(params[1], wires=wires)
-    >>> coeffs = [1, 1]
-    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
+    >>> coeffs = [2, 4, -1, 5, 2]
+    >>> obs = [
+    ...   qml.PauliX(1),
+    ...   qml.PauliZ(1),
+    ...   qml.PauliX(0) @ qml.PauliX(1),
+    ...   qml.PauliY(0) @ qml.PauliY(1),
+    ...   qml.PauliZ(0) @ qml.PauliZ(1)
+    ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> cost_fn = qml.ExpvalCost(circuit, H, dev)
+    >>> dev = qml.device("default.qubit", wires=2, analytic=False)
+    >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` function:
 
-    >>> eta = 0.01
-    >>> init_params = [0.011, 0.012]
-    >>> opt = qml.QNGOptimizer(eta)
-    >>> theta_new = opt.step(cost_fn, init_params)
-    >>> print(theta_new)
-    [0.011445239214543481, -0.027519522461477233]
-
-    Alternatively, the same objective function can be used for the optimizer
-    by manually providing the ``metric_tensor_fn``.
-
-    >>> qnodes = qml.map(circuit, obs, dev, 'expval')
-    >>> cost_fn = qml.dot(coeffs, qnodes)
-    >>> eta = 0.01
-    >>> init_params = [0.011, 0.012]
-    >>> opt = qml.QNGOptimizer(eta)
-    >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
-    >>> print(theta_new)
-    [0.011445239214543481, -0.027519522461477233]
+    >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+    >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+    >>> for i in range(60):
+    ...    params = opt.step(cost, params)
+    ...    print(f"Step {i}: cost = {cost(params)}, shots_used = {opt.shots_used}")
+    Step 0: cost = -5.686, shots_used = 240
+    Step 1: cost = -2.983999999999999, shots_used = 336
+    Step 2: cost = -4.974, shots_used = 624
+    Step 3: cost = -5.534, shots_used = 1054
+    Step 4: cost = -6.5, shots_used = 1798
+    Step 5: cost = -6.684, shots_used = 2942
+    Step 6: cost = -6.992, shots_used = 4350
+    Step 7: cost = -6.970000000000001, shots_used = 5814
+    Step 8: cost = -6.998, shots_used = 7230
+    Step 9: cost = -6.686, shots_used = 9006
+    Step 10: cost = -6.85, shots_used = 11286
+    Step 11: cost = -6.628000000000001, shots_used = 14934
+    Step 12: cost = -6.862, shots_used = 17934
+    Step 13: cost = -7.188, shots_used = 22950
+    Step 14: cost = -6.9879999999999995, shots_used = 28302
+    Step 15: cost = -7.380000000000001, shots_used = 34134
+    Step 16: cost = -7.656, shots_used = 41022
+    Step 17: cost = -7.212, shots_used = 48918
+    Step 18: cost = -7.532, shots_used = 56286
+    Step 19: cost = -7.462000000000001, shots_used = 63822
+    Step 20: cost = -7.306000000000001, shots_used = 72534
+    Step 21: cost = -7.234, shots_used = 82014
+    Step 22: cost = -7.314, shots_used = 92838
     """
-    def __init__(self, min_shots, mu=0.99, b=1e-6, stepsize=0.07):
+    def __init__(self, min_shots, weighted_random_sampling=True, mu=0.99, b=1e-6, stepsize=0.07):
+        self.wrs = weighted_random_sampling
+
         # hyperparameters
         self.min_shots = min_shots
         self.mu = mu  # running average constant
@@ -165,7 +185,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         super().__init__(stepsize=stepsize)
 
     @staticmethod
-    def estimate_hamiltonian(qnodes, coeffs, shots, argnums, *args, **kwargs):
+    def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
         """Returns an array containing length ``shots`` single-shot estimates
         of the Hamiltonian. The shots are distributed randomly over
         the terms in the Hamiltonian, as per a Multinomial distribution.
@@ -259,7 +279,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             **kwargs: keyword arguments to the objective function
 
         Returns:
-            tuple[array[float]]: a tuple of NumPy arrays containing the gradient
+            tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
             :math:`\nabla f(x^{(t)})` and the variance of the gradient.
         """
         max_s = max(np.concatenate([i.flatten() for i in self.s]))
@@ -275,9 +295,16 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 self.check_learning_rate(coeffs)
 
             try:
-                grads = self.estimate_hamiltonian(
-                    qnodes, coeffs, max_s, self.trainable_args, *args, **kwargs
-                )
+                if self.wrs:
+                    grads = self.weighted_random_sampling(
+                        qnodes, coeffs, max_s, self.trainable_args, *args, **kwargs
+                    )
+                else:
+                    qnodes[0].device.shots = [(1, max_s)]
+                    grads = [
+                        qml.jacobian(objective_fn, argnum=i)(*args, **kwargs)
+                        for i in self.trainable_args
+                    ]
             finally:
                 qnodes[0].device.shots = original_shots
 
