@@ -382,7 +382,7 @@ class TestWeightedRandomSampling:
 
     def test_wrs_expval_cost(self, mocker):
         """Checks that cost functions that are expval costs can
-        make use of, and turn off, weighted random sampling"""
+        make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
         dev = qml.device("default.qubit", wires=2, analytic=False)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
@@ -390,13 +390,28 @@ class TestWeightedRandomSampling:
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=100)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(opt, "weighted_random_sampling")
 
         new_weights = opt.step(expval_cost, weights)
         spy.assert_called_once()
 
-        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, 0, weights)
+        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
         assert len(grads) == 1
-        assert grad[0].shape == (10,)
-        assert dev.num_executions == len(coeffs)
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_wrs_disabled(self, mocker):
+        """Checks that cost functions that are expval costs can
+        disable use of weighted random sampling"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, weighted_random_sampling=False)
+        spy = mocker.spy(opt, "weighted_random_sampling")
+
+        new_weights = opt.step(expval_cost, weights)
+        spy.assert_not_called()
