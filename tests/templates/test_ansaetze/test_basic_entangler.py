@@ -115,6 +115,8 @@ class TestDecomposition:
 
 
 class TestParameters:
+    """Test inputs and pre-processing."""
+
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the weights shape is incorrect."""
 
@@ -150,7 +152,7 @@ class TestParameters:
 
 
 class TestGradients:
-    """Tests that the gradient is computed correctly in all three interfaces."""
+    """Tests that the gradient is computed correctly in all interfaces."""
 
     def test_autograd(self, tol):
         """Tests that gradients of template and decomposed circuit

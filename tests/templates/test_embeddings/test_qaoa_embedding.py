@@ -257,7 +257,7 @@ class TestParameters:
 
 
 class TestGradients:
-    """Tests that the gradient is computed correctly in all three interfaces."""
+    """Tests that the gradient is computed correctly in all interfaces."""
 
     def test_autograd(self, tol):
         """Tests that gradients of template and decomposed circuit
