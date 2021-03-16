@@ -366,7 +366,7 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     ...     return np.sin(y[0])*np.sin(y[1]) - x**-3
 
     >>> (x, y) = (0.376, np.array([1.975, 0.33, -0.4]))
-    
+
     # We compute the gradient with respect to 'y' as
     >>> gradient = qml.finite_diff(f, argnum=1)
     >>> print(gradient(x, y))
