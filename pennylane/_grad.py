@@ -367,17 +367,17 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
 
     >>> (x, y) = (0.376, np.array([1.975, 0.33, -0.4]))
 
-    # We compute the gradient with respect to 'y' as
+    >>> # We compute the gradient with respect to 'y' as
     >>> gradient = qml.finite_diff(f, argnum=1)
     >>> print(gradient(x, y))
     [-0.12744129189670161 0.8698027233702277]
 
-    # We can also compute the derivative with respect to 'y[1]'
+    >>> # We can also compute the derivative with respect to 'y[1]'
     >>> derivative = qml.finite_diff(f, argnum=1, idx=[1])
     >>> print(derivative(x, y)[1])
     0.8698027233702277
 
-    # and the second derivative with respect to 'y[0], y[1]'
+    >>> # and the second derivative with respect to 'y[0], y[1]'
     >>> second_derivative = qml.finite_diff(f, N=2, argnum=1, idx=[0, 1])
     >>> print(second_derivative(x, y))
     -0.372062798810191
