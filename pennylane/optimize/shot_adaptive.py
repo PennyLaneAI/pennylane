@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Shot adaptive optimizer"""
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
 from scipy.stats import multinomial
 
 import pennylane as qml
@@ -164,6 +164,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def __init__(self, min_shots, weighted_random_sampling=True, mu=0.99, b=1e-6, stepsize=0.07):
         self.wrs = weighted_random_sampling
+        self.trainable_args = set()
 
         # hyperparameters
         self.min_shots = min_shots
@@ -270,14 +271,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self._stepsize > 2 / self.lipschitz:
             raise ValueError("The learning rate must be less than ", 2 / self.lipschitz)
 
-    def compute_grad(self, objective_fn, *args, **kwargs):
+    def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=signature-differs
         r"""Compute gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
         Args:
             objective_fn (function): the objective function for optimization
-            *args: arguments to the objective function
-            **kwargs: keyword arguments to the objective function
+            args: arguments to the objective function
+            kwargs: keyword arguments to the objective function
 
         Returns:
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
@@ -384,7 +385,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         # compute the gradient, as well as the variance in the gradient,
         # using the number of shots determined by the array s.
-        grads, grad_variances = self.compute_grad(objective_fn, *args, **kwargs)
+        grads, grad_variances = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(grads, args)
 
         if self.xi is None:
@@ -397,7 +398,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         # running average of the gradient variance
         self.xi = [self.mu * x + (1 - self.mu) * v for x, v in zip(self.xi, grad_variances)]
 
-        for idx, (c, x, v) in enumerate(zip(self.chi, self.xi, grad_variances)):
+        for idx, (c, x) in enumerate(zip(self.chi, self.xi)):
             xi = x / (1 - self.mu ** (self.k + 1))
             chi = c / (1 - self.mu ** (self.k + 1))
 
