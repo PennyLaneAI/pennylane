@@ -354,6 +354,25 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
         function: the function to compute the gradient (``N=1``) or the
         second-order derivative (``N=2``) of the input function ``f`` with respect
         to the arguments in ``argnum``
+
+    **Examples**
+
+    >>> def f(x, y):
+    ...     return np.sin(y[0])*np.sin(y[1]) + np.exp(y[2]) - x**-3
+
+    >>> (x, y) = (0.376, np.array([1.975, 0.33, -0.4]))
+
+    >>> gradient = qml.finite_diff(f, argnum=1)
+    >>> print(gradient(x, y))
+    [-0.12744129189670161 0.869802723370583 0.6703228390396276]
+
+    >>> derivative = qml.finite_diff(f, argnum=1, idx=[1])
+    >>> print(derivative(x, y)[1])
+    0.869802723370583
+
+    >>> second_derivative = qml.finite_diff(f, N=2, argnum=1, idx=[0, 1])
+    >>> print(second_derivative(x, y))
+    -0.37206279888124527
     """
 
     if not callable(f):
