@@ -345,13 +345,13 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
         f (function): function with signature ``f(*args, **kwargs)``
         N (int): specifies the order of the finite difference approximation
         argnum (int): the argument of function ``f`` to differentiate
-        idx (list[int]): If argument ``args[argnum]`` is an array, `idx`` can be used
+        idx (list[int]): If argument ``args[argnum]`` is an array, ``idx`` can be used
             to specify the indices of the argument ``argnum`` to differentiate.
             For ``N=1`` it can be given to specify the gradient components to be computed.
-            For example, for function ``f(x, y, z)``, ``argnum=1``, ``idx=[3, 2]``the returned
-            function will differentiate ``f`` with respect to elements ``3`` and ``2`` of
-            argument ``y``. For ``N=2``, it specifies the indices ``i, j`` of the variables
-            involved in the second-order derivative
+            For example, for the function ``f(x, y, z)``, ``argnum=1``, ``idx=[3, 2]``
+            the returned function will differentiate ``f`` with respect to elements
+            ``3`` and ``2`` of argument ``y``. For ``N=2``, it specifies the indices
+            ``i, j`` of the variables involved in the second-order derivative
             :math:`\frac{\partial^2 f(x, y, z)}{\partial y_i \partial y_j}`.
         delta (float): step size used to evaluate the finite differences
 
