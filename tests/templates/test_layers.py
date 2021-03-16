@@ -33,7 +33,6 @@ from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
 from pennylane.numpy import tensor
 from pennylane.init import particle_conserving_u1_normal
-from pennylane.tape import QuantumTape
 
 TOLERANCE = 1e-8
 
@@ -608,6 +607,108 @@ class TestSimplifiedTwoDesign:
             initial_layer = np.random.randn(3)
             weights = np.random.randn(2, 1, 2)
             circuit(initial_layer, weights)
+
+
+class TestBasicEntangler:
+    """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
+
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
+    def test_circuit_queue(self, n_wires, n_cnots):
+        """Tests the gate types in the circuit."""
+        np.random.seed(42)
+        n_layers = 2
+
+        weights = np.random.randn(n_layers, n_wires)
+
+        with qml.tape.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires))
+
+        # Test that gates appear in the right order
+        exp_gates = [qml.RX] * n_wires + [qml.CNOT] * n_cnots
+        exp_gates *= n_layers
+        res_gates = rec.queue
+
+        for op1, op2 in zip(res_gates, exp_gates):
+            assert isinstance(op1, op2)
+
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
+    def test_circuit_parameters(self, n_wires, n_cnots):
+        """Tests the parameter values in the circuit."""
+        np.random.seed(42)
+        n_layers = 2
+
+        weights = np.random.randn(n_layers, n_wires)
+
+        with qml.tape.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires))
+
+        # test the device parameters
+        for l in range(n_layers):
+            # only select the rotation gates
+            layer_ops = rec.queue[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
+
+            # check each rotation gate parameter
+            for n in range(n_wires):
+                res_param = layer_ops[n].parameters[0]
+                exp_param = weights[l, n]
+                assert res_param == exp_param
+
+    @pytest.mark.parametrize("rotation", [RX, RY, RZ])
+    def test_custom_rotation(self, rotation):
+        """Tests that non-default rotation gates are used correctly."""
+        n_layers = 2
+        n_wires = 4
+        weights = np.ones(shape=(n_layers, n_wires))
+
+        with qml.tape.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
+
+        # assert queue contains the custom rotations and CNOTs only
+        gates = rec.queue
+        for op in gates:
+            if not isinstance(op, CNOT):
+                assert isinstance(op, rotation)
+
+    @pytest.mark.parametrize(
+        "weights, n_wires, target",
+        [
+            ([[np.pi]], 1, [-1]),
+            ([[np.pi] * 2], 2, [-1, 1]),
+            ([[np.pi] * 3], 3, [1, 1, -1]),
+            ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
+        ],
+    )
+    def test_simple_target_outputs(self, weights, n_wires, target):
+        """Tests the result of the template for simple cases."""
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        expectations = circuit(weights)
+        for exp, target_exp in zip(expectations, target):
+            assert exp == target_exp
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+
+        n_wires = 1
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit([1, 0])
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+            circuit([[1, 0], [1, 0]])
 
 
 class TestParticleConservingU2:

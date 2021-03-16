@@ -28,7 +28,6 @@ from pennylane.templates.embeddings import (AngleEmbedding,
                                             SqueezingEmbedding)
 from pennylane import Beamsplitter
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
 
 
 class TestAmplitudeEmbedding:
@@ -492,7 +491,179 @@ class TestIQPEmbedding:
             circuit(f=features)
 
 
+class TestQAOAEmbedding:
+    """ Tests the QAOAEmbedding method."""
 
+    QUEUES = [(1, (1, 1), [qml.RX, qml.RY, qml.RX]),
+              (2, (1, 3), [qml.RX, qml.RX, qml.MultiRZ, qml.RY, qml.RY, qml.RX, qml.RX]),
+              (3, (1, 6), [qml.RX, qml.RX, qml.RX, qml.MultiRZ, qml.MultiRZ, qml.MultiRZ,
+                   qml.RY, qml.RY, qml.RY, qml.RX, qml.RX, qml.RX])]
+
+    @pytest.mark.parametrize('n_wires, weight_shape, expected_queue', QUEUES)
+    def test_queue(self, n_wires, weight_shape, expected_queue):
+        """Checks the queue for the default settings."""
+
+        with qml.tape.OperationRecorder() as rec:
+            QAOAEmbedding(features=list(range(n_wires)), weights=np.zeros(shape=weight_shape), wires=range(n_wires))
+
+        for gate, expected_gate in zip(rec.queue, expected_queue):
+            assert isinstance(gate, expected_gate)
+
+    def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
+        """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
+
+        features = [pi, pi / 2, pi / 4, 0]
+        if n_subsystems == 1:
+            shp = (1, 1)
+        elif n_subsystems == 2:
+            shp = (1, 3)
+        else:
+            shp = (1, 2 * n_subsystems)
+
+        weights = np.zeros(shape=shp)
+
+        @qml.qnode(qubit_device)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        target = [1, -1, 0, 1, 1]
+        assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [0]),
+                                                               (2, [[1, pi / 2, pi / 4]], [0, 1 / np.sqrt(2)]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]],
+                                                                [-1, 0, 1 / np.sqrt(2)])])
+    def test_output_local_field_ry(self, n_subsystems, weights, target, tol):
+        """Checks the output if the features are zero. Uses RY local fields."""
+
+        features = np.zeros(shape=(n_subsystems,))
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Y')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [0]),
+                                                               (2, [[1, pi / 2, pi / 4]], [0, 1 / np.sqrt(2)]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]],
+                                                                [-1, 0, 1 / np.sqrt(2)])])
+    def test_output_local_field_rx(self, n_subsystems, weights, target, tol):
+        """Checks the output if the features are zero. Uses RX local fields."""
+
+        features = np.zeros(shape=(n_subsystems,))
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='X')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [1]),
+                                                               (2, [[1, pi / 2, pi / 4]], [1, 1]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]], [1, 1, 1])])
+    def test_output_local_field_rz(self, n_subsystems, weights, target, tol):
+        """Checks the output if the features are zero. Uses RZ local fields."""
+
+        features = np.zeros(shape=(n_subsystems,))
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Z')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('weights, target', [([[np.pi, 0, 0]], [1, 1]),
+                                                 ([[np.pi / 2, 0, 0]], [0, 0]),
+                                                 ([[0, 0, 0]], [-1, -1])])
+    def test_output_zz(self, weights, target, tol):
+        """Checks the output if the features and entangler weights are nonzero."""
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        res = circuit(x=[np.pi/2, np.pi/2])
+
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi / 2]], [1, 0]),
+                                                                    (3, [0, 0], [[0, 0, 0, 0, 0, np.pi / 2]],
+                                                                     [1, 1, 0])])
+    def test_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
+        """Checks the state is correct if there are more qubits than features."""
+
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='Z')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        res = circuit(x=features)
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    def test_exception_fewer_wires_than_features(self, ):
+        """Verifies that exception raised if there are fewer
+           wires than features."""
+
+        features = [0, 0, 0, 0]
+        n_wires = 1
+        weights = np.zeros(shape=(1, 2 * n_wires))
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Features must be of "):
+            circuit(x=features)
+
+    def test_exception_wrongrot(self):
+        """Verifies exception raised if the
+        rotation strategy is unknown."""
+
+        n_wires = 1
+        weights = np.zeros(shape=(1, 1))
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="did not recognize"):
+            circuit(x=[1])
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        n_wires = 1
+        weights = np.zeros(shape=(1, 1))
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
+            circuit(x=[[1], [0]])
 
 
 class TestDisplacementEmbedding:
