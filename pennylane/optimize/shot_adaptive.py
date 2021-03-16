@@ -271,7 +271,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self._stepsize > 2 / self.lipschitz:
             raise ValueError("The learning rate must be less than ", 2 / self.lipschitz)
 
-    def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=signature-differs,arguments-differ
+    def compute_grad(
+        self, objective_fn, args, kwargs
+    ):  # pylint: disable=signature-differs,arguments-differ
         r"""Compute gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
