@@ -37,12 +37,14 @@ def circuit_decomposed(weights):
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    QUEUES = [(1, (1, 1), ['RX']),
-              (2, (1, 2), ['RX', 'RX', 'CNOT', 'RY', 'RY', 'RX', 'RX']),
-              (2, (2, 2), ['RX', 'RX', 'CNOT', 'RX', 'RX', 'CNOT']),
-              (3, (1, 3), ['RX', 'RX', 'RX', 'CNOT', 'CNOT', 'CNOT'])]
+    QUEUES = [
+        (1, (1, 1), ["RX"]),
+        (2, (1, 2), ["RX", "RX", "CNOT", "RY", "RY", "RX", "RX"]),
+        (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"]),
+        (3, (1, 3), ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"]),
+    ]
 
-    @pytest.mark.parametrize('n_wires, weight_shape, expected_names', QUEUES)
+    @pytest.mark.parametrize("n_wires, weight_shape, expected_names", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names):
         """Checks the queue for the default settings."""
 
@@ -54,7 +56,7 @@ class TestDecomposition:
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
 
-    @pytest.mark.parametrize('rotation', [qml.RY, qml.RZ])
+    @pytest.mark.parametrize("rotation", [qml.RY, qml.RZ])
     def test_rotation(self, rotation):
         """Checks that custom rotation gate is used."""
 
@@ -93,8 +95,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 3))
 
-        dev = qml.device('default.qubit', wires=3)
-        dev2 = qml.device('default.qubit', wires=['z', 'a', 'k'])
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -103,8 +105,8 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasicEntanglerLayers(weights, wires=['z', 'a', 'k'])
-            return qml.expval(qml.Identity('z'))
+            qml.templates.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z"))
 
         circuit()
         circuit2()
@@ -113,12 +115,11 @@ class TestDecomposition:
 
 
 class TestParameters:
-
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the weights shape is incorrect."""
 
         n_wires = 1
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -131,11 +132,14 @@ class TestParameters:
         with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
             circuit([[1, 0], [1, 0]])
 
-    @pytest.mark.parametrize('n_layers, n_wires, expected_shape', [
-        (2, 3, (2, 3)),
-        (2, 1, (2, 1)),
-        (2, 2, (2, 2)),
-    ])
+    @pytest.mark.parametrize(
+        "n_layers, n_wires, expected_shape",
+        [
+            (2, 3, (2, 3)),
+            (2, 1, (2, 1)),
+            (2, 2, (2, 2)),
+        ],
+    )
     def test_shape_random_weights(self, n_layers, n_wires, expected_shape):
 
         weights1 = qml.templates.BasicEntanglerLayers.weights_uniform(n_layers, n_wires)
@@ -154,7 +158,7 @@ class TestGradients:
 
         weights = np.random.random(size=(1, 3))
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -176,10 +180,10 @@ class TestGradients:
 
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface='jax')
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface='jax')
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -197,10 +201,10 @@ class TestGradients:
 
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface='tf')
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface='tf')
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -220,10 +224,10 @@ class TestGradients:
 
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface='torch')
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface='torch')
+        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
 
         res = circuit(weights)
         res.backward()
@@ -234,4 +238,3 @@ class TestGradients:
         grads2 = [weights.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-

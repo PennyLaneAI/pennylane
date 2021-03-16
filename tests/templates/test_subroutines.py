@@ -572,37 +572,6 @@ class TestArbitraryUnitary:
             circuit(weights)
 
 
-class TestDoubleExcitationUnitary:
-    """Tests for the DoubleExcitationUnitary template from the
-    pennylane.templates.subroutine module."""
-
-
-
-
-    @pytest.mark.parametrize(
-        ("weight", "wires1", "wires2", "expected"),
-        [
-            (1.34817, [0, 1], [3, 4], [0.22079189, 0.22079189, 1.0, -0.22079189, -0.22079189]),
-            (0.84817, [1, 2], [3, 4], [1.0, 0.66135688, 0.66135688, -0.66135688, -0.66135688]),
-        ],
-    )
-    def test_integration(self, weight, wires1, wires2, expected, tol):
-        """Test integration with PennyLane and gradient calculations"""
-
-        N = 5
-        dev = qml.device("default.qubit", wires=N)
-
-        @qml.qnode(dev)
-        def circuit(weight):
-            init_state = np.array([0, 0, 0, 1, 1], requires_grad=False)
-            qml.BasisState(init_state, wires=range(N))
-            DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
-            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
-
-        res = circuit(weight)
-        assert np.allclose(res, np.array(expected), atol=tol)
-
-
 class TestUCCSDUnitary:
     """Tests for the UCCSD template from the pennylane.templates.subroutine module."""
 
