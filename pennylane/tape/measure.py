@@ -22,6 +22,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
+from pennylane import Hamiltonian
 from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
@@ -229,7 +230,7 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, (Observable, Hamiltonian)):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with expval".format(op.name)
         )

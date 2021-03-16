@@ -78,6 +78,22 @@ def operation_expand(self):
     return tape
 
 
+def hamiltonian_queue(self):
+    """Monkeypatched :meth:`~.Operation.queue` method, allowing
+    Hamiltonians to queue themselves to the beta :class:`~.QueuingContext`.
+    """
+    for o in self.ops:
+        try:
+            QueuingContext.update_info(o, owner=self)
+        except ValueError:
+            o.queue()
+            qml.tape.QueuingContext.update_info(o, owner=self)
+        except NotImplementedError:
+            pass
+
+    QueuingContext.append(self, owns=tuple(self.ops))
+
+
 def tensor_init(self, *args):
     """Monkeypatched :meth:`~.Tensor.__init__` method, allowing
     Tensors to queue themselves to the beta :class:`~.QueuingContext`,
@@ -157,6 +173,9 @@ def mock_operations():
 
     # create mock observable methods
     mocks += [mock.patch.object(qml.operation.Observable, "queue", operation_queue)]
+
+    # create mock Hamiltonian methods
+    mocks += [mock.patch.object(qml.Hamiltonian, "queue", hamiltonian_queue)]
 
     # create mock tensor methods
     mocks += [mock.patch.object(qml.operation.Tensor, "__init__", tensor_init)]

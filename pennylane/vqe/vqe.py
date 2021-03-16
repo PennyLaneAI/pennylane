@@ -93,8 +93,12 @@ class Hamiltonian:
         self._coeffs = list(coeffs)
         self._ops = list(observables)
 
+        self.data = []
+
         if simplify:
             self.simplify()
+
+        self.queue()
 
     @property
     def coeffs(self):
@@ -131,6 +135,10 @@ class Hamiltonian:
             (Wires): Combined wires present in all terms, sorted.
         """
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+
+    @property
+    def name(self):
+        return "Hamiltonian"
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
@@ -187,6 +195,17 @@ class Hamiltonian:
             terms_ls.append(term_str)
 
         return "\n+ ".join(terms_ls)
+
+    def __repr__(self):
+        #Constructor-call-like representation
+        s = "coeffs=" + str(self._coeffs) + ", ops=["
+
+        for op in self._ops:
+            s += op.__repr__()
+            s += ", "
+        s = s[:-2]
+        s += "]"
+        return "Hamiltonian(" + s + ")"
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
@@ -361,6 +380,11 @@ class Hamiltonian:
             self.__iadd__(H.__mul__(-1))
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+
+    def queue(self):
+        """Queues a qml.Hamiltonian instance"""
+        qml.QueuingContext.append(self)
+        return self
 
 
 class ExpvalCost:

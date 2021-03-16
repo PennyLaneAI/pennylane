@@ -16,3 +16,4 @@ This subpackage contains tape transforms. These are functions that transform one
 other tapes are also provided.
 """
 from .metric_tensor import metric_tensor
+from .hamiltonian_expval import hamiltonian_expval
