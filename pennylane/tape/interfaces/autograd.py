@@ -157,29 +157,64 @@ class AutogradInterface(AnnotatedQueue):
         the primitve wrapped function is the autograd forward pass.
         """
         if isinstance(params, autograd.extend.Box):
-            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = True
+            self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = True
         else:
-            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = False
+            self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = False
         return self.actual_execute(params, device)
 
     @autograd.extend.primitive
     def actual_execute(self, params, device):
-
-        # unwrap all NumPy scalar arrays to Python literals
-        params = [p.item() if p.shape == tuple() else p for p in params]
-        params = autograd.builtins.tuple(params)
 
         # unwrap constant parameters
         self._all_params_unwrapped = [
             p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
         ]
 
-        if self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass:
-            self.do_not_execute_device_as_this_is_the_needless_autograd_forward_pass = False
-            # all that counts here is that we return somthing that has the right shape
-            # and that we return only after setting self._all_params_unwrapped as this
-            # is needed in the subsequent call to self.vjp() by autograd
-            return np.zeros(len(self.observables))
+        if self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass:
+            self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = False
+
+            class DelayedExecutionTensor(np.tensor):
+                """A numpy tensor that delays computation of its content until it is actually needed
+                """
+                def bind(self, *, autograd_interface=None, params=None, device=None):
+                    """Bind this numpy tensor to the current interface instance for delayed execution
+                    """
+                    self.autograd_interface = autograd_interface
+                    self.params = params
+                    self.device = device
+                    self.res = None
+
+                def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+                    """Intercept universal functions on this tensor and do the execution
+
+                    This is never called durinng a
+                    """
+                    #print("ufunc", ufunc, method, inputs, kwargs)
+                    # use the bound interface to do the execution now
+                    if self.res is None:
+                        self.res = self.autograd_interface.actual_execute(self.params, self.device)
+                    # inject the actual result into the ufunc inputs
+                    inputs_with_result_injected = tuple([self.res if isinstance(inp, self.__class__) else inp for inp in inputs])
+                    # return a normal tensor so that this is called only once
+                    array_ufunc_return = self.res.__array_ufunc__(ufunc, method, *inputs_with_result_injected, **kwargs)
+                    # replace
+                    #self.__dict__.update(self.res.__dict__)
+                    #print("array_ufunc_return", type(array_ufunc_return))
+                    return array_ufunc_return
+
+            # register the DelayedExecutionTensor with autograd
+            ArrayBox.register(DelayedExecutionTensor)
+            autograd.extend.VSpace.register(DelayedExecutionTensor, lambda x: autograd.numpy.numpy_vspaces.ArrayVSpace(x))
+
+            # Make a DelayedExecutionTensor with suitable shape,
+            # bind it, and return it as a fake result
+            fake_res = DelayedExecutionTensor(np.zeros(len(self.observables)))
+            fake_res.bind(autograd_interface=self, params=params, device=device)
+            return fake_res
+
+        # unwrap all NumPy scalar arrays to Python literals
+        params = [p.item() if p.shape == tuple() else p for p in params]
+        params = autograd.builtins.tuple(params)
 
         # evaluate the tape
         self.set_parameters(self._all_params_unwrapped, trainable_only=False)
