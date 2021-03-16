@@ -173,6 +173,7 @@ class TestDecomposition:
 
 
 class TestParameters:
+    """Test inputs and pre-processing."""
 
     def test_exception_fewer_qubits_than_features(self, ):
         """Verifies that exception raised if there are fewer

@@ -156,10 +156,6 @@ class BasicEntanglerLayers(Operation):
 
         * Check the shape of the weights tensor, making sure that the second dimension
           has length :math:`n`, where :math:`n` is the number of qubits.
-
-        Args:
-            weights (tensor_like): trainable parameters of the template
-            wires (Wires): wires that template acts on
         """
         shape = qml.math.shape(self.parameters[0])
 
