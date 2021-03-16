@@ -261,9 +261,9 @@ class QuantumTape(AnnotatedQueue):
 
     .. code-block:: python
 
-    with qml.tape.QuantumTape() as tape1:
-        with qml.tape.QuantumTape(do_queue=False) as tape2:
-            qml.RX(0.123, wires=0)
+        with qml.tape.QuantumTape() as tape1:
+            with qml.tape.QuantumTape(do_queue=False) as tape2:
+                qml.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 
