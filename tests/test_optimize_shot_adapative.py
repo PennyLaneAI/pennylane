@@ -91,4 +91,58 @@ class TestExceptions:
         new_x = opt.step(cost, 0.5)
 
         assert isinstance(new_x, float)
-        assert new_x != 0.5
+
+
+class TestQNodeIntegration:
+    """Integration tests to ensure that the optimizer works correctly with QNodes"""
+
+    def test_single_argument_step(self, mocker, monkeypatch):
+        """Test that a simple QNode with a single argument correctly performs an optimization step,
+        and that the single-shot gradients generated have the correct shape"""
+        dev = qml.device("default.qubit", wires=1, analytic=False)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy_single_shot = mocker.spy(opt, "_single_shot_qnode_gradients")
+        spy_grad = mocker.spy(opt, "compute_grad")
+
+        x_init = 0.5
+        new_x = opt.step(circuit, x_init)
+
+        assert isinstance(new_x, float)
+        assert new_x != x_init
+
+        spy_single_shot.assert_called_once()
+        spy_grad.assert_called_once()
+
+        # assert single shot gradients are computed correctly
+        single_shot_grads = opt._single_shot_qnode_gradients(circuit, [x_init], {})
+        assert len(single_shot_grads) == 1
+        assert single_shot_grads[0].shape == (10,)
+
+        # monkeypatch the optimizer to use the same single shot gradients
+        # as previously
+        monkeypatch.setattr(opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads)
+
+        # reset the shot budget
+        opt.s = [np.array(10)]
+
+        # check that the gradient and variance are computed correctly
+        grad, grad_variance = opt.compute_grad(circuit, [x_init], {})
+        assert len(grad) == 1
+        assert len(grad_variance) == 1
+        assert np.allclose(grad, np.mean(single_shot_grads))
+        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1))
+
+        # check that the gradient and variance are computed correctly
+        # with a different shot budget
+        opt.s = [np.array(5)]
+        grad, grad_variance = opt.compute_grad(circuit, [x_init], {})
+        assert len(grad) == 1
+        assert len(grad_variance) == 1
+        assert np.allclose(grad, np.mean(single_shot_grads[0][:5]))
+        assert np.allclose(grad_variance, np.var(single_shot_grads[0][:5], ddof=1))

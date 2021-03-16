@@ -271,7 +271,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self._stepsize > 2 / self.lipschitz:
             raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
 
-    def _single_shot_expval_gradients(self, expval_cost, max_shots, args, kwargs):
+    def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
         """Compute the single shot gradients of an ExpvalCost object"""
 
         qnodes = expval_cost.qnodes
@@ -287,10 +287,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         try:
             if self.wrs:
                 grads = self.weighted_random_sampling(
-                    qnodes, coeffs, max_shots, self.trainable_args, *args, **kwargs
+                    qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
                 )
             else:
-                device.shots = [(1, max_shots)]
+                device.shots = [(1, self.max_shots)]
                 grads = [
                     qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
                     for i in self.trainable_args
@@ -300,7 +300,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return grads
 
-    def _single_shot_qnode_gradients(self, qnode, max_shots, args, kwargs):
+    def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
         device = qnode.device
 
@@ -311,7 +311,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.check_learning_rate(1)
 
         try:
-            device.shots = [(1, max_shots)]
+            device.shots = [(1, self.max_shots)]
             grads = [qml.jacobian(qnode, argnum=i)(*args, **kwargs) for i in self.trainable_args]
         finally:
             device.shots = original_shots
@@ -333,12 +333,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
             :math:`\nabla f(x^{(t)})` and the variance of the gradient.
         """
-        max_s = max(np.concatenate([i.flatten() for i in self.s]))
-
         if isinstance(objective_fn, qml.ExpvalCost):
-            grads = self._single_shot_expval_gradients(objective_fn, max_s, args, kwargs)
+            grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
         elif isinstance(objective_fn, qml.tape.QNode) or hasattr(objective_fn, "device"):
-            grads = self._single_shot_qnode_gradients(objective_fn, max_s, args, kwargs)
+            grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
@@ -352,14 +350,15 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         gradient_variances = []
 
         for i, grad in enumerate(grads):
-            p_ind = list(np.ndindex(*grad.shape[1:]))
+            p_ind = np.ndindex(*grad.shape[1:])
 
             g = np.zeros_like(grad[0])
             s = np.zeros_like(grad[0])
 
             for idx in p_ind:
-                g[idx] = np.mean(grad[(slice(0, self.s[i][idx]),) + idx])
-                s[idx] = np.var(grad[(slice(0, self.s[i][idx]),) + idx], ddof=1)
+                grad_slice = grad[(slice(0, self.s[i][idx]),) + idx]
+                g[idx] = np.mean(grad_slice)
+                s[idx] = np.var(grad_slice, ddof=1)
 
             gradients.append(g)
             gradient_variances.append(s)
@@ -394,8 +393,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             ]
 
         # keep track of the number of shots run
-        sum_s = np.sum(np.concatenate([i.flatten() for i in self.s]))
-        self.shots_used += int(2 * sum_s)
+        s = np.concatenate([i.flatten() for i in self.s])
+        self.max_shots = max(s)
+        self.shots_used += int(2 * np.sum(s))
 
         # compute the gradient, as well as the variance in the gradient,
         # using the number of shots determined by the array s.
@@ -436,7 +436,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = s[argmax_gamma]
-            self.s[idx] = np.int64(np.clip(s, min(2, self.min_shots), smax))
+            self.s[idx] = np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
 
         self.k += 1
 
