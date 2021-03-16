@@ -363,21 +363,24 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     **Examples**
 
     >>> def f(x, y):
-    ...     return np.sin(y[0])*np.sin(y[1]) + np.exp(y[2]) - x**-3
+    ...     return np.sin(y[0])*np.sin(y[1]) - x**-3
 
     >>> (x, y) = (0.376, np.array([1.975, 0.33, -0.4]))
-
+    
+    # We compute the gradient with respect to 'y' as
     >>> gradient = qml.finite_diff(f, argnum=1)
     >>> print(gradient(x, y))
-    [-0.12744129189670161 0.869802723370583 0.6703228390396276]
+    [-0.12744129189670161 0.8698027233702277]
 
+    # We can also compute the derivative with respect to 'y[1]'
     >>> derivative = qml.finite_diff(f, argnum=1, idx=[1])
     >>> print(derivative(x, y)[1])
-    0.869802723370583
+    0.8698027233702277
 
+    # and the second derivative with respect to 'y[0], y[1]'
     >>> second_derivative = qml.finite_diff(f, N=2, argnum=1, idx=[0, 1])
     >>> print(second_derivative(x, y))
-    -0.37206279888124527
+    -0.372062798810191
     """
 
     if not callable(f):
