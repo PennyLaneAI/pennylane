@@ -193,8 +193,11 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): the argument with respect to which the gradient is taken
         delta (float): step size used to evaluate the finite difference
-        idx (list[int]): if argument ``args[argnum]`` is an array, ``idx`` can
-            be used to specify the indices of the arguments to differentiate
+        idx (list[int]): If argument ``args[argnum]`` is an array, ``idx`` can
+            be used to specify the indices of the arguments to differentiate.
+            For example, for function ``f(x, y, z)``, ``argnum=1``, ``idx=[3, 2]``
+            the function will differentiate ``f`` with respect to elements
+            ``3`` and ``2`` of argument ``y``.
 
     Returns:
         (float or array): the gradient of the input function with respect
@@ -238,8 +241,11 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         f (function): function with signature ``f(*args, **kwargs)``
         argnum (int): the argument with respect to which the gradient is taken
         delta (float): step size used to evaluate the finite difference
-        idx (list[int]): if argument ``args[argnum]`` is an array, `idx`` specifies
-            the indices ``i, j`` of the arguments to differentiate
+        idx (list[int]): If argument ``args[argnum]`` is an array, `idx`` specifies
+            the indices ``i, j`` of the arguments to differentiate.
+            For example, for function ``f(x, y, z)``, ``argnum=1``, ``idx=[3, 2]``,
+            the function will calculate the second-order derivative of ``f`` with
+            respect to elements ``3`` and ``2`` of argument ``y``.
 
     Returns:
         (float or array): the second-order derivative of the input function with respect
@@ -337,8 +343,11 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
         idx (list[int]): If argument ``args[argnum]`` is an array, `idx`` can be used
             to specify the indices of the argument ``argnum`` to differentiate.
             For ``N=1`` it can be given to specify the gradient components to be computed.
-            For ``N=2``, it specifies the indices ``i, j`` of the variables involved in the
-            derivative :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}`.
+            For example, for function ``f(x, y, z)``, ``argnum=1``, ``idx=[3, 2]``the returned
+            function will differentiate ``f`` with respect to elements ``3`` and ``2`` of
+            argument ``y``. For ``N=2``, it specifies the indices ``i, j`` of the variables
+            involved in the second-order derivative
+            :math:`\frac{\partial^2 f(x, y, z)}{\partial y_i \partial y_j}`.
         delta (float): step size used to evaluate the finite differences
 
     Returns:
