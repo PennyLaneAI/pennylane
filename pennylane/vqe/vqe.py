@@ -197,7 +197,7 @@ class Hamiltonian:
         return "\n+ ".join(terms_ls)
 
     def __repr__(self):
-        #Constructor-call-like representation
+        # Constructor-call-like representation
         s = "coeffs=" + str(self._coeffs) + ", ops=["
 
         for op in self._ops:

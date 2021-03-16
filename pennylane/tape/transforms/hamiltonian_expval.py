@@ -69,8 +69,10 @@ def hamiltonian_expval(tape):
     for obs in new_obs:
         new_tape = qml.tape.QuantumTape()
         with new_tape:
-            [op.queue() for op in tape.operations]
-            [qml.expval(m) for m in obs]
+            for op in tape.operations:
+                op.queue()
+            for m in obs:
+                qml.expval(m)
 
         tapes.append(new_tape)
 
