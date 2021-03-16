@@ -161,6 +161,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     Step 21: cost = -7.234, shots_used = 82014
     Step 22: cost = -7.314, shots_used = 92838
     """
+
     def __init__(self, min_shots, weighted_random_sampling=True, mu=0.99, b=1e-6, stepsize=0.07):
         self.wrs = weighted_random_sampling
 

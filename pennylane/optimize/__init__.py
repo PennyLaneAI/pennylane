@@ -40,5 +40,5 @@ __all__ = [
     "QNGOptimizer",
     "RotosolveOptimizer",
     "RotoselectOptimizer",
-    "ShotAdaptiveOptimizer"
+    "ShotAdaptiveOptimizer",
 ]
