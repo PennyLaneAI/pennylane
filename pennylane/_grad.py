@@ -332,13 +332,13 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     :math:`\frac{\partial^2 f(x)}{\partial x_i \partial x_j}` are evaluated using the
     following expressions:
 
-    For :math:`i = j`
+    For :math:`i = j`:
 
     .. math::
         \frac{\partial^2 f(x)}{\partial x_i^2} \approx
         \frac{f(x_i + \delta) - 2 f(x) + f(x_i - \delta)}{\delta^2},
 
-    and for :math:`i \neq j`
+    and for :math:`i \neq j`:
 
     .. math::
         \frac{\partial^2 f(x)}{\partial x_i \partial x_j} \approx
@@ -380,8 +380,7 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     if N == 2:
         return partial(_fd_second_order_centered, f, argnum, delta, idx=idx)
 
-    if N > 2:
-        raise ValueError(
-            "At present, finite-difference approximations are supported up to second-order."
-            " The value of 'N' can be 1 or 2; got {}".format(N)
-        )
+    raise ValueError(
+        "At present, finite-difference approximations are supported up to second-order."
+        " The value of 'N' can be 1 or 2; got {}".format(N)
+    )
