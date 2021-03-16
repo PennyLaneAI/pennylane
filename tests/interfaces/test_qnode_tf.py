@@ -562,7 +562,7 @@ def qtransform(qnode, a, framework=tf):
 @pytest.mark.parametrize(
     "dev_name,diff_method", [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")]
 )
-def test_transform(dev_name, diff_method, monkeypatch, tol):
+def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""
 
     dev = qml.device(dev_name, wires=1)
