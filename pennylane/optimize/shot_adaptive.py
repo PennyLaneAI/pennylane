@@ -178,6 +178,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.k = 0
         # Number of shots per parameter
         self.s = None
+        # maximum number of shots allowed per iteration
+        self.max_shots = None
 
         # Running average of the parameter gradients
         self.chi = None
