@@ -63,8 +63,7 @@ def MultiCircuit(parameters1, parameters2, var1, wires, var2):
             qml.RY(parameters1[i], wires=w)
 
     if var1 == True:
-        op = qml.templates.BasicEntanglerLayers([parameters2], wires=wires, do_queue=False)
-        op.decomposition([parameters2], wires=wires)
+        qml.templates.BasicEntanglerLayers([parameters2], wires=wires)
 
 UNITARIES = [
     ConstantCircuit,
@@ -81,7 +80,8 @@ GATES = [
     [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0)],
     [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0), qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=[0])],
     [qml.RX(0.5, wires=0), qml.RX(0.5, wires=1), qml.MultiRZ(0.3, wires=[0, 1])],
-    [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.RX(0.4, wires=0), qml.RX(0.4, wires=1), qml.CNOT(wires=[0, 1]), qml.RY(0.5, wires=0), qml.RY(0.4, wires=1)]
+    [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.templates.BasicEntanglerLayers([[0.5, 0.4]], wires=[0, 1]),
+     qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.templates.BasicEntanglerLayers([[0.5, 0.4]], wires=[0, 1])]
 ]
 
 ARGS = [ [], [], [], [ [ [[0.5, 0.5], 0.3] ] ], [ [[0.5, 0.4], [0.5, 0.4]], [[0.4, 0.4], []], [True, False] ] ]
