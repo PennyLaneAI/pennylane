@@ -189,7 +189,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     @staticmethod
     def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
         """Returns an array containing length ``shots`` single-shot estimates
-        of the Hamiltonian. The shots are distributed randomly over
+        of the Hamiltonian gradient. The shots are distributed randomly over
         the terms in the Hamiltonian, as per a Multinomial distribution.
 
         Args:
@@ -269,7 +269,54 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.lipschitz = np.sum(np.abs(coeffs))
 
         if self._stepsize > 2 / self.lipschitz:
-            raise ValueError("The learning rate must be less than ", 2 / self.lipschitz)
+            raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
+
+    def _single_shot_expval_gradients(self, expval_cost, max_shots, args, kwargs):
+        """Compute the single shot gradients of an ExpvalCost object"""
+
+        qnodes = expval_cost.qnodes
+        coeffs = expval_cost.hamiltonian.coeffs
+        device = qnodes[0].device
+
+        self.check_device(device)
+        original_shots = device.shots
+
+        if self.lipschitz is None:
+            self.check_learning_rate(coeffs)
+
+        try:
+            if self.wrs:
+                grads = self.weighted_random_sampling(
+                    qnodes, coeffs, max_shots, self.trainable_args, *args, **kwargs
+                )
+            else:
+                device.shots = [(1, max_shots)]
+                grads = [
+                    qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
+                    for i in self.trainable_args
+                ]
+        finally:
+            device.shots = original_shots
+
+        return grads
+
+    def _single_shot_qnode_gradients(self, qnode, max_shots, args, kwargs):
+        """Compute the single shot gradients of a QNode."""
+        device = qnode.device
+
+        self.check_device(qnode.device)
+        original_shots = device.shots
+
+        if self.lipschitz is None:
+            self.check_learning_rate(1)
+
+        try:
+            device.shots = [(1, max_shots)]
+            grads = [qml.jacobian(qnode, argnum=i)(*args, **kwargs) for i in self.trainable_args]
+        finally:
+            device.shots = original_shots
+
+        return grads
 
     def compute_grad(
         self, objective_fn, args, kwargs
@@ -289,44 +336,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         max_s = max(np.concatenate([i.flatten() for i in self.s]))
 
         if isinstance(objective_fn, qml.ExpvalCost):
-            self.check_device(objective_fn.qnodes[0].device)
-
-            qnodes = objective_fn.qnodes
-            coeffs = objective_fn.hamiltonian.coeffs
-            original_shots = qnodes[0].device.shots
-
-            if self.lipschitz is None:
-                self.check_learning_rate(coeffs)
-
-            try:
-                if self.wrs:
-                    grads = self.weighted_random_sampling(
-                        qnodes, coeffs, max_s, self.trainable_args, *args, **kwargs
-                    )
-                else:
-                    qnodes[0].device.shots = [(1, max_s)]
-                    grads = [
-                        qml.jacobian(objective_fn, argnum=i)(*args, **kwargs)
-                        for i in self.trainable_args
-                    ]
-            finally:
-                qnodes[0].device.shots = original_shots
-
-        elif isinstance(objective_fn, qml.tape.QNode):
-            self.check_device(objective_fn.device)
-            original_shots = objective_fn.device.shots
-
-            if self.lipschitz is None:
-                self.check_learning_rate(1)
-
-            try:
-                objective_fn.device.shots = [(1, max_s)]
-                grads = [
-                    qml.jacobian(objective_fn, argnum=i)(*args, **kwargs)
-                    for i in self.trainable_args
-                ]
-            finally:
-                objective_fn.device.shots = original_shots
+            grads = self._single_shot_expval_gradients(objective_fn, max_s, args, kwargs)
+        elif isinstance(objective_fn, qml.tape.QNode) or hasattr(objective_fn, "device"):
+            grads = self._single_shot_qnode_gradients(objective_fn, max_s, args, kwargs)
         else:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
