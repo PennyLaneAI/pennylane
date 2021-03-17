@@ -262,7 +262,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             ValueError: if the device is analytic
         """
         if dev.analytic:
-            raise ValueError("The Rosalin optimizer can only be used with non-analytic devices")
+            raise ValueError(
+                "The Rosalin optimizer can only be used with non-analytic devices "
+                "that estimate expectation values with a finite number of shots."
+            )
 
     def check_learning_rate(self, coeffs):
         r"""Verifies that the learning rate is less than 2 over the Lipschitz constant,
