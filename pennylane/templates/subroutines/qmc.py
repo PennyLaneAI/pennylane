@@ -206,14 +206,14 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
     r"""Performs the `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__
     algorithm.
 
-    Given a probability distribution :math:`p_{i}` of dimension :math:`M = 2^{m}` for some
-    :math:`m \geq 1` and a random variable :math:`f: X \rightarrow [0, 1]` defined on the set of
+    Given a probability distribution :math:`p(i)` of dimension :math:`M = 2^{m}` for some
+    :math:`m \geq 1` and a function :math:`f: X \rightarrow [0, 1]` defined on the set of
     integers :math:`X = \{0, 1, \ldots, M - 1\}`, this function implements the algorithm that
     allows the following expectation value to be estimated:
 
     .. math::
 
-        \mu = \sum_{i \in X} p_{i} f(i).
+        \mu = \sum_{i \in X} p(i) f(i).
 
     .. figure:: ../../_static/templates/subroutines/qmc.svg
         :align: center
@@ -222,9 +222,9 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     The algorithm proceeds as follows:
 
-    #. The probability distribution is encoded using a unitary :math:`\mathcal{A}` applied to the
+    #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}` applied to the
        first :math:`m` qubits specified by ``target_wires``.
-    #. The random variable is encoded onto the last qubit of ``target_wires`` using a unitary
+    #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
        :math:`\mathcal{R}`.
     #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
        :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
@@ -257,8 +257,8 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     Args:
         probs (array): input probability distribution as a flat array
-        func (callable): input random variable defined on the set of integers
-            :math:`X = [0, 1, \ldots, M - 1]` with output value inside :math:`[0, 1]`
+        func (callable): input function :math:`f` defined on the set of integers
+            :math:`X = \{0, 1, \ldots, M - 1\}` such that :math:`f(i)\in [0, 1]` for :math:`i \in X`
         target_wires (Union[Wires, Sequence[int], or int]): the target wires
         estimation_wires (Union[Wires, Sequence[int], or int]): the estimation wires
 
@@ -320,7 +320,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
             phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
 
-        The estimated value can be read-out as
+        The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
         0.4327096457464369
