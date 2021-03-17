@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -415,3 +416,107 @@ class TestWeightedRandomSampling:
 
         new_weights = opt.step(expval_cost, weights)
         spy.assert_not_called()
+
+    def test_zero_shots(self, mocker, monkeypatch):
+        """Test that, if the shot budget for a single term is 0,
+        that the jacobian computation is skipped"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy = mocker.spy(qml, "jacobian")
+        mocker.patch("scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]]))
+        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+
+        assert len(spy.call_args_list) == 2
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_single_shots(self, mocker, monkeypatch):
+        """Test that, if the shot budget for a single term is 1,
+        that the number of dimensions for the returned Jacobian is expanded"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        spy = mocker.spy(qml, "jacobian")
+        spy_dims = mocker.spy(np, "expand_dims")
+        mocker.patch("scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]]))
+        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+
+        spy_dims.assert_called_once()
+        assert len(spy.call_args_list) == 3
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+
+class TestOptimization:
+    """Integration test to ensure that the optimizer
+    minimizes simple examples"""
+
+    def test_multi_qubit_rotation(self):
+        """Test that multiple qubit rotation can be optimized"""
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.RZ(x[2], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        params = np.array([0.1, 0.3, 0.4], requires_grad=True)
+        initial_loss = circuit(params)
+
+        min_shots = 10
+        loss = initial_loss
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        for i in range(100):
+            params = opt.step(circuit, params)
+            loss = circuit(params)
+
+        assert loss < initial_loss
+        assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
+        assert opt.shots_used > min_shots
+
+    def test_vqe_optimization(self):
+        """Test that a simple VQE circuit can be optimized"""
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        coeffs = [0.1, 0.2]
+        obs = [qml.PauliZ(0), qml.PauliX(0)]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        def ansatz(x, **kwargs):
+            qml.Rot(*x[0], wires=0)
+            qml.Rot(*x[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Rot(*x[2], wires=0)
+            qml.Rot(*x[3], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        cost = qml.ExpvalCost(ansatz, H, dev)
+        params = np.random.random((4, 3), requires_grad=True)
+        initial_loss = cost(params)
+
+        min_shots = 10
+        loss = initial_loss
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        for i in range(100):
+            params = opt.step(cost, params)
+            loss = cost(params)
+
+        assert loss < initial_loss
+        assert np.allclose(loss, -1 / (2 * np.sqrt(5)), atol=0.1, rtol=0.2)
+        assert opt.shots_used > min_shots

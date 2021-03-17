@@ -131,13 +131,15 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
 
     Once constructed, the cost function can be passed directly to the
-    optimizer's ``step`` function:
+    optimizer's ``step`` function. The attributes ``opt.shots_used`` and
+    ``opt.total_shots_used`` can be used to track the number of shots per
+    iteration, and acorss the life of the optimizer, respectively.
 
     >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
-    ...    print(f"Step {i}: cost = {cost(params)}, shots_used = {opt.shots_used}")
+    ...    print(f"Step {i}: cost = {cost(params)}, shots_used = {opt.total_shots_used}")
     Step 0: cost = -5.686, shots_used = 240
     Step 1: cost = -2.983999999999999, shots_used = 336
     Step 2: cost = -4.974, shots_used = 624
@@ -173,13 +175,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.b = b  # regularization bias
         self.lipschitz = None
 
-        # keep track of the total number of shots used
         self.shots_used = 0
+        """int: number of shots used on the current iteration"""
+
+        self.total_shots_used = 0
+        """int: total number of shots used across all iterations"""
+
         # total number of iterations
         self.k = 0
         # Number of shots per parameter
         self.s = None
-        # maximum number of shots allowed per iteration
+        # maximum number of shots required to evaluate across all parameters
         self.max_shots = None
 
         # Running average of the parameter gradients
@@ -398,7 +404,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         # keep track of the number of shots run
         s = np.concatenate([i.flatten() for i in self.s])
         self.max_shots = max(s)
-        self.shots_used += int(2 * np.sum(s))
+        self.shots_used = int(2 * np.sum(s))
+        self.total_shots_used += self.shots_used
 
         # compute the gradient, as well as the variance in the gradient,
         # using the number of shots determined by the array s.
@@ -438,7 +445,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             ) / s
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
-            smax = s[argmax_gamma]
+            smax = max(s[argmax_gamma], 2)
             self.s[idx] = np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
 
         self.k += 1
