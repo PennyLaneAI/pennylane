@@ -1013,6 +1013,73 @@ class TestDoubleExcitation:
 
         assert np.allclose(res, exp)
 
+    @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
+                                            qml.DoubleExcitationMinus])
+    def test_autograd(self, excitation):
+        """Tests that gradients and operations are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("autograd")
+
+        dev = qml.device('default.qubit.autograd', wires=4)
+        state = np.array([0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0,
+                          0])
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
+
+    @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
+                                            qml.DoubleExcitationMinus])
+    def test_tf(self, excitation):
+        """Tests that gradients and operations are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("tensorflow")
+
+        dev = qml.device('default.qubit.tf', wires=4)
+        state = np.array([0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0,
+                          0])
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
+    @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
+                                            qml.DoubleExcitationMinus])
+    def test_jax(self, excitation):
+        """Tests that gradients and operations are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("jax")
+
+        dev = qml.device('default.qubit.jax', wires=4)
+        state = np.array([0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0,
+                          0])
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
 
 class TestPauliRot:
     """Test the PauliRot operation."""
