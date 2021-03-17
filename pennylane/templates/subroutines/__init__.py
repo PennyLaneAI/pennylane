@@ -24,3 +24,4 @@ from .uccsd import UCCSD
 from .approx_time_evolution import ApproxTimeEvolution
 from .permute import Permute
 from .qpe import QuantumPhaseEstimation
+from .qmc import QuantumMonteCarlo
