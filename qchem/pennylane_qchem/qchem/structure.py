@@ -616,7 +616,9 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
-        qubit_indexed_wires = _process_wires(wires,)
+        qubit_indexed_wires = _process_wires(
+            wires,
+        )
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
@@ -1121,7 +1123,7 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
 
             import pennylane as qml
             from pennylane import numpy as np
-            
+
             # build parametrized hamiltonian H(x) of the molecule
             def H(x):
                 return qml.qchem.molecular_hamiltonian(["H", "H"], x)[0]
