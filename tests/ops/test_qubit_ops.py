@@ -933,8 +933,9 @@ class TestSingleExcitation:
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
 
-
-    def test_autograd(self):
+    @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
+                                            qml.SingleExcitationMinus])
+    def test_autograd(self, excitation):
         """Tests that gradients and operations are computed correctly using the
         autograd interface"""
 
@@ -946,14 +947,17 @@ class TestSingleExcitation:
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
-            qml.SingleExcitation(phi, wires=[0, 1])
+            excitation(phi, wires=[0, 1])
 
             return qml.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+        # Add qml.grad()
 
-    def test_tf(self):
+    @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
+                                            qml.SingleExcitationMinus])
+    def test_tf(self, excitation):
         """Tests that gradients and operations are computed correctly using the
         tensorflow interface"""
 
@@ -971,8 +975,9 @@ class TestSingleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-
-    def test_jax(self):
+    @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
+                                            qml.SingleExcitationMinus])
+    def test_jax(self, excitation):
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
