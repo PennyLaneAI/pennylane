@@ -26,6 +26,7 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
+    "force_constants",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",

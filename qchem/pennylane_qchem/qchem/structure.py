@@ -1059,6 +1059,131 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
+def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
+    r"""Computes the second-order derivative
+    :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the total energy
+    evaluated at the nuclear coordinates :math:`x`.
+
+    The expression to evaluate the second derivative of the energy is given by
+    (`arXiv:1905.04054 <https://arxiv.org/abs/1905.04054>`_):
+
+    .. math::
+
+        \frac{\partial^2 E(\theta^*(x))}{\partial x_i \partial x_j} = \sum_a
+        \frac{\partial \theta^*_a(x)}{\partial x_i} \frac{\partial}{\partial \theta_a}
+        \frac{\partial E({\theta}^*(x), x)}{\partial x_j} + \langle \Psi(\theta^*(x)) \vert
+        \frac{\partial^2 \hat{H}(x)}{\partial x_i \partial x_j} \vert \Psi(\theta^*(x)) \rangle.
+
+    In the equation above, the energy derivatives with respect to the nuclear coordinates :math:`x`
+    are obtained from the expectation value of Hamiltonian derivative
+
+    .. math::
+
+        \frac{\partial E({\theta}^*(x), x)}{\partial x_j} = \langle \Psi(\theta^*(x))
+        \vert \frac{\partial \hat{H}(x)}{\partial x_j} \vert \Psi(\theta^*(x)) \rangle.
+
+    The derivative of the optimized circuit parameters :math:`\theta^*(x)` with respect
+    to :math:`x` are obtained by solving the system of linear equations,
+
+    .. math::
+
+        \sum_b \frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}
+        \frac{\partial \theta^*_b(x)}{\partial x_i} = -\frac{\partial}{\partial \theta_a}
+        \frac{\partial E(\theta^*(x), x)}{\partial x_i},
+
+    where :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}` is
+    the Hessian of the energy with respect to the circuit parameters.
+
+    Args:
+        H (callable): function with signature ``H(x)`` that builds the molecular
+            Hamiltonian for a given set of nuclear coordinates ``x``
+        x (array[float]): 1D array with the atomic positions in Cartesian coordinates.
+            The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
+        idx (list[int]): specifies the indices ``i, j`` of the coordinates to differentiate
+        ansatz (callable): the ansatz for the circuit before the final measurement step
+        params (array[float]): optimized circuit parameters :math:`\theta^*(x)`
+        dev (Device): device where the calculations of the expectation values should be executed
+        hessian (array[float, float]): matrix containing the Hessian of the energy with
+            respect to the circuit parameters
+            :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}
+        delta (float): Step size in Bohr radii used to displace the nuclear coordinates
+
+    Returns:
+        float: the second derivative of the energy
+        :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}`
+
+    .. UsageDetails::
+
+        An example of how to use this function is shown below:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import numpy as np
+            
+            # build parametrized hamiltonian H(x) of the molecule
+            def H(x):
+                return qml.qchem.molecular_hamiltonian(["H", "H"], x)[0]
+
+            # set of nuclear coordinates in atomic units
+            x = np.array([ 0., 0., -0.332568, 0., 0., -1.067432])
+
+            # define device
+            dev = qml.device('default.qubit', wires=4)
+
+            # define the quantum circuit
+            def circuit(params, wires):
+                qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+                qml.Rot(*params, wires=2)
+                qml.CNOT(wires=[2, 3])
+                qml.CNOT(wires=[2, 0])
+                qml.CNOT(wires=[3, 1])
+
+            # initialize circuit parameters
+            params = np.random.normal(0, np.pi, 3)
+
+            # define function to compute E(x)
+            energy = qml.ExpvalCost(circuit, H(x), dev)
+
+            # compute the Hessian of the quantum circuit
+            hessian = qml.jacobian(qml.grad(energy, argnum=0))(params)
+
+            # compute the second-order derivative of E(x)
+            deriv2 = qml.qchem.force_constants(H, x, [0, 2], circuit, params, dev, hessian)
+    """
+
+    if not callable(H):
+        error_message = (
+            "{} object is not callable. \n"
+            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
+                type(H)
+            )
+        )
+        raise TypeError(error_message)
+
+    i, j = idx
+
+    # gradient of 'dE / dx_j'
+    dH_j = qml.finite_diff(H, idx=[j], delta=delta)(x)[j]
+    dE_j = qml.ExpvalCost(ansatz, dH_j, dev)
+    grad_j = np.array(qml.grad(dE_j)(params))
+
+    # gradient of 'dE / dx_i'
+    dH_i = qml.finite_diff(H, idx=[i], delta=delta)(x)[i]
+    dE_i = qml.ExpvalCost(ansatz, dH_i, dev)
+    grad_i = np.array(qml.grad(dE_i)(params))
+
+    # compute 'dtheta / dx_i'
+    dtheta_i = np.linalg.solve(hessian, -grad_i)
+
+    # compute '<d^2H / dx_i dx_j>'
+    d2H_ij = qml.finite_diff(H, N=2, idx=[i, j], delta=delta)(x)
+    expval_d2H = qml.ExpvalCost(ansatz, d2H_ij, dev)(params)
+
+    return np.dot(dtheta_i, grad_j) + expval_d2H
+
+
 __all__ = [
     "read_structure",
     "meanfield",
@@ -1069,6 +1194,7 @@ __all__ = [
     "hf_state",
     "excitations",
     "excitations_to_wires",
+    "force_constants",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
