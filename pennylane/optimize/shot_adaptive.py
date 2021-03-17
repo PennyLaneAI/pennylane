@@ -74,7 +74,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
        the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
        :math:`\theta_i = \theta_i - \eta g_i`.
 
-    4. The improvement in the cost function per shot, for a specific parameter value,
+    4. The improvement in the expected gain per shot, for a specific parameter value,
        is then calculated via
 
        .. math::
