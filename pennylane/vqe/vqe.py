@@ -94,6 +94,7 @@ class Hamiltonian:
         self._ops = list(observables)
 
         self.data = []
+        self.return_type = None
 
         if simplify:
             self.simplify()

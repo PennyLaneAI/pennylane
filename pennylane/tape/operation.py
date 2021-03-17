@@ -93,7 +93,6 @@ def hamiltonian_queue(self):
 
     QueuingContext.append(self, owns=tuple(self.ops))
 
-
 def tensor_init(self, *args):
     """Monkeypatched :meth:`~.Tensor.__init__` method, allowing
     Tensors to queue themselves to the beta :class:`~.QueuingContext`,

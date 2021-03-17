@@ -56,6 +56,7 @@ def hamiltonian_expval(tape):
     """
 
     hamiltonian = tape.measurements[0].obs
+    hamiltonian.simplify()
     combined_obs = []
 
     c = hamiltonian.coeffs
