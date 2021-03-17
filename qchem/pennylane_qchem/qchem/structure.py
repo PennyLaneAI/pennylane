@@ -1156,13 +1156,30 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
     """
 
     if not callable(H):
-        error_message = (
-            "{} object is not callable. \n"
-            "'H' should be a callable function to build the electronic Hamiltonian 'H(x)'".format(
-                type(H)
-            )
+        error_message = "{} object is not callable. 'H' should be a callable function".format(
+            type(H)
         )
         raise TypeError(error_message)
+
+    if delta <= 0.0:
+        raise ValueError(
+            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
+        )
+
+    if len(idx) > 2:
+        raise ValueError(
+            "The number of indices given in 'idx' can not be greater than two; got {} indices in idx = {}".format(
+                len(idx), idx
+            )
+        )
+
+    exp_shape = (params.size, params.size)
+    if hessian.shape != exp_shape:
+        raise ValueError(
+            "The argument 'hessian' must be an array of shape {}; got an array with shape {}".format(
+                exp_shape, hessian.shape
+            )
+        )
 
     i, j = idx
 
