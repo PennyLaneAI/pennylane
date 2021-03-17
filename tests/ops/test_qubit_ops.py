@@ -1016,7 +1016,7 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
                                             qml.DoubleExcitationMinus])
     def test_autograd(self, excitation):
-        """Tests that gradients and operations are computed correctly using the
+        """Tests that operations are computed correctly using the
         autograd interface"""
 
         pytest.importorskip("autograd")
@@ -1039,8 +1039,8 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
                                             qml.DoubleExcitationMinus])
     def test_tf(self, excitation):
-        """Tests that gradients and operations are computed correctly using the
-        autograd interface"""
+        """Tests that operations are computed correctly using the
+        tensorflow interface"""
 
         pytest.importorskip("tensorflow")
 
@@ -1061,8 +1061,8 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize("excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus,
                                             qml.DoubleExcitationMinus])
     def test_jax(self, excitation):
-        """Tests that gradients and operations are computed correctly using the
-        autograd interface"""
+        """Tests that operations are computed correctly using the
+        jax interface"""
 
         pytest.importorskip("jax")
 
