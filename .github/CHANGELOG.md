@@ -2,6 +2,54 @@
 
 <h3>New features since last release</h3>
 
+* Added the `QuantumMonteCarlo` template for performing quantum Monte Carlo estimation of an
+  expectation value on simulator.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  The following example shows how the expectation value of sine squared over a standard normal
+  distribution can be approximated:
+  
+  ```python
+  from scipy.stats import norm
+
+  m = 5
+  M = 2 ** m
+  n = 10
+  N = 2 ** n
+  target_wires = range(m + 1)
+  estimation_wires = range(m + 1, n + m + 1)
+
+  xmax = np.pi  # bound to region [-pi, pi]
+  xs = np.linspace(-xmax, xmax, M)
+
+  probs = np.array([norm().pdf(x) for x in xs])
+  probs /= np.sum(probs)
+
+  func = lambda i: np.sin(xs[i]) ** 2
+
+  dev = qml.device("default.qubit", wires=(n + m + 1))
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.templates.QuantumMonteCarlo(
+          probs,
+          func,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+  expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+  ```
+  
+  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
+  
+  ```pycon
+  >>> expectation_estimated
+  0.4327096457464369
+  ```
+
 * A new adjoint transform has been added. 
   [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
   [(#1135)](https://github.com/PennyLaneAI/pennylane/pull/1135)
