@@ -131,9 +131,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
 
     Once constructed, the cost function can be passed directly to the
-    optimizer's ``step`` function. The attributes ``opt.shots_used`` and
+    optimizer's ``step`` method. The attributes ``opt.shots_used`` and
     ``opt.total_shots_used`` can be used to track the number of shots per
-    iteration, and acorss the life of the optimizer, respectively.
+    iteration, and across the life of the optimizer, respectively.
 
     >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
