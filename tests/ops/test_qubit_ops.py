@@ -936,7 +936,7 @@ class TestSingleExcitation:
     @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
                                             qml.SingleExcitationMinus])
     def test_autograd(self, excitation):
-        """Tests that gradients and operations are computed correctly using the
+        """Tests that operations are computed correctly using the
         autograd interface"""
 
         pytest.importorskip("autograd")
@@ -953,47 +953,65 @@ class TestSingleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-        # Add qml.grad()
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
+                                                     (qml.SingleExcitationPlus, 0.2),
+                                                     (qml.SingleExcitationMinus, np.pi/4)])
+    def test_autograd_grad(self, excitation, phi):
+        """Tests that gradients are computed correctly using the
+        autograd interface"""
 
-    @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
-                                            qml.SingleExcitationMinus])
-    def test_tf(self, excitation):
+        pytest.importorskip("autograd")
+
+        dev = qml.device('default.qubit.autograd', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            excitation(phi, wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
+                                                     (qml.SingleExcitationPlus, 0.2),
+                                                     (qml.SingleExcitationMinus, np.pi / 4)])
+    def test_tf(self, excitation, phi):
         """Tests that gradients and operations are computed correctly using the
         tensorflow interface"""
 
         pytest.importorskip("tensorflow")
 
         dev = qml.device('default.qubit.tf', wires=2)
-        state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
 
-            return qml.state()
+            return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(state, circuit(np.pi / 2))
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
 
-    @pytest.mark.parametrize("excitation", [qml.SingleExcitation, qml.SingleExcitationPlus,
-                                            qml.SingleExcitationMinus])
-    def test_jax(self, excitation):
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
+                                                     (qml.SingleExcitationPlus, 0.2),
+                                                     (qml.SingleExcitationMinus, np.pi / 4)])
+    def test_jax(self, excitation, phi):
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
         pytest.importorskip("jax")
 
         dev = qml.device('default.qubit.jax', wires=2)
-        state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
 
-            return qml.state()
+            return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(state, circuit(np.pi / 2))
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
