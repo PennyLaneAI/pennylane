@@ -1080,6 +1080,69 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
+                                                     (qml.DoubleExcitationPlus, 0.2),
+                                                     (qml.DoubleExcitationMinus, np.pi / 4)])
+    def test_autograd_grad(self, excitation, phi):
+        """Tests that gradients are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("autograd")
+
+        dev = qml.device('default.qubit.autograd', wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
+                                                     (qml.DoubleExcitationPlus, 0.2),
+                                                     (qml.DoubleExcitationMinus, np.pi / 4)])
+    def test_tf_grad(self, excitation, phi):
+        """Tests that gradients are computed correctly using the
+        tensorflow interface"""
+
+        pytest.importorskip("tensorflow")
+
+        dev = qml.device('default.qubit.tf', wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+
+    @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
+                                                     (qml.DoubleExcitationPlus, 0.2),
+                                                     (qml.DoubleExcitationMinus, np.pi / 4)])
+    def test_jax_grad(self, excitation, phi):
+        """Tests that gradients are computed correctly using the
+        jax interface"""
+
+        pytest.importorskip("jax")
+
+        dev = qml.device('default.qubit.jax', wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            excitation(phi, wires=[0, 1, 2, 3])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+
 
 class TestPauliRot:
     """Test the PauliRot operation."""
