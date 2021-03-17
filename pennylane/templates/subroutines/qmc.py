@@ -60,18 +60,16 @@ def probs_to_unitary(probs):
             "must be input"
         )
 
+    # Using the approach discussed here:
+    # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
+    psi = np.sqrt(probs)
+    overlap = psi[0]
+    denominator = np.sqrt(2 + 2 * overlap)
+    psi[0] += 1
+    psi /= denominator
+
     dim = len(probs)
-    unitary = np.eye(dim)
-
-    unitary[:, 0] = np.sqrt(probs)
-    unitary = np.linalg.qr(unitary)[0]
-
-    # The QR decomposition introduces a phase of -1. We remove this so that we are preparing
-    # sqrt(p_{i}) rather than -sqrt(p_{i}). Even though both options are valid, it may be surprising
-    # to prepare the negative version.
-    unitary *= -1
-
-    return unitary
+    return 2 * np.outer(psi, psi) - np.eye(dim)
 
 
 def func_to_unitary(func, M):
