@@ -24,15 +24,15 @@ from pennylane.wires import Wires
 def probs_to_unitary(probs):
     r"""Calculates the unitary matrix corresponding to an input probability distribution.
 
-    For a given distribution :math:`p_{i}`, this function returns the unitary :math:`\mathcal{A}`
+    For a given distribution :math:`p(i)`, this function returns the unitary :math:`\mathcal{A}`
     that transforms the :math:`|0\rangle` state as
 
     .. math::
 
-        \mathcal{A} |0\rangle = \sum_{i} \sqrt{p_{i}} |i\rangle,
+        \mathcal{A} |0\rangle = \sum_{i} \sqrt{p(i)} |i\rangle,
 
     so that measuring the resulting state in the computational basis will give the state
-    :math:`|i\rangle` with probability :math:`p_{i}`. Note that the returned unitary matrix is
+    :math:`|i\rangle` with probability :math:`p(i)`. Note that the returned unitary matrix is
     real and hence an orthogonal matrix.
 
     Args:
@@ -173,7 +173,8 @@ def _make_Z(dim):
 
 def make_Q(A, R):
     r"""Calculates the :math:`\mathcal{Q}` matrix that encodes the expectation value according to
-    the probability unitary :math:`\mathcal{A}` and the random variable unitary :math:`\mathcal{R}`.
+    the probability unitary :math:`\mathcal{A}` and the function-encoding unitary
+    :math:`\mathcal{R}`.
 
     Following `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper,
     the expectation value is encoded as the phase of an eigenvalue of :math:`\mathcal{Q}`. This
@@ -274,7 +275,7 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     .. UsageDetails::
 
-        Consider a standard normal distribution :math:`p(x)` and a random variable
+        Consider a standard normal distribution :math:`p(x)` and a function
         :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is
         :math:`\int_{-\infty}^{\infty}f(x)p(x) \approx 0.432332`. This number can be approximated by
         discretizing the problem and using the quantum Monte Carlo algorithm.
