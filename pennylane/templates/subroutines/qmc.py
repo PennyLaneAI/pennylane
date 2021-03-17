@@ -223,14 +223,14 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
 
     The algorithm proceeds as follows:
 
-    #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}` applied to the
-       first :math:`m` qubits specified by ``target_wires``.
+    #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
+       applied to the first :math:`m` qubits specified by ``target_wires``.
     #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
        :math:`\mathcal{R}`.
     #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
        :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
-       value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1 and 2 prepares
-       an equal superposition over the two states corresponding to the eigenvalues
+       value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1
+       and 2 prepares an equal superposition over the two states corresponding to the eigenvalues
        :math:`e^{\pm 2 \pi i \theta}`.
     #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
        estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
