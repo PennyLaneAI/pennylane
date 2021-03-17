@@ -15,19 +15,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
-from .utils import to_dict
+from .utils import to_dict, format_nvec
 from itertools import product
 
-
-def _format_nvec(nvec):
-    """Nice strings representing tuples of integers."""
-
-    if isinstance(nvec, int):
-        return str(nvec)
-
-    nvec_str = ["{}".format(n) if n < 0 else " {}".format(n) for n in nvec]
-
-    return " ".join(nvec_str)
 
 
 def violin_plot(list_of_coeffs, figsize=None):
@@ -35,7 +25,7 @@ def violin_plot(list_of_coeffs, figsize=None):
 
     # extract the x ticks
     nvecs = list(to_dict(list_of_coeffs[0]).keys())
-    nvecs_formatted = [_format_nvec(nvec) for nvec in nvecs]
+    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # make data
     data_real = np.array([[coeffs[nvec].real for nvec in nvecs] for coeffs in list_of_coeffs])
@@ -90,7 +80,7 @@ def bar_plot(coeffs, show_freq=True, figsize=None):
 
     # extract the x ticks
     nvecs = list(to_dict(coeffs).keys())
-    nvecs_formatted = [_format_nvec(nvec) for nvec in nvecs]
+    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # make data
     coeffs_real = np.array([coeffs[nvec].real for nvec in nvecs])
@@ -460,10 +450,10 @@ def radial_box_plots(
         # Rotate so that the 0 frequency is at the top
         a.set_theta_zero_location("N")
 
-    frequency_labels = [" " + _format_nvec(f) + " " for f in frequencies]
+    frequency_labels = [" " + format_nvec(f) + " " for f in frequencies]
 
     full_labels = frequencies[split_point:] + frequencies[split_point + 1 :][::-1]
-    full_labels = [_format_nvec(x) for x in full_labels]
+    full_labels = [format_nvec(x) for x in full_labels]
 
     # Set and rotate the tickmarks
     if merge_plots:

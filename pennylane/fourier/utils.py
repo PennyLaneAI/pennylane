@@ -14,9 +14,18 @@
 import numpy as np
 from itertools import product
 
+def format_nvec(nvec):
+    """Nice strings representing tuples of integers."""
+
+    if isinstance(nvec, int):
+        return str(nvec)
+
+    nvec_str = ["{}".format(n) if n < 0 else " {}".format(n) for n in nvec]
+
+    return " ".join(nvec_str)
+
 
 def to_dict(coeffs):
-
     # infer hyperparameters
     degree = coeffs.shape[0] // 2 - 1
     n_inputs = len(coeffs.shape)
