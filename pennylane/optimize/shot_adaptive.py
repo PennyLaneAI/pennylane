@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from .gradient_descent import GradientDescentOptimizer
 
 
 class ShotAdaptiveOptimizer(GradientDescentOptimizer):
-    r"""Optimizer with adaptive shot rate, via calculation of the variances of the parameter-shift
+    r"""Optimizer where the shot rate is adaptively calculated using the variances of the parameter-shift
     gradient.
 
     By keeping a running average of the parameter-shift gradient and the *variance*
@@ -32,7 +32,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     In addition, if computing the expectation value of a Hamiltonian using
     :class:`~.ExpvalCost`, weighted random sampling can be used to further
-    distribute the shot budget across the terms in the Hamiltonian.
+    distribute the shot budget across the local terms from which the Hamiltonian
+    is constructed.
 
     .. note::
 
@@ -43,7 +44,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         min_shots (int): the minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.
-        mu (float): The running average constant :math:`\mu\in[0, 1]`. Used to control how quickly the
+        mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how quickly the
             number of shots recommended for each gradient component changes.
         b (float): Regularization bias. The bias should be kept small, but non-zero.
         weighted_random_sampling (bool): Whether to use the weighted random sampling algorithm
@@ -192,7 +193,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
         """Returns an array containing length ``shots`` single-shot estimates
         of the Hamiltonian gradient. The shots are distributed randomly over
-        the terms in the Hamiltonian, as per a Multinomial distribution.
+        the terms in the Hamiltonian, as per a multinomial distribution.
 
         Args:
             qnodes (Sequence[.tape.QNode]): Sequence of QNodes, each one when evaluated
