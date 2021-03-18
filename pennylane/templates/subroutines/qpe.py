@@ -15,7 +15,7 @@
 Contains the QuantumPhaseEstimation template.
 """
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -114,7 +114,9 @@ class QuantumPhaseEstimation(Operation):
         wires = self.target_wires + self.estimation_wires
 
         if len(Wires.shared_wires([self.target_wires, self.estimation_wires])) != 0:
-            raise qml.QuantumFunctionError("The target wires and estimation wires must be different")
+            raise qml.QuantumFunctionError(
+                "The target wires and estimation wires must be different"
+            )
 
         super().__init__(unitary, wires=wires, do_queue=do_queue)
 
@@ -129,7 +131,9 @@ class QuantumPhaseEstimation(Operation):
         with qml.tape.QuantumTape() as tape:
             for wire in self.estimation_wires:
                 qml.Hadamard(wire)
-                qml.ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=self.target_wires)
+                qml.ControlledQubitUnitary(
+                    unitary_powers.pop(), control_wires=wire, wires=self.target_wires
+                )
 
             qml.QFT(wires=self.estimation_wires).inv()
 
