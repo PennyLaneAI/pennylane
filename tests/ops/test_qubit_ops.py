@@ -882,12 +882,9 @@ class TestSingleExcitation:
         """Tests that the SingleExcitation operation calculates the correct decomposition"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
         decomp = op.decomposition(phi, wires=[0, 1])
-
         mats = [m.matrix for m in decomp]
-
         decomposed_matrix = mats[0] @ mats[1]
         exp = SingleExcitation(phi)
-
         assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi/4])
@@ -940,7 +937,6 @@ class TestSingleExcitation:
         autograd interface"""
 
         pytest.importorskip("autograd")
-
         dev = qml.device('default.qubit.autograd', wires=2)
         state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
@@ -948,9 +944,7 @@ class TestSingleExcitation:
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
-
             return qml.state()
-
         assert np.allclose(state, circuit(np.pi / 2))
 
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
@@ -961,17 +955,14 @@ class TestSingleExcitation:
         autograd interface"""
 
         pytest.importorskip("autograd")
-
         dev = qml.device('default.qubit.autograd', wires=2)
 
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
-
             return qml.expval(qml.PauliZ(0))
-
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
@@ -982,7 +973,6 @@ class TestSingleExcitation:
         tensorflow interface"""
 
         tf = pytest.importorskip("tensorflow")
-
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
@@ -992,7 +982,6 @@ class TestSingleExcitation:
             return qml.expval(qml.PauliZ(0))
             
         phi_t = tf.Variable(phi, dtype=tf.float64)
-        
         with tf.GradientTape() as tape:
             res = circuit(phi_t)
 
@@ -1007,7 +996,7 @@ class TestSingleExcitation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
         
-        if diff_method="parameter-shift":
+        if diff_method=="parameter-shift":
             pytest.skip("JAX support for the parameter-shift method is still TBD")
 
         jax = pytest.importorskip("jax")
