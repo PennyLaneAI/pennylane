@@ -46,12 +46,13 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
-from ._grad import jacobian, grad
+from ._grad import jacobian, grad, finite_diff
 
 import pennylane.math  # pylint: disable=wrong-import-order
 import pennylane.tape  # pylint: disable=wrong-import-order
 from .tape import enable_tape, disable_tape, tape_mode_active
 from .tape.qnode import draw, metric_tensor
+from .tape.transforms.adjoint import adjoint
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
