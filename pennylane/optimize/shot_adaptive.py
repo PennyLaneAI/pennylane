@@ -41,7 +41,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         objective functions.
 
     Args:
-        min_shots (int): the minimum number of shots used to estimate the expectations
+        min_shots (int): The minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.
         mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how quickly the
@@ -72,7 +72,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     3. Gradient descent is performed for each parameter :math:`\theta_i`, using
        the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
-       :math:`\theta_i = \theta_i - \eta g_i`.
+       :math:`\theta_i \rightarrow \theta_i - \eta g_i`.
 
     4. The improvement in the expected gain per shot, for a specific parameter value,
        is then calculated via
@@ -205,7 +205,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             qnodes (Sequence[.tape.QNode]): Sequence of QNodes, each one when evaluated
                 returning the corresponding expectation value of a term in the Hamiltonian.
             coeffs (Sequence[float]): Sequences of coefficients corresponding to
-                each term in the Hamiltonian.
+                each term in the Hamiltonian. Must be the same length as ``qnodes``.
             shots (int): The number of shots used to estimate the Hamiltonian expectation
                 value. These shots are distributed over the terms in the Hamiltonian,
                 as per a Multinomial distribution.
@@ -303,6 +303,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 )
             else:
                 device.shots = [(1, self.max_shots)]
+                # We iterate over each trainable argument, rather than using
+                # qml.jacobian(expval_cost), to take into account the edge case where
+                # different arguments have different shapes and cannot be stacked.
                 grads = [
                     qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
                     for i in self.trainable_args
@@ -382,12 +385,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         Args:
             objective_fn (function): the objective function for optimization
-            *args : Variable length argument list for objective function
-            **kwargs : variable length of keyword arguments for the objective function
+            *args: variable length argument list for objective function
+            **kwargs: variable length of keyword arguments for the objective function
 
         Returns:
-            list[array]: the new variable values :math:`x^{(t+1)}`.
-            If single arg is provided, list [array] is replaced by array.
+            list[array]: The new variable values :math:`x^{(t+1)}`.
+            If single arg is provided, list[array] is replaced by array.
         """
 
         self.trainable_args = set()
