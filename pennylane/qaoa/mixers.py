@@ -34,26 +34,21 @@ def x_mixer(wires):
     This is mixer is used in *A Quantum Approximate Optimization Algorithm*
     by Edward Farhi, Jeffrey Goldstone, Sam Gutmann [`arXiv:1411.4028 <https://arxiv.org/abs/1411.4028>`__].
 
-
     Args:
         wires (Iterable or Wires): The wires on which the Hamiltonian is applied
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
 
-    .. UsageDetails::
+    **Example**
 
-        The mixer Hamiltonian can be called as follows:
+    The mixer Hamiltonian can be called as follows:
 
-        .. code-block:: python
-
-            from pennylane import qaoa
-
-            wires = range(3)
-            mixer_h = qaoa.x_mixer(wires)
-
-        >>> print(mixer_h)
-        (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+    >>> from pennylane import qaoa
+    >>> wires = range(3)
+    >>> mixer_h = qaoa.x_mixer(wires)
+    >>> print(mixer_h)
+    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
     """
 
     wires = Wires(wires)
@@ -82,22 +77,18 @@ def xy_mixer(graph):
         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
-         Hamiltonian: Mixer Hamiltonian
+        Hamiltonian: Mixer Hamiltonian
 
-    .. UsageDetails::
+    **Example**
 
-        The mixer Hamiltonian can be called as follows:
+    The mixer Hamiltonian can be called as follows:
 
-        .. code-block:: python
-
-            from pennylane import qaoa
-            from networkx import Graph
-
-            graph = Graph([(0, 1), (1, 2)])
-            mixer_h = qaoa.xy_mixer(graph)
-
-        >>> print(mixer_h)
-        (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
+    >>> from pennylane import qaoa
+    >>> from networkx import Graph
+    >>> graph = Graph([(0, 1), (1, 2)])
+    >>> mixer_h = qaoa.xy_mixer(graph)
+    >>> print(mixer_h)
+    (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
     """
 
     if not isinstance(graph, nx.Graph):
@@ -143,27 +134,23 @@ def bit_flip_mixer(graph, b):
     Returns:
         Hamiltonian: Mixer Hamiltonian
 
-    .. UsageDetails::
+    **Example**
 
-        The mixer Hamiltonian can be called as follows:
+    The mixer Hamiltonian can be called as follows:
 
-        .. code-block:: python3
-
-            from pennylane import qaoa
-            from networkx import Graph
-
-            graph = Graph([(0, 1), (1, 2)])
-            mixer_h = qaoa.bit_flip_mixer(graph, 0)
-
-        >>> print(mixer_h)
-        (0.5) [X0]
-        + (0.5) [X0 Z1]
-        + (0.25) [X1]
-        + (0.25) [X1 Z2]
-        + (0.25) [X1 Z0]
-        + (0.25) [X1 Z0 Z2]
-        + (0.5) [X2]
-        + (0.5) [X2 Z1]
+    >>> from pennylane import qaoa
+    >>> from networkx import Graph
+    >>> graph = Graph([(0, 1), (1, 2)])
+    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
+    >>> print(mixer_h)
+    (0.5) [X0]
+    + (0.5) [X0 Z1]
+    + (0.25) [X1]
+    + (0.25) [X1 Z2]
+    + (0.25) [X1 Z0]
+    + (0.25) [X1 Z0 Z2]
+    + (0.5) [X2]
+    + (0.5) [X2 Z1]
     """
 
     if not isinstance(graph, nx.Graph):

@@ -1,16 +1,103 @@
+# Release 0.14.0-dev
+
+<h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+* The molecular geometry is now stored by a list containing the atomic symbols and
+  a 1D array with the position of the atoms in atomic units.
+
+  - The ``read_structure`` function returns a list with the symbols of the atoms and
+    the array with the atomic positions. 
+
+  - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
+    list of atomic symbols and the array with the atomic coordinates.
+
+  - Labelling the molecule is now optional as we have made ``name`` a keyword argument
+    in the ``meanfield`` and ``molecular_hamiltonian`` functions.
+
+    For example:
+
+    ```pycon
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.661, 0., 0., 0.661]))
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+    ```
+
+  This allows users to more easily build parametrized electronic Hamiltonians
+  [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
+
+<h3>Breaking changes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Alain Delgado
+
+
+# Release 0.13.1
+
+<h3>Bug fixes</h3>
+
+* Updates `PennyLane-QChem` to support the new OpenFermion v1.0 release.
+  [(#973)](https://github.com/PennyLaneAI/pennylane/pull/973)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Josh Izaac
+
+# Release 0.13.0
+
+<h3>Improvements</h3>
+
+* Many-body observables are now built from the OpenFermion `FermionOperator` representation of
+  one-particle and two-particle second-quantized operators.
+  [(#854)](https://github.com/PennyLaneAI/pennylane/pull/854)
+
+  This improvement brings the following advantages:
+
+  - Extra tables to store the indices of the orbitals and the corresponding
+    matrix elements are not needed.
+
+  - The functions `observable`, `one_particle` and `two_particle` are
+    significantly simplified.
+
+  - The methodology to build many-body observables in PL-QChem is more consistent.
+
+  - There is no longer a need to keep track of the contribution due to core orbitals
+    when an active space is defined. This is now handled internally.
+
+<h3>Bug fixes</h3>
+
+* The `qchem._terms_to_qubit_operator` function is now updated to handle tensor products with
+  `Identity` observables.
+  [(#928)](https://github.com/PennyLaneAI/pennylane/pull/928)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri, Zeyue Niu.
+
 # Release 0.12.0
 
 <h3>New features since last release</h3>
 
-* The functions ``one_particle`` and ``two_particle`` have been implemented
+* The functions `one_particle` and `two_particle` have been implemented
   to extend PennyLane-QChem capabilities to construct observables of many-body
   quantum systems. These functions can be used in conjunction with the
-  ``observable`` function to construct electronic structure hamiltonians
+  `observable` function to construct electronic structure hamiltonians
   involving one- and two-particle operators.
   [(#809)](https://github.com/PennyLaneAI/pennylane/pull/809)
 
-* The function ``observable`` in the ``obs`` module has been generalized to build
-  many-body observables combining one- and two-particle operators (e.g. Hamiltonians)
+* The function `observable` in the `obs` module has been generalized to build
+  many-body observables combining one- and two-particle operators (e.g., Hamiltonians)
   [(#791)](https://github.com/PennyLaneAI/pennylane/pull/791)
 
 <h3>Improvements</h3>
@@ -23,11 +110,11 @@
   function two_particle.
   [(#825)](https://github.com/PennyLaneAI/pennylane/pull/825)
 
-<h3>Documentation</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Thomas Bromley, Alain Delgado, Josh Izaac, Soran Jahangiri.
 
 # Release 0.11.0
 

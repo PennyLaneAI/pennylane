@@ -34,6 +34,9 @@ except ImportError:
     TORCH_IMPORTED = False
 
 
+import pennylane as qml
+
+
 class TorchLayer(Module):
     r"""Converts a :func:`~.QNode` to a Torch layer.
 
@@ -207,6 +210,60 @@ class TorchLayer(Module):
             )
         super().__init__()
 
+        weight_shapes = {
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            for weight, size in weight_shapes.items()
+        }
+
+        # validate the QNode signature, and convert to a Torch QNode.
+        if qml.tape_mode_active():
+            # TODO: update the docstring regarding changes to restrictions when tape mode is default.
+            self._signature_validation_tape_mode(qnode, weight_shapes)
+            self.qnode = qnode
+            self.qnode.to_torch()
+        else:
+            self._signature_validation(qnode, weight_shapes)
+            self.qnode = to_torch(qnode)
+
+        if not init_method:
+            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
+
+        self.qnode_weights = {}
+
+        for name, size in weight_shapes.items():
+            if len(size) == 0:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
+            else:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
+
+            self.register_parameter(name, self.qnode_weights[name])
+
+    def _signature_validation_tape_mode(self, qnode, weight_shapes):
+        sig = inspect.signature(qnode.func).parameters
+
+        if self.input_arg not in sig:
+            raise TypeError(
+                "QNode must include an argument with name {} for inputting data".format(
+                    self.input_arg
+                )
+            )
+
+        if self.input_arg in set(weight_shapes.keys()):
+            raise ValueError(
+                "{} argument should not have its dimension specified in "
+                "weight_shapes".format(self.input_arg)
+            )
+
+        param_kinds = [p.kind for p in sig.values()]
+
+        if inspect.Parameter.VAR_POSITIONAL in param_kinds:
+            raise TypeError("Cannot have a variable number of positional arguments")
+
+        if inspect.Parameter.VAR_KEYWORD not in param_kinds:
+            if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
+                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+
+    def _signature_validation(self, qnode, weight_shapes):
         self.sig = qnode.func.sig
 
         if self.input_arg not in self.sig:
@@ -222,40 +279,25 @@ class TorchLayer(Module):
                 "weight_shapes".format(self.input_arg)
             )
 
-        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
-            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
-
         if qnode.func.var_pos:
             raise TypeError("Cannot have a variable number of positional arguments")
 
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
 
-        self.qnode = to_torch(qnode)
-        weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
-            for weight, size in weight_shapes.items()
-        }
+        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
+            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
         defaults = {
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
         }
+
         self.input_is_default = self.input_arg in defaults
+
         if defaults - {self.input_arg} != set():
             raise TypeError(
                 "Only the argument {} is permitted to have a default".format(self.input_arg)
             )
-
-        if not init_method:
-            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
-
-        self.qnode_weights = {}
-        for name, size in weight_shapes.items():
-            if len(size) == 0:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
-            else:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
-            self.register_parameter(name, self.qnode_weights[name])
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
@@ -267,10 +309,17 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
-        if len(inputs.shape) == 1:
-            return self._evaluate_qnode(inputs)
 
-        return torch.stack([self._evaluate_qnode(x) for x in inputs])
+        if len(inputs.shape) > 1:
+            # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
+            # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
+            reconstructor = []
+            for x in torch.unbind(inputs):
+                reconstructor.append(self.forward(x))
+            return torch.stack(reconstructor)
+
+        # If the input is 1-dimensional, calculate the forward pass as usual
+        return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.
@@ -281,11 +330,14 @@ class TorchLayer(Module):
         Returns:
             tensor: output datapoint
         """
+        if qml.tape_mode_active():
+            return self._evaluate_qnode_tape_mode(x)
+
         qnode = self.qnode
 
         for arg in self.sig:
             if arg is not self.input_arg:  # Non-input arguments must always be positional
-                w = self.qnode_weights[arg]
+                w = self.qnode_weights[arg].to(x)
 
                 qnode = functools.partial(qnode, w)
             else:
@@ -294,6 +346,21 @@ class TorchLayer(Module):
                 else:
                     qnode = functools.partial(qnode, x)
         return qnode().type(x.dtype)
+
+    def _evaluate_qnode_tape_mode(self, x):
+        """Evaluates a tape-mode QNode for a single input datapoint.
+
+        Args:
+            x (tensor): the datapoint
+
+        Returns:
+            tensor: output datapoint
+        """
+        kwargs = {
+            **{self.input_arg: x},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+        }
+        return self.qnode(**kwargs).type(x.dtype)
 
     def __str__(self):
         detail = "<Quantum Torch Layer: func={}>"

@@ -63,7 +63,7 @@ def operation_expand(self):
         operations decomposition, or if not implemented, simply
         the operation itself.
     """
-    tape = qml.tape.JacobianTape()
+    tape = qml.tape.QuantumTape()
 
     with tape:
         self.decomposition(*self.data, wires=self.wires)
@@ -71,6 +71,9 @@ def operation_expand(self):
     if not self.data:
         # original operation has no trainable parameters
         tape.trainable_params = {}
+
+    if self.inverse:
+        tape.inv()
 
     return tape
 
@@ -93,6 +96,9 @@ def tensor_init(self, *args):
 
         try:
             QueuingContext.update_info(o, owner=self)
+        except ValueError:
+            o.queue()
+            qml.tape.QueuingContext.update_info(o, owner=self)
         except NotImplementedError:
             pass
 
@@ -163,6 +169,9 @@ def mock_operations():
     mocks += [mock.patch.object(qml, "sample", qml.tape.measure.sample)]
     mocks += [mock.patch.object(qml, "probs", qml.tape.measure.probs)]
     mocks += [mock.patch.object(qml, "state", qml.tape.measure.state, create=True)]
+    mocks += [
+        mock.patch.object(qml, "density_matrix", qml.tape.measure.density_matrix, create=True)
+    ]
 
     # Mock the operations so that they no longer perform validation
     # on argument types and domain. This is required to avoid the operations

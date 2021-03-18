@@ -47,6 +47,9 @@ from gate_data import (
     CRoty,
     CRotz,
     CRot3,
+    MultiRZ1,
+    MultiRZ2,
+    ControlledPhaseShift,
 )
 
 np.random.seed(42)
@@ -72,9 +75,21 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 #####################################################
 
 single_qubit = [(qml.S, S), (qml.T, T), (qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
-single_qubit_param = [(qml.PhaseShift, Rphi), (qml.RX, Rotx), (qml.RY, Roty), (qml.RZ, Rotz)]
+single_qubit_param = [
+    (qml.PhaseShift, Rphi),
+    (qml.RX, Rotx),
+    (qml.RY, Roty),
+    (qml.RZ, Rotz),
+    (qml.MultiRZ, MultiRZ1),
+]
 two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP)]
-two_qubit_param = [(qml.CRX, CRotx), (qml.CRY, CRoty), (qml.CRZ, CRotz)]
+two_qubit_param = [
+    (qml.CRX, CRotx),
+    (qml.CRY, CRoty),
+    (qml.CRZ, CRotz),
+    (qml.MultiRZ, MultiRZ2),
+    (qml.ControlledPhaseShift, ControlledPhaseShift),
+]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 
 
@@ -149,6 +164,31 @@ class TestApply:
         expected = state
         assert isinstance(res, tf.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_full_subsystem_statevector(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(tf.reshape(dev._state, [-1]) == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem_statevector(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = tf.reshape(tf.reduce_sum(dev._state, axis=(1,)), [-1])
+
+        assert np.all(res == state)
+        spy.assert_called()
 
     def test_invalid_qubit_state_vector_size(self):
         """Test that an exception is raised if the state
@@ -839,16 +879,22 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.qubit.tf", wires=1)
         cap = dev.capabilities()
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": True,
-                        "supports_tensor_observables": True,
-                        "returns_probs": True,
-                        "returns_state": True,
-                        "supports_reversible_diff": False,
-                        "supports_inverse_operations": True,
-                        "supports_analytic_computation": True,
-                        "passthru_interface": 'tf',
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_reversible_diff": False,
+            "supports_inverse_operations": True,
+            "supports_analytic_computation": True,
+            "passthru_interface": 'tf',
+            "passthru_devices": {
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
+        }
         assert cap == capabilities
 
     def test_load_tensornet_tf_device(self):
@@ -874,7 +920,7 @@ class TestQNodeIntegration:
 
         expected = -tf.math.sin(p)
 
-        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+        assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -901,6 +947,69 @@ class TestQNodeIntegration:
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_one_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the one-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=1)
+        state = init_state(1)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0])
+            op(params[0], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, 4.213])
+    @pytest.mark.parametrize("op,func", two_qubit_param)
+    def test_two_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the two-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=2)
+        state = init_state(2)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0,1])
+            op(params[0], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_integration(self, init_state, tol):
+        """Test the integration of the two-qubit controlled rotation by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=2)
+        a = 1.7
+        b = 1.3432
+        c = -0.654
+        state = init_state(2)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0,1])
+            qml.CRot(params[0], params[1], params[2], wires=[0,1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([a,b,c]))
+        circuit(params)
+        res = dev.state
+        expected = CRot3(a, b, c) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1003,7 +1112,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
         res = tape.jacobian(res, p_tf)
-        assert np.allclose(res, circuit2.jacobian([p]), atol=tol, rtol=0)
+        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
         """Test that the device state can be differentiated"""
@@ -1041,7 +1150,7 @@ class TestPassthruIntegration:
 
         with tf.GradientTape() as tape:
             # get the probability of wire 1
-            prob_wire_1 = circuit(a, b)[0]
+            prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
             res = prob_wire_1[1] - prob_wire_1[0]
 
@@ -1093,7 +1202,7 @@ class TestPassthruIntegration:
         dev = qml.device("default.qubit.tf", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(x, weights, w=None):
+        def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
             qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
@@ -1102,11 +1211,11 @@ class TestPassthruIntegration:
 
         # Check that the correct QNode type is being used.
         if diff_method == "backprop":
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert not hasattr(circuit, "jacobian")
-        else:
-            assert not isinstance(circuit, qml.qnodes.PassthruQNode)
-            assert hasattr(circuit, "jacobian")
+            assert circuit.diff_options["method"] == "backprop"
+        elif diff_method == "parameter-shift":
+            assert circuit.diff_options["method"] == "analytic"
+        elif diff_method == "finite-diff":
+            assert circuit.diff_options["method"] == "numeric"
 
         def cost(params):
             """Perform some classical processing"""
@@ -1142,6 +1251,26 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
 
+    def test_inverse_operation_jacobian_backprop(self, tol):
+        """Test that inverse operations work in backprop
+        mode"""
+        dev = qml.device('default.qubit.tf', wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(param):
+            qml.RY(param, wires=0).inv()
+            return qml.expval(qml.PauliX(0))
+
+        x = tf.Variable(0.3)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+
+        assert np.allclose(res, -tf.sin(x), atol=tol, rtol=0)
+
+        grad = tape.gradient(res, x)
+        assert np.allclose(grad, -tf.cos(x), atol=tol, rtol=0)
+
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
@@ -1153,7 +1282,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliX(w))
 
         with pytest.raises(
-            ValueError,
+            qml.QuantumFunctionError,
             match="default.qubit.tf only supports diff_method='backprop' when using the tf interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
@@ -1176,8 +1305,8 @@ class TestSamplesNonAnalytic:
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (1, shots)
-        assert set(res[0].numpy()) == {-1, 1}
+        assert res.shape == (shots,)
+        assert set(res.numpy()) == {-1, 1}
 
     def test_sample_observables_non_differentiable(self):
         """Test that sampled observables cannot be differentiated."""

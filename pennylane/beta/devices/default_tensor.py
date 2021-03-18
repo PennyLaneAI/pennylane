@@ -31,7 +31,7 @@ try:
     if int(v[0]) != 0 and int(v[1]) < 3:
         raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 except ImportError as e:
-    raise ImportError("default.tensor device requires TensorNetwork>=0.3")
+    raise ImportError("default.tensor device requires TensorNetwork>=0.3") from e
 
 
 # tolerance for numerical errors
@@ -99,8 +99,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.12"
-    version = "0.12.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     _operation_map = {
@@ -212,7 +212,7 @@ class DefaultTensor(Device):
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, wires.labels)
+        name = "{}{}".format(name, (tuple([wires]) if isinstance(wires, int) else wires.labels))
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend
@@ -551,7 +551,7 @@ class DefaultTensor(Device):
                 tn.connect(obs_node[input_idx], ket[l])  # A|psi>
                 tn.connect(bra[l], obs_node[output_idx])  # <psi|A
 
-        meas_device_wires = Wires(meas_device_wires)
+        meas_device_wires = Wires.all_wires(meas_device_wires)
 
         # unmeasured wires are contracted directly between bra and ket
         unmeasured_device_wires = Wires.unique_wires([all_device_wires, meas_device_wires])

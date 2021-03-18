@@ -16,6 +16,7 @@
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
@@ -73,7 +74,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer supports single QNodes or :class:`~.VQECost` objects as objective functions.
+        The QNG optimizer supports single QNodes or :class:`~.ExpvalCost` objects as objective functions.
         Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
         using the ``metric_tensor_fn`` argument.
 
@@ -91,7 +92,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         If the objective function is VQE/VQE-like, i.e., a function of a group
         of QNodes that share an ansatz, there are two ways to use the optimizer:
 
-        * Realize the objective function as a :class:`~.VQECost` object, which has
+        * Realize the objective function as an :class:`~.ExpvalCost` object, which has
           a ``metric_tensor`` method.
 
         * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
@@ -100,7 +101,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as a VQECost object.
+    realized as an ExpvalCost object.
 
     >>> dev = qml.device("default.qubit", wires=1)
     >>> def circuit(params, wires=0):
@@ -109,7 +110,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> coeffs = [1, 1]
     >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> cost_fn = qml.VQECost(circuit, H, dev)
+    >>> cost_fn = qml.ExpvalCost(circuit, H, dev)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` function:
@@ -154,8 +155,52 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
+    def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
+        """Update the parameter array :math:`x` with one step of the optimizer and return the
+        corresponding objective function value prior to the step.
+
+        Args:
+            qnode (QNode): the QNode for optimization
+            x (array): NumPy array containing the current values of the variables to be updated
+            recompute_tensor (bool): Whether or not the metric tensor should
+                be recomputed. If not, the metric tensor from the previous
+                optimization step is used.
+            metric_tensor_fn (function): Optional metric tensor function
+                with respect to the variables ``x``.
+                If ``None``, the metric tensor function is computed automatically.
+
+        Returns:
+            tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
+            prior to the step
+        """
+        # pylint: disable=arguments-differ
+        if (
+            not isinstance(qnode, (qml.tape.QNode, qml.qnodes.BaseQNode, qml.ExpvalCost))
+            and metric_tensor_fn is None
+        ):
+            raise ValueError(
+                "The objective function must either be encoded as a single QNode or "
+                "an ExpvalCost object for the natural gradient to be automatically computed. "
+                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
+            )
+
+        if recompute_tensor or self.metric_tensor is None:
+            if metric_tensor_fn is None:
+                # pseudo-inverse metric tensor
+                self.metric_tensor = qml.metric_tensor(qnode, diag_approx=self.diag_approx)(x)
+            else:
+                self.metric_tensor = metric_tensor_fn(x)
+            self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
+
+        # The QNGOptimizer.step does not permit passing an external gradient function.
+        # Autograd will always calculate the gradient and `forward` will never be `None`.
+        g, forward = self.compute_grad(qnode, (x,), dict())
+        x_out = self.apply_grad(g, x)
+        return x_out, forward
+
+    # pylint: disable=arguments-differ
     def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer.
+        """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
             qnode (QNode): the QNode for optimization
@@ -170,29 +215,14 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        # pylint: disable=arguments-differ
-        if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
-            raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "a VQECost object for the natural gradient to be automatically computed. "
-                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
-            )
-
-        if recompute_tensor or self.metric_tensor is None:
-            if not metric_tensor_fn:
-                # pseudo-inverse metric tensor
-                self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
-            else:
-                self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
-            self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
-
-        g = self.compute_grad(qnode, x)
-        x_out = self.apply_grad(g, x)
+        x_out, _ = self.step_and_cost(
+            qnode, x, recompute_tensor=recompute_tensor, metric_tensor_fn=metric_tensor_fn
+        )
         return x_out
 
     def apply_grad(self, grad, x):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
-        the inputs to maintain nested iterables as the parameters of the optimization.
+        r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
+        unflattens the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective

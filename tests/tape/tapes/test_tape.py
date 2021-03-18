@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
-import pytest
+import copy
+
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, TapeCircuitGraph
-from pennylane.tape.measure import MeasurementProcess
+from pennylane.tape.measure import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -304,6 +306,90 @@ class TestGraph:
         spy.assert_called_once()
 
 
+class TestResourceEstimation:
+    """Tests for verifying resource counts and depths of tapes."""
+
+    @pytest.fixture
+    def make_empty_tape(self):
+        with QuantumTape() as tape:
+            qml.probs(wires=[0, 1])
+
+        return tape
+
+    @pytest.fixture
+    def make_tape(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+            qml.expval(qml.PauliX(wires="a"))
+            qml.probs(wires=[0, "a"])
+
+        return tape
+
+    @pytest.fixture
+    def make_extendible_tape(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+
+        return tape
+
+    def test_resources_empty_tape(self, make_empty_tape):
+        """Test that empty tapes return empty resource counts."""
+        tape = make_empty_tape
+
+        assert tape.get_depth() == 0
+        assert len(tape.get_resources()) == 0
+
+    def test_resources_tape(self, make_tape):
+        """Test that regular tapes return correct number of resources."""
+        tape = make_tape
+
+        assert tape.get_depth() == 3
+
+        # Verify resource counts
+        resources = tape.get_resources()
+        assert len(resources) == 3
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 1
+
+    def test_resources_add_to_tape(self, make_extendible_tape):
+        """Test that tapes return correct number of resources after adding to them."""
+        tape = make_extendible_tape
+
+        assert tape.get_depth() == 3
+
+        resources = tape.get_resources()
+        assert len(resources) == 3
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 1
+
+        with tape as tape:
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.1, wires=3)
+            qml.expval(qml.PauliX(wires="a"))
+            qml.probs(wires=[0, "a"])
+
+        assert tape.get_depth() == 4
+
+        resources = tape.get_resources()
+        assert len(resources) == 4
+        assert resources["RX"] == 2
+        assert resources["Rot"] == 1
+        assert resources["CNOT"] == 2
+        assert resources["RZ"] == 1
+
+
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""
 
@@ -411,6 +497,29 @@ class TestParameters:
             new_params[1],
             params[4],
         ]
+
+    def test_setting_parameters_unordered(self, make_tape, monkeypatch):
+        """Test that an 'unordered' trainable_params set does not affect
+        the setting of parameter values"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        with monkeypatch.context() as m:
+            m.setattr(tape, "_trainable_params", {3, 1})
+            tape.set_parameters(new_params)
+
+            assert tape.get_parameters(trainable_only=True) == [
+                new_params[0],
+                new_params[1],
+            ]
+
+            assert tape.get_parameters(trainable_only=False) == [
+                params[0],
+                new_params[0],
+                params[2],
+                new_params[1],
+                params[4],
+            ]
 
     def test_setting_all_parameters(self, make_tape):
         """Test that all parameters are correctly modified after construction"""
@@ -695,6 +804,67 @@ class TestExpand:
         expected = [None, [1, -1, -1, 1], [0, 5]]
         assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
 
+    def test_expand_tape_multiple_wires(self):
+        """Test the expand() method when measurements with more than one observable on the same
+        wire are used"""
+        with QuantumTape() as tape1:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliX(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
+
+        with QuantumTape() as tape2:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.RY(-np.pi / 2, wires=0)
+            qml.RY(-np.pi / 2, wires=1)
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliX(2))
+
+        tape1_exp = tape1.expand()
+
+        assert tape1_exp.graph.hash == tape2.graph.hash
+
+    @pytest.mark.parametrize("ret", [expval, var, sample])
+    def test_expand_tape_multiple_wires_non_commuting(self, ret):
+        """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
+        observables are on the same wire"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            ret(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
+        """Test that the is_sampled property is correctly set when tape
+        expansion happens."""
+        dev = qml.device('default.qubit', wires=1, analytic=True)
+
+        # Remove support for an op to enforce decomposition & tape expansion
+        mock_ops = copy.copy(dev.operations)
+        mock_ops.remove("T")
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "operations", mock_ops)
+
+            def circuit():
+                qml.T(wires=0)
+                return sample(qml.PauliZ(0))
+
+            # Choosing parameter-shift not to swap the device under the hood
+            qnode = qml.tape.QNode(circuit, dev, diff_method="parameter-shift")
+            qnode()
+
+            # Double-checking that the T gate is not supported
+            assert "T" not in qnode.device.operations
+            assert "T" not in qnode._original_device.operations
+
+            assert qnode.qtape.is_sampled
 
 class TestExecution:
     """Tests for tape execution"""
@@ -925,7 +1095,7 @@ class TestExecution:
 
         res = tape.execute(dev)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], float)
+        assert isinstance(res[1], np.ndarray)
 
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""
@@ -938,6 +1108,21 @@ class TestExecution:
         tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
         res = tape.execute(dev)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
+
+    def test_multiple_observables_same_wire(self):
+        """Test if an error is raised when multiple observables are evaluated on the same wire
+        without first running tape.expand()."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with QuantumTape() as tape:
+            qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliX(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Multiple observables are being"):
+            tape.execute(dev)
+
+        new_tape = tape.expand()
+        new_tape.execute(dev)
 
 
 class TestCVExecution:
@@ -979,3 +1164,137 @@ class TestCVExecution:
 
         res = tape.execute(dev)
         assert res.shape == (2,)
+
+
+class TestTapeCopying:
+    """Test for tape copying behaviour"""
+
+    def test_shallow_copy(self):
+        """Test that shallow copying of a tape results in all
+        contained data being shared between the original tape and the copy"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = tape.copy()
+
+        assert copied_tape is not tape
+
+        # the operations are simply references
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # operation data is also a reference
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+        # check that all tape metadata is identical
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # since the copy is shallow, mutating the parameters
+        # on one tape will affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        # check that they are the same objects in memory
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert i is j
+
+    @pytest.mark.parametrize(
+        "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
+    )
+    def test_shallow_copy_with_operations(self, copy_fn):
+        """Test that shallow copying of a tape and operations allows
+        parameters to be set independently"""
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = copy_fn(tape)
+
+        assert copied_tape is not tape
+
+        # the operations are not references; they are unique objects
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # however, the underlying operation data *is still shared*
+        assert copied_tape.operations[0].wires is tape.operations[0].wires
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+        assert tape.get_parameters() == copied_tape.get_parameters()
+        assert tape.wires == copied_tape.wires
+        assert tape.data == copied_tape.data
+
+        # Since they have unique operations, mutating the parameters
+        # on one tape will *not* affect the parameters on another tape
+        new_params = [np.array([0, 0]), 0.2]
+        tape.set_parameters(new_params)
+
+        for i, j in zip(tape.get_parameters(), new_params):
+            assert i is j
+
+        for i, j in zip(copied_tape.get_parameters(), new_params):
+            assert not np.all(i == j)
+            assert i is not j
+
+    def test_deep_copy(self):
+        """Test that deep copying a tape works, and copies all constituent data except parameters"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        copied_tape = copy.deepcopy(tape)
+
+        assert copied_tape is not tape
+
+        # the operations are not references
+        assert copied_tape.operations != tape.operations
+        assert copied_tape.observables != tape.observables
+        assert copied_tape.measurements != tape.measurements
+        assert copied_tape.operations[0] is not tape.operations[0]
+
+        # The underlying operation data has also been copied
+        assert copied_tape.operations[0].wires is not tape.operations[0].wires
+
+        # however, the underlying operation *parameters* are still shared
+        # to support PyTorch, which does not support deep copying of tensors
+        assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
+
+    def test_casting(self):
+        """Test that copying and casting works as expected"""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 0]), wires=[0, 1])
+            qml.RY(0.5, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # copy and cast to a JacobianTape
+        copied_tape = tape.copy(tape_cls=qml.tape.tapes.JacobianTape)
+
+        # check that the copying worked
+        assert copied_tape is not tape
+        assert copied_tape.operations == tape.operations
+        assert copied_tape.observables == tape.observables
+        assert copied_tape.measurements == tape.measurements
+        assert copied_tape.operations[0] is tape.operations[0]
+
+        # check that the casting worked
+        assert isinstance(copied_tape, qml.tape.tapes.JacobianTape)
+        assert not isinstance(tape, qml.tape.tapes.JacobianTape)

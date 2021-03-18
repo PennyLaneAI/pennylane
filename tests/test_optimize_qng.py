@@ -19,6 +19,9 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
@@ -40,13 +43,32 @@ class TestExceptions:
         params = 0.5
 
         with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode or a VQECost object"
+            ValueError, match="The objective function must either be encoded as a single QNode or an ExpvalCost object"
         ):
             opt.step(cost, params)
 
 
 class TestOptimize:
     """Test basic optimization integration"""
+
+    def test_step_and_cost_autograd(self, tol):
+        """Test that the correct cost is returned via the step_and_cost method for the QNG
+        optimizer"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        _, res = opt.step_and_cost(circuit, var)
+
+        expected = circuit(var)
+        assert np.all(res == expected)
 
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
@@ -125,8 +147,7 @@ class TestOptimize:
 
         # optimization for 200 steps total
         for t in range(num_steps):
-            theta_new = opt.step(cost_fn, theta,
-                                 metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+            theta_new = opt.step(cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0]))
 
             # check metric tensor
             res = opt.metric_tensor
@@ -143,7 +164,7 @@ class TestOptimize:
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
 
     def test_single_qubit_vqe_using_vqecost(self, tol):
-        """Test single-qubit VQE using VQECost 
+        """Test single-qubit VQE using ExpvalCost
         has the correct QNG value every step, the correct parameter updates,
         and correct cost after 200 steps"""
         dev = qml.device("default.qubit", wires=1)
@@ -160,7 +181,7 @@ class TestOptimize:
 
         h = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
 
-        cost_fn = qml.VQECost(ansatz=circuit, hamiltonian=h, device=dev)
+        cost_fn = qml.ExpvalCost(ansatz=circuit, hamiltonian=h, device=dev)
 
         def gradient(params):
             """Returns the gradient"""

@@ -102,6 +102,9 @@ class Rotation(CVOperation):
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
+    def adjoint(self, do_queue=False):
+        return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class Squeezing(CVOperation):
     r"""pennylane.Squeezing(r, phi, wires)
@@ -138,12 +141,19 @@ class Squeezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5 / math.sinh(shift), shift), None]
+    multiplier = 0.5 / math.sinh(shift)
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
+
+    def adjoint(self, do_queue=False):
+        r, phi = self.parameters
+        new_phi = (phi + np.pi) % (2 * np.pi)
+        return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
 
 class Displacement(CVOperation):
@@ -180,7 +190,9 @@ class Displacement(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift), None]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -188,6 +200,11 @@ class Displacement(CVOperation):
         s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
+
+    def adjoint(self, do_queue=False):
+        a, phi = self.parameters
+        new_phi = (phi + np.pi) % (2 * np.pi)
+        return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
 
 
 class Beamsplitter(CVOperation):
@@ -239,6 +256,10 @@ class Beamsplitter(CVOperation):
         U[3:5, 1:3] = s * R
         return U
 
+    def adjoint(self, do_queue=False):
+        theta, phi = self.parameters
+        return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
+
 
 class TwoModeSqueezing(CVOperation):
     r"""pennylane.TwoModeSqueezing(r, phi, wires)
@@ -278,8 +299,11 @@ class TwoModeSqueezing(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / math.sinh(shift), shift), None]
+    multiplier = 0.5 / math.sinh(shift)
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -292,6 +316,11 @@ class TwoModeSqueezing(CVOperation):
         U[1:3, 3:5] = S @ R.T
         U[3:5, 1:3] = S @ R.T
         return U
+
+    def adjoint(self, do_queue=False):
+        r, phi = self.parameters
+        new_phi = (phi + np.pi) % (2 * np.pi)
+        return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
 
 class QuadraticPhase(CVOperation):
@@ -326,8 +355,11 @@ class QuadraticPhase(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift)]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -371,8 +403,11 @@ class ControlledAddition(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift)]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -380,6 +415,9 @@ class ControlledAddition(CVOperation):
         U[2, 4] = -p[0]
         U[3, 1] = p[0]
         return U
+
+    def adjoint(self, do_queue=False):
+        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class ControlledPhase(CVOperation):
@@ -417,8 +455,11 @@ class ControlledPhase(CVOperation):
     par_domain = "R"
 
     grad_method = "A"
+
     shift = 0.1
-    grad_recipe = [(0.5 / shift, shift)]
+    multiplier = 0.5 / shift
+    a = 1
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -426,6 +467,9 @@ class ControlledPhase(CVOperation):
         U[2, 3] = p[0]
         U[4, 1] = p[0]
         return U
+
+    def adjoint(self, do_queue=False):
+        return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class Kerr(CVOperation):
@@ -450,6 +494,9 @@ class Kerr(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
+    def adjoint(self, do_queue=False):
+        return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class CrossKerr(CVOperation):
     r"""pennylane.CrossKerr(kappa, wires)
@@ -473,6 +520,9 @@ class CrossKerr(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
+    def adjoint(self, do_queue=False):
+        return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
 
 class CubicPhase(CVOperation):
     r"""pennylane.CubicPhase(gamma, wires)
@@ -495,6 +545,9 @@ class CubicPhase(CVOperation):
     num_wires = 1
     par_domain = "R"
     grad_method = "F"
+
+    def adjoint(self, do_queue=False):
+        return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class Interferometer(CVOperation):
@@ -549,6 +602,10 @@ class Interferometer(CVOperation):
         M = np.eye(2 * N + 1)
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
+
+    def adjoint(self, do_queue=False):
+        U = self.parameters[0]
+        return Interferometer(U.conj().T, wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
@@ -853,13 +910,12 @@ class TensorN(CVObservable):
         # Custom definition for __new__ needed such that a NumberOperator can
         # be returned when a single mode is defined
 
-        if wires is None:
+        if wires is None and len(params) != 0:
             wires = params[-1]
             params = params[:-1]
 
-        if isinstance(wires, int) or len(wires) == 1:
+        if wires is not None and (isinstance(wires, int) or len(wires) == 1):
             return NumberOperator(*params, wires=wires, do_queue=do_queue)
-
         return super().__new__(cls)
 
 

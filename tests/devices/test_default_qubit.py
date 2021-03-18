@@ -21,8 +21,8 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice
-from pennylane.operation import Operation
+from pennylane.devices.default_qubit import _get_slice, DefaultQubit
+from pennylane.wires import WireError
 
 U = np.array(
     [
@@ -508,7 +508,7 @@ class TestExpval:
 
         dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliX(0))
 
@@ -598,7 +598,7 @@ class TestVar:
 
         dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.var(qml.PauliX(0))
 
@@ -675,15 +675,21 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device("default.qubit", wires=1)
         cap = dev.capabilities()
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": True,
-                        "supports_tensor_observables": True,
-                        "returns_probs": True,
-                        "returns_state": True,
-                        "supports_reversible_diff": True,
-                        "supports_inverse_operations": True,
-                        "supports_analytic_computation": True,
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_reversible_diff": True,
+            "supports_inverse_operations": True,
+            "supports_analytic_computation": True,
+            "passthru_devices": {
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
+        }
         assert cap == capabilities
 
     def test_load_default_qubit_device(self):
@@ -738,7 +744,7 @@ class TestDefaultQubitIntegration:
 
         p = 0.543
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
@@ -1112,7 +1118,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
@@ -1130,7 +1136,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device('default.qubit', wires=num_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.Hadamard(0)
             qml.CNOT(wires=[0, 1])
@@ -1697,7 +1703,7 @@ class TestWiresIntegration:
         dev = qml.device("default.qubit", wires=wires)
         n_wires = len(wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.5, wires=wires[0 % n_wires])
             qml.RY(2., wires=wires[1 % n_wires])
@@ -1712,7 +1718,7 @@ class TestWiresIntegration:
         dev = qml.device("default.qubit", wires=wires)
         n_wires = len(wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.5, wires=wires[0 % n_wires])
             qml.RY(2., wires=wires[1 % n_wires])
@@ -1749,6 +1755,19 @@ class TestWiresIntegration:
         circuit2 = self.make_circuit_expval(wires2)
 
         assert np.allclose(circuit1(), circuit2(), tol)
+
+    def test_wires_not_found_exception(self):
+        """Tests that an exception is raised when wires not present on the device are adressed. """
+        dev = qml.device("default.qubit", wires=['a', 'b'])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires='c')
+
+        with pytest.raises(
+                WireError,
+                match="Did not find some of the wires"
+        ):
+            dev.execute(tape)
 
 
 class TestGetSlice:
@@ -1813,6 +1832,7 @@ class TestApplyOps:
         (qml.Hadamard, dev._apply_hadamard),
         (qml.S, dev._apply_s),
         (qml.T, dev._apply_t),
+        (qml.SX, dev._apply_sx),
     ]
     two_qubit_ops = [
         (qml.CNOT, dev._apply_cnot),
@@ -1849,3 +1869,107 @@ class TestApplyOps:
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
+
+
+class TestStateVector:
+    """Unit tests for the _apply_state_vector method"""
+
+    def test_full_subsystem(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultQubit(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.
+        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(dev._state.flatten() == state)
+        spy.assert_not_called()
+
+    def test_partial_subsystem(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+
+        dev = DefaultQubit(wires=['a', 'b', 'c'])
+        state = np.array([1, 0, 1, 0]) / np.sqrt(2.)
+        state_wires = qml.wires.Wires(['a', 'c'])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+        res = np.sum(dev._state, axis=(1,)).flatten()
+
+        assert np.all(res == state)
+        spy.assert_called()
+
+
+@pytest.mark.usefixtures("tape_mode")
+class TestInverseDecomposition:
+    """Integration tests for decompositions of inverse gates"""
+
+    def test_inverse_S(self, tol):
+        """Test that applying the inverse of the S gate
+        works without decomposition"""
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def test_s():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0)
+            return qml.probs(wires=0)
+
+        test_s()
+        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        assert "S" in [i.name for i in operations]
+
+        expected = np.array([1., 1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def test_s_inverse():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0).inv()
+            return qml.probs(wires=0)
+
+        test_s_inverse()
+        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        assert "S.inv" in [i.name for i in operations]
+
+        expected = np.array([1., -1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+    def test_inverse_S_decomposition(self, tol, monkeypatch):
+        """Test that applying the inverse of the S gate
+        works when the inverse S gate is decomposed"""
+        dev = qml.device('default.qubit', wires=1)
+
+        patched_operations = dev.operations.copy()
+        patched_operations.remove("S")
+        monkeypatch.setattr(dev, "operations", patched_operations)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def test_s():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0)
+            return qml.probs(wires=0)
+
+        test_s()
+        operations = test_s.qtape.operations if qml.tape_mode_active() else test_s.ops
+        assert "S" not in [i.name for i in operations]
+        assert "PhaseShift" in [i.name for i in operations]
+
+        expected = np.array([1., 1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def test_s_inverse():
+            qml.Hadamard(wires=0)
+            qml.S(wires=0).inv()
+            return qml.probs(wires=0)
+
+        test_s_inverse()
+        operations = test_s_inverse.qtape.operations if qml.tape_mode_active() else test_s_inverse.ops
+        assert "S.inv" not in [i.name for i in operations]
+        assert "PhaseShift.inv" in [i.name for i in operations]
+
+        expected = np.array([1., -1.j]) / np.sqrt(2)
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)

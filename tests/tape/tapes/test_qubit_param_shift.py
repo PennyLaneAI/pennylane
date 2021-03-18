@@ -151,31 +151,60 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="CR gates do not satisfy the parameter-shift rule")
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
-        """Test gradient of controlled RX gate"""
+        """Test gradient of controlled rotation gates"""
         dev = qml.device("default.qubit", wires=2)
         b = 0.123
 
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
-            qml.Hadamard(wires=0)
             G(b, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
-        tape.trainable_params = {2}
+        tape.trainable_params = {1}
 
         res = tape.execute(dev)
-        assert np.allclose(res, np.cos(b / 2), atol=tol, rtol=0)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
 
         grad = tape.jacobian(dev, method="analytic")
-        expected = -np.sin(-b / 2) / 2
+        expected = np.sin(b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
         # compare to finite differences
-        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
-        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+        numeric_val = tape.jacobian(dev, method="numeric")
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient(self, mocker, theta, tol):
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
+        dev = qml.device("default.qubit", wires=2)
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+        with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        res = tape.execute(dev)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = tape.jacobian(dev, method="analytic")
+        expected = np.array([[
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+            0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+        ]])
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+        # compare to finite differences
+        numeric_val = tape.jacobian(dev, method="numeric")
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, mocker, tol):
         """Tests that the parameter-shift rule agrees with the first and second
@@ -353,12 +382,13 @@ class TestJacobianIntegration:
 
     def test_involutory_variance(self, mocker, tol):
         """Tests qubit observable that are involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
+
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -389,13 +419,13 @@ class TestJacobianIntegration:
 
     def test_non_involutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=1)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -428,13 +458,13 @@ class TestJacobianIntegration:
     def test_involutory_and_noninvolutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         a involutory observable."""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
-        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
-
         dev = qml.device("default.qubit", wires=2)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
+
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
+        spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
+        spy_execute = mocker.spy(dev, "execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -511,3 +541,55 @@ class TestJacobianIntegration:
         ).T
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+class TestHessian:
+    """Tests for parameter Hessian method"""
+
+    @pytest.mark.parametrize("s1", [np.pi / 2, np.pi / 4, 2])
+    @pytest.mark.parametrize("s2", [np.pi / 2, np.pi / 4, 3])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
+    def test_pauli_rotation_hessian(self, s1, s2, G, tol):
+        """Tests that the automatic Hessian of Pauli rotations are correct."""
+        theta = np.array([0.234, 2.443])
+        dev = qml.device("default.qubit", wires=2)
+
+        with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1., 1., -1.]) / np.sqrt(4), wires=[0, 1])
+            G(theta[0], wires=[0])
+            G(theta[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2}
+
+        autograd_val = tape.hessian(dev, s1=s1, s2=s2)
+
+        assert autograd_val.shape == (len(theta), len(theta))
+
+        shift = np.eye(len(theta))
+        manualgrad_val = np.zeros((len(theta), len(theta)))
+        for i in range(len(theta)):
+            for j in range(len(theta)):
+                manualgrad_val[i, j] = (
+                    tape.execute(dev, params=theta + s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta - s1 * shift[i] + s2 * shift[j])
+                    - tape.execute(dev, params=theta + s1 * shift[i] - s2 * shift[j])
+                    + tape.execute(dev, params=theta - s1 * shift[i] - s2 * shift[j])
+                ) / (4 * np.sin(s1) * np.sin(s2))
+
+        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+
+    def test_no_trainable_params_hessian(self):
+        """Test that an empty Hessian is returned when there are no trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with QubitParamShiftTape() as tape:
+            qml.RX(0.224, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {}
+
+        hessian = tape.hessian(dev)
+
+        assert hessian.shape == (0, 0)

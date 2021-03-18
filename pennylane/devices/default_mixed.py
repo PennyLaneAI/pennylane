@@ -20,13 +20,16 @@ qubit-based quantum circuits.
 """
 
 import functools
+import itertools
 from string import ascii_letters as ABC
 
 import numpy as np
-from pennylane import QubitDevice
+from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
 from pennylane.operation import DiagonalOperation, Channel
+from pennylane.wires import Wires
 
 ABC_ARRAY = np.array(list(ABC))
+tolerance = 1e-10
 
 
 class DefaultMixed(QubitDevice):
@@ -43,18 +46,24 @@ class DefaultMixed(QubitDevice):
             of samples returned by ``sample``.
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically.
+        cache (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.12"
-    version = "0.12.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     operations = {
-        #     "BasisState",
-        #     "QubitStateVector",
+        "BasisState",
+        "QubitStateVector",
         "QubitUnitary",
+        "ControlledQubitUnitary",
+        "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -63,12 +72,14 @@ class DefaultMixed(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
         "CSWAP",
         "Toffoli",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -81,16 +92,19 @@ class DefaultMixed(QubitDevice):
         "GeneralizedAmplitudeDamping",
         "PhaseDamping",
         "DepolarizingChannel",
+        "BitFlip",
+        "PhaseFlip",
         "QubitChannel",
+        "QFT",
     }
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
-        if wires > 23:
+    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
+        if isinstance(wires, int) and wires > 23:
             raise ValueError(
-                "This device does not currently support computations on more than" "23 wires"
+                "This device does not currently support computations on more than 23 wires"
             )
         # call QubitDevice init
-        super().__init__(wires, shots, analytic)
+        super().__init__(wires, shots, analytic, cache=cache)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)
@@ -111,12 +125,48 @@ class DefaultMixed(QubitDevice):
         rho = self._asarray(rho, dtype=self.C_DTYPE)
         return self._reshape(rho, [2] * (2 * self.num_wires))
 
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            returns_state=True,
+        )
+        return capabilities
+
     @property
     def state(self):
         """Returns the state density matrix of the circuit prior to measurement"""
         dim = 2 ** self.num_wires
         # User obtains state as a matrix
         return self._reshape(self._pre_rotated_state, (dim, dim))
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        # Return the full density matrix if all the wires are given
+        if wires == self.wires:
+            return self.state
+
+        traced_wires = [x for x in self.wires if x not in wires]
+
+        # Trace first subsystem by applying kraus operators of the partial trace
+        tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
+        tr_op = self._reshape(tr_op, (2, 1, 2))
+
+        self._apply_channel(tr_op, Wires(traced_wires[0]))
+
+        # Trace next subsystem by applying kraus operators of the partial trace
+        for traced_wire in traced_wires[1:]:
+            self._apply_channel(tr_op, Wires(traced_wire))
+
+        return self._reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
 
     def reset(self):
         """Resets the device"""
@@ -174,9 +224,19 @@ class DefaultMixed(QubitDevice):
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
         # Changes tensor shape
-        kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-        kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-        kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+        if kraus[0].shape[0] == kraus[0].shape[1]:
+            kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
+            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+
+        # Add the possibility to give a (1,2) shape Kraus operator
+        elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
+            kraus_shape = [len(kraus)] + list(kraus[0].shape)
+            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
+            kraus_dagger = self._cast(
+                self._reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
+            )
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[:rho_dim]
@@ -250,6 +310,76 @@ class DefaultMixed(QubitDevice):
 
         self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
 
+    def _apply_basis_state(self, state, wires):
+        """Initialize the device in a specified computational basis state.
+
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s and 1s.
+            wires (Wires): wires that the provided computational state should be initialized on
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state).issubset({0, 1}):
+            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
+
+        if n_basis_state != len(device_wires):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
+        # get computational basis state number
+        basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
+        num = int(np.dot(state, basis_states))
+
+        self._state = self._create_basis_state(num)
+
+    def _apply_state_vector(self, state, device_wires):
+        """Initialize the internal state in a specified pure state.
+
+        Args:
+            state (array[complex]): normalized input state of length
+                ``2**len(wires)``
+            device_wires (Wires): wires that get initialized in the state
+        """
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        n_state_vector = state.shape[0]
+
+        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
+            raise ValueError("State vector must be of length 2**wires.")
+
+        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+            raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        if len(device_wires) == self.num_wires and sorted(device_wires.labels) == list(
+            device_wires.labels
+        ):
+            # Initialize the entire wires with the state
+            rho = self._outer(state, self._conj(state))
+            self._state = self._reshape(rho, [2] * 2 * self.num_wires)
+
+        else:
+            # generate basis states on subset of qubits via the cartesian product
+            basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+
+            # get basis states to alter on full set of qubits
+            unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+            unravelled_indices[:, device_wires] = basis_states
+
+            # get indices for which the state is changed to input state vector elements
+            ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+
+            state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+            rho = self._outer(state, self._conj(state))
+            rho = self._reshape(rho, [2] * 2 * self.num_wires)
+            self._state = self._asarray(rho, dtype=self.C_DTYPE)
+
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
 
@@ -257,6 +387,15 @@ class DefaultMixed(QubitDevice):
             operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
+
+        if isinstance(operation, QubitStateVector):
+            self._apply_state_vector(operation.parameters[0], wires)
+            return
+
+        if isinstance(operation, BasisState):
+            self._apply_basis_state(operation.parameters[0], wires)
+            return
+
         matrices = self._get_kraus(operation)
 
         if isinstance(operation, DiagonalOperation):
@@ -270,8 +409,15 @@ class DefaultMixed(QubitDevice):
         rotations = rotations or []
 
         # apply the circuit operations
-        for operation in operations:
+        for i, operation in enumerate(operations):
 
+            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+                raise DeviceError(
+                    "Operation {} cannot be used after other Operations have already been applied "
+                    "on a {} device.".format(operation.name, self.short_name)
+                )
+
+        for operation in operations:
             self._apply_operation(operation)
 
         # store the pre-rotated state

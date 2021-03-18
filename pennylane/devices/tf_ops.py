@@ -16,6 +16,7 @@ Utility functions and numerical implementations of quantum operations TensorFlow
 """
 import tensorflow as tf
 from numpy import kron
+from pennylane.utils import pauli_eigs
 
 C_DTYPE = tf.complex128
 R_DTYPE = tf.float64
@@ -48,6 +49,19 @@ def PhaseShift(phi):
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     return tf.convert_to_tensor([1.0, tf.exp(1j * phi)])
+
+
+def ControlledPhaseShift(phi):
+    r"""Two-qubit controlled phase shift.
+
+    Args:
+        phi (float): phase shift angle
+
+    Returns:
+        tf.Tensor[complex]: diagonal part of the controlled phase shift matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    return tf.convert_to_tensor([1.0, 1.0, 1.0, tf.exp(1j * phi)])
 
 
 def RX(theta):
@@ -100,6 +114,21 @@ def Rot(a, b, c):
         tf.Tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
     return tf.linalg.diag(RZ(c)) @ RY(b) @ tf.linalg.diag(RZ(a))
+
+
+def MultiRZ(theta, n):
+    r"""Arbitrary multi Z rotation.
+
+    Args:
+        theta (float): rotation angle
+        n (int): number of wires the rotation acts on
+
+    Returns:
+        tf.Tensor[complex]: diagonal part of the MultiRZ matrix
+    """
+    theta = tf.cast(theta, dtype=C_DTYPE)
+    multi_Z_rot_eigs = tf.exp(-1j * theta / 2 * pauli_eigs(n))
+    return tf.convert_to_tensor(multi_Z_rot_eigs)
 
 
 def CRX(theta):

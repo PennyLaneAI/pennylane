@@ -21,7 +21,7 @@ Tape-mode QNodes
 
 The PennyLane tape module provides a new QNode class, rewritten from the ground-up,
 that uses a :class:`~.QuantumTape` to represent the internal variational quantum circuit.
-Tape mode provides several advantanges over the standard PennyLane QNode.
+Tape mode provides several advantages over the standard PennyLane QNode.
 
 * **Support for in-QNode classical processing**: Tape mode allows for differentiable classical
   processing within the QNode.
@@ -124,7 +124,7 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
   tensor(0.8396) tensor([0.0289, 0.0193]) tensor(0.8387)
 
 * **Unifying all QNodes**: The tape-mode QNode merges all QNodes (including the :class:`~.JacobianQNode`
-  and the :class:`~.PassthruQNode`) into a single unified QNode, with identicaly behaviour regardless
+  and the :class:`~.PassthruQNode`) into a single unified QNode, with identical behaviour regardless
   of the differentiation type.
 
   In addition, it is now possible to inspect the internal variational quantum circuit structure
@@ -134,19 +134,6 @@ Tape mode provides several advantanges over the standard PennyLane QNode.
 * **Optimizations**: Tape mode provides various performance optimizations, reducing pre- and post-processing
   overhead, and reduces the number of quantum evaluations in certain cases.
 
-.. warning::
-
-    In tape-mode, the QNode does not yet have feature-parity with the standard PennyLane
-    QNode. Features currently not available in tape mode include:
-
-    * Circuit drawing and visualization
-
-    * Metric tensor computation
-
-    * The ability to automatically extract the layer structure of variational circuits
-
-    * Tape-mode QNodes cannot be used with the ``qml.qnn`` module yet
-
 
 Quantum tapes
 -------------
@@ -155,7 +142,6 @@ Under the hood, tape mode is able to provide these new features by significantly
 the internal structure of the QNode. When tape mode is enabled, the QNode is no longer
 responsible for recording quantum operations, executing devices, or computing gradients---these
 tasks have been delegated to an internal object that is created by the QNode, the **quantum tape**.
-
 
 In addition to being created internally by QNodes in tape mode, quantum tapes can also be created,
 nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually. Tape subclasses also provide
@@ -180,7 +166,11 @@ TensorFlow, and PyTorch:
 
 For more details and examples, please see the tape documentation.
 
+
+.. automodapi:: pennylane.tape.transforms
+    :include-all-objects:
+
 .. automodapi:: pennylane.tape
     :no-main-docstr:
     :include-all-objects:
-    :skip: enable_tape, disable_tape
+    :skip: QNode, qnode, enable_tape, disable_tape

@@ -31,6 +31,7 @@ from pennylane.interfaces.torch import to_torch, unflatten_torch
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
@@ -643,7 +644,7 @@ class TestTorchGradients:
 
         div(a, b).backward()
         assert a.grad == 1 / b
-        assert b.grad == -a / b ** 2
+        assert torch.isclose(b.grad, -a / b ** 2)
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
     def test_composition_qnodes_gradient(self, qnodes, x, y):

@@ -17,6 +17,7 @@ Contains the ``DoubleExcitationUnitary`` template.
 import numpy as np
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (
@@ -24,6 +25,45 @@ from pennylane.templates.utils import (
     get_shape,
 )
 from pennylane.wires import Wires
+
+
+def _preprocess(weight, wires1, wires2):
+    """Validate and pre-process inputs as follows:
+
+    * Check the shape of the weights tensor.
+    * Check that both wire sets have at least 2 wires.
+
+    Args:
+        weight (tensor_like): trainable parameters of the template
+        wires1 (Wires): first set of wires
+        wires2 (Wires): second set of wires
+    """
+
+    if len(wires1) < 2:
+        raise ValueError(
+            "expected at least two wires representing the occupied orbitals; "
+            "got {}".format(len(wires1))
+        )
+    if len(wires2) < 2:
+        raise ValueError(
+            "expected at least two wires representing the unoccupied orbitals; "
+            "got {}".format(len(wires2))
+        )
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(weight)
+        if shape != ():
+            raise ValueError(f"Weight must be a scalar; got shape {shape}.")
+
+    else:
+
+        expected_shape = ()
+        check_shape(
+            weight,
+            expected_shape,
+            msg="Weight must be a scalar; got shape {}".format(expected_shape, get_shape(weight)),
+        )
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -489,25 +529,7 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     wires1 = Wires(wires1)
     wires2 = Wires(wires2)
 
-    if len(wires1) < 2:
-        raise ValueError(
-            "expected at least two wires representing the occupied orbitals; "
-            "got {}".format(len(wires1))
-        )
-    if len(wires2) < 2:
-        raise ValueError(
-            "expected at least two wires representing the unoccupied orbitals; "
-            "got {}".format(len(wires2))
-        )
-
-    expected_shape = ()
-    check_shape(
-        weight,
-        expected_shape,
-        msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
-    )
-
-    ###############
+    _preprocess(weight, wires1, wires2)
 
     s = wires1[0]
     r = wires1[-1]

@@ -17,6 +17,8 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+import copy
+
 import numpy as np
 
 import pennylane as qml
@@ -70,11 +72,41 @@ class MeasurementProcess:
         # Below, we imitate an identity observable, so that the
         # device undertakes no action upon recieving this observable.
         self.name = "Identity"
-        self.diagonalizing_gates = lambda: []
         self.data = []
 
         # Queue the measurement process
         self.queue()
+
+    def diagonalizing_gates(self):
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Returns:
+            List[.Operation]: the operations that diagonalize the observables
+        """
+        try:
+            return self.expand().operations
+        except NotImplementedError:
+            return []
+
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            return "{}(wires={})".format(self.return_type.value, self.wires.tolist())
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if self.obs.return_type is None:
+            return "{}({})".format(self.return_type.value, self.obs)
+
+        return "{}".format(self.obs)
+
+    def __copy__(self):
+        cls = self.__class__
+
+        if self.obs is not None:
+            return cls(self.return_type, obs=copy.copy(self.obs))
+
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
     @property
     def wires(self):
@@ -159,7 +191,12 @@ class MeasurementProcess:
     def queue(self):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            try:
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+            except ValueError:
+                self.obs.queue()
+                qml.tape.QueuingContext.update_info(self.obs, owner=self)
+
             qml.tape.QueuingContext.append(self, owns=self.obs)
         else:
             qml.tape.QueuingContext.append(self)
@@ -239,6 +276,11 @@ def sample(op):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
 
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
     **Example:**
 
     .. code-block:: python3
@@ -276,7 +318,9 @@ def probs(wires):
 
     This measurement function accepts no observables, and instead
     instructs the QNode to return a flat array containing the
-    probabilities of each quantum state.
+    probabilities :math:`|\langle i | \psi \rangle |^2` of measuring
+    the computational basis state :math:`| i \rangle` given the current
+    state :math:`| \psi \rangle`.
 
     Marginal probabilities may also be requested by restricting
     the wires to a subset of the full system; the size of the
@@ -312,14 +356,6 @@ def probs(wires):
 def state():
     r"""Quantum state in the computational basis.
 
-    .. note::
-
-        The quantum state can only be returned in tape mode:
-
-        >>> qml.enable_tape()
-
-        For more details on tape mode, see :mod:`pennylane.tape`.
-
     This function accepts no observables and instead instructs the QNode to return its state. A
     ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
     describing all wires in the device.
@@ -327,8 +363,6 @@ def state():
     **Example:**
 
     .. code-block:: python3
-
-        qml.enable_tape()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -353,3 +387,44 @@ def state():
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)
+
+
+def density_matrix(wires):
+    r"""Quantum density matrix in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its density
+    matrix or reduced density matrix. The ``wires`` argument gives the possibility
+    to trace out a part of the system. It can result in obtaining a mixed state, which can be
+    only represented by the reduced density matrix.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliY(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.density_matrix([0])
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([[0.+0.j 0.+0.j]
+        [0.+0.j 1.+0.j]])
+
+    The returned matrix is the reduced density matrix, where system 1 is traced out.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    .. note::
+
+        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State, wires=qml.wires.Wires(wires))

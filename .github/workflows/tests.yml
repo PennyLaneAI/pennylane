@@ -7,8 +7,8 @@ on:
 
 
 env:
-  TF_VERSION: 2.3
-  TORCH_VERSION: 1.6
+  TF_VERSION: 2.4
+  TORCH_VERSION: 1.7
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -21,7 +21,7 @@ jobs:
         config:
           - {python-version: 3.6, interfaces: ['tf']}
           - {python-version: 3.7, interfaces: ['torch']}
-          - {python-version: 3.8, interfaces: ['tf', 'torch']}
+          - {python-version: 3.8, interfaces: ['tf', 'torch', 'jax']}
           - {python-version: 3.8, interfaces: []}
 
     steps:
@@ -31,6 +31,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -50,6 +52,12 @@ jobs:
       - name: Conditionally install TensorFlow
         if: contains(matrix.config.interfaces, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
+
+      # Jax releases new version very frequently, so we should always build
+      # to the latest release. We can always fix a version later if it breaks.
+      - name: Conditionally install JAX
+        if: contains(matrix.config.interfaces, 'jax')
+        run: pip3 install jax jaxlib
 
       - name: Install PennyLane
         run: |
@@ -79,6 +87,7 @@ jobs:
           # - {device: "default.qubit", analytic: false, shots: 1000}
           # - {device: "default.qubit.tf", analytic: true, shots: 1000}
           - {device: "default.qubit.autograd", analytic: true, shots: 1000}
+          - {device: "default.mixed", analytic: true, shots: 1000}
 
     steps:
       - name: Cancel Previous Runs
@@ -87,6 +96,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -106,6 +117,10 @@ jobs:
       - name: Conditionally install TensorFlow
         if: contains(matrix.config.device, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
+
+      - name: Conditionally install Jax
+        if: contains(matrix.config.device, 'jax')
+        run: pip3 install jax jaxlib
 
       - name: Install PennyLane
         run: |
@@ -140,6 +155,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Setup conda
         uses: s-weigand/setup-conda@v1

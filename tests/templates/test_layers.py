@@ -26,12 +26,19 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    ParticleConservingU2,
+    ParticleConservingU1,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
+from pennylane.numpy import tensor
+from pennylane.init import particle_conserving_u1_normal
 
 TOLERANCE = 1e-8
+
+
+pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 class TestCVNeuralNet:
@@ -177,8 +184,21 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="The first dimension of all parameters"):
             qnode(wrong_weights)
+
+    def test_cvqnn_layers_exception_second_dim(self, weights, gaussian_device_4modes):
+        """Integration test for the CVNeuralNetLayers method."""
+
+        def circuit(*weights):
+            CVNeuralNetLayers(*weights, wires=range(4))
+            return qml.expval(qml.X(0))
+
+        qnode = qml.QNode(circuit, gaussian_device_4modes)
+
+        wrong_weights = [np.array([[0, 1, 0, 0, 0], [0, 1, 0, 0, 0]])] + weights[1:]
+        with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
+            qnode(*wrong_weights)
 
 
 class TestStronglyEntangling:
@@ -192,10 +212,10 @@ class TestStronglyEntangling:
 
         assert len(rec.queue) == n_layers
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
-        assert all([q._wires[0] == Wires(0) for q in rec.queue])
+        assert all([q._wires[0] == 0 for q in rec.queue])
 
-    def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
+    def test_uses_correct_weights(self, n_subsystems):
+        """Test that correct weights are used in the circuit."""
         np.random.seed(12)
         n_layers = 2
         num_wires = n_subsystems
@@ -224,8 +244,8 @@ class TestStronglyEntangling:
                 exp_params = weights[l, n, :]
                 assert sum([r == e for r, e in zip(res_params, exp_params)])
 
-    def test_strong_ent_layers_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
-        """Test that StronglyEntanglingLayers uses the correct number of imprimitives."""
+    def test_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
+        """Test that correct number of imprimitives are used in the circuit."""
         imprimitive = CZ
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
@@ -237,54 +257,30 @@ class TestStronglyEntangling:
         types = [type(q) for q in rec.queue]
         assert types.count(imprimitive) == n_subsystems * n_layers
 
-    @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]), (3, 1, [5])])
-    def test_strong_ent_layers_ranges_equals_wires_exception(self, n_layers, n_wires, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if a range is equal to or
-        larger than the number of wires."""
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
 
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
         def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+            StronglyEntanglingLayers(weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(weights)
 
-        with pytest.raises(ValueError, match="the range for all layers needs to be smaller than"):
-            qnode(weights)
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 2, 1)
+            circuit(weights)
 
-    def test_strong_ent_layers_illegal_ranges_exception(self):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter of illegal type."""
-        n_wires = 2
-        n_layers = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=["a", "a"])
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be a list of integers"):
-            qnode(weights)
-
-    @pytest.mark.parametrize("n_layers, ranges", [(2, [1, 2, 4]), (5, [2])])
-    def test_strong_ent_layers_wrong_size_ranges_exception(self, n_layers, ranges):
-        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter
-        not of shape (len(wires),)."""
-        n_wires = 5
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_wires, 3)
-
-        def circuit(weights):
-            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="'ranges' must be of shape"):
-            qnode(weights)
+        with pytest.raises(ValueError, match="Weights tensor must be 3-dimensional"):
+            weights = np.random.randn(2, 2, 3, 1)
+            circuit(weights)
 
 
 class TestRandomLayers:
@@ -351,6 +347,8 @@ class TestRandomLayers:
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
+        if qml.tape_mode_active():
+            pytest.skip("Immutable QNodes no longer exist in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1] * 100]
@@ -477,6 +475,41 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
+    def test_tensor_gradient_no_error(self, monkeypatch):
+        """Tests that the gradient calculation of a circuit that contains a
+        RandomLayers template taking a PennyLane tensor as differentiable
+        argument executes without error.
+        """
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+
+            # Random quantum circuit
+            RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
+
+        qml.jacobian(circuit)(phi)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.array([0.04439891, 0.14490549, 3.29725643, 2.51240058])
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit(phi)
 
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
@@ -558,6 +591,33 @@ class TestSimplifiedTwoDesign:
         expectations = circuit(initial_layer_weights, weights)
         for exp, target_exp in zip(expectations, target):
             assert pytest.approx(exp, target_exp, abs=TOLERANCE)
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        dev = qml.device("default.qubit", wires=4)
+        initial_layer = np.random.randn(2)
+
+        @qml.qnode(dev)
+        def circuit(initial_layer, weights):
+            SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
+            weights = np.random.randn(2, 2, 2)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
+            weights = np.random.randn(2, 1, 3)
+            circuit(initial_layer, weights)
+
+        with pytest.raises(ValueError, match="Initial layer weights must be of shape"):
+            initial_layer = np.random.randn(3)
+            weights = np.random.randn(2, 1, 2)
+            circuit(initial_layer, weights)
 
 
 class TestBasicEntangler:
@@ -642,3 +702,431 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+        if not qml.tape_mode_active():
+            pytest.skip("This validation is only performed in tape mode")
+
+        n_wires = 1
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit([1, 0])
+
+        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+            circuit([[1, 0], [1, 0]])
+
+
+class TestParticleConservingU2:
+    """Tests for the ParticleConservingU2 template from the pennylane.templates.layers module."""
+
+    @pytest.mark.parametrize(
+        "layers, qubits, init_state",
+        [
+            (2, 4, np.array([1, 1, 0, 0])),
+            (1, 6, np.array([1, 1, 0, 0, 0, 0])),
+            (1, 5, np.array([1, 1, 0, 0, 0])),
+        ],
+    )
+    def test_u2_operations(self, layers, qubits, init_state):
+        """Test the correctness of the ParticleConservingU2 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+        weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
+
+        n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
+
+        exp_gates = (
+            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
+        ) * layers
+
+        with pennylane._queuing.OperationRecorder() as rec:
+            ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
+
+        # number of gates
+        assert len(rec.queue) == n_gates
+
+        # initialization
+        assert isinstance(rec.queue[0], qml.BasisState)
+
+        # order of gates
+        for op1, op2 in zip(rec.queue[1:], exp_gates):
+            assert isinstance(op1, op2)
+
+        # gate parameter
+        params = np.array(
+            [
+                rec.queue[i].parameters
+                for i in range(1, n_gates)
+                if rec.queue[i].parameters != []
+            ]
+        )
+        weights[:, qubits:] = weights[:, qubits:] * 2
+        assert np.allclose(params.flatten(), weights.flatten())
+
+        # gate wires
+        wires = Wires(range(qubits))
+        nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+
+        exp_wires = []
+        for _ in range(layers):
+            for i in range(qubits):
+                exp_wires.append(wires.subset([i]))
+            for j in nm_wires:
+                exp_wires.append(j)
+                exp_wires.append(j[::-1])
+                exp_wires.append(j)
+
+        res_wires = [rec.queue[i]._wires for i in range(1, n_gates)]
+
+        assert res_wires == exp_wires
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "msg_match"),
+        [
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0],
+                "This template requires the number of qubits to be greater than one",
+            ),
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383]]),
+                [0, 1, 2, 3],
+                "Weights tensor must",
+            ),
+            (
+                np.array(
+                    [
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                    ]
+                ),
+                [0, 1, 2, 3],
+                "Weights tensor must",
+            ),
+            (
+                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 2-dimensional",
+            ),
+        ],
+    )
+    def test_u2_exceptions(self, weights, wires, msg_match):
+        """Test that ParticleConservingU2 throws an exception if the parameters have illegal
+        shapes, types or values."""
+        N = len(wires)
+        init_state = np.array([1, 1, 0, 0])
+
+        dev = qml.device("default.qubit", wires=N)
+
+        if not qml.tape_mode_active() and "must be 2-dimensional" in msg_match:
+            pytest.skip("Validation only performed in tape mode")
+
+        @qml.qnode(dev)
+        def circuit():
+            ParticleConservingU2(
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
+            )
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "expected"),
+        [
+            (
+                np.array([[-2.712, -1.958, 1.875, 1.811, 0.296, -0.412, 1.723]]),
+                [0, 1, 2, 3],
+                [-1.0, 0.95402475, -0.95402475, 1.0],
+            )
+        ],
+    )
+    def test_u2_integration(self, weights, wires, expected):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = len(wires)
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit():
+            ParticleConservingU2(
+                weights,
+                wires,
+                init_state=np.array([1, 1, 0, 0]),
+            )
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit()
+        assert np.allclose(res, np.array(expected))
+
+
+class TestParticleConservingU1:
+    """Tests for the ParticleConservingU1 template from the
+    pennylane.templates.layers module."""
+
+    @staticmethod
+    def _wires_gates_u1(wires):
+        """Auxiliary function giving the wires that the elementary gates decomposing
+        ``u1_ex_gate`` act on."""
+
+        exp_wires = [
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+            wires[::-1],
+            wires[::-1],
+            wires,
+            wires,
+            wires[1],
+            wires,
+            wires[1],
+            wires,
+            wires[0],
+        ]
+
+        return exp_wires
+
+    def test_particle_conserving_u1_operations(self):
+        """Test the correctness of the ParticleConservingU1 template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+
+        qubits = 4
+        layers = 2
+        weights = particle_conserving_u1_normal(layers, qubits)
+
+        gates_per_u1 = 16
+        gates_per_layer = gates_per_u1 * (qubits - 1)
+        gate_count = layers * gates_per_layer + 1
+
+        gates_u1 = [
+            qml.CZ,
+            qml.CRot,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+            qml.CNOT,
+            qml.PhaseShift,
+        ]
+        gates_ent = gates_u1 + [qml.CZ, qml.CRot] + gates_u1
+
+        wires = Wires(range(qubits))
+
+        nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
+
+        with pennylane._queuing.OperationRecorder() as rec:
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+
+        assert gate_count == len(rec.queue)
+
+        # check initialization of the qubit register
+        assert isinstance(rec.queue[0], qml.BasisState)
+
+        # check all quantum operations
+        idx_CRot = 8
+        for l in range(layers):
+            for i in range(qubits - 1):
+                exp_wires = self._wires_gates_u1(nm_wires[i])
+
+                phi = weights[l, i, 0]
+                theta = weights[l, i, 1]
+
+                for j, exp_gate in enumerate(gates_ent):
+                    idx = gates_per_layer * l + gates_per_u1 * i + j + 1
+
+                    # check that the gates are applied in the right order
+                    assert isinstance(rec.queue[idx], exp_gate)
+
+                    # check the wires the gates act on
+                    assert rec.queue[idx]._wires == Wires(exp_wires[j])
+
+                    # check that parametrized gates take the parameters \phi and \theta properly
+                    if exp_gate is qml.CRot:
+
+                        if j < idx_CRot:
+                            exp_params = [-phi, np.pi, phi]
+                        if j > idx_CRot:
+                            exp_params = [phi, np.pi, -phi]
+                        if j == idx_CRot:
+                            exp_params = [0, 2 * theta, 0]
+
+                        assert rec.queue[idx].parameters == exp_params
+
+                    elif exp_gate is qml.PhaseShift:
+
+                        if j < idx_CRot:
+                            exp_params = -phi
+                            if j == idx_CRot / 2:
+                                exp_params = phi
+                        if j > idx_CRot:
+                            exp_params = phi
+                            if j == (3 * idx_CRot + 2) / 2:
+                                exp_params = -phi
+
+                        assert rec.queue[idx].parameters == exp_params
+
+    @pytest.mark.parametrize(
+        ("weights", "n_wires", "msg_match"),
+        [
+            (np.ones((4, 3)), 4, "Weights tensor must"),
+            (np.ones((4, 2, 2)), 4, "Weights tensor must"),
+            (np.ones((4, 3, 1)), 4, "Weights tensor must"),
+            (
+                np.ones((4, 3, 1)),
+                1,
+                "This template requires the number of qubits to be greater than one",
+            ),
+        ],
+    )
+    def test_particle_conserving_u1_exceptions(self, weights, n_wires, msg_match):
+        """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
+        shape."""
+
+        wires = range(n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        def circuit(weights=weights, wires=None, init_state=None):
+            ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit(weights=weights, wires=wires, init_state=np.array([1, 1, 0, 0]))
+
+    def test_integration(self, tol):
+        """Test integration with PennyLane to compute expectation values"""
+
+        N = 4
+        wires = range(N)
+        layers = 2
+        weights = np.array(
+            [
+                [[-0.09009989, -0.00090317], [-0.16034551, -0.13278097], [-0.02926428, 0.05175079]],
+                [[-0.07988132, 0.11315495], [-0.16079166, 0.09439518], [-0.04321269, 0.13678911]],
+            ]
+        )
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(weights)
+
+        exp = np.array([-0.99993177, -0.9853332, 0.98531251, 0.99995246])
+        assert np.allclose(res, np.array(exp), atol=tol)
+
+
+    @pytest.mark.parametrize(
+        ("init_state", "exp_state"),
+        [
+            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
+            (
+                np.array([0, 1]),
+                np.array([0.0 + 0.0j, 0.862093 + 0.0j, 0.0 - 0.506749j, 0.0 + 0.0j]),
+            ),
+            (
+                np.array([1, 0]),
+                np.array([0.0 + 0.0j, 0.0 - 0.506749j, 0.862093 + 0.0j, 0.0 + 0.0j]),
+            ),
+            (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j])),
+        ],
+    )
+    def test_decomposition_u2ex(self, init_state, exp_state, tol):
+        """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
+        state."""
+
+        N = 2
+        wires = range(N)
+        wires = Wires(wires)
+
+        weight = 0.53141
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weight):
+            qml.BasisState(init_state, wires=wires)
+            qml.templates.layers.particle_conserving_u2.u2_ex_gate(weight, wires)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(weight)
+
+        assert np.allclose(circuit.device.state, exp_state, atol=tol)
+
+
+    @pytest.mark.parametrize(
+        ("init_state", "exp_state"),
+        [
+            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
+            (
+                np.array([1, 1]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        3.18686105e-17 - 1.38160066e-17j,
+                        1.09332080e-16 - 2.26795885e-17j,
+                        1.00000000e00 + 2.77555756e-17j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        8.23539739e-01 - 2.77555756e-17j,
+                        -5.55434174e-01 - 1.15217954e-01j,
+                        3.18686105e-17 + 1.38160066e-17j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0]),
+                np.array(
+                    [
+                        0.00000000e00 + 0.00000000e00j,
+                        -5.55434174e-01 + 1.15217954e-01j,
+                        -8.23539739e-01 - 5.55111512e-17j,
+                        1.09332080e-16 + 2.26795885e-17j,
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_decomposition_u1ex(self, init_state, exp_state, tol):
+        """Test the decomposition of the U_{1, ex}` exchange gate by asserting the prepared
+        state."""
+
+        N = 2
+        wires = range(N)
+        layers = 1
+        weights = np.array([[[0.2045368, -0.6031732]]])
+
+        dev = qml.device("default.qubit", wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            ParticleConservingU1(weights, wires, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(weights)
+
+        assert np.allclose(circuit.device.state, exp_state, atol=tol)

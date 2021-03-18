@@ -15,28 +15,122 @@ r"""
 Contains the ``QAOAEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_is_in_options,
     check_number_of_layers,
     get_shape,
 )
 from pennylane.wires import Wires
 
 
+def _preprocess(features, wires, weights):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * Check that the first dimension of the features tensor
+      has length :math:`n` or less, where :math:`n` is the number of qubits.
+    * Check that the shape of the weights tensor is correct for the number of qubits.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        weights (tensor_like): weights of the embedding
+
+    Returns:
+        int: number of times that embedding is repeated
+    """
+
+    if qml.tape_mode_active():
+
+        shape = qml.math.shape(features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
+
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
+
+        if len(wires) == 1:
+            if shape != (repeat, 1):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
+
+        elif len(wires) == 2:
+            if shape != (repeat, 3):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
+        else:
+            if shape != (repeat, 2 * len(wires)):
+                raise ValueError(
+                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
+                )
+
+    else:
+
+        expected_shape = (len(wires),)
+        check_shape(
+            features,
+            expected_shape,
+            bound="max",
+            msg="Features must be of shape {} or smaller; got {}"
+            "".format((len(wires),), get_shape(features)),
+        )
+
+        repeat = check_number_of_layers([weights])
+
+        if len(wires) == 1:
+            expected_shape = (repeat, 1)
+            check_shape(
+                weights,
+                expected_shape,
+                msg="Weights tensor must be of shape {}; got {}"
+                "".format(expected_shape, get_shape(features)),
+            )
+        elif len(wires) == 2:
+            expected_shape = (repeat, 3)
+            check_shape(
+                weights,
+                expected_shape,
+                msg="Weights tensor must be of shape {}; got {}"
+                "".format(expected_shape, get_shape(features)),
+            )
+        else:
+            expected_shape = (repeat, 2 * len(wires))
+            check_shape(
+                weights,
+                expected_shape,
+                msg="Weights tensor must be of shape {}; got {}"
+                "".format(expected_shape, get_shape(features)),
+            )
+
+    return repeat
+
+
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
-        features (array): array of features to encode
+        features (tensor_like): array of features to encode
         wires (Wires): wires that the template acts on
     """
 
-    feature_encoding_wires = wires[: len(features)]
-    remaining_wires = wires[len(features) :]
+    try:
+        # works for tensors
+        n_features = features.shape[0]
+    except AttributeError:
+        # works for lists and tuples
+        n_features = len(features)
+
+    feature_encoding_wires = wires[:n_features]
+    remaining_wires = wires[n_features:]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
@@ -46,7 +140,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """Implements the Ising-like Hamiltonian of the QAOA embedding.
 
     Args:
-        weights (array): array of weights for one layer
+        weights (tensor_like): array of weights for one layer
         wires (Wires): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
     """
@@ -114,8 +208,8 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
-        features (array): array of features to encode
-        weights (array): array of weights
+        features (tensor_like): array of features to encode
+        weights (tensor_like): array of weights
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
@@ -212,61 +306,17 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         1-dimensional Ising model.
 
     """
-    #############
-    # Input checks
-
     wires = Wires(wires)
-
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        bound="max",
-        msg="'features' must be of shape {} or smaller; got {}"
-        "".format((len(wires),), get_shape(features)),
-    )
-
-    check_is_in_options(
-        local_field,
-        ["X", "Y", "Z"],
-        msg="did not recognize option {} for 'local_field'" "".format(local_field),
-    )
-
-    repeat = check_number_of_layers([weights])
-
-    if len(wires) == 1:
-        expected_shape = (repeat, 1)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
-    elif len(wires) == 2:
-        expected_shape = (repeat, 3)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
-    else:
-        expected_shape = (repeat, 2 * len(wires))
-        check_shape(
-            weights,
-            expected_shape,
-            msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
-        )
-
-    #####################
+    repeat = _preprocess(features, wires, weights)
 
     if local_field == "Z":
         local_fields = RZ
     elif local_field == "X":
         local_fields = RX
-    else:
+    elif local_field == "Y":
         local_fields = RY
+    else:
+        raise ValueError(f"did not recognize local field {local_field}")
 
     for l in range(repeat):
         # apply alternating Hamiltonians

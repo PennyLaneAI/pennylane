@@ -363,7 +363,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
             ansatz(a, b, c)
             return sample(qml.PauliX(0) @ qml.PauliY(2))
@@ -396,7 +396,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
@@ -438,7 +438,7 @@ class TestTensorSample:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))

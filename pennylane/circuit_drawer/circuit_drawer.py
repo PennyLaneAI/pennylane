@@ -48,6 +48,7 @@ class CircuitDrawer:
         wires (Wires): all wires on the device for which the circuit is drawn
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
     """
 
     def __init__(
@@ -57,6 +58,7 @@ class CircuitDrawer:
         wires,
         charset=UnicodeCharSet,
         show_variable_names=False,
+        show_all_wires=False,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -64,6 +66,11 @@ class CircuitDrawer:
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
         self.charset = charset
         self.show_variable_names = show_variable_names
+
+        if show_all_wires:
+            # if the provided wires include empty wires, make sure they are included
+            # as active wires
+            self.active_wires = wires.all_wires([wires, self.active_wires])
 
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_representation_grid = Grid()

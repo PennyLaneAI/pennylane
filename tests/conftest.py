@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 
+
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
@@ -139,6 +140,11 @@ def skip_if_no_tf_support(tf_support):
         pytest.skip("Skipped, no tf support")
 
 
+@pytest.fixture
+def skip_if_no_jax_support():
+    pytest.importorskip("jax")
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
@@ -155,6 +161,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, '__abstractmethods__', frozenset())
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
         yield qml.Device(wires=2)
 
 
@@ -163,3 +170,53 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
+
+@pytest.fixture
+def non_tape_mode_only():
+    """Run the test in tape mode"""
+    qml.disable_tape()
+    yield
+    qml.enable_tape()
+
+
+@pytest.fixture
+def in_tape_mode():
+    return
+
+
+@pytest.fixture(params=[False, True])
+def tape_mode(request, mocker):
+    """Tests using this fixture will be run twice, once in tape mode and once without."""
+
+    if request.param:
+        # Several attributes and methods on the old QNode have a new location on the new QNode/tape.
+        # Here, we dynamically mock so that the tests do not have to be modified to support both
+        # tape and non-tape mode. Once tape mode is default, we can make the equivalent
+        # changes directly in the tests.
+        mocker.patch("pennylane.tape.QNode.ops", property(lambda self: self.qtape.operations + self.qtape.observables), create=True)
+        mocker.patch("pennylane.tape.QNode.h", property(lambda self: self.diff_options["h"]), create=True)
+        mocker.patch("pennylane.tape.QNode.order", property(lambda self: self.diff_options["order"]), create=True)
+        mocker.patch("pennylane.tape.QNode.circuit", property(lambda self: self.qtape.graph), create=True)
+
+        def patched_jacobian(self, args, **kwargs):
+            method = kwargs.get("method", "best")
+
+            if method == "A":
+                method = "analytic"
+            elif method == "F":
+                method = "numeric"
+
+            kwargs["method"] = method
+            dev = kwargs["options"]["device"]
+
+            return self.qtape.jacobian(dev, **kwargs)
+
+
+        mocker.patch("pennylane.tape.QNode.jacobian", patched_jacobian, create=True)
+
+    else:
+        qml.disable_tape()
+
+    yield
+
+    qml.enable_tape()

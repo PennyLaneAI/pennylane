@@ -18,8 +18,7 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-from openfermion.hamiltonians import MolecularData
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import MolecularData, QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
@@ -27,6 +26,10 @@ from openfermionpyscf import run_pyscf
 import pennylane as qml
 from pennylane import Hamiltonian
 from pennylane.wires import Wires
+
+
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
 
 
 def _process_wires(wires, n_wires=None):
@@ -147,15 +150,17 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the structure of the polyatomic system from a file and creates
-    a list containing the symbol and Cartesian coordinates of the atomic species.
+    r"""Reads the structure of the polyatomic system from a file and returns
+    a list with the symbols of the atoms in the molecule and a 1D array
+    with their positions :math:`[x_1, y_1, z_1, x_2, y_2, z_2, \dots]` in
+    atomic units (Bohr radius = 1).
 
+    The atomic coordinates in the file must be in Angstroms.
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
     `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
     is also supported. Additionally, the new file ``structure.xyz``,
-    containing the input geometry, is created in a directory with path given by
-    ``outpath``.
+    containing the input geometry, is created in a directory with path given by ``outpath``.
 
     Open Babel can be installed using ``apt`` if on Ubuntu:
 
@@ -177,12 +182,14 @@ def read_structure(filepath, outpath="."):
         outpath (str): path to the output directory
 
     Returns:
-        list: for each atomic species, a list containing the symbol and the Cartesian coordinates
+        tuple[list, array]: symbols of the atoms in the molecule and a 1D array with their
+        positions in atomic units.
 
     **Example**
 
-    >>> read_structure('h2_ref.xyz')
-    [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
+    >>> symbols, coordinates = read_structure('h2.xyz')
+    >>> print(symbols, coordinates)
+    ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
     """
 
     obabel_error_message = (
@@ -211,20 +218,32 @@ def read_structure(filepath, outpath="."):
             raise RuntimeError(
                 "Open Babel error. See the following Open Babel "
                 "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
-            )
+            ) from e
     else:
         copyfile(file_in, file_out)
 
-    geometry = []
+    symbols = []
+    coordinates = []
     with open(file_out) as f:
         for line in f.readlines()[2:]:
-            species, x, y, z = line.split()
-            geometry.append([species, (float(x), float(y), float(z))])
-    return geometry
+            symbol, x, y, z = line.split()
+            symbols.append(symbol)
+            coordinates.append(float(x))
+            coordinates.append(float(y))
+            coordinates.append(float(z))
+
+    return symbols, np.array(coordinates) / bohr_angs
 
 
 def meanfield(
-    name, geometry, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
+    symbols,
+    coordinates,
+    name="molecule",
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    outpath=".",
 ):  # pylint: disable=too-many-arguments
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
@@ -248,8 +267,11 @@ def meanfield(
     |
 
     Args:
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
         name (str): molecule label
-        geometry (list): list containing the symbol and Cartesian coordinates for each atom
         charge (int): net charge of the system
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -267,11 +289,16 @@ def meanfield(
 
     **Example**
 
-    >>> name = 'h2'
-    >>> geometry = [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
-    >>> meanfield(name, geometry)
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    >>> meanfield(symbols, coordinates, name="h2")
     ./pyscf/sto-3g/h2
     """
+
+    if coordinates.size != 3 * len(symbols):
+        raise ValueError(
+            "The size of the array 'coordinates' has to be 3*len(symbols) = {};"
+            " got 'coordinates.size' = {}".format(3 * len(symbols), coordinates.size)
+        )
 
     package = package.strip().lower()
 
@@ -292,6 +319,11 @@ def meanfield(
         os.mkdir(basis_dir)
 
     path_to_file = os.path.join(basis_dir, name.strip())
+
+    geometry = [
+        [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
 
     molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
@@ -593,9 +625,6 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     q_op = QubitOperator()
     for coeff, op in zip(coeffs, ops):
 
-        # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
-        pauli_names = [s[-1] for s in op.name]
-
         extra_obsvbs = set(op.name) - {"PauliX", "PauliY", "PauliZ", "Identity"}
         if extra_obsvbs != set():
             raise ValueError(
@@ -603,13 +632,18 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
                 + "but also got {}.".format(extra_obsvbs)
             )
 
-        if op.name == ["Identity"] and len(op.wires) == 1:
+        # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
+        pauli_names = [s[-1] if s != "Identity" else s for s in op.name]
+
+        all_identity = all(obs.name == "Identity" for obs in op.obs)
+        if (op.name == ["Identity"] and len(op.wires) == 1) or all_identity:
             term_str = ""
         else:
             term_str = " ".join(
                 [
                     "{}{}".format(pauli, qubit_indexed_wires.index(wire))
                     for pauli, wire in zip(pauli_names, op.wires)
+                    if pauli != "Identity"
                 ]
             )
 
@@ -675,8 +709,9 @@ def convert_observable(qubit_observable, wires=None):
 
 
 def molecular_hamiltonian(
-    name,
-    geo_file,
+    symbols,
+    coordinates,
+    name="molecule",
     charge=0,
     mult=1,
     basis="sto-3g",
@@ -691,8 +726,6 @@ def molecular_hamiltonian(
 
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
-
-    #. The process begins by reading the file containing the geometry of the molecule.
 
     #. OpenFermion-PySCF or OpenFermion-Psi4 plugins are used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
@@ -724,8 +757,11 @@ def molecular_hamiltonian(
     |
 
     Args:
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
         name (str): name of the molecule
-        geo_file (str): file containing the geometry of the molecule
         charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
             for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
@@ -755,9 +791,8 @@ def molecular_hamiltonian(
 
     **Example**
 
-    >>> name = "h2"
-    >>> geo_file = "h2.xyz"
-    >>> H, qubits = molecular_hamiltonian(name, geo_file)
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
     >>> print(qubits)
     4
     >>> print(H)
@@ -778,9 +813,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    geometry = read_structure(geo_file, outpath)
-
-    hf_file = meanfield(name, geometry, charge, mult, basis, package, outpath)
+    hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
     molecule = MolecularData(filename=hf_file)
 

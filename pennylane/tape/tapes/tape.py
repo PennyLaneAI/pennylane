@@ -15,29 +15,33 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import OrderedDict
 import contextlib
+import copy
+from collections import Counter
+from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-
+from pennylane.grouping import diagonalize_qwc_pauli_words
 from pennylane.tape.circuit_graph import TapeCircuitGraph
 from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
+from pennylane.operation import Sample
 
-
+# CV ops still need to support state preparation operations prior to any
+# other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
     qml.QubitStateVector,
-    qml.CatState,
-    qml.CoherentState,
-    qml.FockDensityMatrix,
-    qml.DisplacedSqueezedState,
-    qml.FockState,
-    qml.FockStateVector,
-    qml.ThermalState,
-    qml.GaussianState,
+    # qml.CatState,
+    # qml.CoherentState,
+    # qml.FockDensityMatrix,
+    # qml.DisplacedSqueezedState,
+    # qml.FockState,
+    # qml.FockStateVector,
+    # qml.ThermalState,
+    # qml.GaussianState,
 )
 
 
@@ -66,7 +70,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             qml.CNOT(wires=[0, 'a'])
             qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.probs(wires=0), qml.probs(wires='a')
 
     The nested structure is preserved:
 
@@ -95,6 +99,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+
+    # Check for observables acting on the same wire. If present, observables must be
+    # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
+    # rotations and the observables updated to the computational basis. Note that this
+    # expansion acts on the original tape in place.
+    if tape._obs_sharing_wires:
+        try:
+            rotations, diag_obs = diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+        except ValueError as e:
+            raise qml.QuantumFunctionError(
+                "Only observables that are qubit-wise commuting "
+                "Pauli words can be returned on the same wire"
+            ) from e
+
+        tape._ops.extend(rotations)
+
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+            new_m = qml.tape.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+            tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
@@ -129,6 +152,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
 
+    # Update circuit info
+    new_tape._update_circuit_info()
     return new_tape
 
 
@@ -136,17 +161,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
-    .. note::
-
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
-
     Args:
         name (str): a name given to the quantum tape
-        caching (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
+        do_queue (bool): Whether to queue this tape in a parent tape context.
 
     **Example**
 
@@ -159,7 +176,7 @@ class QuantumTape(AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliZ(wires=[0]))
 
     Once constructed, information about the quantum circuit can be queried:
 
@@ -203,12 +220,33 @@ class QuantumTape(AnnotatedQueue):
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
+
+
+    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+
+    .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape1:
+        with qml.tape.QuantumTape(do_queue=False) as tape2:
+            qml.RX(0.123, wires=0)
+
+    Here, tape2 records the RX gate, but tape1 doesn't record tape2.
+
+    >>> tape1.operations
+    []
+    >>> tape2.operations
+    [RX(0.123, wires=[0])]
+
+    This is useful for when you want to transform a tape first before applying it.
     """
 
-    def __init__(self, name=None, caching=0):
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
+
+    def __init__(self, name=None, do_queue=True):
         super().__init__()
         self.name = name
-
+        self.do_queue = do_queue
         self._prep = []
         """list[.Operation]: Tape state preparations."""
 
@@ -225,48 +263,55 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = set()
         self._graph = None
+        self._resources = None
+        self._depth = None
         self._output_dim = 0
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
 
-        self.hash = 0
         self.is_sampled = False
+        self.all_sampled = False
         self.inverse = False
 
         self._stack = None
 
-        self._caching = caching
-        """float: number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-
-        self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
-        device."""
+        self._obs_sharing_wires = []
+        """list[.Observable]: subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires."""
+        self._obs_sharing_wires_id = []
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
-        if not QueuingContext.recording():
-            # if the tape is the first active queuing context
-            # monkeypatch the operations to support the new queuing context
-            with contextlib.ExitStack() as stack:
-                for mock in mock_operations():
-                    stack.enter_context(mock)
-                self._stack = stack.pop_all()
-
-        QueuingContext.append(self)
-        return super().__enter__()
+        QuantumTape._lock.acquire()
+        try:
+            if not QueuingContext.recording():
+                # if the tape is the first active queuing context
+                # monkeypatch the operations to support the new queuing context
+                with contextlib.ExitStack() as stack:
+                    for mock in mock_operations():
+                        stack.enter_context(mock)
+                    self._stack = stack.pop_all()
+            if self.do_queue:
+                QueuingContext.append(self)
+            return super().__enter__()
+        except Exception as _:
+            QuantumTape._lock.release()
+            raise
 
     def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
+        try:
+            super().__exit__(exception_type, exception_value, traceback)
 
-        if not QueuingContext.recording():
-            # remove the monkeypatching
-            self._stack.__exit__(exception_type, exception_value, traceback)
+            if not QueuingContext.recording():
+                # remove the monkeypatching
+                self._stack.__exit__(exception_type, exception_value, traceback)
 
-        self._process_queue()
+            self._process_queue()
+        finally:
+            QuantumTape._lock.release()
 
     @property
     def interface(self):
@@ -349,6 +394,26 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
+        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+        self.all_sampled = all(m.return_type is Sample for m in self.measurements)
+
+    def _update_observables(self):
+        """Update information about observables, including the wires that are acted upon and
+        identifying any observables that share wires"""
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        self._obs_sharing_wires = []
+        self._obs_sharing_wires_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None:
+                    if len(set(m.wires) & repeated_wires) > 0:
+                        self._obs_sharing_wires.append(m.obs)
+                        self._obs_sharing_wires_id.append(i)
+
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -369,9 +434,12 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
+        self._resources = None
+        self._depth = None
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
+        self._update_observables()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -398,7 +466,7 @@ class QuantumTape(AnnotatedQueue):
 
                 qml.CNOT(wires=[0, 'a'])
                 qml.RY(0.2, wires='a')
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         The nested structure is preserved:
 
@@ -444,7 +512,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
                 qml.CNOT(wires=[0, 'a'])
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         This tape has the following properties:
 
@@ -551,7 +619,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.trainable_params
         {0, 1, 2}
@@ -579,7 +647,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
-    def get_parameters(self, trainable_only=True):
+    def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
@@ -597,7 +665,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and will be returned:
 
@@ -645,7 +713,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and can be modified:
 
@@ -703,7 +771,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.operations
         [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
@@ -726,7 +794,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.observables
         [expval(PauliZ(wires=[0]))]
@@ -761,7 +829,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
         [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
@@ -808,9 +876,116 @@ class QuantumTape(AnnotatedQueue):
             .TapeCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = TapeCircuitGraph(self.operations, self.observables, self.wires)
+            self._graph = TapeCircuitGraph(
+                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+            )
 
         return self._graph
+
+    def get_resources(self):
+        """Resource requirements of a quantum circuit.
+
+        Returns:
+            dict[str, int]: how many times constituent operations are applied
+
+        **Example**
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.RZ(0.26, wires=1)
+                qml.CNOT(wires=[1, 0])
+                qml.Rot(1.8, -2.7, 0.2, wires=0)
+                qml.Hadamard(wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the resources produces a dictionary as shown below:
+
+        >>> tape.get_resources()
+        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+        """
+        if self._resources is None:
+            self._resources = {}
+
+            for op in self.operations:
+                if op.name not in self._resources.keys():
+                    self._resources[op.name] = 1
+                else:
+                    self._resources[op.name] += 1
+
+        return self._resources
+
+    def get_depth(self):
+        """Depth of the quantum circuit.
+
+        Returns:
+            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
+
+        **Example**
+
+        .. code-block:: python3
+
+            with QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.PauliX(wires=1)
+                qml.CRX(2.3, wires=[0, 1])
+                qml.Rot(1.2, 3.2, 0.7, wires=[1])
+                qml.CRX(-2.3, wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        The depth can be obtained like so:
+
+        >>> tape.get_depth()
+        4
+        """
+        if self._depth is None:
+            self._depth = self.graph.get_depth()
+
+        return self._depth
+
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
+        """Draw the quantum tape as a circuit diagram.
+
+        Consider the following circuit as an example:
+
+        .. code-block:: python3
+
+            with QuantumTape() as tape:
+                qml.Hadamard(0)
+                qml.CRX(2.3, wires=[0, 1])
+                qml.Rot(1.2, 3.2, 0.7, wires=[1])
+                qml.CRX(-2.3, wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        We can draw the tape after construction:
+
+        >>> print(tape.draw())
+        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(tape.draw(charset="ascii"))
+        0: --H--+C----------------------------+C---------+| <Z @ Z>
+        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and
+                "ascii" are supported.
+            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
+
+        Raises:
+            ValueError: if the given charset is not supported
+
+        Returns:
+            str: the circuit representation of the tape
+        """
+        return self.graph.draw(
+            charset=charset,
+            show_variable_names=False,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+        )
 
     @property
     def data(self):
@@ -822,18 +997,47 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self):
-        """Returns a shallow copy of the quantum tape."""
-        tape = self.__class__()
-        tape._prep = self._prep.copy()
-        tape._ops = self._ops.copy()
-        tape._measurements = self._measurements.copy()
+    def copy(self, copy_operations=False, tape_cls=None):
+        """Returns a shallow copy of the quantum tape.
+
+        Args:
+            copy_operations (bool): If True, the tape operations are also shallow copied.
+                Otherwise, if False, the copied tape operations will simply be references
+                to the original tape operations; changing the parameters of one tape will likewise
+                change the parameters of all copies.
+            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
+                If not provided, the same subclass is used as the original tape.
+
+        Returns:
+            .QuantumTape: a shallow copy of the tape
+        """
+        if tape_cls is None:
+            tape = self.__class__()
+        else:
+            tape = tape_cls()
+
+        if copy_operations:
+            # Perform a shallow copy of all operations in the state prep, operation, and measurement
+            # queues. The operations will continue to share data with the original tape operations
+            # unless modified.
+            tape._prep = [copy.copy(op) for op in self._prep]
+            tape._ops = [copy.copy(op) for op in self._ops]
+            tape._measurements = [copy.copy(op) for op in self._measurements]
+        else:
+            # Perform a shallow copy of the state prep, operation, and measurement queues. The
+            # operations within the queues will be references to the original tape operations;
+            # changing the original operations will always alter the operations on the copied tape.
+            tape._prep = self._prep.copy()
+            tape._ops = self._ops.copy()
+            tape._measurements = self._measurements.copy()
 
         tape._update()
-
-        tape._par_info = self._par_info.copy()
         tape.trainable_params = self.trainable_params.copy()
+
         return tape
+
+    def __copy__(self):
+        return self.copy(copy_operations=True)
 
     # ========================================================
     # execution methods
@@ -857,7 +1061,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
+                qml.probs(wires=[0, 'a'])
 
         If parameters are not provided, the existing tape parameters are used:
 
@@ -895,6 +1099,11 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        if not all(len(o.diagonalizing_gates()) == 0 for o in self._obs_sharing_wires):
+            raise qml.QuantumFunctionError(
+                "Multiple observables are being evaluated on the same wire. Call tape.expand() "
+                "prior to execution to support this."
+            )
 
         device.reset()
 
@@ -903,12 +1112,6 @@ class QuantumTape(AnnotatedQueue):
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
-
-        if self._caching:
-            circuit_hash = self.graph.hash
-            if circuit_hash in self._cache_execute:
-                self.set_parameters(saved_parameters)
-                return self._cache_execute[circuit_hash]
 
         if isinstance(device, qml.QubitDevice):
             res = device.execute(self)
@@ -935,20 +1138,9 @@ class QuantumTape(AnnotatedQueue):
         # restore original parameters
         self.set_parameters(saved_parameters)
 
-        if self._caching and circuit_hash not in self._cache_execute:
-            self._cache_execute[circuit_hash] = res
-            if len(self._cache_execute) > self._caching:
-                self._cache_execute.popitem(last=False)
-
         return res
 
     # interfaces can optionally override the _execute method
     # if they need to perform any logic in between the user's
     # call to tape.execute and the internal call to tape.execute_device.
     _execute = execute_device
-
-    @property
-    def caching(self):
-        """float: number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-        return self._caching

@@ -91,8 +91,10 @@ def get_shape(inpt):
 
         try:
             shape = inpt.shape
-        except AttributeError:
-            raise ValueError("could not extract shape of object of type {}".format(type(inpt)))
+        except AttributeError as e:
+            raise ValueError(
+                "could not extract shape of object of type {}".format(type(inpt))
+            ) from e
 
         # turn result into tuple to avoid type TensorShape
         shape = tuple(shape)
@@ -108,6 +110,9 @@ def check_shape(inpt, target_shape, msg, bound=None):
         target_shape (tuple[int]): expected shape of inpt
         msg (str): error message to display if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
+
+    Returns:
+        tuple: shape of ``inpt``
 
     Raises:
         ValueError
@@ -138,6 +143,9 @@ def check_shapes(inpt_list, target_shapes, msg, bounds=None):
         msg (str): error message to display
         bounds (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
             shape
+
+    Returns:
+        list: list of shapes for ``inpt_list``
 
     Raises:
         ValueError
@@ -195,7 +203,7 @@ def check_number_of_layers(list_of_weights):
 
     if any(len(s) == 0 for s in shapes):
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got scalar weights."
         )
 
@@ -205,7 +213,7 @@ def check_number_of_layers(list_of_weights):
 
     if n_different_first_dims > 1:
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got differing first dimensions: {}.".format(*different_first_dims)
         )
 

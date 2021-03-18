@@ -22,6 +22,9 @@ from networkx import Graph
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 #####################################################
 
 graph = Graph()
@@ -55,7 +58,7 @@ class TestMixerHamiltonians:
 
         assert mixer_coeffs == [1, 1, 1, 1]
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [Wires(0), Wires(1), Wires(2), Wires(3)]
+        assert mixer_wires == [0, 1, 2, 3]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -211,6 +214,8 @@ class TestMixerHamiltonians:
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(target_hamiltonian)
 
 
+'''GENERATES CASES TO TEST THE MAXCUT PROBLEM'''
+
 GRAPHS = [
     Graph([(0, 1), (1, 2)]),
     Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
@@ -250,7 +255,129 @@ MIXER_TERMS = [
 
 MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
 
-MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
+MAXCUT = list(zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+
+'''GENERATES THE CASES TO TEST THE MAX INDEPENDENT SET PROBLEM'''
+
+CONSTRAINED = [True, True, False]
+
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, -0.5, 0.75, 0.25]]
+
+COST_TERMS = [
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.PauliZ(2)]
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+
+MIXER_COEFFS = [
+    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+    [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
+    [1, 1, 1]
+]
+
+MIXER_TERMS = [
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliX(1),
+        qml.PauliX(1) @ qml.PauliZ(2),
+        qml.PauliX(1) @ qml.PauliZ(0),
+        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(1)
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliX(1),
+        qml.PauliX(1) @ qml.PauliZ(2),
+        qml.PauliX(1) @ qml.PauliZ(0),
+        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(0),
+        qml.PauliX(2) @ qml.PauliZ(1),
+        qml.PauliX(2) @ qml.PauliZ(1) @ qml.PauliZ(0)
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliX(1),
+        qml.PauliX(2)
+    ]
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+
+MIS = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+
+'''GENERATES THE CASES TO TEST THE MIn VERTEX COVER PROBLEM'''
+
+COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25]]
+
+COST_TERMS = [
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.PauliZ(2)]
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+
+MIXER_COEFFS = [
+    [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
+    [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
+    [1, 1, 1]
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+
+MVC = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+
+'''GENERATES THE CASES TO TEST THE MAXCLIQUE PROBLEM'''
+
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1]]
+
+COST_TERMS = [
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)]
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+
+MIXER_COEFFS = [
+    [0.5, 0.5, 1.0, 0.5, 0.5],
+    [1.0, 1.0, 1.0],
+    [1, 1, 1]
+]
+
+MIXER_TERMS = [
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliX(1),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(0)
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliX(1),
+        qml.PauliX(2)
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliX(1),
+        qml.PauliX(2)
+    ]
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+
+MAXCLIQUE = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+
+'''GENERATES CASES TO TEST EDGE DRIVER COST HAMILTONIAN'''
 
 GRAPHS.append(graph)
 GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
@@ -355,13 +482,19 @@ class TestCostHamiltonians:
 
     """Tests the cost Hamiltonians"""
 
-    def test_maxcut_error(self):
-        """Tests that the MaxCut Hamiltonian throws the correct error"""
+    def test_cost_graph_error(self):
+        """Tests that the cost Hamiltonians throw the correct error"""
 
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.max_independent_set(graph)
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.min_vertex_cover(graph)
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.max_clique(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
@@ -372,6 +505,32 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
+    def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Max Indepenent Set method is correct"""
+
+        cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
+    def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Min Vertex Cover method is correct"""
+
+        cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE)
+    def test_max_clique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Maximum Clique method is correct"""
+
+        cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
 class TestUtils:
     """Tests that the utility functions are working properly"""
@@ -471,3 +630,38 @@ class TestLayers:
             target = [j.name, j.parameters, j.wires]
 
         assert prep == target
+
+
+class TestIntegration:
+    """Test integration of the QAOA module with PennyLane"""
+
+    def test_module_example(self, tol):
+        """Test the example in the QAOA module docstring"""
+
+        # Defines the wires and the graph on which MaxCut is being performed
+        wires = range(3)
+        graph = Graph([(0, 1), (1, 2), (2, 0)])
+
+        # Defines the QAOA cost and mixer Hamiltonians
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
+        def qaoa_layer(gamma, alpha):
+            qaoa.cost_layer(gamma, cost_h)
+            qaoa.mixer_layer(alpha, mixer_h)
+
+        # Repeatedly applies layers of the QAOA ansatz
+        def circuit(params, **kwargs):
+            for w in wires:
+                qml.Hadamard(wires=w)
+
+            qml.layer(qaoa_layer, 2, params[0], params[1])
+
+        # Defines the device and the QAOA cost function
+        dev = qml.device('default.qubit', wires=len(wires))
+        cost_function = qml.ExpvalCost(circuit, cost_h, dev)
+
+        res = cost_function([[1, 1], [1, 1]])
+        expected = -1.8260274380964299
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)

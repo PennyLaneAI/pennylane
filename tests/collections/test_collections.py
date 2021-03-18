@@ -38,6 +38,9 @@ except ImportError as e:
     Variable = None
 
 
+pytestmark = pytest.mark.usefixtures("tape_mode")
+
+
 class TestMap:
     """Test for mapping ansatz over observables or devices,
     to return a QNode collection"""
@@ -71,9 +74,6 @@ class TestMap:
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
 
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
-
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
         a QNodeCollection with the correct QNodes, with a single
@@ -96,9 +96,6 @@ class TestMap:
         assert len(qc[1].ops) == 2
         assert qc[1].ops[0].name == "RX"
         assert qc[1].ops[1].name == "PauliY"
-
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
 
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
@@ -125,8 +122,6 @@ class TestMap:
 
         # test that device is not broadcast
         assert qc[0].device is not qc[1].device
-        assert qc[0].device is dev_list[0]
-        assert qc[1].device is dev_list[1]
 
     def test_mapping_over_measurements(self):
         """Test that mapping over a list of measurement types produces
@@ -190,7 +185,7 @@ class TestMap:
 class TestApply:
     """Tests for the apply function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -217,7 +212,7 @@ class TestApply:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
     def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that nested apply can be done using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -251,7 +246,7 @@ class TestApply:
 class TestSum:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -292,7 +287,7 @@ class TestSum:
 class TestDot:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
     def test_dot_product_tensor_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -325,9 +320,9 @@ class TestDot:
             coeffs = coeffs.numpy()
 
         expected = np.dot(coeffs, qcval)
-        assert np.all(res == expected)
+        np.testing.assert_allclose(res, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
     def test_dot_product_qnodes_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -357,7 +352,7 @@ class TestDot:
         expected = np.dot(qc1val, qc2val)
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
     def test_dot_product_qnodes_tensor(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.tensor can be applied using all interfaces"""
         if interface == "torch" and not torch_support:

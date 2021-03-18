@@ -311,16 +311,18 @@ class TestParameterShiftLogic:
         tape.trainable_params = {0}
         assert tape.analytic_pd == tape.parameter_shift
 
-        spy1 = mocker.spy(tape, "parameter_shift_first_order")
-        spy2 = mocker.spy(tape, "parameter_shift_second_order")
+        spy_analytic = mocker.spy(tape, "analytic_pd")
+        spy_first_order_shift = mocker.spy(tape, "parameter_shift_first_order")
+        spy_second_order_shift = mocker.spy(tape, "parameter_shift_second_order")
         spy_transform = mocker.spy(qml.operation.CVOperation, "heisenberg_tr")
         spy_numeric = mocker.spy(tape, "numeric_pd")
 
         with pytest.warns(UserWarning, match="does not support the PolyXP observable"):
             tape.jacobian(dev, method="analytic")
 
-        spy1.assert_not_called()
-        spy2.assert_called()
+        spy_analytic.assert_called()
+        spy_first_order_shift.assert_not_called()
+        spy_second_order_shift.assert_not_called()
         spy_transform.assert_not_called()
         spy_numeric.assert_called()
 
@@ -752,6 +754,35 @@ class TestVarianceQuantumGradients:
 
         with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{0\}"):
             tape.jacobian(dev, method="analytic")
+
+    def test_error_unsupported_grad_recipe(self, monkeypatch):
+        """Test exception raised if attempting to use the second order rule for
+        computing the gradient analytically of an expectation value that
+        contains an operation with more than two terms in the gradient recipe"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+            grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        dev.operations.add(DummyOp)
+
+
+        with CVParamShiftTape() as tape:
+            DummyOp(1, wires=[0])
+            qml.expval(qml.X(0))
+
+        with monkeypatch.context() as m:
+            m.setattr(tape, "_grad_method_validation", lambda *args: ('A',))
+            tape._par_info[0]["grad_method"] = 'A'
+            tape.trainable_params = {0}
+
+            with pytest.raises(NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"):
+                tape.jacobian(dev, method="analytic", force_order2=True)
 
     cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
     analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]

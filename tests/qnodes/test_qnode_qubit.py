@@ -22,7 +22,7 @@ from pennylane._device import Device
 from pennylane.operation import CVObservable
 from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.qnodes.qubit import QubitQNode
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 

@@ -28,7 +28,7 @@ import pennylane as qml
 from scipy.linalg import block_diag
 from flaky import flaky
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [pytest.mark.skip_unsupported, pytest.mark.usefixtures("tape_mode")]
 
 np.random.seed(42)
 
@@ -46,15 +46,18 @@ ops = {
     "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
     "CZ": qml.CZ(wires=[0, 1]),
     "CY": qml.CY(wires=[0, 1]),
-    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.eye(2), wires=[0]),
+    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
     "PauliX": qml.PauliX(wires=[0]),
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
+    "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
     "RX": qml.RX(0, wires=[0]),
     "RY": qml.RY(0, wires=[0]),
     "RZ": qml.RZ(0, wires=[0]),
@@ -62,7 +65,9 @@ ops = {
     "S": qml.S(wires=[0]),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
+    "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
+    "QFT": qml.QFT(wires=[0, 1, 2]),
 }
 
 all_ops = ops.keys()
@@ -75,6 +80,7 @@ Z = np.array([[1, 0], [0, -1]])
 H = np.array([[1, 1], [1, -1]]) / sqrt(2)
 S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
+SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
@@ -141,6 +147,7 @@ single_qubit = [
     (qml.Hadamard, H),
     (qml.S, S),
     (qml.T, T),
+    (qml.SX, SX),
 ]
 
 # list of all parametrized single-qubit gates
@@ -222,7 +229,7 @@ class TestSupportedGates:
 
             @qml.qnode(dev)
             def circuit():
-                ops[operation].inv()
+                ops[operation].queue().inv()
                 return qml.expval(qml.Identity(wires=0))
 
             assert isinstance(circuit(), (float, np.ndarray))

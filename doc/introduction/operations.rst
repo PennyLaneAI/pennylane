@@ -58,6 +58,7 @@ Qubit gates
     ~pennylane.PauliZ
     ~pennylane.S
     ~pennylane.T
+    ~pennylane.SX
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
@@ -65,6 +66,7 @@ Qubit gates
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
     ~pennylane.PhaseShift
+    ~pennylane.ControlledPhaseShift
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
@@ -79,7 +81,10 @@ Qubit gates
     ~pennylane.Toffoli
     ~pennylane.CSWAP
     ~pennylane.QubitUnitary
+    ~pennylane.ControlledQubitUnitary
+    ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
+    ~pennylane.QFT
 
 :html:`</div>`
 
@@ -114,6 +119,8 @@ Noisy channels
     ~pennylane.GeneralizedAmplitudeDamping
     ~pennylane.PhaseDamping
     ~pennylane.DepolarizingChannel
+    ~pennylane.BitFlip
+    ~pennylane.PhaseFlip
     ~pennylane.QubitChannel
 
 :html:`</div>`
@@ -136,6 +143,30 @@ Qubit observables
     ~pennylane.PauliZ
 
 :html:`</div>`
+
+Grouping Pauli words
+^^^^^^^^^^^^^^^^^^^^
+
+Grouping Pauli words can be used for the optimizing the measurement of qubit
+Hamiltonians. Along with groups of observables, post-measurement rotations can
+also be obtained using :func:`~.optimize_measurements`:
+
+.. code-block:: python
+
+    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+    >>> coeffs = [1.43, 4.21, 0.97]
+    >>> post_rotations, diagonalized_groupings, grouped_coeffs = optimize_measurements(obs, coeffs)
+    >>> post_rotations
+    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
+     [RX(1.5707963267948966, wires=[0])]]
+
+The post-measurement rotations can be used to diagonalize the partitions of
+observables found.
+
+For further details on measurement optimization, grouping observables through
+solving the minimum clique cover problem, and auxiliary functions, refer to the
+:doc:`/code/qml_grouping` subpackage.
+
 
 .. _intro_ref_ops_cv:
 

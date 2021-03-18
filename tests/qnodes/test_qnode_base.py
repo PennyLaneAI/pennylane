@@ -26,7 +26,7 @@ from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
 from pennylane.wires import Wires, WireError
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 @pytest.fixture(scope="function")
 def mock_qnode(mock_device):
@@ -343,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == Wires(0)
+        assert qnode.ops[0].wires[0] == 0
 
 
 class TestQNodeExceptions:
@@ -518,17 +518,6 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
-    def test_bad_wire_argument(self, operable_mock_device_2_wires):
-        """Error: wire arguments must be intergers."""
-
-        def circuit(x):
-            qml.RX(x, wires=[qml.PauliX])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
-
-        node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
-            node(1)
-
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
         """Error: trying to use a differentiable parameter as a wire argument."""
 
@@ -537,7 +526,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(WireError, match="Wires must be hashable"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -548,7 +537,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(WireError, match="Wires must be hashable"):
             node(x=1)
 
     @pytest.mark.xfail(
@@ -1500,3 +1489,32 @@ class TestTrainableArgs:
         # the user will evaluate the QNode with.
         node.set_trainable_args({0, 1, 6})
         assert node.get_trainable_args() == {0, 1, 6}
+
+
+def test_old_qnode_in_tape_mode():
+    """Test that the old QNode can still be evaluated when running in tape mode"""
+
+    # tape mode should not be active so that we can use the old QNode
+    assert not qml.tape_mode_active()
+
+    try:
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def f(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        qml.enable_tape()
+        res = f(0.4)
+        exp = 0.9210609940028851
+
+        assert np.allclose(res, exp)
+
+        # check that tape mode is turned on again after evaluating the old QNode
+        assert qml.tape_mode_active()
+
+    finally:  # always make sure we turn on tape mode to prevent disrupting the other tests
+        qml.enable_tape()

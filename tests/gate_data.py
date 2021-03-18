@@ -37,6 +37,20 @@ CSWAP = np.array(
 Toffoli = np.diag([1 for i in range(8)])
 Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
+w = np.exp(2 * np.pi * 1j / 8)
+QFT = np.array(
+    [
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, w, w ** 2, w ** 3, w ** 4, w ** 5, w ** 6, w ** 7],
+        [1, w ** 2, w ** 4, w ** 6, 1, w ** 2, w ** 4, w ** 6],
+        [1, w ** 3, w ** 6, w, w ** 4, w ** 7, w ** 2, w ** 5],
+        [1, w ** 4, 1, w ** 4, 1, w ** 4, 1, w ** 4],
+        [1, w ** 5, w ** 2, w ** 7, w ** 4, w, w ** 6, w ** 3],
+        [1, w ** 6, w ** 4, w ** 2, 1, w ** 6, w ** 4, w ** 2],
+        [1, w ** 7, w ** 6, w ** 5, w ** 4, w ** 3, w ** 2, w],
+    ]
+) / np.sqrt(8)
+
 # ========================================================
 #  parametrized gates
 # ========================================================
@@ -177,3 +191,45 @@ def CRot3(a, b, c):
             ],
         ]
     )
+
+def MultiRZ1(theta):
+    r"""Arbitrary multi Z rotation on one wire.
+
+    Args:
+        theta (float): rotation angle
+
+    Returns:
+        array: the one-wire MultiRZ matrix
+    """
+    return np.array([[np.exp(-1j * theta / 2), 0.0 + 0.0j], [0.0 + 0.0j, np.exp(1j * theta / 2)]])
+
+
+def MultiRZ2(theta):
+    r"""Arbitrary multi Z rotation on two wires.
+
+    Args:
+        theta (float): rotation angle
+
+    Returns:
+        array: the two-wire MultiRZ matrix
+    """
+    return np.array(
+        [
+            [np.exp(-1j * theta / 2), 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, np.exp(1j * theta / 2), 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, np.exp(1j * theta / 2), 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * theta / 2)],
+        ]
+    )
+
+
+def ControlledPhaseShift(phi):
+    r"""Controlled phase shift.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-wire controlled-phase matrix
+    """
+    return np.diag([1, 1, 1, np.exp(1j * phi)])

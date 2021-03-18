@@ -16,7 +16,7 @@ This module contains the :func:`to_torch` function to convert Numpy-interfacing 
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
-from collections import Iterable
+from collections.abc import Iterable
 import inspect
 from functools import partial
 import numbers
@@ -212,7 +212,7 @@ def to_torch(qnode):
 
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
-            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
+            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype).to(grad_output)
 
             vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
             vjp = vjp.flatten()

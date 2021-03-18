@@ -25,6 +25,8 @@ try:
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
 except ImportError as e:
@@ -120,8 +122,10 @@ class DefaultQubitTF(DefaultQubit):
             If ``analytic == True``, then the number of shots is ignored
             in the calculation of expectation values and variances, and only controls the number
             of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
+        analytic (bool): Indicates if the device should calculate expectations
+            and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
+            QNode differentiation method is not supported and it is recommended to consider
+            switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
     """
 
     name = "Default qubit (TensorFlow) PennyLane plugin"
@@ -129,13 +133,16 @@ class DefaultQubitTF(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
+        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,
         "Rot": tf_ops.Rot,
+        "MultiRZ": tf_ops.MultiRZ,
         "CRX": tf_ops.CRX,
         "CRY": tf_ops.CRY,
         "CRZ": tf_ops.CRZ,
+        "CRot": tf_ops.CRot,
     }
 
     C_DTYPE = tf.complex128
@@ -152,12 +159,24 @@ class DefaultQubitTF(DefaultQubit):
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
-    _imag = staticmethod(tf.math.conj)
+    _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
 
+    @staticmethod
+    def _asarray(array, dtype=None):
+        try:
+            res = tf.convert_to_tensor(array, dtype=dtype)
+        except InvalidArgumentError:
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+
+            if dtype is not None:
+                res = tf.cast(res, dtype=dtype)
+
+        return res
+
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
@@ -166,7 +185,7 @@ class DefaultQubitTF(DefaultQubit):
         # raise an error when calculating the gradient. For versions of TF after 2.3.0,
         # special apply methods are also not supported when using more than 8 wires due to
         # limitations with TF slicing.
-        if not SUPPORTS_APPLY_OPS or wires > 8:
+        if not SUPPORTS_APPLY_OPS or self.num_wires > 8:
             self._apply_ops = {}
 
     @classmethod
@@ -196,8 +215,18 @@ class DefaultQubitTF(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
             object will be returned.
         """
-        if unitary.name in self.parametric_ops:
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+        op_name = unitary.name.split(".inv")[0]
+
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals

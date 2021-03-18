@@ -109,6 +109,7 @@ h1 {
   /*border-bottom: 3px solid #D8E4EF;*/
   /*border-bottom: 3px solid #eee;*/
   padding-bottom: -29px;
+  word-wrap: break-word;
 }
 
 h2 {
