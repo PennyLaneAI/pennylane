@@ -1115,12 +1115,18 @@ def force_constants(
             The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
         idx (list[int]): specifies the indices ``i, j`` of the coordinates to differentiate
+        hessian (array[float, float]): matrix containing the Hessian of the energy with
+            respect to the circuit parameters
+            :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}`
         ansatz (callable): the ansatz for the circuit before the final measurement step
         params (array[float]): optimized circuit parameters :math:`\theta^*(x)`
         dev (Device): device where the calculations of the expectation values should be executed
-        hessian (array[float, float]): matrix containing the Hessian of the energy with
-            respect to the circuit parameters
-            :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}
+        interface(str): interface to use to evaluate the expectation value of
+            the Hamiltonian derivatives
+        diff_method(str): the method of differentiation to compute the derivatives
+            :math:`\frac{\partial}{\partial \theta_a}\frac{\partial E({\theta}^*, x)}{\partial x_j}`
+        optimize (bool): whether to optimize the observables composing the derivative of the
+            Hamiltonian by separating them into qubit-wise commuting groups
         delta (float): step size in Bohr radii used to displace the nuclear coordinates
             in order to compute the derivative of the Hamiltonian using finite differences
             approximation
