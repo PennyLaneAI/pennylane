@@ -39,10 +39,11 @@ def frequency_spectra(qnode):
         \sum \limits_{n_1\in \Omega_1} \dots \sum \limits_{n_N \in \Omega_N}
         c_{n_1,\dots, n_N} e^{-i x_1 n_1} \dots e^{-i x_N n_N}
 
-    summing over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{Z}`
+    summing over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{Z},`
     :math:`i=1,\dots,N`, where :math:`\mathbb{Z}` are the integers. Each
-    spectrum has the property that :math:`0 \in \Omega_i` and are symmetric (for
-    every :math:`n \in \Omega_i` we have that :math:`-n \in \Omega_i`).
+    spectrum has the property that :math:`0 \in \Omega_i`, and the spectrum is
+    symmetric (for every :math:`n \in \Omega_i` we have that :math:`-n \in
+    \Omega_i`).
 
     As shown in `Schuld, Sweke and Meyer (2020)
     <https://arxiv.org/abs/2008.08605>`_ and XXX, the frequency spectra only
@@ -74,7 +75,7 @@ def frequency_spectra(qnode):
 
     .. math::
 
-        \Omega_i = \{\sum_{j=1}^J \lambda_{j} - \sum_{j'=1}^J \lambda_{j'}\}, \;
+        \Omega_i = \left\{\sum_{j=1}^J \lambda_{j} - \sum_{j'=1}^J \lambda_{j'}\right\}, \;
         \lambda_j, \lambda_{j'} \in ev_j
 
     Args:
@@ -118,6 +119,7 @@ def frequency_spectra(qnode):
 
         for inp, freqs in frequencies.items():
             print(f"{inp}: {freqs}")
+
     """
 
     all_params = qnode.qtape.get_parameters(trainable_only=False)
@@ -130,32 +132,52 @@ def frequency_spectra(qnode):
     if not inputs:
         return [], []
 
-    generator_evals = [[] for _ in range(len(inputs))]
+    # First, pass through the list of operations. Extract the ones that
+    # are parameter-dependent, and unroll anything that isn't.
+    relevant_operations = []
 
-    # go through operations to find generators of inputs
     for obj in qnode.qtape.operations:
         if isinstance(obj, qml.operation.Operation):
+            # Ignore operations with no parameters, or with no parameters marked as inputs
+            if obj.num_params == 0:
+                continue
 
-            # do nothing if no gate parameter is marked as input
             if not np.any([p.is_input for p in obj.data if isinstance(p, np.tensor)]):
                 continue
 
-            if len(obj.data) > 1:
-                raise ValueError(
-                    "Function does not support inputs fed into multi-parameter gates."
-                )
-            inp = obj.data[0]
+            # Check if this is a gate should be unrolled into Pauli operators
+            try:
+                decomp = obj.decomposition(*obj.parameters, wires=obj.wires)
+            except NotImplementedError:
+                relevant_operations.append(obj)
+                continue
 
-            idx = inputs.index(inp)
+            # Only add gates with relevant input parameters
+            for decomp_op in decomp:
+                if np.any([p.is_input for p in decomp_op.data if isinstance(p, np.tensor)]):
+                    relevant_operations.append(decomp_op)
 
-            # get eigenvalues of gate generator
-            gen, coeff = obj.generator
-            evals = np.linalg.eigvals(coeff * gen.matrix)
-            # eigenvalues of hermitian ops are guaranteed to be real
-            evals = np.real(evals)
-            generator_evals[idx].append(evals)
-            # append negative to cater for the complex conjugate part which subtracts eigenvalues
-            generator_evals[idx].append(-evals)
+    # Next, go through operations to find generators of inputs
+    generator_evals = [[] for _ in range(len(inputs))]
+
+    for obj in relevant_operations:
+        #if len(obj.data) > 1:
+        #    raise ValueError(
+        #        "Function does not support inputs fed into multi-parameter gates."
+        #    )
+
+        inp = obj.data[0]
+
+        idx = inputs.index(inp)
+
+        # get eigenvalues of gate generator
+        gen, coeff = obj.generator
+        evals = np.linalg.eigvals(coeff * gen.matrix)
+        # eigenvalues of hermitian ops are guaranteed to be real
+        evals = np.real(evals)
+        generator_evals[idx].append(evals)
+        # append negative to cater for the complex conjugate part which subtracts eigenvalues
+        generator_evals[idx].append(-evals)
 
     # for each spectrum, compute sums of all possible combinations of eigenvalues
     frequencies = [[sum(comb) for comb in product(*e)] for e in generator_evals]
