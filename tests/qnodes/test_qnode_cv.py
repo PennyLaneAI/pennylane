@@ -22,7 +22,7 @@ from pennylane._device import Device
 from pennylane.operation import CVObservable
 from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.qnodes.cv import CVQNode
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 class PolyN(qml.ops.PolyXP):
     """Mimics NumberOperator using the arbitrary 2nd order observable interface.

@@ -18,14 +18,14 @@ import numpy as np
 import semantic_version
 
 from pennylane.operation import DiagonalOperation
-from pennylane.wires import Wires, WireError
-from pennylane.numpy.tensor import tensor
 
 try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
+
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
@@ -133,6 +133,7 @@ class DefaultQubitTF(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
+        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,
@@ -161,6 +162,18 @@ class DefaultQubitTF(DefaultQubit):
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        try:
+            res = tf.convert_to_tensor(array, dtype=dtype)
+        except InvalidArgumentError:
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+
+            if dtype is not None:
+                res = tf.cast(res, dtype=dtype)
+
+        return res
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots=shots, analytic=analytic, cache=0)
@@ -202,26 +215,20 @@ class DefaultQubitTF(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
             object will be returned.
         """
-        if unitary.name in self.parametric_ops:
-            if unitary.name == "MultiRZ":
-                return self.parametric_ops[unitary.name](unitary.parameters, len(unitary.wires))
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+        op_name = unitary.name.split(".inv")[0]
+
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
 
         return unitary.matrix
-
-    def map_wires(self, wires):
-        """Map the wire labels of wires using this device's wire map.
-
-        Args:
-            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
-
-        Returns:
-            Wires: wires with new labels
-        """
-        wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
-        mapped_wires = super().map_wires(wires)
-
-        return mapped_wires

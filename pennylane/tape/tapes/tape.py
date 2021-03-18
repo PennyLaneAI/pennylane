@@ -29,17 +29,19 @@ from pennylane.tape.operation import mock_operations
 from pennylane.tape.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
+# CV ops still need to support state preparation operations prior to any
+# other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
     qml.BasisState,
     qml.QubitStateVector,
-    qml.CatState,
-    qml.CoherentState,
-    qml.FockDensityMatrix,
-    qml.DisplacedSqueezedState,
-    qml.FockState,
-    qml.FockStateVector,
-    qml.ThermalState,
-    qml.GaussianState,
+    # qml.CatState,
+    # qml.CoherentState,
+    # qml.FockDensityMatrix,
+    # qml.DisplacedSqueezedState,
+    # qml.FockState,
+    # qml.FockStateVector,
+    # qml.ThermalState,
+    # qml.GaussianState,
 )
 
 
@@ -68,7 +70,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             qml.CNOT(wires=[0, 'a'])
             qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.probs(wires=0), qml.probs(wires='a')
 
     The nested structure is preserved:
 
@@ -150,8 +152,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
 
-    # Check the observables without needing to create the circuit graph
-    new_tape.is_sampled = any(obs.return_type == Sample for obs in new_tape.observables)
+    # Update circuit info
+    new_tape._update_circuit_info()
     return new_tape
 
 
@@ -159,13 +161,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
-    .. note::
-
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
-
     Args:
         name (str): a name given to the quantum tape
+        do_queue (bool): Whether to queue this tape in a parent tape context.
 
     **Example**
 
@@ -178,7 +176,7 @@ class QuantumTape(AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliZ(wires=[0]))
 
     Once constructed, information about the quantum circuit can be queried:
 
@@ -222,15 +220,33 @@ class QuantumTape(AnnotatedQueue):
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
+
+
+    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+
+    .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape1:
+        with qml.tape.QuantumTape(do_queue=False) as tape2:
+            qml.RX(0.123, wires=0)
+
+    Here, tape2 records the RX gate, but tape1 doesn't record tape2.
+
+    >>> tape1.operations
+    []
+    >>> tape2.operations
+    [RX(0.123, wires=[0])]
+
+    This is useful for when you want to transform a tape first before applying it.
     """
 
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, do_queue=True):
         super().__init__()
         self.name = name
-
+        self.do_queue = do_queue
         self._prep = []
         """list[.Operation]: Tape state preparations."""
 
@@ -254,8 +270,8 @@ class QuantumTape(AnnotatedQueue):
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
 
-        self.hash = 0
         self.is_sampled = False
+        self.all_sampled = False
         self.inverse = False
 
         self._stack = None
@@ -278,8 +294,8 @@ class QuantumTape(AnnotatedQueue):
                     for mock in mock_operations():
                         stack.enter_context(mock)
                     self._stack = stack.pop_all()
-
-            QueuingContext.append(self)
+            if self.do_queue:
+                QueuingContext.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -378,6 +394,9 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
+        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+        self.all_sampled = all(m.return_type is Sample for m in self.measurements)
+
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
         identifying any observables that share wires"""
@@ -447,7 +466,7 @@ class QuantumTape(AnnotatedQueue):
 
                 qml.CNOT(wires=[0, 'a'])
                 qml.RY(0.2, wires='a')
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         The nested structure is preserved:
 
@@ -493,7 +512,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
                 qml.CNOT(wires=[0, 'a'])
-                probs(wires=0), probs(wires='a')
+                qml.probs(wires=0), qml.probs(wires='a')
 
         This tape has the following properties:
 
@@ -600,7 +619,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.trainable_params
         {0, 1, 2}
@@ -646,7 +665,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and will be returned:
 
@@ -694,7 +713,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and can be modified:
 
@@ -752,7 +771,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.operations
         [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
@@ -775,7 +794,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.observables
         [expval(PauliZ(wires=[0]))]
@@ -810,7 +829,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
         [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
@@ -926,7 +945,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._depth
 
-    def draw(self, charset="unicode", wire_order=None):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -953,6 +972,7 @@ class QuantumTape(AnnotatedQueue):
             charset (str, optional): The charset that should be used. Currently, "unicode" and
                 "ascii" are supported.
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -960,7 +980,12 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(charset=charset, show_variable_names=False, wire_order=wire_order)
+        return self.graph.draw(
+            charset=charset,
+            show_variable_names=False,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+        )
 
     @property
     def data(self):
@@ -1036,7 +1061,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
+                qml.probs(wires=[0, 'a'])
 
         If parameters are not provided, the existing tape parameters are used:
 

@@ -18,7 +18,6 @@ representation of a quantum circuit from an operator and observable queue.
 # pylint: disable=too-many-arguments
 import networkx as nx
 
-import pennylane as qml
 from pennylane.circuit_graph import CircuitGraph, Layer
 
 
@@ -53,11 +52,6 @@ class TapeCircuitGraph(CircuitGraph):
         self.trainable_params = trainable_params
 
         self._depth = None
-
-        for m in self._observables:
-            if m.return_type is qml.operation.State:
-                # state measurements are applied to all device wires
-                m._wires = wires  # pylint: disable=protected-access
 
         super().__init__(ops + obs, variable_deps={}, wires=wires)
 

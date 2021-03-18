@@ -18,6 +18,7 @@ This module contains the QNode class and qnode decorator.
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper, wraps
 import warnings
+import inspect
 
 import numpy as np
 
@@ -37,25 +38,8 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> qml.tape.QNode(qfunc, dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -103,12 +87,31 @@ class QNode:
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
+            * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
+              reverses through the circuit after a forward pass by iteratively applying the inverse
+              (adjoint) gate. This method is similar to the reversible method, but has a lower time
+              overhead and a similar memory overhead. Only allowed on simulator devices such as
+              :class:`default.qubit <~.DefaultQubit>`.
+
             * ``"parameter-shift"``: Use the analytic parameter-shift
               rule for all supported quantum operation arguments, with finite-difference
               as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
+
+        mutable (bool): If True, the underlying quantum circuit is re-constructed with
+            every evaluation. This is the recommended approach, as it allows the underlying
+            quantum structure to depend on (potentially trainable) QNode input arguments,
+            however may add some overhead at evaluation time. If this is set to False, the
+            quantum structure will only be constructed on the *first* evaluation of the QNode,
+            and is stored and re-used for further quantum evaluations. Only set this to False
+            if it is known that the underlying quantum structure is **independent of QNode input**.
+
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
 
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
@@ -118,7 +121,6 @@ class QNode:
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
@@ -128,7 +130,16 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes,too-many-arguments
 
-    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+    def __init__(
+        self,
+        func,
+        device,
+        interface="autograd",
+        diff_method="best",
+        mutable=True,
+        max_expansion=10,
+        **diff_options,
+    ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
@@ -141,6 +152,18 @@ class QNode:
                 "Invalid device. Device must be a valid PennyLane device."
             )
 
+        if "shots" in inspect.signature(func).parameters:
+            warnings.warn(
+                "Detected 'shots' as an argument to the given quantum function. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device. Its use outside of this context should be avoided.",
+                DeprecationWarning,
+            )
+            self._qfunc_uses_shots_arg = True
+        else:
+            self._qfunc_uses_shots_arg = False
+
+        self.mutable = mutable
         self.func = func
         self._original_device = device
         self.qtape = None
@@ -148,19 +171,18 @@ class QNode:
         # store the user-specified differentiation method
         self.diff_method = diff_method
 
-        self._tape, self.interface, diff_method, self.device = self.get_tape(
+        self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
+
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
-        # Store the differentiation method to be passed to JacobianTape.jacobian().
-        # Note that the tape accepts a different set of allowed methods than the QNode:
-        #     best, analytic, numeric, device
-        self.diff_options["method"] = diff_method
+        self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
-        self.max_expansion = 2
+        self.max_expansion = max_expansion
 
+    # pylint: disable=too-many-return-statements
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
         """Determine the best JacobianTape, differentiation method, interface, and device
@@ -170,13 +192,13 @@ class QNode:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str): The requested method of differentiation. One of
-                ``"best"``, ``"backprop"``, ``"reversible"``, ``"device"``,
+                ``"best"``, ``"backprop"``, ``"reversible"``, ``"adjoint"``, ``"device"``,
                 ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
         """
 
         if diff_method == "best":
@@ -188,18 +210,26 @@ class QNode:
         if diff_method == "reversible":
             return QNode._validate_reversible_method(device, interface)
 
+        if diff_method == "adjoint":
+            return QNode._validate_adjoint_method(device, interface)
+
         if diff_method == "device":
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return QNode._get_parameter_shift_tape(device), interface, "analytic", device
+            return (
+                QNode._get_parameter_shift_tape(device),
+                interface,
+                device,
+                {"method": "analytic"},
+            )
 
         if diff_method == "finite-diff":
-            return JacobianTape, interface, "numeric", device
+            return JacobianTape, interface, device, {"method": "numeric"}
 
         raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
-            "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible')."
+            "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
         )
 
     @staticmethod
@@ -223,9 +253,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
         """
         try:
             return QNode._validate_device_method(device, interface)
@@ -234,9 +264,14 @@ class QNode:
                 return QNode._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_tape(device), interface, "best", device
+                    return (
+                        QNode._get_parameter_shift_tape(device),
+                        interface,
+                        device,
+                        {"method": "best"},
+                    )
                 except qml.QuantumFunctionError:
-                    return JacobianTape, interface, "numeric", device
+                    return JacobianTape, interface, device, {"method": "numeric"}
 
     @staticmethod
     def _validate_backprop_method(device, interface):
@@ -248,9 +283,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support backpropagation, or the
@@ -271,7 +306,7 @@ class QNode:
             # device supports backpropagation natively
 
             if interface == backprop_interface:
-                return JacobianTape, interface, "backprop", device
+                return JacobianTape, interface, device, {"method": "backprop"}
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
@@ -284,8 +319,13 @@ class QNode:
             if interface in backprop_devices:
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
-                device = qml.device(backprop_devices[interface], wires=device.wires, analytic=True)
-                return JacobianTape, interface, "backprop", device
+                device = qml.device(
+                    backprop_devices[interface],
+                    wires=device.wires,
+                    shots=device.shots,
+                    analytic=True,
+                )
+                return JacobianTape, interface, device, {"method": "backprop"}
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
@@ -307,9 +347,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not support reversible backprop
@@ -323,7 +363,45 @@ class QNode:
                 f"The {device.short_name} device does not support reversible differentiation."
             )
 
-        return ReversibleTape, interface, "analytic", device
+        return ReversibleTape, interface, device, {"method": "analytic"}
+
+    @staticmethod
+    def _validate_adjoint_method(device, interface):
+        """Validates whether a particular device and JacobianTape interface
+        supports the ``"adjoint"`` differentiation method.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
+
+        Raises:
+            qml.QuantumFunctionError: if the device does not support adjoint backprop
+        """
+        supported_device = hasattr(device, "_apply_operation")
+        supported_device = supported_device and hasattr(device, "_apply_unitary")
+        supported_device = supported_device and device.capabilities().get("returns_state")
+        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
+        # The above provides a minimal set of requirements that we can likely improve upon in
+        # future, or alternatively summarize within a single device capability. Moreover, we also
+        # need to inspect the circuit measurements to ensure only expectation values are taken. This
+        # cannot be done here since we don't yet know the composition of the circuit.
+
+        if not supported_device:
+            raise ValueError(
+                f"The {device.short_name} device does not support adjoint differentiation."
+            )
+
+        return (
+            JacobianTape,
+            interface,
+            device,
+            {"method": "device", "jacobian_method": "adjoint_jacobian"},
+        )
 
     @staticmethod
     def _validate_device_method(device, interface):
@@ -335,9 +413,9 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[.JacobianTape, str, str, .Device]: Tuple containing the compatible
-            JacobianTape, the interface to apply, the method argument
-            to pass to the ``JacobianTape.jacobian`` method, and the device to use.
+            tuple[.JacobianTape, str, .Device, dict[str, str]]: Tuple containing the compatible
+            JacobianTape, the interface to apply, the device to use, and the method argument
+            to pass to the ``JacobianTape.jacobian`` method.
 
         Raises:
             qml.QuantumFunctionError: if the device does not provide a native method for computing
@@ -352,7 +430,7 @@ class QNode:
                 "method for computing the jacobian."
             )
 
-        return JacobianTape, interface, "device", device
+        return JacobianTape, interface, device, {"method": "device"}
 
     @staticmethod
     def _get_parameter_shift_tape(device):
@@ -430,47 +508,75 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
-        # provide the jacobian options
-        self.qtape.jacobian_options = self.diff_options
+        for obj in self.qtape.operations + self.qtape.observables:
+            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+                # check here only if enough wires
+                if len(obj.wires) != self.device.num_wires:
+                    raise qml.QuantumFunctionError(
+                        "Operator {} must act on all wires".format(obj.name)
+                    )
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
-            not self.device.supports_operation(op.name) for op in self.qtape.operations
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in self.qtape.operations
         )
 
-        # expand out the tape, if any operations are not supported on the device or multiple
-        # observables are measured on the same wire
+        # expand out the tape, if nested tapes are present, any operations are not supported on the
+        # device, or multiple observables are measured on the same wire
         if ops_not_supported or obs_on_same_wire:
             self.qtape = self.qtape.expand(
                 depth=self.max_expansion,
-                stop_at=lambda obj: self.device.supports_operation(obj.name),
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.device.supports_operation(obj.name),
             )
 
+        # provide the jacobian options
+        self.qtape.jacobian_options = self.diff_options
+
     def __call__(self, *args, **kwargs):
-        # construct the tape
-        self.construct(args, kwargs)
+
+        # If shots specified in call but not in qfunc signature,
+        # interpret it as device shots value for this call.
+        # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
+        original_shots = None
+        if "shots" in kwargs and not self._qfunc_uses_shots_arg:
+            original_shots = self.device.shots  # remember device shots
+            # remove shots from kwargs and temporarily change on device
+            self.device.shots = kwargs.pop("shots", None)
+
+        if self.mutable or self.qtape is None:
+            # construct the tape
+            self.construct(args, kwargs)
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
+        if original_shots is not None:
+            # reinstate default on device
+            self.device.shots = original_shots
+
+        # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
+        # In the long run, we should make sure that the user's device is the one
+        # actually run so she has full control. This could be done by changing the class
+        # of the user's device before and after executing the tape.
+        if self.device is not self._original_device:
+            self._original_device._num_executions += 1  # pylint: disable=protected-access
+
+            # Update for state vector simulators that have the _pre_rotated_state attribute
+            if hasattr(self._original_device, "_pre_rotated_state"):
+                self._original_device._pre_rotated_state = self.device._pre_rotated_state
+
+            # Update for state vector simulators that have the _state attribute
+            if hasattr(self._original_device, "_state"):
+                self._original_device._state = self.device._state
+
         if isinstance(self.qfunc_output, Sequence):
             return res
 
-        # HOTFIX: Output is a single measurement function. To maintain compatibility
-        # with core, we squeeze all outputs.
-
-        # Get the namespace associated with the return type
-        res_type_namespace = res.__class__.__module__.split(".")[0]
-
-        if res_type_namespace in ("pennylane", "autograd"):
-            # For PennyLane and autograd we must branch, since
-            # 'squeeze' does not exist in the top-level of the namespace
-            return anp.squeeze(res)
-        # Same for JAX
-        if res_type_namespace == "jax":
-            return __import__(res_type_namespace).numpy.squeeze(res)
-        return __import__(res_type_namespace).squeeze(res)
+        return qml.math.squeeze(res)
 
     def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
         """Evaluate the value of the metric tensor.
@@ -489,7 +595,9 @@ class QNode:
             *args, **kwargs
         )
 
-    def draw(self, charset="unicode", wire_order=None, **kwargs):  # pylint: disable=unused-argument
+    def draw(
+        self, charset="unicode", wire_order=None, show_all_wires=False, **kwargs
+    ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
         Args:
@@ -497,6 +605,7 @@ class QNode:
                 "ascii" are supported.
             wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
                 If not provided, this defaults to the wire order of the device.
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -567,12 +676,19 @@ class QNode:
         wire_order = wire_order or self.device.wires
         wire_order = qml.wires.Wires(wire_order)
 
+        if show_all_wires and len(wire_order) < self.device.num_wires:
+            raise ValueError(
+                "When show_all_wires is enabled, the provided wire order must contain all wires on the device."
+            )
+
         if not self.device.wires.contains_wires(wire_order):
             raise ValueError(
                 f"Provided wire order {wire_order.labels} contains wires not contained on the device: {self.device.wires}."
             )
 
-        return self.qtape.draw(charset=charset, wire_order=wire_order)
+        return self.qtape.draw(
+            charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
+        )
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -591,12 +707,12 @@ class QNode:
 
             if self.interface != "tf" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                self._tape, interface, diff_method, self.device = self.get_tape(
+                self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "tf", self.diff_method
                 )
 
                 self.interface = interface
-                self.diff_options["method"] = diff_method
+                self.diff_options.update(diff_options)
             else:
                 self.interface = "tf"
 
@@ -631,12 +747,12 @@ class QNode:
 
             if self.interface != "torch" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                self._tape, interface, diff_method, self.device = self.get_tape(
+                self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "torch", self.diff_method
                 )
 
                 self.interface = interface
-                self.diff_options["method"] = diff_method
+                self.diff_options.update(diff_options)
             else:
                 self.interface = "torch"
 
@@ -663,12 +779,12 @@ class QNode:
 
         if self.interface != "autograd" and self.interface is not None:
             # Since the interface is changing, need to re-validate the tape class.
-            self._tape, interface, diff_method, self.device = self.get_tape(
+            self._tape, interface, self.device, diff_options = self.get_tape(
                 self._original_device, "autograd", self.diff_method
             )
 
             self.interface = interface
-            self.diff_options["method"] = diff_method
+            self.diff_options.update(diff_options)
         else:
             self.interface = "autograd"
 
@@ -676,43 +792,53 @@ class QNode:
             AutogradInterface.apply(self.qtape)
 
     def to_jax(self):
-        """Validation checks when a user expects to use the JAX interface."""
-        if self.diff_method != "backprop":
+        """Apply the JAX interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the JAX QNode should
+                output. If not provided, the default is ``jnp.float64``.
+
+        Raises:
+            .QuantumFunctionError: if TensorFlow >= 2.1 is not installed
+        """
+        # pylint: disable=import-outside-toplevel
+        try:
+            from pennylane.tape.interfaces.jax import JAXInterface
+
+            if self.interface != "jax" and self.interface is not None:
+                # Since the interface is changing, need to re-validate the tape class.
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "jax", self.diff_method
+                )
+
+                self.interface = interface
+                self.diff_options.update(diff_options)
+            else:
+                self.interface = "jax"
+
+            if self.qtape is not None:
+                JAXInterface.apply(self.qtape)
+
+        except ImportError as e:
             raise qml.QuantumFunctionError(
-                "The JAX interface can only be used with "
-                "diff_method='backprop' on supported devices"
-            )
-        self.interface = "jax"
+                "JAX not found. Please install the latest "
+                "version of JAX to enable the 'jax' interface."
+            ) from e
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
 
-def qnode(device, interface="autograd", diff_method="best", **diff_options):
+def qnode(
+    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+):
     """Decorator for creating QNodes.
 
     This decorator is used to indicate to PennyLane that the decorated function contains a
     :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
     compatible device.
 
-    The QNode calls the quantum function to construct a :class:`~.JacobianTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
-
-    .. note::
-
-        The quantum tape is an *experimental* feature. QNodes that use the quantum
-        tape have access to advanced features, such as in-QNode classical processing,
-        but do not yet have feature parity with the standard PennyLane QNode.
-
-        This quantum tape-comaptible QNode can either be created directly,
-
-        >>> import pennylane as qml
-        >>> @qml.tape.qnode(dev)
-
-        or enabled globally via :func:`~.enable_tape` without changing your PennyLane code:
-
-        >>> qml.enable_tape()
-
-        For more details, see :mod:`pennylane.tape`.
 
     Args:
         func (callable): a quantum function
@@ -757,6 +883,12 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
+            * ``"adjoint"``: Uses an adjoint `method <https://arxiv.org/abs/2009.02823>`__ that
+              reverses through the circuit after a forward pass by iteratively applying the inverse
+              (adjoint) gate. This method is similar to the reversible method, but has a lower time
+              overhead and a similar memory overhead. Only allowed on simulator devices such as
+              :class:`default.qubit <~.DefaultQubit>`.
+
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.
 
@@ -767,6 +899,19 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum
               operation arguments.
 
+        mutable (bool): If True, the underlying quantum circuit is re-constructed with
+            every evaluation. This is the recommended approach, as it allows the underlying
+            quantum structure to depend on (potentially trainable) QNode input arguments,
+            however may add some overhead at evaluation time. If this is set to False, the
+            quantum structure will only be constructed on the *first* evaluation of the QNode,
+            and is stored and re-used for further quantum evaluations. Only set this to False
+            if it is known that the underlying quantum structure is **independent of QNode input**.
+
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
@@ -774,7 +919,6 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
 
     **Example**
 
-    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
     >>> def circuit(x):
@@ -790,6 +934,8 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
             device,
             interface=interface,
             diff_method=diff_method,
+            mutable=mutable,
+            max_expansion=max_expansion,
             **diff_options,
         )
         return update_wrapper(qn, func)
@@ -945,8 +1091,8 @@ def metric_tensor(_qnode, diag_approx=False, only_construct=False):
     return _metric_tensor_fn
 
 
-def draw(_qnode, charset="unicode", wire_order=None):
-    """draw(qnode, charset="unicode", wire_order=None)
+def draw(_qnode, charset="unicode", wire_order=None, show_all_wires=False):
+    """draw(qnode, charset="unicode", wire_order=None, show_all_wires=False)
     Create a function that draws the given _qnode.
 
     Args:
@@ -954,6 +1100,7 @@ def draw(_qnode, charset="unicode", wire_order=None):
         charset (str, optional): The charset that should be used. Currently, "unicode" and
             "ascii" are supported.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
     Returns:
         A function that has the same arguement signature as ``qnode``. When called,
@@ -1020,6 +1167,8 @@ def draw(_qnode, charset="unicode", wire_order=None):
     @wraps(_qnode)
     def wrapper(*args, **kwargs):
         _qnode.construct(args, kwargs)
-        return _qnode.qtape.draw(charset, wire_order=wire_order)
+        _wire_order = wire_order or _qnode.device.wires
+        _wire_order = qml.wires.Wires(_wire_order)
+        return _qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper

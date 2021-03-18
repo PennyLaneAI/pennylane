@@ -54,7 +54,6 @@ class DefaultQubitJax(DefaultQubit):
     Using this method, the created QNode is a 'white-box', and is
     tightly integrated with your JAX computation:
 
-    >>> qml.enable_tape()
     >>> dev = qml.device("default.qubit.jax", wires=1)
     >>> @qml.qnode(dev, interface="jax", diff_method="backprop")
     ... def circuit(x):
@@ -137,6 +136,7 @@ class DefaultQubitJax(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": jax_ops.PhaseShift,
+        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
         "RX": jax_ops.RX,
         "RY": jax_ops.RY,
         "RZ": jax_ops.RZ,
@@ -205,11 +205,18 @@ class DefaultQubitJax(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.name
+        op_name = unitary.name.split(".inv")[0]
+
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
-                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals

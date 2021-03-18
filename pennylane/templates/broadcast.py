@@ -65,7 +65,7 @@ def wires_all_to_all(wires):
 
 # define wire sequences for patterns
 PATTERN_TO_WIRES = {
-    "single": lambda wires: [wires[i] for i in range(len(wires))],
+    "single": lambda wires: [wires.subset([i]) for i in range(len(wires))],
     "double": lambda wires: [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
     "double_odd": lambda wires: [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
     "chain": lambda wires: [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],

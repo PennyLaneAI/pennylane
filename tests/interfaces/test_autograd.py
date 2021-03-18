@@ -35,6 +35,9 @@ thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
 
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
+
+
 class TestAutogradDetails:
     """Test configuration details of the autograd interface"""
 
@@ -538,8 +541,7 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert len(res) == 1
-        assert res[0].shape == weights.shape
+        assert res.shape == weights.shape
 
         # check that the first arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {0}
@@ -584,8 +586,7 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert len(res) == 1
-        assert res[0].shape == weights.shape
+        assert res.shape == weights.shape
 
         # check that the second arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {1}
@@ -630,8 +631,7 @@ class TestParameterHandlingIntegration:
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert len(res) == 1
-        assert res[0].shape == weights.shape
+        assert res.shape == weights.shape
 
         # check that the last arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {2}
@@ -745,7 +745,7 @@ class TestParameterHandlingIntegration:
         grad_fn = qml.grad(cost)
         res = grad_fn(weights)
 
-        assert len(res[0]) == 2
+        assert len(res) == 2
 
     def test_gradient_value(self, tol):
         """Test that the returned gradient value for a qubit QNode is correct,
@@ -893,7 +893,8 @@ class TestParameterHandlingIntegration:
     def test_non_diff_wires_argument(self, w, expected_res, expected_grad, tol):
         """Test that passing wires as a non-differentiable positional
         argument works correctly."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=[qml.numpy.array(0, requires_grad=False),
+                                                 qml.numpy.array(1, requires_grad=False)])
 
         @qml.qnode(dev, interface="autograd")
         def circuit(wires, params):
@@ -904,7 +905,7 @@ class TestParameterHandlingIntegration:
             qml.CNOT(wires=[wires[1], wires[0]])
             qml.RX(params[0], wires=wires[0])
             qml.RY(params[1], wires=wires[1])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(qml.numpy.array(0, requires_grad=False)))
 
         params = qml.numpy.array([0.6, 0.2])
         wires = qml.numpy.array(w, requires_grad=False)

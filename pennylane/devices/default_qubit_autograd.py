@@ -16,8 +16,6 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
-from pennylane.wires import Wires
-from pennylane.numpy.tensor import tensor
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import autograd_ops
@@ -87,6 +85,7 @@ class DefaultQubitAutograd(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
+        "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
         "RX": autograd_ops.RX,
         "RY": autograd_ops.RY,
         "RZ": autograd_ops.RZ,
@@ -100,7 +99,6 @@ class DefaultQubitAutograd(DefaultQubit):
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
@@ -115,6 +113,15 @@ class DefaultQubitAutograd(DefaultQubit):
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        res = np.asarray(array, dtype=dtype)
+
+        if res.dtype is np.dtype("O"):
+            return np.hstack(array).flatten().astype(dtype)
+
+        return res
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots=shots, analytic=analytic, cache=0)
@@ -151,27 +158,20 @@ class DefaultQubitAutograd(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.name
+        op_name = unitary.name.split(".inv")[0]
+
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
-                return self.parametric_ops[unitary.name](*unitary.parameters, len(unitary.wires))
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
 
         return unitary.matrix
-
-    def map_wires(self, wires):
-        """Map the wire labels of wires using this device's wire map.
-
-        Args:
-            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
-
-        Returns:
-            Wires: wires with new labels
-        """
-        wires = Wires([w.item() if isinstance(w, tensor) else w for w in wires])
-        mapped_wires = super().map_wires(wires)
-
-        return mapped_wires

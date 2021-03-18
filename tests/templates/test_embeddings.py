@@ -332,10 +332,13 @@ class TestAngleEmbedding:
 class TestBasisEmbedding:
     """ Tests the BasisEmbedding method."""
 
-    def test_state(self):
-        """Checks the state."""
+    @pytest.mark.parametrize("state", [[0, 1],
+                                       [1, 1],
+                                       [1, 0],
+                                       [0, 0]])
+    def test_state(self, state):
+        """Checks that the correct state is prepared."""
 
-        state = np.array([0, 1])
         n_qubits = 2
         dev = qml.device('default.qubit', wires=n_qubits)
 
@@ -345,7 +348,8 @@ class TestBasisEmbedding:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
-        assert np.allclose(res, [1, -1])
+        expected = [1 if s == 0 else -1 for s in state]
+        assert np.allclose(res, expected)
 
     def test_too_many_input_bits_exception(self):
         """Verifies that exception thrown if there are more features than qubits."""

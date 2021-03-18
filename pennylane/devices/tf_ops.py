@@ -51,6 +51,19 @@ def PhaseShift(phi):
     return tf.convert_to_tensor([1.0, tf.exp(1j * phi)])
 
 
+def ControlledPhaseShift(phi):
+    r"""Two-qubit controlled phase shift.
+
+    Args:
+        phi (float): phase shift angle
+
+    Returns:
+        tf.Tensor[complex]: diagonal part of the controlled phase shift matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    return tf.convert_to_tensor([1.0, 1.0, 1.0, tf.exp(1j * phi)])
+
+
 def RX(theta):
     r"""One-qubit rotation about the x axis.
 

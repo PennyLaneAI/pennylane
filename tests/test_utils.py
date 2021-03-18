@@ -473,10 +473,10 @@ class TestInv:
 
     def test_inversion_without_context(self):
         """Test that a sequence of operations is properly inverted."""
-        op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        inv_queue = [qml.PauliZ(0).inv(), qml.PauliY(0).inv(), qml.PauliX(0).inv()]
+        op_queue = [qml.PauliX(0), qml.PauliY(0).inv(), qml.PauliZ(0)]
+        inv_queue = [qml.PauliZ(0).inv(), qml.PauliY(0), qml.PauliX(0).inv()]
 
-        inv_ops = pu.inv(op_queue)
+        inv_ops = pu.inv(op_queue).operations
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -487,7 +487,7 @@ class TestInv:
         """Test that a template is properly inverted."""
         inv_queue = inverted_dummy_template_operations([0, 1, 2])
 
-        inv_ops = pu.inv(dummy_template([0, 1, 2]))
+        inv_ops = pu.inv(dummy_template([0, 1, 2])).operations
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -498,7 +498,7 @@ class TestInv:
         """Test that inverting twice changes nothing."""
         op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
 
-        inv_inv_ops = pu.inv(pu.inv(op_queue))
+        inv_inv_ops = pu.inv(pu.inv(op_queue)).operations
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
             assert inv_inv_op.name == exp_op.name
@@ -507,7 +507,7 @@ class TestInv:
 
     def test_template_double_inversion(self):
         """Test that inverting twice changes nothing for a template."""
-        inv_inv_ops = pu.inv(pu.inv(dummy_template([0, 1, 2])))
+        inv_inv_ops = pu.inv(pu.inv(dummy_template([0, 1, 2]))).operations
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
             assert inv_inv_op.name == exp_op.name
@@ -677,7 +677,7 @@ class TestInv:
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -711,7 +711,7 @@ class TestInv:
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -746,7 +746,7 @@ class TestInv:
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -775,7 +775,7 @@ class TestInv:
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -785,7 +785,7 @@ class TestInv:
         op = qml.PauliX(0)
         exp_op = qml.PauliX(0).inv()
 
-        inv_ops = pu.inv(op)
+        inv_ops = pu.inv(op).operations
 
         assert inv_ops[0].name == exp_op.name
         assert inv_ops[0].wires == exp_op.wires

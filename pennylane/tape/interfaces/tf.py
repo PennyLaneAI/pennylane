@@ -159,6 +159,9 @@ class TFInterface(AnnotatedQueue):
 
             return grad_input
 
+        if self.is_sampled:
+            return res, grad
+
         if res.dtype == np.dtype("object"):
             res = np.hstack(res)
 
