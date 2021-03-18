@@ -1075,7 +1075,7 @@ def force_constants(
     delta=0.01,
 ):  # pylint: disable=too-many-arguments
     r"""Computes the second-order derivative
-    :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the molecular energy
+    :math:`\frac{\partial^2 E(\theta^*, x)}{\partial x_i \partial x_j}` of the molecular energy
     evaluated at the nuclear coordinates :math:`x`.
 
     The expression to evaluate the second derivative of the energy is given by
@@ -1105,7 +1105,7 @@ def force_constants(
         \frac{\partial \theta^*_b(x)}{\partial x_i} = -\frac{\partial}{\partial \theta_a}
         \frac{\partial E(\theta^*(x), x)}{\partial x_i},
 
-    where :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}` is
+    where :math:`\frac{\partial^2 E(\theta^*, x)}{\partial \theta_a \partial \theta_b}` is
     the Hessian of the energy with respect to the circuit parameters.
 
     Args:
@@ -1119,7 +1119,7 @@ def force_constants(
             respect to the circuit parameters
             :math:`\frac{\partial^2 E(\theta^*, x)}{\partial \theta_a \partial \theta_b}`
         ansatz (callable): the ansatz for the circuit before the final measurement step
-        params (array[float]): optimized circuit parameters :math:`\theta^*(x)`
+        params (array[float]): the optimized circuit parameters :math:`\theta^*`
         dev (Device): device where the calculations of the expectation values should be executed
         interface(str): interface to use to evaluate the expectation value of
             the Hamiltonian derivatives
@@ -1133,7 +1133,7 @@ def force_constants(
 
     Returns:
         float: the second derivative of the energy
-        :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}`
+        :math:`\frac{\partial^2 E(\theta^*, x)}{\partial x_i \partial x_j}`
 
     .. UsageDetails::
 
