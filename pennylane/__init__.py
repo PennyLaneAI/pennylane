@@ -28,7 +28,7 @@ import pennylane.qaoa as qaoa
 import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError
-from pennylane._grad import grad, jacobian
+from pennylane._grad import grad, jacobian, finite_diff
 from pennylane._qubit_device import QubitDevice
 from pennylane._version import __version__
 from pennylane.about import about
