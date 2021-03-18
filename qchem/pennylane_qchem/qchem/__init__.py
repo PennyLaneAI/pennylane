@@ -14,6 +14,7 @@
 """The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
 and Psi4 for quantum chemistry calculations using PennyLane."""
 from .structure import *
+from .structure import force_constants
 from .obs import *
 
 __all__ = [
