@@ -173,4 +173,4 @@ For more details and examples, please see the tape documentation.
 .. automodapi:: pennylane.tape
     :no-main-docstr:
     :include-all-objects:
-    :skip: enable_tape, disable_tape
+    :skip: QNode, qnode, enable_tape, disable_tape

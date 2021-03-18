@@ -316,6 +316,9 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Operator
         """
+        if isinstance(op, qml.tape.MeasurementProcess) and op.obs is not None:
+            op = op.obs
+
         if isinstance(op, qml.operation.Tensor):
             constituent_representations = [
                 self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs

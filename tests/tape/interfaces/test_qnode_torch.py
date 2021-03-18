@@ -26,6 +26,7 @@ from pennylane.tape import JacobianTape, qnode, QNode
     "dev_name,diff_method", [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
+        ["default.qubit", "adjoint"]
     ],
 )
 class TestQNode:
@@ -410,6 +411,9 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
         y_val = -0.654
@@ -450,6 +454,9 @@ class TestQNode:
     def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
         y_val = -0.654
@@ -501,6 +508,24 @@ class TestQNode:
 
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
+
+    def test_sampling_expval(self, dev_name, diff_method):
+        """Test sampling works as expected if combined with expectation values"""
+        dev = qml.device(dev_name, wires=2, shots=10)
+
+        @qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        res = circuit()
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert res[0].shape == (10,)
+        assert isinstance(res[0], torch.Tensor)
+        assert isinstance(res[1], torch.Tensor)
 
 
 def qtransform(qnode, a, framework=torch):

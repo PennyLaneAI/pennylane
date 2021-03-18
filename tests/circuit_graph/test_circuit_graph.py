@@ -163,8 +163,8 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        circuit = qnode.circuit
+        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
 
@@ -174,7 +174,7 @@ class TestCircuitGraph:
         assert layers[1].ops == [ops[3]]
         assert layers[1].param_inds == [3]
         assert layers[2].ops == [ops[x] for x in [5, 6]]
-        assert layers[2].param_inds == [4, 5]
+        assert layers[2].param_inds == [6, 7]
 
     @pytest.mark.parametrize("wires", [['a', 'q1', 3]])
     def test_iterate_layers(self, parameterized_circuit, wires):
@@ -182,8 +182,8 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        circuit = qnode.circuit
+        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
@@ -199,7 +199,7 @@ class TestCircuitGraph:
 
         assert set(result[2][0]) == set(circuit.operations[:4])
         assert set(result[2][1]) == set(circuit.operations[5:])
-        assert result[2][2] == (4, 5)
+        assert result[2][2] == (6, 7)
         assert set(result[2][3]) == set(circuit.observables[1:])
 
     def test_diagonalizing_gates(self):

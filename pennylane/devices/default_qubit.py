@@ -27,6 +27,7 @@ import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
+from pennylane.wires import WireError
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -88,14 +89,16 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.14"
-    version = "0.14.0"
+    pennylane_requires = "0.15"
+    version = "0.15.0"
     author = "Xanadu Inc."
 
     operations = {
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
+        "ControlledQubitUnitary",
+        "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -112,6 +115,7 @@ class DefaultQubit(QubitDevice):
         "CY",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
         "RX",
         "RY",
         "RZ",
@@ -120,6 +124,7 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
+        "QFT",
     }
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
@@ -149,7 +154,15 @@ class DefaultQubit(QubitDevice):
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
-        mapped_wires = [self.wire_map[w] for w in wires]
+        try:
+            mapped_wires = [self.wire_map[w] for w in wires]
+        except KeyError as e:
+            raise WireError(
+                "Did not find some of the wires {} on device with wires {}.".format(
+                    wires.labels, self.wires.labels
+                )
+            ) from e
+
         return mapped_wires
 
     def define_wire_map(self, wires):

@@ -185,6 +185,15 @@ class KerasLayer(Layer):
         Epoch 8/8
         100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
 
+        **Returning a state**
+
+        If your QNode returns the state of the quantum circuit using :func:`~.state` or
+        :func:`~.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
+        that casts to reals. For example, you could use
+        `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
+        with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
+        Keras layers require a real input and are differentiated with respect to real parameters.
+
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
@@ -216,8 +225,13 @@ class KerasLayer(Layer):
             self._signature_validation(qnode, weight_shapes)
             self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
 
-        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
-        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+        # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
+        # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
+        # are passed as integer 5 and [5, 2] will be passes as tuple (5, 2)
+        if isinstance(output_dim, Iterable) and len(output_dim) > 1:
+            self.output_dim = tuple(output_dim)
+        else:
+            self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
@@ -307,30 +321,36 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        outputs = []
-        for x in inputs:  # iterate over batch
 
-            if qml.tape_mode_active():
-                res = self._evaluate_qnode_tape_mode(x)
-                outputs.append(res)
+        if len(tf.shape(inputs)) > 1:
+            # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
+            # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
+            reconstructor = []
+            for x in tf.unstack(inputs):
+                reconstructor.append(self.call(x))
+            return tf.stack(reconstructor)
+
+        # Otherwise, the input is 1-dimensional, so calculate the forward pass as usual
+        if qml.tape_mode_active():
+            res = self._evaluate_qnode_tape_mode(inputs)
+            return res
+
+        # The QNode can require some passed arguments to be positional and others to be
+        # keyword. The following loops through input arguments in order and uses
+        # functools.partial to bind the argument to the QNode.
+        qnode = self.qnode
+
+        for arg in self.sig:
+            if arg is not self.input_arg:  # Non-input arguments must always be positional
+                w = self.qnode_weights[arg]
+                qnode = functools.partial(qnode, w)
             else:
-                # The QNode can require some passed arguments to be positional and others to be
-                # keyword. The following loops through input arguments in order and uses
-                # functools.partial to bind the argument to the QNode.
-                qnode = self.qnode
+                if self.input_is_default:  # The input argument can be positional or keyword
+                    qnode = functools.partial(qnode, **{self.input_arg: inputs})
+                else:
+                    qnode = functools.partial(qnode, inputs)
 
-                for arg in self.sig:
-                    if arg is not self.input_arg:  # Non-input arguments must always be positional
-                        w = self.qnode_weights[arg]
-                        qnode = functools.partial(qnode, w)
-                    else:
-                        if self.input_is_default:  # The input argument can be positional or keyword
-                            qnode = functools.partial(qnode, **{self.input_arg: x})
-                        else:
-                            qnode = functools.partial(qnode, x)
-                outputs.append(qnode())
-
-        return tf.stack(outputs)
+        return qnode()
 
     def _evaluate_qnode_tape_mode(self, x):
         """Evaluates a tape-mode QNode for a single input datapoint.
@@ -354,7 +374,7 @@ class KerasLayer(Layer):
         Returns:
             tf.TensorShape: shape of output data
         """
-        return tf.TensorShape([input_shape[0], self.output_dim])
+        return tf.TensorShape(input_shape[0]).concatenate(self.output_dim)
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"

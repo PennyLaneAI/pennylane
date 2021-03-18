@@ -156,8 +156,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.lam = lam
 
     def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer and return the corresponding objective
-        function value prior to the step.
+        """Update the parameter array :math:`x` with one step of the optimizer and return the
+        corresponding objective function value prior to the step.
 
         Args:
             qnode (QNode): the QNode for optimization
@@ -171,7 +171,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
-                prior to the step
+            prior to the step
         """
         # pylint: disable=arguments-differ
         if (
@@ -200,7 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     # pylint: disable=arguments-differ
     def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
-        """Update x with one step of the optimizer.
+        """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
             qnode (QNode): the QNode for optimization
@@ -221,8 +221,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         return x_out
 
     def apply_grad(self, grad, x):
-        r"""Update the variables x to take a single optimization step. Flattens and unflattens
-        the inputs to maintain nested iterables as the parameters of the optimization.
+        r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
+        unflattens the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective

@@ -16,7 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
-from collections import Sequence
+from collections.abc import Sequence
 import itertools
 import warnings
 
@@ -42,7 +42,7 @@ class Hamiltonian:
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
-    .. seealso:: :class:`~.ExpvalCost`, :func:`~.generate_hamiltonian`
+    .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
 
     **Example:**
 
@@ -66,7 +66,7 @@ class Hamiltonian:
     >>> print(H)
     (0.8) [Hermitian0'1]
 
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
     """
@@ -90,8 +90,8 @@ class Hamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = coeffs
-        self._ops = observables
+        self._coeffs = list(coeffs)
+        self._ops = list(observables)
 
         if simplify:
             self.simplify()
@@ -116,7 +116,7 @@ class Hamiltonian:
 
     @property
     def terms(self):
-        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
+        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
 
         Returns:
             (tuple, tuple): tuples of coefficients and operations, each of length N
@@ -396,7 +396,7 @@ class ExpvalCost:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
         the expectation of the Hamiltonian on the provided device(s)
 
-    .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
+    .. seealso:: :class:`~.Hamiltonian`, :func:`~.molecular_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
     **Example:**
 
@@ -441,7 +441,6 @@ class ExpvalCost:
 
         .. code-block:: python
 
-            qml.enable_tape()
             commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
             H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
 
@@ -463,8 +462,6 @@ class ExpvalCost:
         Number of executions: 2
         >>> print("Number of executions (optimized):", ex_opt)
         Number of executions (optimized): 1
-
-        Note that this feature is only available in :doc:`tape mode <../../code/qml_tape>`.
     """
 
     def __init__(
@@ -477,6 +474,9 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        if kwargs.get("measure", "expval") != "expval":
+            raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
+
         coeffs, observables = hamiltonian.terms
 
         self.hamiltonian = hamiltonian
@@ -488,6 +488,10 @@ class ExpvalCost:
 
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
+
+        if all(c == 0 for c in coeffs) or not coeffs:
+            self.cost_fn = lambda *args, **kwargs: np.array(0)
+            return
 
         tape_mode = qml.tape_mode_active()
         self._optimize = optimize

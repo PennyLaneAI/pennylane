@@ -54,10 +54,18 @@ def template(func):
     Returns:
         callable: The wrapper function
     """
+    # pylint: disable=import-outside-toplevel
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with OperationRecorder() as rec:
+        import pennylane as qml
+
+        recorder_class = OperationRecorder
+
+        if qml.tape_mode_active():
+            recorder_class = qml.tape.TapeOperationRecorder
+
+        with recorder_class() as rec:
             func(*args, **kwargs)
 
         return rec.queue

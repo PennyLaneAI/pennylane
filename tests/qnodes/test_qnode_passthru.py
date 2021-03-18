@@ -29,7 +29,7 @@ except ImportError:
 
 import pennylane as qml
 from pennylane.qnodes import PassthruQNode, BaseQNode, JacobianQNode
-
+pytestmark = pytest.mark.usefixtures("non_tape_mode_only")
 
 
 @pytest.fixture(scope="function")

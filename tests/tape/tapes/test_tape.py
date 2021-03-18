@@ -856,8 +856,13 @@ class TestExpand:
                 qml.T(wires=0)
                 return sample(qml.PauliZ(0))
 
-            qnode = qml.tape.QNode(circuit, dev)
+            # Choosing parameter-shift not to swap the device under the hood
+            qnode = qml.tape.QNode(circuit, dev, diff_method="parameter-shift")
             qnode()
+
+            # Double-checking that the T gate is not supported
+            assert "T" not in qnode.device.operations
+            assert "T" not in qnode._original_device.operations
 
             assert qnode.qtape.is_sampled
 
@@ -1090,7 +1095,7 @@ class TestExecution:
 
         res = tape.execute(dev)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], float)
+        assert isinstance(res[1], np.ndarray)
 
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""
