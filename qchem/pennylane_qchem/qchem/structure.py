@@ -1155,17 +1155,6 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
             deriv2 = qml.qchem.force_constants(H, x, [0, 2], circuit, params, dev, hessian)
     """
 
-    if not callable(H):
-        error_message = "{} object is not callable. 'H' should be a callable function".format(
-            type(H)
-        )
-        raise TypeError(error_message)
-
-    if delta <= 0.0:
-        raise ValueError(
-            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
-        )
-
     if len(idx) > 2:
         raise ValueError(
             "The number of indices given in 'idx' can not be greater than two; got {} indices in idx = {}".format(
