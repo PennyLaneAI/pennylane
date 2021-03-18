@@ -6,8 +6,9 @@
   chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
   
   It can be used to perform an SO(2) rotation in the subspace 
-  spanned by the states |01>, |10>. For example, the following circuit 
-  performs the transformation |10> --> cos(phi/2)|10> - sin(phi/2)|01>:    
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
   
   ```python
   dev = qml.device('default.qubit', wires=2)
