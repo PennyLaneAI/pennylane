@@ -1151,7 +1151,7 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
             # compute the Hessian of the quantum circuit
             hessian = qml.jacobian(qml.grad(energy, argnum=0))(params)
 
-            # compute the second-order derivative of E(x)
+            # compute the second-order derivative of E(x) with respect to 'x[0]' and 'x[2]'
             deriv2 = qml.qchem.force_constants(H, x, [0, 2], circuit, params, dev, hessian)
     """
 
