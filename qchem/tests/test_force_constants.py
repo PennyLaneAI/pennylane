@@ -54,7 +54,7 @@ def test_force_constants(symbols, x, idx, hessian, delta, exp_deriv2, tol, tmpdi
 
     params = np.array([-3.49563464, 0.34446748, -1.03118105])
 
-    deriv2 = qml.qchem.force_constants(H, x, idx, circuit, params, dev, hessian, delta=delta)
+    deriv2 = qml.qchem.force_constants(H, x, idx, hessian, circuit, params, dev, delta=delta)
 
     assert np.allclose(deriv2, exp_deriv2, **tol)
 
@@ -97,4 +97,4 @@ def test_exceptions_force_constants(idx, hessian, msg_match):
     params = np.array([-3.49563464, 0.34446748, -1.03118105])
 
     with pytest.raises(ValueError, match=msg_match):
-        qml.qchem.force_constants(H, x, idx, circuit, params, dev, hessian)
+        qml.qchem.force_constants(H, x, idx, hessian, circuit, params, dev)
