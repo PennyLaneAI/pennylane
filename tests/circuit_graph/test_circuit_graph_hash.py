@@ -185,41 +185,6 @@ class TestQNodeCircuitHashIntegration:
         assert circuit_hash_1 == circuit_hash_2
 
     @pytest.mark.parametrize(
-        "a,b",
-        zip(np.linspace(0.1, 2 * np.pi, 3), np.linspace(0, 2 * np.pi, 3)),
-    )
-    @pytest.mark.parametrize(
-        "x,y",
-        zip(np.linspace(-2 * np.pi, 0, 3), np.linspace(-2 * np.pi, 0, 3)),
-    )
-    @pytest.mark.xfail(reason="This test will not work in tape mode")
-    def test_evaluate_circuit_hash_symbolic_assigned_arguments_do_not_matter(self, a, b, x, y):
-        """Tests that the circuit hashes of identical circuits where different values are assigned to symbolic parameters are equal"""
-        dev = qml.device("default.qubit", wires=2)
-
-        def circuit1(a, b):
-            qml.RX(a, wires=[0])
-            qml.RY(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        node1 = qml.QNode(circuit1, dev)
-        node1(a, b)
-        circuit_hash_1 = node1.qtape.graph.hash
-
-        def circuit2(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        node2 = qml.QNode(circuit2, dev)
-        node2(x, y)
-        circuit_hash_2 = node2.qtape.graph.hash
-
-        assert circuit_hash_1 == circuit_hash_2
-
-    @pytest.mark.parametrize(
         "x,y",
         zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
     )

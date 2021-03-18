@@ -764,7 +764,7 @@ class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 
     def test_multi_thread(self):
-        """Test that multi-threaded queuing in tape mode works correctly"""
+        """Test that multi-threaded queuing works correctly"""
         n_qubits = 4
         n_batches = 5
         dev = qml.device("default.qubit", wires=n_qubits)
