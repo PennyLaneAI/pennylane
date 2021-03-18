@@ -6,9 +6,8 @@
   chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
 
   It can be used to perform an SO(2) rotation in the subspace 
-  spanned by the states |1100>, |0011>. For example, the following circuit 
-  performs the transformation |1100> --> cos(phi/2)|1100> - sin(phi/2)
-  |00111>:   
+  spanned by the states 1100, 0011. For example, the following circuit 
+  performs the transformation 1100 --> cos(phi/2)1100 - sin(phi/2)00111:   
 
   ```python
 
