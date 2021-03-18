@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Contains visualization functions for Fourier series and coefficients."""
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
 from itertools import product
-
 
 
 def violin_plot(list_of_coeffs, figsize=None):

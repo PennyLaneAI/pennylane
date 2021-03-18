@@ -11,58 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Contains methods for computing Fourier coefficients and frequency spectra of quantum functions ."""
 import pennylane as qml
 from pennylane import numpy as np
 from itertools import product
 
 
-def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
-    """Computes the first 2*degree+1 Fourier coefficients of a 2*pi periodic function.
-
-    Args:
-        f (callable): function that takes an array of N scalar inputs
-        N (int): dimension of the input
-        degree (int): degree up to which Fourier coeffs are to be computed
-        apply_rfftn (bool): If True, call rfftn instead of fftn.
-
-    Returns:
-        (np.ndarray): The Fourier coefficients of the function f.
-    """
-    # number of integer values for the indices n_i = -degree,...,0,...,degree
-    k = 2 * degree + 1
-
-    # create generator for indices nvec = (n1, ..., nN), ranging from (-d,...,-d) to (d,...,d).
-    n_range = np.array(range(-degree, degree + 1))
-    n_ranges = [n_range] * n_inputs
-    nvecs = product(*n_ranges)
-
-    # here we will collect the discretized values of function f
-    shp = tuple([k] * n_inputs)
-    f_discrete = np.zeros(shape=shp)
-
-    for nvec in nvecs:
-        nvec = np.array(nvec)
-
-        # compute the evaluation points for frequencies nvec
-        sample_points = 2 * np.pi / k * nvec
-
-        # fill discretized function array with value of f at inpts
-        f_discrete[tuple(nvec)] = f(x=sample_points)
-
-    # Now we have a discretized verison of f we can use
-    # the discrete fourier transform.
-    # The normalization factor is the number of discrete points (??)
-    if apply_rfftn:
-        coeffs = np.fft.rfftn(f_discrete) / f_discrete.size
-    else:
-        coeffs = np.fft.fftn(f_discrete) / f_discrete.size
-
-    return coeffs
-
-
-def frequency_spectra(tape):
+def frequency_spectra(qnode):
     """Return the frequency spectrum of a tape that returns the expectation value of
-a single quantum observable.
+    a single quantum observable.
 
     .. note::
 
@@ -120,22 +77,26 @@ a single quantum observable.
         \lambda_j, \lambda_{j'} \in ev_j
 
     Args:
-        tape (pennylane.tape.QuantumTape): tape representing the circuit
+        qnode (pennylane.QNode): a qnode representing the circuit
 
     Returns:
-        list[pennylane.numpy.tensor], list[list] : inputs and list of frequency spectra
+        Dict({pennylane.numpy.tensor : list[float]}) : dictionary of input keys
+           with a list of their frequency spectra.
 
     **Example**
 
     .. code-block:: python
 
         import pennylane as qml
+        from pennylane import numpy as anp
 
         inpt = anp.array([0.1, 0.3], requires_grad=False, is_input=True)
         weights = anp.array([0.5, 0.2], requires_grad=True, is_input=False)
 
-        with qml.tape.QuantumTape() as tape:
+        dev = qml.device('default.qubit', wires=['a'])
 
+        @qml.qnode(dev)
+        def circuit(weights, inpt):
             qml.RX(inpt[0], wires='a')
             qml.Rot(0.1, 0.2, 0.3, wires='a')
 
@@ -148,16 +109,17 @@ a single quantum observable.
             qml.RX(weights[0], wires='a')
             qml.T(wires='a')
 
-            qml.expval(qml.PauliZ(wires='a'))
+            return qml.expval(qml.PauliZ(wires='a'))
 
-        inpts, spectra = frequency_spectra(tape)
-        for inp, spectrum in zip(inpts, spectra):
-            print(inp, spectrum)
-    ```
+        circuit(weights, inpt)
 
+        frequencies = frequency_spectra(circuit)
+
+        for inp, freqs in frequencies.items():
+            print(f"{inp}: {freqs}")
     """
 
-    all_params = tape.get_parameters(trainable_only=False)
+    all_params = qnode.qtape.get_parameters(trainable_only=False)
 
     # get all unique tensors marked as input
     inputs = list(
@@ -170,7 +132,7 @@ a single quantum observable.
     generator_evals = [[] for _ in range(len(inputs))]
 
     # go through operations to find generators of inputs
-    for obj in tape.operations:
+    for obj in qnode.qtape.operations:
         if isinstance(obj, qml.operation.Operation):
 
             # do nothing if no gate parameter is marked as input
@@ -200,4 +162,83 @@ a single quantum observable.
 
     unique_frequencies = [sorted(set(fs)) for fs in frequencies]
 
-    return inputs, unique_frequencies
+    # Convert to a dictionary of parameter values and integers
+    frequency_dict = {
+        inp.base.take(0) : [f.base.take(0) for f in freqs] for inp, freqs in zip(inputs, unique_frequencies)
+    }
+
+    return frequency_dict
+
+
+def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
+    """Computes the first 2*degree+1 Fourier coefficients of a 2*pi periodic function.
+
+    This function computes the Fourier coefficients of parameters in the 
+    last argument of a quantum function.
+
+    Args:
+        f (callable): function that takes an array of N scalar inputs
+        N (int): dimension of the input
+        degree (int): degree up to which Fourier coeffs are to be computed
+        apply_rfftn (bool): If True, call rfftn instead of fftn.
+
+    Returns:
+        (np.ndarray): The Fourier coefficients of the function f.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane import numpy as anp
+
+        # Expected Fourier series over 2 parameters with frequencies 0 and 1
+        num_inputs = 2
+        degree = 1
+
+        weights = anp.array([0.5, 0.2], requires_grad=True, is_input=False)
+
+        dev = qml.device('default.qubit', wires=['a'])
+
+        @qml.qnode(dev)
+        def circuit(weights, inpt):
+            qml.RX(inpt[0], wires='a')
+            qml.Rot(0.1, 0.2, 0.3, wires='a')
+
+            qml.RY(inpt[1], wires='a')
+            qml.Rot(-4.1, 3.2, 1.3, wires='a')
+
+            return qml.expval(qml.PauliZ(wires='a'))
+
+        coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
+    """
+    # number of integer values for the indices n_i = -degree,...,0,...,degree
+    k = 2 * degree + 1
+
+    # create generator for indices nvec = (n1, ..., nN), ranging from (-d,...,-d) to (d,...,d).
+    n_range = np.array(range(-degree, degree + 1))
+    n_ranges = [n_range] * n_inputs
+    nvecs = product(*n_ranges)
+
+    # here we will collect the discretized values of function f
+    shp = tuple([k] * n_inputs)
+    f_discrete = np.zeros(shape=shp)
+
+    for nvec in nvecs:
+        nvec = np.array(nvec)
+
+        # compute the evaluation points for frequencies nvec
+        sample_points = 2 * np.pi / k * nvec
+
+        # fill discretized function array with value of f at inpts
+        f_discrete[tuple(nvec)] = f(sample_points)
+
+    # Now we have a discretized verison of f we can use
+    # the discrete fourier transform.
+    # The normalization factor is the number of discrete points (??)
+    if apply_rfftn:
+        coeffs = np.fft.rfftn(f_discrete) / f_discrete.size
+    else:
+        coeffs = np.fft.fftn(f_discrete) / f_discrete.size
+
+    return coeffs
