@@ -2036,7 +2036,6 @@ class DoubleExcitation(Operation):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-
     """
 
     num_params = 1
@@ -2106,7 +2105,6 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-
     """
 
     num_params = 1
@@ -2171,7 +2169,6 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-
     """
 
     num_params = 1

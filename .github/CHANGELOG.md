@@ -19,9 +19,9 @@
       qml.SingleExcitation(phi, wires=[0, 1, 2, 3])
   ```
 
-  The `DoubleExcitation` operation supports analytical gradients via its decomposition
-  in terms of the `DoubleExcitationPlus` and `DoubleExcitationMinus` operations, whose
-  gradients are given by the standard parameter-shift rule. These are also now supported.
+  The `DoubleExcitation` operation supports analytical gradients on hardware using only four 
+  expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938).
 
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
