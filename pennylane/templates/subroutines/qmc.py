@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the ``QuantumMonteCarlo`` template and utility functions.
+Contains the QuantumMonteCarlo template and utility functions.
 """
 import numpy as np
 
 import pennylane as qml
-from pennylane.templates.decorator import template
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -202,8 +202,7 @@ def make_Q(A, R):
     return UV @ UV
 
 
-@template
-def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
+class QuantumMonteCarlo(Operation):
     r"""Performs the `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__
     algorithm.
 
@@ -326,32 +325,47 @@ def QuantumMonteCarlo(probs, func, target_wires, estimation_wires):
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
         0.4327096457464369
     """
-    if isinstance(probs, np.ndarray) and probs.ndim != 1:
-        raise ValueError("The probability distribution must be specified as a flat array")
+    num_params = 3
+    num_wires = AnyWires
+    par_domain = "A"
 
-    dim_p = len(probs)
-    num_target_wires = float(np.log2(2 * dim_p))
+    def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True):
+        if isinstance(probs, np.ndarray) and probs.ndim != 1:
+            raise ValueError("The probability distribution must be specified as a flat array")
 
-    if not num_target_wires.is_integer():
-        raise ValueError("The probability distribution must have a length that is a power of two")
+        dim_p = len(probs)
+        num_target_wires = float(np.log2(2 * dim_p))
 
-    num_target_wires = int(num_target_wires)
+        if not num_target_wires.is_integer():
+            raise ValueError(
+                "The probability distribution must have a length that is a power of " "two"
+            )
 
-    target_wires = Wires(target_wires)
-    estimation_wires = Wires(estimation_wires)
+        num_target_wires = int(num_target_wires)
 
-    if num_target_wires != len(target_wires):
-        raise ValueError(
-            f"The probability distribution of dimension {dim_p} requires"
-            f" {num_target_wires} target wires"
-        )
+        self.target_wires = Wires(target_wires)
+        self.estimation_wires = Wires(estimation_wires)
+        wires = self.target_wires + self.estimation_wires
 
-    A = probs_to_unitary(probs)
-    R = func_to_unitary(func, dim_p)
-    Q = make_Q(A, R)
+        if num_target_wires != len(self.target_wires):
+            raise ValueError(
+                f"The probability distribution of dimension {dim_p} requires"
+                f" {num_target_wires} target wires"
+            )
 
-    qml.QubitUnitary(A, wires=target_wires[:-1])
-    qml.QubitUnitary(R, wires=target_wires)
-    qml.templates.QuantumPhaseEstimation(
-        Q, target_wires=target_wires, estimation_wires=estimation_wires
-    )
+        A = probs_to_unitary(probs)
+        R = func_to_unitary(func, dim_p)
+        Q = make_Q(A, R)
+        super().__init__(A, R, Q, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+        A, R, Q = self.data[:3]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(A, wires=self.target_wires[:-1])
+            qml.QubitUnitary(R, wires=self.target_wires)
+            qml.templates.QuantumPhaseEstimation(
+                Q, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+            )
+
+        return tape
