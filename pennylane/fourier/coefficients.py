@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains methods for computing Fourier coefficients and frequency spectra of quantum functions ."""
+from itertools import product
+
 import pennylane as qml
 from pennylane import numpy as np
-from itertools import product
 
 
 def frequency_spectra(qnode):
-    """Return the frequency spectrum of a tape that returns the expectation value of
+    r"""Return the frequency spectrum of a tape that returns the expectation value of
     a single quantum observable.
 
     .. note::
@@ -51,7 +52,7 @@ def frequency_spectra(qnode):
     function class that the circuit can express.
 
     This function extracts the frequency spectra for all inputs and a circuit
-    represented by a :class:`QuantumTape`.  To mark quantum circuit arguments as
+    represented by a :class:`~.pennylane.QNode`.  To mark quantum circuit arguments as
     inputs, create them via:
 
     .. code-block:: python
@@ -80,8 +81,8 @@ def frequency_spectra(qnode):
         qnode (pennylane.QNode): a qnode representing the circuit
 
     Returns:
-        Dict({pennylane.numpy.tensor : list[float]}) : dictionary of input keys
-           with a list of their frequency spectra.
+        (Dict[pennylane.numpy.tensor, list[float]]): Dictionary of input keys
+        with a list of their frequency spectra.
 
     **Example**
 
@@ -171,15 +172,19 @@ def frequency_spectra(qnode):
 
 
 def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
-    """Computes the first 2*degree+1 Fourier coefficients of a 2*pi periodic function.
+    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
+    function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
-    This function computes the Fourier coefficients of parameters in the 
-    last argument of a quantum function.
+    The Fourier coefficients are computed for the parameters in the *last*
+    argument of a quantum function.
 
     Args:
-        f (callable): function that takes an array of N scalar inputs
+        f (callable): function that takes an array of :math:`N` scalar inputs. Function should
+            have structure ``f(weights, params)`` where params are the paramters that the
+            Fourier coefficients are taken with respect to.
         N (int): dimension of the input
-        degree (int): degree up to which Fourier coeffs are to be computed
+        degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
+            the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
         apply_rfftn (bool): If True, call rfftn instead of fftn.
 
     Returns:
@@ -210,7 +215,9 @@ def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
 
             return qml.expval(qml.PauliZ(wires='a'))
 
+        # Coefficients of the "inpt" variable will be computed
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
+
     """
     # number of integer values for the indices n_i = -degree,...,0,...,degree
     k = 2 * degree + 1
