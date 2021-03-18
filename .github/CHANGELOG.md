@@ -2,8 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Edited MottonenStatePreparation template to improve performance on states with only real amplitudes.
-  This edit reduces the number of redundant CNOT gates at the end of a circuit.
+* Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
+  by reducing the number of redundant CNOT gates at the end of a circuit.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
