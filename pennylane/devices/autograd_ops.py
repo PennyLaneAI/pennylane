@@ -187,6 +187,7 @@ def DoubleExcitation(phi):
 
     Args:
         phi (float): rotation angle
+
     Returns:
         array[complex]: Double excitation rotation matrix
     """
