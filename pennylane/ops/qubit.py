@@ -2009,7 +2009,7 @@ class DoubleExcitation(Operation):
 
     This operation performs a rotation in the two-dimensional subspace :math:`\{|1100\rangle,
     |0011\rangle\}`. The name originates from a fermionic interpretation, where the transformation
-    from :math:`|1100\rangle` to `:math:`|0011\rangle` is interpreted as "exciting" two particles
+    from :math:`|1100\rangle` to :math:`|0011\rangle` is interpreted as "exciting" two particles
     from the first pair of qubits to the second pair of qubits.
 
     **Details:**

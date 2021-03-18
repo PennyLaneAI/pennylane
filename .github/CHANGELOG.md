@@ -2,13 +2,13 @@
 
 <h3>New features since last release</h3>
 
-- Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
-  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+* Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
+  chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
 
-  It can be used to perform an :math:`SO(2)` rotation in the subspace 
-  spanned by the states :math:`|1100\rangle, |0011\rangle`. For example, the following circuit 
-  performs the transformation :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle -\sin(\phi/2)
-  |00111\rangle)`:   
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states |1100>, |0011>. For example, the following circuit 
+  performs the transformation |1100> --> cos(phi/2)|1100> -sin(phi/2)
+  |00111>:   
 
   ```python
 

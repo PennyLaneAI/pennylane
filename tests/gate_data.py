@@ -257,8 +257,10 @@ def DoubleExcitation(phi):
 
 def DoubleExcitationPlus(phi):
     r"""Double excitation rotation with positive phase shift.
+
     Args:
         phi (float): rotation angle
+
     Returns:
         array: the four-qubit matrix describing the operation
     """

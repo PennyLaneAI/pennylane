@@ -183,8 +183,8 @@ def MultiRZ(theta, n):
 
 
 def DoubleExcitation(phi):
-    r"""
-    Double excitation rotation.
+    r"""Double excitation rotation.
+
     Args:
         phi (float): rotation angle
     Returns:
