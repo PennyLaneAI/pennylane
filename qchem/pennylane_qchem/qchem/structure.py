@@ -1062,6 +1062,7 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 
 def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
+    # pylint: disable=too-many-arguments
     r"""Computes the second-order derivative
     :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the total energy
     evaluated at the nuclear coordinates :math:`x`.
