@@ -1007,7 +1007,7 @@ class TestSingleExcitation:
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
-            qml.SingleExcitation(phi, wires=[0, 1])
+            excitation(phi, wires=[0, 1])
 
             return qml.expval(qml.PauliZ(0))
 
