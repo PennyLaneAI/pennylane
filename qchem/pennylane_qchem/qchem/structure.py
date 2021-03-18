@@ -1117,7 +1117,7 @@ def force_constants(
         idx (list[int]): specifies the indices ``i, j`` of the coordinates to differentiate
         hessian (array[float, float]): matrix containing the Hessian of the energy with
             respect to the circuit parameters
-            :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}`
+            :math:`\frac{\partial^2 E(\theta^*, x)}{\partial \theta_a \partial \theta_b}`
         ansatz (callable): the ansatz for the circuit before the final measurement step
         params (array[float]): optimized circuit parameters :math:`\theta^*(x)`
         dev (Device): device where the calculations of the expectation values should be executed
