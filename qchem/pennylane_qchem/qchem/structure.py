@@ -1061,10 +1061,11 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
-    # pylint: disable=too-many-arguments
+def force_constants(
+    H, x, idx, ansatz, params, dev, hessian, delta=0.01
+):  # pylint: disable=too-many-arguments
     r"""Computes the second-order derivative
-    :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the total energy
+    :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the molecular energy
     evaluated at the nuclear coordinates :math:`x`.
 
     The expression to evaluate the second derivative of the energy is given by
@@ -1099,7 +1100,7 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
 
     Args:
         H (callable): function with signature ``H(x)`` that builds the molecular
-            Hamiltonian for a given set of nuclear coordinates ``x``
+            Hamiltonian for a given set of coordinates ``x``
         x (array[float]): 1D array with the atomic positions in Cartesian coordinates.
             The coordinates must be given in atomic units and the size of the array
             should be ``3*N`` where ``N`` is the number of atoms.
@@ -1110,7 +1111,9 @@ def force_constants(H, x, idx, ansatz, params, dev, hessian, delta=0.01):
         hessian (array[float, float]): matrix containing the Hessian of the energy with
             respect to the circuit parameters
             :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial \theta_a \partial \theta_b}
-        delta (float): Step size in Bohr radii used to displace the nuclear coordinates
+        delta (float): step size in Bohr radii used to displace the nuclear coordinates
+            in order to compute the derivative of the Hamiltonian using finite differences
+            approximation
 
     Returns:
         float: the second derivative of the energy
