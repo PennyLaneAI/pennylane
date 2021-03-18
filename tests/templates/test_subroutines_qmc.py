@@ -259,7 +259,7 @@ class TestQuantumMonteCarlo:
 
         Q = make_Q(A, R)
 
-        with qml.tape.tapes.QuantumTape() as qpe_tape:
+        with qml.tape.QuantumTape() as qpe_tape:
             qml.templates.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         qpe_tape = qpe_tape.expand()

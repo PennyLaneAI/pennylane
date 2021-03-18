@@ -32,7 +32,6 @@ from pennylane.operation import (
     Probability,
     Tensor,
 )
-from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
 
 
@@ -379,10 +378,10 @@ class Device(abc.ABC):
                     results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is State:
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Unsupported return type specified for observable {}".format(obs.name)
                     )
 
@@ -414,7 +413,7 @@ class Device(abc.ABC):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -617,7 +616,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.tape.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):
