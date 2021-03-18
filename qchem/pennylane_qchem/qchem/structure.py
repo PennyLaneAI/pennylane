@@ -1062,7 +1062,17 @@ def excitations_to_wires(singles, doubles, wires=None):
 
 
 def force_constants(
-    H, x, idx, ansatz, params, dev, hessian, delta=0.01
+    H,
+    x,
+    idx,
+    hessian,
+    ansatz,
+    params,
+    dev,
+    interface="autograd",
+    diff_method="best",
+    optimize="False",
+    delta=0.01,
 ):  # pylint: disable=too-many-arguments
     r"""Computes the second-order derivative
     :math:`\frac{\partial^2 E(\theta^*(x), x)}{\partial x_i \partial x_j}` of the molecular energy
@@ -1156,7 +1166,7 @@ def force_constants(
             hessian = qml.jacobian(qml.grad(energy, argnum=0))(params)
 
             # compute the second-order derivative of E(x) with respect to 'x[0]' and 'x[2]'
-            deriv2 = qml.qchem.force_constants(H, x, [0, 2], circuit, params, dev, hessian)
+            deriv2 = qml.qchem.force_constants(H, x, [0, 2], hessian, circuit, params, dev)
     """
 
     if len(idx) > 2:
@@ -1178,12 +1188,16 @@ def force_constants(
 
     # gradient of 'dE / dx_j'
     dH_j = qml.finite_diff(H, idx=[j], delta=delta)(x)[j]
-    dE_j = qml.ExpvalCost(ansatz, dH_j, dev)
+    dE_j = qml.ExpvalCost(
+        ansatz, dH_j, dev, interface=interface, diff_method=diff_method, optimize=optimize
+    )
     grad_j = np.array(qml.grad(dE_j)(params))
 
     # gradient of 'dE / dx_i'
     dH_i = qml.finite_diff(H, idx=[i], delta=delta)(x)[i]
-    dE_i = qml.ExpvalCost(ansatz, dH_i, dev)
+    dE_i = qml.ExpvalCost(
+        ansatz, dH_i, dev, interface=interface, diff_method=diff_method, optimize=optimize
+    )
     grad_i = np.array(qml.grad(dE_i)(params))
 
     # compute 'dtheta / dx_i'
@@ -1191,7 +1205,9 @@ def force_constants(
 
     # compute '<d^2H / dx_i dx_j>'
     d2H_ij = qml.finite_diff(H, N=2, idx=[i, j], delta=delta)(x)
-    expval_d2H = qml.ExpvalCost(ansatz, d2H_ij, dev)(params)
+    expval_d2H = qml.ExpvalCost(
+        ansatz, d2H_ij, dev, interface=interface, diff_method=diff_method, optimize=optimize
+    )(params)
 
     return np.dot(dtheta_i, grad_j) + expval_d2H
 
