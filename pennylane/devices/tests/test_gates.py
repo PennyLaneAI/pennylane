@@ -70,7 +70,7 @@ ops = {
     "QFT": qml.QFT(wires=[0, 1, 2]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
-    "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1])
+    "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
 }
 
 all_ops = ops.keys()
