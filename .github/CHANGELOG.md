@@ -5,9 +5,9 @@
 - Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
   chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
   
-  It can be used to perform an :math:`SO(2)` rotation in the subspace 
-  spanned by the states :math:`|01\rangle, |10\rangle`. For example, the following circuit 
-  performs the transformation :math:`|10\rangle\rightarrow \cos(\phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:   
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states |01>, |10>. For example, the following circuit 
+  performs the transformation |10> --> cos(phi/2)|10> -sin(phi/2)|01>`:    
   
   ```python
   dev = qml.device('default.qubit', wires=2)
@@ -18,12 +18,7 @@
       qml.SingleExcitation(phi, wires=[0, 1])
   ```
   
-  The `SingleExcitation` operation supports analytical gradients via its decomposition
-  in terms of the `SingleExcitationPlus` and `SingleExcitationMinus` operations, whose
-  gradients are given by the standard parameter-shift rule. These are also now supported.
-  Instead of acting as the identity on the subspace :math:`|00\rangle, |11\rangle`, the
-  `SingleExcitationPlus` and `SingleExcitationMinus` operations respectively apply a 
-  positive/negative phase-shift on this subspace. 
+  The `SingleExcitation` operation supports analytical gradients on hardware using only four expectation value calculations, following results from [(Kottmann et al.)](https://arxiv.org/abs/2011.05938)
   
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
