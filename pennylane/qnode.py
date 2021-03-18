@@ -666,7 +666,6 @@ class QNode:
           a: ──╰C──RX(0.2)──┤
          -1: ───H───────────┤
         """
-        # Currently it only exists to match the signature of non-tape mode draw.
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."
