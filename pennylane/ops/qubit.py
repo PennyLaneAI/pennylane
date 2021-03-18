@@ -1679,7 +1679,7 @@ class SingleExcitation(Operation):
 
     This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
     |10\rangle\}`. The name originates from a fermionic interpretation, where the transformation
-    from :math:`|10\rangle` to `:math:`|01\rangle` is interpreted as "exciting" a particle from
+    from :math:`|10\rangle` to :math:`|01\rangle` is interpreted as "exciting" a particle from
     the first qubit to the second.
 
     **Details:**
@@ -1687,7 +1687,7 @@ class SingleExcitation(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: Obtained from its decomposition in terms of the
-        :class:`~.SingleExcitationPlus` and `:class:`~.SingleExcitationMinus` operations
+      :class:`~.SingleExcitationPlus` and :class:`~.SingleExcitationMinus` operations
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1697,7 +1697,7 @@ class SingleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|10\rangle\rightarrow \cos(
-    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle)`:
+    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
 
     .. code-block::
 

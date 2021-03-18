@@ -394,7 +394,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
 Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 

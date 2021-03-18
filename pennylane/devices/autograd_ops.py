@@ -183,8 +183,7 @@ def MultiRZ(theta, n):
 
 
 def SingleExcitation(phi):
-    r"""
-    Single excitation rotation.
+    r"""Single excitation rotation.
 
     Args:
         phi (float): rotation angle
