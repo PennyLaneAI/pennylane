@@ -1115,6 +1115,7 @@ class TestDoubleExcitation:
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
             excitation(phi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
@@ -1127,26 +1128,30 @@ class TestDoubleExcitation:
         print('analytical', np.sin(phi))
         assert np.allclose(grad, np.sin(phi))
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
                                                      (qml.DoubleExcitationPlus, 0.2),
                                                      (qml.DoubleExcitationMinus, np.pi / 4)])
-    def test_jax_grad(self, excitation, phi):
-        """Tests that gradients are computed correctly using the
+    def test_jax_grad(self, excitation, phi, diff_method):
+        """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        pytest.importorskip("jax")
+        if diff_method=="parameter-shift":
+            pytest.skip("JAX support for the parameter-shift method is still TBD")
 
-        dev = qml.device('default.qubit.jax', wires=4)
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
 
-        @qml.qnode(dev)
+        dev = qml.device('default.qubit', wires=4)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             excitation(phi, wires=[0, 1, 2, 3])
-
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
 
 
 class TestPauliRot:
