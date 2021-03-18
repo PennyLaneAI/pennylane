@@ -45,6 +45,31 @@
   Step 2: cost = -4.974, shots_used = 624
   Step 3: cost = -5.534, shots_used = 1054
   Step 4: cost = -6.5, shots_used = 1798
+  ```
+
+* Added the function ``finite_diff()`` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  arbitrary callable functions.
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
+  This is useful to compute the derivative of parametrized
+  ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
+
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2 = deriv2_fn(x)
+  ```
 
 * Added the `QuantumMonteCarlo` template for performing quantum Monte Carlo estimation of an
   expectation value on simulator.
