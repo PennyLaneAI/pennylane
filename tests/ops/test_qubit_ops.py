@@ -1099,28 +1099,33 @@ class TestDoubleExcitation:
 
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
                                                      (qml.DoubleExcitationPlus, 0.2),
                                                      (qml.DoubleExcitationMinus, np.pi / 4)])
-    def test_tf_grad(self, excitation, phi):
+    def test_tf_grad(self, excitation, phi, diff_method):
         """Tests that gradients are computed correctly using the
         tensorflow interface"""
 
-        pytest.importorskip("tensorflow")
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device('default.qubit', wires=4)
 
-        dev = qml.device('default.qubit.tf', wires=4)
-
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
             excitation(phi, wires=[0, 1, 2, 3])
-
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))  # gradient = sin(phi)
+        phi_t = tf.Variable(phi, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            res = circuit(phi_t)
+
+        grad = tape.gradient(res, phi_t)
+        print('grad=', grad)
+        print('analytical', np.sin(phi))
+        assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.DoubleExcitation, -0.1),
                                                      (qml.DoubleExcitationPlus, 0.2),
