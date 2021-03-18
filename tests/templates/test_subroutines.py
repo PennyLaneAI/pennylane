@@ -1497,8 +1497,8 @@ class TestQuantumPhaseEstimation:
 
         m = qml.RX(0.3, wires=0).matrix
 
-        with qml.tape.QuantumTape() as tape:
-            QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        op = QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        tape = op.expand()
 
         with qml.tape.QuantumTape() as tape2:
             qml.Hadamard(1),
@@ -1534,6 +1534,7 @@ class TestQuantumPhaseEstimation:
                 )
                 qml.probs(estimation_wires)
 
+            tape = tape.expand()
             res = tape.execute(dev).flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
@@ -1581,6 +1582,7 @@ class TestQuantumPhaseEstimation:
                 )
                 qml.probs(estimation_wires)
 
+            tape = tape.expand()
             res = tape.execute(dev).flatten()
 
             if phase < 0:
