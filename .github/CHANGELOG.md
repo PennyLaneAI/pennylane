@@ -18,7 +18,7 @@
       qml.SingleExcitation(phi, wires=[0, 1])
   ```
   
-  The `SingleExcitation` operation supports analytical gradients on hardware using only four expectation value calculations, following results from [(Kottmann et al.)](https://arxiv.org/abs/2011.05938)
+  The `SingleExcitation` operation supports analytical gradients on hardware using only four expectation value calculations, following results from [Kottmann et al.](https://arxiv.org/abs/2011.05938)
   
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
