@@ -189,7 +189,8 @@ def DoubleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        array[complex]: Double excitation rotation matrix
+        array[float]: Double excitation rotation matrix
+
     """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)

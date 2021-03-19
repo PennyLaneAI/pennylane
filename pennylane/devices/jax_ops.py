@@ -188,7 +188,8 @@ def DoubleExcitation(phi):
     Args:
         phi (float): rotation angle
     Returns:
-        jnp.Tensor[complex]: Double excitation rotation matrix
+        jnp.Tensor[float]: Double excitation rotation matrix
+
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)

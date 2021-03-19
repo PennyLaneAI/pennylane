@@ -199,7 +199,8 @@ def DoubleExcitation(phi):
     Args:
         phi (float): rotation angle
     Returns:
-        tf.Tensor[complex]: Double excitation rotation matrix
+        tf.Tensor[float]: Double excitation rotation matrix
+
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     c = tf.cos(phi / 2)
