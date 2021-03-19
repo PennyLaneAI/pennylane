@@ -46,7 +46,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     'sphinx_copybutton',
-    "m2r"
+    # "m2r"
 ]
 
 source_suffix = ['.rst', '.md']

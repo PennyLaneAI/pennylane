@@ -183,16 +183,13 @@ def MultiRZ(theta, n):
 
 
 def SingleExcitation(phi):
-    r"""
-    Single excitation rotation.
+    r"""Single excitation rotation.
 
     Args:
         phi (float): rotation angle
 
     Returns:
         jnp.Tensor[float]: Single excitation rotation matrix
-
-
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)
@@ -200,15 +197,13 @@ def SingleExcitation(phi):
 
 
 def SingleExcitationPlus(phi):
-    r"""
-    Single excitation rotation with positive phase-shift outside the rotation subspace.
+    r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
 
     Args:
         phi (float): rotation angle
 
     Returns:
         jnp.Tensor[complex]: Single excitation rotation matrix with positive phase-shift
-
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)
@@ -217,15 +212,13 @@ def SingleExcitationPlus(phi):
 
 
 def SingleExcitationMinus(phi):
-    r"""
-    Single excitation rotation with negative phase-shift outside the rotation subspace.
+    r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     Args:
         phi (float): rotation angle
 
     Returns:
         tf.Tensor[complex]: Single excitation rotation matrix with negative phase-shift
-
     """
     c = jnp.cos(phi / 2)
     s = jnp.sin(phi / 2)

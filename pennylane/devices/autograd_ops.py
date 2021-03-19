@@ -190,9 +190,6 @@ def SingleExcitation(phi):
 
     Returns:
         array[float]: Single excitation rotation matrix
-
-
-
     """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
@@ -200,16 +197,13 @@ def SingleExcitation(phi):
 
 
 def SingleExcitationPlus(phi):
-    r"""
-    Single excitation rotation with positive phase-shift outside the rotation subspace.
+    r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
 
     Args:
         phi (float): rotation angle
 
     Returns:
         array[complex]: Single excitation rotation matrix with positive phase-shift
-
-
     """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
@@ -218,16 +212,13 @@ def SingleExcitationPlus(phi):
 
 
 def SingleExcitationMinus(phi):
-    r"""
-    Single excitation rotation with negative phase-shift outside the rotation subspace.
+    r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     Args:
         phi (float): rotation angle
 
     Returns:
        array[complex]: Single excitation rotation matrix with negative phase-shift
-
-
     """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
