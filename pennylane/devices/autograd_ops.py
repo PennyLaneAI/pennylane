@@ -189,7 +189,8 @@ def SingleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        array[complex]: Single excitation rotation matrix
+        array[float]: Single excitation rotation matrix
+
 
 
     """

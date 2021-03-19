@@ -1678,9 +1678,9 @@ class SingleExcitation(Operation):
             \end{bmatrix}.
 
     This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
-    |10\rangle\}`. The name originates from a fermionic interpretation, where the transformation
-    from :math:`|10\rangle` to :math:`|01\rangle` is interpreted as "exciting" a particle from
-    the first qubit to the second.
+    |10\rangle\}`. The name originates from the occupation-number representation of
+    fermionic wavefunctions, where the transformation  from :math:`|10\rangle` to :math:`|01\rangle`
+     is interpreted as "exciting" a particle from the first qubit to the second.
 
     **Details:**
 

@@ -190,7 +190,8 @@ def SingleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        jnp.Tensor[complex]: Single excitation rotation matrix
+        jnp.Tensor[float]: Single excitation rotation matrix
+
 
     """
     c = jnp.cos(phi / 2)

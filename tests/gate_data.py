@@ -242,7 +242,7 @@ def SingleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        array: the two-qubit Givens rotation describing the single excitation
+        array: the two-qubit Givens rotation describing the single excitation operation
     """
 
     return np.array([[1, 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
