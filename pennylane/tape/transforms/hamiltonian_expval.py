@@ -24,6 +24,15 @@ def hamiltonian_expval(tape):
     Returns a list of tapes, and a classical processing function, for computing the expectation
     value of a Hamiltonian.
 
+    Args:
+        tape (.QuantumTape) the tape used when calculating the expectation value
+        of the Hamiltonian.
+
+    Returns:
+        tuple[list[.QuantumTape], func]: Returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape results to compute the expectation value.
+
     **Example**
 
     Given a tape of the form,
@@ -35,27 +44,30 @@ def hamiltonian_expval(tape):
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
 
-            H = qml.PauliZ(0) @ qml.PauliZ(1) + 2 * qml.PauliX(1) + qml.PauliZ(2)
+            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
             qml.expval(H)
 
-    We can use the ``expand_hamiltonian_expval`` transform to generate new tapes and a classical
+    We can use the ``hamiltonian_expval`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
 
-    >>> tapes, fn = qml.tape.transforms.expand_hamiltonian_expval(tape)
-    >>> print(tapes)
+    >>> tapes, fn = qml.tape.transforms.hamiltonian_expval(tape)
 
     We can evaluate these tapes on a device:
 
     >>> dev = qml.device("default.qubit", wires=3)
     >>> res = dev.batch_execute(tapes)
-    >>> print(res)
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
+    -0.5
     """
 
     hamiltonian = tape.measurements[0].obs
+
+    if not isinstance(hamiltonian, qml.Hamiltonian) or len(tape.measurements) > 1:
+        raise ValueError("Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`")
+
     hamiltonian.simplify()
     combined_obs = []
 
