@@ -559,7 +559,7 @@ class TestQNode:
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
         expected_g2 = [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a scalar valued QNode"""
