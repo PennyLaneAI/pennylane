@@ -403,7 +403,6 @@ class TestMottonenStatePreparation:
         ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], 3),
     ])
     # fmt: on
-
     def test_RZ_skipped(self, state_vector, n_wires):
         """Tests whether the cascade of RZ gates is skipped.
         Note that currently there are also inefficiencies in the number of CNOT gates in the RY cascade.
