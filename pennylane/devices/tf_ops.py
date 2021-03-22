@@ -191,8 +191,8 @@ def CRot(a, b, c):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))
-  
-  
+
+
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
@@ -205,7 +205,7 @@ def SingleExcitation(phi):
     phi = tf.cast(phi, dtype=C_DTYPE)
     c = tf.cos(phi / 2)
     s = tf.sin(phi / 2)
-  
+
     return tf.convert_to_tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
 
 
@@ -217,7 +217,7 @@ def SingleExcitationPlus(phi):
 
     Returns:
         tf.Tensor[complex]: Single excitation rotation matrix with positive phase-shift
-    """        
+    """
     phi = tf.cast(phi, dtype=C_DTYPE)
     c = tf.cos(phi / 2)
     s = tf.sin(phi / 2)
@@ -249,7 +249,7 @@ def DoubleExcitation(phi):
     Returns:
         tf.Tensor[complex]: Double excitation rotation matrix
     """
-    
+
     phi = tf.cast(phi, dtype=C_DTYPE)
     c = tf.cos(phi / 2)
     s = tf.sin(phi / 2)
@@ -344,4 +344,3 @@ def DoubleExcitationMinus(phi):
     ]
 
     return tf.convert_to_tensor(U)
-  

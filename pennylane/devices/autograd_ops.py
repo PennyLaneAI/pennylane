@@ -180,8 +180,8 @@ def MultiRZ(theta, n):
         array[complex]: diagonal part of the multi-qubit rotation matrix
     """
     return np.exp(-1j * theta / 2 * pauli_eigs(n))
-  
-  
+
+
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
@@ -207,7 +207,7 @@ def SingleExcitationPlus(phi):
     """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
-    e = np.exp(1j * phi / 2)        
+    e = np.exp(1j * phi / 2)
     return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
 
@@ -219,7 +219,7 @@ def SingleExcitationMinus(phi):
 
     Returns:
        array[complex]: Single excitation rotation matrix with negative phase-shift
-    """    
+    """
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
     e = np.exp(-1j * phi / 2)
@@ -268,7 +268,7 @@ def DoubleExcitationPlus(phi):
     Returns:
         array[complex]: rotation matrix
     """
-    
+
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
     e = np.exp(1j * phi / 2)
@@ -303,7 +303,7 @@ def DoubleExcitationMinus(phi):
     Returns:
         array[complex]: rotation matrix
     """
-    
+
     c = np.cos(phi / 2)
     s = np.sin(phi / 2)
     e = np.exp(-1j * phi / 2)
