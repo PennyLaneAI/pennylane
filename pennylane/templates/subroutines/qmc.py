@@ -269,8 +269,9 @@ class QuantumMonteCarlo(Operation):
     .. note::
 
         This template is only compatible with simulators because the algorithm is performed using
-        unitary matrices. To implement the quantum Monte Carlo algorithm on hardware requires
-        breaking down the unitary matrices into hardware-compatible gates.
+        unitary matrices. Additionally, this operation is not differentiable. To implement the
+        quantum Monte Carlo algorithm on hardware requires breaking down the unitary matrices into
+        hardware-compatible gates.
 
     .. UsageDetails::
 
