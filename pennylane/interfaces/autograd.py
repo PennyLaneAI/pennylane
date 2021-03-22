@@ -163,6 +163,8 @@ class AutogradInterface(AnnotatedQueue):
         """
         from pennylane.operation import Expectation
 
+        print("params", params, type(params))
+
         if not self.is_sampled \
            and isinstance(params, autograd.extend.Box) \
            and all([m.return_type is Expectation for m in self.measurements]):
@@ -238,7 +240,7 @@ class AutogradInterface(AnnotatedQueue):
                 """
                 """
                 def __getattribute__(self, attrname):
-                    #print("__getattribute__", attrname)
+                    print("__getattribute__", attrname)
                     # we need to access res and __dict__ in the
                     # following, so ignore them to avoid infinite
                     # recursion
@@ -249,16 +251,18 @@ class AutogradInterface(AnnotatedQueue):
                         # we are bound, so calculate the real result if not already
                         # done and return the corresponidng attribute of the result
                         if self.res is None:
-                            #print("executing now")
+                            print("executing now")
                             device = super().__getattribute__('device')
                             params = super().__getattribute__('params')
                             autograd_interface = super().__getattribute__('autograd_interface')
                             res = autograd_interface.actual_execute(params, device)
-                            #print("computed result", res, type(res))
+                            print("computed result1", res, type(res), params)
                             self.__dict__['res'] = res
                             # redirecting __dict__ seems not sufficient (because ndarrays are
                             # not purely python objects?), we also need to copy the data
                             np.copyto(self, res)
+                            #self.__dict__['res'] = res
+                            #self.data = res.data
                         return self.__dict__['res'].__getattribute__(attrname)
 
                     return super().__getattribute__(attrname)
@@ -269,15 +273,17 @@ class AutogradInterface(AnnotatedQueue):
             ArrayBox.register(DelayedExecutionTensor)
             autograd.extend.VSpace.register(DelayedExecutionTensor, lambda x: autograd.numpy.numpy_vspaces.ArrayVSpace(x))
 
-            # todo: make a DelayedExecutionTensor with suitable shape and dtype
-            fake_res = DelayedExecutionTensor(np.zeros(len(self.observables)))
+            # make a DelayedExecutionTensor with suitable shape and dtype
+            print("device.shots", device._shot_vector)
+            predicted_res_shape = len(self.measurements)
+            try:
+                predicted_res_shape = (sum([shot_tuple.copies for shot_tuple in device._shot_vector]), predicted_res_shape)
+            except TypeError:
+                pass
+            fake_res = DelayedExecutionTensor(np.zeros(predicted_res_shape))
             fake_res.bind(autograd_interface=self, params=params, device=device)
 
-            # print("initialized fake result to be", np.zeros(len(self.observables)))
-            # value = np.array(fake_res, copy=False)
-            # print("In ArrayVSpace this will lead to", value.shape, value.dtype)
-
-            # print("does this trigger an execution?", fake_res)
+            print("comment in to trigger an execution now", fake_res)
 
             return fake_res
 
@@ -301,7 +307,10 @@ class AutogradInterface(AnnotatedQueue):
         if self.trainable_params:
             requires_grad = True
 
-        return np.array(res, requires_grad=requires_grad)
+        res = np.array(res, requires_grad=requires_grad)
+        print("computed result2", res, type(res), params)
+
+        return res
 
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
