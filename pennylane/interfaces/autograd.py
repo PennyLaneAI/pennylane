@@ -155,8 +155,17 @@ class AutogradInterface(AnnotatedQueue):
         This function is not primitive to autograd so when params
         is a autograd box we know that the following call to
         the primitve wrapped function is the autograd forward pass.
+
+        Attempting to deplay this forward pass is only woth it if
+        the final node's output depends linarly on the result of this execution
+        because only then the value at the currentl parameter values is not needed
+        for the result (
         """
-        if isinstance(params, autograd.extend.Box):
+        from pennylane.operation import Expectation
+
+        if not self.is_sampled \
+           and isinstance(params, autograd.extend.Box) \
+           and all([m.return_type is Expectation for m in self.measurements]):
             self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = True
         else:
             self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = False
@@ -172,8 +181,9 @@ class AutogradInterface(AnnotatedQueue):
 
         if self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass:
             self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = False
-
-
+            #print("measurement return types", [m.return_type for m in self.measurements])
+            #from pennylane.operation import Expectation
+            #all([m.return_type is State for m in self.measurements]):
 
 
             from functools import wraps
@@ -228,7 +238,7 @@ class AutogradInterface(AnnotatedQueue):
                 """
                 """
                 def __getattribute__(self, attrname):
-                    print("__getattribute__", attrname)
+                    #print("__getattribute__", attrname)
                     # we need to access res and __dict__ in the
                     # following, so ignore them to avoid infinite
                     # recursion
@@ -239,12 +249,12 @@ class AutogradInterface(AnnotatedQueue):
                         # we are bound, so calculate the real result if not already
                         # done and return the corresponidng attribute of the result
                         if self.res is None:
-                            print("executing now")
+                            #print("executing now")
                             device = super().__getattribute__('device')
                             params = super().__getattribute__('params')
                             autograd_interface = super().__getattribute__('autograd_interface')
                             res = autograd_interface.actual_execute(params, device)
-                            print("computed result", res, type(res))
+                            #print("computed result", res, type(res))
                             self.__dict__['res'] = res
                             # redirecting __dict__ seems not sufficient (because ndarrays are
                             # not purely python objects?), we also need to copy the data
