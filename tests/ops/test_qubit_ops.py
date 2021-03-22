@@ -1106,7 +1106,7 @@ class TestDoubleExcitation:
         tensorflow interface"""
 
         tf = pytest.importorskip("tensorflow")
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device('default.qubit.tf', wires=4)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(phi):
@@ -1120,8 +1120,6 @@ class TestDoubleExcitation:
             res = circuit(phi_t)
 
         grad = tape.gradient(res, phi_t)
-        print('grad=', grad)
-        print('analytical', np.sin(phi))
         assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1138,7 +1136,7 @@ class TestDoubleExcitation:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device('default.qubit.jax', wires=4)
 
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(phi):
