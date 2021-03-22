@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_number_of_layers,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -40,29 +35,15 @@ def _preprocess(weights, wires):
     Returns:
         int: number of times that the ansatz is repeated
     """
+    shape = qml.math.shape(weights)
+    repeat = shape[0]
 
-    if qml.tape_mode_active():
+    if len(shape) != 2:
+        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
-        shape = qml.math.shape(weights)
-        repeat = shape[0]
-
-        if len(shape) != 2:
-            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-        if shape[1] != len(wires):
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-            )
-
-    else:
-
-        repeat = check_number_of_layers([weights])
-
-        expected_shape = (repeat, len(wires))
-        check_shape(
-            weights,
-            expected_shape,
-            msg=f"Weights tensor must have second dimension of length {len(wires)}; got {get_shape(weights)[1]}",
+    if shape[1] != len(wires):
+        raise ValueError(
+            f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
         )
 
     return repeat

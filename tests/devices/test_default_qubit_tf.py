@@ -432,25 +432,23 @@ class TestExpval:
     def test_single_wire_expectation(self, gate, obs, expected, theta, phi, varphi, tol):
         """Test that identity expectation value (i.e. the trace) is 1"""
         dev = DefaultQubitTF(wires=2)
-        queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
-        observables = [obs(wires=[i]) for i in range(2)]
 
-        for i in range(len(observables)):
-            observables[i].return_type = qml.operation.Expectation
+        with qml.tape.QuantumTape() as tape:
+            queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            observables = [qml.expval(obs(wires=[i])) for i in range(2)]
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1, 2])))
+        res = dev.execute(tape)
         assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, theta, phi, varphi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
         dev = DefaultQubitTF(wires=2)
-        queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-        observables = [qml.Hermitian(A, wires=[i]) for i in range(2)]
 
-        for i in range(len(observables)):
-            observables[i].return_type = qml.operation.Expectation
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            observables = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1])))
+        res = dev.execute(tape)
 
         a = A[0, 0]
         re_b = A[0, 1].real
@@ -473,13 +471,13 @@ class TestExpval:
         )
 
         dev = DefaultQubitTF(wires=2)
-        queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-        observables = [qml.Hermitian(A, wires=[0, 1])]
 
-        for i in range(len(observables)):
-            observables[i].return_type = qml.operation.Expectation
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1])))
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
+
+        res = dev.execute(tape)
 
         # below is the analytic expectation value for this circuit with arbitrary
         # Hermitian observable A
@@ -713,13 +711,11 @@ class TestVar:
         dev = DefaultQubitTF(wires=1)
         # test correct variance for <Z> of a rotated state
 
-        queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-        observables = [qml.PauliZ(wires=[0])]
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+            observables = [qml.var(qml.PauliZ(wires=[0]))]
 
-        for i in range(len(observables)):
-            observables[i].return_type = qml.operation.Variance
-
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0])))
+        res = dev.execute(tape)
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -729,13 +725,12 @@ class TestVar:
 
         # test correct variance for <H> of a rotated state
         H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
-        queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-        observables = [qml.Hermitian(H, wires=[0])]
 
-        for i in range(len(observables)):
-            observables[i].return_type = qml.operation.Variance
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+            observables = [qml.var(qml.Hermitian(H, wires=[0]))]
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0])))
+        res = dev.execute(tape)
         expected = 0.5 * (
             2 * np.sin(2 * theta) * np.cos(phi) ** 2
             + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))

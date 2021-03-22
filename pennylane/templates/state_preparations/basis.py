@@ -17,7 +17,6 @@ Contains the ``BasisStatePreparation`` template.
 
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
@@ -34,41 +33,22 @@ def _preprocess(basis_state, wires):
     Returns:
         array: preprocessed basis state
     """
+    shape = qml.math.shape(basis_state)
 
-    if qml.tape_mode_active():
+    if len(shape) != 1:
+        raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
 
-        shape = qml.math.shape(basis_state)
+    n_bits = shape[0]
+    if n_bits != len(wires):
+        raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_bits}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
+    basis_state = list(qml.math.toarray(basis_state))
 
-        n_bits = shape[0]
-        if n_bits != len(wires):
-            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_bits}.")
+    if not all(bit in [0, 1] for bit in basis_state):
+        raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
-        basis_state = list(qml.math.toarray(basis_state))
-
-        if not all(bit in [0, 1] for bit in basis_state):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
-
-        # we return the input as a list of values, since
-        # it is not differentiable
-        return basis_state
-
-    expected_shape = (len(wires),)
-    check_shape(
-        basis_state,
-        expected_shape,
-        msg="Basis state must be of shape {}; got {}."
-        "".format(expected_shape, get_shape(basis_state)),
-    )
-
-    # basis_state is guaranteed to be a list of binary values
-    if any([b not in [0, 1] for b in basis_state]):
-        raise ValueError(
-            "Basis state must only contain values of 0 and 1; got {}".format(basis_state)
-        )
-
+    # we return the input as a list of values, since
+    # it is not differentiable
     return basis_state
 
 

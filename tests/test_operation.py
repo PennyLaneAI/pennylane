@@ -22,7 +22,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane._queuing
+import pennylane.queuing
 from pennylane.operation import Tensor, operation_derivative
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
@@ -169,39 +169,6 @@ class TestOperation:
         if n == 0:
             return
 
-        # wrong parameter types
-        if test_class.do_check_domain:
-            if test_class.par_domain == "A":
-                # params must be arrays
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [0.0], wires=ww)
-                # params must not be Variables
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [qml.variable.Variable(0)], wires=ww)
-            elif test_class.par_domain == "N":
-                # params must be natural numbers
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [0.7], wires=ww)
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [-1], wires=ww)
-            elif test_class.par_domain == "R":
-                # params must be real numbers
-                with pytest.raises(TypeError, match="Real scalar parameter expected"):
-                    test_class(*n * [1j], wires=ww)
-            elif test_class.par_domain == "L":
-                # params must be list of numpy arrays
-                with pytest.raises(TypeError, match="List parameter"):
-                    test_class(*n * [np.eye(2)], wires=ww)
-
-            # if par_domain ever gets overridden to an unsupported value, should raise exception
-            monkeypatch.setattr(test_class, "par_domain", "junk")
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
-
-            monkeypatch.setattr(test_class, "par_domain", 7)
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
-
     def test_controlled_qubit_unitary_init(self):
         """Test for the init of ControlledQubitUnitary"""
         control_wires = [3, 2]
@@ -316,19 +283,6 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
 
-    def test_incorrect_param_domain(self):
-        """Test that an exception is raised if an incorrect parameter domain is requested"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "J"
-            grad_method = "A"
-
-        with pytest.raises(ValueError, match="Unknown parameter domain"):
-            DummyOp(0.5, wires=0)
-
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -394,90 +348,6 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
-
-    def test_list_of_arrays(self):
-        """Test that an exception is raised if a list of arrays is expected
-        but a list of mixed types is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "L"
-
-        with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
-            DummyOp([[np.eye(2), "a"]], wires=[0])
-
-    def test_variable_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a variable is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
-            DummyOp(qml.variable.Variable(0), wires=[0])
-
-    def test_array_instead_of_flattened_array(self):
-        """Test that an exception is raised if an array is expected, but an array is passed
-        to check_domain when flattened=True. In the initial release of the library, this is not
-        accessible by the developer or the user, but is kept in case it will be used in the future."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Flattened array parameter expected"):
-            op = DummyOp(np.array([1]), wires=[0])
-            op.check_domain(np.array([1]), True)
-
-    def test_scalar_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a scalar is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-    def test_array_instead_of_real(self):
-        """Test that an exception is raised if a real number is expected but an array is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Real scalar parameter expected, got"):
-            DummyOp(np.array([1.0]), wires=[0])
-
-    def test_not_natural_param(self):
-        """Test that an exception is raised if a natural number is expected but not passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "N"
-            grad_method = None
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(-2, wires=[0])
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
@@ -1180,7 +1050,7 @@ class TestDecomposition:
         theta = 0.654
         omega = -5.43
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Rot.decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
@@ -1199,7 +1069,7 @@ class TestDecomposition:
         qubit rotation"""
         phi = 0.432
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
@@ -1252,7 +1122,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRY.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1290,7 +1160,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRZ.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1326,7 +1196,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.U2.decomposition(phi, lam, wires=0)
 
         assert len(rec.queue) == 3
@@ -1346,7 +1216,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.U3.decomposition(theta, phi, lam, wires=0)
 
         assert len(rec.queue) == 3

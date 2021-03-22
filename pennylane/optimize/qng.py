@@ -174,10 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if (
-            not isinstance(qnode, (qml.tape.QNode, qml.qnodes.BaseQNode, qml.ExpvalCost))
-            and metric_tensor_fn is None
-        ):
+        if not isinstance(qnode, (qml.QNode, qml.ExpvalCost)) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
                 "an ExpvalCost object for the natural gradient to be automatically computed. "
