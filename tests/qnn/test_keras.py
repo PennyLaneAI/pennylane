@@ -22,8 +22,6 @@ from pennylane.qnn.keras import KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 @pytest.fixture
 def model(get_circuit, n_qubits, output_dim):
@@ -160,35 +158,8 @@ class TestKerasLayer:
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, get_circuit, monkeypatch, output_dim):
-        """Test if a TypeError is raised when instantiated with a variable number of keyword
-        arguments"""
-        if qml.tape_mode_active():
-            pytest.skip(
-                "This functionality is supported in tape mode, so will not raise an exception."
-            )
-
-        c, w = get_circuit
-
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
-
-            sig = c.func.sig
-            var_pos = False
-            var_keyword = True
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
-                KerasLayer(c, w, output_dim)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword_tape_mode(self):
-        """Test that variable number of keyword arguments works in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
-
+    def test_var_keyword(self):
+        """Test that variable number of keyword arguments works"""
         n_qubits = 2
         output_dim = 2
 
@@ -255,33 +226,9 @@ class TestKerasLayer:
         }
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, get_circuit, output_dim, n_qubits):
-        """Test if a TypeError is raised when default arguments that are not the input argument are
-        present in the QNode"""
-        if qml.tape_mode_active():
-            pytest.skip(
-                "This functionality is supported in tape mode, so will not raise an exception."
-            )
-
-        c, w = get_circuit
-
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
-        def c_dummy(inputs, w1, w2, w3, w4, w5, w6, w7, w8=None):
-            """Dummy version of the circuit with a default argument"""
-            return c(inputs, w1, w2, w3, w4, w5, w6, w7)
-
-        with pytest.raises(
-            TypeError,
-            match="Only the argument {} is permitted".format(qml.qnn.keras.KerasLayer._input_arg),
-        ):
-            KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults_tape_mode(self):
+    def test_non_input_defaults(self):
         """Test that everything works when default arguments that are not the input argument are
-        present in the QNode in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
+        present in the QNode"""
 
         n_qubits = 2
         output_dim = 2
@@ -514,8 +461,6 @@ class TestKerasLayer:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_backprop_gradients(self, mocker):
         """Test if KerasLayer is compatible with the backprop diff method."""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
 
         dev = qml.device("default.qubit.tf", wires=2)
 
@@ -534,7 +479,7 @@ class TestKerasLayer:
         with tf.GradientTape() as tape:
             out = tf.reduce_sum(qlayer(inputs))
 
-        spy = mocker.spy(qml.tape.tapes.QubitParamShiftTape, "jacobian")
+        spy = mocker.spy(qml.tape.QubitParamShiftTape, "jacobian")
 
         grad = tape.gradient(out, qlayer.trainable_weights)
         assert grad is not None
@@ -615,10 +560,6 @@ class TestKerasLayerIntegrationDM:
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
-
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim[0] * output_dim[1]))
 
@@ -630,10 +571,6 @@ class TestKerasLayerIntegrationDM:
     def test_model_gradients_dm(self, model_dm, output_dim, n_qubits):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model."""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
-
         x = tf.zeros((2, n_qubits))
         y = tf.zeros((2, output_dim[0] * output_dim[1]))
 
@@ -648,9 +585,6 @@ class TestKerasLayerIntegrationDM:
     def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
-
-        if not qml.tape_mode_active():
-            pytest.skip()
 
         prediction = model_dm.predict(np.ones(n_qubits))
         weights = model_dm.get_weights()

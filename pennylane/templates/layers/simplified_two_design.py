@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_number_of_layers,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -40,51 +35,24 @@ def _preprocess(weights, initial_layer_weights, wires):
     Returns:
         int: number of times that the ansatz is repeated
     """
+    shape = qml.math.shape(weights)
+    repeat = shape[0]
 
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(weights)
-        repeat = shape[0]
-
-        if len(shape) > 1:
-            if shape[1] != len(wires) - 1:
-                raise ValueError(
-                    f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
-                )
-
-            if shape[2] != 2:
-                raise ValueError(
-                    f"Weights tensor must have third dimension of length 2; got {shape[2]}"
-                )
-
-        shape2 = qml.math.shape(initial_layer_weights)
-        if shape2 != (len(wires),):
+    if len(shape) > 1:
+        if shape[1] != len(wires) - 1:
             raise ValueError(
-                f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
+                f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
             )
 
-    else:
-        repeat = check_number_of_layers([weights])
+        if shape[2] != 2:
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 2; got {shape[2]}"
+            )
 
-        expected_shape_initial = (len(wires),)
-        check_shape(
-            initial_layer_weights,
-            expected_shape_initial,
-            msg="Initial layer weights must be of shape {}; got {}"
-            "".format(expected_shape_initial, get_shape(initial_layer_weights)),
-        )
+    shape2 = qml.math.shape(initial_layer_weights)
+    if shape2 != (len(wires),):
+        raise ValueError(f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}")
 
-        if len(wires) in [0, 1]:
-            expected_shape_weights = (0,)
-        else:
-            expected_shape_weights = (repeat, len(wires) - 1, 2)
-
-        check_shape(
-            weights,
-            expected_shape_weights,
-            msg="Weights tensor must be of shape {}; got {}"
-            "".format(expected_shape_weights, get_shape(weights)),
-        )
     return repeat
 
 
@@ -93,8 +61,8 @@ def entangler(par1, par2, wires):
     """Implements a two qubit unitary consisting of a controlled-Z entangler and Pauli-Y rotations.
 
     Args:
-         par1 (float or qml.Variable): parameter of first Pauli-Y rotation
-         par2 (float or qml.Variable): parameter of second Pauli-Y rotation
+         par1 (float): parameter of first Pauli-Y rotation
+         par2 (float): parameter of second Pauli-Y rotation
          wires (Wires): two wire indices that unitary acts on
     """
 
