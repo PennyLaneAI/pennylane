@@ -512,7 +512,7 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             circuit(phi=phi)
 
         for i in range(phi.shape[1]):
@@ -534,7 +534,7 @@ class TestNumpyConversion:
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             circuit(phi=phi)
 
         # Test the rotation applied

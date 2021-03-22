@@ -2,6 +2,193 @@
 
 <h3>New features since last release</h3>
 
+* Added the function ``finite_diff()`` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  arbitrary callable functions.
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
+  This is useful to compute the derivative of parametrized
+  ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
+
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2 = deriv2_fn(x)
+  ```
+
+* Added the `QuantumMonteCarlo` template for performing quantum Monte Carlo estimation of an
+  expectation value on simulator.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  The following example shows how the expectation value of sine squared over a standard normal
+  distribution can be approximated:
+  
+  ```python
+  from scipy.stats import norm
+
+  m = 5
+  M = 2 ** m
+  n = 10
+  N = 2 ** n
+  target_wires = range(m + 1)
+  estimation_wires = range(m + 1, n + m + 1)
+
+  xmax = np.pi  # bound to region [-pi, pi]
+  xs = np.linspace(-xmax, xmax, M)
+
+  probs = np.array([norm().pdf(x) for x in xs])
+  probs /= np.sum(probs)
+
+  func = lambda i: np.sin(xs[i]) ** 2
+
+  dev = qml.device("default.qubit", wires=(n + m + 1))
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.templates.QuantumMonteCarlo(
+          probs,
+          func,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+  expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+  ```
+  
+  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
+  
+  ```pycon
+  >>> expectation_estimated
+  0.4327096457464369
+  ```
+
+* A new adjoint transform has been added. 
+  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
+  [(#1135)](https://github.com/PennyLaneAI/pennylane/pull/1135)
+
+  This new method allows users to apply the adjoint of an arbitrary sequence of operations.
+
+  ```python
+  def subroutine(wire):
+      qml.RX(0.123, wires=wire)
+      qml.RY(0.456, wires=wire)
+
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev)
+  def circuit():
+      subroutine(0)
+      qml.adjoint(subroutine)(0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  This creates the following circuit:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+  ```
+
+  Directly applying to a gate also works as expected.
+
+  ```python
+  qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
+  ```
+
+- Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
+  unitary matrix.
+  [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
+  
+  Consider the matrix corresponding to a rotation from an `RX` gate:
+  
+  ```pycon
+  >>> phase = 5
+  >>> target_wires = [0]
+  >>> unitary = qml.RX(phase, wires=0).matrix
+  ```
+  
+  The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
+  phase-estimation qubits:
+  
+  ```python
+  n_estimation_wires = 5
+  estimation_wires = range(1, n_estimation_wires + 1)
+
+  dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
+  @qml.qnode(dev)
+  def circuit():
+      # Start in the |+> eigenstate of the unitary
+      qml.Hadamard(wires=target_wires)
+
+      QuantumPhaseEstimation(
+          unitary,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
+
+  # Need to rescale phase due to convention of RX gate
+  phase_estimated = 4 * np.pi * (1 - phase)
+  ```
+
+  The resulting phase is a close approximation to the true value:
+  
+  ```pycon
+  >>> phase_estimated
+  5.105088062083414
+  ```
+
+* Batches of shots can now be specified as a list, allowing measurement statistics
+  to be course-grained with a single QNode evaluation.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  Consider
+
+  ```pycon
+  >>> shots_list = [5, 10, 1000]
+  >>> dev = qml.device("default.qubit", wires=2, analytic=False, shots=shots_list)
+  ```
+
+  When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
+  However, three sets of measurement statistics will be returned; using the first 5 shots,
+  second set of 10 shots, and final 1000 shots, separately.
+
+  For example:
+
+  ```python
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+  ```
+
+  Executing this, we will get an output of size `(3, 2)`:
+
+  ```pycon
+  >>> circuit(0.5)
+  [[0.33333333 1.        ]
+   [0.2        1.        ]
+   [0.012      0.868     ]]
+  ```
+
+  This output remains fully differentiable.
+
 - The number of shots can now be specified on a temporary basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
@@ -47,8 +234,33 @@
 
 <h3>Improvements</h3>
 
-- Added the `ControlledQubitUnitary` operation.
-  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
+
+- Added the `ControlledQubitUnitary` operation. This
+  enables implementation of multi-qubit gates with a variable number of
+  control qubits. It is also possible to specify a different state for the
+  control qubits using the `control_values` argument (also known as a
+  mixed-polarity multi-controlled operation).
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069) [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
+  
+  For example, we can  create a multi-controlled T gate using:
+
+  ```python
+  T = qml.T._matrix()
+  qml.ControlledQubitUnitary(T, control_wires=[0, 1, 3], wires=2, control_values="110")
+  ```
+
+  Here, the T gate will be applied to wire `2` if control wires `0` and `1` are in
+  state `1`, and control wire `3` is in state `0`. If no value is passed to
+  `control_values`, the gate will be applied if all control wires are in
+  the `1` state.
+
+- Added `MultiControlledX` for multi-controlled `NOT` gates.
+  This is a special case of `ControlledQubitUnitary` that applies a
+  Pauli X gate conditioned on the state of an arbitrary number of
+  control qubits.
+  [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
@@ -82,9 +294,18 @@
   (5, 4, 4)
   ```
 
+* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+  set to True, then the returned gradient will be a NumPy array, rather than a
+  tuple of length 1.
+  [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
+  [(#1081)](https://github.com/PennyLaneAI/pennylane/pull/1081)
+
 * An improvement has been made to how `QubitDevice` generates and post-processess samples,
   allowing QNode measurement statistics to work on devices with more than 32 qubits.
   [(#1088)](https://github.com/PennyLaneAI/pennylane/pull/1088)
+
+* Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
+  [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
 <h3>Breaking changes</h3>
 
@@ -93,20 +314,65 @@
   argument to change the number of shots on a per-call basis.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
+* For devices inheriting from `QubitDevice`, the methods `expval`, `var`, `sample`
+  accept two new keyword arguments --- `shot_range` and `bin_size`.
+  [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
+
+  These new arguments allow for the statistics to be performed on only a subset of device samples.
+  This finer level of control is accessible from the main UI by instantiating a device with a batch
+  of shots.
+
+  For example, consider the following device:
+
+  ```pycon
+  >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+  ```
+
+  This device will execute QNodes using 135 shots, however
+  measurement statistics will be **course grained** across these 135
+  shots:
+
+  * All measurement statistics will first be computed using the
+    first 5 shots --- that is, `shots_range=[0, 5]`, `bin_size=5`.
+
+  * Next, the tuple `(10, 3)` indicates 10 shots, repeated 3 times. We will want to use
+    `shot_range=[5, 35]`, performing the expectation value in bins of size 10
+    (`bin_size=10`).
+
+  * Finally, we repeat the measurement statistics for the final 100 shots,
+    `shot_range=[35, 135]`, `bin_size=100`.
+
 <h3>Bug fixes</h3>
+
+* Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
+  being updated.
+  [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
+
+* Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
+  or all zeros. 
+  [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
+
+* The `ExpvalCost` class raises an error if instantiated
+  with non-expectation measurement statistics.
+  [(#1106)](https://github.com/PennyLaneAI/pennylane/pull/1106)
+
+* Fixes a bug where decompositions would reset the differentiation method
+  of a QNode.
+  [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
+- Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Josh Izaac, Daniel Polatajko, Chase Roberts, Maria Schuld.
-
-
+Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
