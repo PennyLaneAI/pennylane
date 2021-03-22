@@ -947,7 +947,7 @@ class TestSingleExcitation:
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
                                                      (qml.SingleExcitationPlus, 0.2),
                                                      (qml.SingleExcitationMinus, np.pi/4)])
-    def test_autograd_grad(self, excitation, phi):
+    def test_autograd_grad(self, diff_method, excitation, phi):
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
