@@ -140,7 +140,7 @@ class QAOAEmbedding(Operation):
         **Parameter shape**
 
         The shape of the weights argument can be computed by the static method
-        :meth:`QAOAEmbedding.parameter_shape` and used when creating randomly
+        :meth:`~.QAOAEmbedding.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
@@ -218,13 +218,14 @@ class QAOAEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize local field {local_field}")
 
+        wires = Wires(wires)
+        self._preprocess(features, weights, wires)
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
-        self._preprocess()
 
     def expand(self):
 
-        features = self.data[0]
-        weights = self.data[1]
+        features = self.parameters[0]
+        weights = self.parameters[1]
 
         # first dimension of the weights tensor determines
         # the number of layers
@@ -242,17 +243,19 @@ class QAOAEmbedding(Operation):
 
         return tape
 
-    def _preprocess(self):
+    @staticmethod
+    def _preprocess(features, weights, wires):
         """Validate and pre-process inputs as follows:
 
         * Check that the features tensor is one-dimensional.
         * Check that the first dimension of the features tensor
           has length :math:`n` or less, where :math:`n` is the number of qubits.
         * Check that the shape of the weights tensor is correct for the number of qubits.
-        """
 
-        features = self.parameters[0]
-        weights = self.parameters[1]
+        Args:
+            features (tensor-like): feature tensor
+            weights (tensor-like): weight tensor
+        """
 
         shape = qml.math.shape(features)
 
@@ -260,25 +263,25 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
-        if n_features > len(self.wires):
+        if n_features > len(wires):
             raise ValueError(
-                f"Features must be of length {len(self.wires)} or less; got length {n_features}."
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
         shape = qml.math.shape(weights)
         repeat = shape[0]
 
-        if len(self.wires) == 1:
+        if len(wires) == 1:
             if shape != (repeat, 1):
                 raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
 
-        elif len(self.wires) == 2:
+        elif len(wires) == 2:
             if shape != (repeat, 3):
                 raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
         else:
-            if shape != (repeat, 2 * len(self.wires)):
+            if shape != (repeat, 2 * len(wires)):
                 raise ValueError(
-                    f"Weights tensor must be of shape {(repeat, 2*len(self.wires))}; got {shape}"
+                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
                 )
 
     @staticmethod

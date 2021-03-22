@@ -14,10 +14,8 @@
 r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.templates import broadcast
 from pennylane.wires import Wires
 
 
@@ -82,12 +80,12 @@ class BasicEntanglerLayers(Operation):
         **Parameter shape**
 
         The shape of the weights argument can be computed by the static method
-        :meth:`BasicEntanglerLayers.parameter_shape` and used when creating randomly
+        :meth:`~.BasicEntanglerLayers.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = BasicEntanglerLayers.parameter_shape(n_layers=2, n_wires=2)
+            shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
@@ -132,12 +130,13 @@ class BasicEntanglerLayers(Operation):
 
         self.rotation = rotation or qml.RX
 
+        wires = Wires(wires)
+        self._preprocess(weights, wires)
         super().__init__(weights, wires=wires, do_queue=do_queue)
-        self._preprocess()
 
     def expand(self):
 
-        weights = self.data[0]
+        weights = self.parameters[0]
 
         # first dimension of the weights tensor determines
         # the number of layers
@@ -147,7 +146,7 @@ class BasicEntanglerLayers(Operation):
 
             for layer in range(repeat):
                 for i in range(len(self.wires)):
-                    self.rotation(weights[layer][i], wires=self.wires[i : i + 1])
+                    self.rotation(weights[layer][i], wires=self.wires[i: i + 1])
 
                 if len(self.wires) == 2:
                     qml.CNOT(wires=self.wires)
@@ -159,20 +158,21 @@ class BasicEntanglerLayers(Operation):
 
         return tape
 
-    def _preprocess(self):
+    @staticmethod
+    def _preprocess(weights, wires):
         """Validate and pre-process inputs as follows:
 
         * Check the shape of the weights tensor, making sure that the second dimension
           has length :math:`n`, where :math:`n` is the number of qubits.
         """
-        shape = qml.math.shape(self.parameters[0])
+        shape = qml.math.shape(weights)
 
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
-        if shape[1] != len(self.wires):
+        if shape[1] != len(wires):
             raise ValueError(
-                f"Weights tensor must have second dimension of length {len(self.wires)}; got {shape[1]}"
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
             )
 
     @staticmethod
