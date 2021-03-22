@@ -121,7 +121,7 @@ class QuantumPhaseEstimation(Operation):
         super().__init__(unitary, wires=wires, do_queue=do_queue)
 
     def expand(self):
-        unitary = self.data[0]
+        unitary = self.parameters[0]
         unitary_powers = [unitary]
 
         for _ in range(len(self.estimation_wires) - 1):

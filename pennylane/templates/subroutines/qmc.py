@@ -339,7 +339,7 @@ class QuantumMonteCarlo(Operation):
 
         if not num_target_wires.is_integer():
             raise ValueError(
-                "The probability distribution must have a length that is a power of " "two"
+                "The probability distribution must have a length that is a power of two"
             )
 
         num_target_wires = int(num_target_wires)
@@ -360,7 +360,7 @@ class QuantumMonteCarlo(Operation):
         super().__init__(A, R, Q, wires=wires, do_queue=do_queue)
 
     def expand(self):
-        A, R, Q = self.data[:3]
+        A, R, Q = self.parameters
 
         with qml.tape.QuantumTape() as tape:
             qml.QubitUnitary(A, wires=self.target_wires[:-1])
