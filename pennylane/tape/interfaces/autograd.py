@@ -317,7 +317,7 @@ class AutogradInterface(AnnotatedQueue):
                         setattr(cls, name, wrap(name, magic_method))
 
 
-            class BindableDelayedExecutionTensor(np.tensor):
+            class BindableTensor(np.tensor):
                 def bind(self, *, autograd_interface=None, params=None, device=None):
                     #print("bind()")
                     self.autograd_interface = autograd_interface
@@ -325,7 +325,7 @@ class AutogradInterface(AnnotatedQueue):
                     self.device = device
                     self.res = None
 
-            class DelayedExecutionTensor(BindableDelayedExecutionTensor, metaclass=MetaAlsoMagicMethodsCallGetAttribute):
+            class DelayedExecutionTensor(BindableTensor, metaclass=MetaAlsoMagicMethodsCallGetAttribute):
                 """
                 """
                 def __getattribute__(self, attrname):
@@ -337,14 +337,19 @@ class AutogradInterface(AnnotatedQueue):
                             'res',
                             '__dict__',
                     ] and hasattr(self, 'res'):
-                        # we are bound so calculate the real result if not already
-                        # done and return the attribute of the result
+                        # we are bound, so calculate the real result if not already
+                        # done and return the corresponidng attribute of the result
                         if self.res is None:
                             print("executing now")
                             device = super().__getattribute__('device')
                             params = super().__getattribute__('params')
                             autograd_interface = super().__getattribute__('autograd_interface')
-                            self.__dict__['res'] = autograd_interface.actual_execute(params, device)
+                            res = autograd_interface.actual_execute(params, device)
+                            print("computed result", res, type(res))
+                            self.__dict__['res'] = res
+                            # redirecting __dict__ seems not sufficient (because ndarrays are
+                            # not purely python objects?), we also need to copy the data
+                            np.copyto(self, res)
                         return self.__dict__['res'].__getattribute__(attrname)
 
                     return super().__getattribute__(attrname)
@@ -354,8 +359,14 @@ class AutogradInterface(AnnotatedQueue):
             autograd.extend.VSpace.register(DelayedExecutionTensor, lambda x: autograd.numpy.numpy_vspaces.ArrayVSpace(x))
 
             # todo: make a DelayedExecutionTensor with suitable shape and dtype
-            fake_res = DelayedExecutionTensor(np.zeros(self.output_dim))
+            fake_res = DelayedExecutionTensor(np.zeros(len(self.observables)))
             fake_res.bind(autograd_interface=self, params=params, device=device)
+
+            # print("initialized fake result to be", np.zeros(len(self.observables)))
+            # value = np.array(fake_res, copy=False)
+            # print("In ArrayVSpace this will lead to", value.shape, value.dtype)
+
+            # print("does this trigger an execution?", fake_res)
 
             return fake_res
 
