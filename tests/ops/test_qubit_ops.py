@@ -947,6 +947,7 @@ class TestSingleExcitation:
             return qml.state()
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(("excitation", "phi"), [(qml.SingleExcitation, -0.1),
                                                      (qml.SingleExcitationPlus, 0.2),
                                                      (qml.SingleExcitationMinus, np.pi/4)])
@@ -1000,7 +1001,6 @@ class TestSingleExcitation:
             pytest.skip("JAX support for the parameter-shift method is still TBD")
 
         jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
 
         dev = qml.device('default.qubit', wires=2)
 
