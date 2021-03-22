@@ -614,16 +614,6 @@ class TestHessian:
         ):
             tape.hessian(None)
 
-    def test_output_dim_error(self):
-        """Test NotImplementedError raised for output_dim != 1
-        """
-
-        with JacobianTape() as tape:
-            qml.probs(0)
-
-        with pytest.raises(NotImplementedError):
-            tape.hessian(None)
-
     def test_unknown_hessian_method_error(self):
         """Test error raised if gradient method is unknown."""
         tape = JacobianTape()
