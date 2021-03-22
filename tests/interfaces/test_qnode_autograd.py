@@ -579,6 +579,10 @@ class TestQNode:
 
     def test_sampling(self, dev_name, diff_method):
         """Test sampling works as expected"""
+
+        if diff_method == "backprop":
+            pytest.skip("Sampling not possible with backprop differentiation.")
+
         dev = qml.device(dev_name, wires=2, shots=10)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")

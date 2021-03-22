@@ -38,22 +38,22 @@ def ansatz(a, b, c):
     qml.CNOT(wires=[1, 2])
 
 
-@pytest.mark.parametrize("analytic", [True, False])
-@pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("shots", [None, int(1e6)])
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
 
     @pytest.fixture
-    def tolerance(self, analytic, tol):
-        if not analytic:
+    def tolerance(self, shots, tol):
+        if shots is not None:
             return {"atol": 0.01, "rtol": 0.1}
 
         return {"atol": tol, "rtol": 0}
 
-    def test_tensor_product(self, analytic, theta, phi, varphi, tolerance):
+    def test_tensor_product(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product ZxZ gives the same result as simply
         using an Hermitian matrix"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit1(a, b, c):
@@ -70,10 +70,10 @@ class TestTensorExpval:
 
         assert np.allclose(res1, res2, **tolerance)
 
-    def test_combine_tensor_with_non_tensor(self, analytic, theta, phi, varphi, tolerance):
+    def test_combine_tensor_with_non_tensor(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product along with a non-tensor product
         continues to function correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit1(a, b, c):
@@ -95,9 +95,9 @@ class TestTensorExpval:
 
         assert np.allclose(res1, res2, **tolerance)
 
-    def test_paulix_tensor_pauliy(self, analytic, theta, phi, varphi, tolerance):
+    def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -109,9 +109,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_paulix_tensor_pauliy_gradient(self, analytic, theta, phi, varphi, tolerance):
+    def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -124,9 +124,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_pauliz_tensor_identity(self, analytic, theta, phi, varphi, tolerance):
+    def test_pauliz_tensor_identity(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -138,9 +138,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_pauliz_tensor_hadamard(self, analytic, theta, phi, varphi, tolerance):
+    def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -152,9 +152,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_hermitian(self, analytic, theta, phi, varphi, tolerance):
+    def test_hermitian(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving an Hermitian matrix works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         A = np.array(
             [
@@ -180,9 +180,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_hermitian_tensor_hermitian(self, analytic, theta, phi, varphi, tolerance):
+    def test_hermitian_tensor_hermitian(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -220,9 +220,9 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_hermitian_tensor_identity_expectation(self, analytic, theta, phi, varphi, tolerance):
+    def test_hermitian_tensor_identity_expectation(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=2, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -245,21 +245,21 @@ class TestTensorExpval:
         assert np.allclose(res, expected, **tolerance)
 
 
-@pytest.mark.parametrize("analytic", [True, False])
+@pytest.mark.parametrize("shots", [None, int(1e6)])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
     @pytest.fixture
-    def tolerance(self, analytic, tol):
-        if not analytic:
+    def tolerance(self, shots, tol):
+        if shots is not None:
             return {"atol": 0.01, "rtol": 0.2}
 
         return {"atol": tol, "rtol": 0}
 
-    def test_paulix_tensor_pauliy(self, analytic, theta, phi, varphi, tolerance):
+    def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -278,9 +278,9 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_pauliz_tensor_hadamard(self, analytic, theta, phi, varphi, tolerance):
+    def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -297,9 +297,9 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_tensor_hermitian(self, analytic, theta, phi, varphi, tolerance):
+    def test_tensor_hermitian(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         A = np.array(
             [
@@ -345,9 +345,9 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
-    def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol):
+    def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit():
@@ -357,11 +357,11 @@ class TestTensorSample:
         s1 = circuit()
 
         # s1 should only contain 1
-        assert np.allclose(s1, 1, atol=tol, rtol=0)
+        assert np.allclose(s1, 1, atol=tol_stochastic, rtol=0)
 
-    def test_paulix_tensor_pauliy(self, theta, phi, varphi, tol):
+    def test_paulix_tensor_pauliy(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
@@ -371,7 +371,7 @@ class TestTensorSample:
         s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
@@ -390,11 +390,11 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
-    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol):
+    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
@@ -420,14 +420,14 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
-    def test_tensor_hermitian(self, theta, phi, varphi, tol):
+    def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
         A = np.array(
             [
@@ -453,7 +453,6 @@ class TestTensorSample:
 
         zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
-        psi = zero_state
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
         psi = tensor_product([I, Rotx(phi), I]) @ psi
         psi = tensor_product([I, I, Rotx(varphi)]) @ psi
@@ -466,4 +465,4 @@ class TestTensorSample:
 
         expected_probabilities = np.abs(psi) ** 2
 
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)

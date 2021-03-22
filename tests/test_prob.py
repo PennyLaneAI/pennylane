@@ -107,7 +107,7 @@ def test_integration(tol):
 def test_integration_analytic_false(tol):
     """Test the probability is correct for a known state preparation when the
     analytic attribute is set to False."""
-    dev = qml.device('default.qubit', wires=3, analytic=False)
+    dev = qml.device('default.qubit', wires=3, shots=1000)
 
     @qml.qnode(dev)
     def circuit():

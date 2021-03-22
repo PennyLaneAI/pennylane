@@ -283,6 +283,10 @@ class TensorBox(abc.ABC):
                 datatype in the target framework is chosen.
         """
 
+    @abc.abstractmethod
+    def conj(self):
+        """TensorBox: Returns the elementwise conjugation."""
+
     @staticmethod
     @abc.abstractmethod
     def concatenate(values, axis=0):

@@ -542,7 +542,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('P', Wires([0]), [])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
@@ -556,7 +558,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('QuadOperator', Wires([0]), [np.pi/2])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
     def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi, monkeypatch):
@@ -570,7 +574,9 @@ class TestSample:
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
             gaussian_device_1_wire.sample('P', Wires([0]), [])
-            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
+            assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
+            assert input_logger.args[2] == gaussian_device_1_wire.shots
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
@@ -619,8 +625,7 @@ class TestDefaultGaussianIntegration:
 
         dev = qml.device('default.gaussian', wires=2, hbar=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic == True
+        assert dev.shots == None
         assert dev.hbar == 2
         assert dev.short_name == 'default.gaussian'
 
@@ -658,7 +663,7 @@ class TestDefaultGaussianIntegration:
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
-    def test_nonzero_shots(self, tol):
+    def test_nonzero_shots(self, tol_stochastic):
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
         shots = 10**4
@@ -676,7 +681,7 @@ class TestDefaultGaussianIntegration:
         for _ in range(100):
             runs.append(circuit(p))
 
-        assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol)
+        assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol_stochastic)
 
     @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
     def test_supported_gates(self, g, qop, gaussian_dev):
