@@ -21,6 +21,7 @@ import pytest
 
 import pennylane
 from pennylane import numpy as np
+import numpy.testing as np_testing
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
@@ -40,6 +41,41 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
+    @pytest.mark.parametrize("op,size", [
+            (cv.Squeezing(0.123, -0.456, wires=1), 3),
+            (cv.Squeezing(0.668, 10.0, wires=0), 3), # phi > 2pi
+            (cv.Squeezing(1.992, -9.782, wires=0), 3), # phi < -2pi
+            (cv.Rotation(2.005, wires=1), 3),
+            (cv.Rotation(-1.365, wires=1), 3),
+            (cv.Displacement(2.841, 0.456, wires=0), 3),
+            (cv.Displacement(3.142, -7.221, wires=0), 3), # phi < -2pi
+            (cv.Displacement(2.004, 8.673, wires=0), 3), # phi > 2pi
+            (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
+            (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
+            (cv.Interferometer(
+                np.array([[1, 1], [1, -1]]) * -1.j / np.sqrt(2.0),
+                wires=1), 5),
+            (cv.ControlledAddition(2.551, wires=[0, 2]), 5),
+            (cv.ControlledPhase(2.189, wires=[3, 1]), 5),
+        ])
+    def test_adjoint_cv_ops(self, op, size, tol):
+        op_d = op.adjoint()
+        op_heis = op._heisenberg_rep(op.parameters)
+        op_d_heis = op_d._heisenberg_rep(op_d.parameters)
+        res1 = np.dot(op_heis, op_d_heis)
+        res2 = np.dot(op_d_heis, op_heis)
+        np_testing.assert_allclose(res1, np.eye(size), atol=tol)
+        np_testing.assert_allclose(res2, np.eye(size), atol=tol)
+        assert op.wires == op_d.wires
+
+    @pytest.mark.parametrize("op", [
+            cv.CrossKerr(-1.724, wires=[2, 0]),
+            cv.CubicPhase(0.997, wires=2),
+            cv.Kerr(2.568, wires=2),
+        ])
+    def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
+        op_d = op.adjoint()
+        assert op.parameters[0] == -op_d.parameters[0]
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)

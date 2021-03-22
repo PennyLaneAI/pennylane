@@ -19,7 +19,6 @@ import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.templates.utils import check_shapes, get_shape
 from pennylane.wires import Wires
 
 
@@ -41,26 +40,17 @@ def _preprocess(theta, phi, varphi, wires):
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
 
-    if qml.tape_mode_active():
+    shape = qml.math.shape(theta)
+    if shape != (n_if,):
+        raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
 
-        shape = qml.math.shape(theta)
-        if shape != (n_if,):
-            raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
+    shape = qml.math.shape(phi)
+    if shape != (n_if,):
+        raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
 
-        shape = qml.math.shape(phi)
-        if shape != (n_if,):
-            raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
-
-        shape_varphi = qml.math.shape(varphi)
-        if shape_varphi != (n_wires,):
-            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
-
-    else:
-        weights_list = [theta, phi, varphi]
-
-        expected_shapes = [(n_if,), (n_if,), (n_wires,)]
-        check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
-        shape_varphi = get_shape(varphi)
+    shape_varphi = qml.math.shape(varphi)
+    if shape_varphi != (n_wires,):
+        raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
 
     return shape_varphi
 

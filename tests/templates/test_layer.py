@@ -109,7 +109,7 @@ class TestLayer:
     def test_layer(self, unitary, depth, arguments, keywords, gates):
         """Tests that the layering function is yielding the correct sequence of gates"""
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             layer(unitary, depth, *arguments, **keywords)
 
         for i, gate in enumerate(rec.operations):
