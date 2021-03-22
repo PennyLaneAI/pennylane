@@ -17,7 +17,6 @@ Contains the ``ArbitraryStatePreparation`` template.
 import functools
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
@@ -30,24 +29,10 @@ def _preprocess(weights, wires):
         weights (tensor_like): trainable parameters of the template
         wires (Wires): wires that template acts on
     """
-
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(weights)
-        if shape != (2 ** (len(wires) + 1) - 2,):
-            raise ValueError(
-                f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
-            )
-
-    else:
-
-        expected_shape = (2 ** (len(wires) + 1) - 2,)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="Weights tensor must be of shape {}; got {}.".format(
-                expected_shape, get_shape(weights)
-            ),
+    shape = qml.math.shape(weights)
+    if shape != (2 ** (len(wires) + 1) - 2,):
+        raise ValueError(
+            f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
         )
 
 

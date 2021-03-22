@@ -39,9 +39,6 @@ except ImportError as e:
     Variable = None
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestConstruction:
     """Tests for the QNodeCollection construction"""
 

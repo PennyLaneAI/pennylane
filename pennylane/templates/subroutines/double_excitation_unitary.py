@@ -20,10 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -50,20 +46,9 @@ def _preprocess(weight, wires1, wires2):
             "got {}".format(len(wires2))
         )
 
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(weight)
-        if shape != ():
-            raise ValueError(f"Weight must be a scalar; got shape {shape}.")
-
-    else:
-
-        expected_shape = ()
-        check_shape(
-            weight,
-            expected_shape,
-            msg="Weight must be a scalar; got shape {}".format(expected_shape, get_shape(weight)),
-        )
+    shape = qml.math.shape(weight)
+    if shape != ():
+        raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):

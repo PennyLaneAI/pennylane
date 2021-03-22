@@ -17,7 +17,6 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access,too-many-branches
 from collections.abc import Iterable
-import copy
 import functools
 import inspect
 import itertools
@@ -27,7 +26,6 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.variable import Variable
 
 
 def decompose_hamiltonian(H, hide_identity=False):
@@ -147,7 +145,7 @@ def _unflatten(flat, model):
         Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, (numbers.Number, Variable, str)):
+    if isinstance(model, (numbers.Number, str)):
         return flat[0], flat[1:]
 
     if isinstance(model, np.ndarray):
@@ -326,35 +324,24 @@ def inv(operation_list):
             + ",".join(string_reps)
         )
 
-    if qml.tape_mode_active():
-        for op in operation_list:
-            try:
-                # remove the queued operation to be inverted
-                # from the existing queuing context
-                qml.tape.QueuingContext.remove(op)
-            except KeyError:
-                # operation to be inverted does not
-                # exist on the queuing context
-                pass
-
-        with qml.tape.QuantumTape() as tape:
-            for o in operation_list:
-                o.queue()
-                if o.inverse:
-                    o.inv()
-
-        tape.inv()
-        return tape
-
-    inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
-
     for op in operation_list:
-        qml.QueuingContext.remove(op)
+        try:
+            # remove the queued operation to be inverted
+            # from the existing queuing context
+            qml.QueuingContext.remove(op)
+        except KeyError:
+            # operation to be inverted does not
+            # exist on the queuing context
+            pass
 
-    for inv_op in inv_ops:
-        qml.QueuingContext.append(inv_op)
+    with qml.tape.QuantumTape() as tape:
+        for o in operation_list:
+            o.queue()
+            if o.inverse:
+                o.inv()
 
-    return inv_ops
+    tape.inv()
+    return tape
 
 
 def expand(matrix, original_wires, expanded_wires):
