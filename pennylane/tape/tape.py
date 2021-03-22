@@ -75,7 +75,7 @@ Note that QASM has two native gates:
 - ``U`` (equivalent to :class:`~.U3`)
 - ``CX`` (equivalent to :class:`~.CNOT`)
 
-All other gates are defined in the file qelib1.inc:
+All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
@@ -417,6 +417,7 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
+        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and

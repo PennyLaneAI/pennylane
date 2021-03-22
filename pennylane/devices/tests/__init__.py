@@ -237,7 +237,6 @@ def cli():
 
     test_device(
         device_name=args.device,
-        analytic=args.analytic,
         shots=args.shots,
         skip_ops=args.skip_ops,
         flaky_report=flaky,
