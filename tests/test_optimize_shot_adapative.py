@@ -19,14 +19,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-@pytest.fixture(autouse=True)
-def tape_mode_only():
-    """Run the test in tape mode"""
-    qml.enable_tape()
-    yield
-    qml.disable_tape()
-
-
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
