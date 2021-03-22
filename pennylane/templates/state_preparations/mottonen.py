@@ -292,6 +292,7 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires_reverse[k:]
         target = wires_reverse[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
+
     # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
     if not np.allclose(omega,0):
         for k in range(len(wires_reverse), 0, -1):
