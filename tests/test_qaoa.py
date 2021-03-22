@@ -22,8 +22,6 @@ from networkx import Graph
 from pennylane.wires import Wires
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 #####################################################
 
@@ -592,7 +590,7 @@ class TestLayers:
 
         alpha = 1
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qaoa.mixer_layer(alpha, mixer)
 
         for i, j in zip(rec.operations, gates):
@@ -622,7 +620,7 @@ class TestLayers:
 
         gamma = 1
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qaoa.cost_layer(gamma, cost)
 
         for i, j in zip(rec.operations, gates):

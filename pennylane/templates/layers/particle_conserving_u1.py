@@ -21,10 +21,6 @@ import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, CRot, PhaseShift, CZ
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -50,36 +46,20 @@ def _preprocess(weights, wires, init_state):
             "got a wire sequence with {} elements".format(len(wires))
         )
 
-    if qml.tape_mode_active():
+    shape = qml.math.shape(weights)
 
-        shape = qml.math.shape(weights)
+    if len(shape) != 3:
+        raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
-        if len(shape) != 3:
-            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
-
-        if shape[1] != len(wires) - 1:
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
-            )
-
-        if shape[2] != 2:
-            raise ValueError(
-                f"Weights tensor must have third dimension of length 2; got {shape[2]}"
-            )
-
-        repeat = shape[0]
-
-    else:
-        repeat = get_shape(weights)[0]
-
-        expected_shape = (repeat, len(wires) - 1, 2)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="Weights tensor must be of shape {}; got {}".format(
-                expected_shape, get_shape(weights)
-            ),
+    if shape[1] != len(wires) - 1:
+        raise ValueError(
+            f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
         )
+
+    if shape[2] != 2:
+        raise ValueError(f"Weights tensor must have third dimension of length 2; got {shape[2]}")
+
+    repeat = shape[0]
 
     nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]

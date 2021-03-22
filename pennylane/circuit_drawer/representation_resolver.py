@@ -26,12 +26,10 @@ class RepresentationResolver:
 
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
-        show_variable_names (bool, optional): Show variable names instead of variable values.
     """
 
-    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
+    def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
-        self.show_variable_names = show_variable_names
         self.matrix_cache = []
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
@@ -104,18 +102,16 @@ class RepresentationResolver:
 
         return len(target_list) - 1
 
-    def single_parameter_representation(self, par):
+    @staticmethod
+    def single_parameter_representation(par):
         """Resolve the representation of an Operator's parameter.
 
         Args:
-            par (Union[~.variable.Variable, int, float, str]): The parameter to be rendered
+            par (Union[int, float, str]): The parameter to be rendered
 
         Returns:
             str: String representation of the parameter
         """
-        if isinstance(par, qml.variable.Variable):
-            return par.render(self.show_variable_names)
-
         if isinstance(par, str):
             return par
 
@@ -316,7 +312,7 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Operator
         """
-        if isinstance(op, qml.tape.MeasurementProcess) and op.obs is not None:
+        if isinstance(op, qml.measure.MeasurementProcess) and op.obs is not None:
             op = op.obs
 
         if isinstance(op, qml.operation.Tensor):
@@ -453,7 +449,7 @@ class RepresentationResolver:
         if isinstance(element, str):
             return element
         if (
-            isinstance(element, (qml.operation.Observable, qml.tape.MeasurementProcess))
+            isinstance(element, (qml.operation.Observable, qml.measure.MeasurementProcess))
             and element.return_type is not None
         ):
             return self.output_representation(element, wire)
