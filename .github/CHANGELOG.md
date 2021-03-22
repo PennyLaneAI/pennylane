@@ -2,29 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
-  by reducing the number of redundant CNOT gates at the end of a circuit.
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-  inputstate = [np.sqrt(0.2),np.sqrt(0.3),np.sqrt(0.4),np.sqrt(0.1)]
-  @qml.qnode(dev)
-  def circuit():
-    mottonen.MottonenStatePreparation(inputstate,wires=[0,1])
-    return qml.expval(qml.PauliZ(0))
-  ```
-  Previously returned:
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩ 
-  1: ──RY(1.35)──╰X──RY(0.422)──╰X──╰X──╰X──┤   
-  ```
-  Now returns:
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩ 
-  1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
-
 * Adds a new function ``qml.math.conj``.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
@@ -273,6 +250,31 @@
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
 <h3>Improvements</h3>
+
+* Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
+  by reducing the number of redundant CNOT gates at the end of a circuit.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  
+  inputstate = [np.sqrt(0.2),np.sqrt(0.3),np.sqrt(0.4),np.sqrt(0.1)]
+  
+  @qml.qnode(dev)
+  def circuit():
+    mottonen.MottonenStatePreparation(inputstate,wires=[0,1])
+    return qml.expval(qml.PauliZ(0))
+  ```
+  Previously returned:
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩ 
+  1: ──RY(1.35)──╰X──RY(0.422)──╰X──╰X──╰X──┤   
+  ```
+  Now returns:
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩ 
+  1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
 
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
