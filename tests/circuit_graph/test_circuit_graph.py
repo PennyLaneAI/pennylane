@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 
 
 @pytest.fixture
-def queue():
+def ops():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
         qml.RX(0.43, wires=0),
@@ -48,15 +48,9 @@ def obs():
 
 
 @pytest.fixture
-def ops(queue, obs):
-    """Queue of Operations followed by Observables."""
-    return queue + obs
-
-
-@pytest.fixture
-def circuit(ops):
+def circuit(ops, obs):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+    circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
     return circuit
 
 
@@ -89,51 +83,55 @@ class TestCircuitGraph:
 
         ops = [qml.RX(0.43, wires=0), qml.RY(0.35, wires=1)]
 
-        res = CircuitGraph(ops, {}, Wires([0, 1])).graph
+        res = CircuitGraph(ops, [], Wires([0, 1])).graph
         assert len(res) == 2
         assert not res.edges()
 
-    def test_dependence(self, ops):
+    def test_dependence(self, ops, obs):
         """Test a more complex example containing operations
         that do depend on the result of previous operations"""
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
         assert len(graph) == 9
         assert len(graph.edges()) == 9
 
+        queue = ops + obs
+
         # all ops should be nodes in the graph
-        for k in ops:
+        for k in queue:
             assert k in graph.nodes
 
         # all nodes in the graph should be ops
         for k in graph.nodes:
-            assert k is ops[k.queue_idx]
+            assert k is queue[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
         assert set(graph.edges()) == set(
-            (ops[a], ops[b])
+            (queue[a], queue[b])
             for a, b in [(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8),]
         )
 
-    def test_ancestors_and_descendants_example(self, ops):
+    def test_ancestors_and_descendants_example(self, ops, obs):
         """
         Test that the ``ancestors`` and ``descendants`` methods return the expected result.
         """
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
-        ancestors = circuit.ancestors([ops[6]])
+        queue = ops + obs
+
+        ancestors = circuit.ancestors([queue[6]])
         assert len(ancestors) == 3
         for o_idx in (0, 1, 3):
-            assert ops[o_idx] in ancestors
+            assert queue[o_idx] in ancestors
 
-        descendants = circuit.descendants([ops[6]])
-        assert descendants == set([ops[8]])
+        descendants = circuit.descendants([queue[6]])
+        assert descendants == set([queue[8]])
 
-    def test_update_node(self, ops):
+    def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 
-        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
@@ -142,9 +140,9 @@ class TestCircuitGraph:
         """Test that the `observables` property returns the list of observables in the circuit."""
         assert circuit.observables == obs
 
-    def test_operations(self, circuit, queue):
+    def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
-        assert circuit.operations == queue
+        assert circuit.operations == ops
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
@@ -163,7 +161,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
         circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
@@ -182,7 +180,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
         circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
 
@@ -201,21 +199,3 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (6, 7)
         assert set(result[2][3]) == set(circuit.observables[1:])
-
-    def test_diagonalizing_gates(self):
-        """Tests that the diagonalizing gates are correct for a circuit"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {}, Wires([0, 1]))
-        diag_gates = circuit.diagonalizing_gates
-
-        assert len(diag_gates) == 1
-        assert isinstance(diag_gates[0], qml.Hadamard)
-        assert diag_gates[0].wires == Wires([0])
-
-    def test_is_sampled(self):
-        """Test that circuit graphs with sampled observables properly return
-        True for CircuitGraph.is_sampled"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {}, Wires([0, 1]))
-        assert not circuit.is_sampled
-
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {}, Wires([0, 1]))
-        assert circuit.is_sampled

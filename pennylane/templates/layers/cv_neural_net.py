@@ -20,7 +20,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
-from pennylane.templates.utils import check_number_of_layers, check_shapes
 from pennylane.wires import Wires
 
 
@@ -51,56 +50,33 @@ def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
 
-    if qml.tape_mode_active():
+    # check that first dimension is the same
+    weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+    shapes = [qml.math.shape(w) for w in weights_list]
 
-        # check that first dimension is the same
-        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        shapes = [qml.math.shape(w) for w in weights_list]
-
-        first_dims = [s[0] for s in shapes]
-        if len(set(first_dims)) > 1:
-            raise ValueError(
-                f"The first dimension of all parameters needs to be the same, got {first_dims}"
-            )
-        repeat = shapes[0][0]
-
-        second_dims = [s[1] for s in shapes]
-        expected = [
-            n_if,
-            n_if,
-            n_wires,
-            n_wires,
-            n_wires,
-            n_if,
-            n_if,
-            n_wires,
-            n_wires,
-            n_wires,
-            n_wires,
-        ]
-        if not all(e == d for e, d in zip(expected, second_dims)):
-            raise ValueError("Got unexpected shape for one or more parameters.")
-
-    else:
-        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        repeat = check_number_of_layers(weights_list)
-
-        expected_shapes = [
-            (repeat, n_if),
-            (repeat, n_if),
-            (repeat, n_wires),
-            (repeat, n_wires),
-            (repeat, n_wires),
-            (repeat, n_if),
-            (repeat, n_if),
-            (repeat, n_wires),
-            (repeat, n_wires),
-            (repeat, n_wires),
-            (repeat, n_wires),
-        ]
-        check_shapes(
-            weights_list, expected_shapes, msg="Got unexpected shape for one or more parameters"
+    first_dims = [s[0] for s in shapes]
+    if len(set(first_dims)) > 1:
+        raise ValueError(
+            f"The first dimension of all parameters needs to be the same, got {first_dims}"
         )
+    repeat = shapes[0][0]
+
+    second_dims = [s[1] for s in shapes]
+    expected = [
+        n_if,
+        n_if,
+        n_wires,
+        n_wires,
+        n_wires,
+        n_if,
+        n_if,
+        n_wires,
+        n_wires,
+        n_wires,
+        n_wires,
+    ]
+    if not all(e == d for e, d in zip(expected, second_dims)):
+        raise ValueError("Got unexpected shape for one or more parameters.")
 
     return repeat
 
