@@ -174,107 +174,6 @@ class AutogradInterface(AnnotatedQueue):
             self.delay_execute_device_as_this_is_a_potentially_needless_autograd_forward_pass = False
 
 
-            # class _DelayedExecutionTensor(np.tensor):
-            #     """A numpy tensor that delays computation of its content until it is actually needed
-            #     """
-            #     def bind(self, *, autograd_interface=None, params=None, device=None, output_dim=None):
-            #         """Bind this numpy tensor to the current interface instance for delayed execution
-            #         """
-            #         #print("bind()")
-            #         self.autograd_interface = autograd_interface
-            #         self.params = params
-            #         self.device = device
-            #         self.output_dim = output_dim
-            #         self.res = None
-
-            #     def execute(self):
-            #         #print("execute")
-            #         if hasattr(self, 'res') and self.res is None:
-            #             print("* * * executig * * *")
-            #             print(self.shape)
-            #             res = self.autograd_interface.actual_execute(self.params, self.device)
-            #             self.res = res
-            #             # Now we want self to look like res
-            #             #self.data = res.data # option 1 (may lead to problems with incompatible dtypes)
-            #             np.copyto(self, res) # option 2 (may lead to problems with incompatible dtypes)
-            #             print(self.shape, res.shape)
-            #             # self.__dict__ = res.__dict__ # option 3 (does not work)
-
-            #     @property
-            #     def dtype(self):
-            #         if hasattr(self, 'res') and self.res is None:
-            #             return res.dtype
-            #         return super().dtype
-
-            #     def unwrap(self):
-            #         self.execute()
-            #         return super().unwrap()
-
-            #     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-            #         self.execute()
-            #         return super().__array_ufunc__(ufunc, method, *inputs, **kwargs)
-
-            #     @property
-            #     def ndim(self):
-            #         self.execute()
-            #         return self.res.ndim
-
-            #     # def __array_function__(self, func, types, args, kwargs):
-            #     #     print("__array_function__")
-            #     #     return NotImplemented
-
-            #     def squeeze(self, a, axis=None):
-            #         self.execute()
-            #         return super().squeeze(self, a, axis=axis)
-
-            #     def __array_finalize__(self, obj):
-            #         print("__array_finalize__(", type(self), type(obj), ")")
-            #         self.execute()
-            #         super().__array_finalize__(obj)
-
-            #     # @property
-            #     # def shape(self):
-            #     #     print("shape", super().shape)
-            #     #     #return (self.output_dim,)
-            #     #     return super().shape
-
-            #     # @property
-            #     # def dtype(self):
-            #     #     print("dtype", super().dtype)
-            #     #     #return float
-            #     #     return super().dtype
-
-            #     # def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-            #     #     """Intercept universal functions on this tensor and do the execution
-
-            #     #     This is never called durinng a
-            #     #     """
-            #     #     print("__array_ufunc__", ufunc, method, inputs, kwargs)
-            #     #     # use the bound interface to do the execution now
-            #     #     self.execute()
-            #     #     # inject the actual result into the ufunc inputs
-            #     #     inputs_with_result_injected = tuple([self.res if isinstance(inp, self.__class__) else inp for inp in inputs])
-            #     #     # return ufunc applied to resul
-            #     #     array_ufunc_return = self.res.__array_ufunc__(ufunc, method, *inputs_with_result_injected, **kwargs)
-            #     #     # replace
-            #     #     #self.__dict__.update(self.res.__dict__)
-            #     #     #print("array_ufunc_return", type(array_ufunc_return))
-            #     #     return array_ufunc_return
-
-
-            # # class Meta(type):
-            # #     def __getattribute__(*args):
-            # #         print("Metaclass __getattribute__", args)
-            # #         return type.__getattribute__(*args)
-
-            # class DelayedExecutionTensor(_DelayedExecutionTensor):
-            #     # __metaclass__ = Meta
-            #     def __getattribute__(self, name):
-            #         print("__getattribute__(", name, ")", )
-            #         if hasattr(super(), 'res') and super().res is not None:
-            #             return super().res.__getattribute__(name)
-            #         return super().__getattribute__(name)
-
 
 
             from functools import wraps
@@ -353,6 +252,8 @@ class AutogradInterface(AnnotatedQueue):
                         return self.__dict__['res'].__getattribute__(attrname)
 
                     return super().__getattribute__(attrname)
+
+
 
             # register the DelayedExecutionTensor with autograd
             ArrayBox.register(DelayedExecutionTensor)
