@@ -408,9 +408,8 @@ class TestMottonenStatePreparation:
         """Tests whether the cascade of RZ gates is skipped.
         Note that currently there are also inefficiencies in the number of CNOT gates in the RY cascade.
         When these are updated, this test will become ineffective"""
-        n_CNOT = 0
-        for i in range(1, n_wires):
-            n_CNOT = n_CNOT + 2 ** (i)
+       
+        n_CNOT = 2**n_wires - 2
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -422,7 +421,7 @@ class TestMottonenStatePreparation:
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
         circuit(state_vector)
 
-        assert circuit.qtape.get_resources()["CNOT"] == n_CNOT
+        assert circuit.qtape.get_resources()["CNOT"] <= n_CNOT
 
     @pytest.mark.parametrize("state_vector, n_wires", [
         ([.5,.5j,.5,.5],2),
