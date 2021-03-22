@@ -7,13 +7,6 @@ In addition to being created internally by QNodes, quantum tapes can also be cre
 nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually. Tape subclasses also provide
 additional gradient methods:
 
-.. autosummary::
-
-    ~pennylane.tape.QuantumTape
-    ~pennylane.tape.QubitParamShiftTape
-    ~pennylane.tape.CVParamShiftTape
-    ~pennylane.tape.ReversibleTape
-
 Finally, quantum tapes are fully compatible with autodifferentiating via NumPy/Autograd,
 TensorFlow, and PyTorch.
 

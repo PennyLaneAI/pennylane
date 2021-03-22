@@ -40,6 +40,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane.operation import AnyWires, CVOperation, CVObservable
+from pennylane import math as qml_math
 
 
 def _rotation(phi, bare=False):
@@ -605,7 +606,7 @@ class Interferometer(CVOperation):
 
     def adjoint(self, do_queue=False):
         U = self.parameters[0]
-        return Interferometer(U.conj().T, wires=self.wires, do_queue=do_queue)
+        return Interferometer(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
