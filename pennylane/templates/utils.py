@@ -19,26 +19,6 @@ for example to make sure that arguments have the right shape, range or type.
 from collections.abc import Iterable
 
 import numpy as np
-from pennylane.variable import Variable
-
-
-def check_no_variable(arg, msg):
-    """Checks that ``arg`` does not represent or contain a :func:`~.pennylane.Variable` object.
-
-    This ensures that the user has not passed ``arg`` to the qnode as a
-    primary argument.
-
-    Args:
-        arg: argument to check
-        msg (str): error message to display
-    """
-
-    if isinstance(arg, Variable):
-        raise ValueError(msg)
-
-    if isinstance(arg, Iterable):
-        if any([isinstance(a_, Variable) for a_ in arg]):
-            raise ValueError(msg)
 
 
 def check_wires(wires):
@@ -81,7 +61,7 @@ def get_shape(inpt):
     """
 
     # avoids incorrect assignment of shape
-    if isinstance(inpt, (float, int, complex, Variable)):
+    if isinstance(inpt, (float, int, complex)):
         shape = ()
 
     else:

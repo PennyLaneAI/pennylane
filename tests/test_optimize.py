@@ -33,9 +33,6 @@ from pennylane.optimize import (GradientDescentOptimizer,
                                 RotosolveOptimizer)
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
 # Hyperparameters for optimizers

@@ -19,9 +19,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 

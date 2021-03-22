@@ -1115,7 +1115,7 @@ class TestCovMatrix:
             -np.cos(a) * np.cos(c) * np.sin(b) ** 2
         ])
 
-    def test_weird_wires(self, in_tape_mode, tol):
+    def test_weird_wires(self, tol):
         """Test that the covariance matrix computes the correct
         result when weird wires are used"""
         dev = qml.device("default.qubit", wires=["a", -1, "q"])
@@ -1146,7 +1146,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_autograd(self, in_tape_mode, tol):
+    def test_autograd(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Autograd interface"""
         dev = qml.device("default.qubit", wires=3)
@@ -1176,7 +1176,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_torch(self, in_tape_mode, tol):
+    def test_torch(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Torch interface"""
         dev = qml.device("default.qubit", wires=3)
@@ -1205,7 +1205,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-    def test_tf(self, in_tape_mode, tol):
+    def test_tf(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the TF interface"""
         dev = qml.device("default.qubit", wires=3)
@@ -1236,7 +1236,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_jax(self, in_tape_mode, tol):
+    def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
         dev = qml.device("default.qubit.jax", wires=3)
