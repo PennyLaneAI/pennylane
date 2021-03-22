@@ -1980,8 +1980,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
-        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -2057,9 +2057,9 @@ class DoubleExcitationPlus(Operation):
 
     .. math::
 
-        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
-        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle\\
-        |x\rangle \rightarrow e^{i\theta} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
@@ -2113,9 +2113,9 @@ class DoubleExcitationMinus(Operation):
 
     .. math::
 
-        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
-        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle\\
-        |x\rangle \rightarrow e^{-i\theta} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
