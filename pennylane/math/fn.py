@@ -278,6 +278,7 @@ def conj(tensor):
 
     Args:
         tensor (tensor_like): A tensor-like object to conjugate.
+
     Returns:
         tensor_like: The conjugated tensor.
 
@@ -285,8 +286,7 @@ def conj(tensor):
 
     >>> x = tf.constant([0.6 + 0.1j, 0.1 - 0.3j, 0.6])
     >>> conj(x)
-    TensorBox: <tf.Tensor: shape=(3,), dtype=complex64, numpy=
-    array([6.00e-01 + 1.00e-1j, 1.00e-01 + 3.00e-1j, 6.00e-01 + 0.00j], dtype=complex64)>
+    <tf.Tensor: shape=(3,), dtype=complex64, numpy=array([6.00e-01 + 1.00e-1j, 1.00e-01 + 3.00e-1j, 6.00e-01 + 0.00j], dtype=complex64)>
     """
     return TensorBox(tensor).conj(wrap_output=False)
 
