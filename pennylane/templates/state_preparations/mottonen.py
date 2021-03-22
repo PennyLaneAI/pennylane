@@ -19,8 +19,6 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
-from pennylane.variable import Variable
 from pennylane.wires import Wires
 
 
@@ -38,48 +36,22 @@ def _preprocess(state_vector, wires):
     Returns:
         tensor_like, tensor_like, Wires: amplitudes a, phases omega and preprocessed wires
     """
+    shape = qml.math.shape(state_vector)
 
-    n_wires = len(wires)
+    if len(shape) != 1:
+        raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
 
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(state_vector)
-
-        if len(shape) != 1:
-            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
-
-        n_amplitudes = shape[0]
-        if n_amplitudes != 2 ** len(wires):
-            raise ValueError(
-                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
-            )
-
-        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
-        if not qml.math.allclose(norm, 1.0, atol=1e-3):
-            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
-        a = qml.math.abs(state_vector)
-        omega = qml.math.angle(state_vector)
-
-    else:
-
-        expected_shape = (2 ** n_wires,)
-        check_shape(
-            state_vector,
-            expected_shape,
-            msg="State vector must be of shape {}; got {}."
-            "".format(expected_shape, get_shape(state_vector)),
+    n_amplitudes = shape[0]
+    if n_amplitudes != 2 ** len(wires):
+        raise ValueError(
+            f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
         )
 
-        if isinstance(state_vector[0], Variable):
-            state_vector = np.array([s.val for s in state_vector])
-
-        # check if normalized
-        norm = np.sum(np.abs(state_vector) ** 2)
-        if not np.isclose(norm, 1.0, atol=1e-3):
-            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
-
-        a = np.absolute(state_vector)
-        omega = np.angle(state_vector)
+    norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+    if not qml.math.allclose(norm, 1.0, atol=1e-3):
+        raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+    a = qml.math.abs(state_vector)
+    omega = qml.math.angle(state_vector)
 
     # change ordering of wires, since original code was written for IBM machines
     wires_reverse = wires[::-1]

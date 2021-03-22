@@ -21,9 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
-from pennylane.variable import Variable
 from pennylane.wires import Wires
-from pennylane.templates.utils import check_shape, get_shape, check_type
 
 # tolerance for normalization
 TOLERANCE = 1e-10
@@ -49,105 +47,41 @@ def _preprocess(features, wires, pad_with, normalize):
         tensor: pre-processed features
     """
 
-    if qml.tape_mode_active():
+    shape = qml.math.shape(features)
 
-        shape = qml.math.shape(features)
+    # check shape
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        # check shape
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-        n_features = shape[0]
-        if pad_with is None and n_features != 2 ** len(wires):
-            raise ValueError(
-                f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
-                f"Use the 'pad' argument for automated padding."
-            )
-
-        if pad_with is not None and n_features > 2 ** len(wires):
-            raise ValueError(
-                f"Features must be of length {2 ** len(wires)} or "
-                f"smaller to be padded; got length {n_features}."
-            )
-
-        # pad
-        if pad_with is not None and n_features < 2 ** len(wires):
-            padding = [pad_with] * (2 ** len(wires) - n_features)
-            features = qml.math.concatenate([features, padding], axis=0)
-
-        # normalize
-        norm = qml.math.sum(qml.math.abs(features) ** 2)
-
-        if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize or pad_with:
-                features = features / np.sqrt(norm)
-            else:
-                raise ValueError(
-                    f"Features must be a vector of length 1.0; got length {norm}. "
-                    "Use 'normalize=True' to automatically normalize."
-                )
-
-    # todo: delete if tape is only core
-    else:
-        n_amplitudes = 2 ** len(wires)
-        expected_shape = (n_amplitudes,)
-
-        if len(get_shape(features)) > 1:
-            raise ValueError(
-                f"Features must be a one-dimensional vector; got shape {get_shape(features)}."
-            )
-
-        if pad_with is None:
-            shape = check_shape(
-                features,
-                expected_shape,
-                msg="Features must be of length {}; got {}. Use the 'pad' "
-                "argument for automated padding."
-                "".format(expected_shape, get_shape(features)),
-            )
-        else:
-            shape = check_shape(
-                features,
-                expected_shape,
-                bound="max",
-                msg="Features must be of length {} or smaller "
-                "to be padded; got {}"
-                "".format(expected_shape, get_shape(features)),
-            )
-
-        check_type(
-            pad_with,
-            [float, complex, type(None)],
-            msg="'pad' must be a float or complex; got {}".format(pad_with),
+    n_features = shape[0]
+    if pad_with is None and n_features != 2 ** len(wires):
+        raise ValueError(
+            f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+            f"Use the 'pad' argument for automated padding."
         )
-        check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
 
-        # pad
-        n_features = shape[0]
-        if pad_with is not None and n_amplitudes > n_features:
-            features = np.pad(
-                features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad_with
-            )
+    if pad_with is not None and n_features > 2 ** len(wires):
+        raise ValueError(
+            f"Features must be of length {2 ** len(wires)} or "
+            f"smaller to be padded; got length {n_features}."
+        )
 
-        # normalize
-        if isinstance(features[0], Variable):
-            feature_values = [s.val for s in features]
-            norm = np.sum(np.abs(feature_values) ** 2)
+    # pad
+    if pad_with is not None and n_features < 2 ** len(wires):
+        padding = [pad_with] * (2 ** len(wires) - n_features)
+        features = qml.math.concatenate([features, padding], axis=0)
+
+    # normalize
+    norm = qml.math.sum(qml.math.abs(features) ** 2)
+
+    if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+        if normalize or pad_with:
+            features = features / np.sqrt(norm)
         else:
-            norm = np.sum(np.abs(features) ** 2)
-
-        if not np.isclose(norm, 1.0, atol=TOLERANCE):
-            if normalize or pad_with:
-                features = features / np.sqrt(norm)
-            else:
-                raise ValueError(
-                    "Features must be a vector of length 1.0; got length {}."
-                    "Use 'normalize=True' to automatically normalize.".format(norm)
-                )
-
-        ###############
-
-        features = np.array(features)
+            raise ValueError(
+                f"Features must be a vector of length 1.0; got length {norm}."
+                "Use 'normalize=True' to automatically normalize."
+            )
 
     return features
 

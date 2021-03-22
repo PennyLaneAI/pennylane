@@ -22,21 +22,15 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import pennylane as qml
-import pennylane._queuing
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-    ArbitraryStatePreparation,
-)
+from pennylane.templates.state_preparations import (BasisStatePreparation,
+                                                    MottonenStatePreparation,
+                                                    ArbitraryStatePreparation)
 from pennylane.templates.state_preparations.mottonen import gray_code
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 class TestHelperFunctions:
@@ -131,7 +125,6 @@ class TestBasisStatePreparation:
         ([1, 0, 1], [0, 1, 2], [1, 0, 1]),
     ])
     # fmt: on
-    @pytest.mark.usefixtures("tape_mode")
     def test_state_preparation(self, tol, qubit_device_3_wires, basis_state, wires, target_state):
         """Tests that the template BasisStatePreparation integrates correctly with PennyLane."""
 
@@ -176,9 +169,6 @@ class TestBasisStatePreparation:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -246,7 +236,6 @@ class TestMottonenStatePreparation:
         ([1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0], [0, 1, 2], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
     ])
-    @pytest.mark.usefixtures("tape_mode")
     # fmt: on
     def test_state_preparation_fidelity(
         self, tol, qubit_device_3_wires, state_vector, wires, target_state
@@ -313,7 +302,6 @@ class TestMottonenStatePreparation:
         ([1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0], [0, 1, 2], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
     ])
-    @pytest.mark.usefixtures("tape_mode")
     # fmt: on
     def test_state_preparation_probability_distribution(
         self, tol, qubit_device_3_wires, state_vector, wires, target_state
@@ -381,8 +369,6 @@ class TestMottonenStatePreparation:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -417,12 +403,11 @@ class TestMottonenStatePreparation:
         ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], 3),
     ])
     # fmt: on
-    
+
     def test_RZ_skipped(self, state_vector, n_wires):
         """Tests whether the cascade of RZ gates is skipped.
         Note that currently there are also inefficiencies in the number of CNOT gates in the RY cascade.
         When these are updated, this test will become ineffective"""
-        qml.enable_tape()
         n_CNOT = 0
         for i in range(1, n_wires):
             n_CNOT = n_CNOT + 2 ** (i)
@@ -470,7 +455,6 @@ class TestMottonenStatePreparation:
     ])
     def test_correct_phase(self, state_vector,n_wires):
         """Tests that the template MottonenStatePreparation produces the correct phases."""
-        qml.enable_tape
         dev = qml.device("default.qubit",wires=n_wires)
         @qml.qnode(dev)
         def circuit():
@@ -505,7 +489,7 @@ class TestArbitraryStatePreparation:
         """Test that the correct gates are applied on a single wire."""
         weights = np.array([0, 1], dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0])
 
         assert rec.queue[0].name == "PauliRot"
@@ -523,7 +507,7 @@ class TestArbitraryStatePreparation:
         """Test that the correct gates are applied on on two wires."""
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0, 1])
 
         assert rec.queue[0].name == "PauliRot"
@@ -557,7 +541,6 @@ class TestArbitraryStatePreparation:
         assert rec.queue[5].data[1] == "XY"
         assert rec.queue[5].wires == Wires([0, 1])
 
-    @pytest.mark.usefixtures("tape_mode")
     def test_GHZ_generation(self, qubit_device_3_wires, tol):
         """Test that the template prepares a GHZ state."""
         GHZ_state = np.array([1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)])
@@ -575,7 +558,6 @@ class TestArbitraryStatePreparation:
 
         assert np.allclose(circuit.device.state, GHZ_state, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("tape_mode")
     def test_even_superposition_generation(self, qubit_device_3_wires, tol):
         """Test that the template prepares a even superposition state."""
         even_superposition_state = np.ones(8) / math.sqrt(8)
@@ -598,9 +580,6 @@ class TestArbitraryStatePreparation:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
