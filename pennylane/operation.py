@@ -118,7 +118,6 @@ import abc
 import copy
 import itertools
 import functools
-import numbers
 from enum import Enum, IntEnum
 
 import numpy as np
@@ -128,7 +127,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
-from .variable import Variable
 
 # =============================================================================
 # Wire types
@@ -245,7 +243,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): operator parameters
+        params (tuple[float, int, array]): operator parameters
 
     Keyword Args:
         wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
@@ -253,7 +251,6 @@ class Operator(abc.ABC):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
-    do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
     def __copy__(self):
         cls = self.__class__
@@ -437,10 +434,6 @@ class Operator(abc.ABC):
                 "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
             )
 
-        # check the validity of the params
-        if self.do_check_domain:
-            for p in params:
-                self.check_domain(p)
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -448,79 +441,10 @@ class Operator(abc.ABC):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        # FIXME using self.parameters here instead of self.data is dangerous, it assumes the data can be evaluated
-        # which is only true if something suitable happens to remain in VariableRef.positional_arg_values etc. after
-        # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
-
-    def check_domain(self, p, flattened=False):
-        """Check the validity of a parameter.
-
-        :class:`.Variable` instances can represent any real scalars (but not arrays).
-
-        Args:
-            p (Number, array, Variable): parameter to check
-            flattened (bool): True means p is an element of a flattened parameter
-                sequence (affects the handling of 'A' parameters)
-        Raises:
-            TypeError: parameter is not an element of the expected domain
-            ValueError: parameter is an element of an unknown domain
-        Returns:
-            Number, array, Variable: p
-        """
-        # pylint: disable=too-many-branches
-        # If parameter is a NumPy scalar, convert it into a Python scalar.
-        if isinstance(p, np.ndarray) and p.ndim == 0:
-            p = p.item()
-
-        if isinstance(p, Variable):
-            if self.par_domain == "A":
-                raise TypeError(
-                    "{}: Array parameter expected, got a Variable, "
-                    "which can only represent real scalars.".format(self.name)
-                )
-            return p
-
-        # p is not a Variable
-        if self.par_domain == "A":
-            if flattened:
-                if isinstance(p, np.ndarray):
-                    raise TypeError(
-                        "{}: Flattened array parameter expected, got {}.".format(self.name, type(p))
-                    )
-            else:
-                if not isinstance(p, np.ndarray):
-                    raise TypeError(
-                        "{}: Array parameter expected, got {}.".format(self.name, type(p))
-                    )
-        elif self.par_domain in ("R", "N"):
-            if not isinstance(p, numbers.Real):
-                raise TypeError(
-                    "{}: Real scalar parameter expected, got {}.".format(self.name, type(p))
-                )
-
-            if self.par_domain == "N":
-                if not isinstance(p, numbers.Integral):
-                    raise TypeError(
-                        "{}: Natural number parameter expected, got {}.".format(self.name, type(p))
-                    )
-                if p < 0:
-                    raise TypeError(
-                        "{}: Natural number parameter expected, got {}.".format(self.name, p)
-                    )
-        elif self.par_domain == "L":
-            if not isinstance(p, list):
-                raise TypeError("{}: List parameter expected, got {}.".format(self.name, type(p)))
-            if not all(isinstance(elem, np.ndarray) for elem in p):
-                raise TypeError("List elements must be Numpy arrays.")
-        else:
-            raise ValueError(
-                "{}: Unknown parameter domain '{}'.".format(self.name, self.par_domain)
-            )
-        return p
 
     @property
     def wires(self):
@@ -533,41 +457,8 @@ class Operator(abc.ABC):
 
     @property
     def parameters(self):
-        """Current parameter values.
-
-        Fixed parameters are returned as is, free parameters represented by
-        :class:`.Variable` instances are replaced by their
-        current numerical value.
-
-        Returns:
-            list[Any]: parameter values
-        """
-        # TODO profiling
-        def evaluate(p):
-            """Evaluate a single parameter."""
-            if isinstance(p, np.ndarray):
-                # object arrays may have Variables inside them
-                if p.dtype == object:
-                    temp = np.array([x.val if isinstance(x, Variable) else x for x in p.flat])
-                    return temp.reshape(p.shape)
-                return p
-
-            if isinstance(p, list):
-                # p is assumed to be a list of numpy arrays
-                # object arrays may have Variables inside them
-                evaled_list = []
-                for arr in p:
-                    if arr.dtype == object:
-                        temp = np.array([x.val if isinstance(x, Variable) else x for x in arr.flat])
-                        evaled_list.append(temp.reshape(arr.shape))
-                        return evaled_list
-                return p
-
-            if isinstance(p, Variable):
-                p = self.check_domain(p.val)
-            return p
-
-        return [evaluate(p) for p in self.data]
+        """Current parameter values."""
+        return self.data.copy()
 
     def queue(self):
         """Append the operator to the Operator queue."""
@@ -604,7 +495,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -666,21 +557,6 @@ class Operation(Operator):
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
-
-        if hasattr(self.data[idx], "mult"):
-            # Parameter is a variable, we are in non-tape mode
-            # Need to use the internal multiplier in the Variable to update the
-            # multiplier and the shift
-            var_mult = self.data[idx].mult
-
-            for elem in param_shift:
-
-                # Update the multiplier
-                elem[0] *= var_mult
-                if var_mult != 0:
-                    # Update the shift
-                    # zero multiplier means the shift is unimportant
-                    elem[2] /= var_mult
         return param_shift
 
     @property
@@ -738,6 +614,29 @@ class Operation(Operator):
         quantum operations."""
         raise NotImplementedError
 
+    def expand(self):
+        """Returns a tape containing the decomposed operations, rather
+        than a list.
+
+        Returns:
+            .JacobianTape: Returns a quantum tape that contains the
+            operations decomposition, or if not implemented, simply
+            the operation itself.
+        """
+        tape = qml.tape.QuantumTape()
+
+        with tape:
+            self.decomposition(*self.data, wires=self.wires)
+
+        if not self.data:
+            # original operation has no trainable parameters
+            tape.trainable_params = {}
+
+        if self.inverse:
+            tape.inv()
+
+        return tape
+
     def inv(self):
         """Inverts the operation, such that the inverse will
         be used for the computations by the specific device.
@@ -751,7 +650,11 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        self.inverse = not self._inverse
+        if qml.QueuingContext.recording():
+            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
+            qml.QueuingContext.update_info(self, inverse=not current_inv)
+        else:
+            self.inverse = not self._inverse
         return self
 
     @property
@@ -835,7 +738,7 @@ class DiagonalOperation(Operation):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -920,7 +823,7 @@ class Channel(Operation, abc.ABC):
     * :attr:`~.Operation.grad_recipe`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems the channel acts on. If not given, args[-1]
@@ -997,7 +900,7 @@ class Observable(Operator):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): observable parameters
+        params (tuple[float, int, array]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
@@ -1216,6 +1119,16 @@ class Tensor(Observable):
             else:
                 raise ValueError("Can only perform tensor products between observables.")
 
+            try:
+                qml.QueuingContext.update_info(o, owner=self)
+            except ValueError:
+                o.queue()
+                qml.QueuingContext.update_info(o, owner=self)
+            except NotImplementedError:
+                pass
+
+        qml.QueuingContext.append(self, owns=tuple(args))
+
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -1304,17 +1217,27 @@ class Tensor(Observable):
     def __matmul__(self, other):
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
-            return self
 
-        if isinstance(other, Observable):
+        elif isinstance(other, Observable):
             self.obs.append(other)
-            return self
 
-        raise ValueError("Can only perform tensor products between observables.")
+        else:
+            raise ValueError("Can only perform tensor products between observables.")
+
+        if qml.QueuingContext.recording():
+            owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
+
+            # update the annotated queue information
+            qml.QueuingContext.update_info(self, owns=owning_info)
+            qml.QueuingContext.update_info(other, owner=self)
+
+        return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
+            if qml.QueuingContext.recording():
+                qml.QueuingContext.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")

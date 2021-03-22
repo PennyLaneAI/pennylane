@@ -20,7 +20,7 @@ import numpy as np
 
 
 @pytest.fixture
-def get_circuit(n_qubits, output_dim, interface, tape_mode):
+def get_circuit(n_qubits, output_dim, interface):
     """Fixture for getting a sample quantum circuit with a controllable qubit number and output
     dimension. Returns both the circuit and the shape of the weights."""
 
@@ -54,7 +54,7 @@ def get_circuit(n_qubits, output_dim, interface, tape_mode):
 
 
 @pytest.fixture
-def get_circuit_dm(n_qubits, output_dim, interface, tape_mode):
+def get_circuit_dm(n_qubits, output_dim, interface):
     """Fixture for getting a sample quantum circuit with a controllable qubit number and output
     dimension for density matrix return type. Returns both the circuit and the shape of the weights."""
 
