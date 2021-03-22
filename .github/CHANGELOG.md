@@ -2,7 +2,28 @@
 
 <h3>New features since last release</h3>
 
-* Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
+* Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
+  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+  
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.SingleExcitation(phi, wires=[0, 1])
+  ```
+  
+  The `SingleExcitation` operation supports analytic gradients on hardware
+  using only four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938) 
+  
+  * Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
   chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
 
   It can be used to perform an SO(2) rotation in the subspace 
@@ -10,20 +31,20 @@
   For example, the following circuit performs the transformation
   :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:   
 
-  ```python
+    ```python
+  dev = qml.device('default.qubit', wires=2)
 
   @qml.qnode(dev)
   def circuit(phi):
       qml.PauliX(wires=0)
       qml.PauliX(wires=1)
-      qml.SingleExcitation(phi, wires=[0, 1, 2, 3])
+      qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
   ```
-
-  The `DoubleExcitation` operation supports analytic gradients on hardware using only four 
+  
+   The `DoubleExcitation` operation supports analytic gradients on hardware using only four 
   expectation value calculations, following results from
   [Kottmann et al.](https://arxiv.org/abs/2011.05938).
-
-
+  
 * Adds a new function ``qml.math.conj``.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
@@ -449,8 +470,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
