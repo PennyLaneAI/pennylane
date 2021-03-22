@@ -21,18 +21,18 @@ import pennylane as qml
 
 FEATURES = [np.array([0, 1, 0, 0]),
             1 / np.sqrt(4) * np.array([1, 1, 1, 1]),
-            np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                      np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
+            np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                      complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
 
 NOT_ENOUGH_FEATURES = [np.array([0, 1, 0]),
                        1 / np.sqrt(3) * np.array([1, 1, 1]),
-                       np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                                 np.complex(0, -np.sqrt(0.6))])]
+                       np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                                 complex(0, -np.sqrt(0.6))])]
 
 TOO_MANY_FEATURES = [[0, 0, 0, 1, 0],
                      1 / np.sqrt(8) * np.array([1] * 8),
-                     [np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                      np.complex(0, -np.sqrt(0.6)), 0., 0.]]
+                     [complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                      complex(0, -np.sqrt(0.6)), 0., 0.]]
 
 
 class TestDecomposition:
@@ -49,8 +49,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("inpt", FEATURES)
     def test_prepares_correct_state(self, inpt):
-        """Checks the state produced by AmplitudeEmbedding for real and complex
-        inputs."""
+        """Checks the state for real and complex inputs."""
 
         n_qubits = 2
         dev = qml.device('default.qubit', wires=2)
@@ -67,10 +66,10 @@ class TestDecomposition:
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
     @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0., 1.])
     def test_prepares_padded_state(self, inpt, pad):
-        """Checks the state produced by AmplitudeEmbedding() for real and complex padding constants."""
+        """Checks the state for real and complex padding constants."""
 
         n_qubits = 2
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device('default.qubit', wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -205,95 +204,3 @@ class TestParameters:
         with pytest.warns(PendingDeprecationWarning,
                           match="will be replaced by the pad_with option in future versions"):
             circuit(x=inputs)
-
-
-class TestGradients:
-    """Tests that the gradient is computed correctly in all interfaces."""
-
-    def test_autograd(self, tol):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the autograd interface."""
-
-        x = [np.sqrt(0.2), np.sqrt(0.8)]
-        features = pnp.array(x, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit(features_):
-            qml.templates.AmplitudeEmbedding(features_, range(3))
-            return qml.state()
-
-        grad_fn = qml.grad(circuit)
-        grads = grad_fn(features)
-
-        assert np.allclose(grads, [1, 1], atol=tol, rtol=0)
-
-    # def test_jax(self, tol, skip_if_no_jax_support):
-    #     """Tests that gradients of template and decomposed circuit
-    #     are the same in the jax interface."""
-    #
-    #     import jax
-    #     import jax.numpy as jnp
-    #
-    #     weights = jnp.array(np.random.random(size=(1, 3)))
-    #
-    #     dev = qml.device("default.qubit", wires=3)
-    #
-    #     circuit = qml.QNode(circuit_template, dev, interface="jax")
-    #     circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
-    #
-    #     grad_fn = jax.grad(circuit)
-    #     grads = grad_fn(weights)
-    #
-    #     grad_fn2 = jax.grad(circuit2)
-    #     grads2 = grad_fn2(weights)
-    #
-    #     assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-    #
-    # def test_tf(self, tol, skip_if_no_tf_support):
-    #     """Tests that gradients of template and decomposed circuit
-    #     are the same in the tf interface."""
-    #
-    #     import tensorflow as tf
-    #
-    #     weights = tf.Variable(np.random.random(size=(1, 3)))
-    #
-    #     dev = qml.device("default.qubit", wires=3)
-    #
-    #     circuit = qml.QNode(circuit_template, dev, interface="tf")
-    #     circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
-    #
-    #     with tf.GradientTape() as tape:
-    #         res = circuit(weights)
-    #     grads = tape.gradient(res, [weights])
-    #
-    #     with tf.GradientTape() as tape2:
-    #         res2 = circuit2(weights)
-    #     grads2 = tape2.gradient(res2, [weights])
-    #
-    #     assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-    #
-    # def test_torch(self, tol, skip_if_no_torch_support):
-    #     """Tests that gradients of template and decomposed circuit
-    #     are the same in the torch interface."""
-    #
-    #     import torch
-    #
-    #     weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
-    #
-    #     dev = qml.device("default.qubit", wires=3)
-    #
-    #     circuit = qml.QNode(circuit_template, dev, interface="torch")
-    #     circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
-    #
-    #     res = circuit(weights)
-    #     res.backward()
-    #     grads = [weights.grad]
-    #
-    #     res2 = circuit2(weights)
-    #     res2.backward()
-    #     grads2 = [weights.grad]
-    #
-    #     assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-    #

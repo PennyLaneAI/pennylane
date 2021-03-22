@@ -175,12 +175,15 @@ class AmplitudeEmbedding(Operation):
         self.pad_with = pad_with
         self.normalize = normalize
 
-        self._preprocess(features, wires, pad_with, normalize)
+        features = self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue)
 
     def expand(self):
 
-        QubitStateVector(self.parameters[0], wires=self.wires)
+        with qml.tape.QuantumTape() as tape:
+            QubitStateVector(self.parameters[0], wires=self.wires)
+
+        return tape
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):
