@@ -1134,7 +1134,6 @@ class TestDoubleExcitation:
             pytest.skip("JAX support for the parameter-shift method is still TBD")
 
         jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
 
         dev = qml.device('default.qubit.jax', wires=4)
 
