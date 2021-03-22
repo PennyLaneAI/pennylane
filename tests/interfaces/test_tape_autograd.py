@@ -251,7 +251,7 @@ class TestAutogradQuantumTape:
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, mocker, tol):
+    def test_differentiable_expand(self, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 

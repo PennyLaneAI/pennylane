@@ -99,7 +99,7 @@ class CircuitGraph:
     Args:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
         obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
-        wires (.Wires): The addressable wire register of the device that will be executing this graph
+        wires (.Wires): The addressable wire registers of the device that will be executing this graph
         par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
             parameter indices (in the order they appear on the tape), and values are a
             dictionary containing the corresponding operation and operation parameter index.

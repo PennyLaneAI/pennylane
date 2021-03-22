@@ -351,7 +351,7 @@ class TestQNode:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
@@ -564,7 +564,7 @@ def qtransform(qnode, a, framework=torch):
     return new_qnode
 
 
-def test_transform(monkeypatch, tol):
+def test_transform(tol):
     """Test an example transform"""
 
     dev = qml.device("default.qubit", wires=1)

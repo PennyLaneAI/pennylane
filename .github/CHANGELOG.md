@@ -2,6 +2,110 @@
 
 <h3>New features since last release</h3>
 
+* Added the function ``finite_diff()`` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  arbitrary callable functions.
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
+  This is useful to compute the derivative of parametrized
+  ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
+
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2 = deriv2_fn(x)
+  ```
+
+* Added the `QuantumMonteCarlo` template for performing quantum Monte Carlo estimation of an
+  expectation value on simulator.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  The following example shows how the expectation value of sine squared over a standard normal
+  distribution can be approximated:
+  
+  ```python
+  from scipy.stats import norm
+
+  m = 5
+  M = 2 ** m
+  n = 10
+  N = 2 ** n
+  target_wires = range(m + 1)
+  estimation_wires = range(m + 1, n + m + 1)
+
+  xmax = np.pi  # bound to region [-pi, pi]
+  xs = np.linspace(-xmax, xmax, M)
+
+  probs = np.array([norm().pdf(x) for x in xs])
+  probs /= np.sum(probs)
+
+  func = lambda i: np.sin(xs[i]) ** 2
+
+  dev = qml.device("default.qubit", wires=(n + m + 1))
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.templates.QuantumMonteCarlo(
+          probs,
+          func,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+  expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+  ```
+  
+  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
+  
+  ```pycon
+  >>> expectation_estimated
+  0.4327096457464369
+  ```
+
+* A new adjoint transform has been added. 
+  [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
+  [(#1135)](https://github.com/PennyLaneAI/pennylane/pull/1135)
+
+  This new method allows users to apply the adjoint of an arbitrary sequence of operations.
+
+  ```python
+  def subroutine(wire):
+      qml.RX(0.123, wires=wire)
+      qml.RY(0.456, wires=wire)
+
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev)
+  def circuit():
+      subroutine(0)
+      qml.adjoint(subroutine)(0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  This creates the following circuit:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+  ```
+
+  Directly applying to a gate also works as expected.
+
+  ```python
+  qml.adjoint(qml.RX)(0.123, wires=0) # Really applies RX(-0.123).
+  ```
+
 - Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
@@ -130,8 +234,33 @@
 
 <h3>Improvements</h3>
 
-- Added the `ControlledQubitUnitary` operation.
-  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
+- ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
+  [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
+
+- Added the `ControlledQubitUnitary` operation. This
+  enables implementation of multi-qubit gates with a variable number of
+  control qubits. It is also possible to specify a different state for the
+  control qubits using the `control_values` argument (also known as a
+  mixed-polarity multi-controlled operation).
+  [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069) [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
+  
+  For example, we can  create a multi-controlled T gate using:
+
+  ```python
+  T = qml.T._matrix()
+  qml.ControlledQubitUnitary(T, control_wires=[0, 1, 3], wires=2, control_values="110")
+  ```
+
+  Here, the T gate will be applied to wire `2` if control wires `0` and `1` are in
+  state `1`, and control wire `3` is in state `0`. If no value is passed to
+  `control_values`, the gate will be applied if all control wires are in
+  the `1` state.
+
+- Added `MultiControlledX` for multi-controlled `NOT` gates.
+  This is a special case of `ControlledQubitUnitary` that applies a
+  Pauli X gate conditioned on the state of an arbitrary number of
+  control qubits.
+  [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 * Most layers in Pytorch or Keras accept arbitrary dimension inputs, where each dimension barring
   the last (in the case where the actual weight function of the layer operates on one-dimensional
@@ -215,6 +344,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
+  being updated.
+  [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
+
 * Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
   or all zeros. 
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
@@ -238,8 +371,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld.
+Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
+Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
