@@ -335,14 +335,13 @@ class QuantumMonteCarlo(Operation):
             raise ValueError("The probability distribution must be specified as a flat array")
 
         dim_p = len(probs)
-        num_target_wires = float(np.log2(2 * dim_p))
+        num_target_wires_ = np.log2(2 * dim_p)
+        num_target_wires = int(num_target_wires_)
 
-        if not num_target_wires.is_integer():
+        if not np.allclose(num_target_wires_, num_target_wires):
             raise ValueError(
                 "The probability distribution must have a length that is a power of two"
             )
-
-        num_target_wires = int(num_target_wires)
 
         self.target_wires = Wires(target_wires)
         self.estimation_wires = Wires(estimation_wires)
