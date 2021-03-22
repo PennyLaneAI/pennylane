@@ -202,7 +202,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         the terms in the Hamiltonian, as per a multinomial distribution.
 
         Args:
-            qnodes (Sequence[.tape.QNode]): Sequence of QNodes, each one when evaluated
+            qnodes (Sequence[.QNode]): Sequence of QNodes, each one when evaluated
                 returning the corresponding expectation value of a term in the Hamiltonian.
             coeffs (Sequence[float]): Sequences of coefficients corresponding to
                 each term in the Hamiltonian. Must be the same length as ``qnodes``.
@@ -350,7 +350,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         if isinstance(objective_fn, qml.ExpvalCost):
             grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
-        elif isinstance(objective_fn, qml.tape.QNode) or hasattr(objective_fn, "device"):
+        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
