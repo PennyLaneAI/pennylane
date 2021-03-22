@@ -969,7 +969,7 @@ class TestSingleExcitation:
         tensorflow interface"""
 
         tf = pytest.importorskip("tensorflow")
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device('default.qubit.tf', wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(phi):
@@ -998,7 +998,7 @@ class TestSingleExcitation:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device('default.qubit.jax', wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(phi):
