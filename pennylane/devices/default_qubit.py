@@ -74,13 +74,9 @@ class DefaultQubit(QubitDevice):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that the device
+            returns analytical results.
         cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
@@ -129,9 +125,9 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic, cache=cache)
+        super().__init__(wires, shots, cache=cache)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.

@@ -12,14 +12,14 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-@pytest.mark.parametrize("analytic", [True, False])
+@pytest.mark.parametrize("shots", [None, 1000000])
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestEdgeHermitian:
     def test_hermitian_two_wires_identity_expectation_only_hermitian(
-        self, analytic, theta, phi, varphi
+        self, shots, theta, phi, varphi
     ):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=1000000)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -45,10 +45,10 @@ class TestEdgeHermitian:
         assert np.allclose(res, expected, atol=0.01, rtol=0)
 
     def test_hermitian_two_wires_identity_expectation_with_tensor(
-        self, analytic, theta, phi, varphi
+        self, shots, theta, phi, varphi
     ):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=1000000)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -74,9 +74,9 @@ class TestEdgeHermitian:
         assert np.allclose(res, expected, atol=0.01, rtol=0)
 
     @pytest.mark.parametrize("w1, w2", list(itertools.permutations(range(4), 2)))
-    def test_hermitian_two_wires_permuted(self, w1, w2, analytic, theta, phi, varphi):
+    def test_hermitian_two_wires_permuted(self, w1, w2, shots, theta, phi, varphi):
         """Test that an hermitian expectation with various wires permuted works"""
-        dev = qml.device("default.qubit", wires=4, shots=1000000, analytic=analytic)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
         theta = 0.543
 
         A = np.array(

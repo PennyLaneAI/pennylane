@@ -25,6 +25,23 @@
   0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩ 
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
 
+* Adds a new function ``qml.math.conj``.
+  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
+
+  This new method will do elementwise conjugation to the given tensor-like object.
+
+  ```python
+  a = np.array([1.0 + 2.0j])
+  b = qml.math.conj(a)
+  ```
+
+  Our new object ``b`` is the conjugate of ``a``.
+
+  ```pycon
+  >>> b
+  array([1.0 - 2.0j])
+  ```
+
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
   arbitrary callable functions.
@@ -331,6 +348,45 @@
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
 <h3>Breaking changes</h3>
+
+* Devices do not have an `analytic` argument or attribute anymore. 
+  Instead, `shots` is the source of truth for whether a simulator 
+  estimates return values from a finite number of shots, or whether 
+  it returns analytic results (`shots=None`).
+  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079)
+  
+  ```python  
+  dev_analytic = qml.device('default.qubit', wires=1, shots=None)
+  dev_finite_shots = qml.device('default.qubit', wires=1, shots=1000)
+  
+  def circuit():
+      qml.Hadamard(wires=0)
+      return qml.expval(qml.PauliZ(wires=0))
+  
+  circuit_analytic = qml.QNode(circuit, dev_analytic)
+  circuit_finite_shots = qml.QNode(circuit, dev_finite_shots)
+  ```
+  
+  Devices with `shots=None` return deterministic, exact results:
+  
+  ```pycon
+  >>> circuit_analytic()
+  0.0
+  >>> circuit_analytic()
+  0.0
+  ```
+  Devices with `shots > 0` return stochastic results estimated from 
+  samples in each run:
+
+  ```pycon
+  >>> circuit_finite_shots()
+  -0.062
+  >>> circuit_finite_shots()
+  0.034
+  ``` 
+  
+  The `qml.sample()` measurement can only be used on devices on which the number 
+  of shots is set explicitly. 
 
 * If creating a QNode from a quantum function with an argument named `shots`,
   a `DeprecationWarning` is raised, warning the user that this is a reserved
