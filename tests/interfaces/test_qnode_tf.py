@@ -541,9 +541,10 @@ class TestQNode:
             with tf.GradientTape() as tape2:
                 res = circuit(x)
             g = tape2.gradient(res, x)
+            res2 = tf.reduce_sum(g)
 
         spy = mocker.spy(JacobianTape, "hessian")
-        g2 = tape1.gradient(g[0], x)
+        g2 = tape1.gradient(res2, x)
 
         if diff_method == "parameter-shift":
             spy.assert_called_once()
@@ -558,7 +559,7 @@ class TestQNode:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-        expected_g2 = [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)]
+        expected_g2 = [-tf.cos(a) * tf.cos(b) + tf.sin(a) * tf.sin(b), tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)]
         assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mocker, tol):
