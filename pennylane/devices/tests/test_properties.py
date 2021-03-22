@@ -81,7 +81,6 @@ class TestDeviceProperties:
         assert dev.num_wires == 2
         assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
-        assert hasattr(dev, "analytic")
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
@@ -246,6 +245,3 @@ class TestCapabilities:
         else:
             with pytest.raises(NotImplementedError):
                 qnode()
-
-    # TODO: Add tests for supports_finite_shots and supports_analytic_computation
-    # once the shots refactor is done

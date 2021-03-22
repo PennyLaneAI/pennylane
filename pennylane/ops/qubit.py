@@ -1685,7 +1685,9 @@ class QubitUnitary(Operation):
         return U
 
     def adjoint(self, do_queue=False):
-        return QubitUnitary(self.data[0].conj().T, wires=self.wires, do_queue=do_queue)
+        return QubitUnitary(
+            qml.math.T(qml.math.conj(self.data[0])), wires=self.wires, do_queue=do_queue
+        )
 
 
 class ControlledQubitUnitary(QubitUnitary):
