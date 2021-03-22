@@ -384,7 +384,16 @@ class Hamiltonian:
 
     def queue(self):
         """Queues a qml.Hamiltonian instance"""
-        qml.QueuingContext.append(self)
+        for o in self.ops:
+            try:
+                QueuingContext.update_info(o, owner=self)
+            except ValueError:
+                o.queue()
+                qml.tape.QueuingContext.update_info(o, owner=self)
+            except NotImplementedError:
+                pass
+
+        QueuingContext.append(self, owns=tuple(self.ops))
         return self
 
 
@@ -518,7 +527,6 @@ class ExpvalCost:
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 
-        tape_mode = qml.tape_mode_active()
         self._optimize = optimize
 
         self.qnodes = qml.map(
@@ -526,12 +534,6 @@ class ExpvalCost:
         )
 
         if self._optimize:
-            if not tape_mode:
-                raise ValueError(
-                    "Observable optimization is only supported in tape mode. Tape "
-                    "mode can be enabled with the command:\n"
-                    "qml.enable_tape()"
-                )
 
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
