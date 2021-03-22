@@ -41,8 +41,8 @@
       qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
   ```
   
-   The `DoubleExcitation` operation supports analytic gradients on hardware using only four 
-  expectation value calculations, following results from
+  The `DoubleExcitation` operation supports analytic gradients on hardware using only
+  four expectation value calculations, following results from
   [Kottmann et al.](https://arxiv.org/abs/2011.05938).
   
 * Adds a new function ``qml.math.conj``.
