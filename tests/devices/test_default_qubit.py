@@ -428,6 +428,7 @@ class TestApply:
                 qml.BasisState(np.array([1, 1]), wires=[0, 1])
             ])
 
+
 class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
 
@@ -506,7 +507,7 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -517,6 +518,7 @@ class TestExpval:
         # With 3 samples we are guaranteed to see a difference between
         # an estimated variance an an analytically calculated one
         assert expval != 0.0
+
 
 class TestVar:
     """Tests that variances are properly calculated."""
@@ -596,7 +598,7 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -608,10 +610,11 @@ class TestVar:
         # an estimated variance and an analytically calculated one
         assert var != 1.0
 
+
 class TestSample:
     """Tests that samples are properly calculated."""
 
-    def test_sample_dimensions(self, qubit_device_2_wires):
+    def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
         the correct dimensions
         """
@@ -619,30 +622,30 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        qubit_device_2_wires.reset()
+        dev = qml.device('default.qubit', wires=2, shots=1000)
 
-        qubit_device_2_wires.apply(
+        dev.apply(
             [qml.RX(1.5708, wires=[0]), qml.RX(1.5708, wires=[1])]
         )
 
-        qubit_device_2_wires.shots = 10
-        qubit_device_2_wires._wires_measured = {0}
-        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
-        s1 = qubit_device_2_wires.sample(qml.PauliZ(wires=[0]))
+        dev.shots = 10
+        dev._wires_measured = {0}
+        dev._samples = dev.generate_samples()
+        s1 = dev.sample(qml.PauliZ(wires=[0]))
         assert np.array_equal(s1.shape, (10,))
 
-        qubit_device_2_wires.reset()
-        qubit_device_2_wires.shots = 12
-        qubit_device_2_wires._wires_measured = {1}
-        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
-        s2 = qubit_device_2_wires.sample(qml.PauliZ(wires=[1]))
+        dev.reset()
+        dev.shots = 12
+        dev._wires_measured = {1}
+        dev._samples = dev.generate_samples()
+        s2 = dev.sample(qml.PauliZ(wires=[1]))
         assert np.array_equal(s2.shape, (12,))
 
-        qubit_device_2_wires.reset()
-        qubit_device_2_wires.shots = 17
-        qubit_device_2_wires._wires_measured = {0, 1}
-        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
-        s3 = qubit_device_2_wires.sample(qml.PauliX(0) @ qml.PauliZ(1))
+        dev.reset()
+        dev.shots = 17
+        dev._wires_measured = {0, 1}
+        dev._samples = dev.generate_samples()
+        s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, qubit_device_2_wires, tol):
@@ -653,13 +656,13 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        qubit_device_2_wires.reset()
+        dev = qml.device('default.qubit', wires=2, shots=1000)
 
-        qubit_device_2_wires.apply([qml.RX(1.5708, wires=[0])])
-        qubit_device_2_wires._wires_measured = {0}
-        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
+        dev.apply([qml.RX(1.5708, wires=[0])])
+        dev._wires_measured = {0}
+        dev._samples = dev.generate_samples()
 
-        s1 = qubit_device_2_wires.sample(qml.PauliZ(0))
+        s1 = dev.sample(qml.PauliZ(0))
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
@@ -697,8 +700,7 @@ class TestDefaultQubitIntegration:
 
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots == None
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
@@ -1116,7 +1118,7 @@ class TestDefaultQubitIntegration:
         the correct dimensions
         """
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device('default.qubit', wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1134,7 +1136,7 @@ class TestDefaultQubitIntegration:
         the correct dimensions
         """
 
-        dev = qml.device('default.qubit', wires=num_wires)
+        dev = qml.device('default.qubit', wires=num_wires, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1145,6 +1147,7 @@ class TestDefaultQubitIntegration:
         outcomes = circuit()
 
         assert np.array_equal(outcomes[0], outcomes[1])
+
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
@@ -1336,7 +1339,7 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=True)
+        dev = qml.device("default.qubit", wires=3)
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
         Identity = np.array([[1, 0],[0, 1]])
@@ -1359,6 +1362,7 @@ class TestTensorExpval:
 
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:
@@ -1483,13 +1487,14 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorSample:
     """Test tensor expectation values"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
+    def test_paulix_pauliy(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=10000)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1512,11 +1517,11 @@ class TestTensorSample:
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
         expected = (
@@ -1527,11 +1532,11 @@ class TestTensorSample:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_pauliz_hadamard(self, theta, phi, varphi, monkeypatch, tol):
+    def test_pauliz_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
         dev.apply(
             [
@@ -1552,11 +1557,11 @@ class TestTensorSample:
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
         expected = (
@@ -1565,13 +1570,13 @@ class TestTensorSample:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_hermitian(self, theta, phi, varphi, monkeypatch, tol):
+    def test_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
-        A = np.array(
+        A = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -1606,17 +1611,16 @@ class TestTensorSample:
         assert set(np.round(s1, 8).tolist()).issubset(set(np.round(eigvals, 8).tolist()))
 
         mean = s1 @ p
-        expected = 0.5 * (
+        expected = 0.1 * 0.5 * (
             -6 * np.cos(theta) * (np.cos(varphi) + 1)
             - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
             + 3 * np.cos(varphi) * np.sin(phi)
             + np.sin(phi)
         )
-        assert np.allclose(mean, expected, atol=tol, rtol=0)
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
-        expected = (
-            1057
+        expected = 0.01 * (1057
             - np.cos(2 * phi)
             + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
             - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
@@ -1645,7 +1649,8 @@ class TestTensorSample:
                 )
             )
         ) / 16
-        assert np.allclose(var, expected, atol=tol, rtol=0)
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
+
 
 class TestProbabilityIntegration:
     """Test probability method for when analytic is True/False"""
@@ -1656,9 +1661,9 @@ class TestProbabilityIntegration:
 
     @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
     def test_probability(self, x, tol):
-        """Test that the probability function works when analytic=False"""
-        dev = qml.device("default.qubit", wires=2, analytic=False)
-        dev_analytic = qml.device("default.qubit", wires=2, analytic=True)
+        """Test that the probability function works for finite and infinite shots"""
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev_analytic = qml.device("default.qubit", wires=2, shots=None)
 
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1673,12 +1678,11 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
-    @pytest.mark.parametrize("analytic", [True, False])
-    def test_call_generate_samples(self, analytic, monkeypatch):
+    def test_call_generate_samples(self, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
         monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
