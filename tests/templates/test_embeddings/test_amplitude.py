@@ -16,7 +16,6 @@ Unit tests for the AmplitudeEmbedding template.
 """
 import pytest
 import numpy as np
-from pennylane import numpy as pnp
 import pennylane as qml
 
 FEATURES = [np.array([0, 1, 0, 0]),
@@ -80,6 +79,27 @@ class TestDecomposition:
         state = circuit.device.state.ravel()
         assert len(set(state[len(inpt):])) == 1
 
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        features = np.array([0, 1/2, 0, 1/2, 0, 0, 1/2, 1/2])
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.AmplitudeEmbedding(features, wires=range(3))
+            return qml.expval(qml.Identity(0))
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.templates.AmplitudeEmbedding(features, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z"))
+
+        circuit()
+        circuit2()
+
+        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
 class TestParameters:
     """Test inputs and pre-processing."""

@@ -234,6 +234,11 @@
 
 <h3>Improvements</h3>
 
+- The embeddings are now classes inheriting 
+  from `Operation`, and define the ansatz in their `expand()` method. This 
+  change does not affect the user interface.
+  XXX
+
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
 
