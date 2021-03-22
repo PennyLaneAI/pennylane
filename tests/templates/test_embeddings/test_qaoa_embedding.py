@@ -17,7 +17,7 @@ Unit tests for the QAOAEmbedding template.
 import pytest
 import numpy as np
 import pennylane as qml
-
+from pennylane import numpy as pnp
 
 def circuit_template(features, weights):
     qml.templates.QAOAEmbedding(features, weights, range(2))
@@ -265,7 +265,10 @@ class TestGradients:
         are the same in the autograd interface."""
 
         features = np.random.random(size=(2,))
+        features = pnp.array(features, requires_grad=True)
+
         weights = np.random.random(size=(1, 3))
+        weights = pnp.array(weights, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 

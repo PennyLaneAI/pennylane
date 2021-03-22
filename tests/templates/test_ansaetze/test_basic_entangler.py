@@ -17,6 +17,7 @@ Unit tests for the BasicEntanglerLayers template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def circuit_template(weights):
@@ -157,6 +158,7 @@ class TestGradients:
         are the same in the autograd interface."""
 
         weights = np.random.random(size=(1, 3))
+        weights = pnp.array(weights, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
