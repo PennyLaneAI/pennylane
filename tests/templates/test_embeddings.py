@@ -499,7 +499,6 @@ class TestQAOAEmbedding:
               (3, (1, 6), [qml.RX, qml.RX, qml.RX, qml.MultiRZ, qml.MultiRZ, qml.MultiRZ,
                    qml.RY, qml.RY, qml.RY, qml.RX, qml.RX, qml.RX])]
 
-
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
 
