@@ -21,10 +21,6 @@ import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.templates.subroutines import DoubleExcitationUnitary, SingleExcitationUnitary
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -63,22 +59,10 @@ def _preprocess(init_state, weights, s_wires, d_wires):
                 )
             )
 
-    if qml.tape_mode_active():
-
-        shape = qml.math.shape(weights)
-        if shape != (len(s_wires) + len(d_wires),):
-            raise ValueError(
-                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
-            )
-
-    else:
-        expected_shape = (len(s_wires) + len(d_wires),)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="Weights tensor must be of shape {}; got {}".format(
-                expected_shape, get_shape(weights)
-            ),
+    shape = qml.math.shape(weights)
+    if shape != (len(s_wires) + len(d_wires),):
+        raise ValueError(
+            f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
         )
 
     # we can extract the numpy representation here

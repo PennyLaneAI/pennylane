@@ -19,12 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_type,
-    check_number_of_layers,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -42,36 +36,19 @@ def _preprocess(weights, wires, ranges):
     Returns:
         int, list[int]: number of times that the ansatz is repeated and preprocessed ranges
     """
+    shape = qml.math.shape(weights)
+    repeat = shape[0]
 
-    if qml.tape_mode_active():
+    if len(shape) != 3:
+        raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
-        shape = qml.math.shape(weights)
-        repeat = shape[0]
-
-        if len(shape) != 3:
-            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
-
-        if shape[1] != len(wires):
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-            )
-
-        if shape[2] != 3:
-            raise ValueError(
-                f"Weights tensor must have third dimension of length 3; got {shape[2]}"
-            )
-
-    else:
-
-        repeat = check_number_of_layers([weights])
-
-        expected_shape = (repeat, len(wires), 3)
-        check_shape(
-            weights,
-            expected_shape,
-            msg="Weights tensor must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(weights)),
+    if shape[1] != len(wires):
+        raise ValueError(
+            f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
         )
+
+    if shape[2] != 3:
+        raise ValueError(f"Weights tensor must have third dimension of length 3; got {shape[2]}")
 
     if len(wires) > 1:
         if ranges is None:
@@ -135,7 +112,6 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     Raises:
         ValueError: if inputs do not have the correct format
     """
-
     wires = Wires(wires)
     repeat, ranges = _preprocess(weights, wires, ranges)
 

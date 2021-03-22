@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates import broadcast
 from pennylane.wires import Wires
-from pennylane.templates.utils import (
-    check_shape,
-    check_is_in_options,
-    get_shape,
-)
 
 
 def _preprocess(features, wires, method, c):
@@ -43,51 +38,24 @@ def _preprocess(features, wires, method, c):
     Returns:
         tensor_like: 2-dimensional tensor containing the features and constants
     """
+    shape = qml.math.shape(features)
+    constants = [c] * shape[0]
 
-    if qml.tape_mode_active():
-        shape = qml.math.shape(features)
-        constants = [c] * shape[0]
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+    n_features = shape[0]
+    if n_features != len(wires):
+        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        n_features = shape[0]
-        if n_features != len(wires):
-            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+    if method == "amplitude":
+        pars = qml.math.stack([features, constants], axis=1)
 
-        if method == "amplitude":
-            pars = qml.math.stack([features, constants], axis=1)
-
-        elif method == "phase":
-            pars = qml.math.stack([constants, features], axis=1)
-
-        else:
-            raise ValueError(f"did not recognize method {method}")
+    elif method == "phase":
+        pars = qml.math.stack([constants, features], axis=1)
 
     else:
-
-        expected_shape = (len(wires),)
-        check_shape(
-            features,
-            expected_shape,
-            bound="max",
-            msg="Features must be of shape {} or smaller; got {}."
-            "".format(expected_shape, get_shape(features)),
-        )
-
-        check_is_in_options(
-            method,
-            ["amplitude", "phase"],
-            msg="did not recognize option {} for 'method'" "".format(method),
-        )
-
-        constants = [c] * len(features)
-
-        if method == "amplitude":
-            pars = list(zip(features, constants))
-
-        elif method == "phase":
-            pars = list(zip(constants, features))
+        raise ValueError(f"did not recognize method {method}")
 
     return pars
 
