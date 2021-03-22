@@ -142,25 +142,13 @@ class TestParameters:
             (2, 2, (2, 2)),
         ],
     )
-    def test_shape_random_weights(self, n_layers, n_wires, expected_shape):
-        """Test that the random weights have the correct shape"""
+    def test_shape(self, n_layers, n_wires, expected_shape):
+        """Test that the shape method returns the correct shape of the weights tensor"""
 
-        weights1 = qml.templates.BasicEntanglerLayers.weights_uniform(n_layers, n_wires)
-        weights2 = qml.templates.BasicEntanglerLayers.weights_normal(n_layers, n_wires)
-        assert weights1.shape == expected_shape
-        assert weights2.shape == expected_shape
+        shape = qml.templates.BasicEntanglerLayers.shape(n_layers, n_wires)
+        assert shape == expected_shape
 
-    @pytest.mark.parametrize("func", [qml.templates.BasicEntanglerLayers.weights_uniform,
-                                      qml.templates.BasicEntanglerLayers.weights_normal])
-    def test_seed_random_weights(self, func, tol):
-        """Test that the random weights are made deterministic by using a seed"""
 
-        w_42 = func(3, 4, seed=42)
-        w_41 = func(3, 4, seed=41)
-        assert np.allclose(w_42, w_42, atol=tol, rtol=0)
-        assert not np.allclose(w_42, w_41, atol=tol, rtol=0)
-
-        
 class TestGradients:
     """Tests that the gradient is computed correctly in all interfaces."""
 

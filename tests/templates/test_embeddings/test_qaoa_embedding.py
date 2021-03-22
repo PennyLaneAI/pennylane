@@ -250,22 +250,11 @@ class TestParameters:
             (2, 2, (2, 3)),
         ],
     )
-    def test_shape_random_weights(self, n_layers, n_wires, expected_shape):
-        """Test that the random weights have the correct shape"""
-        weights1 = qml.templates.QAOAEmbedding.weights_uniform(n_layers, n_wires, seed=42)
-        weights2 = qml.templates.QAOAEmbedding.weights_normal(n_layers, n_wires, seed=42)
-        assert weights1.shape == expected_shape
-        assert weights2.shape == expected_shape
+    def test_shape(self, n_layers, n_wires, expected_shape):
+        """Test that the shape method returns the correct shape of the weights tensor"""
 
-    @pytest.mark.parametrize("func", [qml.templates.QAOAEmbedding.weights_uniform,
-                                      qml.templates.QAOAEmbedding.weights_normal])
-    def test_seed_random_weights(self, func, tol):
-        """Test that the random weights are made deterministic by using a seed"""
-
-        w_42 = func(3, 4, seed=42)
-        w_41 = func(3, 4, seed=41)
-        assert np.allclose(w_42, w_42, atol=tol, rtol=0)
-        assert not np.allclose(w_42, w_41, atol=tol, rtol=0)
+        shape = qml.templates.QAOAEmbedding.shape(n_layers, n_wires)
+        assert shape == expected_shape
 
 
 class TestGradients:

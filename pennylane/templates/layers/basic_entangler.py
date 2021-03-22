@@ -79,14 +79,16 @@ class BasicEntanglerLayers(Operation):
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
 
-        **Parameter initialization function**
+        **Parameter shape**
 
-        A random numpy weights array can be generated using the static methods
-        `BasicEntanglerLayers.weights_normal` and `BasicEntanglerLayers.weights_uniform`.
+        The shape of the weights argument can be computed by the static method
+        :meth:`BasicEntanglerLayers.parameter_shape` and used when creating randomly
+        initialised weight tensors:
 
         .. code-block:: python
 
-            weights = BasicEntanglerLayers.weights_normal(n_layers=2, n_wires=2, mean=0, std=0.2)
+            shape = BasicEntanglerLayers.parameter_shape(n_layers=2, n_wires=2)
+            weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
 
@@ -145,9 +147,15 @@ class BasicEntanglerLayers(Operation):
 
             for layer in range(repeat):
                 for i in range(len(self.wires)):
-                    self.rotation(weights[layer][i], wires=self.wires[i : i + 1])
+                    self.rotation(weights[layer][i], wires=self.wires[i: i + 1])
 
-                broadcast(unitary=qml.CNOT, pattern="ring", wires=self.wires)
+                if len(self.wires) == 2:
+                    qml.CNOT(wires=self.wires)
+
+                elif len(self.wires) > 2:
+                    for i in range(len(self.wires)):
+                        w = self.wires.subset([i, i + 1], periodic_boundary=True)
+                        qml.CNOT(wires=w)
 
         return tape
 
@@ -168,45 +176,15 @@ class BasicEntanglerLayers(Operation):
             )
 
     @staticmethod
-    def weights_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-        r"""Creates a standard numpy weights array whose entries are drawn from a normal
-        distribution.
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
 
         Args:
             n_layers (int): number of layers
             n_wires (int): number of qubits
-            mean (float): mean of parameters
-            std (float): standard deviation of parameters
-            seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            array: weights array
+            tuple[int]: shape
         """
-        if seed is not None:
-            np.random.seed(seed)
 
-        params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
-
-        return params
-
-    @staticmethod
-    def weights_uniform(n_layers, n_wires, low=0, high=2 * np.pi, seed=None):
-        r"""Creates a standard numpy weights array whose entries are drawn from a uniform
-        distribution.
-
-        Args:
-            n_layers (int): number of layers
-            n_wires (int): number of qubits
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
-
-        Returns:
-            array: weights array
-        """
-        if seed is not None:
-            np.random.seed(seed)
-
-        params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
-
-        return params
+        return n_layers, n_wires
