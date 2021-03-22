@@ -200,7 +200,8 @@ def SingleExcitation(phi):
         phi (float): rotation angle
 
     Returns:
-        tf.Tensor[float]: Single excitation rotation matrix
+        tf.Tensor[complex]: Single excitation rotation matrix
+
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     c = tf.cos(phi / 2)
