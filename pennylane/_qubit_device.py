@@ -177,12 +177,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        # TODO: Remove try/except when circuit is always QuantumTape and
-        # consider merging with caching case
-        try:
-            self._circuit_hash = circuit.graph.hash
-        except AttributeError:
-            self._circuit_hash = circuit.hash
+        self._circuit_hash = circuit.graph.hash
 
         if self._cache:
             circuit_hash = circuit.graph.hash

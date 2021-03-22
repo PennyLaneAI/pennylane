@@ -89,6 +89,21 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
         qnode.construct(args, kwargs)
         _wire_order = wire_order or qnode.device.wires
         _wire_order = qml.wires.Wires(_wire_order)
+
+        if show_all_wires and len(_wire_order) < qnode.device.num_wires:
+            raise ValueError(
+                "When show_all_wires is enabled, the provided wire order must contain all wires on the device."
+            )
+
+        if not qnode.device.wires.contains_wires(_wire_order):
+            raise ValueError(
+                f"Provided wire order {_wire_order.labels} contains wires not contained on the device: {qnode.device.wires}."
+            )
+
+        return qnode.qtape.draw(
+            charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires
+        )
+
         return qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper

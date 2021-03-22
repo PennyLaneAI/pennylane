@@ -170,7 +170,6 @@ def pytest_addoption(parser):
         "--shots",
         action="store",
         default=None,
-
         help="Number of shots to use in stochastic mode.",
     )
     addoption(

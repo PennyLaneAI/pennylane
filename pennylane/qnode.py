@@ -596,7 +596,7 @@ class QNode:
         )
 
     def draw(
-        self, charset="unicode", wire_order=None, show_all_wires=False, **kwargs
+        self, charset="unicode", wire_order=None, show_all_wires=False
     ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
@@ -666,8 +666,6 @@ class QNode:
           a: ──╰C──RX(0.2)──┤
          -1: ───H───────────┤
         """
-        # TODO: remove 'kwargs' when tape mode is default.
-        # Currently it only exists to match the signature of non-tape mode draw.
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."

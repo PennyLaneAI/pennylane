@@ -28,7 +28,7 @@ import pennylane.qaoa as qaoa
 import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError
-from pennylane._grad import grad, jacobian
+from pennylane._grad import grad, jacobian, finite_diff
 from pennylane._qubit_device import QubitDevice
 from pennylane._version import __version__
 from pennylane.about import about
@@ -40,13 +40,14 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
-from pennylane.transforms import draw, measurement_grouping, metric_tensor
+from pennylane.transforms import adjoint, draw, measurement_grouping, metric_tensor
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, apply, dot, map, sum
 from .queuing import QueuingContext
+
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

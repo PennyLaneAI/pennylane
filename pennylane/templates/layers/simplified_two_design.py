@@ -61,8 +61,8 @@ def entangler(par1, par2, wires):
     """Implements a two qubit unitary consisting of a controlled-Z entangler and Pauli-Y rotations.
 
     Args:
-         par1 (float or qml.Variable): parameter of first Pauli-Y rotation
-         par2 (float or qml.Variable): parameter of second Pauli-Y rotation
+         par1 (float): parameter of first Pauli-Y rotation
+         par2 (float): parameter of second Pauli-Y rotation
          wires (Wires): two wire indices that unitary acts on
     """
 

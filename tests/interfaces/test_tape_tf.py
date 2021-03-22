@@ -313,7 +313,7 @@ class TestTFQuantumTape:
         res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, mocker, tol):
+    def test_differentiable_expand(self, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 

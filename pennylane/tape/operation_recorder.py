@@ -84,7 +84,7 @@ class OperationRecorder(QuantumTape):
 
         output += "\n"
         output += "Observables\n"
-        output += "==========\n"
+        output += "===========\n"
         for op in self.obs:
             output += repr(op) + "\n"
 

@@ -161,7 +161,7 @@ class TorchInterface(AnnotatedQueue):
     providing the ``dtype`` argument when applying the interface:
 
     >>> p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-    >>> with TorchInterface.apply(JacobianTape()) as qtape:
+    >>> with TorchInterface.apply(JacobianTape(), dtype=torch.float32) as qtape:
     ...     qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
     ...     expval(qml.PauliX(0))
     >>> result = qtape.execute(dev)

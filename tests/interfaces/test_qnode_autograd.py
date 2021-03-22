@@ -379,7 +379,7 @@ class TestQNode:
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
@@ -758,7 +758,7 @@ def qtransform(qnode, a, framework=np):
     "dev_name,diff_method",
     [("default.qubit", "finite-diff"), ("default.qubit.autograd", "backprop")],
 )
-def test_transform(dev_name, diff_method, monkeypatch, tol):
+def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""
 
     dev = qml.device(dev_name, wires=1)

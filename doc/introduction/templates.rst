@@ -198,6 +198,11 @@ of other templates.
   :description: QuantumPhaseEstimation
   :figure: ../_static/templates/subroutines/qpe.svg
 
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.QuantumMonteCarlo.html
+  :description: QuantumMonteCarlo
+  :figure: ../_static/templates/subroutines/qmc.svg
+
 .. raw:: html
 
         <div style='clear:both'></div>

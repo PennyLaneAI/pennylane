@@ -14,22 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
 """
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-
-#     http://www.apache.org/licenses/LICENSE-2.0
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""
-Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
-"""
 import contextlib
 
 import pytest
@@ -381,7 +365,7 @@ class TestOperationRecorder:
             + "CNOT(wires=[0, 1])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
         )
 
         dev = qml.device("default.qubit", wires=2)
@@ -420,7 +404,7 @@ class TestOperationRecorder:
             + "RZ(12, wires=[0])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
         )
 
         def template(x):
@@ -445,7 +429,7 @@ class TestOperationRecorder:
             + "RZ(12, wires=[0])\n"
             + "\n"
             + "Observables\n"
-            + "==========\n"
+            + "===========\n"
             + "var(PauliZ(wires=[0]))\n"
             + "sample(PauliX(wires=[1]))\n"
         )
