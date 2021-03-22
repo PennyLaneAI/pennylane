@@ -22,9 +22,11 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import pennylane as qml
-from pennylane.templates.state_preparations import (BasisStatePreparation,
-                                                    MottonenStatePreparation,
-                                                    ArbitraryStatePreparation)
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+    ArbitraryStatePreparation,
+)
 from pennylane.templates.state_preparations.mottonen import gray_code
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
@@ -408,8 +410,8 @@ class TestMottonenStatePreparation:
         """Tests whether the cascade of RZ gates is skipped.
         Note that currently there are also inefficiencies in the number of CNOT gates in the RY cascade.
         When these are updated, this test will become ineffective"""
-       
-        n_CNOT = 2**n_wires - 2
+
+        n_CNOT = 2 ** n_wires - 2
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -423,63 +425,113 @@ class TestMottonenStatePreparation:
 
         assert circuit.qtape.get_resources()["CNOT"] <= n_CNOT
 
-    @pytest.mark.parametrize("state_vector, n_wires", [
-        ([.5,.5j,.5,.5],2),
-        ([0, 0, 0, 0, 1j, 0, 0, 0], 3),
-        ([1/2, 0, 0, 0, 1/2, 1j/2, -1/2, 0], 3),
-        ([1/3, 0, 0, 0, 2j/3, 2j/3, 0, 0], 3),
-        ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], 3),
-        (
-            [1/math.sqrt(8), 1j/math.sqrt(8), 1/math.sqrt(8), -1j/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1j/math.sqrt(8)],
-            3,
-        ),
-        (
-            [-0.17133152-0.18777771j, 0.00240643-0.40704011j, 0.18684538-0.36315606j, -0.07096948+0.104501j, 0.30357755-0.23831927j, -0.38735106+0.36075556j, 0.12351096-0.0539908j, 0.27942828-0.24810483j],
-            3,
-        ),
-        (
-            [-0.29972867+0.04964242j, -0.28309418+0.09873227j, 0.00785743-0.37560696j, -0.3825148 +0.00674343j, -0.03008048+0.31119167j, 0.03666351-0.15935903j, -0.25358831+0.35461265j, -0.32198531+0.33479292j],
-            3,
-        ),
-        (
-            [-0.39340123+0.05705932j, 0.1980509 -0.24234781j, 0.27265585-0.0604432j, -0.42641249+0.25767258j, 0.40386614-0.39925987j, 0.03924761+0.13193724j, -0.06059103-0.01753834j, 0.21707136-0.15887973j],
-            3,
-        ),
-        (
-            [-1.33865287e-01+0.09802308j, 1.25060033e-01+0.16087698j, -4.14678130e-01-0.00774832j, 1.10121136e-01+0.37805482j, -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j, 5.64131205e-02+0.38135286j, 2.32694503e-01+0.41331133j],
-            3,
-        ),
-        ([1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0], 3),
-        ([1/2, 0, 1j/2, 1j/math.sqrt(2)], 2),
-    ])
-    def test_correct_phase(self, state_vector,n_wires):
+    @pytest.mark.parametrize(
+        "state_vector, n_wires",
+        [
+            ([0.5, 0.5j, 0.5, 0.5], 2),
+            ([0, 0, 0, 0, 1j, 0, 0, 0], 3),
+            ([1 / 2, 0, 0, 0, 1 / 2, 1j / 2, -1 / 2, 0], 3),
+            ([1 / 3, 0, 0, 0, 2j / 3, 2j / 3, 0, 0], 3),
+            ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
+            (
+                [
+                    1 / math.sqrt(8),
+                    1j / math.sqrt(8),
+                    1 / math.sqrt(8),
+                    -1j / math.sqrt(8),
+                    1 / math.sqrt(8),
+                    1 / math.sqrt(8),
+                    1 / math.sqrt(8),
+                    1j / math.sqrt(8),
+                ],
+                3,
+            ),
+            (
+                [
+                    -0.17133152 - 0.18777771j,
+                    0.00240643 - 0.40704011j,
+                    0.18684538 - 0.36315606j,
+                    -0.07096948 + 0.104501j,
+                    0.30357755 - 0.23831927j,
+                    -0.38735106 + 0.36075556j,
+                    0.12351096 - 0.0539908j,
+                    0.27942828 - 0.24810483j,
+                ],
+                3,
+            ),
+            (
+                [
+                    -0.29972867 + 0.04964242j,
+                    -0.28309418 + 0.09873227j,
+                    0.00785743 - 0.37560696j,
+                    -0.3825148 + 0.00674343j,
+                    -0.03008048 + 0.31119167j,
+                    0.03666351 - 0.15935903j,
+                    -0.25358831 + 0.35461265j,
+                    -0.32198531 + 0.33479292j,
+                ],
+                3,
+            ),
+            (
+                [
+                    -0.39340123 + 0.05705932j,
+                    0.1980509 - 0.24234781j,
+                    0.27265585 - 0.0604432j,
+                    -0.42641249 + 0.25767258j,
+                    0.40386614 - 0.39925987j,
+                    0.03924761 + 0.13193724j,
+                    -0.06059103 - 0.01753834j,
+                    0.21707136 - 0.15887973j,
+                ],
+                3,
+            ),
+            (
+                [
+                    -1.33865287e-01 + 0.09802308j,
+                    1.25060033e-01 + 0.16087698j,
+                    -4.14678130e-01 - 0.00774832j,
+                    1.10121136e-01 + 0.37805482j,
+                    -3.21284864e-01 + 0.21521063j,
+                    -2.23121454e-04 + 0.28417422j,
+                    5.64131205e-02 + 0.38135286j,
+                    2.32694503e-01 + 0.41331133j,
+                ],
+                3,
+            ),
+            ([1 / 2, 0, 0, 0, 1j / 2, 0, 1j / math.sqrt(2), 0], 3),
+            ([1 / 2, 0, 1j / 2, 1j / math.sqrt(2)], 2),
+        ],
+    )
+    def test_correct_phase(self, state_vector, n_wires):
         """Tests that the template MottonenStatePreparation produces the correct phases."""
-        dev = qml.device("default.qubit",wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
+
         @qml.qnode(dev)
         def circuit():
-            MottonenStatePreparation(state_vector,wires=range(n_wires))
+            MottonenStatePreparation(state_vector, wires=range(n_wires))
 
             return qml.probs(wires=range(n_wires))
 
         circuit()
-        #since this produces a phase up to a global phase difference e**(1j*phi)=phi'
-        #we can divide phase state by state_vector (state/desired state)
-        #to get phi'
-        #if this is the same for all elements, the phase is correct to a global phase
+        # since this produces a phase up to a global phase difference e**(1j*phi)=phi'
+        # we can divide phase state by state_vector (state/desired state)
+        # to get phi'
+        # if this is the same for all elements, the phase is correct to a global phase
         state = circuit.device.state.ravel()
         indices = []
         for i in range(len(state)):
-            if(np.isclose(np.abs(state[i]),np.abs(state_vector[i])) and np.isclose(np.abs(state[i]),0)):
+            if np.isclose(np.abs(state[i]), np.abs(state_vector[i])) and np.isclose(
+                np.abs(state[i]), 0
+            ):
                 indices.append(i)
-        state=np.delete(state,indices)
-        state_vector=np.delete(state_vector,indices)
-        ratio=state/state_vector
-        assert np.allclose(ratio,ratio[0])
+        state = np.delete(state, indices)
+        state_vector = np.delete(state_vector, indices)
+        ratio = state / state_vector
+        assert np.allclose(ratio, ratio[0])
 
-    @pytest.mark.parametrize("state_vector", [
-        np.array([0.70710678, 0.70710678]),
-        np.array([0.70710678, 0.70710678j])]
-                             )
+    @pytest.mark.parametrize(
+        "state_vector", [np.array([0.70710678, 0.70710678]), np.array([0.70710678, 0.70710678j])]
+    )
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
         checks that the gradient is calculated without an error, we should consider adding
