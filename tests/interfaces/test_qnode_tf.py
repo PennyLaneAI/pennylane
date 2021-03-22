@@ -522,6 +522,45 @@ class TestQNode:
         assert res.shape == (2, 10)
         assert isinstance(res, tf.Tensor)
 
+    def test_second_derivative(self, dev_name, diff_method, mocker, tol):
+        """Test second derivative calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(x)
+            g = tape2.gradient(res, x)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        g2 = tape1.gradient(g[0], x)
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
+
+        a, b = x * 1.0
+
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_g2 = [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
     def test_hessian(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a scalar valued QNode"""
         if diff_method not in {"parameter-shift", "backprop"}:

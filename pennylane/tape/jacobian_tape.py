@@ -743,4 +743,7 @@ class JacobianTape(QuantumTape):
             else:
                 hessian[i, j] = hessian[j, i] = g
 
+        if self.output_dim == 1:
+            hessian = np.squeeze(hessian, axis=-1)
+
         return hessian

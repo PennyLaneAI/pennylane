@@ -181,12 +181,11 @@ class TFInterface(AnnotatedQueue):
                     variables = tfkwargs.get("variables", None)
                     hessian = _evaluate_grad_matrix("hessian")
 
-                    # vhp = tf.tensordot(ddy, hessian, axes=1)
-                    # vhp = tf.tensordot(tf.tensordot(dy_row, vhp, axes=1), tf.transpose(dy_row), axes=1)
-                    # vhp = tf.unstack(tf.reshape(vhp, [-1]))
+                    if self.output_dim == 1:
+                        hessian = tf.expand_dims(hessian, -1)
 
                     vhp = tf.cond(
-                        tf.rank(tf.squeeze(ddy)) > 1,
+                        tf.rank(hessian) > 2,
                         lambda: dy_row @ ddy @ hessian @ tf.transpose(dy_row),
                         lambda: ddy @ hessian,
                     )
