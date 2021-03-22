@@ -15,7 +15,12 @@
 This file contains functionalities for embedding kernels.
 """
 import pennylane as qml
-from .cost_functions import square_kernel_matrix, kernel_matrix, kernel_polarization, kernel_target_alignment
+from .cost_functions import (
+    square_kernel_matrix,
+    kernel_matrix,
+    kernel_polarization,
+    kernel_target_alignment,
+)
 
 
 class EmbeddingKernel:
@@ -91,7 +96,9 @@ class EmbeddingKernel:
             array[float]: Kernel matrix for the given datapoints
         """
         return kernel_matrix(
-            X1, X2, lambda x1, x2: self(x1, x2, params, **kwargs),
+            X1,
+            X2,
+            lambda x1, x2: self(x1, x2, params, **kwargs),
         )
 
     def square_kernel_matrix(self, X, params, **kwargs):

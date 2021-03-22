@@ -17,6 +17,7 @@ See 10.1007/s10462-012-9369-4 for a review.
 """
 from pennylane import numpy as np
 
+
 def _matrix_inner_product(A, B):
     """Frobenius/Hilbert-Schmidt inner product between two matrices
 
