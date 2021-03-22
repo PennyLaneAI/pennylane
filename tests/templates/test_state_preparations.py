@@ -421,7 +421,7 @@ class TestMottonenStatePreparation:
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
         circuit(state_vector)
 
-        assert circuit.qtape.get_resources()["CNOT"] <= n_CNOT
+        assert circuit.qtape.get_resources()["CNOT"] == n_CNOT
 
     @pytest.mark.parametrize(
         "state_vector, n_wires",
