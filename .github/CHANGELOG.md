@@ -2,6 +2,23 @@
 
 <h3>New features since last release</h3>
 
+* Adds a new function ``qml.math.conj``.
+  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
+
+  This new method will do elementwise conjugation to the given tensor-like object.
+
+  ```python
+  a = np.array([1.0 + 2.0j])
+  b = qml.math.conj(a)
+  ```
+
+  Our new object ``b`` is the conjugate of ``a``.
+
+  ```pycon
+  >>> b
+  array([1.0 - 2.0j])
+  ```
+
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
   arbitrary callable functions.
