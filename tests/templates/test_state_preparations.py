@@ -31,6 +31,7 @@ from pennylane.templates.state_preparations.arbitrary_state_preparation import (
 )
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
+from pennylane import numpy as anp
 
 
 class TestHelperFunctions:
@@ -476,9 +477,22 @@ class TestMottonenStatePreparation:
         ratio=state/state_vector
         assert np.allclose(ratio,ratio[0])
 
-    #def test_differentiability(self):
-        """TODO"""
+    @pytest.mark.parametrize("state_vector", [
+        np.array([0.70710678, 0.70710678]),
+        np.array([0.70710678, 0.70710678j])]
+                             )
+    def test_gradient_evaluated(self, state_vector):
+        """Test that the gradient is successfully calculated for a simple example. This test only
+        checks that the gradient is calculated without an error, we should consider adding
+        additional numeric checks for fixed examples."""
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            MottonenStatePreparation(state_vector, wires=range(1))
+            return qml.expval(qml.PauliZ(0))
+
+        qml.grad(circuit)(state_vector)
 
 
 class TestArbitraryStatePreparation:
