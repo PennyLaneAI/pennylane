@@ -15,11 +15,190 @@
 """
 This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
-and measurement samples.
+and measurement samples using AnnotatedQueues.
 """
+import copy
+
+import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
-from pennylane.qnodes import QuantumFunctionError
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.wires import Wires
+
+
+class MeasurementProcess:
+    """Represents a measurement process occurring at the end of a
+    quantum variational circuit.
+
+    Args:
+        return_type (.ObservableReturnTypes): The type of measurement process.
+            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+        self.return_type = return_type
+        self.obs = obs
+
+        if wires is not None and obs is not None:
+            raise ValueError("Cannot set the wires if an observable is provided.")
+
+        self._wires = wires or Wires([])
+        self._eigvals = None
+
+        if eigvals is not None:
+            if obs is not None:
+                raise ValueError("Cannot set the eigenvalues if an observable is provided.")
+
+            self._eigvals = np.array(eigvals)
+
+        # TODO: remove the following lines once devices
+        # have been refactored to accept and understand recieving
+        # measurement processes rather than specific observables.
+
+        # The following lines are only applicable for measurement processes
+        # that do not have corresponding observables (e.g., Probability). We use
+        # them to 'trick' the device into thinking it has recieved an observable.
+
+        # Below, we imitate an identity observable, so that the
+        # device undertakes no action upon recieving this observable.
+        self.name = "Identity"
+        self.data = []
+
+        # Queue the measurement process
+        self.queue()
+
+    def diagonalizing_gates(self):
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Returns:
+            List[.Operation]: the operations that diagonalize the observables
+        """
+        try:
+            return self.expand().operations
+        except NotImplementedError:
+            return []
+
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            return "{}(wires={})".format(self.return_type.value, self.wires.tolist())
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if self.obs.return_type is None:
+            return "{}({})".format(self.return_type.value, self.obs)
+
+        return "{}".format(self.obs)
+
+    def __copy__(self):
+        cls = self.__class__
+
+        if self.obs is not None:
+            return cls(self.return_type, obs=copy.copy(self.obs))
+
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+
+    @property
+    def wires(self):
+        r"""The wires the measurement process acts on."""
+        if self.obs is not None:
+            return self.obs.wires
+        return self._wires
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues associated with the measurement process.
+
+        If the measurement process has an associated observable,
+        the eigenvalues will correspond to this observable. Otherwise,
+        they will be the eigenvalues provided when the measurement
+        process was instantiated.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        **Example:**
+
+        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m.eigvals
+        array([1, -1])
+
+        Returns:
+            array: eigvals representation
+        """
+        if self.obs is not None:
+            try:
+                return self.obs.eigvals
+            except NotImplementedError:
+                pass
+
+        return self._eigvals
+
+    def expand(self):
+        """Expand the measurement of an observable to a unitary
+        rotation and a measurement in the computational basis.
+
+        Returns:
+            .JacobianTape: a quantum tape containing the operations
+            required to diagonalize the observable
+
+        **Example**
+
+        Consider a measurement process consisting of the expectation
+        value of an Hermitian observable:
+
+        >>> H = np.array([[1, 2], [2, 4]])
+        >>> obs = qml.Hermitian(H, wires=['a'])
+        >>> m = MeasurementProcess(Expectation, obs=obs)
+
+        Expanding this out:
+
+        >>> tape = m.expand()
+
+        We can see that the resulting tape has the qubit unitary applied,
+        and a measurement process with no observable, but the eigenvalues
+        specified:
+
+        >>> print(tape.operations)
+        [QubitUnitary(array([[-0.89442719,  0.4472136 ],
+              [ 0.4472136 ,  0.89442719]]), wires=['a'])]
+        >>> print(tape.measurements[0].eigvals)
+        [0. 5.]
+        >>> print(tape.measurements[0].obs)
+        None
+        """
+        if self.obs is None:
+            raise NotImplementedError("Cannot expand a measurement process with no observable.")
+
+        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
+
+        with JacobianTape() as tape:
+            self.obs.diagonalizing_gates()
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
+
+        return tape
+
+    def queue(self):
+        """Append the measurement process to an annotated queue."""
+        if self.obs is not None:
+            try:
+                qml.QueuingContext.update_info(self.obs, owner=self)
+            except ValueError:
+                self.obs.queue()
+                qml.QueuingContext.update_info(self.obs, owner=self)
+
+            qml.QueuingContext.append(self, owns=self.obs)
+        else:
+            qml.QueuingContext.append(self)
 
 
 def expval(op):
@@ -50,21 +229,11 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-    if isinstance(op, Tensor):
-        for o in op.obs:
-            qml.QueuingContext.remove(o)
-    else:
-        qml.QueuingContext.remove(op)
-
-    op.return_type = Expectation
-
-    qml.QueuingContext.append(op)
-
-    return op
+    return MeasurementProcess(Expectation, obs=op)
 
 
 def var(op):
@@ -95,21 +264,11 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
-    if isinstance(op, Tensor):
-        for o in op.obs:
-            qml.QueuingContext.remove(o)
-    else:
-        qml.QueuingContext.remove(op)
-
-    op.return_type = Variance
-
-    qml.QueuingContext.append(op)
-
-    return op
+    return MeasurementProcess(Variance, obs=op)
 
 
 def sample(op):
@@ -146,21 +305,11 @@ def sample(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
-    if isinstance(op, Tensor):
-        for o in op.obs:
-            qml.QueuingContext.remove(o)
-    else:
-        qml.QueuingContext.remove(op)
-
-    op.return_type = Sample
-
-    qml.QueuingContext.append(op)
-
-    return op
+    return MeasurementProcess(Sample, obs=op)
 
 
 def probs(wires):
@@ -200,9 +349,81 @@ def probs(wires):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # pylint: disable=protected-access
-    op = qml.Identity(wires=wires, do_queue=False)
-    op.return_type = Probability
+    return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
 
-    qml.QueuingContext.append(op)
 
-    return op
+def state():
+    r"""Quantum state in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its state. A
+    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
+    describing all wires in the device.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=1)
+            return qml.state()
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
+    in both :math:`|00\rangle` and :math:`|01\rangle`.
+
+    .. note::
+
+        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        classical backpropagation differentiation method (``diff_method="backprop"``) with a
+        compatible device.
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State)
+
+
+def density_matrix(wires):
+    r"""Quantum density matrix in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its density
+    matrix or reduced density matrix. The ``wires`` argument gives the possibility
+    to trace out a part of the system. It can result in obtaining a mixed state, which can be
+    only represented by the reduced density matrix.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliY(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.density_matrix([0])
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([[0.+0.j 0.+0.j]
+        [0.+0.j 1.+0.j]])
+
+    The returned matrix is the reduced density matrix, where system 1 is traced out.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    .. note::
+
+        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    # pylint: disable=protected-access
+    return MeasurementProcess(State, wires=qml.wires.Wires(wires))

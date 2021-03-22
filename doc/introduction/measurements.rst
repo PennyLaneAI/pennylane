@@ -208,7 +208,6 @@ Running the simulator when ``analytic`` is set to ``True`` returns the exact exp
 
 Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
->>> dev.analytic = False
 >>> dev.shots = 10
 >>> circuit()
 0.2

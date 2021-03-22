@@ -18,7 +18,6 @@ import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane._device import DeviceError
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 try:
     import tensorflow as tf
@@ -82,7 +81,6 @@ class TestDeviceProperties:
         assert dev.num_wires == 2
         assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
-        assert hasattr(dev, "analytic")
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
@@ -135,11 +133,7 @@ class TestCapabilities:
         assert interface in ["tf", "autograd", "jax"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
-        qnode = (
-            qml.QNode(qfunc, dev)
-            if qml.tape_mode_active()
-            else qml.qnodes.passthru.PassthruQNode(qfunc, dev)
-        )
+        qnode = qml.QNode(qfunc, dev)
         qnode.interface = interface
 
         # assert that we can do a simple gradient computation in the passthru interface
@@ -251,6 +245,3 @@ class TestCapabilities:
         else:
             with pytest.raises(NotImplementedError):
                 qnode()
-
-    # TODO: Add tests for supports_finite_shots and supports_analytic_computation
-    # once the shots refactor is done

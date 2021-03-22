@@ -240,7 +240,7 @@ class TestCVGradient:
         def qf(x, y):
             qml.Displacement(0.5, 0, wires=[0])
             qml.Squeezing(x, 0, wires=[0])
-            M = np.zeros((5, 5), dtype=object)
+            M = np.zeros((5, 5))
             M[1,1] = y
             M[1,2] = 1.0
             M[2,1] = 1.0
@@ -601,7 +601,7 @@ class TestQubitGradient:
 
     def test_gradient_exception_on_sample(self):
         """Tests that the proper exception is raised if differentiation of sampling is attempted."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -614,7 +614,6 @@ class TestQubitGradient:
             grad_fn(1.0)
 
 
-@pytest.mark.usefixtures("tape_mode")
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
 

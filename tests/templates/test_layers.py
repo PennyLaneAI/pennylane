@@ -18,7 +18,6 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
-import pennylane._queuing
 from pennylane import numpy as np
 from pennylane.templates.layers import (
     CVNeuralNetLayers,
@@ -36,9 +35,6 @@ from pennylane.numpy import tensor
 from pennylane.init import particle_conserving_u1_normal
 
 TOLERANCE = 1e-8
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 class TestCVNeuralNet:
@@ -123,7 +119,7 @@ class TestCVNeuralNet:
     def test_cvneuralnet_uses_correct_weights(self, weights):
         """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             CVNeuralNetLayers(*weights, wires=range(4))
 
         # Test that gates appear in the right order for each layer:
@@ -207,7 +203,7 @@ class TestStronglyEntangling:
     @pytest.mark.parametrize("n_layers", range(1, 4))
     def test_single_qubit(self, n_layers):
         weights = np.zeros((n_layers, 1, 3))
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights, wires=range(1))
 
         assert len(rec.queue) == n_layers
@@ -222,7 +218,7 @@ class TestStronglyEntangling:
 
         weights = np.random.randn(n_layers, num_wires, 3)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights, wires=range(num_wires))
 
         # Test that gates appear in the right order
@@ -249,7 +245,7 @@ class TestStronglyEntangling:
         imprimitive = CZ
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             StronglyEntanglingLayers(
                 weights=weights, wires=range(n_subsystems), imprimitive=imprimitive
             )
@@ -260,8 +256,6 @@ class TestStronglyEntangling:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -344,11 +338,10 @@ class TestRandomLayers:
         second_call = circuit(weights)
         assert np.allclose(first_call, second_call, atol=tol)
 
+    @pytest.mark.xfail(reason="mutable qnodes are deprecated")
     def test_no_seed(self, tol):
         """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
         same circuit for immutable qnodes."""
-        if qml.tape_mode_active():
-            pytest.skip("Immutable QNodes no longer exist in tape mode")
 
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1] * 100]
@@ -370,7 +363,7 @@ class TestRandomLayers:
         impr = CNOT
         weights = np.random.randn(n_layers, n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             RandomLayers(weights=weights, wires=range(n_wires))
 
         types = [type(q) for q in rec.queue]
@@ -383,7 +376,7 @@ class TestRandomLayers:
         impr = CNOT
         weights = np.random.randn(n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_wires)),
@@ -402,7 +395,7 @@ class TestRandomLayers:
         n_rots = 20
         weights = np.random.randn(n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -422,7 +415,7 @@ class TestRandomLayers:
         n_rots = 5
         weights = np.random.randn(n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -440,7 +433,7 @@ class TestRandomLayers:
         n_rots = 500
         weights = np.random.randn(n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -461,7 +454,7 @@ class TestRandomLayers:
         n_rots = 5
         weights = np.random.randn(n_rots)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
                 wires=Wires(range(n_subsystems)),
@@ -496,8 +489,6 @@ class TestRandomLayers:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -524,7 +515,7 @@ class TestSimplifiedTwoDesign:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
@@ -547,7 +538,7 @@ class TestSimplifiedTwoDesign:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # test the device parameters
@@ -595,8 +586,6 @@ class TestSimplifiedTwoDesign:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         dev = qml.device("default.qubit", wires=4)
         initial_layer = np.random.randn(2)
@@ -631,7 +620,7 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
@@ -650,7 +639,7 @@ class TestBasicEntangler:
 
         weights = np.random.randn(n_layers, n_wires)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # test the device parameters
@@ -671,7 +660,7 @@ class TestBasicEntangler:
         n_wires = 4
         weights = np.ones(shape=(n_layers, n_wires))
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
 
         # assert queue contains the custom rotations and CNOTs only
@@ -706,8 +695,6 @@ class TestBasicEntangler:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         n_wires = 1
         dev = qml.device('default.qubit', wires=n_wires)
@@ -747,7 +734,7 @@ class TestParticleConservingU2:
             [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
         ) * layers
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
 
         # number of gates
@@ -826,9 +813,6 @@ class TestParticleConservingU2:
         init_state = np.array([1, 1, 0, 0])
 
         dev = qml.device("default.qubit", wires=N)
-
-        if not qml.tape_mode_active() and "must be 2-dimensional" in msg_match:
-            pytest.skip("Validation only performed in tape mode")
 
         @qml.qnode(dev)
         def circuit():
@@ -930,7 +914,7 @@ class TestParticleConservingU1:
         nm_wires = [wires.subset([l, l + 1]) for l in range(0, qubits - 1, 2)]
         nm_wires += [wires.subset([l, l + 1]) for l in range(1, qubits - 1, 2)]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
 
         assert gate_count == len(rec.queue)

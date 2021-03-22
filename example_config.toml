@@ -54,10 +54,8 @@
 ## Set the default value of hbar
 # hbar = 2
 
-## set the default number of shots/runs used
-## to determine expectation value statistics
-# shots = 1000
-# analytic = true
+## set the device to analytic mode by default
+# shots = None
 
     [strawberryfields.fock]
     ## Default options for the Fock simulator
@@ -66,13 +64,13 @@
     # cutoff_dim = 10
 
     ## set the default number of shots
-    # shots = 1000
+    # shots = None
 
     [strawberryfields.gaussian]
     ## Default options for the Gaussian simulator
 
     ## set the default number of shots
-    # shots = 1000
+    # shots = None
 
     ## Set the default value of hbar
     # hbar = 2
@@ -96,6 +94,7 @@
 
     ## IBM Quantum Experience authentication token
     # ibmqx_token = "XXX"
+    # shots = 1000
 
     ## hardware backend device
     # backend = "ibmq_rome"

@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.utils import _flatten
 from pennylane.optimize import (GradientDescentOptimizer,
                                 MomentumOptimizer,
                                 NesterovMomentumOptimizer,
@@ -31,9 +30,6 @@ from pennylane.optimize import (GradientDescentOptimizer,
                                 AdamOptimizer,
                                 RotoselectOptimizer,
                                 RotosolveOptimizer)
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
@@ -250,7 +246,7 @@ class TestOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         bunch.rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", analytic=True, wires=2)
+        dev = qml.device("default.qubit", shots=None, wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
@@ -629,7 +625,7 @@ class TestOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         bunch.rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", analytic=True, wires=2)
+        dev = qml.device("default.qubit", shots=None, wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
@@ -670,7 +666,7 @@ class TestOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         bunch.rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", analytic=True, wires=2)
+        dev = qml.device("default.qubit", shots=None, wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)

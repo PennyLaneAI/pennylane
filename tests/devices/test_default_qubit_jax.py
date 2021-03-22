@@ -6,8 +6,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
@@ -48,8 +46,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots == None
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
 
@@ -66,8 +63,6 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliY(0))
 
         expected = -jnp.sin(p)
-        if not qml.tape_mode_active():
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
         assert jnp.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_qubit_circuit_with_jit(self, tol):
@@ -116,8 +111,6 @@ class TestQNodeIntegration:
     def test_correct_state_returned(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
-        if not qml.tape_mode_active():
-            pytest.skip("Only supported in tape mode")
         dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -137,7 +130,7 @@ class TestQNodeIntegration:
         """Test that sampling works with a jax.jit"""
         @jax.jit
         def circuit(key):
-            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+            dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
             @qml.qnode(dev, interface="jax", diff_method="backprop")
             def inner_circuit():
                 qml.Hadamard(0)
@@ -152,7 +145,7 @@ class TestQNodeIntegration:
 
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.Hadamard(0)
@@ -164,7 +157,7 @@ class TestQNodeIntegration:
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests. """
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
@@ -175,7 +168,7 @@ class TestQNodeIntegration:
 
     def test_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)
@@ -204,8 +197,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        if not qml.tape_mode_active():
-            assert isinstance(circuit, qml.qnodes.PassthruQNode)
         res = circuit(weights)
 
         expected = jnp.cos(3 * x) * jnp.cos(y) * jnp.cos(z / 2) - jnp.sin(3 * x) * jnp.sin(z / 2)
@@ -262,15 +253,14 @@ class TestPassthruIntegration:
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
             qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
         a = jnp.array(0.54)
 
         def cost(a):
             """A function of the device quantum state, as a function
             of ijnput QNode parameters."""
-            circuit(a)
-            res = jnp.abs(dev.state) ** 2
+            res = jnp.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = jax.grad(cost)(a)
@@ -319,7 +309,7 @@ class TestPassthruIntegration:
         res = circuit(a, b)
         expected_cost = 0.5 * (jnp.cos(a) * jnp.cos(b) + jnp.cos(a) - jnp.cos(b) + 1)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
-        res = jax.grad(lambda x, y: circuit(x, y).reshape(()), argnums=(0, 1))(a, b)
+        res = jax.grad(circuit, argnums=(0, 1))(a, b)
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
         )
@@ -339,15 +329,6 @@ class TestPassthruIntegration:
             qml.QubitStateVector(1j * jnp.array([1, -1]) / jnp.sqrt(2), wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
-
-        # Check that the correct QNode type is being used.
-        if not qml.tape_mode_active():
-            if diff_method == "backprop":
-                assert isinstance(circuit, qml.qnodes.PassthruQNode)
-                assert not hasattr(circuit, "jacobian")
-            else:
-                assert not isinstance(circuit, qml.qnodes.PassthruQNode)
-                assert hasattr(circuit, "jacobian")
 
         def cost(params):
             """Perform some classical processing"""
@@ -389,7 +370,7 @@ class TestPassthruIntegration:
             qml.RZ(x, wires=w)
             return qml.expval(qml.PauliX(w))
 
-        error_type = qml.QuantumFunctionError if qml.tape_mode_active() else ValueError
+        error_type = qml.QuantumFunctionError
         with pytest.raises(
             error_type,
             match="default.qubit.jax only supports diff_method='backprop' when using the jax interface",
@@ -411,7 +392,7 @@ class TestHighLevelIntegration:
 
         weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
 
-        grad = jax.grad(lambda a: circuit(a).reshape(()))(weights)
+        grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
@@ -425,8 +406,6 @@ class TestHighLevelIntegration:
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-        if not qml.tape_mode_active():
-            assert qnodes.interface == "jax"
 
         weights = jnp.array([0.1, 0.2])
 
@@ -435,6 +414,7 @@ class TestHighLevelIntegration:
 
         grad = jax.grad(cost)(weights)
         assert grad.shape == weights.shape
+
 
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""

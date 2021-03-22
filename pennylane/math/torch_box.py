@@ -31,6 +31,7 @@ class TorchBox(qml.math.TensorBox):
     abs = wrap_output(lambda self: torch.abs(self.data))
     angle = wrap_output(lambda self: torch.angle(self.data))
     arcsin = wrap_output(lambda self: torch.asin(self.data))
+    conj = wrap_output(lambda self: torch.conj(self.data))
     expand_dims = wrap_output(lambda self, axis: torch.unsqueeze(self.data, dim=axis))
     gather = wrap_output(lambda self, indices: self.data[indices])
     ones_like = wrap_output(lambda self: torch.ones_like(self.data))

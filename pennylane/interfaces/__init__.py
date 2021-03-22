@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions convert QNodes to interface with different machine
+This subpackage defines functions convert quantum tapes to interface with different machine
 learning libraries.
-
-.. currentmodule:: pennylane.interfaces
-.. autosummary::
-    :toctree: api
-
-    tf
-    torch
-    autograd
 """
