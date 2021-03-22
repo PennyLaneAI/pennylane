@@ -183,8 +183,8 @@ def MultiRZ(theta, n):
 
 
 def DoubleExcitation(phi):
-    r"""
-    Double excitation rotation.
+    r"""Double excitation rotation.
+
     Args:
         phi (float): rotation angle
     Returns:
@@ -217,8 +217,8 @@ def DoubleExcitation(phi):
 
 
 def DoubleExcitationPlus(phi):
-    r"""
-    Double excitation rotation with positive phase-shift.
+    r"""Double excitation rotation with positive phase-shift.
+
     Args:
         phi (float): rotation angle
     Returns:
@@ -251,8 +251,8 @@ def DoubleExcitationPlus(phi):
 
 
 def DoubleExcitationMinus(phi):
-    r"""
-    Double excitation rotation with negative phase-shift.
+    r"""Double excitation rotation with negative phase-shift.
+
     Args:
         phi (float): rotation angle
     Returns:

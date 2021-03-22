@@ -187,7 +187,6 @@ def DoubleExcitation(phi):
 
     Args:
         phi (float): rotation angle
-
     Returns:
         array[float]: Double excitation rotation matrix
 
@@ -218,8 +217,8 @@ def DoubleExcitation(phi):
 
 
 def DoubleExcitationPlus(phi):
-    r"""
-    Double excitation rotation with positive phase-shift.
+    r"""Double excitation rotation with positive phase-shift.
+
     Args:
         phi (float): rotation angle
     Returns:
@@ -252,8 +251,8 @@ def DoubleExcitationPlus(phi):
 
 
 def DoubleExcitationMinus(phi):
-    r"""
-    Double excitation rotation with negative phase-shift.
+    r"""Double excitation rotation with negative phase-shift.
+
     Args:
         phi (float): rotation angle
     Returns:

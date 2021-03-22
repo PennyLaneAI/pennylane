@@ -1975,29 +1975,17 @@ class DoubleExcitation(Operation):
     r"""DoubleExcitation(phi, wires)
     Double excitation rotation.
 
-    .. math:: U(\phi) = \begin{bmatrix}
-                1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & -\sin(\phi/2) & 0 & 0
-                & 0\\
-                0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \sin(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
-            \end{bmatrix}.
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}`. More precisely, it performs the transformation
 
+    .. math::
 
-    This operation performs a rotation in the two-dimensional subspace :math:`\{|1100\rangle,
-    |0011\rangle\}`. The name originates from the occupation-number representation, where
+        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
+        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle,
+
+    while leaving all other basis states unchanged.
+
+    The name originates from the occupation-number representation of fermionic wavefunctions, where
     the transformation from :math:`|1100\rangle` to :math:`|0011\rangle` is interpreted as
     "exciting" two particles from the first pair of qubits to the second pair of qubits.
 
@@ -2064,25 +2052,17 @@ class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
     Double excitation rotation with positive phase-shift outside the rotation subspace.
 
-    .. math:: U_+(\phi) = \begin{bmatrix}
-                e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & -\sin(\phi/2) & 0 & 0
-                & 0\\
-                0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \sin(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2} & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{i\phi/2}
-            \end{bmatrix}.
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
+        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle\\
+        |x\rangle \rightarrow e^{i\theta} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
 
     **Details:**
 
@@ -2128,25 +2108,17 @@ class DoubleExcitationMinus(Operation):
     r"""DoubleExcitationMinus(phi, wires)
     Double excitation rotation with negative phase-shift outside the rotation subspace.
 
-    .. math:: U_-(\phi) = \begin{bmatrix}
-                e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & -\sin(\phi/2) & 0 & 0
-                & 0\\
-                0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0 & 0 & 0\\
-                0 & 0 & 0 & \sin(\phi/2) & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \cos(\phi/2) & 0 & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0 & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2} & 0\\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & e^{-i\phi/2}
-            \end{bmatrix}.
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        |0011\rangle \rightarrow \cos(\theta) |0011\rangle - \sin(\theta) |1100\rangle\\
+        |1100\rangle \rightarrow \cos(\theta) |1100\rangle + \sin(\theta) |0011\rangle\\
+        |x\rangle \rightarrow e^{-i\theta} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
 
     **Details:**
 
