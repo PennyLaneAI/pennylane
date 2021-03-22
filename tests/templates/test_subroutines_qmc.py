@@ -240,7 +240,7 @@ class TestQuantumMonteCarlo:
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
-        with qml.tape.tapes.QuantumTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
 
         queue_before_qpe = tape.queue[:2]
@@ -259,7 +259,7 @@ class TestQuantumMonteCarlo:
 
         Q = make_Q(A, R)
 
-        with qml.tape.tapes.QuantumTape() as qpe_tape:
+        with qml.tape.QuantumTape() as qpe_tape:
             qml.templates.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         assert len(queue_after_qpe) == len(qpe_tape.queue)

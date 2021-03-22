@@ -20,7 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import channel
 from pennylane.wires import Wires
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])

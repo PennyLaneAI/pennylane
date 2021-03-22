@@ -22,7 +22,6 @@ from typing import Callable, Optional
 try:
     import torch
     from torch.nn import Module
-    from pennylane.interfaces.torch import to_torch
 
     TORCH_IMPORTED = True
 except ImportError:
@@ -32,9 +31,6 @@ except ImportError:
 
     Module = Mock
     TORCH_IMPORTED = False
-
-
-import pennylane as qml
 
 
 class TorchLayer(Module):
@@ -216,14 +212,10 @@ class TorchLayer(Module):
         }
 
         # validate the QNode signature, and convert to a Torch QNode.
-        if qml.tape_mode_active():
-            # TODO: update the docstring regarding changes to restrictions when tape mode is default.
-            self._signature_validation_tape_mode(qnode, weight_shapes)
-            self.qnode = qnode
-            self.qnode.to_torch()
-        else:
-            self._signature_validation(qnode, weight_shapes)
-            self.qnode = to_torch(qnode)
+        # TODO: update the docstring regarding changes to restrictions when tape mode is default.
+        self._signature_validation(qnode, weight_shapes)
+        self.qnode = qnode
+        self.qnode.to_torch()
 
         if not init_method:
             init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
@@ -238,7 +230,7 @@ class TorchLayer(Module):
 
             self.register_parameter(name, self.qnode_weights[name])
 
-    def _signature_validation_tape_mode(self, qnode, weight_shapes):
+    def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
 
         if self.input_arg not in sig:
@@ -262,42 +254,6 @@ class TorchLayer(Module):
         if inspect.Parameter.VAR_KEYWORD not in param_kinds:
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
                 raise ValueError("Must specify a shape for every non-input parameter in the QNode")
-
-    def _signature_validation(self, qnode, weight_shapes):
-        self.sig = qnode.func.sig
-
-        if self.input_arg not in self.sig:
-            raise TypeError(
-                "QNode must include an argument with name {} for inputting data".format(
-                    self.input_arg
-                )
-            )
-
-        if self.input_arg in set(weight_shapes.keys()):
-            raise ValueError(
-                "{} argument should not have its dimension specified in "
-                "weight_shapes".format(self.input_arg)
-            )
-
-        if qnode.func.var_pos:
-            raise TypeError("Cannot have a variable number of positional arguments")
-
-        if qnode.func.var_keyword:
-            raise TypeError("Cannot have a variable number of keyword arguments")
-
-        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
-            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
-
-        defaults = {
-            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
-        }
-
-        self.input_is_default = self.input_arg in defaults
-
-        if defaults - {self.input_arg} != set():
-            raise TypeError(
-                "Only the argument {} is permitted to have a default".format(self.input_arg)
-            )
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
@@ -323,32 +279,6 @@ class TorchLayer(Module):
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.
-
-        Args:
-            x (tensor): the datapoint
-
-        Returns:
-            tensor: output datapoint
-        """
-        if qml.tape_mode_active():
-            return self._evaluate_qnode_tape_mode(x)
-
-        qnode = self.qnode
-
-        for arg in self.sig:
-            if arg is not self.input_arg:  # Non-input arguments must always be positional
-                w = self.qnode_weights[arg].to(x)
-
-                qnode = functools.partial(qnode, w)
-            else:
-                if self.input_is_default:  # The input argument can be positional or keyword
-                    qnode = functools.partial(qnode, **{self.input_arg: x})
-                else:
-                    qnode = functools.partial(qnode, x)
-        return qnode().type(x.dtype)
-
-    def _evaluate_qnode_tape_mode(self, x):
-        """Evaluates a tape-mode QNode for a single input datapoint.
 
         Args:
             x (tensor): the datapoint
