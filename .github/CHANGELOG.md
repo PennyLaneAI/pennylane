@@ -17,6 +17,7 @@
   ```pycon
   >>> b
   array([1.0 - 2.0j])
+  ```
 
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
