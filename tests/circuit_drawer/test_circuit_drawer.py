@@ -294,7 +294,7 @@ def parameterized_qubit_qnode():
             qml.expval(qml.Hermitian(np.eye(4), wires=[3, 4])),
         ]
 
-    dev = qml.device("default.qubit", wires=5)
+    dev = qml.device("default.qubit", wires=5, shots=10)
 
     qnode = qml.QNode(qfunc, dev)
     qnode(0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6]))
