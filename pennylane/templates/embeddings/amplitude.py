@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import Operation, AnyWires
 from pennylane.ops import QubitStateVector
 from pennylane.wires import Wires
 
@@ -156,6 +156,10 @@ class AmplitudeEmbedding(Operation):
 
     """
 
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+
     def __init__(self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True):
 
         # pad is replaced with the more verbose pad_with
@@ -167,18 +171,19 @@ class AmplitudeEmbedding(Operation):
             if pad_with is None:
                 pad_with = pad
 
-        self.wires = Wires(wires)
+        wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
 
+        self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue)
-        self._preprocess()
 
     def expand(self):
 
         QubitStateVector(self.parameters[0], wires=self.wires)
 
-    def _preprocess(self):
+    @staticmethod
+    def _preprocess(features, wires, pad_with, normalize):
         """Validate and pre-process inputs as follows:
 
         * Check that the features tensor is one-dimensional.
@@ -188,7 +193,6 @@ class AmplitudeEmbedding(Operation):
         * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
-        features = self.parameters[0]
 
         shape = qml.math.shape(features)
 
@@ -197,28 +201,28 @@ class AmplitudeEmbedding(Operation):
             raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
         n_features = shape[0]
-        if self.pad_with is None and n_features != 2 ** len(self.wires):
+        if pad_with is None and n_features != 2 ** len(wires):
             raise ValueError(
-                f"Features must be of length {2 ** len(self.wires)}; got length {n_features}. "
+                f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
                 f"Use the 'pad' argument for automated padding."
             )
 
-        if self.pad_with is not None and n_features > 2 ** len(self.wires):
+        if pad_with is not None and n_features > 2 ** len(wires):
             raise ValueError(
-                f"Features must be of length {2 ** len(self.wires)} or "
+                f"Features must be of length {2 ** len(wires)} or "
                 f"smaller to be padded; got length {n_features}."
             )
 
         # pad
-        if self.pad_with is not None and n_features < 2 ** len(self.wires):
-            padding = [self.pad_with] * (2 ** len(self.wires) - n_features)
+        if pad_with is not None and n_features < 2 ** len(wires):
+            padding = [pad_with] * (2 ** len(wires) - n_features)
             features = qml.math.concatenate([features, padding], axis=0)
 
         # normalize
         norm = qml.math.sum(qml.math.abs(features) ** 2)
 
         if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
-            if self.normalize or self.pad_with:
+            if normalize or pad_with:
                 features = features / np.sqrt(norm)
             else:
                 raise ValueError(
@@ -226,4 +230,4 @@ class AmplitudeEmbedding(Operation):
                     "Use 'normalize=True' to automatically normalize."
                 )
 
-        self.parameters[0] = features
+        return features
