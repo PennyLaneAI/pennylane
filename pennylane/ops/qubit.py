@@ -25,7 +25,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
-from pennylane.templates import template
+from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
@@ -1462,28 +1462,15 @@ class CRot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        if qml.tape_mode_active():
-            decomp_ops = [
-                RZ((phi - omega) / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RZ(-(phi + omega) / 2, wires=wires[1]),
-                RY(-theta / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RY(theta / 2, wires=wires[1]),
-                RZ(omega, wires=wires[1]),
-            ]
-        else:  # We cannot add gate parameters in non-tape mode, resulting in greater depth
-            decomp_ops = [
-                RZ(phi / 2, wires=wires[1]),
-                RZ(-omega / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RZ(-phi / 2, wires=wires[1]),
-                RZ(-omega / 2, wires=wires[1]),
-                RY(-theta / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RY(theta / 2, wires=wires[1]),
-                RZ(omega, wires=wires[1]),
-            ]
+        decomp_ops = [
+            RZ((phi - omega) / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            RZ(-(phi + omega) / 2, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            RY(theta / 2, wires=wires[1]),
+            RZ(omega, wires=wires[1]),
+        ]
         return decomp_ops
 
     def adjoint(self, do_queue=False):

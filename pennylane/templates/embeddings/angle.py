@@ -18,10 +18,6 @@ Contains the ``AngleEmbedding`` template.
 import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -39,31 +35,16 @@ def _preprocess(features, wires):
     Returns:
         int: number of features
     """
+    shape = qml.math.shape(features)
 
-    if qml.tape_mode_active():
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        shape = qml.math.shape(features)
-
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-        n_features = shape[0]
-        if n_features > len(wires):
-            raise ValueError(
-                f"Features must be of length {len(wires)} or less; got length {n_features}."
-            )
-
-    else:
-
-        shp = check_shape(
-            features,
-            (len(wires),),
-            bound="max",
-            msg="Features must be of shape {} or smaller; "
-            "got {}.".format((len(wires),), get_shape(features)),
+    n_features = shape[0]
+    if n_features > len(wires):
+        raise ValueError(
+            f"Features must be of length {len(wires)} or less; got length {n_features}."
         )
-        n_features = shp[0]
-
     return n_features
 
 
