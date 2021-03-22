@@ -413,7 +413,7 @@ class TestSampleBasisStates:
         dev.shots = None
         state_probs = [0.1, 0.2, 0.3, 0.4]
 
-        with pytest.warns(DeprecationWarning, match="In future, the number of shots"):
+        with pytest.warns(DeprecationWarning, match="The number of shots has to be explicitly set on the device"):
             dev.sample_basis_states(number_of_states, state_probs)
 
 
