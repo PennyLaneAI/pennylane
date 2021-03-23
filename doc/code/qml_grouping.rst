@@ -46,7 +46,10 @@ the groups of observables:
     :no-inheritance-diagram:
     :no-inherited-members:
 
-
 .. automodapi:: pennylane.grouping.graph_colouring
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
+.. automodapi:: pennylane.grouping.pauli_group
     :no-inheritance-diagram:
     :no-inherited-members:

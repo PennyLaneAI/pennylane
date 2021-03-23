@@ -333,13 +333,64 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     return pauli_word
 
 
-def are_commuting(pauli_vec_1, pauli_vec_2):
-    """Checks if two Pauli words in binary vector representation commute in general.
+def pauli_word_to_string(pauli_word, wire_map=None):
+    """Convert a Pauli operation from a tensor to a string.
 
+    Given a Pauli in observable form, convert it into string of
+    characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
+    functions such as ``qml.PauliRot``.
+
+    Args:
+        pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
+            single-qubit observable representing a Pauli group element.
+        wire_map (dict[qml.Wires, int]): dictionary containing all wire labels used in
+            the Pauli word as keys, and unique integer labels as their values
+
+    Returns:
+        (str): The string representation of the observable in terms of ``I``, ``X``, ``Y``,
+            and/or ``Z``.
+
+    Raises:
+        TypeError: if the input observable is not a proper Pauli word.
+    """
+
+    if not is_pauli_word(pauli_word):
+        raise TypeError(
+            "Expected a Pauli word Observable instance, instead got {}.".format(pauli_word)
+        )
+
+    # If there is no wire map, we must infer from the structure of Paulis
+    if wire_map is None:
+        wire_map = {Wires(pauli_word.wires[i]): i for i in range(len(pauli_word.wires))}
+
+    n_qubits = len(wire_map)
+
+    # Set default value of all characters to identity
+    pauli_string = ["I"] * n_qubits
+
+    # Special case is when there is a single Pauli term
+    if not isinstance(pauli_word.name, list):
+        if pauli_word.name != "Identity":
+            wire_idx = wire_map[Wires(pauli_word.wires[0])]
+            pauli_string[wire_idx] = character_map[pauli_word.name]
+        return "".join(pauli_string)
+
+    for name, wire_label in zip(pauli_word.name, pauli_word.wires):
+        wire_idx = wire_map[Wires(wire_label)]
+        pauli_string[wire_idx] = character_map[name]
+
+    return "".join(pauli_string)
+
+
+def are_commuting(pauli_1, pauli_2, n_qubits=None, wire_map=None):
+    """Checks if two Pauli words commute.
+
+    To determine if two Pauli words commute, we can check the value of the
+    symplectic inner product of their binary vector representations.
     For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
-    and :math:`p_2 = [x_2, z_2]`, we can determine if they commute by taking the
-    symplectic inner product modulo 2, where the symplectic inner product is defined as
-    :math:\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`.
+    and :math:`p_2 = [x_2, z_2]`, the symplectic inner product is defined as
+    :math:\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
+    product is 0 they commute, while if it is 1, they don't commute.
 
     Args:
         pauli_vec_1 (Union[list, tuple, array]): first binary vector argument in commutator

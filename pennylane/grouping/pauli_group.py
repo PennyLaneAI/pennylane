@@ -18,11 +18,8 @@ Functions for generating and manipulating elements of the Pauli group.
 import numpy as np
 
 from pennylane import Identity
-from pennylane.grouping.utils import (
-    binary_to_pauli,
-    pauli_to_binary,
-    are_identical_pauli_words
-)
+from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+
 
 def pauli_group_generator(n_qubits, wire_map=None):
     """Generator for iterating over the n-qubit Pauli group.
@@ -75,7 +72,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
     element_idx = 0
 
     if not wire_map:
-        wire_map = {wire_idx : wire_idx for wire_idx in range(n_qubits)}
+        wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
 
     while element_idx < 4 ** n_qubits:
         binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
@@ -85,7 +82,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
 
 
 def pauli_group(n_qubits, wire_map=None):
-    """ Constructs the n-qubit Pauli group.
+    """Constructs the n-qubit Pauli group.
 
     This function constructs and returns the complete :math:`n`-qubit Pauli
     group (without global phases) on the desired set of wires. This function
@@ -160,7 +157,7 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
         n_qubits = max(pauli_1.wires + pauli_2.wires) + 1
 
     if not wire_map:
-        wire_map = {x : x for x in range(n_qubits)}
+        wire_map = {x: x for x in range(n_qubits)}
 
     # Compute binary symplectic representations
     pauli_1_binary = pauli_to_binary(pauli_1, n_qubits=n_qubits, wire_map=wire_map)
@@ -176,7 +173,7 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
 
 
 def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
-    """ Multiply two Pauli words together including the global phase.
+    """Multiply two Pauli words together including the global phase.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
@@ -229,22 +226,18 @@ def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
             pauli_1_op_name = pauli_1_names[pauli_1_placeholder]
             pauli_1_placeholder += 1
         else:
-            pauli_1_op_name = 'Identity'
+            pauli_1_op_name = "Identity"
 
         if wire_idx in pauli_2.wires:
             pauli_2_op_name = pauli_2_names[pauli_2_placeholder]
             pauli_2_placeholder += 1
         else:
-            pauli_2_op_name = 'Identity'
+            pauli_2_op_name = "Identity"
 
-        if pauli_1_op_name is not 'Identity' and pauli_2_op_name is not 'Identity':
+        if pauli_1_op_name is not "Identity" and pauli_2_op_name is not "Identity":
             if pauli_1_op_name > pauli_2_op_name:
                 phase *= -1j
             else:
                 phase *= 1j
 
     return pauli_product, phase
-
-
-def pauli_matrix(pauli, n_qubits=None):
-    return
