@@ -101,7 +101,7 @@ def test_control_with_qnode():
     """Test ctrl works when in a qnode cotext."""
     dev = qml.device("default.qubit", wires=3)
 
-    def my_anzats(params):
+    def my_ansatz(params):
         qml.RY(params[0], wires=0)
         qml.RY(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -109,7 +109,7 @@ def test_control_with_qnode():
         qml.RX(params[3], wires=0)
         qml.CNOT(wires=[1, 0])
 
-    def controlled_anzats(params):
+    def controlled_ansatz(params):
         qml.CRY(params[0], wires=[2, 0])
         qml.CRY(params[1], wires=[2, 1])
         qml.Toffoli(wires=[2, 0, 1])
@@ -117,14 +117,14 @@ def test_control_with_qnode():
         qml.CRX(params[3], wires=[2, 0])
         qml.Toffoli(wires=[2, 1, 0])
 
-    def circuit(anzats, params):
+    def circuit(ansatz, params):
         qml.RX(np.pi/4.0, wires=2)
-        anzats(params)
+        ansatz(params)
         return qml.state()
 
     params = [0.123, 0.456, 0.789, 1.345]
-    circuit1 = qml.qnode(dev)(partial(circuit, anzats=ctrl(my_anzats, 2)))
-    circuit2 = qml.qnode(dev)(partial(circuit, anzats=controlled_anzats))
+    circuit1 = qml.qnode(dev)(partial(circuit, ansatz=ctrl(my_ansatz, 2)))
+    circuit2 = qml.qnode(dev)(partial(circuit, ansatz=controlled_ansatz))
     res1 = circuit1(params=params)
     res2 = circuit2(params=params)
     np.testing.assert_allclose(res1, res2) 
@@ -132,15 +132,15 @@ def test_control_with_qnode():
 
 def test_ctrl_within_ctrl():
     """Test using ctrl on a method that uses ctrl."""
-    def anzats(params):
+    def ansatz(params):
         qml.RX(params[0], wires=0)
         ctrl(qml.PauliX, control=0)(wires=1)
         qml.RX(params[1], wires=0)
 
-    controlled_anzats = ctrl(anzats, 2)
+    controlled_ansatz = ctrl(ansatz, 2)
 
     with QuantumTape() as tape:
-        controlled_anzats([0.123, 0.456])
+        controlled_ansatz([0.123, 0.456])
 
     tape = expand_tape(tape, 2, stop_at=lambda op: not isinstance(op, ControlledOperation))
 
