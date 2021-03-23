@@ -397,7 +397,7 @@ class TestQNodeIntegration:
         """Test that the tensor network plugin loads correctly"""
         dev = qml.device("default.tensor.tf", wires=2, representation=rep)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
+        assert dev.shots is None
         assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["passthru_interface"] == "tf"
 
