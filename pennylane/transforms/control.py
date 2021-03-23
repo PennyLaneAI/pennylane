@@ -28,10 +28,11 @@ def expand_with_control(tape, control_wire):
     """Expand a tape to include a control wire on all queued operations.
 
     Args:
-        tape: A QuantumTape.
-        control_wire: A single wire to use as the control wire.
+        tape (.QuantumTape): quantum tape to be controlled
+        control_wire (int): a single wire to use as the control wire
+
     Returns:
-        A new QuantumTape with the controlled operations.
+        .QuantumTape: A new QuantumTape with the controlled operations.
     """
     with QuantumTape(do_queue=False) as new_tape:
         for op in tape.operations:
@@ -53,9 +54,9 @@ class ControlledOperation(Operation):
     """A Controlled Operation.
 
     Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
-    instead, use the ``qml.ctrl`` method.
+    instead, use the :func:`qml.ctrl <.ctrl>` function.
 
-    The ``ControlledOperation`` is a container class that defines a set of operations that
+    The ``ControlledOperation`` class is a container class that defines a set of operations that
     should by applied relative to a single control wire or a list of control wires.
 
     Certain simulators and quantum computers can take advantage of the controlled gate sparsity,
@@ -116,7 +117,8 @@ def ctrl(fn, control):
         control (Wires): The control wire(s).
 
     Returns:
-        A new function that applies the controlled equivalent of `fn`.
+        function: A new function that applies the controlled equivalent of ``fn``. The returned
+        function takes the same input arguments as ``fn``.
 
     **Example**
 
@@ -177,8 +179,8 @@ def ctrl(fn, control):
         .. code-block:: python3
 
             # These two ops are equivalent.
-            op1 = ctrl(ctrl(my_ops, 1), 2)
-            op2 = ctrl(my_ops, [2, 1])
+            op1 = qml.ctrl(qml.ctrl(my_ops, 1), 2)
+            op2 = qml.ctrl(my_ops, [2, 1])
     """
 
     @wraps(fn)

@@ -8,17 +8,17 @@
   Here's a simple usage example:
 
   ```python
-  def my_anzats(params):
+  def my_ansatz(params):
      qml.RX(params[0], wires=0)
      qml.RZ(params[1], wires=1)
 
-  # Create a new method that applies `my_anzats`
+  # Create a new method that applies `my_ansatz`
   # controlled by the "2" wire.
-  my_anzats2 = ctrl(my_anzats, control=2)
+  my_anzats2 = qml.ctrl(my_ansatz, control=2)
 
   @qml.qnode(...)
   def circuit(params):
-      my_anzats2(params)
+      my_ansatz2(params)
       return qml.state()
   ```
 
@@ -32,9 +32,8 @@
       return qml.state()
   ```
 
-  The `qml.ctrl` transform is especially useful for when you want to repeatedly apply an
-  operation but controlled by different qubits. A very famous example that can benefit from 
-  this is Shor's algorithm.
+  The `qml.ctrl` transform is especially useful to repeatedly apply an
+  operation which is controlled by different qubits in each repetition. A famous example is Shor's algorithm.
 
   ```python
   def modmul(a, mod, wires):
@@ -42,7 +41,7 @@
       # qml.CNOT(...); qml.Toffoli(...); ... 
  
   @qml.qnode(...)
-  def shors(a, mod, scratch_wires, qft_wires):
+  def shor(a, mod, scratch_wires, qft_wires):
       for i, wire in enumerate(qft_wires):
           qml.Hadamard(wire)
 
@@ -58,7 +57,7 @@
 
   ```
 
-  In the future, devices will be able to expliot the sparsity of controlled operations to 
+  In the future, devices will be able to exploit the sparsity of controlled operations to 
   improve simulation performance. 
 
 
@@ -81,8 +80,29 @@
   
   The `SingleExcitation` operation supports analytic gradients on hardware
   using only four expectation value calculations, following results from
-  [Kottmann et al.](https://arxiv.org/abs/2011.05938)
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938) 
   
+  * Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
+  chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
+
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|1100\rangle` and :math:`|0011\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:   
+
+    ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.PauliX(wires=1)
+      qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+  ```
+  
+  The `DoubleExcitation` operation supports analytic gradients on hardware using only
+  four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938).
   
 * Adds a new function ``qml.math.conj``.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
@@ -332,6 +352,18 @@
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
 <h3>Improvements</h3>
+
+- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+  from `Operation`, and define the ansatz in their `expand()` method. This 
+  change does not affect the user interface. 
+  
+  For convenience, the class has a method that returns the shape of the 
+  trainable parameter tensor, i.e.,
+  
+  ```python
+  shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
+  weights = np.random.random(shape)
+  ```
 
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
