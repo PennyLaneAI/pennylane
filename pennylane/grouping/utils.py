@@ -203,7 +203,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
 
     if wire_map is None:
         num_wires = len(pauli_word.wires)
-        wire_map = {pauli_word.wires[i]: i for i in range(num_wires)}
+        wire_map = {pauli_word.wires.labels[i]: i for i in range(num_wires)}
 
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:
@@ -214,7 +214,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
             " instead got n_qubits={}.".format(n_qubits_min, n_qubits)
         )
 
-    pauli_wires = pauli_word.wires.map(wire_map).tolist()
+    pauli_wires = pauli_word.wires.labels
 
     binary_pauli = np.zeros(2 * n_qubits)
 
@@ -226,16 +226,17 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
         operations_zip = zip(pauli_wires, pauli_word.name)
 
     for wire, name in operations_zip:
+        wire_idx = wire_map[wire]
 
         if name == "PauliX":
-            binary_pauli[wire] = 1
+            binary_pauli[wire_idx] = 1
 
         elif name == "PauliY":
-            binary_pauli[wire] = 1
-            binary_pauli[n_qubits + wire] = 1
+            binary_pauli[wire_idx] = 1
+            binary_pauli[n_qubits + wire_idx] = 1
 
         elif name == "PauliZ":
-            binary_pauli[n_qubits + wire] = 1
+            binary_pauli[n_qubits + wire_idx] = 1
 
     return binary_pauli
 
@@ -353,11 +354,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
     """
-    character_map = {
-        "PauliX" : "X",
-        "PauliY" : "Y",
-        "PauliZ" : "Z"
-    }
+    character_map = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
     if not is_pauli_word(pauli_word):
         raise TypeError(
@@ -366,7 +363,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
-        wire_map = {Wires(pauli_word.wires[i]) : i for i in range(len(pauli_word.wires))}
+        wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
 
     n_qubits = len(wire_map)
 
@@ -375,13 +372,13 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     # Special case is when there is a single Pauli term
     if not isinstance(pauli_word.name, list):
-        if pauli_word.name != 'Identity':
-            wire_idx = wire_map[Wires(pauli_word.wires[0])]
+        if pauli_word.name != "Identity":
+            wire_idx = wire_map[pauli_word.wires[0]]
             pauli_string[wire_idx] = character_map[pauli_word.name]
         return "".join(pauli_string)
 
     for name, wire_label in zip(pauli_word.name, pauli_word.wires):
-        wire_idx = wire_map[Wires(wire_label)]
+        wire_idx = wire_map[wire_label]
         pauli_string[wire_idx] = character_map[name]
 
     return "".join(pauli_string)
@@ -555,7 +552,7 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
 
     if wire_map is None:
         all_wires = Wires.all_wires([pauli_word.wires for pauli_word in observables])
-        wire_map = {i: c for c, i in enumerate(all_wires)}
+        wire_map = {i: c for c, i in enumerate(all_wires.labels)}
 
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:

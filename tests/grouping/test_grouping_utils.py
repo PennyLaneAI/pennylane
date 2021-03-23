@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
-from pennylane.wires import Wires
+
 from pennylane.grouping.utils import (
     is_pauli_word,
     are_identical_pauli_words,

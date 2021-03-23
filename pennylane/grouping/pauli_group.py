@@ -36,9 +36,9 @@ def pauli_group_generator(n_qubits, wire_map=None):
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict): dictionary containing all wire labels used in the Pauli
-            word as keys, and unique integer labels as their values. If no wire map is
-            provided, wires will be labeled by integers between 0 and ``n_qubits``.
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels
+            used in the Pauli word as keys, and unique integer labels as their values.
+            If no wire map is provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
     Returns:
         (qml.Operation): The next Pauli word in the group.
@@ -64,7 +64,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
         from pennylane.grouping.pauli_group import pauli_group_generator
 
         n_qubits = 3
-        wire_map = {Wires('a') : 0, Wires('b') : 1, Wires('c') : 2}
+        wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
 
         for p in pauli_group_generator(n_qubits, wire_map=wire_map):
             print(p)
@@ -73,7 +73,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
     element_idx = 0
 
     if not wire_map:
-        wire_map = {Wires(wire_idx): wire_idx for wire_idx in range(n_qubits)}
+        wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
 
     while element_idx < 4 ** n_qubits:
         binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
@@ -114,7 +114,7 @@ def pauli_group(n_qubits, wire_map=None):
     return list(pauli_group_generator(n_qubits, wire_map=wire_map))
 
 
-def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
+def pauli_mult(pauli_1, pauli_2, wire_map=None):
     """Multiply two Pauli words together.
 
     Two Pauli operations can be multiplied together by taking the additive
@@ -123,6 +123,10 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     Args:
         pauli_1 (qml.Operation): A Pauli word.
         pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
+            word as keys, and unique integer labels as their values. If no wire map is
+            provided, the map will be constructed from the set of wires acted on
+            by the input Pauli words.
 
     Returns:
         (qml.Operation): The product of pauli_1 and pauli_2 as a Pauli word
@@ -150,19 +154,15 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     if are_identical_pauli_words(pauli_1, pauli_2):
         return Identity(0)
 
-    # TODO: cover the case where the wires are not numbered like this
-
-    # Expand Paulis so they have the same number of qubits
-    # Grab the max index of the wires among the two Paulis
-    if not n_qubits:
-        n_qubits = max(pauli_1.wires + pauli_2.wires) + 1
-
-    if not wire_map:
-        wire_map = {x: x for x in range(n_qubits)}
+    # If no wire map is specified, generate one from the union of wires
+    # in both Paulis.
+    if wire_map is None:
+        wire_labels = set(pauli_1.wires.labels, pauli_2.wires.labels)
+        wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     # Compute binary symplectic representations
-    pauli_1_binary = pauli_to_binary(pauli_1, n_qubits=n_qubits, wire_map=wire_map)
-    pauli_2_binary = pauli_to_binary(pauli_2, n_qubits=n_qubits, wire_map=wire_map)
+    pauli_1_binary = pauli_to_binary(pauli_1, wire_map=wire_map)
+    pauli_2_binary = pauli_to_binary(pauli_2, wire_map=wire_map)
 
     bin_symp_1 = np.array([int(x) for x in pauli_1_binary])
     bin_symp_2 = np.array([int(x) for x in pauli_2_binary])
@@ -170,10 +170,10 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     # Shorthand for bitwise XOR of numpy arrays
     pauli_product = bin_symp_1 ^ bin_symp_2
 
-    return binary_to_pauli(pauli_product)
+    return binary_to_pauli(pauli_product, wire_map=wire_map)
 
 
-def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
+def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     """Multiply two Pauli words together including the global phase.
 
     Two Pauli operations can be multiplied together by taking the additive
@@ -184,6 +184,10 @@ def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     Args:
         pauli_1 (qml.Operation): A Pauli word.
         pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
+        wire_map  (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
+            word as keys, and unique integer labels as their values. If no wire map is
+            provided, the map will be constructed from the set of wires acted on
+            by the input Pauli words.
 
     Returns:
         (qml.Operation, np.complex): The product of pauli_1 and pauli_2, and the
@@ -208,11 +212,14 @@ def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     will yield ``qml.PauliZ(0)`` and :math:`1j`.
     """
 
-    # Get the product; use our earlier function
-    pauli_product = pauli_mult(pauli_1, pauli_2, n_qubits, wire_map)
+    # If no wire map is specified, generate one from the union of wires
+    # in both Paulis.
+    if wire_map is None:
+        wire_labels = set(pauli_1.wires.labels, pauli_2.wires.labels)
+        wire_map = {label: i for i, label in enumerate(wire_labels)}
 
-    if not n_qubits:
-        n_qubits = max(pauli_1.wires + pauli_2.wires) + 1
+    # Get the product; use our earlier function
+    pauli_product = pauli_mult(pauli_1, pauli_2, wire_map)
 
     pauli_1_names = [pauli_1.name] if isinstance(pauli_1.name, str) else pauli_1.name
     pauli_2_names = [pauli_2.name] if isinstance(pauli_2.name, str) else pauli_2.name
@@ -222,23 +229,33 @@ def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
 
     phase = 1
 
-    for wire_idx in range(n_qubits):
-        if wire_idx in pauli_1.wires:
+    for wire in wire_map.keys():
+        if wire in pauli_1.wires:
             pauli_1_op_name = pauli_1_names[pauli_1_placeholder]
             pauli_1_placeholder += 1
         else:
             pauli_1_op_name = "Identity"
 
-        if wire_idx in pauli_2.wires:
+        if wire in pauli_2.wires:
             pauli_2_op_name = pauli_2_names[pauli_2_placeholder]
             pauli_2_placeholder += 1
         else:
             pauli_2_op_name = "Identity"
 
-        if pauli_1_op_name is not "Identity" and pauli_2_op_name is not "Identity":
-            if pauli_1_op_name > pauli_2_op_name:
-                phase *= -1j
-            else:
-                phase *= 1j
+        # If we have identities anywhere we don't pick up a phase
+        if pauli_1_op_name == "Identity" or pauli_2_op_name == "Identity":
+            continue
+
+        # Likewise, no additional phase if the Paulis are the same
+        if pauli_1_op_name == pauli_2_op_name:
+            continue
+
+        # Use Pauli commutation rules to determine the phase
+        pauli_ordering = (pauli_1_op_name, pauli_2_op_name)
+
+        if pauli_ordering in [("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX")]:
+            phase *= 1j
+        else:
+            phase *= -1j
 
     return pauli_product, phase
