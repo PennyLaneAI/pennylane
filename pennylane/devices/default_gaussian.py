@@ -640,15 +640,10 @@ class DefaultGaussian(Device):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. If ``None``, the results are analytically computed and hence deterministic.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
     """
     name = "Default Gaussian PennyLane plugin"
     short_name = "default.gaussian"
@@ -685,11 +680,10 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=1000, hbar=2, analytic=True):
+    def __init__(self, wires, *, shots=None, hbar=2):
         super().__init__(wires, shots)
         self.eng = None
         self.hbar = hbar
-        self.analytic = analytic
 
         self.reset()
 
@@ -790,7 +784,7 @@ class DefaultGaussian(Device):
             mu, cov = self.reduced_state(wires)
             ev, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
 
-        if not self.analytic:
+        if self.shots is not None:
             # estimate the ev
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large
             # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
