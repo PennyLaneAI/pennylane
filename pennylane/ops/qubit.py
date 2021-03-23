@@ -29,6 +29,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
+from pennylane.transforms.registrations import register_control
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -151,6 +152,9 @@ class PauliX(Observable, Operation):
         return PauliX(wires=self.wires, do_queue=do_queue)
 
 
+register_control(PauliX, lambda op, wire: CNOT(wires=Wires(wire) + op.wires))
+
+
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
     The Pauli Y operator
@@ -208,6 +212,9 @@ class PauliY(Observable, Operation):
         return PauliY(wires=self.wires, do_queue=do_queue)
 
 
+register_control(PauliY, lambda op, wire: CY(wires=Wires(wire) + op.wires))
+
+
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
     The Pauli Z operator
@@ -246,6 +253,9 @@ class PauliZ(Observable, DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return PauliZ(wires=self.wires, do_queue=do_queue)
+
+
+register_control(PauliZ, lambda op, wire: CZ(wires=Wires(wire) + op.wires))
 
 
 class S(DiagonalOperation):
@@ -401,6 +411,9 @@ class CNOT(Operation):
         return CNOT(wires=self.wires, do_queue=do_queue)
 
 
+register_control(CNOT, lambda op, wire: Toffoli(wires=Wires(wire) + op.wires))
+
+
 class CZ(DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
@@ -516,6 +529,9 @@ class SWAP(Operation):
 
     def adjoint(self, do_queue=False):
         return SWAP(wires=self.wires, do_queue=do_queue)
+
+
+register_control(SWAP, lambda op, wire: CSWAP(wire + op.wires))
 
 
 class CSWAP(Operation):
@@ -655,6 +671,9 @@ class RX(Operation):
         return RX(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
+register_control(RX, lambda op, wire: CRX(*op.parameters, wires=wire + op.wires))
+
+
 class RY(Operation):
     r"""RY(phi, wires)
     The single qubit Y rotation
@@ -691,6 +710,9 @@ class RY(Operation):
 
     def adjoint(self, do_queue=False):
         return RY(-self.data[0], wires=self.wires, do_queue=do_queue)
+
+
+register_control(RY, lambda op, wire: CRY(*op.parameters, wires=wire + op.wires))
 
 
 class RZ(DiagonalOperation):
@@ -737,6 +759,9 @@ class RZ(DiagonalOperation):
         return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
+register_control(RZ, lambda op, wire: CRZ(*op.parameters, wires=wire + op.wires))
+
+
 class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
@@ -780,6 +805,9 @@ class PhaseShift(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
+
+
+register_control(PhaseShift, lambda op, wire: ControlledPhaseShift(*op.parameters, wire + op.wires))
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -893,6 +921,9 @@ class Rot(Operation):
     def adjoint(self, do_queue=False):
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
+
+
+register_control(Rot, lambda op, wire: CRot(*op.parameters, wire + op.wires))
 
 
 class MultiRZ(DiagonalOperation):
@@ -1686,6 +1717,12 @@ class QubitUnitary(Operation):
 
     def adjoint(self, do_queue=False):
         return QubitUnitary(self.data[0].conj().T, wires=self.wires, do_queue=do_queue)
+
+
+register_control(
+    QubitUnitary,
+    lambda op, wire: ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=op.wires),
+)
 
 
 class ControlledQubitUnitary(QubitUnitary):
