@@ -1967,7 +1967,7 @@ class ControlledQubitUnitary(QubitUnitary):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any([x not in ["0", "1"] for x in control_values]):
+            if any(x not in ["0", "1"] for x in control_values):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
