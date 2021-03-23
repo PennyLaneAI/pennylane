@@ -40,7 +40,7 @@ def test_control_sanity_check():
     assert len(tape.operations) == 1
     ctrl_op = tape.operations[0]
     assert isinstance(ctrl_op, ControlledOperation)
-    assert len(ctrl_op._tape.operations) == 6
+    assert len(ctrl_op.subtape.operations) == 6
     expanded = ctrl_op.expand()
     assert_equal_operations(expanded.operations, expected)
 

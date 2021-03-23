@@ -74,17 +74,17 @@ class ControlledOperation(Operation):
 
     par_domain = "A"
     num_wires = AnyWires
-    num_params = property(lambda self: self._tape.num_params)
+    num_params = property(lambda self: self.subtape.num_params)
 
     def __init__(self, tape, control_wires, do_queue=True):
-        self._tape = tape
-        self._control_wires = Wires(control_wires)
-        wires = self._control_wires + tape.wires
+        self.subtape = tape
+        self.control_wires = Wires(control_wires)
+        wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
     def expand(self):
-        tape = self._tape
-        for wire in self._control_wires:
+        tape = self.subtape
+        for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
         # TODO(chase): Do we need to re-queue these ops?
         return tape
@@ -96,15 +96,15 @@ class ControlledOperation(Operation):
 
         with QuantumTape(do_queue=False) as new_tape:
             # Execute all ops adjointed.
-            adjoint(requeue_tape)(self._tape)
-        return ControlledOperation(new_tape, self._control_wires, do_queue=do_queue)
+            adjoint(requeue_tape)(self.subtape)
+        return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
 
 
 register_control(
     ControlledOperation,
     lambda op, wires: ControlledOperation(
-        tape=op._tape,
-        control_wires=Wires(wires) + op._control_wires,
+        tape=op.subtape,
+        control_wires=Wires(wires) + op.control_wires,
     ),
 )
 
