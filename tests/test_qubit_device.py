@@ -19,15 +19,12 @@ import numpy as np
 from random import random
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError
-from pennylane.qnodes import QuantumFunctionError
-from pennylane.qnodes.base import BaseQNode
+from pennylane import QubitDevice, DeviceError, QuantumFunctionError
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.variable import Variable
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.tape.measure import state
+from pennylane.measure import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -163,11 +160,10 @@ class TestOperations:
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
            op_queue raises no error"""
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
-
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
         call_history = []
 
@@ -176,7 +172,7 @@ class TestOperations:
                       lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             dev = mock_qubit_device_with_paulis_and_methods()
-            dev.execute(circuit_graph)
+            dev.execute(tape)
 
         assert call_history == queue
 
@@ -192,15 +188,13 @@ class TestOperations:
 
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
-
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
-
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
+            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
-            dev.execute(circuit_graph)
+            dev.execute(tape)
 
     numeric_queues = [
         [
@@ -213,11 +207,6 @@ class TestOperations:
         ]
     ]
 
-    variable = Variable(1)
-    symbolic_queue = [
-        [qml.RX(variable, wires=[0])],
-    ]
-
     observables = [
         [qml.PauliZ(0)],
         [qml.PauliX(0)],
@@ -225,22 +214,24 @@ class TestOperations:
     ]
 
     @pytest.mark.parametrize("observables", observables)
-    @pytest.mark.parametrize("queue", numeric_queues + symbolic_queue)
+    @pytest.mark.parametrize("queue", numeric_queues)
     def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods,
                                                   monkeypatch, queue, observables):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+        with qml.tape.QuantumTape() as tape:
+            for op in queue + observables:
+                op.queue()
 
         call_history = {}
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
             dev = mock_qubit_device_with_paulis_rotations_and_methods()
-            dev.execute(circuit_graph, hash=circuit_graph.hash)
+            dev.execute(tape, hash=tape.graph.hash)
 
         len(call_history.items()) == 1
-        call_history["hash"] = circuit_graph.hash
+        call_history["hash"] = tape.graph.hash
 
 
 class TestObservables:
@@ -260,41 +251,35 @@ class TestObservables:
 
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        with qml.tape.QuantumTape() as tape:
+            queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
-        observables = [
-            qml.expval(qml.Hadamard(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
-        ]
-
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
+            observables = [
+                qml.expval(qml.Hadamard(0)),
+                qml.var(qml.PauliZ(1)),
+                qml.sample(qml.PauliZ(2)),
+            ]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
-            dev.execute(circuit_graph)
+            dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(
             self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        queue = [qml.PauliX(wires=0)]
-
-        # Make a observable without specifying a return operation upon measuring
-        obs = qml.PauliZ(0)
-        obs.return_type = "SomeUnsupportedReturnType"
-        observables = [obs]
-
-        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0]))
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.measure.MeasurementProcess(return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0))
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                    QuantumFunctionError, match="Unsupported return type specified for observable"
+                    qml.QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
-                dev.execute(circuit_graph)
+                dev.execute(tape)
 
 
 class TestParameters:
@@ -338,7 +323,7 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
-            with pytest.raises(QuantumFunctionError, match="The state is not available in the current"):
+            with pytest.raises(qml.QuantumFunctionError, match="The state is not available in the current"):
                 dev.statistics([state()])
 
     @pytest.mark.parametrize("returntype", [None])
@@ -373,7 +358,7 @@ class TestExtractStatistics:
 
         obs = SomeObservable(wires=0)
 
-        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
             dev.statistics([obs])
 
@@ -392,6 +377,7 @@ class TestGenerateSamples:
             m.setattr(QubitDevice, "sample_basis_states", lambda self, wires, b: wires)
             m.setattr(QubitDevice, "states_to_binary", lambda a, b: (a, b))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
+            m.setattr(QubitDevice, "shots", 1000)
             dev._samples = dev.generate_samples()
 
         assert dev._samples == (number_of_states, dev.num_wires)
@@ -418,6 +404,17 @@ class TestSampleBasisStates:
         assert np.array_equal(res[0], np.array([0, 1, 2, 3]))
         assert res[1] == shots
         assert res[2] == state_probs
+
+    def test_raises_deprecation_warning(self, mock_qubit_device, monkeypatch):
+        """Test that sampling basis states on a device with shots=None produces a warning."""
+
+        dev = mock_qubit_device()
+        number_of_states = 4
+        dev.shots = None
+        state_probs = [0.1, 0.2, 0.3, 0.4]
+
+        with pytest.warns(DeprecationWarning, match="The number of shots has to be explicitly set on the device"):
+            dev.sample_basis_states(number_of_states, state_probs)
 
 
 class TestStatesToBinary:
@@ -473,7 +470,7 @@ class TestExpval:
         probs = [0.5, 0.5]
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
+        assert dev.shots is None
 
         call_history = []
         with monkeypatch.context() as m:
@@ -493,10 +490,7 @@ class TestExpval:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
-        dev.analytic = False
-
-        assert not dev.analytic
+        dev.shots = 1000
 
         call_history = []
         with monkeypatch.context() as m:
@@ -521,7 +515,7 @@ class TestVar:
         probs = [0.5, 0.5]
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
+        assert dev.shots is None
 
         call_history = []
         with monkeypatch.context() as m:
@@ -541,10 +535,7 @@ class TestVar:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
 
-        assert dev.analytic
-        dev.analytic = False
-
-        assert not dev.analytic
+        dev.shots = 1000
 
         call_history = []
         with monkeypatch.context() as m:
@@ -730,7 +721,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_1 = BaseQNode(circuit_1, dev_1)
+        node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
         for _ in range(num_evals_1):
@@ -745,7 +736,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_2 = BaseQNode(circuit_2, dev_2)
+        node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
         for _ in range(num_evals_2):
@@ -758,7 +749,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node_3 = BaseQNode(circuit_3, dev_1)
+        node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
         for _ in range(num_evals_3):
@@ -876,7 +867,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_single_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a single expectation value"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -900,7 +891,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple expectation values"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -929,7 +920,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a probability return"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -957,7 +948,7 @@ class TestShotList:
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple probability returns"""
-        dev = qml.device("default.qubit", wires=2, analytic=False, shots=shot_list)
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -978,7 +969,7 @@ class TestShotList:
     def test_invalid_shot_list(self):
         """Test exception raised if the shot list is the wrong type"""
         with pytest.raises(qml.DeviceError, match="Shots must be"):
-            qml.device("default.qubit", wires=2, analytic=False, shots=0.5)
+            qml.device("default.qubit", wires=2, shots=0.5)
 
         with pytest.raises(ValueError, match="Unknown shot sequence"):
-            qml.device("default.qubit", wires=2, analytic=False, shots=["a", "b", "c"])
+            qml.device("default.qubit", wires=2, shots=["a", "b", "c"])

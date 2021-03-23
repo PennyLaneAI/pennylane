@@ -23,6 +23,9 @@ from pennylane.operation import Observable
 from .qnode_collection import QNodeCollection
 
 
+MEASURE_MAP = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
+
+
 def map(
     template,
     observables,
@@ -100,9 +103,6 @@ def map(
     >>> qnodes(params)
     array([-0.06154835  0.99280864])
     """
-    # TODO: return measure_map to a module variable when tape-mode is default
-    measure_map = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
-
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
 
@@ -134,7 +134,7 @@ def map(
             params, _obs=obs, _m=m, _wires=wires, **circuit_kwargs
         ):  # pylint: disable=dangerous-default-value, function-redefined
             template(params, wires=_wires, **circuit_kwargs)
-            return measure_map[_m](_obs)
+            return MEASURE_MAP[_m](_obs)
 
         qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
         qnodes.append(qnode)

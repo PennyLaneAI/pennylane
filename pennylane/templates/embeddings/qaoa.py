@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_number_of_layers,
-    get_shape,
-)
 from pennylane.wires import Wires
 
 
@@ -43,72 +38,31 @@ def _preprocess(features, wires, weights):
     Returns:
         int: number of times that embedding is repeated
     """
+    shape = qml.math.shape(features)
 
-    if qml.tape_mode_active():
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        shape = qml.math.shape(features)
-
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-        n_features = shape[0]
-        if n_features > len(wires):
-            raise ValueError(
-                f"Features must be of length {len(wires)} or less; got length {n_features}."
-            )
-
-        shape = qml.math.shape(weights)
-        repeat = shape[0]
-
-        if len(wires) == 1:
-            if shape != (repeat, 1):
-                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
-
-        elif len(wires) == 2:
-            if shape != (repeat, 3):
-                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
-        else:
-            if shape != (repeat, 2 * len(wires)):
-                raise ValueError(
-                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
-                )
-
-    else:
-
-        expected_shape = (len(wires),)
-        check_shape(
-            features,
-            expected_shape,
-            bound="max",
-            msg="Features must be of shape {} or smaller; got {}"
-            "".format((len(wires),), get_shape(features)),
+    n_features = shape[0]
+    if n_features > len(wires):
+        raise ValueError(
+            f"Features must be of length {len(wires)} or less; got length {n_features}."
         )
 
-        repeat = check_number_of_layers([weights])
+    shape = qml.math.shape(weights)
+    repeat = shape[0]
 
-        if len(wires) == 1:
-            expected_shape = (repeat, 1)
-            check_shape(
-                weights,
-                expected_shape,
-                msg="Weights tensor must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(features)),
-            )
-        elif len(wires) == 2:
-            expected_shape = (repeat, 3)
-            check_shape(
-                weights,
-                expected_shape,
-                msg="Weights tensor must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(features)),
-            )
-        else:
-            expected_shape = (repeat, 2 * len(wires))
-            check_shape(
-                weights,
-                expected_shape,
-                msg="Weights tensor must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(features)),
+    if len(wires) == 1:
+        if shape != (repeat, 1):
+            raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
+
+    elif len(wires) == 2:
+        if shape != (repeat, 3):
+            raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
+    else:
+        if shape != (repeat, 2 * len(wires)):
+            raise ValueError(
+                f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
             )
 
     return repeat

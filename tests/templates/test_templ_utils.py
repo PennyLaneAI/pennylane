@@ -17,13 +17,11 @@ Tests for the templates utility functions.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.variable import Variable
 from pennylane.templates.utils import (check_wires,
                                        check_shape,
                                        check_shapes,
                                        get_shape,
                                        check_number_of_layers,
-                                       check_no_variable,
                                        check_is_in_options,
                                        check_type)
 
@@ -94,13 +92,6 @@ LAYERS_FAIL = [([[[1], [2], [3]], 1], 5),
                ([[[1], [2], [3]], [[1], [2]]], 4),
                ]
 
-NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
-                     [1, 'a']]
-
-NO_VARIABLES_FAIL = [[[Variable(0.1)], Variable([0.1])],
-                     np.array([Variable(0.3), Variable(4.)]),
-                     Variable(-1.)]
-
 OPTIONS_PASS = [("a", ["a", "b"])]
 
 OPTIONS_FAIL = [("c", ["a", "b"])]
@@ -108,12 +99,10 @@ OPTIONS_FAIL = [("c", ["a", "b"])]
 TYPE_PASS = [(["a"], list, type(None)),
              (1, int, type(None)),
              ("a", int, str),
-             (Variable(1.), list, Variable)
              ]
 
 TYPE_FAIL = [("a", list, type(None)),
-             (Variable(1.), int, list),
-             (1., Variable, type(None))
+             (type(None), int, list),
              ]
 
 
@@ -122,17 +111,6 @@ TYPE_FAIL = [("a", list, type(None)),
 
 class TestInputChecks:
     """Test private functions that check the input of templates."""
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
-    def test_check_no_variable(self, arg):
-        """Tests that variable check succeeds for valid arguments."""
-        check_no_variable(arg, msg="XXX")
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
-    def test_check_no_variable_exception(self, arg):
-        """Tests that variable check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="XXX"):
-            check_no_variable(arg, msg="XXX")
 
     @pytest.mark.parametrize("wires, target", WIRES_PASS)
     def test_check_wires(self, wires, target):

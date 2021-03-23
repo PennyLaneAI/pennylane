@@ -32,7 +32,6 @@ from pennylane.operation import (
     Probability,
     Tensor,
 )
-from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
 
 
@@ -203,6 +202,13 @@ class Device(abc.ABC):
         return self._shots
 
     @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        if self._shots is None:
+            return True
+        return False
+
+    @property
     def wires(self):
         """All wires that can be addressed on this device"""
         return self._wires
@@ -234,16 +240,23 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if isinstance(shots, int):
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
             if shots < 1:
                 raise DeviceError(
                     "The specified number of shots needs to be at least 1. Got {}.".format(shots)
                 )
 
-            self._shots = int(shots)
+            self._shots = shots
             self._shot_vector = None
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
 
         else:
@@ -379,10 +392,10 @@ class Device(abc.ABC):
                     results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is State:
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Unsupported return type specified for observable {}".format(obs.name)
                     )
 
@@ -414,7 +427,7 @@ class Device(abc.ABC):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -617,7 +630,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.tape.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):

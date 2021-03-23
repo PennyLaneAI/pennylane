@@ -2,6 +2,117 @@
 
 <h3>New features since last release</h3>
 
+* Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
+  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+  
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.SingleExcitation(phi, wires=[0, 1])
+  ```
+  
+  The `SingleExcitation` operation supports analytic gradients on hardware
+  using only four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938)
+  
+  
+* Adds a new function ``qml.math.conj``.
+  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
+
+  This new method will do elementwise conjugation to the given tensor-like object.
+
+  ```python
+  a = np.array([1.0 + 2.0j])
+  b = qml.math.conj(a)
+  ```
+
+  Our new object ``b`` is the conjugate of ``a``.
+
+  ```pycon
+  >>> b
+  array([1.0 - 2.0j])
+  ```
+
+* Added the function ``finite_diff()`` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  arbitrary callable functions.
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
+  This is useful to compute the derivative of parametrized
+  ``pennylane.Hamiltonian`` observables ``O(x)`` with respect to the parameter ``x``.
+
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2 = deriv2_fn(x)
+  ```
+
+* Added the `QuantumMonteCarlo` template for performing quantum Monte Carlo estimation of an
+  expectation value on simulator.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  The following example shows how the expectation value of sine squared over a standard normal
+  distribution can be approximated:
+  
+  ```python
+  from scipy.stats import norm
+
+  m = 5
+  M = 2 ** m
+  n = 10
+  N = 2 ** n
+  target_wires = range(m + 1)
+  estimation_wires = range(m + 1, n + m + 1)
+
+  xmax = np.pi  # bound to region [-pi, pi]
+  xs = np.linspace(-xmax, xmax, M)
+
+  probs = np.array([norm().pdf(x) for x in xs])
+  probs /= np.sum(probs)
+
+  func = lambda i: np.sin(xs[i]) ** 2
+
+  dev = qml.device("default.qubit", wires=(n + m + 1))
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.templates.QuantumMonteCarlo(
+          probs,
+          func,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+      return qml.probs(estimation_wires)
+
+  phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
+  expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
+  ```
+  
+  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
+  
+  ```pycon
+  >>> expectation_estimated
+  0.4327096457464369
+  ```
+
 * A new adjoint transform has been added. 
   [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
   [(#1135)](https://github.com/PennyLaneAI/pennylane/pull/1135)
@@ -237,6 +348,45 @@
 
 <h3>Breaking changes</h3>
 
+* Devices do not have an `analytic` argument or attribute anymore. 
+  Instead, `shots` is the source of truth for whether a simulator 
+  estimates return values from a finite number of shots, or whether 
+  it returns analytic results (`shots=None`).
+  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079)
+  
+  ```python  
+  dev_analytic = qml.device('default.qubit', wires=1, shots=None)
+  dev_finite_shots = qml.device('default.qubit', wires=1, shots=1000)
+  
+  def circuit():
+      qml.Hadamard(wires=0)
+      return qml.expval(qml.PauliZ(wires=0))
+  
+  circuit_analytic = qml.QNode(circuit, dev_analytic)
+  circuit_finite_shots = qml.QNode(circuit, dev_finite_shots)
+  ```
+  
+  Devices with `shots=None` return deterministic, exact results:
+  
+  ```pycon
+  >>> circuit_analytic()
+  0.0
+  >>> circuit_analytic()
+  0.0
+  ```
+  Devices with `shots > 0` return stochastic results estimated from 
+  samples in each run:
+
+  ```pycon
+  >>> circuit_finite_shots()
+  -0.062
+  >>> circuit_finite_shots()
+  0.034
+  ``` 
+  
+  The `qml.sample()` measurement can only be used on devices on which the number 
+  of shots is set explicitly. 
+
 * If creating a QNode from a quantum function with an argument named `shots`,
   a `DeprecationWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
@@ -299,8 +449,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 

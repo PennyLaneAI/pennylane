@@ -25,7 +25,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
-from pennylane.templates import template
+from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
@@ -1462,28 +1462,15 @@ class CRot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        if qml.tape_mode_active():
-            decomp_ops = [
-                RZ((phi - omega) / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RZ(-(phi + omega) / 2, wires=wires[1]),
-                RY(-theta / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RY(theta / 2, wires=wires[1]),
-                RZ(omega, wires=wires[1]),
-            ]
-        else:  # We cannot add gate parameters in non-tape mode, resulting in greater depth
-            decomp_ops = [
-                RZ(phi / 2, wires=wires[1]),
-                RZ(-omega / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RZ(-phi / 2, wires=wires[1]),
-                RZ(-omega / 2, wires=wires[1]),
-                RY(-theta / 2, wires=wires[1]),
-                CNOT(wires=wires),
-                RY(theta / 2, wires=wires[1]),
-                RZ(omega, wires=wires[1]),
-            ]
+        decomp_ops = [
+            RZ((phi - omega) / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            RZ(-(phi + omega) / 2, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            RY(theta / 2, wires=wires[1]),
+            RZ(omega, wires=wires[1]),
+        ]
         return decomp_ops
 
     def adjoint(self, do_queue=False):
@@ -1662,6 +1649,153 @@ class U3(Operation):
 
 
 # =============================================================================
+# Quantum chemistry
+# =============================================================================
+
+
+class SingleExcitation(Operation):
+    r"""SingleExcitation(phi, wires)
+    Single excitation rotation.
+
+    .. math:: U(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
+    |10\rangle\}`. The name originates from the occupation-number representation of
+    fermionic wavefunctions, where the transformation  from :math:`|10\rangle` to :math:`|01\rangle`
+    is interpreted as "exciting" a particle from the first qubit to the second.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: Obtained from its decomposition in terms of the
+      :class:`~.SingleExcitationPlus` and :class:`~.SingleExcitationMinus` operations
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|10\rangle\rightarrow \cos(
+    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
+
+    .. code-block::
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.SingleExcitation(phi, wires=[0, 1])
+    """
+
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            SingleExcitationPlus(theta / 2, wires=wires),
+            SingleExcitationMinus(theta / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
+class SingleExcitationMinus(Operation):
+    r"""SingleExcitationMinus(phi, wires)
+    Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{-i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(-1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+class SingleExcitationPlus(Operation):
+    r"""SingleExcitationPlus(phi, wires)
+    Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+# =============================================================================
 # Arbitrary operations
 # =============================================================================
 
@@ -1698,7 +1832,9 @@ class QubitUnitary(Operation):
         return U
 
     def adjoint(self, do_queue=False):
-        return QubitUnitary(self.data[0].conj().T, wires=self.wires, do_queue=do_queue)
+        return QubitUnitary(
+            qml.math.T(qml.math.conj(self.data[0])), wires=self.wires, do_queue=do_queue
+        )
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -2179,6 +2315,9 @@ ops = {
     "MultiControlledX",
     "DiagonalQubitUnitary",
     "QFT",
+    "SingleExcitation",
+    "SingleExcitationPlus",
+    "SingleExcitationMinus",
 }
 
 
