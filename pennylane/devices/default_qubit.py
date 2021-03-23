@@ -124,6 +124,9 @@ class DefaultQubit(QubitDevice):
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
     }
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}

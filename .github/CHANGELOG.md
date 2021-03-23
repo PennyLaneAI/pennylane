@@ -21,8 +21,29 @@
   
   The `SingleExcitation` operation supports analytic gradients on hardware
   using only four expectation value calculations, following results from
-  [Kottmann et al.](https://arxiv.org/abs/2011.05938)
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938) 
   
+  * Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
+  chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
+
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|1100\rangle` and :math:`|0011\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:   
+
+    ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.PauliX(wires=1)
+      qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+  ```
+  
+  The `DoubleExcitation` operation supports analytic gradients on hardware using only
+  four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938).
   
 * Adds a new function ``qml.math.conj``.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
