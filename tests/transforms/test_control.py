@@ -101,7 +101,7 @@ def test_control_with_qnode():
     """Test ctrl works when in a qnode cotext."""
     dev = qml.device("default.qubit", wires=3)
 
-    def my_ansatz(params):
+    def my_anzats(params):
         qml.RY(params[0], wires=0)
         qml.RY(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -109,7 +109,7 @@ def test_control_with_qnode():
         qml.RX(params[3], wires=0)
         qml.CNOT(wires=[1, 0])
 
-    def controlled_ansatz(params):
+    def controlled_anzats(params):
         qml.CRY(params[0], wires=[2, 0])
         qml.CRY(params[1], wires=[2, 1])
         qml.Toffoli(wires=[2, 0, 1])
@@ -119,7 +119,7 @@ def test_control_with_qnode():
 
     def circuit(anzats, params):
         qml.RX(np.pi/4.0, wires=2)
-        ansatz(params)
+        anzats(params)
         return qml.state()
 
     params = [0.123, 0.456, 0.789, 1.345]
