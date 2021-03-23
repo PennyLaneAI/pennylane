@@ -218,7 +218,7 @@ class AutogradInterface(AnnotatedQueue):
                 p (Sequence): quantum tape parameter values use to evaluate the gradient matrix
                 grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
                     tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
-                    
+
                 Returns:
                     array[float]: the gradient matrix
             """
