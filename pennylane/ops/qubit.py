@@ -1222,7 +1222,7 @@ class CRX(Operation):
     .. math::
 
         \begin{align}
-            CR_x(\phi) &= 
+            CR_x(\phi) &=
             \begin{bmatrix}
             & 1 & 0 & 0 & 0 \\
             & 0 & 1 & 0 & 0\\
@@ -1281,7 +1281,7 @@ class CRY(Operation):
     .. math::
 
         \begin{align}
-            CR_y(\phi) &= 
+            CR_y(\phi) &=
             \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0\\
@@ -1338,7 +1338,7 @@ class CRZ(DiagonalOperation):
     .. math::
 
         \begin{align}
-             CR_z(\phi) &= 
+             CR_z(\phi) &=
              \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0\\

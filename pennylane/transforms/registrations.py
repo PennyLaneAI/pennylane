@@ -19,9 +19,9 @@ CONTROL_MAPS = {}
 """Dict[type, Callable[tuple(Operation, Wire), None]]:
 Mapping from operation types to methods that create
 concrete controlled versions of a given operation.
-Functions should take the given operation and contorl 
-wire as input and return nothing. The desired controlled 
-operation(s) should be added to the tape context by setting 
+Functions should take the given operation and contorl
+wire as input and return nothing. The desired controlled
+operation(s) should be added to the tape context by setting
 ``do_queue=True`` when constructing the new operations.
 """
 
