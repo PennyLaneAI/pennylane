@@ -52,22 +52,24 @@ def expand_with_control(tape, control_wire):
 class ControlledOperation(Operation):
     """A Controlled Operation.
 
-    Unless you are a Pennylane plugin developer, **you should NOT directly use this class**, 
+    Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
     instead, use the ``qml.ctrl`` method.
 
     The ``ControlledOperation`` is a container class that defines a set of operations that
-    should by applied relative to a single control wire or a list of control wires. 
+    should by applied relative to a single control wire or a list of control wires.
 
-    Certain simulators and quantum computers can take advantage of the controlled gate sparsity, 
-    while other devices must rely on the op-by-op decomposition defined by the ``op.expand`` 
+    Certain simulators and quantum computers can take advantage of the controlled gate sparsity,
+    while other devices must rely on the op-by-op decomposition defined by the ``op.expand``
     method.
-
-    Args:   
+    
+    Attributes:
+        _tape (QuantumTape): The tape that defines the underlying operation.
+        _control_wires (Wires): The control wires.
+    Args:
         tape: A QuantumTape. This tape defines the unitary that should be applied relative
             to the control wires.
         control_wires: A wire or set of wires.
     """
-
 
     par_domain = "A"
     num_wires = AnyWires
@@ -100,7 +102,7 @@ class ControlledOperation(Operation):
 register_control(
     ControlledOperation,
     lambda op, wires: ControlledOperation(
-        tape=op._tape, 
+        tape=op._tape,
         control_wires=Wires(wires) + op._control_wires,
     ),
 )
@@ -108,13 +110,13 @@ register_control(
 
 def ctrl(fn, control):
     """Create a method that applies a controlled version of the provided method.
-    
-    Args: 
+
+    Args:
         fn (function): Any python function that applies pennylane operations.
-        control (Wires): The control wire(s).  
-    
+        control (Wires): The control wire(s).
+
     Returns:
-        A new function that applies the controlled equivalent of `fn`.  
+        A new function that applies the controlled equivalent of `fn`.
 
     **Example**
 
@@ -123,7 +125,7 @@ def ctrl(fn, control):
         def ops(params):
             qml.RX(params[0], wires=0)
             qml.RZ(params[1] wires=3)
-        
+
         ops1 = qml.ctrl(ops, control=1)
         ops2 = qml.ctrl(ops, control=2)
 
@@ -135,10 +137,10 @@ def ctrl(fn, control):
             ops2(params=[2.321, 1.111])
             return qml.state()
 
-    The above code would be equivalent to 
+    The above code would be equivalent to
 
     .. code-block:: python3
-        
+
         @qml.qnode(dev)
         def my_circuit(params):
             # ops1(params=[0.123, 0.456])
@@ -152,7 +154,7 @@ def ctrl(fn, control):
             # ops2(params=[2.987, 3.654])
             qml.CRX(2.987, wires=[2, 0])
             qml.CRZ(3.654, wires=[2, 3])
-            
+
             # ops2(params=[2.321, 1.111])
             qml.CRX(2.321, wires=[2, 0])
             qml.CRZ(1.111, wires=[2, 3])
@@ -161,7 +163,7 @@ def ctrl(fn, control):
     .. Note::
 
         Some devices are able to take advantage of the inherient sparsity of a
-        controlled operation. In those cases, it may be more efficient to use 
+        controlled operation. In those cases, it may be more efficient to use
         this transform rather than adding controls by hand. For devices that don't
         have special control support, the operation is expanded to add control wires
         to each underlying op individually.
@@ -174,7 +176,7 @@ def ctrl(fn, control):
 
         .. code-block:: python3
 
-            # These two ops are equivalent. 
+            # These two ops are equivalent.
             op1 = ctrl(ctrl(my_ops, 1), 2)
             op2 = ctrl(my_ops, [2, 1])
     """

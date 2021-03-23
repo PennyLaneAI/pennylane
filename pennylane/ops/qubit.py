@@ -1721,10 +1721,7 @@ class QubitUnitary(Operation):
 
 register_control(
     QubitUnitary,
-    lambda op, wire: ControlledQubitUnitary(
-        *op.parameters, 
-        control_wires=wire, 
-        wires=op.wires),
+    lambda op, wire: ControlledQubitUnitary(*op.parameters, control_wires=wire, wires=op.wires),
 )
 
 
@@ -1830,14 +1827,16 @@ class ControlledQubitUnitary(QubitUnitary):
 
         return control_int
 
+
 register_control(
     ControlledQubitUnitary,
     lambda op, wire: ControlledQubitUnitary(
-        *op.parameters, 
-        control_wires=wire, 
-        wires=op.wires, 
-        ),
+        *op.parameters,
+        control_wires=wire,
+        wires=op.wires,
+    ),
 )
+
 
 class MultiControlledX(ControlledQubitUnitary):
     r"""MultiControlledX(control_wires, wires, control_values)
@@ -1918,12 +1917,16 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self, do_queue=False):
-        return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires, do_queue=do_queue)
+        return DiagonalQubitUnitary(
+            qml.math.conj(self.parameters[0]), wires=self.wires, do_queue=do_queue
+        )
+
 
 def _diagonal_control(op, control):
     DiagonalQubitUnitary(
-        qml.math.concatenate([np.array([1, 1]), op.parameters[0]]), 
-        wires=Wires(control) + op.wires)
+        qml.math.concatenate([np.array([1, 1]), op.parameters[0]]), wires=Wires(control) + op.wires
+    )
+
 
 register_control(DiagonalQubitUnitary, _diagonal_control)
 
