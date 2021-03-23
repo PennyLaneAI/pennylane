@@ -2155,6 +2155,9 @@ class DoubleExcitation(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        theta, = self.parameters
+        return DoubleExcitation(-theta, wires=self.wires, do_queue=do_queue)
 
 class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
@@ -2210,6 +2213,10 @@ class DoubleExcitationPlus(Operation):
         U[12, 12] = c
 
         return U
+
+    def adjoint(self, do_queue=False):
+        theta, = self.parameters
+        return DoubleExcitationPlus(-theta, wires=self.wires, do_queue=do_queue)
 
 
 class DoubleExcitationMinus(Operation):
@@ -2267,6 +2274,9 @@ class DoubleExcitationMinus(Operation):
 
         return U
 
+    def adjoint(self, do_queue=False):
+        theta, = self.parameters
+        return DoubleExcitationMinus(-theta, wires=self.wires, do_queue=do_queue)
 
 # =============================================================================
 # State preparation
