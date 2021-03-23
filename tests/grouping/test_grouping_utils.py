@@ -317,6 +317,40 @@ class TestGroupingUtils:
         assert obtained_string == expected_string
 
     @pytest.mark.parametrize(
+        "pauli_word,wire_map,expected_matrix",
+        [
+            (PauliX(0), {0: 0}, PauliX.matrix),
+            (Identity(0), {0: 0}, np.eye(2)),
+            (
+                PauliZ(0) @ PauliY(1),
+                {0: 0, 1: 1},
+                np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
+            ),
+            (
+                PauliX(2),
+                {0: 0, 1: 1, 2: 2},
+                np.array(
+                    [
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 1],
+                        [0, 0, 0, 0, 0, 0, 1, 0],
+                    ]
+                ),
+            ),
+            (PauliX(2), None, PauliX.matrix),
+        ],
+    )
+    def test_pauli_word_to_matrix(self, pauli_word, wire_map, expected_matrix):
+        """Test that Pauli words are correctly converted into strings."""
+        obtained_matrix = pauli_word_to_matrix(pauli_word, wire_map)
+        assert np.allclose(obtained_matrix, expected_matrix)
+
+    @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,commute_status",
         [
             (Identity(0), PauliZ(0), {0: 0}, True),

@@ -422,16 +422,20 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
         return pauli_word.matrix
 
     # If there is more than one qubit, we must go through the wire map wire
-    # by wire and pick out the relevant
+    # by wire and pick out the relevant matrices
     pauli_mats = [np.eye(2) for x in range(n_qubits)]
+
+    # There may be more than one qubit in the Pauli but still only
+    # one of them with anything acting on it, so take that into account
+    pauli_names = [pauli_word.name] if isinstance(pauli_word.name, str) else pauli_word.name
 
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
 
-            if pauli_word.name[op_idx] == "PauliX":
+            if pauli_names[op_idx] == "PauliX":
                 pauli_mats[wire_idx] = PauliX.matrix
-            elif pauli_word.name[op_idx] == "PauliY":
+            elif pauli_names[op_idx] == "PauliY":
                 pauli_mats[wire_idx] = PauliY.matrix
             else:
                 pauli_mats[wire_idx] = PauliZ.matrix
