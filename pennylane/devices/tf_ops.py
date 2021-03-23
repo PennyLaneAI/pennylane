@@ -191,3 +191,156 @@ def CRot(a, b, c):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))
+
+
+def SingleExcitation(phi):
+    r"""Single excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        tf.Tensor[complex]: Single excitation rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+
+    return tf.convert_to_tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+
+def SingleExcitationPlus(phi):
+    r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        tf.Tensor[complex]: Single excitation rotation matrix with positive phase-shift
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+    e = tf.exp(1j * phi / 2)
+    return tf.convert_to_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+def SingleExcitationMinus(phi):
+    r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        tf.Tensor[complex]: Single excitation rotation matrix with negative phase-shift
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+    e = tf.exp(-1j * phi / 2)
+    return tf.convert_to_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+def DoubleExcitation(phi):
+    r"""Double excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        tf.Tensor[complex]: Double excitation rotation matrix
+    """
+
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+
+    U = [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]
+
+    return tf.convert_to_tensor(U)
+
+
+def DoubleExcitationPlus(phi):
+    r"""Double excitation rotation with positive phase-shift.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        tf.Tensor[complex]: rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+    e = tf.exp(1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return tf.convert_to_tensor(U)
+
+
+def DoubleExcitationMinus(phi):
+    r"""Double excitation rotation with negative phase-shift.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        tf.Tensor[complex]: rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    c = tf.cos(phi / 2)
+    s = tf.sin(phi / 2)
+    e = tf.exp(-1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return tf.convert_to_tensor(U)

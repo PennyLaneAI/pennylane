@@ -1189,8 +1189,7 @@ class CRX(Operation):
     .. math::
 
         \begin{align}
-            CRX(\phi) &= I_{1}\otimes RZ_{2}(\pi / 2) ~\cdot~ I_{1}\otimes RY_{2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ RY_{2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RZ_{2}(-\pi / 2)\notag \\[10pt]
-            &=
+            CR_x(\phi) &= 
             \begin{bmatrix}
             & 1 & 0 & 0 & 0 \\
             & 0 & 1 & 0 & 0\\
@@ -1199,26 +1198,12 @@ class CRX(Operation):
             \end{bmatrix}.
         \end{align}
 
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g., 1 corresponds to the first element in ``wires`` that is the **control qubit**.
-
-
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
-
-    **Decomposition**
-
-    If the ``CRX`` gate is not supported on the targeted device, PennyLane
-    will attempt to decompose the gate into :class:`~.RZ`, :class:`~.RY`
-    and :class:`~.CNOT` gates the following way:
-
-
-    .. image:: ../../_static/crx_circuit.png
-        :align: center
-        :width: 800px
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1263,17 +1248,14 @@ class CRY(Operation):
     .. math::
 
         \begin{align}
-             CRY(\phi) &= I_{1}\otimes RY_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RY_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
-            &=
-        \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & \cos(\phi/2) & -\sin(\phi/2)\\
-            0 & 0 & \sin(\phi/2) & \cos(\phi/2)
-        \end{bmatrix}.
+            CR_y(\phi) &= 
+            \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0\\
+                0 & 0 & \cos(\phi/2) & -\sin(\phi/2)\\
+                0 & 0 & \sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
         \end{align}
-
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in ``wires`` that is the **control qubit**.
 
     **Details:**
 
@@ -1281,16 +1263,6 @@ class CRY(Operation):
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
-
-    **Decomposition**
-
-    If the ``CRY`` gate is not supported on the targeted device, PennyLane
-    will attempt to decompose the gate into :class:`~.RY` and :class:`~.CNOT` gates the following way:
-
-    .. image:: ../../_static/cry_circuit.png
-        :align: center
-        :width: 650px
-
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1333,14 +1305,13 @@ class CRZ(DiagonalOperation):
     .. math::
 
         \begin{align}
-             CRZ(\phi) &= I_{1}\otimes PhaseShift_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes PhaseShift_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
-            &=
-         \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & e^{-i\phi/2} & 0\\
-            0 & 0 & 0 & e^{i\phi/2}
-        \end{bmatrix}.
+             CR_z(\phi) &= 
+             \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0\\
+                0 & 0 & e^{-i\phi/2} & 0\\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
         \end{align}
 
 
@@ -1352,15 +1323,6 @@ class CRZ(DiagonalOperation):
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
-
-    **Decomposition**
-
-    If the ``CRZ`` gate is not supported on the targeted device, PennyLane
-    will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.CNOT` gates the following way:
-
-    .. image:: ../../_static/crz_circuit.png
-        :align: center
-        :width: 650px
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1646,6 +1608,153 @@ class U3(Operation):
     def adjoint(self, do_queue=False):
         # TODO(chase): Replace the `inv()` by instead modifying the parameters.
         return U3(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+
+
+# =============================================================================
+# Quantum chemistry
+# =============================================================================
+
+
+class SingleExcitation(Operation):
+    r"""SingleExcitation(phi, wires)
+    Single excitation rotation.
+
+    .. math:: U(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
+    |10\rangle\}`. The name originates from the occupation-number representation of
+    fermionic wavefunctions, where the transformation  from :math:`|10\rangle` to :math:`|01\rangle`
+    is interpreted as "exciting" a particle from the first qubit to the second.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: Obtained from its decomposition in terms of the
+      :class:`~.SingleExcitationPlus` and :class:`~.SingleExcitationMinus` operations
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|10\rangle\rightarrow \cos(
+    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
+
+    .. code-block::
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.SingleExcitation(phi, wires=[0, 1])
+    """
+
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            SingleExcitationPlus(theta / 2, wires=wires),
+            SingleExcitationMinus(theta / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
+class SingleExcitationMinus(Operation):
+    r"""SingleExcitationMinus(phi, wires)
+    Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{-i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(-1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+class SingleExcitationPlus(Operation):
+    r"""SingleExcitationPlus(phi, wires)
+    Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]), -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(1j * theta / 2)
+
+        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
 
 # =============================================================================
@@ -1967,6 +2076,199 @@ class QFT(Operation):
 
 
 # =============================================================================
+# Quantum chemistry
+# =============================================================================
+
+
+class DoubleExcitation(Operation):
+    r"""DoubleExcitation(phi, wires)
+    Double excitation rotation.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}`. More precisely, it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle,
+
+    while leaving all other basis states unchanged.
+
+    The name originates from the occupation-number representation of fermionic wavefunctions, where
+    the transformation from :math:`|1100\rangle` to :math:`|0011\rangle` is interpreted as
+    "exciting" two particles from the first pair of qubits to the second pair of qubits.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: Obtained from its decomposition in terms of the
+      :class:`~.DoubleExcitationPlus` and :class:`~.DoubleExcitationMinus` operations
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
+    \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
+
+    .. code-block::
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = np.zeros((16, 16), dtype=np.complex64)
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        U = np.eye(16)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            DoubleExcitationPlus(theta / 2, wires=wires),
+            DoubleExcitationMinus(theta / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
+class DoubleExcitationPlus(Operation):
+    r"""DoubleExcitationPlus(phi, wires)
+    Double excitation rotation with positive phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = -1 * np.eye(16, dtype=np.complex64)
+    G[3, 3] = 0
+    G[12, 12] = 0
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(1j * theta / 2)
+
+        U = e * np.eye(16, dtype=np.complex64)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+
+class DoubleExcitationMinus(Operation):
+    r"""DoubleExcitationMinus(phi, wires)
+    Double excitation rotation with negative phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = np.eye(16, dtype=np.complex64)
+    G[3, 3] = 0
+    G[12, 12] = 0
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(-1j * theta / 2)
+
+        U = e * np.eye(16, dtype=np.complex64)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+
+# =============================================================================
 # State preparation
 # =============================================================================
 
@@ -2168,6 +2470,12 @@ ops = {
     "MultiControlledX",
     "DiagonalQubitUnitary",
     "QFT",
+    "SingleExcitation",
+    "SingleExcitationPlus",
+    "SingleExcitationMinus",
+    "DoubleExcitation",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
 }
 
 
