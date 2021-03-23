@@ -19,21 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 
-def circuit_template(features, weights):
-    qml.templates.QAOAEmbedding(features, weights, range(2))
-    return qml.expval(qml.PauliZ(0))
-
-
-def circuit_decomposed(features, weights):
-    qml.RX(features[0], wires=0)
-    qml.RX(features[1], wires=1)
-    qml.MultiRZ(weights[0, 0], wires=[0, 1])
-    qml.RY(weights[0, 1], wires=0)
-    qml.RY(weights[0, 2], wires=1)
-    qml.RX(features[0], wires=0)
-    qml.RX(features[1], wires=1)
-    return qml.expval(qml.PauliZ(0))
-
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
@@ -255,6 +240,22 @@ class TestParameters:
 
         shape = qml.templates.QAOAEmbedding.shape(n_layers, n_wires)
         assert shape == expected_shape
+
+
+def circuit_template(features, weights):
+    qml.templates.QAOAEmbedding(features, weights, range(2))
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_decomposed(features, weights):
+    qml.RX(features[0], wires=0)
+    qml.RX(features[1], wires=1)
+    qml.MultiRZ(weights[0, 0], wires=[0, 1])
+    qml.RY(weights[0, 1], wires=0)
+    qml.RY(weights[0, 2], wires=1)
+    qml.RX(features[0], wires=0)
+    qml.RX(features[1], wires=1)
+    return qml.expval(qml.PauliZ(0))
 
 
 class TestGradients:

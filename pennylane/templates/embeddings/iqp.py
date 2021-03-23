@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,55 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``IQPEmbedding`` template.
+Contains the IQPEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from itertools import combinations
 
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.ops import RZ, MultiRZ, Hadamard
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AnyWires
 
 
-def _preprocess(features, wires, pattern):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n`, where :math:`n` is the number of qubits.
-    * If pattern is None, create default pattern. Else cast wires in user-provided pattern to Wires objects.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-        pattern (list[int]): specifies the wires and features of the entanglers
-
-    Returns:
-        list[Wires]: preprocessed pattern
-    """
-    shape = qml.math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features != len(wires):
-        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
-
-    if pattern is None:
-        # default is an all-to-all pattern
-        pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
-    else:
-        # convert wire pairs to Wires object
-        pattern = [Wires(wire_pair) for wire_pair in pattern]
-
-    return pattern
-
-
-@template
-def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
+class IQPEmbedding(Operation):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 
@@ -220,22 +181,46 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     """
 
-    wires = Wires(wires)
-    pattern = _preprocess(features, wires, pattern)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    for i in range(n_repeats):
+    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True):
 
-        # first block of Hadamards
-        broadcast(unitary=Hadamard, pattern="single", wires=wires)
-        # encode features into block of RZ rotations
-        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
+        shape = qml.math.shape(features)
 
-        # create new features for entangling block
-        products = []
-        for wire_pair in pattern:
-            # get the position of the wire indices in the array
-            idx1, idx2 = wires.indices(wire_pair)
-            # create products of parameters
-            products.append(features[idx1] * features[idx2])
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        broadcast(unitary=MultiRZ, pattern=pattern, wires=wires, parameters=products)
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+
+        if pattern is None:
+            # default is an all-to-all pattern
+            pattern = [wire_pair for wire_pair in combinations(wires, 2)]
+
+        self.pattern = pattern
+        self.n_repeats = n_repeats
+
+        super().__init__(features, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        features = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for _ in range(self.n_repeats):
+
+                for i in range(len(self.wires)):
+                    qml.Hadamard(wires=self.wires[i])
+                    qml.RZ(features[i], wires=self.wires[i])
+
+                for wire_pair in self.pattern:
+                    # get the position of the wire indices in the array
+                    idx1, idx2 = self.wires.indices(wire_pair)
+                    # apply product of two features as entangler
+                    qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair)
+
+        return tape
