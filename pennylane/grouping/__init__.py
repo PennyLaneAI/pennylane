@@ -31,6 +31,7 @@ from .utils import (
     pauli_to_binary,
     binary_to_pauli,
     pauli_word_to_string,
+    pauli_word_to_matrix,
     are_commuting,
     is_qwc,
     observables_to_binary_matrix,
