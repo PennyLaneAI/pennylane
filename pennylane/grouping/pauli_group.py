@@ -18,7 +18,6 @@ Functions for generating and manipulating elements of the Pauli group.
 import numpy as np
 
 from pennylane import Identity
-from pennylane.wires import Wires
 from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
 
@@ -174,12 +173,12 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
 
 def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
-    """Multiply two Pauli words together including the global phase.
+    r"""Multiply two Pauli words together including the global phase.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
     looking at the number of times we have the products  XY, YZ, or ZX (adds a
-    phase of +1j), or YX, ZY, XZ (adds a phase of -1j).
+    phase of :math:`i`), or YX, ZY, XZ (adds a phase of :math:`-i`).
 
     Args:
         pauli_1 (qml.Operation): A Pauli word.

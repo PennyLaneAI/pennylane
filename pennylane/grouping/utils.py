@@ -439,8 +439,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     return reduce(np.kron, pauli_mats)
 
 
-def are_commuting(pauli_1, pauli_2, n_qubits=None, wire_map=None):
-    """Checks if two Pauli words commute.
+def are_commuting(pauli_1, pauli_2, wire_map=None):
+    r"""Checks if two Pauli words commute.
 
     To determine if two Pauli words commute, we can check the value of the
     symplectic inner product of their binary vector representations.
@@ -450,46 +450,38 @@ def are_commuting(pauli_1, pauli_2, n_qubits=None, wire_map=None):
     product is 0 they commute, while if it is 1, they don't commute.
 
     Args:
-        pauli_vec_1 (Union[list, tuple, array]): first binary vector argument in commutator
-        pauli_vec_2 (Union[list, tuple, array]): second binary vector argument in commutator
+        pauli_1 (Observable): first Pauli word in commutator
+        pauli_2 (Observable): second Pauli word in commutator
+        wire_map (dict[qml.Wires, int]): dictionary containing all wire labels used in
+            the Pauli word as keys, and unique integer labels as their values
 
     Returns:
         bool: returns True if the input Pauli commute, False otherwise
 
     Raises:
-        ValueError: if the input vectors are of different dimension, if the vectors are not of even
-            dimension, or if the vector components are not strictly binary
+        TypeError: if either of the Pauli words is not valid.
     """
-    if isinstance(pauli_vec_1, (list, tuple)):
-        pauli_vec_1 = np.asarray(pauli_vec_1)
-    if isinstance(pauli_vec_2, (list, tuple)):
-        pauli_vec_2 = np.asarray(pauli_vec_2)
 
-    if len(pauli_vec_1) != len(pauli_vec_2):
-        raise ValueError(
-            "Vectors a and b must be the same dimension, instead got shapes {} and {}.".format(
-                np.shape(pauli_vec_1), np.shape(pauli_vec_2)
-            )
+    if not is_pauli_word(pauli_1):
+        raise TypeError(
+            "Expected a Pauli word Observable instance, instead got {}.".format(pauli_1)
         )
 
-    if len(pauli_vec_1) % 2 != 0:
-        raise ValueError(
-            "Symplectic vector-space must have even dimension, instead got vectors of shape {}.".format(
-                np.shape(pauli_vec_1)
-            )
+    if not is_pauli_word(pauli_2):
+        raise TypeError(
+            "Expected a Pauli word Observable instance, instead got {}.".format(pauli_2)
         )
 
-    if not (
-        np.array_equal(pauli_vec_1, pauli_vec_1.astype(bool))
-        and np.array_equal(pauli_vec_2, pauli_vec_2.astype(bool))
-    ):
-        raise ValueError(
-            "Vectors a and b must have strictly binary components, instead got {} and {}".format(
-                pauli_vec_1, pauli_vec_2
-            )
-        )
+    # If no wire map is specified, generate one from the union of wires
+    # in both Paulis.
+    if wire_map is None:
+        wire_labels = set(pauli_1.wires.labels, pauli_2.wires.labels)
+        wire_map = {label: i for i, label in enumerate(wire_labels)}
 
-    n_qubits = int(len(pauli_vec_1) / 2)
+    n_qubits = len(wire_map)
+
+    pauli_vec_1 = pauli_to_binary(pauli_1, n_qubits=n_qubits, wire_map=wire_map)
+    pauli_vec_2 = pauli_to_binary(pauli_2, n_qubits=n_qubits, wire_map=wire_map)
 
     x1, z1 = pauli_vec_1[:n_qubits], pauli_vec_1[n_qubits:]
     x2, z2 = pauli_vec_2[:n_qubits], pauli_vec_2[n_qubits:]
