@@ -333,6 +333,62 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     return pauli_word
 
 
+def are_commuting(pauli_vec_1, pauli_vec_2):
+    """Checks if two Pauli words in binary vector representation commute in general.
+
+    For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
+    and :math:`p_2 = [x_2, z_2]`, we can determine if they commute by taking the
+    symplectic inner product modulo 2, where the symplectic inner product is defined as
+    :math:\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`.
+
+    Args:
+        pauli_vec_1 (Union[list, tuple, array]): first binary vector argument in commutator
+        pauli_vec_2 (Union[list, tuple, array]): second binary vector argument in commutator
+
+    Returns:
+        bool: returns True if the input Pauli commute, False otherwise
+
+    Raises:
+        ValueError: if the input vectors are of different dimension, if the vectors are not of even
+            dimension, or if the vector components are not strictly binary
+    """
+    if isinstance(pauli_vec_1, (list, tuple)):
+        pauli_vec_1 = np.asarray(pauli_vec_1)
+    if isinstance(pauli_vec_2, (list, tuple)):
+        pauli_vec_2 = np.asarray(pauli_vec_2)
+
+    if len(pauli_vec_1) != len(pauli_vec_2):
+        raise ValueError(
+            "Vectors a and b must be the same dimension, instead got shapes {} and {}.".format(
+                np.shape(pauli_vec_1), np.shape(pauli_vec_2)
+            )
+        )
+
+    if len(pauli_vec_1) % 2 != 0:
+        raise ValueError(
+            "Symplectic vector-space must have even dimension, instead got vectors of shape {}.".format(
+                np.shape(pauli_vec_1)
+            )
+        )
+
+    if not (
+        np.array_equal(pauli_vec_1, pauli_vec_1.astype(bool))
+        and np.array_equal(pauli_vec_2, pauli_vec_2.astype(bool))
+    ):
+        raise ValueError(
+            "Vectors a and b must have strictly binary components, instead got {} and {}".format(
+                pauli_vec_1, pauli_vec_2
+            )
+        )
+
+    n_qubits = int(len(pauli_vec_1) / 2)
+
+    x1, z1 = pauli_vec_1[:n_qubits], pauli_vec_1[n_qubits:]
+    x2, z2 = pauli_vec_2[:n_qubits], pauli_vec_2[n_qubits:]
+
+    return (np.dot(z1, x2) + np.dot(z2, x1)) % 2 == 0
+
+
 def is_qwc(pauli_vec_1, pauli_vec_2):
     """Checks if two Pauli words in the binary vector representation are qubit-wise commutative.
 
