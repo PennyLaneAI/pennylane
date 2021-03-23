@@ -83,21 +83,41 @@ def pauli_group_generator(n_qubits, wire_map=None):
         yield binary_to_pauli(binary_vector, wire_map=wire_map)
         element_idx += 1
 
-def pauli_group(n_qubits):
-    """ The n-qubit Pauli group.
+
+def pauli_group(n_qubits, wire_map=None):
+    """ Constructs the n-qubit Pauli group.
+
+    This function constructs and returns the complete :math:`n`-qubit Pauli
+    group (without global phases) on the desired set of wires. This function
+    differs from ``pauli_group_generator`` in that returns the group in full
+    rather than one element at a time.
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
+        wire_map (dict): dictionary containing all wire labels used in the Pauli
+            word as keys, and unique integer labels as their values. If no wire map is
+            provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
     Returns:
         (list[qml.Operation]): The full n-qubit Pauli group.
+
+    **Example**
+
+    Construction of the Pauli group can be done as follows:
+
+    .. code-block:: python
+
+        from pennylane.grouping.pauli_group import pauli_group
+
+        n_qubits = 3
+        pg = pauli_group(n_qubits)
     """
 
-    return list(pauli_group_generator(n_qubits))
+    return list(pauli_group_generator(n_qubits, wire_map=wire_map))
 
 
 def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
-    """ Multiply two Pauli words together.
+    """Multiply two Pauli words together.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations.
@@ -107,8 +127,26 @@ def pauli_mult(pauli_1, pauli_2, n_qubits=None, wire_map=None):
         pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
 
     Returns:
-        (qml.Operation): The product of pauli_1 and pauli_2
-        as a Pauli word (ignoring the global phase).
+        (qml.Operation): The product of pauli_1 and pauli_2 as a Pauli word
+            (ignoring the global phase).
+
+    **Example**
+
+    This function enables multiplication of Pauli group elements at the level of
+    Pauli words, rather than matrices. For example,
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.grouping.pauli_group import pauli_mult
+
+        pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
+        pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
+
+        product = pauli_mult(pauli_1, pauli_2)
+        print(product)
+
+    will yield ``qml.PauliZ(0)``.
     """
     # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
     if are_identical_pauli_words(pauli_1, pauli_2):
@@ -150,7 +188,26 @@ def pauli_mult_with_phase(pauli_1, pauli_2, n_qubits=None, wire_map=None):
         pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
 
     Returns:
-        (qml.Operation, np.complex): The product of pauli_1 and pauli_2, and the global phase.
+        (qml.Operation, np.complex): The product of pauli_1 and pauli_2, and the
+            global phase.
+
+    **Example**
+
+    This function works the same as ``pauli_mult`` but also returns the global
+    phase accumulated as a result of the Pauli product rules
+    :math:`\sigma_i \sigma_j = i \sigma_k`.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.grouping.pauli_group import pauli_mult
+
+        pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
+        pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
+
+        product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
+
+    will yield ``qml.PauliZ(0)`` and :math:`1j`.
     """
 
     # Get the product; use our earlier function
