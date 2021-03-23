@@ -1729,6 +1729,7 @@ class SingleExcitationMinus(Operation):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires, do_queue=do_queue)
 
+
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
     Single excitation rotation with positive phase-shift outside the rotation subspace.
