@@ -612,63 +612,6 @@ class TestSimplifiedTwoDesign:
 class TestBasicEntangler:
     """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
 
-    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
-    def test_circuit_queue(self, n_wires, n_cnots):
-        """Tests the gate types in the circuit."""
-        np.random.seed(42)
-        n_layers = 2
-
-        weights = np.random.randn(n_layers, n_wires)
-
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires))
-
-        # Test that gates appear in the right order
-        exp_gates = [qml.RX] * n_wires + [qml.CNOT] * n_cnots
-        exp_gates *= n_layers
-        res_gates = rec.queue
-
-        for op1, op2 in zip(res_gates, exp_gates):
-            assert isinstance(op1, op2)
-
-    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
-    def test_circuit_parameters(self, n_wires, n_cnots):
-        """Tests the parameter values in the circuit."""
-        np.random.seed(42)
-        n_layers = 2
-
-        weights = np.random.randn(n_layers, n_wires)
-
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires))
-
-        # test the device parameters
-        for l in range(n_layers):
-            # only select the rotation gates
-            layer_ops = rec.queue[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
-
-            # check each rotation gate parameter
-            for n in range(n_wires):
-                res_param = layer_ops[n].parameters[0]
-                exp_param = weights[l, n]
-                assert res_param == exp_param
-
-    @pytest.mark.parametrize("rotation", [RX, RY, RZ])
-    def test_custom_rotation(self, rotation):
-        """Tests that non-default rotation gates are used correctly."""
-        n_layers = 2
-        n_wires = 4
-        weights = np.ones(shape=(n_layers, n_wires))
-
-        with qml.tape.OperationRecorder() as rec:
-            BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
-
-        # assert queue contains the custom rotations and CNOTs only
-        gates = rec.queue
-        for op in gates:
-            if not isinstance(op, CNOT):
-                assert isinstance(op, rotation)
-
     @pytest.mark.parametrize(
         "weights, n_wires, target",
         [
