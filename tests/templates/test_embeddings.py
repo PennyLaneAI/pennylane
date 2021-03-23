@@ -315,7 +315,7 @@ class TestAngleEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
+            AngleEmbedding(features=x, wires=range(n_subsystems))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
