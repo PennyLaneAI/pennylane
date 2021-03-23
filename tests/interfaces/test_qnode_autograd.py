@@ -713,6 +713,42 @@ class TestQNode:
             # to the first parameter of circuit1.
             assert circuit1.qtape.trainable_params == {1, 2}
 
+    def test_second_derivative(self, dev_name, diff_method, mocker, tol):
+        """Test second derivative calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+        g = qml.grad(circuit)(x)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        g2 = qml.grad(lambda x: np.sum(qml.grad(circuit)(x)))(x)
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_g2 = [-np.cos(a) * np.cos(b) + np.sin(a) * np.sin(b), np.sin(a) * np.sin(b) - np.cos(a) * np.cos(b)]
+        assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
+
     def test_hessian(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a scalar valued QNode"""
         if diff_method not in {"parameter-shift", "backprop"}:
