@@ -8,17 +8,17 @@
   Here's a simple usage example:
 
   ```python
-  def my_anzats(params):
+  def my_ansatz(params):
      qml.RX(params[0], wires=0)
      qml.RZ(params[1], wires=1)
 
-  # Create a new method that applies `my_anzats`
+  # Create a new method that applies `my_ansatz`
   # controlled by the "2" wire.
-  my_anzats2 = ctrl(my_anzats, control=2)
+  my_anzats2 = qml.ctrl(my_ansatz, control=2)
 
   @qml.qnode(...)
   def circuit(params):
-      my_anzats2(params)
+      my_ansatz2(params)
       return qml.state()
   ```
 
@@ -32,9 +32,8 @@
       return qml.state()
   ```
 
-  The `qml.ctrl` transform is especially useful for when you want to repeatedly apply an
-  operation but controlled by different qubits. A very famous example that can benefit from 
-  this is Shor's algorithm.
+  The `qml.ctrl` transform is especially useful to repeatedly apply an
+  operation which is controlled by different qubits in each repetition. A famous example is Shor's algorithm.
 
   ```python
   def modmul(a, mod, wires):
@@ -42,7 +41,7 @@
       # qml.CNOT(...); qml.Toffoli(...); ... 
  
   @qml.qnode(...)
-  def shors(a, mod, scratch_wires, qft_wires):
+  def shor(a, mod, scratch_wires, qft_wires):
       for i, wire in enumerate(qft_wires):
           qml.Hadamard(wire)
 
@@ -58,7 +57,7 @@
 
   ```
 
-  In the future, devices will be able to expliot the sparsity of controlled operations to 
+  In the future, devices will be able to exploit the sparsity of controlled operations to 
   improve simulation performance. 
 
 

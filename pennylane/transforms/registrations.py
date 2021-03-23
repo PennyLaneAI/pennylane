@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the global dictionaries for tranform registrations.
+Contains the global dictionaries for transform registrations.
 """
 
-# Mapping from operation types to methods that create
-# concrete controlled versions of a given operation.
-# Functions should take the given operation as input
-# and return nothing. The desired controlled operation(s)
-# should be added to the tape context by setting do_queue=True.
-CONTROL_MAPS = {}  # Dict[type, Callable[Operation, None]]
+CONTROL_MAPS = {}
+"""Dict[type, Callable[Operation, None]]:
+Mapping from operation types to methods that create
+concrete controlled versions of a given operation.
+Functions should take the given operation as input
+and return nothing. The desired controlled operation(s)
+should be added to the tape context by setting ``do_queue=True``.
+"""
 
 
 def register_control(cls, fn):
