@@ -233,3 +233,45 @@ def ControlledPhaseShift(phi):
         array: the two-wire controlled-phase matrix
     """
     return np.diag([1, 1, 1, np.exp(1j * phi)])
+
+
+def SingleExcitation(phi):
+    r"""Single excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-qubit Givens rotation describing the single excitation operation
+    """
+
+    return np.array([[1, 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
+                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, 1]])
+
+
+def SingleExcitationPlus(phi):
+    r"""Single excitation rotation with positive phase shift.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-qubit matrix describing the operation
+    """
+
+    return np.array([[np.exp(1j*phi/2), 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
+                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, np.exp(1j*phi/2)]])
+
+
+def SingleExcitationMinus(phi):
+    r"""Single excitation rotation with negative phase shift.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-qubit matrix describing the operation
+    """
+
+    return np.array([[np.exp(-1j*phi/2), 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
+                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, np.exp(-1j*phi/2)]])
