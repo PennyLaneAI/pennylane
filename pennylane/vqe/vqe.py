@@ -386,14 +386,14 @@ class Hamiltonian:
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
             try:
-                qml.tape.QueuingContext.update_info(o, owner=self)
+                qml.QueuingContext.update_info(o, owner=self)
             except ValueError:
                 o.queue()
-                qml.tape.QueuingContext.update_info(o, owner=self)
+                qml.QueuingContext.update_info(o, owner=self)
             except NotImplementedError:
                 pass
 
-        qml.tape.QueuingContext.append(self, owns=tuple(self.ops))
+        qml.QueuingContext.append(self, owns=tuple(self.ops))
         return self
 
 
