@@ -15,7 +15,6 @@ r"""
 Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
@@ -298,6 +297,8 @@ class QAOAEmbedding(Operation):
 
         if n_wires == 1:
             return n_layers, 1
-        elif n_wires == 2:
+
+        if n_wires == 2:
             return n_layers, 3
+        
         return n_layers, 2 * n_wires

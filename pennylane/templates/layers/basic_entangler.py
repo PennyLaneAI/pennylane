@@ -14,6 +14,7 @@
 r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
+# pylint: disable=consider-using-enumerate
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
@@ -130,8 +131,14 @@ class BasicEntanglerLayers(Operation):
 
         self.rotation = rotation or qml.RX
 
-        wires = Wires(wires)
-        self._preprocess(weights, wires)
+        shape = qml.math.shape(weights)
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+        if shape[1] != len(wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
+
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
     def expand(self):
@@ -157,23 +164,6 @@ class BasicEntanglerLayers(Operation):
                         qml.CNOT(wires=w)
 
         return tape
-
-    @staticmethod
-    def _preprocess(weights, wires):
-        """Validate and pre-process inputs as follows:
-
-        * Check the shape of the weights tensor, making sure that the second dimension
-          has length :math:`n`, where :math:`n` is the number of qubits.
-        """
-        shape = qml.math.shape(weights)
-
-        if len(shape) != 2:
-            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-        if shape[1] != len(wires):
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-            )
 
     @staticmethod
     def shape(n_layers, n_wires):
