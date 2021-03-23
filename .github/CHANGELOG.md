@@ -48,9 +48,8 @@
       for i, wire in enumerate(qft_wires):
           qml.Hadamard(wire)
      
-          # We apply the entire modmul subroutine based on the control wire.
-          # Once the subroutine is abstracted in a method, applying the contorlled
-          # version is just a single line of code.
+          # Create the controlled modular multiplication 
+          # subroutine based on the control wire.
           cmodmul = qml.ctrl(modmul, control=wire)
 
           # Execute the controlled modular multiplication.
