@@ -33,6 +33,7 @@ class AutogradBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: np.angle(self.data))
     arcsin = wrap_output(lambda self: np.arcsin(self.data))
     cast = wrap_output(lambda self, dtype: np.tensor(self.data, dtype=dtype))
+    conj = wrap_output(lambda self: np.conj(self.data))
     diag = staticmethod(wrap_output(lambda values, k=0: np.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: np.expand_dims(self.data, axis=axis))
     gather = wrap_output(lambda self, indices: self.data[indices])
