@@ -7,6 +7,7 @@ from pennylane.tape.tape import expand_tape
 
 
 def assert_equal_operations(ops1, ops2):
+    """Assert that two list of operations are equivalent"""
     assert len(ops1) == len(ops2)
     for op1, op2 in zip(ops1, ops2):
         assert type(op1) == type(op2)
@@ -15,7 +16,7 @@ def assert_equal_operations(ops1, ops2):
 
 
 def test_control_sanity_check():
-
+    """Test that control works on a very standard usecase."""
     def make_ops():
         qml.RX(0.123, wires=0)
         qml.RY(0.456, wires=2)
@@ -46,7 +47,7 @@ def test_control_sanity_check():
 
 
 def test_adjoint_of_control():
-
+    """Test adjoint(ctrl(fn)) and ctrl(adjoint(fn))"""
     def my_op(a, b, c):
         qml.RX(a, wires=2)
         qml.RY(b, wires=3)
@@ -75,6 +76,7 @@ def test_adjoint_of_control():
         assert_equal_operations(expanded.operations, expected)
 
 def test_nested_control():
+    """Test nested use of control"""
     with QuantumTape() as tape:
         CCX = ctrl(ctrl(qml.PauliX, 7), 3)
         CCX(wires=0)
@@ -85,6 +87,7 @@ def test_nested_control():
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
 
 def test_multi_control():
+    """Test control with a list of wires."""
     with QuantumTape() as tape:
         CCX = ctrl(qml.PauliX, control=[3, 7])
         CCX(wires=0)
@@ -95,6 +98,7 @@ def test_multi_control():
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
 
 def test_control_with_qnode():
+    """Test ctrl works when in a qnode cotext."""
     dev = qml.device("default.qubit", wires=3)
 
     def my_ansatz(params):
@@ -148,6 +152,7 @@ def test_ctrl_within_ctrl():
     assert_equal_operations(tape.operations, expected)
 
 def test_diagonal_ctrl():
+    """Test ctrl on diagonal gates."""
     with QuantumTape() as tape:
         ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
     tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
@@ -160,6 +165,7 @@ def test_diagonal_ctrl():
         ])
 
 def test_qubit_unitary():
+    """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
     with QuantumTape() as tape:
         ctrl(qml.QubitUnitary, 1)(
             np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), 
