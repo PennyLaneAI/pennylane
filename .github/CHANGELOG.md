@@ -273,6 +273,18 @@
 
 <h3>Improvements</h3>
 
+- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+  from `Operation`, and define the ansatz in their `expand()` method. This 
+  change does not affect the user interface. 
+  
+  For convenience, the class has a method that returns the shape of the 
+  trainable parameter tensor, i.e.,
+  
+  ```python
+  shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
+  weights = np.random.random(shape)
+  ```
+
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
 
