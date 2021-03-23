@@ -86,7 +86,6 @@ class ControlledOperation(Operation):
         tape = self.subtape
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
-        # TODO(chase): Do we need to re-queue these ops?
         return tape
 
     def adjoint(self, do_queue=False):
