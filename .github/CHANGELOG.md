@@ -63,6 +63,45 @@
   improve simulation performance. 
 
 
+* Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
+  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+  
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.SingleExcitation(phi, wires=[0, 1])
+  ```
+  
+  The `SingleExcitation` operation supports analytic gradients on hardware
+  using only four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938)
+  
+  
+* Adds a new function ``qml.math.conj``.
+  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
+
+  This new method will do elementwise conjugation to the given tensor-like object.
+
+  ```python
+  a = np.array([1.0 + 2.0j])
+  b = qml.math.conj(a)
+  ```
+
+  Our new object ``b`` is the conjugate of ``a``.
+
+  ```pycon
+  >>> b
+  array([1.0 - 2.0j])
+  ```
+
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
   arbitrary callable functions.
@@ -471,8 +510,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 

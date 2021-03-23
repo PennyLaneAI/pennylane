@@ -140,6 +140,9 @@ class DefaultQubitTF(DefaultQubit):
         "CRY": tf_ops.CRY,
         "CRZ": tf_ops.CRZ,
         "CRot": tf_ops.CRot,
+        "SingleExcitation": tf_ops.SingleExcitation,
+        "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
+        "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
     }
 
     C_DTYPE = tf.complex128
