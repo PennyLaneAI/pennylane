@@ -2114,6 +2114,199 @@ class QFT(Operation):
 
 
 # =============================================================================
+# Quantum chemistry
+# =============================================================================
+
+
+class DoubleExcitation(Operation):
+    r"""DoubleExcitation(phi, wires)
+    Double excitation rotation.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}`. More precisely, it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle,
+
+    while leaving all other basis states unchanged.
+
+    The name originates from the occupation-number representation of fermionic wavefunctions, where
+    the transformation from :math:`|1100\rangle` to :math:`|0011\rangle` is interpreted as
+    "exciting" two particles from the first pair of qubits to the second pair of qubits.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: Obtained from its decomposition in terms of the
+      :class:`~.DoubleExcitationPlus` and :class:`~.DoubleExcitationMinus` operations
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
+    \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
+
+    .. code-block::
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = np.zeros((16, 16), dtype=np.complex64)
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        U = np.eye(16)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            DoubleExcitationPlus(theta / 2, wires=wires),
+            DoubleExcitationMinus(theta / 2, wires=wires),
+        ]
+        return decomp_ops
+
+
+class DoubleExcitationPlus(Operation):
+    r"""DoubleExcitationPlus(phi, wires)
+    Double excitation rotation with positive phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = -1 * np.eye(16, dtype=np.complex64)
+    G[3, 3] = 0
+    G[12, 12] = 0
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(1j * theta / 2)
+
+        U = e * np.eye(16, dtype=np.complex64)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+
+class DoubleExcitationMinus(Operation):
+    r"""DoubleExcitationMinus(phi, wires)
+    Double excitation rotation with negative phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+
+    G = np.eye(16, dtype=np.complex64)
+    G[3, 3] = 0
+    G[12, 12] = 0
+    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+    generator = [G, -1 / 2]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+        e = cmath.exp(-1j * theta / 2)
+
+        U = e * np.eye(16, dtype=np.complex64)
+        U[3, 3] = c  # 3 (dec) = 0011 (bin)
+        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
+        U[12, 3] = s
+        U[12, 12] = c
+
+        return U
+
+
+# =============================================================================
 # State preparation
 # =============================================================================
 
@@ -2318,6 +2511,9 @@ ops = {
     "SingleExcitation",
     "SingleExcitationPlus",
     "SingleExcitationMinus",
+    "DoubleExcitation",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
 }
 
 
