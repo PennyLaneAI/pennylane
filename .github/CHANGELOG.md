@@ -39,15 +39,13 @@
   ```python
   def modmul(a, mod, wires):
       # Some complex set of gates that implements modular multiplcation.
-      # qml.CNOT(...); qml.Toffoli(...); ...
-      ...
- 
+      # qml.CNOT(...); qml.Toffoli(...); ... 
  
   @qml.qnode(...)
   def shors(a, mod, scratch_wires, qft_wires):
       for i, wire in enumerate(qft_wires):
           qml.Hadamard(wire)
-     
+
           # Create the controlled modular multiplication 
           # subroutine based on the control wire.
           cmodmul = qml.ctrl(modmul, control=wire)
@@ -57,6 +55,7 @@
  
       qml.adjoint(qml.QFT)(qft_wires)
       return qml.sample()
+
   ```
 
   In the future, devices will be able to expliot the sparsity of controlled operations to 
