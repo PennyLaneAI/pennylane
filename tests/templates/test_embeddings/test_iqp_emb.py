@@ -23,14 +23,13 @@ from pennylane import numpy as pnp
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    QUEUES = [(0, []),
-              (1, ['Hadamard', 'RZ']),
-              (2, ['Hadamard', 'RZ', 'Hadamard', 'RZ', 'MultiRZ']),
+    QUEUES = [(1, ['Hadamard', 'RZ'], [[0], [0]]),
+              (2, ['Hadamard', 'RZ', 'Hadamard', 'RZ', 'MultiRZ'], [[0], [0], [1], [1], [0, 1]]),
               (3, ['Hadamard', 'RZ', 'Hadamard', 'RZ', 'Hadamard', 'RZ',
-                   'MultiRZ', 'MultiRZ', 'MultiRZ'])]
+                   'MultiRZ', 'MultiRZ', 'MultiRZ'], [[0], [0], [1], [1], [2], [2], [0, 1], [0, 2], [1, 2]])]
 
-    @pytest.mark.parametrize("n_wires, expected_names", QUEUES)
-    def test_expansion(self, n_wires, expected_names):
+    @pytest.mark.parametrize("n_wires, expected_names, expected_wires", QUEUES)
+    def test_expansion(self, n_wires, expected_names, expected_wires):
         """Checks the queue for the default settings."""
 
         features = list(range(n_wires))
@@ -40,10 +39,10 @@ class TestDecomposition:
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 6))
         features = np.random.random(size=(3,))
 
         dev = qml.device("default.qubit", wires=3)
