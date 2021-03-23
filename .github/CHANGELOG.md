@@ -3,9 +3,9 @@
 <h3>New features since last release</h3>
 
 * Added `qml.ctrl`, a transformation that adds control wires to subroutines.
-[(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
+  [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 
- Here's a simple example
+  Here's a simple example
 
   ```python
   def my_anzats(params):
