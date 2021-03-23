@@ -22,8 +22,11 @@ from pennylane.operation import Tensor
 from pennylane.grouping.utils import (
     is_pauli_word,
     are_identical_pauli_words,
+    are_commuting,
     pauli_to_binary,
     binary_to_pauli,
+    pauli_word_to_matrix,
+    pauli_word_to_string,
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
@@ -260,14 +263,16 @@ class TestGroupingUtils:
     def test_qwc_complement_adj_matrix(self):
         """Tests that the ``qwc_complement_adj_matrix`` function returns the correct
         adjacency matrix."""
-        binary_observables = np.array([[1., 0., 1., 0., 0., 1.],
-                                       [0., 1., 1., 1., 0., 1.],
-                                       [0., 0., 0., 1., 0., 0.]])
+        binary_observables = np.array(
+            [
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            ]
+        )
         adj = qwc_complement_adj_matrix(binary_observables)
 
-        expected = np.array([[0., 1., 1.],
-                             [1., 0., 0.],
-                             [1., 0., 0.]])
+        expected = np.array([[0.0, 1.0, 1.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
 
         assert np.all(adj == expected)
 
@@ -282,9 +287,57 @@ class TestGroupingUtils:
     def test_qwc_complement_adj_matrix_exception(self):
         """Tests that the ``qwc_complement_adj_matrix`` function raises an exception if
         the matrix is not binary."""
-        not_binary_observables = np.array([[1.1, 0.5, 1., 0., 0., 1.],
-                                           [0., 1.3, 1., 1., 0., 1.],
-                                           [2.2, 0., 0., 1., 0., 0.]])
+        not_binary_observables = np.array(
+            [
+                [1.1, 0.5, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.3, 1.0, 1.0, 0.0, 1.0],
+                [2.2, 0.0, 0.0, 1.0, 0.0, 0.0],
+            ]
+        )
 
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
+
+    @pytest.mark.parametrize(
+        "pauli_word,wire_map,expected_string",
+        [
+            (PauliX(0), {0: 0}, "X"),
+            (Identity(0), {0: 0}, "I"),
+            (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
+            (PauliX(1), {0: 0, 1: 1}, "IX"),
+            (PauliX(1), None, "X"),
+            (PauliX(1), {1: 0, 0: 1}, "XI"),
+            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
+            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
+        ],
+    )
+    def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
+        """Test that Pauli words are correctly converted into strings."""
+        obtained_string = pauli_word_to_string(pauli_word, wire_map)
+        assert obtained_string == expected_string
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2,wire_map,commute_status",
+        [
+            (Identity(0), PauliZ(0), {0: 0}, True),
+            (PauliY(0), PauliZ(0), {0: 0}, False),
+            (PauliX(0), PauliX(1), {0: 0, 1: 1}, True),
+            (PauliY("x"), PauliX("y"), None, True),
+            (
+                PauliZ("a") @ PauliY("b") @ PauliZ("d"),
+                PauliX("a") @ PauliZ("c") @ PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                True,
+            ),
+            (
+                PauliX("a") @ PauliY("b") @ PauliZ("d"),
+                PauliX("a") @ PauliZ("c") @ PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                False,
+            ),
+        ],
+    )
+    def test_are_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+        """Test that Pauli words are correctly converted into strings."""
+        do_they_commute = are_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        assert do_they_commute == commute_status
