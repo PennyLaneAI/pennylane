@@ -38,10 +38,4 @@ from .utils import (
     qwc_complement_adj_matrix,
 )
 
-from .pauli_group import (
-    pauli_group,
-    pauli_group_generator,
-    pauli_mult,
-    pauli_mult_with_phase
-)
-
+from .pauli_group import pauli_group, pauli_group_generator, pauli_mult, pauli_mult_with_phase

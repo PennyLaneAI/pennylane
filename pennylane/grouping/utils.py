@@ -388,7 +388,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
 
 def string_to_pauli_word(pauli_string, wire_map=None):
-    """Convert a string in terms of I, X, Y, and Z into a Pauli word 
+    """Convert a string in terms of I, X, Y, and Z into a Pauli word
     for the given wire map.
 
     """
