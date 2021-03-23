@@ -63,8 +63,8 @@ class ControlledOperation(Operation):
     method.
 
     Attributes:
-        _tape (QuantumTape): The tape that defines the underlying operation.
-        _control_wires (Wires): The control wires.
+        subtape (QuantumTape): The tape that defines the underlying operation.
+        control_wires (Wires): The control wires.
 
     Args:
         tape: A QuantumTape. This tape defines the unitary that should be applied relative
