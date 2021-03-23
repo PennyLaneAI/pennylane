@@ -66,7 +66,9 @@ def hamiltonian_expval(tape):
     hamiltonian = tape.measurements[0].obs
 
     if not isinstance(hamiltonian, qml.Hamiltonian) or len(tape.measurements) > 1:
-        raise ValueError("Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`")
+        raise ValueError(
+            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+        )
 
     hamiltonian.simplify()
     combined_obs = []
