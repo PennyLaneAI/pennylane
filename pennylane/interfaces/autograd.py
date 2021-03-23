@@ -195,6 +195,12 @@ class AutogradInterface(AnnotatedQueue):
             gradient output vector, and computes the vector-Jacobian product
         """
 
+        # The following dictionary caches the Jacobian and Hessian matrices,
+        # so that they can be re-used for different vjp/vhp computations
+        # within the same backpropagation call.
+        # This dictionary will exist in memory when autograd.grad is called,
+        # via closure. Once autograd.grad has returned, this dictionary
+        # will no longer be in scope and the memory will be freed.
         saved_grad_matrices = {}
 
         def _evaluate_grad_matrix(p, grad_matrix_fn):
@@ -236,6 +242,10 @@ class AutogradInterface(AnnotatedQueue):
             """Returns the vector-Jacobian product with given
             parameter values p and output gradient dy"""
 
+            if all(np.ndim(p) == 0 for p in params):
+                # only flatten dy if all parameters are single values
+                dy = dy.flatten()
+
             @autograd.extend.primitive
             def jacobian(p):
                 """Returns the Jacobian for parameters p"""
@@ -249,11 +259,7 @@ class AutogradInterface(AnnotatedQueue):
                     hessian = _evaluate_grad_matrix(p, "hessian")
 
                     if dy.size > 1:
-                        if all(np.ndim(p) == 0 for p in params):
-                            # only flatten dy if all parameters are single values
-                            vhp = dy.flatten() @ ddy @ hessian @ dy.flatten()
-                        else:
-                            vhp = dy @ ddy @ hessian @ dy.T
+                        vhp = dy @ ddy @ hessian @ dy.T
                     else:
                         vhp = np.squeeze(ddy @ hessian)
 
@@ -265,11 +271,7 @@ class AutogradInterface(AnnotatedQueue):
             autograd.extend.defvjp(jacobian, vhp, argnums=[0])
 
             # only flatten dy if all parameters are single values
-            if all(np.ndim(p) == 0 for p in params):
-                vjp = dy.flatten() @ jacobian(params)
-            else:
-                vjp = dy @ jacobian(params)
-
+            vjp = dy @ jacobian(params)
             return vjp
 
         return gradient_product
