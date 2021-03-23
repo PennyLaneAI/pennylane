@@ -151,11 +151,42 @@ def test_diagonal_ctrl():
     with QuantumTape() as tape:
         ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
     tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
-    print(tape.operations)
     assert_equal_operations(
         tape.operations, 
         [
             qml.DiagonalQubitUnitary(
                 np.array([1.0, 1.0, -1.0, 1.0j]),
                 wires=[1, 0])
+        ])
+
+def test_qubit_unitary():
+    with QuantumTape() as tape:
+        ctrl(qml.QubitUnitary, 1)(
+            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), 
+            wires=0)
+
+    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
+    assert_equal_operations(
+        tape.operations, 
+        [
+            qml.ControlledQubitUnitary(
+                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
+                control_wires=1,
+                wires=0)
+        ])
+
+    with QuantumTape() as tape:
+        ctrl(qml.ControlledQubitUnitary, 1)(
+            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
+            control_wires=2,
+            wires=0)
+
+    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
+    assert_equal_operations(
+        tape.operations, 
+        [
+            qml.ControlledQubitUnitary(
+                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
+                control_wires=[1, 2],
+                wires=0)
         ])

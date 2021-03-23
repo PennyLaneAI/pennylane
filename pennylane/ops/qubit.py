@@ -1721,7 +1721,10 @@ class QubitUnitary(Operation):
 
 register_control(
     QubitUnitary,
-    lambda op, wire: ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=op.wires),
+    lambda op, wire: ControlledQubitUnitary(
+        *op.parameters, 
+        control_wires=wire, 
+        wires=op.wires),
 )
 
 
@@ -1827,6 +1830,14 @@ class ControlledQubitUnitary(QubitUnitary):
 
         return control_int
 
+register_control(
+    ControlledQubitUnitary,
+    lambda op, wire: ControlledQubitUnitary(
+        *op.parameters, 
+        control_wires=wire, 
+        wires=op.wires, 
+        ),
+)
 
 class MultiControlledX(ControlledQubitUnitary):
     r"""MultiControlledX(control_wires, wires, control_values)
