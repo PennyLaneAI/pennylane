@@ -24,21 +24,63 @@ from pennylane.grouping.utils import (
     are_identical_pauli_words
 )
 
-def pauli_group_generator(n_qubits):
+def pauli_group_generator(n_qubits, wire_map=None):
     """Generator for iterating over the n-qubit Pauli group.
+
+    The :math:`n`-qubit Pauli group has size :math:`4^n`, thus it may not be desirable
+    to construct it in full and store. This function allows for iteration over elements
+    of the Pauli group with no storage involved.
+
+    The order of iteration is based on the binary symplectic representation of
+    the Pauli group as :math:`2n`-bit strings. Ordering is done by converting
+    the integers :math:`0` to :math:`2^{2n}` to binary strings, and converting those
+    strings to Pauli operators using the ``binary_to_pauli`` method.
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
+        wire_map (dict): dictionary containing all wire labels used in the Pauli
+            word as keys, and unique integer labels as their values. If no wire map is
+            provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
     Returns:
         (qml.Operation): The next Pauli word in the group.
+
+    **Example**
+
+    The ``pauli_group_generator`` can be used to loop over the Pauli group as follows:
+
+    .. code-block:: python
+
+        from pennylane.grouping.pauli_group import pauli_group_generator
+
+        n_qubits = 3
+
+        for p in pauli_group_generator(n_qubits):
+            print(p)
+
+    Alternatively, using a custom wire map,
+
+    .. code-block:: python
+
+        from pennylane.wires import Wires
+        from pennylane.grouping.pauli_group import pauli_group_generator
+
+        n_qubits = 3
+        wire_map = {Wires('a') : 0, Wires('b') : 1, Wires('c') : 2}
+
+        for p in pauli_group_generator(n_qubits, wire_map=wire_map):
+            print(p)
+
     """
     element_idx = 0
+
+    if not wire_map:
+        wire_map = {wire_idx : wire_idx for wire_idx in range(n_qubits)}
 
     while element_idx < 4 ** n_qubits:
         binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
         binary_vector = [float(b) for b in binary_string]
-        yield binary_to_pauli(binary_vector)
+        yield binary_to_pauli(binary_vector, wire_map=wire_map)
         element_idx += 1
 
 def pauli_group(n_qubits):
