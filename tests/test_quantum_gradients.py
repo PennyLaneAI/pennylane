@@ -601,7 +601,7 @@ class TestQubitGradient:
 
     def test_gradient_exception_on_sample(self):
         """Tests that the proper exception is raised if differentiation of sampling is attempted."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):

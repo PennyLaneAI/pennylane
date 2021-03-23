@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,60 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``QAOAEmbedding`` template.
+Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
-from pennylane.templates import broadcast
+from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
-
-
-def _preprocess(features, wires, weights):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n` or less, where :math:`n` is the number of qubits.
-    * Check that the shape of the weights tensor is correct for the number of qubits.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-        weights (tensor_like): weights of the embedding
-
-    Returns:
-        int: number of times that embedding is repeated
-    """
-    shape = qml.math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features > len(wires):
-        raise ValueError(
-            f"Features must be of length {len(wires)} or less; got length {n_features}."
-        )
-
-    shape = qml.math.shape(weights)
-    repeat = shape[0]
-
-    if len(wires) == 1:
-        if shape != (repeat, 1):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
-
-    elif len(wires) == 2:
-        if shape != (repeat, 3):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
-    else:
-        if shape != (repeat, 2 * len(wires)):
-            raise ValueError(
-                f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
-            )
-
-    return repeat
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -75,19 +27,12 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         features (tensor_like): array of features to encode
         wires (Wires): wires that the template acts on
     """
+    n_features = qml.math.shape(features)[0]
 
-    try:
-        # works for tensors
-        n_features = features.shape[0]
-    except AttributeError:
-        # works for lists and tuples
-        n_features = len(features)
-
-    feature_encoding_wires = wires[:n_features]
-    remaining_wires = wires[n_features:]
-
-    broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
-    broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
+    for i in range(n_features):
+        qml.RX(features[i], wires=wires[i])
+    for i in range(n_features, len(wires)):
+        qml.Hadamard(wires=wires[i])
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields):
@@ -100,27 +45,23 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """
 
     if len(wires) == 1:
-        weights_zz = []
-        weights_fields = weights
+        local_fields(weights[0], wires=wires)
 
     elif len(wires) == 2:
-        # for 2 wires the periodic boundary condition is dropped in broadcast's "ring" pattern
-        # only feed in 1 parameter
-        weights_zz = weights[:1]
-        weights_fields = weights[1:]
+        # deviation for 2 wires: we do not connect last to first qubit
+        # with the entangling gates
+        qml.MultiRZ(weights[0], wires=wires.subset([0, 1]))
+        local_fields(weights[1], wires=wires[0:1])
+        local_fields(weights[2], wires=wires[1:2])
 
     else:
-        weights_zz = weights[: len(wires)]
-        weights_fields = weights[len(wires) :]
-
-    # zz couplings
-    broadcast(unitary=MultiRZ, pattern="ring", wires=wires, parameters=weights_zz)
-    # local fields
-    broadcast(unitary=local_fields, pattern="single", wires=wires, parameters=weights_fields)
+        for i in range(len(wires)):
+            qml.MultiRZ(weights[i], wires=wires.subset([i, i + 1], periodic_boundary=True))
+        for i in range(len(wires)):
+            local_fields(weights[len(wires) + i], wires=wires[i])
 
 
-@template
-def QAOAEmbedding(features, weights, wires, local_field="Y"):
+class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
     circuit that is inspired by the QAOA ansatz.
@@ -195,16 +136,16 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
 
             print(circuit(weights, f=features))
 
-        **Using parameter initialization functions**
+        **Parameter shape**
 
-        The initial weight parameters can alternatively be generated by utility functions from the
-        ``pennylane.init`` module, for example using the function :func:`~.qaoa_embedding_normal`:
+        The shape of the weights argument can be computed by the static method
+        :meth:`~.QAOAEmbedding.shape` and used when creating randomly
+        initialised weight tensors:
 
         .. code-block:: python
 
-            from pennylane.init import qaoa_embedding_normal
-            weights = qaoa_embedding_normal(n_layers=2, n_wires=2, mean=0, std=0.2)
-
+            shape = QAOAEmbedding.shape(n_layers=2, n_wires=2)
+            weights = np.random.random(shape)
 
         **Training the embedding**
 
@@ -260,22 +201,104 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
         1-dimensional Ising model.
 
     """
-    wires = Wires(wires)
-    repeat = _preprocess(features, wires, weights)
 
-    if local_field == "Z":
-        local_fields = RZ
-    elif local_field == "X":
-        local_fields = RX
-    elif local_field == "Y":
-        local_fields = RY
-    else:
-        raise ValueError(f"did not recognize local field {local_field}")
+    num_params = 2
+    num_wires = AnyWires
+    par_domain = "A"
 
-    for l in range(repeat):
-        # apply alternating Hamiltonians
-        qaoa_feature_encoding_hamiltonian(features, wires)
-        qaoa_ising_hamiltonian(weights[l], wires, local_fields)
+    def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
 
-    # repeat the feature encoding once more at the end
-    qaoa_feature_encoding_hamiltonian(features, wires)
+        if local_field == "Z":
+            self.local_field = qml.RZ
+        elif local_field == "X":
+            self.local_field = qml.RX
+        elif local_field == "Y":
+            self.local_field = qml.RY
+        else:
+            raise ValueError(f"did not recognize local field {local_field}")
+
+        wires = Wires(wires)
+        self._preprocess(features, weights, wires)
+        super().__init__(features, weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        features = self.parameters[0]
+        weights = self.parameters[1]
+
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for l in range(repeat):
+                # apply alternating Hamiltonians
+                qaoa_feature_encoding_hamiltonian(features, self.wires)
+                qaoa_ising_hamiltonian(weights[l], self.wires, self.local_field)
+
+            # repeat the feature encoding once more at the end
+            qaoa_feature_encoding_hamiltonian(features, self.wires)
+
+        return tape
+
+    @staticmethod
+    def _preprocess(features, weights, wires):
+        """Validate and pre-process inputs as follows:
+
+        * Check that the features tensor is one-dimensional.
+        * Check that the first dimension of the features tensor
+          has length :math:`n` or less, where :math:`n` is the number of qubits.
+        * Check that the shape of the weights tensor is correct for the number of qubits.
+
+        Args:
+            features (tensor-like): feature tensor
+            weights (tensor-like): weight tensor
+        """
+
+        shape = qml.math.shape(features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
+
+        shape = qml.math.shape(weights)
+        repeat = shape[0]
+
+        if len(wires) == 1:
+            if shape != (repeat, 1):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
+
+        elif len(wires) == 2:
+            if shape != (repeat, 3):
+                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
+        else:
+            if shape != (repeat, 2 * len(wires)):
+                raise ValueError(
+                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
+                )
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        if n_wires == 1:
+            return n_layers, 1
+
+        if n_wires == 2:
+            return n_layers, 3
+
+        return n_layers, 2 * n_wires
