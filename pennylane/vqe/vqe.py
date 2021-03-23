@@ -21,7 +21,6 @@ import itertools
 import warnings
 
 import pennylane as qml
-import pennylane.tape
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 
