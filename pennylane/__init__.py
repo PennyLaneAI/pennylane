@@ -47,6 +47,10 @@ from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, apply, dot, map, sum
 from .queuing import QueuingContext
+<<<<<<< HEAD
+=======
+import pennylane.grouping  # pylint:disable=wrong-import-order
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
 
 # Look for an existing configuration file

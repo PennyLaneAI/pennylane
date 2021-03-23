@@ -612,6 +612,7 @@ class TestSimplifiedTwoDesign:
 class TestBasicEntangler:
     """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
 
+<<<<<<< HEAD
     @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
     def test_circuit_queue(self, n_wires, n_cnots):
         """Tests the gate types in the circuit."""
@@ -669,6 +670,8 @@ class TestBasicEntangler:
             if not isinstance(op, CNOT):
                 assert isinstance(op, rotation)
 
+=======
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
     @pytest.mark.parametrize(
         "weights, n_wires, target",
         [

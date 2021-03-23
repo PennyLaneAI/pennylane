@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
 r"""
 Contains the ``BasicEntanglerLayers`` template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=consider-using-enumerate
 import pennylane as qml
+<<<<<<< HEAD
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
@@ -51,6 +52,13 @@ def _preprocess(weights, wires):
 
 @template
 def BasicEntanglerLayers(weights, wires, rotation=None):
+=======
+from pennylane.operation import Operation, AnyWires
+from pennylane.wires import Wires
+
+
+class BasicEntanglerLayers(Operation):
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
@@ -108,20 +116,16 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
 
-        **Parameter initialization function**
+        **Parameter shape**
 
-        The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
-        and ``basic_entangler_layers_uniform``.
+        The shape of the weights argument can be computed by the static method
+        :meth:`~.BasicEntanglerLayers.shape` and used when creating randomly
+        initialised weight tensors:
 
         .. code-block:: python
 
-            from pennylane.init import basic_entangler_layers_normal
-
-            n_layers = 4
-            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
-
-            circuit(weights)
-
+            shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
+            weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
 
@@ -157,14 +161,58 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         ``ValueError: Wrong number of parameters``.
     """
 
-    if rotation is None:
-        rotation = RX
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
+    def __init__(self, weights, wires=None, rotation=None, do_queue=True):
 
-    repeat = _preprocess(weights, wires)
+        self.rotation = rotation or qml.RX
 
-    for layer in range(repeat):
+        shape = qml.math.shape(weights)
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+        if shape[1] != len(wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
 
-        broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        broadcast(unitary=CNOT, pattern="ring", wires=wires)
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        weights = self.parameters[0]
+
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for layer in range(repeat):
+                for i in range(len(self.wires)):
+                    self.rotation(weights[layer][i], wires=self.wires[i : i + 1])
+
+                if len(self.wires) == 2:
+                    qml.CNOT(wires=self.wires)
+
+                elif len(self.wires) > 2:
+                    for i in range(len(self.wires)):
+                        w = self.wires.subset([i, i + 1], periodic_boundary=True)
+                        qml.CNOT(wires=w)
+
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        return n_layers, n_wires

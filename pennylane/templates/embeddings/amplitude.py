@@ -27,7 +27,71 @@ from pennylane.wires import Wires
 TOLERANCE = 1e-10
 
 
+<<<<<<< HEAD
 class AmplitudeEmbedding(Operation):
+=======
+def _preprocess(features, wires, pad_with, normalize):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the features tensor is one-dimensional.
+    * If pad_with is None, check that the first dimension of the features tensor
+      has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
+      first dimension of the features tensor is not larger than :math:`2^n` and pad features with value if necessary.
+    * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
+      features tensor.
+
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+        pad_with (float): constant used to pad the features tensor to required dimension
+        normalize (bool): whether or not to normalize the features vector
+
+    Returns:
+        tensor: pre-processed features
+    """
+
+    shape = qml.math.shape(features)
+
+    # check shape
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+    n_features = shape[0]
+    if pad_with is None and n_features != 2 ** len(wires):
+        raise ValueError(
+            f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+            f"Use the 'pad' argument for automated padding."
+        )
+
+    if pad_with is not None and n_features > 2 ** len(wires):
+        raise ValueError(
+            f"Features must be of length {2 ** len(wires)} or "
+            f"smaller to be padded; got length {n_features}."
+        )
+
+    # pad
+    if pad_with is not None and n_features < 2 ** len(wires):
+        padding = [pad_with] * (2 ** len(wires) - n_features)
+        features = qml.math.concatenate([features, padding], axis=0)
+
+    # normalize
+    norm = qml.math.sum(qml.math.abs(features) ** 2)
+
+    if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+        if normalize or pad_with:
+            features = features / np.sqrt(norm)
+        else:
+            raise ValueError(
+                f"Features must be a vector of length 1.0; got length {norm}."
+                "Use 'normalize=True' to automatically normalize."
+            )
+
+    return features
+
+
+@template
+def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, pad=None):
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension

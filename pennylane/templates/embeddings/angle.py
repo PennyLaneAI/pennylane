@@ -16,8 +16,14 @@ Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
+<<<<<<< HEAD
 from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
+=======
+from pennylane.templates.decorator import template
+from pennylane.templates import broadcast
+from pennylane.wires import Wires
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
 
 ROT = {'X': RX,
@@ -25,7 +31,32 @@ ROT = {'X': RX,
        'Z': RZ}
 
 
+<<<<<<< HEAD
 class AngleEmbedding(Operation):
+=======
+    Args:
+        features (tensor_like): input features to pre-process
+        wires (Wires): wires that template acts on
+
+    Returns:
+        int: number of features
+    """
+    shape = qml.math.shape(features)
+
+    if len(shape) != 1:
+        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+    n_features = shape[0]
+    if n_features > len(wires):
+        raise ValueError(
+            f"Features must be of length {len(wires)} or less; got length {n_features}."
+        )
+    return n_features
+
+
+@template
+def AngleEmbedding(features, wires, rotation="X"):
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 

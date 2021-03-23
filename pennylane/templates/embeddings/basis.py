@@ -16,7 +16,11 @@ Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
+<<<<<<< HEAD
 from pennylane.operation import Operation, AnyWires
+=======
+from pennylane.templates.decorator import template
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 from pennylane.wires import Wires
 
 
@@ -36,7 +40,9 @@ class BasisEmbedding(Operation):
         features (tensor-like): binary input array of shape ``(n, )``
         wires (Iterable): Wires that the template acts on.
     """
+    shape = qml.math.shape(features)
 
+<<<<<<< HEAD
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
@@ -44,12 +50,18 @@ class BasisEmbedding(Operation):
     def __init__(self, features, wires, do_queue=True):
 
         wires = Wires(wires)
+=======
+    if len(shape) != 1:
+        raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
-        shape = qml.math.shape(features)
+    n_features = shape[0]
+    if n_features != len(wires):
+        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
+    features = list(qml.math.toarray(features))
 
+<<<<<<< HEAD
         n_features = shape[0]
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
@@ -60,6 +72,10 @@ class BasisEmbedding(Operation):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
         super().__init__(features, wires=wires, do_queue=do_queue)
+=======
+    if not set(features).issubset({0, 1}):
+        raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+>>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
     def expand(self):
 

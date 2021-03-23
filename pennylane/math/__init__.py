@@ -45,6 +45,7 @@ from .fn import (
     cast,
     cast_like,
     concatenate,
+    conj,
     convert_like,
     cov_matrix,
     diag,
