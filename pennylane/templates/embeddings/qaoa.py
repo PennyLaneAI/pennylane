@@ -300,5 +300,5 @@ class QAOAEmbedding(Operation):
 
         if n_wires == 2:
             return n_layers, 3
-        
+
         return n_layers, 2 * n_wires
