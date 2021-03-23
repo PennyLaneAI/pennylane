@@ -61,7 +61,7 @@ class ControlledOperation(Operation):
     Certain simulators and quantum computers can take advantage of the controlled gate sparsity,
     while other devices must rely on the op-by-op decomposition defined by the ``op.expand``
     method.
-    
+
     Attributes:
         _tape (QuantumTape): The tape that defines the underlying operation.
         _control_wires (Wires): The control wires.
