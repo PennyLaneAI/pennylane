@@ -25,7 +25,7 @@ def test_control_sanity_check():
         qml.PauliZ(wires=0)
 
     with QuantumTape() as tape:
-        cmake_ops = ctrl(make_ops, control_wires=1)
+        cmake_ops = ctrl(make_ops, control=1)
         #Execute controlled version.
         cmake_ops()
 
@@ -86,7 +86,7 @@ def test_nested_control():
 
 def test_multi_control():
     with QuantumTape() as tape:
-        CCX = ctrl(qml.PauliX, control_wires=[3, 7])
+        CCX = ctrl(qml.PauliX, control=[3, 7])
         CCX(wires=0)
     assert len(tape.operations) == 1
     op = tape.operations[0]
@@ -98,16 +98,16 @@ def test_control_with_qnode():
     dev = qml.device("default.qubit", wires=3)
 
     def my_anzats(params):
-        qml.RZ(params[0], wires=0)
-        qml.RZ(params[1], wires=1)
+        qml.RY(params[0], wires=0)
+        qml.RY(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(params[2], wires=1)
         qml.RX(params[3], wires=0)
         qml.CNOT(wires=[1, 0])
 
     def controlled_anzats(params):
-        qml.CRZ(params[0], wires=[2, 0])
-        qml.CRZ(params[1], wires=[2, 1])
+        qml.CRY(params[0], wires=[2, 0])
+        qml.CRY(params[1], wires=[2, 1])
         qml.Toffoli(wires=[2, 0, 1])
         qml.CRX(params[2], wires=[2, 1])
         qml.CRX(params[3], wires=[2, 0])
@@ -124,3 +124,25 @@ def test_control_with_qnode():
     res1 = circuit1(params=params)
     res2 = circuit2(params=params)
     np.testing.assert_allclose(res1, res2) 
+
+
+def test_ctrl_within_ctrl():
+    """Test using ctrl on a method that uses ctrl."""
+    def anzats(params):
+        qml.RX(params[0], wires=0)
+        ctrl(qml.PauliX, control=0)(wires=1)
+        qml.RX(params[1], wires=0)
+
+    controlled_anzats = ctrl(anzats, 2)
+
+    with QuantumTape() as tape:
+        controlled_anzats([0.123, 0.456])
+
+    tape = expand_tape(tape, 2, stop_at=lambda op: not isinstance(op, ControlledOperation))
+
+    expected = [
+        qml.CRX(0.123, wires=[2, 0]),
+        qml.Toffoli(wires=[0, 2, 1]),
+        qml.CRX(0.456, wires=[2, 0])
+    ]
+    assert_equal_operations(tape.operations, expected)
