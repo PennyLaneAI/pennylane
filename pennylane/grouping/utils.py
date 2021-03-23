@@ -353,6 +353,11 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
     """
+    character_map = {
+        "PauliX" : "X",
+        "PauliY" : "Y",
+        "PauliZ" : "Z"
+    }
 
     if not is_pauli_word(pauli_word):
         raise TypeError(
@@ -361,7 +366,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
-        wire_map = {Wires(pauli_word.wires[i]): i for i in range(len(pauli_word.wires))}
+        wire_map = {Wires(pauli_word.wires[i]) : i for i in range(len(pauli_word.wires))}
 
     n_qubits = len(wire_map)
 
@@ -370,7 +375,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     # Special case is when there is a single Pauli term
     if not isinstance(pauli_word.name, list):
-        if pauli_word.name != "Identity":
+        if pauli_word.name != 'Identity':
             wire_idx = wire_map[Wires(pauli_word.wires[0])]
             pauli_string[wire_idx] = character_map[pauli_word.name]
         return "".join(pauli_string)

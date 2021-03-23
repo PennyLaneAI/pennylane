@@ -18,6 +18,7 @@ Functions for generating and manipulating elements of the Pauli group.
 import numpy as np
 
 from pennylane import Identity
+from pennylane.wires import Wires
 from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
 
@@ -72,7 +73,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
     element_idx = 0
 
     if not wire_map:
-        wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
+        wire_map = {Wires(wire_idx): wire_idx for wire_idx in range(n_qubits)}
 
     while element_idx < 4 ** n_qubits:
         binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
