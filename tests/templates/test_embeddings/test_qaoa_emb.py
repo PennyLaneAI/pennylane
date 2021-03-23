@@ -209,11 +209,10 @@ class TestParameters:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit()
 
-    @pytest.mark.parametrize('weights, n_wires', [
-        (np.zeros(shape=(1, 2)), 1),
-        (np.zeros(shape=(1, 4)), 2),
-        (np.zeros(shape=(1, 3)), 3)
-    ])
+    @pytest.mark.parametrize(
+        "weights, n_wires",
+        [(np.zeros(shape=(1, 2)), 1), (np.zeros(shape=(1, 4)), 2), (np.zeros(shape=(1, 3)), 3)],
+    )
     def test_exception_wrong_weight_shape(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
         features = np.zeros(shape=(n_wires,))

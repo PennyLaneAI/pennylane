@@ -23,8 +23,7 @@ import pennylane as qml
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("features", [[1, 2, 3],
-                                          [-1, 1, -1]])
+    @pytest.mark.parametrize("features", [[1, 2, 3], [-1, 1, -1]])
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
@@ -33,7 +32,7 @@ class TestDecomposition:
 
         assert len(tape.operations) == len(features)
         for idx, gate in enumerate(tape.operations):
-            assert gate.name == 'Squeezing'
+            assert gate.name == "Squeezing"
             assert gate.parameters[0] == features[idx]
 
     def test_state_execution_amplitude(self):
@@ -41,12 +40,17 @@ class TestDecomposition:
 
         features = np.array([1.2, 0.3])
         n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
+        dev = qml.device("default.gaussian", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
-            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
+            qml.templates.SqueezingEmbedding(
+                features=x, wires=range(n_wires), method="amplitude", c=1
+            )
+            return [
+                qml.expval(qml.NumberOperator(wires=0)),
+                qml.expval(qml.NumberOperator(wires=1)),
+            ]
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
@@ -55,20 +59,25 @@ class TestDecomposition:
 
         features = np.array([1.2, 0.3])
         n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
+        dev = qml.device("default.gaussian", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
+            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.templates.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
-            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
+            qml.templates.SqueezingEmbedding(
+                features=[0, 0], wires=range(n_wires), method="phase", c=1
+            )
+            return [
+                qml.expval(qml.NumberOperator(wires=0)),
+                qml.expval(qml.NumberOperator(wires=1)),
+            ]
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.random.random(size=(3, ))
+        features = np.random.random(size=(3,))
 
         dev = qml.device("default.gaussian", wires=3)
         dev2 = qml.device("default.gaussian", wires=["z", "a", "k"])
@@ -97,11 +106,11 @@ class TestParameters:
         """Verifies that an exception is thrown if number of subsystems wrong."""
 
         n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
+        dev = qml.device("default.gaussian", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
+            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of"):
@@ -111,11 +120,11 @@ class TestParameters:
         """Verifies that an exception is thrown if is strategy unknown."""
 
         n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
+        dev = qml.device("default.gaussian", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
+            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="A")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
@@ -125,7 +134,7 @@ class TestParameters:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
         n_subsystems = 2
-        dev = qml.device('default.gaussian', wires=n_subsystems)
+        dev = qml.device("default.gaussian", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -159,7 +168,7 @@ class TestGradients:
         """Tests that gradients of template and decomposed circuit
         are the same in the autograd interface."""
 
-        features = pnp.array([1., 1., 1.], requires_grad=True)
+        features = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
         dev = qml.device("default.gaussian", wires=3)
 
@@ -181,7 +190,7 @@ class TestGradients:
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array([1., 1., 1.])
+        features = jnp.array([1.0, 1.0, 1.0])
 
         dev = qml.device("default.gaussian", wires=3)
 
@@ -202,7 +211,7 @@ class TestGradients:
 
         import tensorflow as tf
 
-        features = tf.Variable([1., 1., 1.])
+        features = tf.Variable([1.0, 1.0, 1.0])
 
         dev = qml.device("default.gaussian", wires=3)
 
@@ -225,7 +234,7 @@ class TestGradients:
 
         import torch
 
-        features = torch.tensor([1., 1., 1.], requires_grad=True)
+        features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 
         dev = qml.device("default.gaussian", wires=3)
 

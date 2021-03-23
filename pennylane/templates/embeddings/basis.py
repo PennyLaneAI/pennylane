@@ -71,4 +71,3 @@ class BasisEmbedding(Operation):
                     qml.PauliX(wire)
 
         return tape
-

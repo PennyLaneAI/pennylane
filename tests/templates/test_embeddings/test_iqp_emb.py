@@ -23,10 +23,15 @@ from pennylane import numpy as pnp
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    QUEUES = [(1, ['Hadamard', 'RZ'], [[0], [0]]),
-              (2, ['Hadamard', 'RZ', 'Hadamard', 'RZ', 'MultiRZ'], [[0], [0], [1], [1], [0, 1]]),
-              (3, ['Hadamard', 'RZ', 'Hadamard', 'RZ', 'Hadamard', 'RZ',
-                   'MultiRZ', 'MultiRZ', 'MultiRZ'], [[0], [0], [1], [1], [2], [2], [0, 1], [0, 2], [1, 2]])]
+    QUEUES = [
+        (1, ["Hadamard", "RZ"], [[0], [0]]),
+        (2, ["Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ"], [[0], [0], [1], [1], [0, 1]]),
+        (
+            3,
+            ["Hadamard", "RZ", "Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ", "MultiRZ", "MultiRZ"],
+            [[0], [0], [1], [1], [2], [2], [0, 1], [0, 2], [1, 2]],
+        ),
+    ]
 
     @pytest.mark.parametrize("n_wires, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, expected_names, expected_wires):
@@ -67,13 +72,13 @@ class TestDecomposition:
 class TestParameters:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize('features', [[1., 2.],
-                                          [1., 2., 3., 4.],
-                                          [[1., 1.], [2., 2.], [3., 3.]]])
+    @pytest.mark.parametrize(
+        "features", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0], [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]]
+    )
     def test_exception_wrong_number_of_features(self, features):
         """Verifies that an exception is raised if 'feature' has the wrong shape."""
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit(f=None):
@@ -94,7 +99,7 @@ def circuit_decomposed(features):
     qml.RZ(features[0], wires=0)
     qml.Hadamard(wires=1)
     qml.RZ(features[1], wires=1)
-    qml.MultiRZ(features[0]*features[1], wires=[0, 1])
+    qml.MultiRZ(features[0] * features[1], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 

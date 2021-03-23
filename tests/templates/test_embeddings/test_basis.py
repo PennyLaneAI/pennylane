@@ -22,9 +22,7 @@ import pennylane as qml
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("features", [[1, 0, 1],
-                                          [1, 1, 1],
-                                          [0, 1, 0]])
+    @pytest.mark.parametrize("features", [[1, 0, 1], [1, 1, 1], [0, 1, 0]])
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
@@ -33,17 +31,14 @@ class TestDecomposition:
 
         assert len(tape.operations) == features.count(1)
         for gate in tape.operations:
-            assert gate.name == 'PauliX'
+            assert gate.name == "PauliX"
 
-    @pytest.mark.parametrize("state", [[0, 1],
-                                       [1, 1],
-                                       [1, 0],
-                                       [0, 0]])
+    @pytest.mark.parametrize("state", [[0, 1], [1, 1], [1, 0], [0, 0]])
     def test_state(self, state):
         """Checks that the correct state is prepared."""
 
         n_qubits = 2
-        dev = qml.device('default.qubit', wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -84,7 +79,7 @@ class TestParameters:
         """Verifies that exception thrown if there are more features than qubits."""
 
         n_qubits = 2
-        dev = qml.device('default.qubit', wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -98,7 +93,7 @@ class TestParameters:
         """Verifies that exception thrown if there are less features than qubits."""
 
         n_qubits = 2
-        dev = qml.device('default.qubit', wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -113,7 +108,7 @@ class TestParameters:
         values other than zero and one."""
 
         n_subsystems = 2
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -128,7 +123,7 @@ class TestParameters:
         number of dimensions of features is incorrect."""
 
         n_subsystems = 2
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):

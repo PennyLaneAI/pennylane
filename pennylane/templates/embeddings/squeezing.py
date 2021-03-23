@@ -82,6 +82,6 @@ class SqueezingEmbedding(Operation):
         with qml.tape.QuantumTape() as tape:
 
             for i in range(len(self.wires)):
-                qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i:i+1])
+                qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
         return tape

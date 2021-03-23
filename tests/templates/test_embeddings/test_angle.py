@@ -23,8 +23,7 @@ import pennylane as qml
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("features", [[1, 1, 1],
-                                          [1, 1]])
+    @pytest.mark.parametrize("features", [[1, 1, 1], [1, 1]])
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
@@ -33,7 +32,7 @@ class TestDecomposition:
 
         assert len(tape.operations) == len(features)
         for gate in tape.operations:
-            assert gate.name == 'RX'
+            assert gate.name == "RX"
 
     def test_state_rotx(self, qubit_device, n_subsystems):
         """Checks the state produced using the rotation='X' strategy."""
@@ -42,9 +41,9 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='X')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="X")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='X')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="X")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
@@ -59,9 +58,9 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Y')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Y")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Y')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Y")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
@@ -75,27 +74,27 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
         target = [-1, 1, 1, 1, 1]
         assert np.allclose(res, target[:n_subsystems])
 
-    @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
+    @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
     def test_angle_embedding_fewer_features(self, strategy):
         """Tests case with fewer features than rotation gates."""
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
         n_subsystems = 5
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features)
@@ -104,7 +103,7 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.random.random(size=(3, ))
+        features = np.random.random(size=(3,))
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -124,17 +123,18 @@ class TestDecomposition:
 
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
+
 class TestParameters:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize('strategy', ['X', 'Y', 'Z'])
+    @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
     def test_exception_fewer_rotations(self, strategy):
         """Verifies that exception is raised if there are fewer
-           rotation gates than features."""
+        rotation gates than features."""
 
         features = [0, 0, 0, 0]
         n_subsystems = 1
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -151,11 +151,11 @@ class TestParameters:
         rotation strategy is unknown."""
 
         n_subsystems = 1
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
+            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="A")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         with pytest.raises(ValueError, match="Rotation option"):
@@ -165,7 +165,7 @@ class TestParameters:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
         n_subsystems = 1
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -199,7 +199,7 @@ class TestGradients:
         """Tests that gradients of template and decomposed circuit
         are the same in the autograd interface."""
 
-        features = pnp.array([1., 1., 1.], requires_grad=True)
+        features = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -221,7 +221,7 @@ class TestGradients:
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array([1., 1., 1.])
+        features = jnp.array([1.0, 1.0, 1.0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -242,7 +242,7 @@ class TestGradients:
 
         import tensorflow as tf
 
-        features = tf.Variable([1., 1., 1.])
+        features = tf.Variable([1.0, 1.0, 1.0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -265,7 +265,7 @@ class TestGradients:
 
         import torch
 
-        features = torch.tensor([1., 1., 1.], requires_grad=True)
+        features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
