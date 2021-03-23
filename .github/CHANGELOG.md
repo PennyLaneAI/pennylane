@@ -8,12 +8,11 @@
  Here's a simple example
 
   ```python
-
   def my_anzats(params):
      qml.RX(params[0], wires=0)
      qml.RZ(params[1], wires=1)
 
-  # Create a new method that applies my_anzats
+  # Create a new method that applies `my_anzats`
   # controlled by the "2" wire.
   my_anzats2 = ctrl(my_anzats, control=2)
 
@@ -38,25 +37,31 @@
   this is Shor's algorithm.
 
   ```python
-
   def modmul(a, mod, wires):
       # Some complex set of gates that implements modular multiplcation.
+      # qml.CNOT(...); qml.Toffoli(...); ...
       ...
  
  
   @qml.qnode(...)
   def shors(a, mod, scratch_wires, qft_wires):
       for i, wire in enumerate(qft_wires):
-      qml.Hadamard(wire)
+          qml.Hadamard(wire)
+     
+          # We apply the entire modmul subroutine based on the control wire.
+          # Once the subroutine is abstracted in a method, applying the contorlled
+          # version is just a single line of code.
+          cmodmul = qml.ctrl(modmul, control=wire)
+
+          # Execute the controlled modular multiplication.
+          cmodmul(a ** i, mod, scratch_wires)
  
-      # We apply the entire modmul subroutine based on the control wire.
-      # Once the subroutine is abstracted in a method, applying the contorlled
-      # version is just a single line of code.
-      qml.ctrl(modmul, control=wire)(a ** i, mod, scratch_wires)
- 
-  qml.adjoint(qml.QFT)(qft_wires)
-  return qml.sample()
+      qml.adjoint(qml.QFT)(qft_wires)
+      return qml.sample()
   ```
+
+  In the future, devices will be able to expliot the sparsity of controlled operations to 
+  improve simulation performance. 
 
 
 * Added the function ``finite_diff()`` to compute finite-difference
