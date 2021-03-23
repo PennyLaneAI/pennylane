@@ -29,7 +29,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
-from pennylane.transforms.registrations import register_control
+from pennylane.transforms.registrations import register_control_transform
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -152,7 +152,7 @@ class PauliX(Observable, Operation):
         return PauliX(wires=self.wires, do_queue=do_queue)
 
 
-register_control(PauliX, lambda op, wire: CNOT(wires=Wires(wire) + op.wires))
+register_control_transform(PauliX, lambda op, wire: CNOT(wires=Wires(wire) + op.wires))
 
 
 class PauliY(Observable, Operation):
@@ -212,7 +212,7 @@ class PauliY(Observable, Operation):
         return PauliY(wires=self.wires, do_queue=do_queue)
 
 
-register_control(PauliY, lambda op, wire: CY(wires=Wires(wire) + op.wires))
+register_control_transform(PauliY, lambda op, wire: CY(wires=Wires(wire) + op.wires))
 
 
 class PauliZ(Observable, DiagonalOperation):
@@ -255,7 +255,7 @@ class PauliZ(Observable, DiagonalOperation):
         return PauliZ(wires=self.wires, do_queue=do_queue)
 
 
-register_control(PauliZ, lambda op, wire: CZ(wires=Wires(wire) + op.wires))
+register_control_transform(PauliZ, lambda op, wire: CZ(wires=Wires(wire) + op.wires))
 
 
 class S(DiagonalOperation):
@@ -411,7 +411,7 @@ class CNOT(Operation):
         return CNOT(wires=self.wires, do_queue=do_queue)
 
 
-register_control(CNOT, lambda op, wire: Toffoli(wires=Wires(wire) + op.wires))
+register_control_transform(CNOT, lambda op, wire: Toffoli(wires=Wires(wire) + op.wires))
 
 
 class CZ(DiagonalOperation):
@@ -531,7 +531,7 @@ class SWAP(Operation):
         return SWAP(wires=self.wires, do_queue=do_queue)
 
 
-register_control(SWAP, lambda op, wire: CSWAP(wire + op.wires))
+register_control_transform(SWAP, lambda op, wire: CSWAP(wire + op.wires))
 
 
 class CSWAP(Operation):
@@ -671,7 +671,7 @@ class RX(Operation):
         return RX(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
-register_control(RX, lambda op, wire: CRX(*op.parameters, wires=wire + op.wires))
+register_control_transform(RX, lambda op, wire: CRX(*op.parameters, wires=wire + op.wires))
 
 
 class RY(Operation):
@@ -712,7 +712,7 @@ class RY(Operation):
         return RY(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
-register_control(RY, lambda op, wire: CRY(*op.parameters, wires=wire + op.wires))
+register_control_transform(RY, lambda op, wire: CRY(*op.parameters, wires=wire + op.wires))
 
 
 class RZ(DiagonalOperation):
@@ -759,7 +759,7 @@ class RZ(DiagonalOperation):
         return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
-register_control(RZ, lambda op, wire: CRZ(*op.parameters, wires=wire + op.wires))
+register_control_transform(RZ, lambda op, wire: CRZ(*op.parameters, wires=wire + op.wires))
 
 
 class PhaseShift(DiagonalOperation):
@@ -807,7 +807,9 @@ class PhaseShift(DiagonalOperation):
         return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
 
 
-register_control(PhaseShift, lambda op, wire: ControlledPhaseShift(*op.parameters, wire + op.wires))
+register_control_transform(
+    PhaseShift, lambda op, wire: ControlledPhaseShift(*op.parameters, wire + op.wires)
+)
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -923,7 +925,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
 
-register_control(Rot, lambda op, wire: CRot(*op.parameters, wire + op.wires))
+register_control_transform(Rot, lambda op, wire: CRot(*op.parameters, wire + op.wires))
 
 
 class MultiRZ(DiagonalOperation):
@@ -1868,7 +1870,7 @@ class QubitUnitary(Operation):
         )
 
 
-register_control(
+register_control_transform(
     QubitUnitary,
     lambda op, wire: ControlledQubitUnitary(*op.parameters, control_wires=wire, wires=op.wires),
 )
@@ -1977,7 +1979,7 @@ class ControlledQubitUnitary(QubitUnitary):
         return control_int
 
 
-register_control(
+register_control_transform(
     ControlledQubitUnitary,
     lambda op, wire: ControlledQubitUnitary(
         *op.parameters,
@@ -2077,7 +2079,7 @@ def _diagonal_control(op, control):
     )
 
 
-register_control(DiagonalQubitUnitary, _diagonal_control)
+register_control_transform(DiagonalQubitUnitary, _diagonal_control)
 
 
 class QFT(Operation):

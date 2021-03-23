@@ -20,7 +20,7 @@ from functools import wraps
 from pennylane.tape import QuantumTape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
-from pennylane.transforms.registrations import register_control, CONTROL_MAPS
+from pennylane.transforms.registrations import register_control_transform, CONTROL_MAPS
 from pennylane.transforms.adjoint import adjoint
 
 
@@ -39,13 +39,12 @@ def expand_with_control(tape, control_wire):
             if op.__class__ in CONTROL_MAPS:
                 # Create the controlled version of the operation
                 # and add that the to the tape context.
-                # NOTE(chase): Should we use type(op) here instead?
                 CONTROL_MAPS[op.__class__](op, control_wire)
             else:
                 raise NotImplementedError(
                     f"Control transform of operation {type(op)} is not registered."
-                    "You can define the control transform by using qml.register_control"
-                    "See documentation for more details."
+                    "You can define the control transform by using "
+                    "qml.register_control_transform. See documentation for more details."
                 )
     return new_tape
 
@@ -63,10 +62,6 @@ class ControlledOperation(Operation):
     while other devices must rely on the op-by-op decomposition defined by the ``op.expand``
     method.
 
-    Attributes:
-        subtape (QuantumTape): The tape that defines the underlying operation.
-        control_wires (Wires): The control wires.
-
     Args:
         tape: A QuantumTape. This tape defines the unitary that should be applied relative
             to the control wires.
@@ -79,7 +74,11 @@ class ControlledOperation(Operation):
 
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
+        """(QuantumTape): The tape that defines the underlying operation."""
+
         self.control_wires = Wires(control_wires)
+        """(Wires): The control wires."""
+
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
@@ -100,7 +99,7 @@ class ControlledOperation(Operation):
         return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
 
 
-register_control(
+register_control_transform(
     ControlledOperation,
     lambda op, wires: ControlledOperation(
         tape=op.subtape,

@@ -16,18 +16,25 @@ Contains the global dictionaries for transform registrations.
 """
 
 CONTROL_MAPS = {}
-"""Dict[type, Callable[Operation, None]]:
+"""Dict[type, Callable[tuple(Operation, Wire), None]]:
 Mapping from operation types to methods that create
 concrete controlled versions of a given operation.
-Functions should take the given operation as input
-and return nothing. The desired controlled operation(s)
-should be added to the tape context by setting ``do_queue=True``.
+Functions should take the given operation and contorl 
+wire as input and return nothing. The desired controlled 
+operation(s) should be added to the tape context by setting 
+``do_queue=True`` when constructing the new operations.
 """
 
 
-def register_control(cls, fn):
-    """Register the control transform for a custom Operation.
+def register_control_transform(cls, fn):
+    """Register the control transform for an ``Operation``.
 
-    TODO(chase): Documentation.
+    Args:
+        cls (python class): The custom ``Operation`` class.
+        fn (function): A python function that queues the desired controlled operations.
+            Should have input signature of:
+                Args:
+                    op: The original operation.
+                    wire: The desired control wire.
     """
     CONTROL_MAPS[cls] = fn
