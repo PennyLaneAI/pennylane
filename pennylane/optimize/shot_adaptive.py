@@ -38,7 +38,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     .. note::
 
         The shot adaptive optimizer only supports single QNodes or :class:`~.ExpvalCost` objects as
-        objective functions.
+        objective functions. The bound device must also be instantiated with a finite number
+        of shots.
 
     Args:
         min_shots (int): The minimum number of shots used to estimate the expectations
@@ -127,7 +128,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ...   qml.PauliZ(0) @ qml.PauliZ(1)
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> dev = qml.device("default.qubit", wires=2, analytic=False)
+    >>> dev = qml.device("default.qubit", wires=2, shots=100)
     >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
 
     Once constructed, the cost function can be passed directly to the
@@ -263,7 +264,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         if dev.analytic:
             raise ValueError(
-                "The Rosalin optimizer can only be used with non-analytic devices "
+                "The Rosalin optimizer can only be used with devices "
                 "that estimate expectation values with a finite number of shots."
             )
 

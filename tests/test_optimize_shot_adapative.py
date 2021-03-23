@@ -25,17 +25,17 @@ class TestExceptions:
     def test_analytic_device_error(self):
         """Test that an exception is raised if an analytic device is used"""
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
-        dev = qml.device("default.qubit", wires=1, analytic=True)
+        dev = qml.device("default.qubit", wires=1, shots=None)
         expval_cost = qml.ExpvalCost(lambda x, **kwargs: qml.RX(x, wires=0), H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
         # test expval cost
-        with pytest.raises(ValueError, match="can only be used with non-analytic"):
+        with pytest.raises(ValueError, match="can only be used with devices that"):
             opt.step(expval_cost, 0.5)
 
         # test qnode cost
-        with pytest.raises(ValueError, match="can only be used with non-analytic"):
+        with pytest.raises(ValueError, match="can only be used with devices that"):
             opt.step(expval_cost.qnodes[0], 0.5)
 
     def test_learning_error(self):
@@ -43,7 +43,7 @@ class TestExceptions:
         lipschitz bound"""
         coeffs = [0.3, 0.1]
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
-        dev = qml.device("default.qubit", wires=1, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=100)
         expval_cost = qml.ExpvalCost(lambda x, **kwargs: qml.RX(x, wires=0), H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.)
@@ -63,7 +63,7 @@ class TestExceptions:
 
     def test_unknown_objective_function(self):
         """Test that an exception is raised if an unknown objective function is passed"""
-        dev = qml.device("default.qubit", wires=1, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -90,7 +90,7 @@ class TestSingleShotGradientIntegration:
     """Integration tests to ensure that the single shot gradient is correctly computed
     for a variety of argument types."""
 
-    dev = qml.device("default.qubit", wires=1, analytic=False)
+    dev = qml.device("default.qubit", wires=1, shots=100)
     H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
     ansatz = lambda x, **kwargs: qml.RX(x, wires=0)
@@ -231,7 +231,7 @@ class TestSingleShotGradientIntegration:
     def test_multiple_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        dev = qml.device("default.qubit", wires=1, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -285,7 +285,7 @@ class TestSingleShotGradientIntegration:
     def test_multiple_array_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        dev = qml.device("default.qubit", wires=1, analytic=False)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -377,7 +377,7 @@ class TestWeightedRandomSampling:
         """Checks that cost functions that are expval costs can
         make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
@@ -397,7 +397,7 @@ class TestWeightedRandomSampling:
         """Checks that cost functions that are expval costs can
         disable use of weighted random sampling"""
         coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
@@ -413,7 +413,7 @@ class TestWeightedRandomSampling:
         """Test that, if the shot budget for a single term is 0,
         that the jacobian computation is skipped"""
         coeffs = [0.2, 0.1, 0.1]
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
@@ -432,7 +432,7 @@ class TestWeightedRandomSampling:
         """Test that, if the shot budget for a single term is 1,
         that the number of dimensions for the returned Jacobian is expanded"""
         coeffs = [0.2, 0.1, 0.1]
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
@@ -457,7 +457,7 @@ class TestOptimization:
 
     def test_multi_qubit_rotation(self):
         """Test that multiple qubit rotation can be optimized"""
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -484,7 +484,7 @@ class TestOptimization:
 
     def test_vqe_optimization(self):
         """Test that a simple VQE circuit can be optimized"""
-        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev = qml.device("default.qubit", wires=2, shots=100)
         coeffs = [0.1, 0.2]
         obs = [qml.PauliZ(0), qml.PauliX(0)]
         H = qml.Hamiltonian(coeffs, obs)
