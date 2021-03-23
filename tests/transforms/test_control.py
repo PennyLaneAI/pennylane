@@ -11,7 +11,7 @@ def assert_equal_operations(ops1, ops2):
     for op1, op2 in zip(ops1, ops2):
         assert type(op1) == type(op2)
         assert op1.wires == op2.wires
-        assert op1.parameters == op2.parameters
+        np.testing.assert_allclose(op1.parameters, op2.parameters)
 
 
 def test_control_sanity_check():
@@ -146,3 +146,16 @@ def test_ctrl_within_ctrl():
         qml.CRX(0.456, wires=[2, 0])
     ]
     assert_equal_operations(tape.operations, expected)
+
+def test_diagonal_ctrl():
+    with QuantumTape() as tape:
+        ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
+    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
+    print(tape.operations)
+    assert_equal_operations(
+        tape.operations, 
+        [
+            qml.DiagonalQubitUnitary(
+                np.array([1.0, 1.0, -1.0, 1.0j]),
+                wires=[1, 0])
+        ])

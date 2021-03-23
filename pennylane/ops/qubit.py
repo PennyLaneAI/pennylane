@@ -1907,7 +1907,14 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self, do_queue=False):
-        return DiagonalQubitUnitary(self.parameters[0].conj(), wires=self.wires, do_queue=do_queue)
+        return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires, do_queue=do_queue)
+
+def _diagonal_control(op, control):
+    DiagonalQubitUnitary(
+        qml.math.concatenate([np.array([1, 1]), op.parameters[0]]), 
+        wires=Wires(control) + op.wires)
+
+register_control(DiagonalQubitUnitary, _diagonal_control)
 
 
 class QFT(Operation):

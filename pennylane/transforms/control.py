@@ -100,7 +100,8 @@ class ControlledOperation(Operation):
 register_control(
     ControlledOperation,
     lambda op, wires: ControlledOperation(
-        tape=op._tape, control_wires=Wires(wires) + op._control_wires, do_queue=True
+        tape=op._tape, 
+        control_wires=Wires(wires) + op._control_wires,
     ),
 )
 
