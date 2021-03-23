@@ -69,6 +69,12 @@ def pauli_group_generator(n_qubits, wire_map=None):
             print(p)
 
     """
+    if not isinstance(n_qubits, int):
+        raise TypeError("Must specify an integer number of qubits construct the Pauli group.")
+
+    if n_qubits <= 0:
+        raise ValueError("Number of qubits must be at least 1 to construct Pauli group.")
+
     element_idx = 0
 
     if not wire_map:
@@ -91,7 +97,7 @@ def pauli_group(n_qubits, wire_map=None):
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict): dictionary containing all wire labels used in the Pauli
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
             word as keys, and unique integer labels as their values. If no wire map is
             provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
@@ -109,6 +115,11 @@ def pauli_group(n_qubits, wire_map=None):
         n_qubits = 3
         pg = pauli_group(n_qubits)
     """
+    if not isinstance(n_qubits, int):
+        raise TypeError("Must specify an integer number of qubits construct the Pauli group.")
+
+    if n_qubits <= 0:
+        raise ValueError("Number of qubits must be at least 1 to construct Pauli group.")
 
     return list(pauli_group_generator(n_qubits, wire_map=wire_map))
 

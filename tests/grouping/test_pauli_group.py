@@ -30,6 +30,35 @@ from pennylane.grouping.pauli_group import (
 class TestPauliGroup:
     """Testing for Pauli group construction and manipulation functions."""
 
+    def test_pauli_group_size(self):
+        """Test that the Pauli group is constructed correctly given the wire map."""
+
+        for n_qubits in range(1, 5):
+            assert len(pauli_group(n_qubits)) == 4 ** n_qubits
+
+    def test_pauli_group_invalid_input(self):
+        """Test that the Pauli group is constructed correctly given the wire map."""
+        with pytest.raises(TypeError, match="Must specify an integer number"):
+            pauli_group("3")
+
+        with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
+            pauli_group(-1)
+
+    @pytest.mark.parametrize(
+        "n_qubits,wire_map",
+        [(1, {0: 0}), (2, {"a": 0, "b": 1}), (2, None), (3, {0: 0, "a": 1, "x": 2})],
+    )
+    def test_pauli_group_generator(self, n_qubits, wire_map):
+        """Test that the generator functionality works as expected."""
+        pg_full = pauli_group(n_qubits=n_qubits, wire_map=wire_map)
+
+        pg_from_generator = []
+
+        for pauli in pauli_group_generator(n_qubits=n_qubits, wire_map=wire_map):
+            pg_from_generator.append(pauli)
+
+        assert all([full.compare(gen) for full, gen in zip(pg_full, pg_from_generator)])
+
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,expected_product",
         [

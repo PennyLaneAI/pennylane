@@ -127,8 +127,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
         pauli_word (Union[Identity, PauliX, PauliY, PauliZ, Tensor]): the Pauli word to be
             converted to binary vector representation
         n_qubits (int): number of qubits to specify dimension of binary vector representation
-        wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-             unique integer labels as their values
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire
+             labels used in the Pauli word as keys, and unique integer labels as
+             their values
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
@@ -155,7 +156,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     labelling across multiple Pauli words, or define any arbitrary enumeration, one can use
     keyword argument ``wire_map`` to set this enumeration.
 
-    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
+    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
     >>> pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b') @ qml.PauliZ('c'), wire_map=wire_map)
     array([1., 1., 0., 0., 1., 1.])
     >>> pauli_to_binary(qml.PauliX('c') @ qml.PauliY('a') @ qml.PauliZ('b'), wire_map=wire_map)
@@ -183,7 +184,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     For these Pauli words to have a consistent mapping to vector representation, we once again
     need to specify a ``wire_map``.
 
-    >>> wire_map = {Wires(0):0, Wires(1):1, Wires(5):5}
+    >>> wire_map = {0:0, 1:1, 5:5}
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(1), n_qubits=6, wire_map=wire_map)
     array([1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5), n_qubits=6, wire_map=wire_map)
@@ -192,9 +193,10 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     Note that if ``n_qubits`` is unspecified and ``wire_map`` is specified, the dimensionality of the
     vector representation will be inferred from the highest integer in ``wire_map.values()``.
 
-    >>> wire_map = {Wires(0):0, Wires(1):1, Wires(5):5}
+    >>> wire_map = {0:0, 1:1, 5:5}
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5),  wire_map=wire_map)
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
+
     """
 
     if not is_pauli_word(pauli_word):
@@ -273,7 +275,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     An arbitrary labelling can be assigned by using ``wire_map``:
 
-    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
+    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
     Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
 
@@ -309,7 +311,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
             )
         label_map = {explicit_index: wire_label for wire_label, explicit_index in wire_map.items()}
     else:
-        label_map = {i: Wires(i) for i in range(n_qubits)}
+        label_map = {i: i for i in range(n_qubits)}
 
     pauli_word = None
     for i in range(n_qubits):
@@ -345,7 +347,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     Args:
         pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
             single-qubit observable representing a Pauli group element.
-        wire_map (dict[qml.Wires, int]): dictionary containing all wire labels used in
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
@@ -396,7 +398,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     Args:
         pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
             single-qubit observable representing a Pauli group element.
-        wire_map (dict[qml.Wires, int]): dictionary containing all wire labels used in
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
@@ -456,7 +458,7 @@ def are_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     Args:
         pauli_word_1 (Observable): first Pauli word in commutator
         pauli_word_2 (Observable): second Pauli word in commutator
-        wire_map (dict[qml.Wires, int]): dictionary containing all wire labels used in
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
