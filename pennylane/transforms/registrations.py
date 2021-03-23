@@ -33,8 +33,7 @@ def register_control_transform(cls, fn):
         cls (python class): The custom ``Operation`` class.
         fn (function): A python function that queues the desired controlled operations.
             Should have input signature of:
-                Args:
-                    op: The original operation.
-                    wire: The desired control wire.
+                - op: The original operation.
+                - wire: The desired control wire.
     """
     CONTROL_MAPS[cls] = fn
