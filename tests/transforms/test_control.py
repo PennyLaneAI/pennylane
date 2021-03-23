@@ -1,3 +1,5 @@
+from functools import partial
+import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms.control import ctrl, ControlledOperation
@@ -91,3 +93,34 @@ def test_multi_control():
     assert isinstance(op, ControlledOperation)
     new_tape = expand_tape(tape, 3)
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
+
+def test_control_with_qnode():
+    dev = qml.device("default.qubit", wires=3)
+
+    def my_anzats(params):
+        qml.RZ(params[0], wires=0)
+        qml.RZ(params[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(params[2], wires=1)
+        qml.RX(params[3], wires=0)
+        qml.CNOT(wires=[1, 0])
+
+    def controlled_anzats(params):
+        qml.CRZ(params[0], wires=[2, 0])
+        qml.CRZ(params[1], wires=[2, 1])
+        qml.Toffoli(wires=[2, 0, 1])
+        qml.CRX(params[2], wires=[2, 1])
+        qml.CRX(params[3], wires=[2, 0])
+        qml.Toffoli(wires=[2, 1, 0])
+
+    def circuit(anzats, params):
+        qml.RX(np.pi/4.0, wires=2)
+        anzats(params)
+        return qml.state()
+
+    params = [0.123, 0.456, 0.789, 1.345]
+    circuit1 = qml.qnode(dev)(partial(circuit, anzats=ctrl(my_anzats, 2)))
+    circuit2 = qml.qnode(dev)(partial(circuit, anzats=controlled_anzats))
+    res1 = circuit1(params=params)
+    res2 = circuit2(params=params)
+    np.testing.assert_allclose(res1, res2) 
