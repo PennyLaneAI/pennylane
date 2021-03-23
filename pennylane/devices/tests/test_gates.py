@@ -71,6 +71,9 @@ ops = {
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
+    "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
 }
 
 all_ops = ops.keys()
@@ -201,7 +204,7 @@ class TestSupportedGates:
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement all its supported gates."""
-        device_kwargs["wires"] = 3  # maximum size of current gates
+        device_kwargs["wires"] = 4  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
         assert hasattr(dev, "operations")
@@ -218,7 +221,7 @@ class TestSupportedGates:
     def test_inverse_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement the inverse of all its supported gates.
         This test is skipped for devices that do not support inverse operations."""
-        device_kwargs["wires"] = 3
+        device_kwargs["wires"] = 4
         dev = qml.device(**device_kwargs)
         supports_inv = (
             "supports_inverse_operations" in dev.capabilities()
