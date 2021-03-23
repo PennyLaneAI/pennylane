@@ -146,6 +146,9 @@ class DefaultQubitJax(DefaultQubit):
         "SingleExcitation": jax_ops.SingleExcitation,
         "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
         "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
+        "DoubleExcitation": jax_ops.DoubleExcitation,
+        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = jnp.complex64

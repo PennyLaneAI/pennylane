@@ -96,6 +96,9 @@ class DefaultQubitAutograd(DefaultQubit):
         "SingleExcitation": autograd_ops.SingleExcitation,
         "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
         "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
+        "DoubleExcitation": autograd_ops.DoubleExcitation,
+        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = np.complex128
