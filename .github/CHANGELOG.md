@@ -2,6 +2,63 @@
 
 <h3>New features since last release</h3>
 
+* Added `qml.ctrl`, a transformation that adds control wires to subroutines.
+[(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
+
+ Here's a simple example
+
+  ```python
+
+  def my_anzats(params):
+     qml.RX(params[0], wires=0)
+     qml.RZ(params[1], wires=1)
+
+  # Create a new method that applies my_anzats
+  # controlled by the "2" wire.
+  my_anzats2 = ctrl(my_anzats, control=2)
+
+  @qml.qnode(...)
+  def circuit(params):
+      my_anzats2(params)
+      return qml.state()
+  ```
+
+  The above `circuit` would be equivalent to:
+
+  ```python
+  @qml.qnode(...)
+  def circuit(params):
+      qml.CRX(params[0], wires=[2, 0])
+      qml.CRZ(params[1], wires=[2, 1])
+      return qml.state()
+  ```
+
+  The `qml.ctrl` transform is especially useful for when you want to repeatedly apply an
+  operation but controlled by different qubits. A very famous example that can benefit from 
+  this is Shor's algorithm.
+
+  ```python
+
+  def modmul(a, mod, wires):
+      # Some complex set of gates that implements modular multiplcation.
+      ...
+ 
+ 
+  @qml.qnode(...)
+  def shors(a, mod, scratch_wires, qft_wires):
+      for i, wire in enumerate(qft_wires):
+      qml.Hadamard(wire)
+ 
+      # We apply the entire modmul subroutine based on the control wire.
+      # Once the subroutine is abstracted in a method, applying the contorlled
+      # version is just a single line of code.
+      qml.ctrl(modmul, control=wire)(a ** i, mod, scratch_wires)
+ 
+  qml.adjoint(qml.QFT)(qft_wires)
+  return qml.sample()
+  ```
+
+
 * Added the function ``finite_diff()`` to compute finite-difference
   approximations to the gradient and the second-order derivatives of
   arbitrary callable functions.
