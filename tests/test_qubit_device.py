@@ -163,11 +163,7 @@ class TestOperations:
 
         with qml.tape.QuantumTape() as tape:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
-<<<<<<< HEAD
-            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
-=======
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
->>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
         call_history = []
 
@@ -194,11 +190,7 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         with qml.tape.QuantumTape() as tape:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
-<<<<<<< HEAD
-            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
-=======
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
->>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()

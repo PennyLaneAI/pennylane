@@ -16,65 +16,10 @@ Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-<<<<<<< HEAD
-from pennylane.templates.decorator import template
-from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
-
-
-def _preprocess(features, wires, weights):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n` or less, where :math:`n` is the number of qubits.
-    * Check that the shape of the weights tensor is correct for the number of qubits.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-        weights (tensor_like): weights of the embedding
-
-    Returns:
-        int: number of times that embedding is repeated
-    """
-    shape = qml.math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features > len(wires):
-        raise ValueError(
-            f"Features must be of length {len(wires)} or less; got length {n_features}."
-        )
-
-    shape = qml.math.shape(weights)
-    repeat = shape[0]
-
-    if len(wires) == 1:
-        if shape != (repeat, 1):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
-
-    elif len(wires) == 2:
-        if shape != (repeat, 3):
-            raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
-    else:
-        if shape != (repeat, 2 * len(wires)):
-            raise ValueError(
-                f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
-            )
-
-    return repeat
-
-
-=======
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 
->>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 

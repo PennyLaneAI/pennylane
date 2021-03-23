@@ -16,49 +16,11 @@ Contains the ``BasicEntanglerLayers`` template.
 """
 # pylint: disable=consider-using-enumerate
 import pennylane as qml
-<<<<<<< HEAD
-from pennylane.templates.decorator import template
-from pennylane.ops import CNOT, RX
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
-
-
-def _preprocess(weights, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the weights tensor, making sure that the second dimension
-      has length :math:`n`, where :math:`n` is the number of qubits.
-
-    Args:
-        weights (tensor_like): trainable parameters of the template
-        wires (Wires): wires that template acts on
-
-    Returns:
-        int: number of times that the ansatz is repeated
-    """
-    shape = qml.math.shape(weights)
-    repeat = shape[0]
-
-    if len(shape) != 2:
-        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-    if shape[1] != len(wires):
-        raise ValueError(
-            f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
-        )
-
-    return repeat
-
-
-@template
-def BasicEntanglerLayers(weights, wires, rotation=None):
-=======
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 
 class BasicEntanglerLayers(Operation):
->>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
