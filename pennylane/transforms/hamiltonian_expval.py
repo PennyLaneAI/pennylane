@@ -96,4 +96,4 @@ def hamiltonian_expval(tape):
 
         return np.dot(new_coeffs, new_results)
 
-    return tapes, processing_fn
+    return [tape.expand() for tape in tapes], processing_fn

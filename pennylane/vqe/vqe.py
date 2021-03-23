@@ -21,6 +21,7 @@ import itertools
 import warnings
 
 import pennylane as qml
+import pennylane.tape
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 
@@ -152,7 +153,6 @@ class Hamiltonian:
         >>> print(H)
         (1.0) [Y2] + (-1.0) [X0]
         """
-
         coeffs = []
         ops = []
 
