@@ -14,8 +14,6 @@
 """
 Contains the control transform.
 """
-
-
 from functools import wraps
 from pennylane.tape import QuantumTape
 from pennylane.operation import Operation, AnyWires
