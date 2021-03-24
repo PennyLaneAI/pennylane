@@ -515,19 +515,36 @@
   ```
 
   Functions for conversion of Pauli observables to strings (and back),
-  as well as computation of their matrix representations has also been
-  added.
+  are included.
 
   ```python
-  from pennylane.grouping.pauli_group import pauli_word_to_matrix
   from pennylane.grouping.utils import pauli_word_to_string, string_to_pauli_word
   ```
 
   ```pycon
   >>> pauli_word_to_string(pg[55], wire_map=wire_map)
-  'YYZ'
+ 'YYZ'
+  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
+  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
   ```
 
+  Calculating of the matrix representation for arbitrary wire maps is now
+  also supported.
+
+  ```python
+  from pennylane.grouping.utils import pauli_word_to_matrix
+
+  wire_map = {'a' : 0, 'b' : 1}
+  pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+  ```
+
+  ```pycon
+  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+  array([[ 1.,  0.,  0.,  0.],
+         [ 0., -1.,  0., -0.],
+         [ 0.,  0.,  1.,  0.],
+         [ 0., -0.,  0., -1.]])
+  ```
 
 <h3>Breaking changes</h3>
 
