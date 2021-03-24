@@ -618,9 +618,6 @@ class Operation(Operator):
         """Returns a tape containing the decomposed operations, rather
         than a list.
 
-        Args:
-            do_queue (booL): Whether to queue this tape in a partent tape context.
-
         Returns:
             .JacobianTape: Returns a quantum tape that contains the
             operations decomposition, or if not implemented, simply
