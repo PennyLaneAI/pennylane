@@ -2,6 +2,51 @@
 
 <h3>New features since last release</h3>
 
+* Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
+  the shot rate is adaptively calculated using the variances of the parameter-shift gradient.
+  [(#1139)](https://github.com/PennyLaneAI/pennylane/pull/1139)
+
+  By keeping a running average of the parameter-shift gradient and the *variance* of the
+  parameter-shift gradient, this optimizer frugally distributes a shot budget across the partial
+  derivatives of each parameter.
+
+  In addition, if computing the expectation value of a Hamiltonian, weighted random sampling can be
+  used to further distribute the shot budget across the local terms from which the Hamiltonian is
+  constructed.
+
+  This optimizer is based on both the [iCANS1](https://quantum-journal.org/papers/q-2020-05-11-263)
+  and [Rosalin](https://arxiv.org/abs/2004.06252) shot adaptive optimizers.
+
+  ```pycon
+  >>> coeffs = [2, 4, -1, 5, 2]
+  >>> obs = [
+  ...   qml.PauliX(1),
+  ...   qml.PauliZ(1),
+  ...   qml.PauliX(0) @ qml.PauliX(1),
+  ...   qml.PauliY(0) @ qml.PauliY(1),
+  ...   qml.PauliZ(0) @ qml.PauliZ(1)
+  ... ]
+  >>> H = qml.Hamiltonian(coeffs, obs)
+  >>> dev = qml.device("default.qubit", wires=2, shots=100)
+  >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+  >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+  ```
+
+  Once constructed, the cost function can be passed directly to the optimizer's `step` method.  The
+  attribute `opt.total_shots_used` can be used to track the number of shots per iteration.
+
+  ```pycon
+  >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+  >>> for i in range(5):
+  ...    params = opt.step(cost, params)
+  ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
+  Step 0: cost = -5.68, shots_used = 240
+  Step 1: cost = -2.98, shots_used = 336
+  Step 2: cost = -4.97, shots_used = 624
+  Step 3: cost = -5.53, shots_used = 1054
+  Step 4: cost = -6.50, shots_used = 1798
+  ```
+
 * Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
   chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
   
