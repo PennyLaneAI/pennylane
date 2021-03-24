@@ -2,6 +2,64 @@
 
 <h3>New features since last release</h3>
 
+* Adds a new transform `qml.ctrl` that adds control wires to subroutines.
+  [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
+
+  Here's a simple usage example:
+
+  ```python
+  def my_ansatz(params):
+     qml.RX(params[0], wires=0)
+     qml.RZ(params[1], wires=1)
+
+  # Create a new method that applies `my_ansatz`
+  # controlled by the "2" wire.
+  my_anzats2 = qml.ctrl(my_ansatz, control=2)
+
+  @qml.qnode(...)
+  def circuit(params):
+      my_ansatz2(params)
+      return qml.state()
+  ```
+
+  The above `circuit` would be equivalent to:
+
+  ```python
+  @qml.qnode(...)
+  def circuit(params):
+      qml.CRX(params[0], wires=[2, 0])
+      qml.CRZ(params[1], wires=[2, 1])
+      return qml.state()
+  ```
+
+  The `qml.ctrl` transform is especially useful to repeatedly apply an
+  operation which is controlled by different qubits in each repetition. A famous example is Shor's algorithm.
+
+  ```python
+  def modmul(a, mod, wires):
+      # Some complex set of gates that implements modular multiplcation.
+      # qml.CNOT(...); qml.Toffoli(...); ... 
+ 
+  @qml.qnode(...)
+  def shor(a, mod, scratch_wires, qft_wires):
+      for i, wire in enumerate(qft_wires):
+          qml.Hadamard(wire)
+
+          # Create the controlled modular multiplication 
+          # subroutine based on the control wire.
+          cmodmul = qml.ctrl(modmul, control=wire)
+
+          # Execute the controlled modular multiplication.
+          cmodmul(a ** i, mod, scratch_wires)
+ 
+      qml.adjoint(qml.QFT)(qft_wires)
+      return qml.sample()
+
+  ```
+
+  In the future, devices will be able to exploit the sparsity of controlled operations to 
+  improve simulation performance. 
+
 * Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
   the shot rate is adaptively calculated using the variances of the parameter-shift gradient.
   [(#1139)](https://github.com/PennyLaneAI/pennylane/pull/1139)
