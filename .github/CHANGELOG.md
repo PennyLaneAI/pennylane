@@ -484,6 +484,16 @@
 
 <h3>Breaking changes</h3>
 
+* The `qml` module is no longer automatically imported with PennyLane and should instead be imported
+  separately using `import pennylane.qnn`. For example, `KerasLayer` can be accessed using:
+  
+  ```python
+  import pennylane as qml
+  import pennylane.qnn
+  
+  qlayer = qml.qnn.KerasLayer(...)
+  ```
+
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
