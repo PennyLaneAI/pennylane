@@ -300,7 +300,7 @@
   ```python
   dev = qml.device("default.qubit", wires=2)
   
-  inputstate = [np.sqrt(0.2),np.sqrt(0.3),np.sqrt(0.4),np.sqrt(0.1)]
+  inputstate = [np.sqrt(0.2), np.sqrt(0.3), np.sqrt(0.4), np.sqrt(0.1)]
   
   @qml.qnode(dev)
   def circuit():
