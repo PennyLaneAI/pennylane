@@ -403,11 +403,25 @@ class TestWeightedRandomSampling:
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10, weighted_random_sampling=False)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
         spy = mocker.spy(opt, "weighted_random_sampling")
 
         new_weights = opt.step(expval_cost, weights)
         spy.assert_not_called()
+
+    def test_unknown_term_sampling_method(self):
+        """Checks that an exception is raised if the term sampling method is unknown"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
+
+        with pytest.raises(ValueError, match="Unknown Hamiltonian term sampling method"):
+            opt.step(expval_cost, weights)
 
     def test_zero_shots(self, mocker, monkeypatch):
         """Test that, if the shot budget for a single term is 0,

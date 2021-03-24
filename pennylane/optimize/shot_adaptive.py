@@ -48,9 +48,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how quickly the
             number of shots recommended for each gradient component changes.
         b (float): Regularization bias. The bias should be kept small, but non-zero.
-        weighted_random_sampling (bool): Whether to use the weighted random sampling algorithm
-            to multinomially distribute the shot budget across terms in the Hamiltonian expectation value.
+        term_sampling (str): The random sampling algorithm to multinomially distribute the shot budget
+                across terms in the Hamiltonian expectation value.
+            Currently, only ``"weighted_random_sampling"`` is supported.
             Only takes effect if the objective function provided is an instance of :class:`~.ExpvalCost`.
+            Set this argument to ``None`` to turn off random sampling of Hamiltonian terms.
         stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
             that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
 
@@ -166,8 +168,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     Step 22: cost = -7.314, shots_used = 92838
     """
 
-    def __init__(self, min_shots, weighted_random_sampling=True, mu=0.99, b=1e-6, stepsize=0.07):
-        self.wrs = weighted_random_sampling
+    def __init__(
+        self, min_shots, term_sampling="weighted_random_sampling", mu=0.99, b=1e-6, stepsize=0.07
+    ):
+        self.term_sampling = term_sampling
         self.trainable_args = set()
 
         # hyperparameters
@@ -298,11 +302,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.check_learning_rate(coeffs)
 
         try:
-            if self.wrs:
+            if self.term_sampling == "weighted_random_sampling":
                 grads = self.weighted_random_sampling(
                     qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
                 )
-            else:
+            elif self.term_sampling is None:
                 device.shots = [(1, self.max_shots)]
                 # We iterate over each trainable argument, rather than using
                 # qml.jacobian(expval_cost), to take into account the edge case where
@@ -311,6 +315,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
                     for i in self.trainable_args
                 ]
+            else:
+                raise ValueError(
+                    f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
+                    "Only term_sampling='weighted_random_sampling' and "
+                    "term_sampling=None currently supported."
+                )
         finally:
             device.shots = original_shots
 
