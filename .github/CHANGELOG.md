@@ -523,7 +523,7 @@
 
   ```pycon
   >>> pauli_word_to_string(pg[55], wire_map=wire_map)
- 'YYZ'
+  'YYZ'
   >>> string_to_pauli_word('ZXY', wire_map=wire_map)
   PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
   ```
