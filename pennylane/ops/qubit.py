@@ -253,8 +253,8 @@ class PauliZ(Observable, DiagonalOperation):
     def adjoint(self, do_queue=False):
         return PauliZ(wires=self.wires, do_queue=do_queue)
 
-    def _controlled(op, wire):
-        CZ(wires=Wires(wire) + op.wires)
+    def _controlled(self, wire):
+        CZ(wires=Wires(wire) + self.wires)
 
 
 class S(DiagonalOperation):
@@ -921,8 +921,8 @@ class Rot(Operation):
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
-    def _controlled(op, wire):
-        CRot(*op.parameters, wire + op.wires)
+    def _controlled(self, wire):
+        CRot(*self.parameters, wire + self.wires)
 
 
 class MultiRZ(DiagonalOperation):
