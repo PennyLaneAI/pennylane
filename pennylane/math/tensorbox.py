@@ -105,7 +105,7 @@ class TensorBox(abc.ABC):
 
         namespace = tensor.__class__.__module__.split(".")[0]
         box = None
-        if namespace == "jax":
+        if namespace in ("jax", "jaxlib"):
             from .jax_box import JaxBox
 
             box = JaxBox.__new__(JaxBox, tensor)
@@ -282,6 +282,10 @@ class TensorBox(abc.ABC):
                 If the boxed tensor is not a NumPy array, the equivalent
                 datatype in the target framework is chosen.
         """
+
+    @abc.abstractmethod
+    def conj(self):
+        """TensorBox: Returns the elementwise conjugation."""
 
     @staticmethod
     @abc.abstractmethod

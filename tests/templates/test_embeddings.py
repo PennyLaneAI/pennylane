@@ -499,16 +499,6 @@ class TestQAOAEmbedding:
               (3, (1, 6), [qml.RX, qml.RX, qml.RX, qml.MultiRZ, qml.MultiRZ, qml.MultiRZ,
                    qml.RY, qml.RY, qml.RY, qml.RX, qml.RX, qml.RX])]
 
-    @pytest.mark.parametrize('n_wires, weight_shape, expected_queue', QUEUES)
-    def test_queue(self, n_wires, weight_shape, expected_queue):
-        """Checks the queue for the default settings."""
-
-        with qml.tape.OperationRecorder() as rec:
-            QAOAEmbedding(features=list(range(n_wires)), weights=np.zeros(shape=weight_shape), wires=range(n_wires))
-
-        for gate, expected_gate in zip(rec.queue, expected_queue):
-            assert isinstance(gate, expected_gate)
-
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
 
@@ -659,7 +649,7 @@ class TestQAOAEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
