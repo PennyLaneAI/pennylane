@@ -489,7 +489,7 @@
   ```python
   from pennylane.grouping.pauli_group import pauli_group_generator
 
-  for pauli in pauli_group_generator(n_qubits=3):
+  for pauli in pauli_group_generator(3):
       print(pauli)
   ```
 
@@ -502,7 +502,7 @@
   from pennylane.grouping.pauli_group import pauli_group, pauli_mult
 
   wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-  pg = pauli_group(n_qubits=3, wire_map=wire_map)
+  pg = pauli_group(3, wire_map=wire_map)
   ```
 
   ```pycon
