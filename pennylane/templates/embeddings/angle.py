@@ -40,7 +40,7 @@ class AngleEmbedding(Operation):
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     Args:
-        features (tensor-like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
+        features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
         wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
