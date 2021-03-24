@@ -209,7 +209,7 @@ class AutogradInterface(AnnotatedQueue):
 
             This function serves two purposes:
 
-            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping.
 
             * Takes advantage of closure, to cache computed gradient matrices via
               the ``saved_grad_matrices`` attribute, to avoid gradient matrices being
