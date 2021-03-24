@@ -27,7 +27,7 @@
   ...   qml.PauliZ(0) @ qml.PauliZ(1)
   ... ]
   >>> H = qml.Hamiltonian(coeffs, obs)
-  >>> dev = qml.device("default.qubit", wires=2, analytic=False)
+  >>> dev = qml.device("default.qubit", wires=2, shots=100)
   >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
   >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
   ```
