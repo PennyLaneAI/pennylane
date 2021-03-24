@@ -18,7 +18,6 @@ from functools import wraps
 from pennylane.tape import QuantumTape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
-from pennylane.transforms.registrations import register_control_transform, CONTROL_MAPS
 from pennylane.transforms.adjoint import adjoint
 
 
@@ -40,10 +39,10 @@ def expand_with_control(tape, control_wire):
     """
     with QuantumTape(do_queue=False) as new_tape:
         for op in tape.operations:
-            if op.__class__ in CONTROL_MAPS:
-                # Create the controlled version of the operation
+            if hasattr(op, "_controlled"):
+                # Execute the controlled version of the operation
                 # and add that the to the tape context.
-                CONTROL_MAPS[op.__class__](op, control_wire)
+                op._controlled(control_wire)
             else:
                 tmp_tape = op.expand()
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
@@ -96,14 +95,10 @@ class ControlledOperation(Operation):
             adjoint(requeue_ops_in_tape)(self.subtape)
         return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
 
-
-register_control_transform(
-    ControlledOperation,
-    lambda op, wires: ControlledOperation(
-        tape=op.subtape,
-        control_wires=Wires(wires) + op.control_wires,
-    ),
-)
+    def _controlled(op, wires): 
+        ControlledOperation(
+            tape=op.subtape,
+            control_wires=Wires(wires) + op.control_wires)
 
 
 def ctrl(fn, control):
