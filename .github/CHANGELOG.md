@@ -528,7 +528,7 @@
   PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
   ```
 
-  Calculating of the matrix representation for arbitrary wire maps is now
+  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
   also supported.
 
   ```python
