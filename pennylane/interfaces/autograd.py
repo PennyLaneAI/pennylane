@@ -270,7 +270,6 @@ class AutogradInterface(AnnotatedQueue):
             # register vhp as the backward method of the jacobian function
             autograd.extend.defvjp(jacobian, vhp, argnums=[0])
 
-            # only flatten dy if all parameters are single values
             vjp = dy @ jacobian(params)
             return vjp
 
