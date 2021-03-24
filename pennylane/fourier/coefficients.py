@@ -19,7 +19,6 @@ from pennylane import numpy as np
 
 from .utils import extract_evals
 
-
 def frequency_spectra(tape):
     r"""Return the frequency spectrum of a tape that returns the expectation value of
     a single quantum observable.
@@ -130,7 +129,7 @@ def frequency_spectra(tape):
     inputs = list(set([p for p in all_params if (isinstance(p, np.tensor) and p.is_input)]))
 
     if not inputs:
-        return [], []
+        return {}
 
     # We will now go through the circuit, and collect the set of gates relevant
     # to each input.
