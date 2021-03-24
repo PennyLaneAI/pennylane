@@ -445,6 +445,8 @@
   Example use:
 
   ```python
+  import qml.qnn
+  
   dev = qml.device("default.qubit", wires=4)
 
   x = tf.ones((5, 4, 4))

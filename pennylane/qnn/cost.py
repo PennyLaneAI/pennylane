@@ -76,6 +76,7 @@ class SquaredErrorLoss:
 
     Next, we can define the loss function:
 
+    >>> import qml.qnn
     >>> loss = qml.qnn.SquaredErrorLoss(ansatz, observables, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
