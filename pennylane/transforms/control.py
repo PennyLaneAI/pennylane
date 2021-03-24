@@ -76,10 +76,10 @@ class ControlledOperation(Operation):
 
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
-        """(QuantumTape): The tape that defines the underlying operation."""
+        """QuantumTape: The tape that defines the underlying operation."""
 
         self.control_wires = Wires(control_wires)
-        """(Wires): The control wires."""
+        """Wires: The control wires."""
 
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
