@@ -25,7 +25,6 @@ import pennylane.init
 import pennylane.math
 import pennylane.operation
 import pennylane.qaoa as qaoa
-import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, finite_diff
