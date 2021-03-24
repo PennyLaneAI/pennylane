@@ -150,7 +150,7 @@ class PauliX(Observable, Operation):
     def adjoint(self, do_queue=False):
         return PauliX(wires=self.wires, do_queue=do_queue)
 
-    def _controlled(self, wire): 
+    def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
 
 
@@ -409,7 +409,7 @@ class CNOT(Operation):
     def adjoint(self, do_queue=False):
         return CNOT(wires=self.wires, do_queue=do_queue)
 
-    def _controlled(self, wire): 
+    def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
 
 
@@ -529,7 +529,7 @@ class SWAP(Operation):
     def adjoint(self, do_queue=False):
         return SWAP(wires=self.wires, do_queue=do_queue)
 
-    def _controlled(self, wire): 
+    def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
 
 
@@ -756,8 +756,8 @@ class RZ(DiagonalOperation):
 
     def adjoint(self, do_queue=False):
         return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
-    
-    def _controlled(self, wire): 
+
+    def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
 
 
@@ -805,7 +805,7 @@ class PhaseShift(DiagonalOperation):
     def adjoint(self, do_queue=False):
         return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
 
-    def _controlled(self, wire): 
+    def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
 
@@ -921,8 +921,7 @@ class Rot(Operation):
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
-    
-    def _controlled(op, wire): 
+    def _controlled(op, wire):
         CRot(*op.parameters, wire + op.wires)
 
 
@@ -2024,8 +2023,8 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]), 
-            wires=Wires(control) + self.wires
+            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            wires=Wires(control) + self.wires,
         )
 
 

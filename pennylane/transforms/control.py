@@ -95,10 +95,8 @@ class ControlledOperation(Operation):
             adjoint(requeue_ops_in_tape)(self.subtape)
         return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
 
-    def _controlled(op, wires): 
-        ControlledOperation(
-            tape=op.subtape,
-            control_wires=Wires(wires) + op.control_wires)
+    def _controlled(op, wires):
+        ControlledOperation(tape=op.subtape, control_wires=Wires(wires) + op.control_wires)
 
 
 def ctrl(fn, control):
