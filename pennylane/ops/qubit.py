@@ -1569,8 +1569,10 @@ class U2(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
-        return U2(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+        phi, lam = self.parameters
+        new_lam = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - lam) % (2 * np.pi)
+        return U2(new_phi, new_lam, wires=self.wires, do_queue=do_queue)
 
 
 class U3(Operation):
@@ -1636,8 +1638,10 @@ class U3(Operation):
         return decomp_ops
 
     def adjoint(self, do_queue=False):
-        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
-        return U3(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+        theta, phi, lam = self.parameters
+        new_lam = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - lam) % (2 * np.pi)
+        return U3(theta, new_phi, new_lam, wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
@@ -1708,6 +1712,10 @@ class SingleExcitation(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        (phi,) = self.parameters
+        return SingleExcitation(-phi, wires=self.wires, do_queue=do_queue)
+
 
 class SingleExcitationMinus(Operation):
     r"""SingleExcitationMinus(phi, wires)
@@ -1747,6 +1755,10 @@ class SingleExcitationMinus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
+    def adjoint(self, do_queue=False):
+        (phi,) = self.parameters
+        return SingleExcitationMinus(-phi, wires=self.wires, do_queue=do_queue)
+
 
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
@@ -1785,6 +1797,10 @@ class SingleExcitationPlus(Operation):
         e = cmath.exp(1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+    def adjoint(self, do_queue=False):
+        (phi,) = self.parameters
+        return SingleExcitationPlus(-phi, wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
@@ -2199,6 +2215,10 @@ class DoubleExcitation(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        (theta,) = self.parameters
+        return DoubleExcitation(-theta, wires=self.wires, do_queue=do_queue)
+
 
 class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
@@ -2255,6 +2275,10 @@ class DoubleExcitationPlus(Operation):
 
         return U
 
+    def adjoint(self, do_queue=False):
+        (theta,) = self.parameters
+        return DoubleExcitationPlus(-theta, wires=self.wires, do_queue=do_queue)
+
 
 class DoubleExcitationMinus(Operation):
     r"""DoubleExcitationMinus(phi, wires)
@@ -2310,6 +2334,10 @@ class DoubleExcitationMinus(Operation):
         U[12, 12] = c
 
         return U
+
+    def adjoint(self, do_queue=False):
+        (theta,) = self.parameters
+        return DoubleExcitationMinus(-theta, wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
