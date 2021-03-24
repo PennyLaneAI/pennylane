@@ -59,14 +59,84 @@ class TestPauliGroup:
 
         assert all([full.compare(gen) for full, gen in zip(pg_full, pg_from_generator)])
 
+    def test_one_qubit_pauli_group(self):
+        """Test that the single-qubit Pauli group is constructed correctly."""
+        # With no wire map; ordering is based on construction from binary representation
+        expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
+        pg_1 = pauli_group(1)
+        assert all(
+            [
+                expected.compare(obtained)
+                for expected, obtained in zip(expected_pg_1, pg_1)
+            ]
+        )
+
+        # With an arbitrary wire map
+        wire_map = {"qubit": 0}
+        expected_pg_1_wires = [
+            Identity("qubit"),
+            PauliZ("qubit"),
+            PauliX("qubit"),
+            PauliY("qubit"),
+        ]
+        pg_1_wires = pauli_group(1, wire_map=wire_map)
+        assert all(
+            [
+                expected.compare(obtained)
+                for expected, obtained in zip(expected_pg_1_wires, pg_1_wires)
+            ]
+        )
+
+    def test_two_qubit_pauli_group(self):
+        """Test that the two-qubit Pauli group is constructed correctly."""
+        # With no wire map; ordering is based on construction from binary representation
+        wire_map = {"a": 0, "b": 1}
+
+        expected_pg_2 = [
+            Identity("a"),
+            PauliZ("b"),
+            PauliZ("a"),
+            PauliZ("a") @ PauliZ("b"),
+            PauliX("b"),
+            PauliY("b"),
+            PauliZ("a") @ PauliX("b"),
+            PauliZ("a") @ PauliY("b"),
+            PauliX("a"),
+            PauliX("a") @ PauliZ("b"),
+            PauliY("a"),
+            PauliY("a") @ PauliZ("b"),
+            PauliX("a") @ PauliX("b"),
+            PauliX("a") @ PauliY("b"),
+            PauliY("a") @ PauliX("b"),
+            PauliY("a") @ PauliY("b"),
+        ]
+
+        pg_2 = pauli_group(2, wire_map=wire_map)
+        assert all(
+            [
+                expected.compare(obtained)
+                for expected, obtained in zip(expected_pg_2, pg_2)
+            ]
+        )
+
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,expected_product",
         [
             (PauliX(0), Identity(0), {0: 0}, PauliX(0)),
             (PauliZ(0), PauliY(0), {0: 0}, PauliX(0)),
             (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, Identity("b")),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), {"b": 0, "a": 1}, Identity("b")),
-            (PauliZ(0) @ PauliY(1), PauliX(0) @ PauliZ(1), {0: 0, 1: 1}, PauliY(0) @ PauliX(1)),
+            (
+                PauliZ("b") @ PauliY("a"),
+                PauliZ("b") @ PauliY("a"),
+                {"b": 0, "a": 1},
+                Identity("b"),
+            ),
+            (
+                PauliZ(0) @ PauliY(1),
+                PauliX(0) @ PauliZ(1),
+                {0: 0, 1: 1},
+                PauliY(0) @ PauliX(1),
+            ),
             (PauliZ("a"), PauliX("b"), {"a": 0, "b": 1}, PauliZ("a") @ PauliX("b")),
             (
                 PauliZ("a"),
@@ -87,11 +157,25 @@ class TestPauliGroup:
         [
             (PauliX(0), Identity(0), {0: 0}, 1),
             (PauliZ(0), PauliY(0), {0: 0}, -1j),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), {"a": 0, "b": 1}, -1),
-            (PauliX(0) @ PauliY(1) @ PauliZ(2), PauliY(0) @ PauliY(1), {0: 0, 1: 1, 2: 2}, 1j),
+            (
+                PauliZ("a") @ PauliY("b"),
+                PauliX("a") @ PauliZ("b"),
+                {"a": 0, "b": 1},
+                -1,
+            ),
+            (
+                PauliX(0) @ PauliY(1) @ PauliZ(2),
+                PauliY(0) @ PauliY(1),
+                {0: 0, 1: 1, 2: 2},
+                1j,
+            ),
         ],
     )
-    def test_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, wire_map, expected_phase):
+    def test_pauli_mult_with_phase(
+        self, pauli_word_1, pauli_word_2, wire_map, expected_phase
+    ):
         """Test that multiplication including phases works as expected."""
-        _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        _, obtained_phase = pauli_mult_with_phase(
+            pauli_word_1, pauli_word_2, wire_map=wire_map
+        )
         assert obtained_phase == expected_phase
