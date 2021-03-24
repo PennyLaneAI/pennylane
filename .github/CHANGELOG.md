@@ -339,7 +339,7 @@
 
 <h3>Improvements</h3>
 
-- The embeddings, as well as `BasicEntanglerLayers`, are now classes inheriting 
+- The embedding templates, as well as `BasicEntanglerLayers`, are now classes inheriting 
   from `Operation`, and define the ansatz in their `expand()` method. This 
   change does not affect the user interface.
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)

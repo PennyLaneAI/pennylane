@@ -75,11 +75,7 @@ Note that QASM has two native gates:
 - ``U`` (equivalent to :class:`~.U3`)
 - ``CX`` (equivalent to :class:`~.CNOT`)
 
-<<<<<<< HEAD:pennylane/tape/tape.py
-All other gates are defined in the file qelib1.inc:
-=======
 All other gates are defined in the file stdgates.inc:
->>>>>>> 6aa1228bcddba63c35bf724bccc8fceaee3c851e:pennylane/tape/tapes/tape.py
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
