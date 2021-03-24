@@ -532,8 +532,7 @@ class TestMottonenStatePreparation:
     )
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
-        checks that the gradient is calculated without an error, we should consider adding
-        additional numeric checks for fixed examples."""
+        checks that the gradient is calculated without an error."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
