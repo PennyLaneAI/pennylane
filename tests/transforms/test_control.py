@@ -21,6 +21,7 @@ def test_control_sanity_check():
         qml.RX(0.123, wires=0)
         qml.RY(0.456, wires=2)
         qml.RX(0.789, wires=0)
+        qml.Rot(0.111, 0.222, 0.333, wires=2),
         qml.PauliX(wires=2)
         qml.PauliY(wires=4)
         qml.PauliZ(wires=0)
@@ -34,6 +35,7 @@ def test_control_sanity_check():
         qml.CRX(0.123, wires=[1, 0]),
         qml.CRY(0.456, wires=[1, 2]),
         qml.CRX(0.789, wires=[1, 0]),
+        qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
         qml.CNOT(wires=[1, 2]),
         qml.CY(wires=[1, 4]),
         qml.CZ(wires=[1, 0]),
@@ -41,7 +43,6 @@ def test_control_sanity_check():
     assert len(tape.operations) == 1
     ctrl_op = tape.operations[0]
     assert isinstance(ctrl_op, ControlledOperation)
-    assert len(ctrl_op.subtape.operations) == 6
     expanded = ctrl_op.expand()
     assert_equal_operations(expanded.operations, expected)
 

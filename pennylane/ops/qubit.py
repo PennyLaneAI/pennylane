@@ -922,7 +922,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
 
     def _controlled(self, wire):
-        CRot(*self.parameters, wire + self.wires)
+        CRot(*self.parameters, wires=wire + self.wires)
 
 
 class MultiRZ(DiagonalOperation):
