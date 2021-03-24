@@ -138,7 +138,7 @@ class CVNeuralNetLayers(Operation):
 
               Args:
                   n_layers (int): number of layers
-                  n_wires (int): number of qubits
+                  n_wires (int): number of wires
 
               Returns:
                   list[tuple[int]]: list of shapes
