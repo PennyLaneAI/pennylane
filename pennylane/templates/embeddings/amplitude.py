@@ -218,4 +218,5 @@ class AmplitudeEmbedding(Operation):
                     "Use 'normalize=True' to automatically normalize."
                 )
 
+        features = qml.math.cast(features, np.complex128)
         return features

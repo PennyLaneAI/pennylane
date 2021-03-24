@@ -17,6 +17,7 @@ Unit tests for the BasisEmbedding template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:
@@ -72,7 +73,7 @@ class TestDecomposition:
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
 
-class TestParameters:
+class TestInputs:
     """Test inputs and pre-processing."""
 
     def test_too_many_input_bits_exception(self):
@@ -132,3 +133,92 @@ class TestParameters:
 
         with pytest.raises(ValueError, match="Features must be one-dimensional"):
             circuit(x=[[1], [0]])
+
+
+def circuit_template(features):
+    qml.templates.BasisEmbedding(features, wires=range(3))
+    return qml.state()
+
+
+def circuit_decomposed(features):
+
+    feats = list(qml.math.toarray(features))
+    for i in range(len(feats)):
+        if feats[i] == 1:
+            qml.PauliX(wires=i)
+
+    return qml.state()
+
+
+class TestInterfaces:
+    """Tests that the result as well as the gradient is computed correctly in all interfaces."""
+
+    def test_autograd(self, tol):
+        """Tests that gradients of template and decomposed circuit
+        are the same in the autograd interface."""
+
+        features = pnp.array([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_jax(self, tol, skip_if_no_jax_support):
+        """Tests that gradients of template and decomposed circuit
+        are the same in the jax interface."""
+
+        import jax.numpy as jnp
+
+        features = jnp.array([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_tf(self, tol, skip_if_no_tf_support):
+        """Tests that gradients of template and decomposed circuit
+        are the same in the tf interface."""
+
+        import tensorflow as tf
+
+        features = tf.Variable([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_torch(self, tol, skip_if_no_torch_support):
+        """Tests that gradients of template and decomposed circuit
+        are the same in the torch interface."""
+
+        import torch
+
+        features = torch.tensor([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)

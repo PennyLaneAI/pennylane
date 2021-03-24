@@ -34,7 +34,7 @@ class BasisEmbedding(Operation):
 
     Args:
         features (tensor-like or Iterable): binary input of shape ``(n, )``
-        wires (Iterable): Wires that the template acts on.
+        wires (Iterable): wires that the template acts on
     """
 
     num_params = 1

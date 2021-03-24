@@ -124,7 +124,7 @@ class TestDecomposition:
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
 
-class TestParameters:
+class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
@@ -192,8 +192,9 @@ def circuit_decomposed(features):
     return qml.expval(qml.PauliZ(0))
 
 
-class TestGradients:
-    """Tests that the gradient is computed correctly in all interfaces."""
+class TestInterfaces:
+    """Tests that the template is compatible with all interfaces, and that gradients are
+    correct."""
 
     def test_autograd(self, tol):
         """Tests that gradients of template and decomposed circuit
@@ -205,6 +206,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = qml.grad(circuit)
         grads = grad_fn(features)
@@ -228,6 +233,10 @@ class TestGradients:
         circuit = qml.QNode(circuit_template, dev, interface="jax")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
 
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
 
@@ -248,6 +257,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev, interface="tf")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(features)
@@ -271,6 +284,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev, interface="torch")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(features)
         res.backward()
