@@ -160,15 +160,17 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
     will yield ``qml.PauliZ(0)``.
     """
-    # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
-    if are_identical_pauli_words(pauli_1, pauli_2):
-        return Identity(0)
 
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
         wire_labels = set(pauli_1.wires.labels + pauli_2.wires.labels)
         wire_map = {label: i for i, label in enumerate(wire_labels)}
+
+    # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
+    if are_identical_pauli_words(pauli_1, pauli_2):
+        first_wire = list(wire_map.keys())[0]
+        return Identity(first_wire)
 
     # Compute binary symplectic representations
     pauli_1_binary = pauli_to_binary(pauli_1, wire_map=wire_map)

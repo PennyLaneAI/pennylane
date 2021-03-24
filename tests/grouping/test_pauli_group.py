@@ -64,8 +64,9 @@ class TestPauliGroup:
         [
             (PauliX(0), Identity(0), {0: 0}, PauliX(0)),
             (PauliZ(0), PauliY(0), {0: 0}, PauliX(0)),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, Identity("b")),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), {"b": 0, "a": 1}, Identity("b")),
             (PauliZ(0) @ PauliY(1), PauliX(0) @ PauliZ(1), {0: 0, 1: 1}, PauliY(0) @ PauliX(1)),
-            # (PauliZ(1) @ PauliY(0), PauliX(0) @ PauliZ(1), {0: 0, 1: 1}, PauliX(1) @ PauliY(0)),
             (PauliZ("a"), PauliX("b"), {"a": 0, "b": 1}, PauliZ("a") @ PauliX("b")),
             (
                 PauliZ("a"),
@@ -73,6 +74,7 @@ class TestPauliGroup:
                 {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4},
                 PauliZ("a") @ PauliX("e"),
             ),
+            (PauliZ("a"), PauliY("e"), None, PauliZ("a") @ PauliY("e")),
         ],
     )
     def test_pauli_mult(self, pauli_word_1, pauli_word_2, wire_map, expected_product):

@@ -482,7 +482,7 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
-* Added functionality for construct and manipulating the Pauli group
+* Added functionality for constructing and manipulating the Pauli group
   [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159).
   For example, we can iterate through the 3-qubit Pauli group like so:
 
@@ -493,10 +493,10 @@
       print(pauli)
   ```
 
-  We can also construct and store the full group, and perform operations
-  on its members using the `pauli_mult` and `pauli_multi_with_phase`
-  functions. This can be done on arbitrarily-labeled wires as well, by
-  defining a wire map.
+  We can also construct and store the full group, and multiply together
+  its members at the level of Pauli words using the `pauli_mult` and
+  `pauli_multi_with_phase` functions. This can be done on
+   arbitrarily-labeled wires as well, by defining a wire map.
 
   ```python
   from pennylane.grouping.pauli_group import pauli_group, pauli_mult
