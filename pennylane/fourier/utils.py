@@ -37,3 +37,19 @@ def to_dict(coeffs):
     nvecs = product(*n_ranges)
 
     return {nvec: coeffs[nvec] for nvec in nvecs}
+
+def extract_evals(obj):
+    """Extract pair of eigenvalues of from generator of an operation."""
+
+    gen_evals = []
+
+    gen, coeff = obj.generator
+    evals = np.linalg.eigvals(coeff * gen.matrix)
+    # eigenvalues of hermitian ops are guaranteed to be real
+    evals = np.real(evals)
+
+    gen_evals.append(evals)
+    # append negative to cater for the complex conjugate part which subtracts eigenvalues
+    gen_evals.append(-evals)
+
+    return gen_evals

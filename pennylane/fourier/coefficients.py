@@ -17,8 +17,10 @@ from itertools import product
 import pennylane as qml
 from pennylane import numpy as np
 
+from .utils import extract_evals
 
-def frequency_spectra(qnode):
+
+def frequency_spectra(tape):
     r"""Return the frequency spectrum of a tape that returns the expectation value of
     a single quantum observable.
 
@@ -79,7 +81,7 @@ def frequency_spectra(qnode):
         \lambda_j, \lambda_{j'} \in ev_j
 
     Args:
-        qnode (pennylane.QNode): a qnode representing the circuit
+        tape (pennylane.tape.QuantumTape): a quantum tape representing the circuit
 
     Returns:
         (Dict[pennylane.numpy.tensor, list[float]]): Dictionary of input keys
@@ -115,69 +117,62 @@ def frequency_spectra(qnode):
 
         circuit(weights, inpt)
 
-        frequencies = frequency_spectra(circuit)
+        frequencies = frequency_spectra(circuit.qtape)
 
         for inp, freqs in frequencies.items():
             print(f"{inp}: {freqs}")
 
     """
 
-    all_params = qnode.qtape.get_parameters(trainable_only=False)
+    all_params = tape.get_parameters(trainable_only=False)
 
     # get all unique tensors marked as input
-    inputs = list(
-        set([p for p in all_params if (isinstance(p, np.tensor) and p.is_input)])
-    )
+    inputs = list(set([p for p in all_params if (isinstance(p, np.tensor) and p.is_input)]))
 
     if not inputs:
         return [], []
 
-    # First, pass through the list of operations. Extract the ones that
-    # are parameter-dependent, and unroll anything that isn't.
-    relevant_operations = []
+    # We will now go through the circuit, and collect the set of gates relevant
+    # to each input.
+    generator_evals = [[] for _ in inputs]
 
-    for obj in qnode.qtape.operations:
+    for obj in tape.operations:
         if isinstance(obj, qml.operation.Operation):
             # Ignore operations with no parameters, or with no parameters marked as inputs
             if obj.num_params == 0:
                 continue
 
-            if not np.any([p.is_input for p in obj.data if isinstance(p, np.tensor)]):
+            tensor_parameters = [p for p in obj.data if isinstance(p, np.tensor)]
+
+            if not np.any([p.is_input for p in tensor_parameters]):
                 continue
+
+            # Collect the set of inputs on this gate
+            relevant_inputs = [inputs.index(p) for p in tensor_parameters if p.is_input]
+
+            # It could be the case that more than one parameter of a given gate is
+            # an input; ignore this case for now.
+            if len(relevant_inputs) > 1:
+                raise ValueError("Function does not support inputs fed into multi-parameter gates.")
+
+            # Get the index of this particular input
+            input_idx = relevant_inputs[0]
 
             # Check if this is a gate should be unrolled into Pauli operators
             try:
                 decomp = obj.decomposition(*obj.parameters, wires=obj.wires)
             except NotImplementedError:
-                relevant_operations.append(obj)
+                # If no decomposition required, simply get the eigenvalues of gate generator
+                evals = extract_evals(obj)
+                generator_evals[input_idx].extend(evals)
                 continue
 
-            # Only add gates with relevant input parameters
+            # If decomposition is required, need to get eigenvalues for each gate in
+            # the decomposition that uses this parameter
             for decomp_op in decomp:
                 if np.any([p.is_input for p in decomp_op.data if isinstance(p, np.tensor)]):
-                    relevant_operations.append(decomp_op)
-
-    # Next, go through operations to find generators of inputs
-    generator_evals = [[] for _ in range(len(inputs))]
-
-    for obj in relevant_operations:
-        #if len(obj.data) > 1:
-        #    raise ValueError(
-        #        "Function does not support inputs fed into multi-parameter gates."
-        #    )
-
-        inp = obj.data[0]
-
-        idx = inputs.index(inp)
-
-        # get eigenvalues of gate generator
-        gen, coeff = obj.generator
-        evals = np.linalg.eigvals(coeff * gen.matrix)
-        # eigenvalues of hermitian ops are guaranteed to be real
-        evals = np.real(evals)
-        generator_evals[idx].append(evals)
-        # append negative to cater for the complex conjugate part which subtracts eigenvalues
-        generator_evals[idx].append(-evals)
+                    evals = extract_evals(decomp_op)
+                    generator_evals[input_idx].extend(evals)
 
     # for each spectrum, compute sums of all possible combinations of eigenvalues
     frequencies = [[sum(comb) for comb in product(*e)] for e in generator_evals]
@@ -187,7 +182,8 @@ def frequency_spectra(qnode):
 
     # Convert to a dictionary of parameter values and integers
     frequency_dict = {
-        inp.base.take(0) : [f.base.take(0) for f in freqs] for inp, freqs in zip(inputs, unique_frequencies)
+        inp.base.take(0): [f.base.take(0) for f in freqs]
+        for inp, freqs in zip(inputs, unique_frequencies)
     }
 
     return frequency_dict
