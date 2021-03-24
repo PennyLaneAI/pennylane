@@ -199,6 +199,7 @@ def test_qubit_unitary():
 
 
 def test_no_control_defined():
+    """Test a custom operation with no control transform defined."""
     # QFT has no control rule defined.
     with QuantumTape() as tape:
         ctrl(qml.QFT, 2)(wires=[0, 1])

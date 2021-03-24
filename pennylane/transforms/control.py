@@ -25,6 +25,7 @@ from pennylane.transforms.adjoint import adjoint
 
 
 def requeue_ops_in_tape(tape):
+    """Requeue all of the operations in a tape directly to the current tape context"""
     for op in tape.operations:
         op.queue()
 
