@@ -167,7 +167,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
-        wire_labels = set(pauli_1.wires.labels, pauli_2.wires.labels)
+        wire_labels = set(pauli_1.wires.labels + pauli_2.wires.labels)
         wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     # Compute binary symplectic representations
@@ -225,7 +225,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
-        wire_labels = set(pauli_1.wires.labels, pauli_2.wires.labels)
+        wire_labels = set(pauli_1.wires.labels + pauli_2.wires.labels)
         wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     # Get the product; use our earlier function
