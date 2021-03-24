@@ -27,6 +27,7 @@ from pennylane.grouping.utils import (
     binary_to_pauli,
     pauli_word_to_matrix,
     pauli_word_to_string,
+    string_to_pauli_word,
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
@@ -315,6 +316,21 @@ class TestGroupingUtils:
         """Test that Pauli words are correctly converted into strings."""
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
+
+    @pytest.mark.parametrize(
+        "pauli_string,wire_map,expected_pauli",
+        [
+            ("I", {"a": 0}, Identity("a")),
+            ("X", {0: 0}, PauliX(0)),
+            ("II", {0: 0, 1: 1}, Identity(0)),
+            ("ZYIZ", {"a": 0, "b": 1, "c": 2, "d": 3}, PauliZ("a") @ PauliY("b") @ PauliZ("d")),
+            ("ZYZ", None, PauliZ(0) @ PauliY(1) @ PauliZ(2)),
+        ],
+    )
+    def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
+        """Test that Pauli words are correctly converted into strings."""
+        obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
+        assert obtained_pauli.compare(expected_pauli)
 
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",

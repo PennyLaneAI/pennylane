@@ -391,8 +391,66 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     """Convert a string in terms of I, X, Y, and Z into a Pauli word
     for the given wire map.
 
+    Args:
+        pauli_string (str): A string of characters consisting of "I", "X", "Y", "Z"
+            indicating a Pauli word.
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
+            the Pauli word as keys, and unique integer labels as their values
+
+    Returns:
+        (qml.Observable): The Pauli word representing of pauli_string on the wires
+            enumerated in the wire map.
+
+    **Example**
+
+    .. code-block:: python
+        wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+        string_to_pauli_word('XIY', wire_map=wire_map)
+
+    yields ``PauliX(wires=['a']) @ PauliY(wires=['c'])
     """
-    pass
+    character_map = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+
+    if not isinstance(pauli_string, str):
+        raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
+
+    # String can only consist of I, X, Y, Z
+    if any([char not in ["I", "X", "Y", "Z"] for char in pauli_string]):
+        raise ValueError(
+            "Invalid characters encountered in string_to_pauli_word "
+            f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
+        )
+
+    # If no wire map is provided, construct one using integers based on the length of the string
+    if wire_map is None:
+        wire_map = {x: x for x in range(len(pauli_string))}
+
+    if len(pauli_string) != len(wire_map):
+        raise ValueError(
+            "Wire map and pauli_string must have the same length to convert "
+            "from string to Pauli word."
+        )
+
+    # Special case: all-identity Pauli
+    if pauli_string == "I" * len(wire_map):
+        first_wire = list(wire_map.keys())[0]
+        return Identity(wire_map[first_wire])
+
+    pauli_word = None
+
+    for wire_name, wire_idx in wire_map.items():
+        pauli_char = pauli_string[wire_idx]
+
+        # Don't care about the identity
+        if pauli_char == "I":
+            continue
+
+        if pauli_word is not None:
+            pauli_word = pauli_word @ character_map[pauli_char](wire_name)
+        else:
+            pauli_word = character_map[pauli_char](wire_name)
+
+    return pauli_word
 
 
 def pauli_word_to_matrix(pauli_word, wire_map=None):
