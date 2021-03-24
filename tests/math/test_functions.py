@@ -191,6 +191,21 @@ def test_arcsin(t):
     res = fn.arcsin(t)
     assert fn.allequal(res, np.arcsin([1, 0.2, -0.5]))
 
+test_conj_data = [
+    [1.0, 1.0j, 1+1j],
+    onp.array([1.0, 1.0j, 1+1j]),
+    np.array([1.0, 1.0j, 1+1j]),
+    jnp.array([1.0, 1.0j, 1+1j]),
+    torch.tensor([1.0, 1.0j, 1+1j], dtype=torch.complex128),
+    tf.Variable([1.0, 1.0j, 1+1j], dtype=tf.complex128),
+    tf.constant([1.0, 1.0j, 1+1j], dtype=tf.complex128),
+]
+
+@pytest.mark.parametrize("t", test_conj_data)
+def test_conj(t):
+    res = fn.conj(t)
+    assert fn.allequal(res, np.conj(t))
+
 
 class TestCast:
     """Tests for the cast function"""
