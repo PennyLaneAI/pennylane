@@ -47,7 +47,7 @@ def expand_with_control(tape, control_wire):
                 # and add that the to the tape context.
                 CONTROL_MAPS[op.__class__](op, control_wire)
             else:
-                tmp_tape = op.expand(do_queue=False)
+                tmp_tape = op.expand()
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
                 requeue_ops_in_tape(tmp_tape)
     return new_tape
@@ -86,7 +86,7 @@ class ControlledOperation(Operation):
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
-    def expand(self, do_queue=False):
+    def expand(self):
         tape = self.subtape
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)

@@ -614,7 +614,7 @@ class Operation(Operator):
         quantum operations."""
         raise NotImplementedError
 
-    def expand(self, do_queue=True):
+    def expand(self):
         """Returns a tape containing the decomposed operations, rather
         than a list.
 
@@ -626,7 +626,7 @@ class Operation(Operator):
             operations decomposition, or if not implemented, simply
             the operation itself.
         """
-        tape = qml.tape.QuantumTape(do_queue=do_queue)
+        tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
             self.decomposition(*self.data, wires=self.wires)
