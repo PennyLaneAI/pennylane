@@ -134,7 +134,7 @@ class tensor(_np.ndarray):
         return string[:-1] + ", requires_grad={}, is_input={})".format(self.requires_grad, self.is_input)
 
     def __array_wrap__(self, obj):
-        out_arr = tensor(obj, requires_grad=self.requires_grad)
+        out_arr = tensor(obj, requires_grad=self.requires_grad, is_input=self.is_input)
         return super().__array_wrap__(out_arr)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -178,10 +178,15 @@ class tensor(_np.ndarray):
             isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
         )
 
+        # if any of the inputs were marked as inputs, the output should also be an input
+        is_input = any(
+            isinstance(x, onp.ndarray) and getattr(x, "is_input", True) for x in inputs
+        )
+
         # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
         # We also correctly set the requires_grad attribute.
         for i in range(len(ufunc_output)):  # pylint: disable=consider-using-enumerate
-            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad)
+            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad, is_input=is_input)
 
         if len(ufunc_output) == 1:
             # the ufunc has a single output so return a single tensor
@@ -203,7 +208,7 @@ class tensor(_np.ndarray):
             # Allowing hashing if the tensor is a scalar.
             # We hash both the scalar value *and* the differentiability information,
             # to match the behaviour of PyTorch.
-            return hash((self.item(), self.requires_grad))
+            return hash((self.item(), self.requires_grad, self.is_input))
 
         raise TypeError("unhashable type: 'numpy.tensor'")
 
