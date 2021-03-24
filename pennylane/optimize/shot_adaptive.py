@@ -49,7 +49,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             number of shots recommended for each gradient component changes.
         b (float): Regularization bias. The bias should be kept small, but non-zero.
         term_sampling (str): The random sampling algorithm to multinomially distribute the shot budget
-                across terms in the Hamiltonian expectation value.
+            across terms in the Hamiltonian expectation value.
             Currently, only ``"weighted_random_sampling"`` is supported.
             Only takes effect if the objective function provided is an instance of :class:`~.ExpvalCost`.
             Set this argument to ``None`` to turn off random sampling of Hamiltonian terms.
@@ -61,61 +61,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
               algorithm objective function, and
 
             * :math:`c_i` are the coefficients of the Hamiltonian used in the objective function.
-
-    The shot adaptive optimizer is based on the iCANS1 optimizer by
-    `Kübler et al. (2020) <https://quantum-journal.org/papers/q-2020-05-11-263/>`__, and works
-    as follows:
-
-    1. The initial step of the optimizer is performed with some specified minimum
-       number of shots, :math:`s_{min}`, for all partial derivatives.
-
-    2. The parameter-shift rule is then used to estimate the gradient :math:`g_i` with :math:`s_i` shots
-       for each parameter :math:`\theta_i`, parameters, as well as the variances
-       :math:`v_i` of the estimated gradients.
-
-    3. Gradient descent is performed for each parameter :math:`\theta_i`, using
-       the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
-       :math:`\theta_i \rightarrow \theta_i - \eta g_i`.
-
-    4. A maximum shot number is set by maximizing the improvement in the expected gain per shot.
-       For a specific parameter value, the improvement in the expected gain per shot
-       is then calculated via
-
-       .. math::
-           \gamma_i = \frac{1}{s_i} \left[ \left(\eta - \frac{1}{2} L\eta^2\right)
-                       g_i^2 - \frac{L\eta^2}{2s_i}v_i \right],
-
-       where:
-
-       * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant
-         <https://en.wikipedia.org/wiki/Lipschitz_continuity>`__ of the variational quantum algorithm objective function,
-
-       * :math:`c_i` are the coefficients of the Hamiltonian, and
-
-       * :math:`\eta` is the learning rate, and *must* be bound such that :math:`\eta < 2/L`
-         for the above expression to hold.
-
-    5. Finally, the new values of :math:`s_{i+1}` (shots for partial derivative of parameter
-       :math:`\theta_i`) is given by:
-
-       .. math::
-
-           s_{i+1} = \frac{2L\eta}{2-L\eta}\left(\frac{v_i}{g_i^2}\right)\propto
-                 \frac{v_i}{g_i^2}.
-
-    In addition to the above, to counteract the presence of noise in the system, a
-    running average of :math:`g_i` and :math:`s_i` (:math:`\chi_i` and :math:`\xi_i` respectively)
-    are used when computing :math:`\gamma_i` and :math:`s_i`.
-
-    For more details, see:
-
-    * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "Operator Sampling
-      for Shot-frugal Optimization in Variational Algorithms." `arXiv:2004.06252
-      <https://arxiv.org/abs/2004.06252>`__ (2020).
-
-    * Jonas M. Kübler, Andrew Arrasmith, Lukasz Cincio, and Patrick J. Coles. "An Adaptive Optimizer
-      for Measurement-Frugal Variational Algorithms." `Quantum 4, 263
-      <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
 
     **Example**
 
@@ -167,6 +112,63 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     Step 20: cost = -7.31, shots_used = 72534
     Step 21: cost = -7.23, shots_used = 82014
     Step 22: cost = -7.31, shots_used = 92838
+
+    .. UsageDetails::
+
+        The shot adaptive optimizer is based on the iCANS1 optimizer by
+        `Kübler et al. (2020) <https://quantum-journal.org/papers/q-2020-05-11-263/>`__, and works
+        as follows:
+
+        1. The initial step of the optimizer is performed with some specified minimum
+           number of shots, :math:`s_{min}`, for all partial derivatives.
+
+        2. The parameter-shift rule is then used to estimate the gradient :math:`g_i` with :math:`s_i` shots
+           for each parameter :math:`\theta_i`, parameters, as well as the variances
+           :math:`v_i` of the estimated gradients.
+
+        3. Gradient descent is performed for each parameter :math:`\theta_i`, using
+           the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
+           :math:`\theta_i \rightarrow \theta_i - \eta g_i`.
+
+        4. A maximum shot number is set by maximizing the improvement in the expected gain per shot.
+           For a specific parameter value, the improvement in the expected gain per shot
+           is then calculated via
+
+           .. math::
+               \gamma_i = \frac{1}{s_i} \left[ \left(\eta - \frac{1}{2} L\eta^2\right)
+                           g_i^2 - \frac{L\eta^2}{2s_i}v_i \right],
+
+           where:
+
+           * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant
+             <https://en.wikipedia.org/wiki/Lipschitz_continuity>`__ of the variational quantum algorithm objective function,
+
+           * :math:`c_i` are the coefficients of the Hamiltonian, and
+
+           * :math:`\eta` is the learning rate, and *must* be bound such that :math:`\eta < 2/L`
+             for the above expression to hold.
+
+        5. Finally, the new values of :math:`s_{i+1}` (shots for partial derivative of parameter
+           :math:`\theta_i`) is given by:
+
+           .. math::
+
+               s_{i+1} = \frac{2L\eta}{2-L\eta}\left(\frac{v_i}{g_i^2}\right)\propto
+                     \frac{v_i}{g_i^2}.
+
+        In addition to the above, to counteract the presence of noise in the system, a
+        running average of :math:`g_i` and :math:`s_i` (:math:`\chi_i` and :math:`\xi_i` respectively)
+        are used when computing :math:`\gamma_i` and :math:`s_i`.
+
+        For more details, see:
+
+        * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "Operator Sampling
+          for Shot-frugal Optimization in Variational Algorithms." `arXiv:2004.06252
+          <https://arxiv.org/abs/2004.06252>`__ (2020).
+
+        * Jonas M. Kübler, Andrew Arrasmith, Lukasz Cincio, and Patrick J. Coles. "An Adaptive Optimizer
+          for Measurement-Frugal Variational Algorithms." `Quantum 4, 263
+          <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
     """
 
     def __init__(
@@ -473,3 +475,44 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             return new_args[0]
 
         return new_args
+
+    def step_and_cost(self, objective_fn, *args, **kwargs):
+        """Update trainable arguments with one step of the optimizer and return the corresponding
+        objective function value prior to the step.
+
+        The objective function will be evaluated using the maximum number of shots
+        across all parameters as determined by the optimizer during the
+        optimization step.
+
+        .. warning::
+
+            Unlike other gradient descent optimizers, the objective function will be evaluated
+            **separately** to the gradient computation, and will result in extra
+            device evaluations.
+
+        Args:
+            objective_fn (function): the objective function for optimization
+            *args : variable length argument list for objective function
+            **kwargs : variable length of keyword arguments for the objective function
+
+        Returns:
+            tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the objective
+            function output prior to the step.
+            If single arg is provided, list [array] is replaced by array.
+        """
+        new_args = self.step(objective_fn, *args, **kwargs)
+
+        if isinstance(objective_fn, qml.ExpvalCost):
+            device = objective_fn.qnodes[0].device
+        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+            device = objective_fn.device
+
+        original_shots = device.shots
+
+        try:
+            device.shots = int(self.max_shots)
+            forward = objective_fn(*args, **kwargs)
+        finally:
+            device.shots = original_shots
+
+        return new_args, forward

@@ -526,3 +526,46 @@ class TestOptimization:
         assert loss < initial_loss
         assert np.allclose(loss, -1 / (2 * np.sqrt(5)), atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
+
+
+class TestStepAndCost:
+    """Tests for the step_and_cost method"""
+
+    def test_qnode_cost(self, tol):
+        """Test that the cost is correctly returned
+        when using a QNode as the cost function"""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        params = np.array([0.1, 0.3], requires_grad=True)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        for i in range(100):
+            params, res = opt.step_and_cost(circuit, params)
+
+        assert np.allclose(res, -1, atol=tol, rtol=0)
+
+    def test_expval_cost(self, tol):
+        """Test that the cost is correctly returned
+        when using a QNode as the cost function"""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        def ansatz(x, **kwargs):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+
+        H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
+        circuit = qml.ExpvalCost(ansatz, H, dev)
+        params = np.array([0.1, 0.3], requires_grad=True)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        for i in range(100):
+            params, res = opt.step_and_cost(circuit, params)
+
+        assert np.allclose(res, -1, atol=tol, rtol=0)
