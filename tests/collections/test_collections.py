@@ -38,9 +38,6 @@ except ImportError as e:
     Variable = None
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestMap:
     """Test for mapping ansatz over observables or devices,
     to return a QNode collection"""
@@ -66,13 +63,15 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
@@ -89,13 +88,15 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
@@ -112,13 +113,15 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
         # test that device is not broadcast
         assert qc[0].device is not qc[1].device
@@ -138,15 +141,17 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
-        assert qc[0].ops[1].return_type == qml.operation.Expectation
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
+        assert queue[1].return_type == qml.operation.Expectation
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
-        assert qc[1].ops[1].return_type == qml.operation.Variance
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
+        assert queue[1].return_type == qml.operation.Variance
 
     def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""
@@ -174,12 +179,12 @@ class TestMap:
         assert len(qc) == 2
 
         # Checking the h attribute which contains the step size
-        assert qc[0].h == 123
-        assert qc[1].h == 123
+        assert qc[0].diff_options["h"] == 123
+        assert qc[1].diff_options["h"] == 123
 
         # Checking that the order is set in each QNode
-        assert qc[0].order == 2
-        assert qc[1].order == 2
+        assert qc[0].diff_options["order"] == 2
+        assert qc[1].diff_options["order"] == 2
 
 
 class TestApply:

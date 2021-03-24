@@ -15,55 +15,14 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from collections import Counter, OrderedDict, namedtuple
 
 import networkx as nx
 
 import pennylane as qml
-from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
-from .variable import Variable
-
-
-OPENQASM_GATES = {
-    "CNOT": "cx",
-    "CZ": "cz",
-    "U3": "u3",
-    "U2": "u2",
-    "U1": "u1",
-    "Identity": "id",
-    "PauliX": "x",
-    "PauliY": "y",
-    "PauliZ": "z",
-    "Hadamard": "h",
-    "S": "s",
-    "S.inv": "sdg",
-    "T": "t",
-    "T.inv": "tdg",
-    "RX": "rx",
-    "RY": "ry",
-    "RZ": "rz",
-    "CRX": "crx",
-    "CRY": "cry",
-    "CRZ": "crz",
-    "SWAP": "swap",
-    "Toffoli": "ccx",
-    "CSWAP": "cswap",
-    "PhaseShift": "u1",
-}
-"""
-dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
-
-Note that QASM has two native gates:
-
-- ``U`` (equivalent to :class:`~.U3`)
-- ``CX`` (equivalent to :class:`~.CNOT`)
-
-All other gates are defined in the file qelib1.inc:
-https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
-"""
 
 
 def _by_idx(x):
@@ -138,16 +97,28 @@ class CircuitGraph:
     between arbitrary quantum channels and measurements, not just unitary gates.
 
     Args:
-        ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
-        variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
-            The dictionary key is the parameter index.
-        wires (Wires): the addressable wires on the device
+        ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
+        obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
+        wires (.Wires): The addressable wire registers of the device that will be executing this graph
+        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
+            parameter indices (in the order they appear on the tape), and values are a
+            dictionary containing the corresponding operation and operation parameter index.
+        trainable_params (set[int]): A set containing the indices of parameters that support
+            differentiability. The indices provided match the order of appearence in the
+            quantum circuit.
     """
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, ops, variable_deps, wires):
-        self.variable_deps = variable_deps
+    def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
+        self._operations = ops
+        self._observables = obs
+        self.par_info = par_info
+        self.trainable_params = trainable_params
+
+        queue = ops + obs
+
+        self._depth = None
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
@@ -158,14 +129,14 @@ class CircuitGraph:
         Required to translate between wires and indices of the wires on the device."""
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
-        for k, op in enumerate(ops):
+        for k, op in enumerate(queue):
             op.queue_idx = k  # store the queue index in the Operator
 
             if hasattr(op, "return_type") and op.return_type is qml.operation.State:
                 # State measurements contain no wires by default, but wires are
                 # required for the circuit drawer, so we recreate the state
                 # measurement with all wires
-                op = qml.tape.MeasurementProcess(qml.operation.State, wires=wires)
+                op = qml.measure.MeasurementProcess(qml.operation.State, wires=wires)
                 op.queue_idx = k
 
             for w in op.wires:
@@ -193,6 +164,10 @@ class CircuitGraph:
                 # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
 
+        # For computing depth; want only a graph with the operations, not
+        # including the observables
+        self._operation_graph = None
+
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
 
@@ -218,22 +193,14 @@ class CircuitGraph:
         """
         serialization_string = ""
         delimiter = "!"
-        variable_delimiter = "V"
 
         for op in self.operations_in_order:
             serialization_string += op.name
 
             for param in op.data:
-                if isinstance(param, Variable):
-                    serialization_string += delimiter
-                    serialization_string += variable_delimiter
-                    serialization_string += str(param.idx)
-                    serialization_string += delimiter
-
-                else:
-                    serialization_string += delimiter
-                    serialization_string += str(param)
-                    serialization_string += delimiter
+                serialization_string += delimiter
+                serialization_string += str(param)
+                serialization_string += delimiter
 
             serialization_string += str(op.wires.tolist())
 
@@ -261,88 +228,6 @@ class CircuitGraph:
         """
         return hash(self.serialize())
 
-    def to_openqasm(self, wires=None, rotations=True):
-        """Serialize the circuit as an OpenQASM 2.0 program.
-
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
-
-        .. note::
-
-            The serialized OpenQASM program assumes that gate definitions
-            in ``qelib1.inc`` are available.
-
-        Args:
-            wires (Wires or None): the wires to use when serializing the circuit
-            rotations (bool): in addition to serializing user-specified
-                operations, also include the gates that diagonalize the
-                measured wires such that they are in the eigenbasis of the circuit observables.
-
-        Returns:
-            str: OpenQASM serialization of the circuit
-        """
-        # We import decompose_queue here to avoid a circular import
-        wires = wires or self.wires
-
-        # add the QASM headers
-        qasm_str = "OPENQASM 2.0;\n"
-        qasm_str += 'include "qelib1.inc";\n'
-
-        if self.num_wires == 0:
-            # empty circuit
-            return qasm_str
-
-        # create the quantum and classical registers
-        qasm_str += "qreg q[{}];\n".format(len(wires))
-        qasm_str += "creg c[{}];\n".format(len(wires))
-
-        # get the user applied circuit operations
-        operations = self.operations
-
-        if rotations:
-            # if requested, append diagonalizing gates corresponding
-            # to circuit observables
-            operations += self.diagonalizing_gates
-
-        with qml.tape.QuantumTape() as tape:
-            for op in operations:
-                op.queue()
-
-                if op.inverse:
-                    op.inv()
-
-        # decompose the queue
-        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
-
-        # create the QASM code representing the operations
-        for op in operations:
-            try:
-                gate = OPENQASM_GATES[op.name]
-            except KeyError as e:
-                raise ValueError(f"Operation {op.name} not supported by the QASM serializer") from e
-
-            wire_labels = ",".join([f"q[{wires.index(w)}]" for w in op.wires.tolist()])
-            params = ""
-
-            if op.num_params > 0:
-                # If the operation takes parameters, construct a string
-                # with parameter values.
-                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
-
-            qasm_str += "{name}{params} {wires};\n".format(
-                name=gate, params=params, wires=wire_labels
-            )
-
-        # apply computational basis measurements to each quantum register
-        # NOTE: This is not strictly necessary, we could inspect self.observables,
-        # and then only measure wires which are requested by the user. However,
-        # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
-
-        return qasm_str
-
     @property
     def observables_in_order(self):
         """Observables in the circuit, in a fixed topological order.
@@ -357,7 +242,10 @@ class CircuitGraph:
         nodes = [node for node in self._graph.nodes if _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
-    observables = observables_in_order
+    @property
+    def observables(self):
+        """Observables in the circuit."""
+        return self._observables
 
     @property
     def operations_in_order(self):
@@ -374,7 +262,10 @@ class CircuitGraph:
         nodes = [node for node in self._graph.nodes if not _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
-    operations = operations_in_order
+    @property
+    def operations(self):
+        """Operations in the circuit."""
+        return self._operations
 
     @property
     def graph(self):
@@ -501,18 +392,15 @@ class CircuitGraph:
         Returns:
             list[Layer]: layers of the circuit
         """
-        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0 c1], [b0, d1] and not [a0], [b0 c1], [d1]
-        # keep track of the current layer
+        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0
+        # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
         current = Layer([], [])
         layers = [current]
 
-        # sort vars by first occurrence of the var in the ops queue
-        variable_ops_sorted = sorted(self.variable_deps.items(), key=lambda x: x[1][0].op.queue_idx)
+        for idx, info in self.par_info.items():
+            if idx in self.trainable_params:
+                op = info["op"]
 
-        # iterate over all parameters
-        for param_idx, gate_param_tuple in variable_ops_sorted:
-            # iterate over ops depending on that param
-            for op, _ in gate_param_tuple:
                 # get all predecessor ops of the op
                 sub = self.ancestors((op,))
 
@@ -525,7 +413,7 @@ class CircuitGraph:
 
                 # store the parameters and ops indices for the layer
                 current.ops.append(op)
-                current.param_inds.append(param_idx)
+                current.param_inds.append(idx)
 
         return layers
 
@@ -566,7 +454,7 @@ class CircuitGraph:
             operations[wire] = list(
                 filter(
                     lambda op: not (
-                        isinstance(op, (qml.operation.Observable, qml.tape.MeasurementProcess))
+                        isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
                         and op.return_type is not None
                     ),
                     operations[wire],
@@ -596,7 +484,7 @@ class CircuitGraph:
             observables[wire] = list(
                 filter(
                     lambda op: isinstance(
-                        op, (qml.operation.Observable, qml.tape.MeasurementProcess)
+                        op, (qml.operation.Observable, qml.measure.MeasurementProcess)
                     )
                     and op.return_type is not None,
                     self._grid[wire],
@@ -654,15 +542,14 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+        self._operations = self.operations_in_order
+        self._observables = self.observables_in_order
 
-    def draw(
-        self, charset="unicode", show_variable_names=False, wire_order=None, show_all_wires=False
-    ):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
-            show_variable_names (bool, optional): Show variable names instead of variable values.
             wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
@@ -689,37 +576,35 @@ class CircuitGraph:
             obs,
             wires=wire_order or self.wires,
             charset=CHARSETS[charset],
-            show_variable_names=show_variable_names,
             show_all_wires=show_all_wires,
         )
 
         return drawer.draw()
 
-    @property
-    def diagonalizing_gates(self):
-        """Returns the gates that diagonalize the measured wires such that they
-        are in the eigenbasis of the circuit observables.
+    def get_depth(self):
+        """Depth of the quantum circuit (longest path in the DAG)."""
+        # If there are no operations in the circuit, the depth is 0
+        if not self.operations:
+            self._depth = 0
+
+        # If there are operations but depth is uncomputed, compute the truncated graph
+        # with only the operations, and return the longest path + 1 (since the path is
+        # expressed in terms of edges, and we want it in terms of nodes).
+        if self._depth is None and self.operations:
+            if self._operation_graph is None:
+                self._operation_graph = self.graph.subgraph(self.operations)
+                self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
+
+        return self._depth
+
+    def has_path(self, a, b):
+        """Checks if a path exists between the two given nodes.
+
+        Args:
+            a (Operator): initial node
+            b (Operator): final node
 
         Returns:
-            List[~.Operation]: the operations that diagonalize the observables
+            bool: returns ``True`` if a path exists
         """
-        rotation_gates = []
-
-        for observable in self.observables_in_order:
-            rotation_gates.extend(observable.diagonalizing_gates())
-
-        return rotation_gates
-
-    @property
-    def is_sampled(self):
-        """Returns ``True`` if the circuit graph contains observables
-        which are sampled."""
-        # TODO: remove when tape is core
-        return any(obs.return_type == Sample for obs in self.observables_in_order)
-
-    @property
-    def all_sampled(self):
-        """Returns ``True`` if the circuit graph contains observables
-        which are sampled."""
-        # TODO: remove when tape is core
-        return all(obs.return_type == Sample for obs in self.observables_in_order)
+        return nx.has_path(self._graph, a, b)

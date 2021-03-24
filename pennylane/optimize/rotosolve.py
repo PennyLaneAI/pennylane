@@ -49,7 +49,7 @@ class RotosolveOptimizer:
 
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
 
-    >>> dev = qml.device("default.qubit", analytic=True, wires=2)
+    >>> dev = qml.device("default.qubit", shots=None, wires=2)
     ... @qml.qnode(dev)
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
