@@ -20,33 +20,18 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def circuit_template(weights):
-    qml.templates.BasicEntanglerLayers(weights, range(3))
-    return qml.expval(qml.PauliZ(0))
-
-
-def circuit_decomposed(weights):
-    qml.RX(weights[0, 0], wires=0)
-    qml.RX(weights[0, 1], wires=1)
-    qml.RX(weights[0, 2], wires=2)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.CNOT(wires=[2, 0])
-    return qml.expval(qml.PauliZ(0))
-
-
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     QUEUES = [
-        (1, (1, 1), ["RX"]),
-        (2, (1, 2), ["RX", "RX", "CNOT", "RY", "RY", "RX", "RX"]),
-        (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"]),
-        (3, (1, 3), ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"]),
+        (1, (1, 1), ["RX"], [[0]]),
+        (2, (1, 2), ["RX", "RX", "CNOT"], [[0], [1], [0, 1]]),
+        (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"], [[0], [1], [0, 1], [0], [1], [0, 1]]),
+        (3, (1, 3), ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"], [[0], [1], [2], [0, 1], [1, 2], [2, 0]]),
     ]
 
-    @pytest.mark.parametrize("n_wires, weight_shape, expected_names", QUEUES)
-    def test_expansion(self, n_wires, weight_shape, expected_names):
+    @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
+    def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires):
         """Checks the queue for the default settings."""
 
         weights = np.random.random(size=weight_shape)
@@ -56,6 +41,7 @@ class TestDecomposition:
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
 
     @pytest.mark.parametrize("rotation", [qml.RY, qml.RZ])
     def test_rotation(self, rotation):
@@ -78,7 +64,7 @@ class TestDecomposition:
             ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
         ],
     )
-    def test_simple_target_outputs(self, weights, n_wires, target):
+    def test_simple_target_outputs(self, weights, n_wires, target, tol):
         """Tests the result of the template for simple cases."""
 
         dev = qml.device("default.qubit", wires=n_wires)
@@ -89,8 +75,7 @@ class TestDecomposition:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         expectations = circuit(weights)
-        for exp, target_exp in zip(expectations, target):
-            assert exp == target_exp
+        assert np.allclose(expectations, target, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -115,7 +100,7 @@ class TestDecomposition:
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
 
-class TestParameters:
+class TestInputs:
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -150,12 +135,45 @@ class TestParameters:
         assert shape == expected_shape
 
 
-class TestGradients:
-    """Tests that the gradient is computed correctly in all interfaces."""
+def circuit_template(weights):
+    qml.templates.BasicEntanglerLayers(weights, range(3))
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_decomposed(weights):
+    qml.RX(weights[0, 0], wires=0)
+    qml.RX(weights[0, 1], wires=1)
+    qml.RX(weights[0, 2], wires=2)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+    qml.CNOT(wires=[2, 0])
+    return qml.expval(qml.PauliZ(0))
+
+
+class TestInterfaces:
+    """Tests that the template is compatible with all interfaces, including the computation
+    of gradients."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        weights = [[0.1, -1.1, 0.2]]
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(weights))
+        res2 = circuit2(tuple(weights))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the autograd interface."""
+        """Tests the autograd interface."""
 
         weights = np.random.random(size=(1, 3))
         weights = pnp.array(weights, requires_grad=True)
@@ -164,6 +182,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = qml.grad(circuit)
         grads = grad_fn(weights)
@@ -174,8 +196,7 @@ class TestGradients:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_jax(self, tol, skip_if_no_jax_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the jax interface."""
+        """Tests the jax interface."""
 
         import jax
         import jax.numpy as jnp
@@ -187,6 +208,10 @@ class TestGradients:
         circuit = qml.QNode(circuit_template, dev, interface="jax")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
 
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
 
@@ -196,8 +221,7 @@ class TestGradients:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_tf(self, tol, skip_if_no_tf_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the tf interface."""
+        """Tests the tf interface."""
 
         import tensorflow as tf
 
@@ -207,6 +231,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev, interface="tf")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -219,8 +247,7 @@ class TestGradients:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_torch(self, tol, skip_if_no_torch_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the torch interface."""
+        """Tests the torch interface."""
 
         import torch
 
@@ -230,6 +257,10 @@ class TestGradients:
 
         circuit = qml.QNode(circuit_template, dev, interface="torch")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()
