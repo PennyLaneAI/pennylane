@@ -103,10 +103,9 @@ class QAOAEmbedding(Operation):
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
-        features (tensor_like): array of features to encode
-        weights (tensor_like): array of weights
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features to encode
+        weights (tensor_like): tensor of weights
+        wires (Iterable): wires that the template acts on
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
 
     Raises:
@@ -217,7 +216,6 @@ class QAOAEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize local field {local_field}")
 
-        wires = Wires(wires)
         self._preprocess(features, weights, wires)
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
 
@@ -252,8 +250,8 @@ class QAOAEmbedding(Operation):
         * Check that the shape of the weights tensor is correct for the number of qubits.
 
         Args:
-            features (tensor-like): feature tensor
-            weights (tensor-like): weight tensor
+            features (tensor_like): feature tensor
+            weights (tensor_like): weight tensor
         """
 
         shape = qml.math.shape(features)

@@ -48,9 +48,8 @@ class AmplitudeEmbedding(Operation):
         gradients with respect to the features cannot be computed by PennyLane.
 
     Args:
-        features (tensor-like): input vector of length ``2^n``, or less if `pad_with` is specified
-        wires (Iterable or :class:`.wires.Wires`): Wires that the template acts on.
-            Accepts an iterable of numbers or strings, or a Wires object.
+        features (tensor_like): input tensor of dimension ``(2^n,)``, or less if `pad_with` is specified
+        wires (Iterable): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
         pad (float or complex): same as `pad`, to be deprecated
@@ -82,21 +81,7 @@ class AmplitudeEmbedding(Operation):
         **Differentiating with respect to the features**
 
         Due to non-trivial classical processing to construct the state preparation circuit,
-        the features argument is **not always differentiable**.
-
-        .. code-block:: python
-
-            from pennylane import numpy as np
-
-            @qml.qnode(dev)
-            def circuit(f):
-                AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
-
-        >>> g = qml.grad(circuit, argnum=0)
-        >>> f = np.array([1, 1, 1, 1], requires_grad=True)
-        >>> g(f)
-        ValueError: Cannot differentiate wrt parameter(s) {0, 1, 2, 3}.
+        the features argument is in general **not differentiable**.
 
         **Normalization**
 

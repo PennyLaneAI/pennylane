@@ -33,7 +33,7 @@ class BasisEmbedding(Operation):
         gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
-        features (tensor-like): binary input array of shape ``(n, )``
+        features (tensor-like or Iterable): binary input of shape ``(n, )``
         wires (Iterable): Wires that the template acts on.
     """
 

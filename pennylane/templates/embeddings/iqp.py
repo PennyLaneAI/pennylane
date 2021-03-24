@@ -71,9 +71,8 @@ class IQPEmbedding(Operation):
       Since diagonal gates commute, the order of the entanglers does not change the result.
 
     Args:
-        features (tensor_like): array of features to encode
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features to encode
+        wires (Iterable): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 

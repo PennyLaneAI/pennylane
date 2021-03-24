@@ -35,9 +35,8 @@ class SqueezingEmbedding(Operation):
     ``features`` than wires, the circuit does not apply the remaining squeezing gates.
 
     Args:
-        features (tensor_like): Array of features of size (N,)
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features
+        wires (Iterable): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the

@@ -42,7 +42,7 @@ class AngleEmbedding(Operation):
     Args:
         features (tensor-like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Iterable): Wires that the template acts on.
+        wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
     """
 
