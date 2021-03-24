@@ -104,12 +104,29 @@ def circuit_decomposed(features):
 
 
 class TestInterfaces:
-    """Tests that the template is compatible with all interfaces, and that gradients are
-    correct."""
+    """Tests that the template is compatible with all interfaces, including the computation
+    of gradients."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        features = [0.1, -1.3]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(features))
+        res2 = circuit2(tuple(features))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the autograd interface."""
+        """Tests the autograd interface."""
 
         features = np.random.random(size=(2,))
         features = pnp.array(features, requires_grad=True)
@@ -132,8 +149,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_jax(self, tol, skip_if_no_jax_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the jax interface."""
+        """Tests the jax interface."""
 
         import jax
         import jax.numpy as jnp
@@ -158,8 +174,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_tf(self, tol, skip_if_no_tf_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the tf interface."""
+        """Tests the tf interface."""
 
         import tensorflow as tf
 
@@ -185,8 +200,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_torch(self, tol, skip_if_no_torch_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the torch interface."""
+        """Tests the torch interface."""
 
         import torch
 

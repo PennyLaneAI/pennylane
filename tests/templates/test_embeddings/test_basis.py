@@ -76,21 +76,6 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    def test_features_are_list(self, tol):
-        """Verifies that the features can be passed as a list."""
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.templates.BasisEmbedding(features=[0, 1], wires=range(2))
-            return qml.state()
-
-        res = circuit()
-
-        assert np.allclose(res, [0, 1, 0, 0], atol=tol, rtol=0)
-
     @pytest.mark.parametrize("x", [[0], [0, 1, 1]])
     def test_wrong_input_bits_exception(self, x):
         """Checks exception if number of features is not same as number of qubits."""
@@ -148,11 +133,28 @@ def circuit_decomposed(features):
 
 
 class TestInterfaces:
-    """Tests that the result as well as the gradient is computed correctly in all interfaces."""
+    """Tests that the template is compatible with all interfaces."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        features = [0, 1, 0]
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(features))
+        res2 = circuit2(tuple(features))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the autograd interface."""
+        """Tests the autograd interface."""
 
         features = pnp.array([0, 1, 0])
 
@@ -167,8 +169,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_jax(self, tol, skip_if_no_jax_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the jax interface."""
+        """Tests the jax interface."""
 
         import jax.numpy as jnp
 
@@ -185,8 +186,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_tf(self, tol, skip_if_no_tf_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the tf interface."""
+        """Tests the tf interface."""
 
         import tensorflow as tf
 
@@ -203,8 +203,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_torch(self, tol, skip_if_no_torch_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the torch interface."""
+        """Tests the torch interface."""
 
         import torch
 

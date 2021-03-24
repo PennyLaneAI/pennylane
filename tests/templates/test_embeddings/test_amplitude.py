@@ -259,9 +259,26 @@ def circuit_decomposed(features):
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces."""
 
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        features = [1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0]
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(features))
+        res2 = circuit2(tuple(features))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     def test_autograd(self, tol):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the autograd interface."""
+        """Tests autograd tensors."""
 
         features = pnp.array([1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0], requires_grad=True)
 
@@ -276,8 +293,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_jax(self, tol, skip_if_no_jax_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the jax interface."""
+        """Tests jax tensors."""
 
         import jax.numpy as jnp
 
@@ -294,8 +310,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_tf(self, tol, skip_if_no_tf_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the tf interface."""
+        """Tests tf tensors."""
 
         import tensorflow as tf
 
@@ -312,8 +327,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_torch(self, tol, skip_if_no_torch_support):
-        """Tests that gradients of template and decomposed circuit
-        are the same in the torch interface."""
+        """Tests torch tensors."""
 
         import torch
 
