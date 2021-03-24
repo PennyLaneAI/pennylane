@@ -86,7 +86,7 @@ class ControlledOperation(Operation):
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
-    def expand(self):
+    def expand(self, do_queue=False):
         tape = self.subtape
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
