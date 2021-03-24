@@ -42,6 +42,7 @@ def expand_with_control(tape, control_wire):
             if hasattr(op, "_controlled"):
                 # Execute the controlled version of the operation
                 # and add that the to the tape context.
+                # pylint: disable=protected-access
                 op._controlled(control_wire)
             else:
                 tmp_tape = op.expand()
