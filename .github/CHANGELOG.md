@@ -424,6 +424,53 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
+* Added functionality for construct and manipulating the Pauli group
+  [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159).
+  For example, we can iterate through the 3-qubit Pauli group like so:
+
+  ```python
+  from pennylane.grouping.pauli_group import pauli_group_generator
+
+  for pauli in pauli_group_generator(n_qubits=3):
+      print(pauli)
+  ```
+
+  We can also construct and store the full group, and perform operations
+  on its members using the `pauli_mult` and `pauli_multi_with_phase`
+  functions. This can be done on arbitrarily-labeled wires as well, by
+  defining a wire map.
+
+  ```python
+  from pennylane.grouping.pauli_group import pauli_group, pauli_mult
+
+  wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  pg = pauli_group(n_qubits=3, wire_map=wire_map)
+  ```
+
+  ```pycon
+  >>> pg[3]
+  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pg[55]
+  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  ```
+
+  Functions for conversion of Pauli observables to strings (and back),
+  as well as computation of their matrix representations has also been
+  added.
+
+  ```python
+  from pennylane.grouping.pauli_group import pauli_word_to_matrix
+  from pennylane.grouping.utils import pauli_word_to_string, string_to_pauli_word
+  ```
+
+  ```pycon
+  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
+  'YYZ'
+  ```
+
+
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
