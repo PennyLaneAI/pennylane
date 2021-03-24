@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the AmplitudeEmbedding template.
+Tests for the AmplitudeEmbedding template.
 """
 import pytest
 import numpy as np

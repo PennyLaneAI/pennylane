@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the SqueezingEmbedding template.
+Tests for the SqueezingEmbedding template.
 """
 import pytest
 import numpy as np
@@ -52,6 +52,7 @@ class TestDecomposition:
                 qml.expval(qml.NumberOperator(wires=1)),
             ]
 
+        # TODO: come up with better test case
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
     def test_state_execution_phase(self):
@@ -73,6 +74,7 @@ class TestDecomposition:
                 qml.expval(qml.NumberOperator(wires=1)),
             ]
 
+        # TODO: come up with better test case
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
     def test_custom_wire_labels(self, tol):

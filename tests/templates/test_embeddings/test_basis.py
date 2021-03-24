@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the BasisEmbedding template.
+Tests for the BasisEmbedding template.
 """
 import pytest
 import numpy as np
@@ -91,59 +91,41 @@ class TestInputs:
 
         assert np.allclose(res, [0, 1, 0, 0], atol=tol, rtol=0)
 
-    def test_too_many_input_bits_exception(self):
-        """Verifies that exception thrown if there are more features than qubits."""
+    @pytest.mark.parametrize("x", [[0], [0, 1, 1]])
+    def test_wrong_input_bits_exception(self, x):
+        """Checks exception if number of features is not same as number of qubits."""
 
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(x=None):
+        def circuit():
             qml.templates.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
-            circuit(x=np.array([0, 1, 1]))
-
-    def test_not_enough_input_bits_exception(self):
-        """Verifies that exception thrown if there are less features than qubits."""
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError):
-            circuit(x=np.array([0]))
+        with pytest.raises(ValueError, match="Features must be of length"):
+            circuit()
 
     def test_input_not_binary_exception(self):
-        """Verifies that exception raised if the features contain
-        values other than zero and one."""
+        """Checks exception if the features contain values other than zero and one."""
 
-        n_subsystems = 2
-        dev = qml.device("default.qubit", wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=[0, 1])
+            qml.templates.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Basis state must only consist of"):
             circuit(x=[2, 3])
 
     def test_exception_wrong_dim(self):
-        """Verifies that exception is raised if the
-        number of dimensions of features is incorrect."""
+        """Checks exception if the number of dimensions of features is incorrect."""
 
-        n_subsystems = 2
-        dev = qml.device("default.qubit", wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=[0, 1])
+            qml.templates.BasisEmbedding(features=x, wires=2)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be one-dimensional"):
@@ -156,7 +138,7 @@ def circuit_template(features):
 
 
 def circuit_decomposed(features):
-
+    # convert tensor to list
     feats = list(qml.math.toarray(features))
     for i in range(len(feats)):
         if feats[i] == 1:

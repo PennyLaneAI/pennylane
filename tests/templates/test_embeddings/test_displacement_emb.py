@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the DisplacementEmbedding template.HE
+Tests for the DisplacementEmbedding template.HE
 """
 import pytest
 import numpy as np
@@ -52,6 +52,7 @@ class TestDecomposition:
                 qml.expval(qml.NumberOperator(wires=1)),
             ]
 
+        # TODO: come up with better test case
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
     def test_state_execution_phase(self):
@@ -75,6 +76,7 @@ class TestDecomposition:
                 qml.expval(qml.NumberOperator(wires=1)),
             ]
 
+        # TODO: come up with better test case
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 
     def test_custom_wire_labels(self, tol):

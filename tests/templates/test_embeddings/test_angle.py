@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the AngleEmbedding template.
+Tests for the AngleEmbedding template.
 """
 import pytest
 import numpy as np
@@ -86,8 +86,7 @@ class TestDecomposition:
         target = [-1, 1, 1, 1]
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
-    def test_angle_embedding_fewer_features(self, strategy):
+    def test_angle_embedding_fewer_features(self):
         """Tests case with fewer features than rotation gates."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
@@ -96,9 +95,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(5), rotation="Z")
+            qml.templates.AngleEmbedding(features=x, wires=range(5))
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(5), rotation="Z")
+            qml.templates.AngleEmbedding(features=x, wires=range(5))
             return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
         res = circuit(x=features)
@@ -131,21 +130,17 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
-    def test_exception_fewer_rotations(self, strategy):
+    def test_exception_fewer_rotations(self):
         """Verifies that exception is raised if there are fewer
         rotation gates than features."""
 
-        features = [0, 0, 0, 0]
-        n_subsystems = 1
-        dev = qml.device("default.qubit", wires=n_subsystems)
+        features = [0, 0, 1, 0]
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
-            qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(4))
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=features)
@@ -154,27 +149,24 @@ class TestInputs:
         """Verifies that exception is raised if the
         rotation strategy is unknown."""
 
-        n_subsystems = 1
-        dev = qml.device("default.qubit", wires=n_subsystems)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="A")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(1), rotation="A")
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
     def test_exception_wrong_dim(self):
-        """Verifies that exception is raised if the
-        number of dimensions of features is incorrect."""
-        n_subsystems = 1
-        dev = qml.device("default.qubit", wires=n_subsystems)
+        """Verifies that exception is raised if the number of dimensions of features is incorrect."""
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(1))
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(x=[[1], [0]])
