@@ -197,7 +197,7 @@ class IQPEmbedding(Operation):
 
         if pattern is None:
             # default is an all-to-all pattern
-            pattern = [wire_pair for wire_pair in combinations(wires, 2)]
+            pattern = combinations(wires, 2)
 
         self.pattern = pattern
         self.n_repeats = n_repeats

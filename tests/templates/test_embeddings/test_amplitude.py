@@ -113,7 +113,7 @@ class TestInputs:
 
     @pytest.mark.parametrize("inpt", FEATURES)
     def test_throws_exception_if_not_normalized(self, inpt):
-        """Checks that AmplitudeEmbedding() throws exception when state is not normalized and `normalize=False`."""
+        """Checks exception when state is not normalized and `normalize=False`."""
         not_nrmlzd = 2 * inpt
         n_qubits = 2
         dev = qml.device("default.qubit", wires=2)
@@ -129,8 +129,7 @@ class TestInputs:
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
-        """Verifies that AmplitudeEmbedding throws exception
-        if features has more than one dimensions."""
+        """Checks exception if features has more than one dimension."""
 
         n_qubits = 2
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -143,29 +142,9 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
             circuit(x=[[1.0, 0.0], [0.0, 0.0]])
 
-    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
+    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES)
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
-        """Verifies that AmplitudeEmbedding() throws exception
-        if the number of features is fewer than the number of amplitudes, and
-        no automatic padding is chosen."""
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=None, normalize=False
-            )
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Features must be of length"):
-            circuit(x=inpt)
-
-    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
-    def test_throws_exception_if_more_features_than_amplitudes(self, inpt):
-        """Verifies that AmplitudeEmbedding() throws exception
-        if the number of features is larger than the number of amplitudes, and
+        """Checks exception if the number of features is wrong and
         no automatic padding is chosen."""
 
         n_qubits = 2
@@ -183,8 +162,7 @@ class TestInputs:
 
     @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
     def test_throws_exception_if_more_features_than_amplitudes_padding(self, inpt):
-        """Verifies that AmplitudeEmbedding() throws exception
-        if the number of features is larger than the number of amplitudes, and
+        """Checks exception if the number of features is larger than the number of amplitudes, and
         automatic padding is chosen."""
 
         n_qubits = 2

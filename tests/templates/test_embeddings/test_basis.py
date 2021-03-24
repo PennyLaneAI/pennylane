@@ -76,6 +76,21 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
+    def test_features_are_list(self, tol):
+        """Verifies that the features can be passed as a list."""
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.BasisEmbedding(features=[0, 1], wires=range(2))
+            return qml.state()
+
+        res = circuit()
+
+        assert np.allclose(res, [0, 1, 0, 0], atol=tol, rtol=0)
+
     def test_too_many_input_bits_exception(self):
         """Verifies that exception thrown if there are more features than qubits."""
 

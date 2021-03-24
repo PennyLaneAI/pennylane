@@ -14,18 +14,17 @@
 r"""
 Contains the QAOAEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.wires import Wires
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
-        features (tensor_like): array of features to encode
-        wires (Wires): wires that the template acts on
+        features (tensor_like): tensor of features to encode
+        wires (Iterable): wires that the template acts on
     """
     n_features = qml.math.shape(features)[0]
 
@@ -39,8 +38,8 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """Implements the Ising-like Hamiltonian of the QAOA embedding.
 
     Args:
-        weights (tensor_like): array of weights for one layer
-        wires (Wires): qubit indices that the template acts on
+        weights (tensor_like): tensor of weights for one layer
+        wires (Iterable): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
     """
 

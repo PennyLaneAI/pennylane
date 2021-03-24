@@ -34,68 +34,72 @@ class TestDecomposition:
         for gate in tape.operations:
             assert gate.name == "RX"
 
-    def test_state_rotx(self, qubit_device, n_subsystems):
+    def test_state_rotx(self, ):
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
+        dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(qubit_device)
+        @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="X")
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="X")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="X")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
 
-        res = circuit(x=features[:n_subsystems])
-        target = [1, -1, 0, 1, 1]
+        res = circuit(x=features)
+        target = [1, -1, 0, 1]
 
-        assert np.allclose(res, target[:n_subsystems])
+        assert np.allclose(res, target)
 
-    def test_state_roty(self, qubit_device, n_subsystems):
+    def test_state_roty(self):
         """Checks the state produced using the rotation='Y' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
+        dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(qubit_device)
+        @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Y")
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="Y")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Y")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="Y")
+            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
 
-        res = circuit(x=features[:n_subsystems])
-        target = [-1, -1, 0, 1, 1]
-        assert np.allclose(res, target[:n_subsystems])
+        res = circuit(x=features)
+        target = [-1, -1, 0, 1]
+        assert np.allclose(res, target)
 
-    def test_state_rotz(self, qubit_device, n_subsystems):
+    def test_state_rotz(self):
         """Checks the state using the rotation='Z' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
+        dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(qubit_device)
+        @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="Z")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="Z")
+            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
 
-        res = circuit(x=features[:n_subsystems])
-        target = [-1, 1, 1, 1, 1]
-        assert np.allclose(res, target[:n_subsystems])
+        res = circuit(x=features)
+        target = [-1, 1, 1, 1]
+        assert np.allclose(res, target)
 
     @pytest.mark.parametrize("strategy", ["X", "Y", "Z"])
     def test_angle_embedding_fewer_features(self, strategy):
         """Tests case with fewer features than rotation gates."""
+
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
-        n_subsystems = 5
-        dev = qml.device("default.qubit", wires=n_subsystems)
+
+        dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
+            qml.templates.AngleEmbedding(features=x, wires=range(5), rotation="Z")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(n_subsystems), rotation="Z")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qml.templates.AngleEmbedding(features=x, wires=range(5), rotation="Z")
+            return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
         res = circuit(x=features)
         target = [-1, 1, 1, 1, 1]
