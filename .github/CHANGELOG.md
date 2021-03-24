@@ -304,7 +304,7 @@
   
   @qml.qnode(dev)
   def circuit():
-    mottonen.MottonenStatePreparation(inputstate,wires=[0,1])
+    mottonen.MottonenStatePreparation(inputstate,wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
   ```
   Previously returned:
