@@ -2,6 +2,94 @@
 
 <h3>New features since last release</h3>
 
+* Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
+  the shot rate is adaptively calculated using the variances of the parameter-shift gradient.
+  [(#1139)](https://github.com/PennyLaneAI/pennylane/pull/1139)
+
+  By keeping a running average of the parameter-shift gradient and the *variance* of the
+  parameter-shift gradient, this optimizer frugally distributes a shot budget across the partial
+  derivatives of each parameter.
+
+  In addition, if computing the expectation value of a Hamiltonian, weighted random sampling can be
+  used to further distribute the shot budget across the local terms from which the Hamiltonian is
+  constructed.
+
+  This optimizer is based on both the [iCANS1](https://quantum-journal.org/papers/q-2020-05-11-263)
+  and [Rosalin](https://arxiv.org/abs/2004.06252) shot adaptive optimizers.
+
+  ```pycon
+  >>> coeffs = [2, 4, -1, 5, 2]
+  >>> obs = [
+  ...   qml.PauliX(1),
+  ...   qml.PauliZ(1),
+  ...   qml.PauliX(0) @ qml.PauliX(1),
+  ...   qml.PauliY(0) @ qml.PauliY(1),
+  ...   qml.PauliZ(0) @ qml.PauliZ(1)
+  ... ]
+  >>> H = qml.Hamiltonian(coeffs, obs)
+  >>> dev = qml.device("default.qubit", wires=2, shots=100)
+  >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+  >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+  ```
+
+  Once constructed, the cost function can be passed directly to the optimizer's `step` method.  The
+  attribute `opt.total_shots_used` can be used to track the number of shots per iteration.
+
+  ```pycon
+  >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+  >>> for i in range(5):
+  ...    params = opt.step(cost, params)
+  ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
+  Step 0: cost = -5.68, shots_used = 240
+  Step 1: cost = -2.98, shots_used = 336
+  Step 2: cost = -4.97, shots_used = 624
+  Step 3: cost = -5.53, shots_used = 1054
+  Step 4: cost = -6.50, shots_used = 1798
+  ```
+
+* Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
+  chemistry applications. [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
+  
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.SingleExcitation(phi, wires=[0, 1])
+  ```
+  
+  The `SingleExcitation` operation supports analytic gradients on hardware
+  using only four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938) 
+  
+  * Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
+  chemistry applications. [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
+
+  It can be used to perform an SO(2) rotation in the subspace 
+  spanned by the states :math:`|1100\rangle` and :math:`|0011\rangle`. 
+  For example, the following circuit performs the transformation
+  :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:   
+
+    ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.PauliX(wires=0)
+      qml.PauliX(wires=1)
+      qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+  ```
+  
+  The `DoubleExcitation` operation supports analytic gradients on hardware using only
+  four expectation value calculations, following results from
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938).
+  
 * Adds a new function ``qml.math.conj``.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
@@ -251,6 +339,18 @@
 
 <h3>Improvements</h3>
 
+- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+  from `Operation`, and define the ansatz in their `expand()` method. This 
+  change does not affect the user interface. 
+  
+  For convenience, the class has a method that returns the shape of the 
+  trainable parameter tensor, i.e.,
+  
+  ```python
+  shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
+  weights = np.random.random(shape)
+  ```
+
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
   [(#1128)](https://github.com/PennyLaneAI/pennylane/pull/1128)
 
@@ -427,8 +527,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac, Daniel Polatajko, Chase Roberts,
-Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
