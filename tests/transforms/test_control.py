@@ -196,3 +196,15 @@ def test_qubit_unitary():
                 control_wires=[1, 2],
                 wires=0)
         ])
+
+
+def test_no_control_defined():
+    # QFT has no control rule defined.
+    with QuantumTape() as tape:
+        ctrl(qml.QFT, 2)(wires=[0, 1])
+    tape = expand_tape(tape)
+    assert len(tape.operations) == 12
+    # Check that all operations are updated to their controlled version.
+    for op in tape.operations:
+        assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP}
+

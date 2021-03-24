@@ -24,6 +24,11 @@ from pennylane.transforms.registrations import register_control_transform, CONTR
 from pennylane.transforms.adjoint import adjoint
 
 
+def requeue_ops_in_tape(tape):
+    for op in tape.operations:
+        op.queue()
+
+
 def expand_with_control(tape, control_wire):
     """Expand a tape to include a control wire on all queued operations.
 
@@ -41,11 +46,9 @@ def expand_with_control(tape, control_wire):
                 # and add that the to the tape context.
                 CONTROL_MAPS[op.__class__](op, control_wire)
             else:
-                raise NotImplementedError(
-                    f"Control transform of operation {type(op)} is not registered."
-                    "You can define the control transform by using "
-                    "qml.register_control_transform. See documentation for more details."
-                )
+                tmp_tape = op.expand(do_queue=False)
+                tmp_tape = expand_with_control(tmp_tape, control_wire)
+                requeue_ops_in_tape(tmp_tape)
     return new_tape
 
 
@@ -89,13 +92,9 @@ class ControlledOperation(Operation):
         return tape
 
     def adjoint(self, do_queue=False):
-        def requeue_tape(tape):
-            for op in tape.operations:
-                op.queue()
-
         with QuantumTape(do_queue=False) as new_tape:
             # Execute all ops adjointed.
-            adjoint(requeue_tape)(self.subtape)
+            adjoint(requeue_ops_in_tape)(self.subtape)
         return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
 
 

@@ -531,7 +531,7 @@ class SWAP(Operation):
         return SWAP(wires=self.wires, do_queue=do_queue)
 
 
-register_control_transform(SWAP, lambda op, wire: CSWAP(wire + op.wires))
+register_control_transform(SWAP, lambda op, wire: CSWAP(wires=wire + op.wires))
 
 
 class CSWAP(Operation):
@@ -808,7 +808,7 @@ class PhaseShift(DiagonalOperation):
 
 
 register_control_transform(
-    PhaseShift, lambda op, wire: ControlledPhaseShift(*op.parameters, wire + op.wires)
+    PhaseShift, lambda op, wire: ControlledPhaseShift(*op.parameters, wires=wire + op.wires)
 )
 
 
