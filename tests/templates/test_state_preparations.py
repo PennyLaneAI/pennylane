@@ -19,7 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 
 import math
 from unittest.mock import patch
-import numpy as np
+from pennylane import numpy as np
 import pytest
 import pennylane as qml
 from pennylane.templates.state_preparations import (
@@ -33,7 +33,6 @@ from pennylane.templates.state_preparations.arbitrary_state_preparation import (
 )
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
-from pennylane import numpy as anp
 
 
 class TestHelperFunctions:
@@ -394,7 +393,7 @@ class TestMottonenStatePreparation:
 
     # fmt: off
     @pytest.mark.parametrize("state_vector, n_wires", [
-        ([.5,.5,.5,.5],2),
+        ([1/2, 1/2, 1/2, 1/2], 2),
         ([1, 0, 0, 0], 2),
         ([0, 1, 0, 0], 2),
         ([0, 0, 0, 1], 2),
