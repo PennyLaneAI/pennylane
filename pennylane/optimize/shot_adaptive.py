@@ -67,15 +67,16 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     1. The initial step of the optimizer is performed with some specified minimum
        number of shots, :math:`s_{min}`, for all partial derivatives.
 
-    2. The parameter-shift rule is then used to estimate the gradient :math:`g_i`
-       for each parameter :math:`\theta_i`, parameters, as well as the *variances*
+    2. The parameter-shift rule is then used to estimate the gradient :math:`g_i` with :math:`s_i` shots
+       for each parameter :math:`\theta_i`, parameters, as well as the variances
        :math:`v_i` of the estimated gradients.
 
     3. Gradient descent is performed for each parameter :math:`\theta_i`, using
        the pre-defined learning rate :math:`\eta` and the gradient information :math:`g_i`:
        :math:`\theta_i \rightarrow \theta_i - \eta g_i`.
 
-    4. The improvement in the expected gain per shot, for a specific parameter value,
+    4. A maximum shot number is set by maximizing the improvement in the expected gain per shot.
+       For a specific parameter value, the improvement in the expected gain per shot
        is then calculated via
 
        .. math::
@@ -92,12 +93,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
        * :math:`\eta` is the learning rate, and *must* be bound such that :math:`\eta < 2/L`
          for the above expression to hold.
 
-    5. Finally, the new values of :math:`s_i` (shots for partial derivative of parameter
+    5. Finally, the new values of :math:`s_{i+1}` (shots for partial derivative of parameter
        :math:`\theta_i`) is given by:
 
        .. math::
 
-           s_i = \frac{2L\eta}{2-L\eta}\left(\frac{v_i}{g_i^2}\right)\propto
+           s_{i+1} = \frac{2L\eta}{2-L\eta}\left(\frac{v_i}{g_i^2}\right)\propto
                  \frac{v_i}{g_i^2}.
 
     In addition to the above, to counteract the presence of noise in the system, a
@@ -140,30 +141,30 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
-    ...    print(f"Step {i}: cost = {cost(params)}, shots_used = {opt.total_shots_used}")
-    Step 0: cost = -5.686, shots_used = 240
-    Step 1: cost = -2.983999999999999, shots_used = 336
-    Step 2: cost = -4.974, shots_used = 624
-    Step 3: cost = -5.534, shots_used = 1054
-    Step 4: cost = -6.5, shots_used = 1798
-    Step 5: cost = -6.684, shots_used = 2942
-    Step 6: cost = -6.992, shots_used = 4350
-    Step 7: cost = -6.970000000000001, shots_used = 5814
-    Step 8: cost = -6.998, shots_used = 7230
-    Step 9: cost = -6.686, shots_used = 9006
+    ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
+    Step 0: cost = -5.69, shots_used = 240
+    Step 1: cost = -2.98, shots_used = 336
+    Step 2: cost = -4.97, shots_used = 624
+    Step 3: cost = -5.53, shots_used = 1054
+    Step 4: cost = -6.50, shots_used = 1798
+    Step 5: cost = -6.68, shots_used = 2942
+    Step 6: cost = -6.99, shots_used = 4350
+    Step 7: cost = -6.97, shots_used = 5814
+    Step 8: cost = -7.00, shots_used = 7230
+    Step 9: cost = -6.69, shots_used = 9006
     Step 10: cost = -6.85, shots_used = 11286
-    Step 11: cost = -6.628000000000001, shots_used = 14934
-    Step 12: cost = -6.862, shots_used = 17934
-    Step 13: cost = -7.188, shots_used = 22950
-    Step 14: cost = -6.9879999999999995, shots_used = 28302
-    Step 15: cost = -7.380000000000001, shots_used = 34134
-    Step 16: cost = -7.656, shots_used = 41022
-    Step 17: cost = -7.212, shots_used = 48918
-    Step 18: cost = -7.532, shots_used = 56286
-    Step 19: cost = -7.462000000000001, shots_used = 63822
-    Step 20: cost = -7.306000000000001, shots_used = 72534
-    Step 21: cost = -7.234, shots_used = 82014
-    Step 22: cost = -7.314, shots_used = 92838
+    Step 11: cost = -6.63, shots_used = 14934
+    Step 12: cost = -6.86, shots_used = 17934
+    Step 13: cost = -7.19, shots_used = 22950
+    Step 14: cost = -6.99, shots_used = 28302
+    Step 15: cost = -7.38, shots_used = 34134
+    Step 16: cost = -7.66, shots_used = 41022
+    Step 17: cost = -7.21, shots_used = 48918
+    Step 18: cost = -7.53, shots_used = 56286
+    Step 19: cost = -7.46, shots_used = 63822
+    Step 20: cost = -7.31, shots_used = 72534
+    Step 21: cost = -7.23, shots_used = 82014
+    Step 22: cost = -7.31, shots_used = 92838
     """
 
     def __init__(self, min_shots, weighted_random_sampling=True, mu=0.99, b=1e-6, stepsize=0.07):
@@ -198,7 +199,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     @staticmethod
     def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
-        """Returns an array containing length ``shots`` single-shot estimates
+        """Returns an array of length ``shots`` containing single-shot estimates
         of the Hamiltonian gradient. The shots are distributed randomly over
         the terms in the Hamiltonian, as per a multinomial distribution.
 
@@ -347,7 +348,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         Returns:
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
-            :math:`\nabla f(x^{(t)})` and the variance of the gradient.
+            :math:`\nabla f(x^{(t)})` and the variance of the gradient
         """
         if isinstance(objective_fn, qml.ExpvalCost):
             grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
@@ -356,7 +357,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         else:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the Rosalin optimizer. "
+                "an ExpvalCost object for the Shot adaptive optimizer. "
             )
 
         # grads will have dimension [max(self.s), *params.shape]

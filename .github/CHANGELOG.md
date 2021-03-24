@@ -39,12 +39,12 @@
   >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
   >>> for i in range(5):
   ...    params = opt.step(cost, params)
-  ...    print(f"Step {i}: cost = {cost(params)}, shots_used = {opt.total_shots_used}")
-  Step 0: cost = -5.686, shots_used = 240
-  Step 1: cost = -2.983999999999999, shots_used = 336
-  Step 2: cost = -4.974, shots_used = 624
-  Step 3: cost = -5.534, shots_used = 1054
-  Step 4: cost = -6.5, shots_used = 1798
+  ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
+  Step 0: cost = -5.68, shots_used = 240
+  Step 1: cost = -2.98, shots_used = 336
+  Step 2: cost = -4.97, shots_used = 624
+  Step 3: cost = -5.53, shots_used = 1054
+  Step 4: cost = -6.50, shots_used = 1798
   ```
 
 * Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
