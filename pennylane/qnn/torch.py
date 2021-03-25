@@ -33,11 +33,13 @@ except ImportError:
     Module = Mock
     TORCH_IMPORTED = False
 
-WARNING_STRING = "TorchLayer will no longer be directly imported in PennyLane from " \
-                 "release 0.16.0. It will be accessible by importing the qnn " \
-                 "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n" \
-                 "qml.qnn.TorchLayer\n\nConsider adding 'import pennylane.qnn' " \
-                 "to your existing code now."
+WARNING_STRING = (
+    "TorchLayer will no longer be directly imported in PennyLane from "
+    "release 0.16.0. It will be accessible by importing the qnn "
+    "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n"
+    "qml.qnn.TorchLayer\n\nConsider adding 'import pennylane.qnn' "
+    "to your existing code now."
+)
 
 
 class TorchLayer(Module):
@@ -212,7 +214,7 @@ class TorchLayer(Module):
                 "instructions."
             )
 
-        warn(WARNING_STRING, DeprecationWarning)
+        warn(WARNING_STRING, DeprecationWarning, stacklevel=2)
 
         super().__init__()
 

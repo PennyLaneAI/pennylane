@@ -31,11 +31,13 @@ except ImportError:
     Layer = ABC
     CORRECT_TF_VERSION = False
 
-WARNING_STRING = "KerasLayer will no longer be directly imported in PennyLane from " \
-                 "release 0.16.0. It will be accessible by importing the qnn " \
-                 "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n" \
-                 "qml.qnn.KerasLayer\n\nConsider adding 'import pennylane.qnn' " \
-                 "to your existing code now."
+WARNING_STRING = (
+    "KerasLayer will no longer be directly imported in PennyLane from "
+    "release 0.16.0. It will be accessible by importing the qnn "
+    "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n"
+    "qml.qnn.KerasLayer\n\nConsider adding 'import pennylane.qnn' "
+    "to your existing code now."
+)
 
 
 class KerasLayer(Layer):
@@ -212,7 +214,7 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
-        warn(WARNING_STRING, DeprecationWarning)
+        warn(WARNING_STRING, DeprecationWarning, stacklevel=2)
 
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
