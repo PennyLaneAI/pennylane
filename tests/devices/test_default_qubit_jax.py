@@ -268,7 +268,7 @@ class TestPassthruIntegration:
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_crot_differentiability(self, tol):
-        """Test that the device state can be differentiated"""
+        """Test that CRot can be differentiated."""
         dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
