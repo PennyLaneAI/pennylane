@@ -259,13 +259,33 @@ class TestPassthruIntegration:
 
         def cost(a):
             """A function of the device quantum state, as a function
-            of ijnput QNode parameters."""
+            of input QNode parameters."""
             res = jnp.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = jax.grad(cost)(a)
         expected = jnp.sin(a)
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_crot_differentiability(self, tol):
+        """Test that the device state can be differentiated"""
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit(a, b, c):
+            qml.PauliX(1)
+            qml.CRot(a, b, c, wires=[1, 0])
+            return qml.state()
+
+
+        def cost(a, b, c):
+            """A function of the device quantum state, as a function
+            of input QNode parameters."""
+            res = jnp.abs(circuit(a, b, c)) ** 2
+            return res[2] - res[3]
+
+        bg = jax.grad(cost, argnums=1)(0.54, 0.31, 1.22)
+        np.testing.assert_allclose(bg, -0.152529, atol=tol, rtol=tol)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
