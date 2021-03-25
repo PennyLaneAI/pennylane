@@ -22,6 +22,7 @@ representation of Pauli words and applications, see:
 """
 from functools import reduce
 
+import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
@@ -498,8 +499,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
-
-            pauli_mats[wires_idx] = getattr(qml, pauli_names[op_idx]).matrix
+            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).matrix
 
     return reduce(np.kron, pauli_mats)
 
