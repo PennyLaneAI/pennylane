@@ -65,6 +65,19 @@ class TestTorchLayer:
     """Unit tests for the pennylane.qnn.torch.TorchLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_str(self):
+        """Test the string method"""
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(inputs, w1, w2):
+            return qml.expval(qml.PauliZ(0))
+
+        layer = TorchLayer(circuit, weight_shapes)
+        assert layer.__str__() == "<Quantum Torch Layer: func=circuit>"
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_no_torch(self, get_circuit, monkeypatch):
         """Test if an ImportError is raised when instantiated without PyTorch"""
         c, w = get_circuit
