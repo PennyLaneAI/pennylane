@@ -2505,6 +2505,92 @@ class Hermitian(Observable):
         """
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
+# =============================================================================
+# Arithmetic
+# =============================================================================
+
+class Carry(Operation):
+    r"""Carry()
+    Apply a ``Carry`` operation on input wires
+    TODO add more information
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 0
+    TODO consider gradient
+    * Gradient recipe: TODO
+
+    Args:
+        wires (Union[Wires or int]): the wires the operation acts on
+
+    **Example**
+    TODO
+    """
+    num_params = 0
+    num_wires = 4
+    par_domain = None
+    matrix = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
+
+    @classmethod
+    def _matrix(self, *params):
+        return Carry.matrix
+    
+    def adjoint(self, do_queue=False):
+        return Carry(wires=self.wires,do_queue=do_queue)
+
+class Sum(Operation):
+    r"""Sum()
+    Apply a ``Sum`` operation on input wires
+    TODO add more information
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+    TODO consider gradient
+    * Gradient recipe: TODO
+
+    Args:
+        wires (Union[Wires or int]): the wires the operation acts on
+
+    **Example**
+    TODO
+    """
+    num_params = 0
+    num_wires = 3
+    par_domain = None
+    matrix = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1]])
+
+    @classmethod
+    def _matrix(self, *params):
+        return Sum.matrix
+    
+    def adjoint(self, do_queue=False):
+        return Sum(wires=self.wires,do_queue=do_queue)
+
 
 ops = {
     "Hadamard",
@@ -2548,6 +2634,8 @@ ops = {
     "DoubleExcitation",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
+    "Carry",
+    "Sum",
 }
 
 
