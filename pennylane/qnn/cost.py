@@ -15,7 +15,15 @@
 This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments
+from warnings import warn
+
 import pennylane as qml
+
+WARNING_STRING = "SquaredErrorLoss will no longer be directly imported in PennyLane from " \
+                 "release 0.16.0. It will be accessible by importing the qnn " \
+                 "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n" \
+                 "qml.qnn.SquaredErrorLoss\n\nConsider adding 'import pennylane.qnn' " \
+                 "to your existing code now."
 
 
 class SquaredErrorLoss:
@@ -95,6 +103,7 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
+        warn(WARNING_STRING, DeprecationWarning)
         self.qnodes = qml.map(
             ansatz,
             observables,
