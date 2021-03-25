@@ -369,6 +369,12 @@ class TestOperations:
             qml.QFT(wires=[1, 2, 3]),
             qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
             qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values='01'),
+            qml.SingleExcitation(0.123, wires=[0, 3]),
+            qml.SingleExcitationPlus(0.123, wires=[0, 3]),
+            qml.SingleExcitationMinus(0.123, wires=[0, 3]),
+            qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
+            qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
+            qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
         ])
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
