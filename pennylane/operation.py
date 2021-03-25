@@ -623,7 +623,7 @@ class Operation(Operator):
             operations decomposition, or if not implemented, simply
             the operation itself.
         """
-        tape = qml.tape.QuantumTape()
+        tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
             self.decomposition(*self.data, wires=self.wires)
