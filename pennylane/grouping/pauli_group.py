@@ -21,12 +21,12 @@ from pennylane import Identity
 from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
 
-def pauli_group_generator(n_qubits, wire_map=None):
+def pauli_group(n_qubits, wire_map=None):
     """Generator for iterating over the n-qubit Pauli group.
 
-    The :math:`n`-qubit Pauli group has size :math:`4^n`, thus it may not be desirable
-    to construct it in full and store. This function allows for iteration over elements
-    of the Pauli group with no storage involved.
+    This function allows for iteration over elements of the Pauli group with no
+    storage involved.  The :math:`n`-qubit Pauli group has size :math:`4^n`,
+    thus it may not be desirable to construct it in full and store.
 
     The order of iteration is based on the binary symplectic representation of
     the Pauli group as :math:`2n`-bit strings. Ordering is done by converting
@@ -44,28 +44,32 @@ def pauli_group_generator(n_qubits, wire_map=None):
 
     **Example**
 
-    The ``pauli_group_generator`` can be used to loop over the Pauli group as follows:
+    The ``pauli_group`` generator can be used to loop over the Pauli group as follows:
 
     .. code-block:: python
 
-        from pennylane.grouping.pauli_group import pauli_group_generator
+        from pennylane.grouping.pauli_group import pauli_group
 
         n_qubits = 3
 
-        for p in pauli_group_generator(n_qubits):
+        for p in pauli_group(n_qubits):
             print(p)
 
-    Alternatively, using a custom wire map,
+    The Pauli group in full can be obtained in full like so:
 
     .. code-block:: python
 
-        from pennylane.wires import Wires
-        from pennylane.grouping.pauli_group import pauli_group_generator
+       full_pg = list(pauli_group(n_qubits))
+
+    The group can also be created using a custom wire map (if no map is
+    specified, a default map of label :math:`i` to wire ``i`` will be created).
+
+    .. code-block:: python
 
         n_qubits = 3
         wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
 
-        for p in pauli_group_generator(n_qubits, wire_map=wire_map):
+        for p in pauli_group(n_qubits, wire_map=wire_map):
             print(p)
 
     """
@@ -85,43 +89,6 @@ def pauli_group_generator(n_qubits, wire_map=None):
         binary_vector = [float(b) for b in binary_string]
         yield binary_to_pauli(binary_vector, wire_map=wire_map)
         element_idx += 1
-
-
-def pauli_group(n_qubits, wire_map=None):
-    """Constructs the n-qubit Pauli group.
-
-    This function constructs and returns the complete :math:`n`-qubit Pauli
-    group (without global phases) on the desired set of wires. This function
-    differs from ``pauli_group_generator`` in that returns the group in full
-    rather than one element at a time.
-
-    Args:
-        n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
-            word as keys, and unique integer labels as their values. If no wire map is
-            provided, wires will be labeled by integers between 0 and ``n_qubits``.
-
-    Returns:
-        list[.Operation]: The full n-qubit Pauli group.
-
-    **Example**
-
-    Construction of the Pauli group can be done as follows:
-
-    .. code-block:: python
-
-        from pennylane.grouping.pauli_group import pauli_group
-
-        n_qubits = 3
-        pg = pauli_group(n_qubits)
-    """
-    if not isinstance(n_qubits, int):
-        raise TypeError("Must specify an integer number of qubits construct the Pauli group.")
-
-    if n_qubits <= 0:
-        raise ValueError("Number of qubits must be at least 1 to construct Pauli group.")
-
-    return list(pauli_group_generator(n_qubits, wire_map=wire_map))
 
 
 def pauli_mult(pauli_1, pauli_2, wire_map=None):

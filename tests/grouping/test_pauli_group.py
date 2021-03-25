@@ -19,12 +19,7 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 
 import numpy as np
 
-from pennylane.grouping.pauli_group import (
-    pauli_group,
-    pauli_group_generator,
-    pauli_mult,
-    pauli_mult_with_phase,
-)
+from pennylane.grouping.pauli_group import pauli_group, pauli_mult, pauli_mult_with_phase
 
 
 class TestPauliGroup:
@@ -44,32 +39,12 @@ class TestPauliGroup:
         with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
             pauli_group(-1)
 
-    @pytest.mark.parametrize(
-        "n_qubits,wire_map",
-        [(1, {0: 0}), (2, {"a": 0, "b": 1}), (2, None), (3, {0: 0, "a": 1, "x": 2})],
-    )
-    def test_pauli_group_generator(self, n_qubits, wire_map):
-        """Test that the generator functionality works as expected."""
-        pg_full = pauli_group(n_qubits=n_qubits, wire_map=wire_map)
-
-        pg_from_generator = []
-
-        for pauli in pauli_group_generator(n_qubits=n_qubits, wire_map=wire_map):
-            pg_from_generator.append(pauli)
-
-        assert all([full.compare(gen) for full, gen in zip(pg_full, pg_from_generator)])
-
     def test_one_qubit_pauli_group(self):
         """Test that the single-qubit Pauli group is constructed correctly."""
         # With no wire map; ordering is based on construction from binary representation
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
-        pg_1 = pauli_group(1)
-        assert all(
-            [
-                expected.compare(obtained)
-                for expected, obtained in zip(expected_pg_1, pg_1)
-            ]
-        )
+        pg_1 = list(pauli_group(1))
+        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
 
         # With an arbitrary wire map
         wire_map = {"qubit": 0}
@@ -79,7 +54,7 @@ class TestPauliGroup:
             PauliX("qubit"),
             PauliY("qubit"),
         ]
-        pg_1_wires = pauli_group(1, wire_map=wire_map)
+        pg_1_wires = list(pauli_group(1, wire_map=wire_map))
         assert all(
             [
                 expected.compare(obtained)
@@ -111,13 +86,8 @@ class TestPauliGroup:
             PauliY("a") @ PauliY("b"),
         ]
 
-        pg_2 = pauli_group(2, wire_map=wire_map)
-        assert all(
-            [
-                expected.compare(obtained)
-                for expected, obtained in zip(expected_pg_2, pg_2)
-            ]
-        )
+        pg_2 = list(pauli_group(2, wire_map=wire_map))
+        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2)])
 
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,expected_product",
@@ -171,11 +141,7 @@ class TestPauliGroup:
             ),
         ],
     )
-    def test_pauli_mult_with_phase(
-        self, pauli_word_1, pauli_word_2, wire_map, expected_phase
-    ):
+    def test_pauli_mult_with_phase(self, pauli_word_1, pauli_word_2, wire_map, expected_phase):
         """Test that multiplication including phases works as expected."""
-        _, obtained_phase = pauli_mult_with_phase(
-            pauli_word_1, pauli_word_2, wire_map=wire_map
-        )
+        _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert obtained_phase == expected_phase

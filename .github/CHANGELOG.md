@@ -513,10 +513,10 @@
   For example, we can iterate through the 3-qubit Pauli group like so:
 
   ```python
-  from pennylane.grouping.pauli_group import pauli_group_generator
+  from pennylane.grouping.pauli_group import pauli_group
 
-  for pauli in pauli_group_generator(3):
-      print(pauli)
+  pauli_group_3_qubits = list(pauli_group_generator(3))
+  print(pauli_group_3_qubits)
   ```
 
   We can also construct and store the full group, and multiply together
