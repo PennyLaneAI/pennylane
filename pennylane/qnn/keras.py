@@ -311,7 +311,7 @@ class KerasLayer(Layer):
         Returns:
             tf.TensorShape: shape of output data
         """
-        return tf.TensorShape(input_shape[0]).concatenate(self.output_dim)
+        return tf.TensorShape([input_shape[0]]).concatenate(self.output_dim)
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"
