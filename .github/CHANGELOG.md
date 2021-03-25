@@ -2,6 +2,28 @@
 
 <h3>New features since last release</h3>
 
+* Adds Carry and Sum operations for basic arithmetic.
+  [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
+
+  A simple example (does not produce meaningful results):
+
+  ```python
+  dev = qml.device('default.qubit',4,shots=1)
+  input = np.zeros(16)
+  input[5] = 1
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.templates.state_preparations.MottonenStatePreparation(input,wires=range(4))
+      qml.Carry(wires=range(4))
+      qml.Sum(wires=range(3))
+      return qml.sample(qml.Hermitian(np.diag(range(16)),wires=range(4)))
+
+  result = int(circuit())
+  print("input: ", binary)
+  print("output:",format(result,"04b"))
+  ```
+
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
   [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 
