@@ -522,7 +522,7 @@
   We can also construct and store the full group, and multiply together
   its members at the level of Pauli words using the `pauli_mult` and
   `pauli_multi_with_phase` functions. This can be done on
-   arbitrarily-labeled wires as well, by defining a wire map.
+  arbitrarily-labeled wires as well, by defining a wire map.
 
   ```python
   from pennylane.grouping.pauli_group import pauli_group, pauli_mult

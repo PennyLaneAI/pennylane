@@ -40,7 +40,7 @@ def pauli_group_generator(n_qubits, wire_map=None):
             If no wire map is provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
     Returns:
-        (qml.Operation): The next Pauli word in the group.
+        .Operation: The next Pauli word in the group.
 
     **Example**
 
@@ -102,7 +102,7 @@ def pauli_group(n_qubits, wire_map=None):
             provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
     Returns:
-        (list[qml.Operation]): The full n-qubit Pauli group.
+        list[.Operation]: The full n-qubit Pauli group.
 
     **Example**
 
@@ -131,15 +131,15 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     OR of their binary symplectic representations.
 
     Args:
-        pauli_1 (qml.Operation): A Pauli word.
-        pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
+        pauli_1 (.Operation): A Pauli word.
+        pauli_2 (.Operation): A Pauli word to multiply with the first one.
         wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
             word as keys, and unique integer labels as their values. If no wire map is
             provided, the map will be constructed from the set of wires acted on
             by the input Pauli words.
 
     Returns:
-        (qml.Operation): The product of pauli_1 and pauli_2 as a Pauli word
+        .Operation: The product of pauli_1 and pauli_2 as a Pauli word
             (ignoring the global phase).
 
     **Example**
@@ -147,18 +147,12 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     This function enables multiplication of Pauli group elements at the level of
     Pauli words, rather than matrices. For example,
 
-    .. code-block:: python
-
-        import pennylane as qml
-        from pennylane.grouping.pauli_group import pauli_mult
-
-        pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
-        pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
-
-        product = pauli_mult(pauli_1, pauli_2)
-        print(product)
-
-    will yield ``qml.PauliZ(0)``.
+    >>> from pennylane.grouping.pauli_group import pauli_mult
+    >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
+    >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
+    >>> product = pauli_mult(pauli_1, pauli_2)
+    >>> print(product)
+    PauliZ(wires=[0])
     """
 
     # If no wire map is specified, generate one from the union of wires
@@ -194,15 +188,15 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     phase of :math:`i`), or YX, ZY, XZ (adds a phase of :math:`-i`).
 
     Args:
-        pauli_1 (qml.Operation): A Pauli word.
-        pauli_2 (qml.Operation): A Pauli word to multiply with the first one.
+        pauli_1 (.Operation): A Pauli word.
+        pauli_2 (.Operation): A Pauli word to multiply with the first one.
         wire_map  (dict[Union[str, int], int]): dictionary containing all wire labels used in the Pauli
             word as keys, and unique integer labels as their values. If no wire map is
             provided, the map will be constructed from the set of wires acted on
             by the input Pauli words.
 
     Returns:
-        (qml.Operation, np.complex): The product of pauli_1 and pauli_2, and the
+        tuple[.Operation, complex]: The product of ``pauli_1`` and ``pauli_2``, and the
             global phase.
 
     **Example**
@@ -211,17 +205,14 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     phase accumulated as a result of the Pauli product rules
     :math:`\sigma_i \sigma_j = i \sigma_k`.
 
-    .. code-block:: python
-
-        import pennylane as qml
-        from pennylane.grouping.pauli_group import pauli_mult
-
-        pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
-        pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
-
-        product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
-
-    will yield ``qml.PauliZ(0)`` and :math:`1j`.
+    >>> from pennylane.grouping.pauli_group import pauli_mult_with_phase
+    >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
+    >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
+    >>> product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
+    >>> product
+    PauliZ(wires=[0])
+    >>> phase
+    1j
     """
 
     # If no wire map is specified, generate one from the union of wires

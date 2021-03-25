@@ -53,3 +53,4 @@ the groups of observables:
 .. automodapi:: pennylane.grouping.pauli_group
     :no-inheritance-diagram:
     :no-inherited-members:
+    :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words

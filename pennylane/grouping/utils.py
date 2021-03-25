@@ -342,7 +342,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     Given a Pauli in observable form, convert it into string of
     characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
-    functions such as ``qml.PauliRot``.
+    functions such as :class:`.PauliRot`.
 
     Args:
         pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
@@ -351,7 +351,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        (str): The string representation of the observable in terms of ``I``, ``X``, ``Y``,
+        str: The string representation of the observable in terms of ``I``, ``X``, ``Y``,
             and/or ``Z``.
 
     Raises:
@@ -398,16 +398,14 @@ def string_to_pauli_word(pauli_string, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        (qml.Observable): The Pauli word representing of pauli_string on the wires
+        .Observable: The Pauli word representing of ``pauli_string`` on the wires
             enumerated in the wire map.
 
     **Example**
 
-    .. code-block:: python
-        wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-        string_to_pauli_word('XIY', wire_map=wire_map)
-
-    yields ``PauliX(wires=['a']) @ PauliY(wires=['c'])
+    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> string_to_pauli_word('XIY', wire_map=wire_map)
+    PauliX(wires=['a']) @ PauliY(wires=['c'])
     """
     character_map = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
@@ -468,7 +466,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        (np.ndarray): The matrix representation of the multi-qubit Pauli over the
+        array[complex]: The matrix representation of the multi-qubit Pauli over the
             specified wire map.
 
     Raises:
@@ -518,7 +516,7 @@ def are_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     symplectic inner product of their binary vector representations.
     For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
     and :math:`p_2 = [x_2, z_2]`, the symplectic inner product is defined as
-    :math:\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
+    :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
     product is 0 they commute, while if it is 1, they don't commute.
 
     Args:
