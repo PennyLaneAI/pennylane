@@ -161,6 +161,9 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
+            qml.CRX(0.0, wires=[0, 1])
+            qml.PhaseShift(0.0, wires=0)
+            qml.ControlledPhaseShift(0.0, wires=[1, 0])
             qml.CRot(1.0, 0.0, 0.0, wires=[0, 1])
             qml.CRY(0.0, wires=[0, 1])
             return qml.sample(qml.PauliZ(wires=0))
