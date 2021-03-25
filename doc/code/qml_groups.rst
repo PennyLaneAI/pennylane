@@ -1,5 +1,5 @@
-qml.grouping
-============
+qml.groups
+==========
 
 This subpackage defines functions and classes for Pauli-word partitioning
 functionality used in measurement optimization.
@@ -39,18 +39,18 @@ the groups of observables:
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
 
-.. currentmodule:: pennylane.grouping
+.. currentmodule:: pennylane.groups
 
 
-.. automodapi:: pennylane.grouping
+.. automodapi:: pennylane.groups
     :no-inheritance-diagram:
     :no-inherited-members:
 
-.. automodapi:: pennylane.grouping.graph_colouring
+.. automodapi:: pennylane.groups.graph_colouring
     :no-inheritance-diagram:
     :no-inherited-members:
 
-.. automodapi:: pennylane.grouping.pauli_group
+.. automodapi:: pennylane.groups.pauli
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words
