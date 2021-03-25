@@ -264,6 +264,11 @@ class Device(abc.ABC):
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
+    @property
+    def shot_vector(self):
+        return self._shot_vector
+    
+
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
