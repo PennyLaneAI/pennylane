@@ -40,7 +40,9 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
-from pennylane.transforms import adjoint, draw, measurement_grouping, metric_tensor
+from pennylane.transforms import draw, measurement_grouping, metric_tensor
+from pennylane.transforms.adjoint import adjoint
+from pennylane.transforms.control import ctrl, ControlledOperation
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
