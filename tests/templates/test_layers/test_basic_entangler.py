@@ -27,7 +27,12 @@ class TestDecomposition:
         (1, (1, 1), ["RX"], [[0]]),
         (2, (1, 2), ["RX", "RX", "CNOT"], [[0], [1], [0, 1]]),
         (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"], [[0], [1], [0, 1], [0], [1], [0, 1]]),
-        (3, (1, 3), ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"], [[0], [1], [2], [0, 1], [1, 2], [2, 0]]),
+        (
+            3,
+            (1, 3),
+            ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"],
+            [[0], [1], [2], [0, 1], [1, 2], [2, 0]],
+        ),
     ]
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)

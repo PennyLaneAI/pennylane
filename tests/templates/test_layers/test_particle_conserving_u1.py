@@ -56,7 +56,7 @@ class TestDecomposition:
 
         qubits = 4
         layers = 2
-        weights = np.random.random(size=(layers, qubits-1, 2))
+        weights = np.random.random(size=(layers, qubits - 1, 2))
 
         gates_per_u1 = 16
         gates_per_layer = gates_per_u1 * (qubits - 1)
@@ -75,8 +75,8 @@ class TestDecomposition:
 
         wires = list(range(qubits))
 
-        nm_wires = [wires[l: l + 2] for l in range(0, qubits - 1, 2)]
-        nm_wires += [wires[l: l + 2] for l in range(1, qubits - 1, 2)]
+        nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
         op = qml.templates.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
         queue = op.expand().operations
@@ -144,7 +144,9 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ParticleConservingU1(weights, wires=["z", "a", "k"], init_state=init_state)
+            qml.templates.ParticleConservingU1(
+                weights, wires=["z", "a", "k"], init_state=init_state
+            )
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -221,9 +223,9 @@ class TestInputs:
             (np.ones((4, 2, 2)), 4, "Weights tensor must"),
             (np.ones((4, 3, 1)), 4, "Weights tensor must"),
             (
-                    np.ones((4, 3, 1)),
-                    1,
-                    "Expected the number of qubits",
+                np.ones((4, 3, 1)),
+                1,
+                "Expected the number of qubits",
             ),
         ],
     )
@@ -247,12 +249,13 @@ class TestInputs:
 class TestAttributes:
     """Tests additional methods and attributes"""
 
-    @pytest.mark.parametrize("n_layers, n_wires, expected_shape",
-            [
-                (2, 3, (2, 2, 2)),
-                (2, 2, (2, 1, 2)),
-            ]
-        )
+    @pytest.mark.parametrize(
+        "n_layers, n_wires, expected_shape",
+        [
+            (2, 3, (2, 2, 2)),
+            (2, 2, (2, 1, 2)),
+        ],
+    )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
@@ -268,8 +271,7 @@ def circuit_template(weights):
 def circuit_decomposed(weights):
     qml.BasisState(np.array([1, 1]), wires=[0, 1])
     qml.CZ(wires=[0, 1])
-    qml.CRot(weights[0, 0, 0], np.pi, weights[0, 0, 0],
-         wires=[0, 1])
+    qml.CRot(weights[0, 0, 0], np.pi, weights[0, 0, 0], wires=[0, 1])
     qml.PhaseShift(-weights[0, 0, 0], wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.PhaseShift(weights[0, 0, 0], wires=[1])
@@ -278,8 +280,7 @@ def circuit_decomposed(weights):
     qml.CZ(wires=[1, 0])
     qml.CRot(0, weights[0, 0, 1], 0, wires=[1, 0])
     qml.CZ(wires=[0, 1])
-    qml.CRot(weights[0, 0, 0], np.pi, -weights[0, 0, 0],
-         wires=[0, 1])
+    qml.CRot(weights[0, 0, 0], np.pi, -weights[0, 0, 0], wires=[0, 1])
     qml.PhaseShift(weights[0, 0, 0], wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.PhaseShift(-weights[0, 0, 0], wires=[1])

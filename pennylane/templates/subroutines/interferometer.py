@@ -100,7 +100,9 @@ class Interferometer(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane", do_queue=True):
+    def __init__(
+        self, theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane", do_queue=True
+    ):
 
         n_wires = len(wires)
         n_if = n_wires * (n_wires - 1) // 2
@@ -149,7 +151,9 @@ class Interferometer(Operation):
                             elif self.beamsplitter == "pennylane":
                                 qml.Beamsplitter(theta[n], phi[n], wires=[w1, w2])
                             else:
-                                raise ValueError(f"did not recognize beamsplitter {self.beamsplitter}")
+                                raise ValueError(
+                                    f"did not recognize beamsplitter {self.beamsplitter}"
+                                )
                             n += 1
 
             elif self.mesh == "triangular":
@@ -179,11 +183,11 @@ class Interferometer(Operation):
     def shape(n_wires):
         r"""Returns a list of shapes for the three parameter tensors.
 
-              Args:
-                  n_wires (int): number of wires
+        Args:
+            n_wires (int): number of wires
 
-              Returns:
-                  list[tuple[int]]: list of shapes
+        Returns:
+            list[tuple[int]]: list of shapes
         """
         n_if = n_wires * (n_wires - 1) // 2
         shapes = [(n_if,), (n_if,), (n_wires,)]

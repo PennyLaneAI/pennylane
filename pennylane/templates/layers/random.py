@@ -178,7 +178,16 @@ class RandomLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, ratio_imprim=0.3, imprimitive=None, rotations=None, seed=42, do_queue=True):
+    def __init__(
+        self,
+        weights,
+        wires,
+        ratio_imprim=0.3,
+        imprimitive=None,
+        rotations=None,
+        seed=42,
+        do_queue=True,
+    ):
 
         self.seed = seed
         self.rotations = rotations or [qml.RX, qml.RY, qml.RZ]
@@ -224,12 +233,12 @@ class RandomLayers(Operation):
     def shape(n_layers, n_rotations):
         r"""Returns the expected shape of the weights tensor.
 
-              Args:
-                  n_layers (int): number of layers
-                  n_rotations (int): number of rotations
+        Args:
+            n_layers (int): number of layers
+            n_rotations (int): number of rotations
 
-              Returns:
-                  tuple[int]: shape
+        Returns:
+            tuple[int]: shape
         """
 
         return n_layers, n_rotations

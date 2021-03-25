@@ -178,8 +178,8 @@ class ParticleConservingU2(Operation):
 
     def expand(self):
 
-        nm_wires = [self.wires[l: l + 2] for l in range(0, len(self.wires) - 1, 2)]
-        nm_wires += [self.wires[l: l + 2] for l in range(1, len(self.wires) - 1, 2)]
+        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
+        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
 
         with qml.tape.QuantumTape() as tape:
 
@@ -210,4 +210,4 @@ class ParticleConservingU2(Operation):
             raise ValueError(
                 "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
             )
-        return n_layers, 2*n_wires - 1
+        return n_layers, 2 * n_wires - 1

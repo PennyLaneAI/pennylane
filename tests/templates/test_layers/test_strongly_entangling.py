@@ -26,8 +26,18 @@ class TestDecomposition:
     QUEUES = [
         (1, (1, 1, 3), ["Rot"], [[0]]),
         (2, (1, 2, 3), ["Rot", "Rot", "CNOT", "CNOT"], [[0], [1], [0, 1], [1, 0]]),
-        (2, (2, 2, 3), ["Rot", "Rot", "CNOT", "CNOT", "Rot", "Rot", "CNOT", "CNOT"], [[0], [1], [0, 1], [1, 0], [0], [1], [0, 1], [1, 0]]),
-        (3, (1, 3, 3), ["Rot", "Rot", "Rot", "CNOT", "CNOT", "CNOT"], [[0], [1], [2], [0, 1], [1, 2], [2, 0]]),
+        (
+            2,
+            (2, 2, 3),
+            ["Rot", "Rot", "CNOT", "CNOT", "Rot", "Rot", "CNOT", "CNOT"],
+            [[0], [1], [0, 1], [1, 0], [0], [1], [0, 1], [1, 0]],
+        ),
+        (
+            3,
+            (1, 3, 3),
+            ["Rot", "Rot", "Rot", "CNOT", "CNOT", "CNOT"],
+            [[0], [1], [2], [0, 1], [1, 2], [2, 0]],
+        ),
     ]
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
@@ -50,8 +60,8 @@ class TestDecomposition:
         weights = np.random.randn(n_layers, n_wires, 3)
 
         op = qml.templates.StronglyEntanglingLayers(
-                weights=weights, wires=range(n_wires), imprimitive=qml.CZ
-            )
+            weights=weights, wires=range(n_wires), imprimitive=qml.CZ
+        )
         ops = op.expand().operations
 
         gate_names = [gate.name for gate in ops]
@@ -158,7 +168,13 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = [[tuple(weights[0][0]), tuple(weights[0][1]), tuple(weights[0][2]),]]
+        weights_tuple = [
+            [
+                tuple(weights[0][0]),
+                tuple(weights[0][1]),
+                tuple(weights[0][2]),
+            ]
+        ]
         res = circuit(weights_tuple)
         res2 = circuit2(tuple(weights_tuple))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

@@ -82,7 +82,9 @@ class StronglyEntanglingLayers(Operation):
             )
 
         if shape[2] != 3:
-            raise ValueError(f"Weights tensor must have third dimension of length 3; got {shape[2]}")
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 3; got {shape[2]}"
+            )
 
         if ranges is None:
             if len(wires) > 1:
@@ -102,7 +104,12 @@ class StronglyEntanglingLayers(Operation):
             for l in range(self.n_layers):
 
                 for i in range(len(self.wires)):
-                    qml.Rot(self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], self.parameters[0][l, i, 2], wires=self.wires[i])
+                    qml.Rot(
+                        self.parameters[0][l, i, 0],
+                        self.parameters[0][l, i, 1],
+                        self.parameters[0][l, i, 2],
+                        wires=self.wires[i],
+                    )
 
                 if len(self.wires) > 1:
                     for i in range(len(self.wires)):
@@ -115,12 +122,12 @@ class StronglyEntanglingLayers(Operation):
     def shape(n_layers, n_wires):
         r"""Returns the expected shape of the weights tensor.
 
-              Args:
-                  n_layers (int): number of layers
-                  n_wires (int): number of wires
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of wires
 
-              Returns:
-                  tuple[int]: shape
+        Returns:
+            tuple[int]: shape
         """
 
         return n_layers, n_wires, 3

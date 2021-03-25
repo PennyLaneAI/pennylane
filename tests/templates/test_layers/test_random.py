@@ -47,7 +47,7 @@ class TestDecomposition:
         ops = op.expand().operations
 
         gate_names = [g.name for g in ops]
-        assert len(gate_names) - gate_names.count("CNOT") == n_layers*n_rots
+        assert len(gate_names) - gate_names.count("CNOT") == n_layers * n_rots
 
     @pytest.mark.parametrize("ratio", [0.2, 0.6])
     def test_ratio_imprimitive(self, ratio):

@@ -23,14 +23,20 @@ from pennylane.devices import DefaultGaussian
 
 class DummyDevice(DefaultGaussian):
     """Dummy Gaussian device to allow Kerr operations"""
+
     _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
+    _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
 def expected_shapes(n_layers, n_wires):
     # compute the expected shapes for a given number of wires
     n_if = n_wires * (n_wires - 1) // 2
-    expected = [(n_layers, n_if)] * 2 + [(n_layers, n_wires)] * 3 + [(n_layers, n_if)] * 2 + [(n_layers, n_wires)] * 4
+    expected = (
+        [(n_layers, n_if)] * 2
+        + [(n_layers, n_wires)] * 3
+        + [(n_layers, n_if)] * 2
+        + [(n_layers, n_wires)] * 4
+    )
     return expected
 
 
@@ -38,9 +44,21 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     QUEUES = [
-        (1, ["Interferometer", "Squeezing", "Interferometer", "Displacement", "Kerr"], [[0]]*5),
-        (2, ["Interferometer", "Squeezing", "Squeezing", "Interferometer",
-             "Displacement", "Displacement", "Kerr", "Kerr"], [[0, 1], [0], [1], [0, 1], [0], [1], [0], [1]]),
+        (1, ["Interferometer", "Squeezing", "Interferometer", "Displacement", "Kerr"], [[0]] * 5),
+        (
+            2,
+            [
+                "Interferometer",
+                "Squeezing",
+                "Squeezing",
+                "Interferometer",
+                "Displacement",
+                "Displacement",
+                "Kerr",
+                "Kerr",
+            ],
+            [[0, 1], [0], [1], [0, 1], [0], [1], [0], [1]],
+        ),
     ]
 
     @pytest.mark.parametrize("n_wires, expected_names, expected_wires", QUEUES)
@@ -105,7 +123,7 @@ class TestInputs:
         """Check exception if weong dimension of weights"""
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes[:-1]]
-        weights += [np.random.random((1, shapes[-1][1]-1))]
+        weights += [np.random.random((1, shapes[-1][1] - 1))]
 
         dev = DummyDevice(wires=2)
 

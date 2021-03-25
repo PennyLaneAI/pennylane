@@ -40,8 +40,8 @@ class TestDecomposition:
         n_gates = 1 + (qubits + (qubits - 1) * 3) * layers
 
         exp_gates = (
-                            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
-                    ) * layers
+            [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
+        ) * layers
 
         op = qml.templates.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
         queue = op.expand().operations
@@ -58,19 +58,15 @@ class TestDecomposition:
 
         # gate parameter
         params = np.array(
-            [
-                queue[i].parameters
-                for i in range(1, n_gates)
-                if queue[i].parameters != []
-            ]
+            [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
         )
         weights[:, qubits:] = weights[:, qubits:] * 2
         assert np.allclose(params.flatten(), weights.flatten())
 
         # gate wires
         wires = range(qubits)
-        nm_wires = [wires[l: l + 2] for l in range(0, qubits - 1, 2)]
-        nm_wires += [wires[l: l + 2] for l in range(1, qubits - 1, 2)]
+        nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
         exp_wires = []
         for _ in range(layers):
@@ -136,7 +132,9 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ParticleConservingU2(weights, wires=["z", "a", "k"], init_state=init_state)
+            qml.templates.ParticleConservingU2(
+                weights, wires=["z", "a", "k"], init_state=init_state
+            )
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -152,29 +150,29 @@ class TestInputs:
         ("weights", "wires", "msg_match"),
         [
             (
-                    np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-                    [0],
-                    "This template requires the number of qubits to be greater than one",
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0],
+                "This template requires the number of qubits to be greater than one",
             ),
             (
-                    np.array([[-0.080, 2.629, -0.710, 5.383]]),
-                    [0, 1, 2, 3],
-                    "Weights tensor must",
+                np.array([[-0.080, 2.629, -0.710, 5.383]]),
+                [0, 1, 2, 3],
+                "Weights tensor must",
             ),
             (
-                    np.array(
-                        [
-                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                        ]
-                    ),
-                    [0, 1, 2, 3],
-                    "Weights tensor must",
+                np.array(
+                    [
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                    ]
+                ),
+                [0, 1, 2, 3],
+                "Weights tensor must",
             ),
             (
-                    np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
-                    [0, 1, 2, 3],
-                    "Weights tensor must be 2-dimensional",
+                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 2-dimensional",
             ),
         ],
     )
@@ -202,14 +200,14 @@ class TestInputs:
 class TestAttributes:
     """Tests additional methods and attributes"""
 
-    @pytest.mark.parametrize("n_layers, n_wires, expected_shape",
-            [
-                (2, 3, (2, 5)),
-                (2, 2, (2, 3)),
-                (1, 3, (1, 5)),
-
-            ]
-        )
+    @pytest.mark.parametrize(
+        "n_layers, n_wires, expected_shape",
+        [
+            (2, 3, (2, 5)),
+            (2, 2, (2, 3)),
+            (1, 3, (1, 5)),
+        ],
+    )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 

@@ -151,7 +151,7 @@ class BasicEntanglerLayers(Operation):
 
             for layer in range(repeat):
                 for i in range(len(self.wires)):
-                    self.rotation(weights[layer][i], wires=self.wires[i: i + 1])
+                    self.rotation(weights[layer][i], wires=self.wires[i : i + 1])
 
                 if len(self.wires) == 2:
                     qml.CNOT(wires=self.wires)

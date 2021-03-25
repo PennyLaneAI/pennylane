@@ -119,7 +119,9 @@ class SimplifiedTwoDesign(Operation):
 
         shape2 = qml.math.shape(initial_layer_weights)
         if shape2 != (len(wires),):
-            raise ValueError(f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}")
+            raise ValueError(
+                f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
+            )
 
         self.n_layers = shape[0]
 
@@ -136,18 +138,22 @@ class SimplifiedTwoDesign(Operation):
             for layer in range(self.n_layers):
 
                 # even layer of entanglers
-                even_wires = [self.wires[i: i + 2] for i in range(0, len(self.wires) - 1, 2)]
+                even_wires = [self.wires[i : i + 2] for i in range(0, len(self.wires) - 1, 2)]
                 for i, wire_pair in enumerate(even_wires):
                     qml.CZ(wires=wire_pair)
                     qml.RY(self.parameters[1][layer, i, 0], wires=wire_pair[0])
                     qml.RY(self.parameters[1][layer, i, 1], wires=wire_pair[1])
 
                 # odd layer of entanglers
-                odd_wires = [self.wires[i: i + 2] for i in range(1, len(self.wires) - 1, 2)]
+                odd_wires = [self.wires[i : i + 2] for i in range(1, len(self.wires) - 1, 2)]
                 for i, wire_pair in enumerate(odd_wires):
                     qml.CZ(wires=wire_pair)
-                    qml.RY(self.parameters[1][layer, len(self.wires) // 2 + i, 0], wires=wire_pair[0])
-                    qml.RY(self.parameters[1][layer, len(self.wires) // 2 + i, 1], wires=wire_pair[1])
+                    qml.RY(
+                        self.parameters[1][layer, len(self.wires) // 2 + i, 0], wires=wire_pair[0]
+                    )
+                    qml.RY(
+                        self.parameters[1][layer, len(self.wires) // 2 + i, 1], wires=wire_pair[1]
+                    )
 
         return tape
 
@@ -155,15 +161,15 @@ class SimplifiedTwoDesign(Operation):
     def shape(n_layers, n_wires):
         r"""Returns a list of shapes for the 2 parameter tensors.
 
-              Args:
-                  n_layers (int): number of layers
-                  n_wires (int): number of wires
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of wires
 
-              Returns:
-                  list[tuple[int]]: list of shapes
+        Returns:
+            list[tuple[int]]: list of shapes
         """
 
         if n_wires == 1:
             return [(n_wires,), (n_layers,)]
 
-        return [(n_wires,), (n_layers, n_wires-1, 2)]
+        return [(n_wires,), (n_layers, n_wires - 1, 2)]

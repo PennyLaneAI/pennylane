@@ -248,7 +248,9 @@ class ParticleConservingU1(Operation):
             )
 
         if shape[2] != 2:
-            raise ValueError(f"Weights tensor must have third dimension of length 2; got {shape[2]}")
+            raise ValueError(
+                f"Weights tensor must have third dimension of length 2; got {shape[2]}"
+            )
 
         self.n_layers = shape[0]
         # we can extract the numpy representation here
@@ -259,8 +261,8 @@ class ParticleConservingU1(Operation):
 
     def expand(self):
 
-        nm_wires = [self.wires[l: l + 2] for l in range(0, len(self.wires) - 1, 2)]
-        nm_wires += [self.wires[l: l + 2] for l in range(1, len(self.wires) - 1, 2)]
+        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
+        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
 
         with qml.tape.QuantumTape() as tape:
 
@@ -268,7 +270,9 @@ class ParticleConservingU1(Operation):
 
             for l in range(self.n_layers):
                 for i, wires_ in enumerate(nm_wires):
-                    u1_ex_gate(self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], wires=wires_)
+                    u1_ex_gate(
+                        self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], wires=wires_
+                    )
         return tape
 
     @staticmethod

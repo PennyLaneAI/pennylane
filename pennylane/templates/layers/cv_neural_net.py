@@ -84,7 +84,22 @@ class CVNeuralNetLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires, do_queue=True):
+    def __init__(
+        self,
+        theta_1,
+        phi_1,
+        varphi_1,
+        r,
+        phi_r,
+        theta_2,
+        phi_2,
+        varphi_2,
+        a,
+        phi_a,
+        k,
+        wires,
+        do_queue=True,
+    ):
 
         n_wires = len(wires)
         n_if = n_wires * (n_wires - 1) // 2
@@ -106,8 +121,21 @@ class CVNeuralNetLayers(Operation):
 
         self.n_layers = shapes[0][0]
 
-        super().__init__(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=wires,
-                         do_queue=do_queue)
+        super().__init__(
+            theta_1,
+            phi_1,
+            varphi_1,
+            r,
+            phi_r,
+            theta_2,
+            phi_2,
+            varphi_2,
+            a,
+            phi_a,
+            k,
+            wires=wires,
+            do_queue=do_queue,
+        )
 
     def expand(self):
 
@@ -115,17 +143,29 @@ class CVNeuralNetLayers(Operation):
 
             for l in range(self.n_layers):
 
-                qml.templates.Interferometer(theta=self.parameters[0][l], phi=self.parameters[1][l],
-                                             varphi=self.parameters[2][l], wires=self.wires)
+                qml.templates.Interferometer(
+                    theta=self.parameters[0][l],
+                    phi=self.parameters[1][l],
+                    varphi=self.parameters[2][l],
+                    wires=self.wires,
+                )
 
                 for i in range(len(self.wires)):
-                    qml.Squeezing(self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i])
+                    qml.Squeezing(
+                        self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i]
+                    )
 
-                qml.templates.Interferometer(theta=self.parameters[5][l], phi=self.parameters[6][l],
-                                             varphi=self.parameters[7][l], wires=self.wires)
+                qml.templates.Interferometer(
+                    theta=self.parameters[5][l],
+                    phi=self.parameters[6][l],
+                    varphi=self.parameters[7][l],
+                    wires=self.wires,
+                )
 
                 for i in range(len(self.wires)):
-                    qml.Displacement(self.parameters[8][l, i], self.parameters[9][l, i], wires=self.wires[i])
+                    qml.Displacement(
+                        self.parameters[8][l, i], self.parameters[9][l, i], wires=self.wires[i]
+                    )
 
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
@@ -136,16 +176,20 @@ class CVNeuralNetLayers(Operation):
     def shape(n_layers, n_wires):
         r"""Returns a list of shapes for the 11 parameter tensors.
 
-              Args:
-                  n_layers (int): number of layers
-                  n_wires (int): number of wires
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of wires
 
-              Returns:
-                  list[tuple[int]]: list of shapes
+        Returns:
+            list[tuple[int]]: list of shapes
         """
         n_if = n_wires * (n_wires - 1) // 2
 
-        shapes = [(n_layers, n_if)] * 2 + [(n_layers, n_wires)] * 3 + [(n_layers, n_if)] * 2 + [
-            (n_layers, n_wires)] * 4
+        shapes = (
+            [(n_layers, n_if)] * 2
+            + [(n_layers, n_wires)] * 3
+            + [(n_layers, n_if)] * 2
+            + [(n_layers, n_wires)] * 4
+        )
 
         return shapes
