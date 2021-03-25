@@ -71,31 +71,4 @@ def hamiltonian_expval(tape):
         )
 
     hamiltonian.simplify()
-    combined_obs = []
-
-    c = hamiltonian.coeffs
-
-    for o in hamiltonian.ops:
-        combined_obs.append(o)
-
-    new_obs, coeffs = qml.grouping.group_observables(combined_obs, c, grouping_type="commuting")
-    tapes = []
-
-    for obs in new_obs:
-        new_tape = qml.tape.QuantumTape()
-        with new_tape:
-            for op in tape.operations:
-                op.queue()
-            for m in obs:
-                qml.expval(m)
-
-        tapes.append(new_tape)
-
-    def processing_fn(results):
-
-        new_coeffs = list(itertools.chain.from_iterable(coeffs))
-        new_results = list(itertools.chain.from_iterable(results))
-
-        return np.dot(new_coeffs, new_results)
-
-    return [tape.expand() for tape in tapes], processing_fn
+    return qml.transforms.measurement_grouping(tape, H.ops, H.coeffs)
