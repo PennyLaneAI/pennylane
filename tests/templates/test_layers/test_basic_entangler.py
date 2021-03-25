@@ -50,10 +50,10 @@ class TestDecomposition:
         weights = np.zeros(shape=(1, 2))
 
         op = qml.templates.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
-        tape = op.expand()
+        queue = op.expand().operations
 
-        assert type(tape.operations[0]) == rotation
-        assert type(tape.operations[1]) == rotation
+        assert type(queue) == rotation
+        assert type(queue) == rotation
 
     @pytest.mark.parametrize(
         "weights, n_wires, target",
@@ -120,6 +120,10 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
             circuit([[1, 0], [1, 0]])
 
+
+class TestAttributes:
+    """Tests additional methods and attributes"""
+
     @pytest.mark.parametrize(
         "n_layers, n_wires, expected_shape",
         [
@@ -168,7 +172,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = tuple([tuple(weights[0])])
+        weights_tuple = [tuple(weights[0])]
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

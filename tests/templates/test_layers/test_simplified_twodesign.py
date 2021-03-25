@@ -153,6 +153,7 @@ class TestInputs:
 
 
 class TestAttributes:
+    """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, expected_shape",

@@ -182,3 +182,21 @@ class ParticleConservingU2(Operation):
                 for i, wires_ in enumerate(nm_wires):
                     u2_ex_gate(self.parameters[0][l, len(self.wires) + i], wires=wires_)
         return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        if n_wires < 2:
+            raise ValueError(
+                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            )
+        return n_layers, 2*n_wires - 1

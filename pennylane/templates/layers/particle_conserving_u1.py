@@ -39,7 +39,7 @@ def decompose_ua(phi, wires=None):
 
     Args:
         phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
-        wires (list[Iterable]): the wires ``n`` and ``m`` the circuit acts on
+        wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
     """
 
     n, m = wires
@@ -212,6 +212,17 @@ class ParticleConservingU1(Operation):
             layers = 2
             params = qml.init.particle_conserving_u1_normal(layers, qubits)
             print(cost_fn(params))
+
+         **Parameter shape**
+
+        The shape of the weights argument can be computed by the static method
+        :meth:`~.ParticleConservingU1.shape` and used when creating randomly
+        initialised weight tensors:
+
+        .. code-block:: python
+
+            shape = ParticleConservingU1.shape(n_layers=2, n_wires=2)
+            weights = np.random.random(size=shape)
     """
 
     num_params = 1
@@ -222,7 +233,7 @@ class ParticleConservingU1(Operation):
 
         if len(wires) < 2:
             raise ValueError(
-                "Expected the number of qubits to be greater than one;"
+                "Expected the number of qubits to be greater than one; "
                 "got wires {}".format(wires)
             )
 
@@ -259,3 +270,21 @@ class ParticleConservingU1(Operation):
                 for i, wires_ in enumerate(nm_wires):
                     u1_ex_gate(self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], wires=wires_)
         return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        if n_wires < 2:
+            raise ValueError(
+                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            )
+        return n_layers, n_wires - 1, 2

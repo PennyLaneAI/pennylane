@@ -205,7 +205,7 @@ class RandomLayers(Operation):
             for l in range(self.n_layers):
 
                 i = 0
-                while i < shape[0]:
+                while i < shape[1]:
                     if np.random.random() > self.ratio_imprimitive:
                         # apply a random rotation gate to a random wire
                         gate = np.random.choice(self.rotations)

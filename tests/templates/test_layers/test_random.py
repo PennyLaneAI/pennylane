@@ -25,293 +25,252 @@ class TestDecomposition:
 
     def test_seed(self):
         """Test that the circuit is fixed by the seed."""
-        weights = [[0.1, 0.2, 0.3]]
+        weights = np.random.random((2, 3))
 
         op1 = qml.templates.RandomLayers(weights, wires=range(2), seed=41)
         op2 = qml.templates.RandomLayers(weights, wires=range(2), seed=42)
         op3 = qml.templates.RandomLayers(weights, wires=range(2), seed=42)
 
-        ops1 = op1.expand().operations
-        ops2 = op2.expand().operations
-        ops3 = op3.expand().operations
+        queue1 = op1.expand().operations
+        queue2 = op2.expand().operations
+        queue3 = op3.expand().operations
 
-        assert ops1 != ops2
-        assert ops2 == ops3
+        assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
+        assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
 
-    def test_random_layers_nlayers(self, n_layers):
-        """Test that the correct number of gates."""
-        np.random.seed(12)
-        n_rots = 1
-        n_wires = 2
-        impr = qml.CNOT
+    @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
+    def test_number_gates(self, n_layers, n_rots):
+        """Test that the number of gates is correct."""
         weights = np.random.randn(n_layers, n_rots)
 
-        op = qml.templates.RandomLayers(weights, wires=range(n_wires))
-        ops = op.expand().operations
-
-        types = [type(o) for o in ops]
-        assert len(types) - types.count(impr) == n_layers
-
-    @pytest.mark.parametrize("ratio", [0.2, 0.6])
-    def test_random_layer_ratio_imprimitive(self, ratio):
-        """Test the ratio of imprimitive gates."""
-        n_rots = 500
-        n_wires = 2
-        weights = np.random.random(size=(1, n_rots))
-
-        op = qml.templates.RandomLayers(weights, wires=range(n_wires), ratio_imprim=ratio)
+        op = qml.templates.RandomLayers(weights, wires=range(2))
         ops = op.expand().operations
 
         gate_names = [g.name for g in ops]
+        assert len(gate_names) - gate_names.count("CNOT") == n_layers*n_rots
+
+    @pytest.mark.parametrize("ratio", [0.2, 0.6])
+    def test_ratio_imprimitive(self, ratio):
+        """Test the ratio of imprimitive gates."""
+        n_rots = 500
+        weights = np.random.random(size=(1, n_rots))
+
+        op = qml.templates.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
+        queue = op.expand().operations
+
+        gate_names = [gate.name for gate in queue]
         ratio_impr = gate_names.count("CNOT") / len(gate_names)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
+    def test_random_wires(self):
+        """Test that random wires are picked for the gates. This is done by
+        taking the mean of all wires, which should be 1 for labels [0, 1, 2]"""
+        n_rots = 5000
+        weights = np.random.random(size=(2, n_rots))
 
-#     QUEUES = [
-#         (1, (1, 1), ["RX"], [[0]]),
-#         (2, (1, 2), ["RX", "RX", "CNOT"], [[0], [1], [0, 1]]),
-#         (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"], [[0], [1], [0, 1], [0], [1], [0, 1]]),
-#         (3, (1, 3), ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"], [[0], [1], [2], [0, 1], [1, 2], [2, 0]]),
-#     ]
-#
-#     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
-#     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires):
-#         """Checks the queue for the default settings."""
-#
-#         weights = np.random.random(size=weight_shape)
-#
-#         op = qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
-#         tape = op.expand()
-#
-#         for i, gate in enumerate(tape.operations):
-#             assert gate.name == expected_names[i]
-#             assert gate.wires.labels == tuple(expected_wires[i])
-#
-#     @pytest.mark.parametrize("rotation", [qml.RY, qml.RZ])
-#     def test_rotation(self, rotation):
-#         """Checks that custom rotation gate is used."""
-#
-#         weights = np.zeros(shape=(1, 2))
-#
-#         op = qml.templates.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
-#         tape = op.expand()
-#
-#         assert type(tape.operations[0]) == rotation
-#         assert type(tape.operations[1]) == rotation
-#
-#     @pytest.mark.parametrize(
-#         "weights, n_wires, target",
-#         [
-#             ([[np.pi]], 1, [-1]),
-#             ([[np.pi] * 2], 2, [-1, 1]),
-#             ([[np.pi] * 3], 3, [1, 1, -1]),
-#             ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
-#         ],
-#     )
-#     def test_simple_target_outputs(self, weights, n_wires, target, tol):
-#         """Tests the result of the template for simple cases."""
-#
-#         dev = qml.device("default.qubit", wires=n_wires)
-#
-#         @qml.qnode(dev)
-#         def circuit(weights):
-#             qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
-#             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-#
-#         expectations = circuit(weights)
-#         assert np.allclose(expectations, target, atol=tol, rtol=0)
-#
-#     def test_custom_wire_labels(self, tol):
-#         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-#         weights = np.random.random(size=(1, 3))
-#
-#         dev = qml.device("default.qubit", wires=3)
-#         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-#
-#         @qml.qnode(dev)
-#         def circuit():
-#             qml.templates.BasicEntanglerLayers(weights, wires=range(3))
-#             return qml.expval(qml.Identity(0))
-#
-#         @qml.qnode(dev2)
-#         def circuit2():
-#             qml.templates.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
-#             return qml.expval(qml.Identity("z"))
-#
-#         circuit()
-#         circuit2()
-#
-#         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
-#
-#
-# class TestInputs:
-#     """Test inputs and pre-processing."""
-#
-#     def test_exception_wrong_dim(self):
-#         """Verifies that exception is raised if the weights shape is incorrect."""
-#
-#         n_wires = 1
-#         dev = qml.device("default.qubit", wires=n_wires)
-#
-#         @qml.qnode(dev)
-#         def circuit(weights):
-#             qml.templates.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-#             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-#
-#         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
-#             circuit([1, 0])
-#
-#         with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
-#             circuit([[1, 0], [1, 0]])
-#
-#     @pytest.mark.parametrize(
-#         "n_layers, n_wires, expected_shape",
-#         [
-#             (2, 3, (2, 3)),
-#             (2, 1, (2, 1)),
-#             (2, 2, (2, 2)),
-#         ],
-#     )
-#     def test_shape(self, n_layers, n_wires, expected_shape):
-#         """Test that the shape method returns the correct shape of the weights tensor"""
-#
-#         shape = qml.templates.BasicEntanglerLayers.shape(n_layers, n_wires)
-#         assert shape == expected_shape
-#
-#
-# def circuit_template(weights):
-#     qml.templates.BasicEntanglerLayers(weights, range(3))
-#     return qml.expval(qml.PauliZ(0))
-#
-#
-# def circuit_decomposed(weights):
-#     qml.RX(weights[0, 0], wires=0)
-#     qml.RX(weights[0, 1], wires=1)
-#     qml.RX(weights[0, 2], wires=2)
-#     qml.CNOT(wires=[0, 1])
-#     qml.CNOT(wires=[1, 2])
-#     qml.CNOT(wires=[2, 0])
-#     return qml.expval(qml.PauliZ(0))
-#
-#
-# class TestInterfaces:
-#     """Tests that the template is compatible with all interfaces, including the computation
-#     of gradients."""
-#
-#     def test_list_and_tuples(self, tol):
-#         """Tests common iterables as inputs."""
-#
-#         weights = [[0.1, -1.1, 0.2]]
-#
-#         dev = qml.device("default.qubit", wires=3)
-#
-#         circuit = qml.QNode(circuit_template, dev)
-#         circuit2 = qml.QNode(circuit_decomposed, dev)
-#
-#         res = circuit(weights)
-#         res2 = circuit2(weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         res = circuit(tuple(weights))
-#         res2 = circuit2(tuple(weights))
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#     def test_autograd(self, tol):
-#         """Tests the autograd interface."""
-#
-#         weights = np.random.random(size=(1, 3))
-#         weights = pnp.array(weights, requires_grad=True)
-#
-#         dev = qml.device("default.qubit", wires=3)
-#
-#         circuit = qml.QNode(circuit_template, dev)
-#         circuit2 = qml.QNode(circuit_decomposed, dev)
-#
-#         res = circuit(weights)
-#         res2 = circuit2(weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         grad_fn = qml.grad(circuit)
-#         grads = grad_fn(weights)
-#
-#         grad_fn2 = qml.grad(circuit2)
-#         grads2 = grad_fn2(weights)
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_jax(self, tol, skip_if_no_jax_support):
-#         """Tests the jax interface."""
-#
-#         import jax
-#         import jax.numpy as jnp
-#
-#         weights = jnp.array(np.random.random(size=(1, 3)))
-#
-#         dev = qml.device("default.qubit", wires=3)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="jax")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
-#
-#         res = circuit(weights)
-#         res2 = circuit2(weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         grad_fn = jax.grad(circuit)
-#         grads = grad_fn(weights)
-#
-#         grad_fn2 = jax.grad(circuit2)
-#         grads2 = grad_fn2(weights)
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_tf(self, tol, skip_if_no_tf_support):
-#         """Tests the tf interface."""
-#
-#         import tensorflow as tf
-#
-#         weights = tf.Variable(np.random.random(size=(1, 3)))
-#
-#         dev = qml.device("default.qubit", wires=3)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="tf")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
-#
-#         res = circuit(weights)
-#         res2 = circuit2(weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         with tf.GradientTape() as tape:
-#             res = circuit(weights)
-#         grads = tape.gradient(res, [weights])
-#
-#         with tf.GradientTape() as tape2:
-#             res2 = circuit2(weights)
-#         grads2 = tape2.gradient(res2, [weights])
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_torch(self, tol, skip_if_no_torch_support):
-#         """Tests the torch interface."""
-#
-#         import torch
-#
-#         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
-#
-#         dev = qml.device("default.qubit", wires=3)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="torch")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
-#
-#         res = circuit(weights)
-#         res2 = circuit2(weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         res = circuit(weights)
-#         res.backward()
-#         grads = [weights.grad]
-#
-#         res2 = circuit2(weights)
-#         res2.backward()
-#         grads2 = [weights.grad]
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        op = qml.templates.RandomLayers(weights, wires=range(3))
+        queue = op.expand().operations
+
+        gate_wires = [gate.wires.labels for gate in queue]
+        wires_flat = [item for w in gate_wires for item in w]
+        mean_wire = np.mean(wires_flat)
+
+        assert np.isclose(mean_wire, 1, atol=0.05)
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        weights = np.random.random(size=(1, 3))
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.RandomLayers(weights, wires=range(3))
+            return qml.expval(qml.Identity(0))
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.templates.RandomLayers(weights, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z"))
+
+        circuit()
+        circuit2()
+
+        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+
+
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    def test_exception_wrong_dim(self):
+        """Verifies that exception is raised if the
+        number of dimensions of features is incorrect."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.templates.RandomLayers(phi, wires=list(range(4)))
+            return qml.expval(qml.PauliZ(0))
+
+        phi = np.array([0.04, 0.14, 3.29, 2.51])
+
+        with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
+            circuit(phi)
+
+
+class TestAttributes:
+    """Tests additional methods and attributes"""
+
+    @pytest.mark.parametrize(
+        "n_layers, n_rots, expected_shape",
+        [
+            (2, 3, (2, 3)),
+            (2, 1, (2, 1)),
+            (2, 2, (2, 2)),
+        ],
+    )
+    def test_shape(self, n_layers, n_rots, expected_shape):
+        """Test that the shape method returns the correct shape of the weights tensor"""
+
+        shape = qml.templates.RandomLayers.shape(n_layers, n_rots)
+        assert shape == expected_shape
+
+
+def circuit_template(weights):
+    qml.templates.RandomLayers(weights, range(3), seed=42)
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_decomposed(weights):
+    # this structure is only true for a seed of 42 and 3 wires
+    qml.RX(weights[0, 0], wires=1)
+    qml.RX(weights[0, 1], wires=0)
+    qml.CNOT(wires=[1, 0])
+    qml.RZ(weights[0, 2], wires=2)
+    return qml.expval(qml.PauliZ(0))
+
+
+class TestInterfaces:
+    """Tests that the template is compatible with all interfaces, including the computation
+    of gradients."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        weights = [[0.1, -1.1, 0.2]]
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        weights_tuple = [tuple(weights[0])]
+        res = circuit(weights_tuple)
+        res2 = circuit2(weights_tuple)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_autograd(self, tol):
+        """Tests the autograd interface."""
+
+        weights = np.random.random(size=(1, 3))
+        weights = pnp.array(weights, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = qml.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_jax(self, tol, skip_if_no_jax_support):
+        """Tests the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 3)))
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_tf(self, tol, skip_if_no_tf_support):
+        """Tests the tf interface."""
+
+        import tensorflow as tf
+
+        weights = tf.Variable(np.random.random(size=(1, 3)))
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        with tf.GradientTape() as tape:
+            res = circuit(weights)
+        grads = tape.gradient(res, [weights])
+
+        with tf.GradientTape() as tape2:
+            res2 = circuit2(weights)
+        grads2 = tape2.gradient(res2, [weights])
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_torch(self, tol, skip_if_no_torch_support):
+        """Tests the torch interface."""
+
+        import torch
+
+        weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(weights)
+        res.backward()
+        grads = [weights.grad]
+
+        res2 = circuit2(weights)
+        res2.backward()
+        grads2 = [weights.grad]
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
