@@ -49,7 +49,7 @@ class TestDecomposition:
 
         return exp_wires
 
-    def test_particle_conserving_u1_operations(self):
+    def test_operations(self):
         """Test the correctness of the ParticleConservingU1 template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
@@ -157,43 +157,6 @@ class TestDecomposition:
         [
             (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
             (
-                np.array([0, 1]),
-                np.array([0.0 + 0.0j, 0.862093 + 0.0j, 0.0 - 0.506749j, 0.0 + 0.0j]),
-            ),
-            (
-                np.array([1, 0]),
-                np.array([0.0 + 0.0j, 0.0 - 0.506749j, 0.862093 + 0.0j, 0.0 + 0.0j]),
-            ),
-            (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j])),
-        ],
-    )
-    def test_decomposition_u2ex(self, init_state, exp_state, tol):
-        """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
-        state."""
-
-        N = 2
-        wires = range(N)
-
-        weight = 0.53141
-
-        dev = qml.device("default.qubit", wires=N)
-
-        @qml.qnode(dev)
-        def circuit(weight):
-            qml.BasisState(init_state, wires=wires)
-            qml.templates.layers.particle_conserving_u2.u2_ex_gate(weight, wires)
-            return qml.expval(qml.PauliZ(0))
-
-        circuit(weight)
-
-        assert np.allclose(circuit.device.state, exp_state, atol=tol)
-
-
-    @pytest.mark.parametrize(
-        ("init_state", "exp_state"),
-        [
-            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
-            (
                 np.array([1, 1]),
                 np.array(
                     [
@@ -264,7 +227,7 @@ class TestInputs:
             ),
         ],
     )
-    def test_particle_conserving_u1_exceptions(self, weights, n_wires, msg_match):
+    def test_exceptions(self, weights, n_wires, msg_match):
         """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
         shape."""
 

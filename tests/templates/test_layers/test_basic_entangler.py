@@ -52,8 +52,7 @@ class TestDecomposition:
         op = qml.templates.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
         queue = op.expand().operations
 
-        assert type(queue) == rotation
-        assert type(queue) == rotation
+        assert rotation in [type(gate) for gate in queue]
 
     @pytest.mark.parametrize(
         "weights, n_wires, target",

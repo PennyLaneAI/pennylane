@@ -718,55 +718,7 @@ class TestParticleConservingU2:
 
         assert res_wires == exp_wires
 
-    @pytest.mark.parametrize(
-        ("weights", "wires", "msg_match"),
-        [
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-                [0],
-                "This template requires the number of qubits to be greater than one",
-            ),
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383]]),
-                [0, 1, 2, 3],
-                "Weights tensor must",
-            ),
-            (
-                np.array(
-                    [
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                    ]
-                ),
-                [0, 1, 2, 3],
-                "Weights tensor must",
-            ),
-            (
-                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
-                [0, 1, 2, 3],
-                "Weights tensor must be 2-dimensional",
-            ),
-        ],
-    )
-    def test_u2_exceptions(self, weights, wires, msg_match):
-        """Test that ParticleConservingU2 throws an exception if the parameters have illegal
-        shapes, types or values."""
-        N = len(wires)
-        init_state = np.array([1, 1, 0, 0])
 
-        dev = qml.device("default.qubit", wires=N)
-
-        @qml.qnode(dev)
-        def circuit():
-            ParticleConservingU2(
-                weights=weights,
-                wires=wires,
-                init_state=init_state,
-            )
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match=msg_match):
-            circuit()
 
     @pytest.mark.parametrize(
         ("weights", "wires", "expected"),

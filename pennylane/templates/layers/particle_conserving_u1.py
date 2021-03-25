@@ -213,7 +213,7 @@ class ParticleConservingU1(Operation):
             params = qml.init.particle_conserving_u1_normal(layers, qubits)
             print(cost_fn(params))
 
-         **Parameter shape**
+        **Parameter shape**
 
         The shape of the weights argument can be computed by the static method
         :meth:`~.ParticleConservingU1.shape` and used when creating randomly
