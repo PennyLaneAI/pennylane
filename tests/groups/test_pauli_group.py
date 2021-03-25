@@ -17,9 +17,11 @@ Unit tests for the :mod:`pauli_group`  functions in ``groups/pauli_group.py``.
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 
-import numpy as np
-
-from pennylane.groups.pauli import pauli_group, pauli_mult, pauli_mult_with_phase
+from pennylane.groups.pauli import (
+    pauli_group,
+    pauli_mult,
+    pauli_mult_with_phase
+)
 
 
 class TestPauliGroup:

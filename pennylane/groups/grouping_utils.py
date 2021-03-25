@@ -21,12 +21,11 @@ representation of Pauli words and applications, see:
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
 
-import pennylane as qml
-from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.wires import Wires
 from pennylane.groups.pauli_utils import pauli_to_binary
 
 import numpy as np
+
 
 def is_qwc(pauli_vec_1, pauli_vec_2):
     """Checks if two Pauli words in the binary vector representation are qubit-wise commutative.

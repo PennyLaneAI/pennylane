@@ -40,7 +40,7 @@ from .pauli_utils import (
     pauli_word_to_string,
     string_to_pauli_word,
     pauli_word_to_matrix,
-    is_commuting
+    is_commuting,
 )
 
 from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase

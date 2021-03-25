@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for constructing the N-qubit Pauli group, and performing the 
+Functions for constructing the N-qubit Pauli group, and performing the
 group operation (multiplication).
 """
 
 import numpy as np
 
 from pennylane import Identity
-from pennylane.groups.pauli_utils import (
-    binary_to_pauli,
-    pauli_to_binary,
-    are_identical_pauli_words
-)
+from pennylane.groups.pauli_utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+
 
 def pauli_group(n_qubits, wire_map=None):
     """Generator for iterating over the n-qubit Pauli group.

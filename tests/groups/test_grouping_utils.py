@@ -16,8 +16,7 @@ Unit tests for the :mod:`grouping` utility functions in ``groups/grouping_utils.
 """
 import pytest
 import numpy as np
-from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
-from pennylane.operation import Tensor
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.groups.pauli_utils import pauli_to_binary
 from pennylane.groups.grouping_utils import (
     is_qwc,
@@ -32,7 +31,6 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        n_qubits = 3
         wire_map = {0: 0, "a": 1, "b": 2}
         p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
         p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
