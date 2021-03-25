@@ -513,7 +513,10 @@
 <h3>Breaking changes</h3>
 
 * The `qml` module is no longer automatically imported with PennyLane and should instead be imported
-  separately using `import pennylane.qnn`. For example, `KerasLayer` can be accessed using:
+  separately using `import pennylane.qnn`.
+  [(#1162)](https://github.com/PennyLaneAI/pennylane/pull/1162)
+  
+  For example, `KerasLayer` can be accessed using:
   
   ```python
   import pennylane as qml
