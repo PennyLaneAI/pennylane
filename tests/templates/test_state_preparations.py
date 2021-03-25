@@ -19,14 +19,18 @@ Integration tests should be placed into ``test_templates.py``.
 
 import math
 from unittest.mock import patch
-import numpy as np
+from pennylane import numpy as np
 import pytest
 import pennylane as qml
-from pennylane.templates.state_preparations import (BasisStatePreparation,
-                                                    MottonenStatePreparation,
-                                                    ArbitraryStatePreparation)
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+    ArbitraryStatePreparation,
+)
 from pennylane.templates.state_preparations.mottonen import gray_code
-from pennylane.templates.state_preparations.arbitrary_state_preparation import _state_preparation_pauli_words
+from pennylane.templates.state_preparations.arbitrary_state_preparation import (
+    _state_preparation_pauli_words,
+)
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
@@ -47,11 +51,32 @@ class TestHelperFunctions:
 
         assert gray_code(rank) == expected_gray_code
 
-    @pytest.mark.parametrize("num_wires,expected_pauli_words", [
-        (1, ["X", "Y"]),
-        (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
-        (3, ["XII", "YII", "IXI", "IYI", "IIX", "IIY", "IXX", "IXY", "XXI", "XYI", "XIX", "XIY", "XXX", "XXY"]),
-    ])
+    @pytest.mark.parametrize(
+        "num_wires,expected_pauli_words",
+        [
+            (1, ["X", "Y"]),
+            (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
+            (
+                3,
+                [
+                    "XII",
+                    "YII",
+                    "IXI",
+                    "IYI",
+                    "IIX",
+                    "IIY",
+                    "IXX",
+                    "IXY",
+                    "XXI",
+                    "XYI",
+                    "XIX",
+                    "XIY",
+                    "XXX",
+                    "XXY",
+                ],
+            ),
+        ],
+    )
     def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
         """Test that the correct Pauli words are returned."""
         for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
@@ -214,7 +239,9 @@ class TestMottonenStatePreparation:
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation_fidelity(self, tol, qubit_device_3_wires, state_vector, wires, target_state):
+    def test_state_preparation_fidelity(
+        self, tol, qubit_device_3_wires, state_vector, wires, target_state
+    ):
         """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
         and produces states with correct fidelity."""
 
@@ -227,7 +254,7 @@ class TestMottonenStatePreparation:
         circuit()
 
         state = circuit.device.state.ravel()
-        fidelity = abs(np.vdot(state, target_state))**2
+        fidelity = abs(np.vdot(state, target_state)) ** 2
 
         # We test for fidelity here, because the vector themselves will hardly match
         # due to imperfect state preparation
@@ -278,7 +305,9 @@ class TestMottonenStatePreparation:
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation_probability_distribution(self, tol, qubit_device_3_wires, state_vector, wires, target_state):
+    def test_state_preparation_probability_distribution(
+        self, tol, qubit_device_3_wires, state_vector, wires, target_state
+    ):
         """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
         and produces states with correct probability distribution."""
 
@@ -292,8 +321,8 @@ class TestMottonenStatePreparation:
 
         state = circuit.device.state.ravel()
 
-        probabilities = np.abs(state)**2
-        target_probabilities = np.abs(target_state)**2
+        probabilities = np.abs(state) ** 2
+        target_probabilities = np.abs(target_state) ** 2
 
         assert np.allclose(probabilities, target_probabilities, atol=tol, rtol=0)
 
@@ -324,11 +353,14 @@ class TestMottonenStatePreparation:
         with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
             MottonenStatePreparation(state_vector, wires)
 
-    @pytest.mark.parametrize("current_qubit, expected", [
-        (1, np.array([0, 0, 0, 1.23095942])),
-        (2, np.array([2.01370737, 3.14159265])),
-        (3, np.array([1.15927948])),
-    ])
+    @pytest.mark.parametrize(
+        "current_qubit, expected",
+        [
+            (1, np.array([0, 0, 0, 1.23095942])),
+            (2, np.array([2.01370737, 3.14159265])),
+            (3, np.array([1.15927948])),
+        ],
+    )
     def test_get_alpha_y(self, current_qubit, expected, tol):
         """Test the _get_alpha_y helper function."""
 
@@ -358,6 +390,52 @@ class TestMottonenStatePreparation:
         with pytest.raises(ValueError, match="State vector has to be of length"):
             state_vector = np.array([0, 2, 0, 0])
             circuit(state_vector)
+
+    # fmt: off
+    @pytest.mark.parametrize("state_vector, n_wires", [
+        ([1/2, 1/2, 1/2, 1/2], 2),
+        ([1, 0, 0, 0], 2),
+        ([0, 1, 0, 0], 2),
+        ([0, 0, 0, 1], 2),
+        ([0, 1, 0, 0, 0, 0, 0, 0], 3),
+        ([0, 0, 0, 0, 1, 0, 0, 0], 3),
+        ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], 3),
+        ([1/2, 0, 0, 0, 1/2, 1/2, 1/2, 0], 3),
+        ([1/3, 0, 0, 0, 2/3, 2/3, 0, 0], 3),
+        ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], 3),
+    ])
+    # fmt: on
+    def test_RZ_skipped(self, state_vector, n_wires):
+        """Tests whether the cascade of RZ gates is skipped for real-valued states"""
+
+        n_CNOT = 2 ** n_wires - 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            MottonenStatePreparation(state_vector, wires=range(n_wires))
+            return qml.expval(qml.PauliX(wires=0))
+
+        # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
+        circuit(state_vector)
+
+        assert circuit.qtape.get_resources()["CNOT"] == n_CNOT
+
+    @pytest.mark.parametrize(
+        "state_vector", [np.array([0.70710678, 0.70710678]), np.array([0.70710678, 0.70710678j])]
+    )
+    def test_gradient_evaluated(self, state_vector):
+        """Test that the gradient is successfully calculated for a simple example. This test only
+        checks that the gradient is calculated without an error."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            MottonenStatePreparation(state_vector, wires=range(1))
+            return qml.expval(qml.PauliZ(0))
+
+        qml.grad(circuit)(state_vector)
 
 
 class TestArbitraryStatePreparation:
@@ -421,7 +499,7 @@ class TestArbitraryStatePreparation:
 
     def test_GHZ_generation(self, qubit_device_3_wires, tol):
         """Test that the template prepares a GHZ state."""
-        GHZ_state = np.array([1/math.sqrt(2), 0, 0, 0, 0, 0, 0, 1/math.sqrt(2)])
+        GHZ_state = np.array([1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)])
 
         weights = np.zeros(14)
         weights[13] = math.pi / 2
@@ -438,7 +516,7 @@ class TestArbitraryStatePreparation:
 
     def test_even_superposition_generation(self, qubit_device_3_wires, tol):
         """Test that the template prepares a even superposition state."""
-        even_superposition_state = np.ones(8)/math.sqrt(8)
+        even_superposition_state = np.ones(8) / math.sqrt(8)
 
         weights = np.zeros(14)
         weights[1] = math.pi / 2
