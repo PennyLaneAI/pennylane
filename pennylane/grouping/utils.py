@@ -499,12 +499,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
 
-            if pauli_names[op_idx] == "PauliX":
-                pauli_mats[wire_idx] = PauliX.matrix
-            elif pauli_names[op_idx] == "PauliY":
-                pauli_mats[wire_idx] = PauliY.matrix
-            else:
-                pauli_mats[wire_idx] = PauliZ.matrix
+            pauli_mats[wires_idx] = getattr(qml, pauli_names[op_idx]).matrix
 
     return reduce(np.kron, pauli_mats)
 
