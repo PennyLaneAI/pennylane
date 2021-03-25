@@ -267,7 +267,6 @@ class Device(abc.ABC):
     @property
     def shot_vector(self):
         return self._shot_vector
-    
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
