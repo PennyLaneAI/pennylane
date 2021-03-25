@@ -471,7 +471,7 @@
   Example use:
 
   ```python
-  import qml.qnn
+  import pennylane.qnn
   
   dev = qml.device("default.qubit", wires=4)
 

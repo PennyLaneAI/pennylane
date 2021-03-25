@@ -71,7 +71,7 @@ class TorchLayer(Module):
     with all other arguments to be treated as internal weights. We can then convert to a Torch
     layer with:
 
-    >>> import qml.qnn
+    >>> import pennylane.qnn
     >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
     >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
 
@@ -124,7 +124,7 @@ class TorchLayer(Module):
 
             import numpy as np
             import pennylane as qml
-            import qml.qnn
+            import pennylane.qnn
             import torch
             import sklearn.datasets
 

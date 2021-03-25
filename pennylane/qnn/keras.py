@@ -75,7 +75,7 @@ class KerasLayer(Layer):
     with all other arguments to be treated as internal weights. We can then convert to a Keras
     Layer_ with:
 
-    >>> import qml.qnn
+    >>> import pennylane.qnn
     >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
     >>> qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
 
@@ -136,7 +136,7 @@ class KerasLayer(Layer):
         .. code-block:: python
 
             import pennylane as qml
-            import qml.qnn
+            import pennylane.qnn
             import tensorflow as tf
             import sklearn.datasets
 
