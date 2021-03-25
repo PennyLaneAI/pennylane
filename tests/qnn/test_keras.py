@@ -96,19 +96,6 @@ class TestKerasLayer:
     """Unit tests for the pennylane.qnn.keras.KerasLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_str(self):
-        """Test the string method"""
-        dev = qml.device("default.qubit", wires=1)
-        weight_shapes = {"w1": (3, 3), "w2": 1}
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(inputs, w1, w2):
-            return qml.expval(qml.PauliZ(0))
-
-        layer = KerasLayer(circuit, weight_shapes, 1)
-        assert layer.__str__() == "<Quantum Keras Layer: func=circuit>"
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_bad_tf_version(self, get_circuit, output_dim, monkeypatch):
         """Test if an ImportError is raised when instantiated with an incorrect version of
         TensorFlow"""
