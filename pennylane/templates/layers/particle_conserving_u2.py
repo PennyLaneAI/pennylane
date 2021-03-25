@@ -139,7 +139,7 @@ class ParticleConservingU2(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
-    
+
     def __init__(self, weights, wires, init_state=None, do_queue=True):
 
         if len(wires) < 2:

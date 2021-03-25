@@ -131,7 +131,7 @@ class SimplifiedTwoDesign(Operation):
 
             # initial rotations
             for i in range(len(self.wires)):
-                qml.RY(self.parameters[0][i], self.wires[i])
+                qml.RY(self.parameters[0][i], wires=self.wires[i])
 
             for layer in range(self.n_layers):
 
@@ -163,5 +163,7 @@ class SimplifiedTwoDesign(Operation):
                   list[tuple[int]]: list of shapes
         """
 
-        shapes = [(n_layers, n_wires), (n_layers, n_wires-1, 2)]
-        return shapes
+        if n_wires == 1:
+            return [(n_wires,), (n_layers,)]
+
+        return [(n_wires,), (n_layers, n_wires-1, 2)]

@@ -28,7 +28,6 @@ from pennylane.templates.layers import (
     ParticleConservingU2,
     ParticleConservingU1,
 )
-from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 from pennylane.wires import Wires
 from pennylane.numpy import tensor

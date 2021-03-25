@@ -170,7 +170,7 @@ class RandomLayers(Operation):
 
         .. code-block:: python
 
-            shape = RandomLayers.shape(n_layers=2, n_wires=2)
+            shape = RandomLayers.shape(n_layers=2, n_rotations=3)
             weights = np.random.random(size=shape)
     """
 
@@ -178,11 +178,9 @@ class RandomLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, ratio_imprim=0.3, imprimitive=qml.CNOT, rotations=None, seed=42, do_queue=True):
+    def __init__(self, weights, wires, ratio_imprim=0.3, imprimitive=None, rotations=None, seed=42, do_queue=True):
 
-        if seed is not None:
-            np.random.seed(seed)
-
+        self.seed = seed
         self.rotations = rotations or [qml.RX, qml.RY, qml.RZ]
 
         shape = qml.math.shape(weights)
@@ -190,12 +188,15 @@ class RandomLayers(Operation):
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self.n_layers = shape[0]
-        self.imprimitive = imprimitive
+        self.imprimitive = imprimitive or qml.CNOT
         self.ratio_imprimitive = ratio_imprim
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
     def expand(self):
+
+        if self.seed is not None:
+            np.random.seed(self.seed)
 
         shape = qml.math.shape(self.parameters[0])
 
@@ -205,16 +206,15 @@ class RandomLayers(Operation):
 
                 i = 0
                 while i < shape[0]:
-                    if np.random.random() > self.ratio_imprim:
-                        # Apply a random rotation gate to a random wire
+                    if np.random.random() > self.ratio_imprimitive:
+                        # apply a random rotation gate to a random wire
                         gate = np.random.choice(self.rotations)
                         rnd_wire = self.wires.select_random(1)
-
-                        gate(self.parameters[0][i], wires=rnd_wire)
-
+                        gate(self.parameters[0][l, i], wires=rnd_wire)
                         i += 1
+
                     else:
-                        # Apply the imprimitive to two random wires
+                        # apply the entangler to two random wires
                         if len(self.wires) > 1:
                             rnd_wires = self.wires.select_random(2)
                             self.imprimitive(wires=rnd_wires)

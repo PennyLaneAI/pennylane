@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-class Interferometer2(Operation):
+class Interferometer(Operation):
     r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by

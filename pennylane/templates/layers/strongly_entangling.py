@@ -68,7 +68,7 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=qml.CNOT, do_queue=True):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True):
 
         shape = qml.math.shape(weights)
         self.n_layers = shape[0]
@@ -91,7 +91,7 @@ class StronglyEntanglingLayers(Operation):
             else:
                 self.ranges = [0] * self.n_layers
 
-        self.imprimitive = imprimitive
+        self.imprimitive = imprimitive or qml.CNOT
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
@@ -102,7 +102,7 @@ class StronglyEntanglingLayers(Operation):
             for l in range(self.n_layers):
 
                 for i in range(len(self.wires)):
-                    qml.Rot(self.parameters[0][l, i], self.wires[i])
+                    qml.Rot(self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], self.parameters[0][l, i, 2], wires=self.wires[i])
 
                 if len(self.wires) > 1:
                     for i in range(len(self.wires)):
