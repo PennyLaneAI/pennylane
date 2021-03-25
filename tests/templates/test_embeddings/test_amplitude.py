@@ -262,7 +262,7 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
 
-        features = [1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0]
+        features = [1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0]
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -280,7 +280,7 @@ class TestInterfaces:
     def test_autograd(self, tol):
         """Tests autograd tensors."""
 
-        features = pnp.array([1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0], requires_grad=True)
+        features = pnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -297,7 +297,7 @@ class TestInterfaces:
 
         import jax.numpy as jnp
 
-        features = jnp.array([1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0])
+        features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -314,7 +314,7 @@ class TestInterfaces:
 
         import tensorflow as tf
 
-        features = tf.Variable([1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0])
+        features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -331,7 +331,7 @@ class TestInterfaces:
 
         import torch
 
-        features = torch.tensor([1/2, 0, 1/2, 0, 1/2, 1/2, 0, 0], requires_grad=True)
+        features = torch.tensor([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
