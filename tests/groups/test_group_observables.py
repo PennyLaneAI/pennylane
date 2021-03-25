@@ -17,8 +17,8 @@ Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``grouping
 import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.grouping.utils import are_identical_pauli_words
-from pennylane.grouping.group_observables import PauliGroupingStrategy, group_observables
+from pennylane.groups.pauli_utils import are_identical_pauli_words
+from pennylane.groups.group_observables import PauliGroupingStrategy, group_observables
 
 
 class TestPauliGroupingStrategy:
@@ -291,7 +291,7 @@ class TestGroupObservables:
 
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
-         wire map correctly."""
+        wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")

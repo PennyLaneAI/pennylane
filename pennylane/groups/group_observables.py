@@ -16,13 +16,9 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 """
 
 from pennylane.wires import Wires
-from pennylane.grouping.utils import (
-    observables_to_binary_matrix,
-    binary_to_pauli,
-    are_identical_pauli_words,
-    qwc_complement_adj_matrix,
-)
-from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
+from pennylane.groups.grouping_utils import observables_to_binary_matrix, qwc_complement_adj_matrix
+from pennylane.groups.pauli_utils import binary_to_pauli, are_identical_pauli_words
+from pennylane.groups.graph_colouring import largest_first, recursive_largest_first
 import numpy as np
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])

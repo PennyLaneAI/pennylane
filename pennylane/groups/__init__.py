@@ -25,7 +25,14 @@ from .transformations import (
     diagonalize_qwc_pauli_words,
     diagonalize_qwc_groupings,
 )
-from .utils import (
+
+from .grouping_utils import (
+    is_qwc,
+    observables_to_binary_matrix,
+    qwc_complement_adj_matrix,
+)
+
+from .pauli_utils import (
     is_pauli_word,
     are_identical_pauli_words,
     pauli_to_binary,
@@ -33,10 +40,7 @@ from .utils import (
     pauli_word_to_string,
     string_to_pauli_word,
     pauli_word_to_matrix,
-    are_commuting,
-    is_qwc,
-    observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
+    is_commuting
 )
 
-from .pauli_group import pauli_group, pauli_mult, pauli_mult_with_phase
+from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase

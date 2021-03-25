@@ -16,8 +16,8 @@ The main function for measurement reduction, ``optimize_measurements`` returns t
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
-from pennylane.grouping.group_observables import group_observables
-from pennylane.grouping.transformations import diagonalize_qwc_groupings
+from pennylane.groups.group_observables import group_observables
+from pennylane.groups.transformations import diagonalize_qwc_groupings
 
 
 def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="rlf"):

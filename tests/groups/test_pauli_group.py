@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pauli_group`  functions in ``grouping/pauli_group.py``.
+Unit tests for the :mod:`pauli_group`  functions in ``groups/pauli_group.py``.
 """
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 
 import numpy as np
 
-from pennylane.grouping.pauli_group import pauli_group, pauli_mult, pauli_mult_with_phase
+from pennylane.groups.pauli import pauli_group, pauli_mult, pauli_mult_with_phase
 
 
 class TestPauliGroup:
@@ -29,7 +29,8 @@ class TestPauliGroup:
         """Test that the Pauli group is constructed correctly given the wire map."""
 
         for n_qubits in range(1, 5):
-            assert len(pauli_group(n_qubits)) == 4 ** n_qubits
+            pg = list(pauli_group(n_qubits))
+            assert len(pg) == 4 ** n_qubits
 
     def test_pauli_group_invalid_input(self):
         """Test that the Pauli group is constructed correctly given the wire map."""

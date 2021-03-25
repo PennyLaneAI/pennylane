@@ -12,25 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`grouping` utility functions in ``grouping/utils.py``.
+Unit tests for the :mod:`grouping` utility functions in ``groups/pauli_utils.py``.
 """
 import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
 
-from pennylane.grouping.utils import (
+from pennylane.groups.pauli_utils import (
     is_pauli_word,
     are_identical_pauli_words,
-    are_commuting,
+    is_commuting,
     pauli_to_binary,
     binary_to_pauli,
     pauli_word_to_matrix,
     pauli_word_to_string,
     string_to_pauli_word,
-    is_qwc,
-    observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
 )
 
 
@@ -42,7 +39,7 @@ non_pauli_words = [
 ]
 
 
-class TestGroupingUtils:
+class TestPauliUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
     ops_to_vecs_explicit_wires = [
@@ -144,74 +141,6 @@ class TestGroupingUtils:
 
         assert pytest.raises(ValueError, binary_to_pauli, not_binary_symplectic)
 
-    def test_observables_to_binary_matrix(self):
-        """Test conversion of list of Pauli word operators to representation as a binary matrix."""
-
-        observables = [Identity(1), PauliX(1), PauliZ(0) @ PauliZ(1)]
-
-        binary_observables = np.array(
-            [[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
-        ).T
-
-        assert (observables_to_binary_matrix(observables) == binary_observables).all()
-
-    def test_observables_to_binary_matrix_n_qubits_arg(self):
-        """Tests if ValueError is raised when specified n_qubits is not large enough to support
-        the number of distinct wire labels in input observables."""
-
-        observables = [Identity(1) @ PauliZ("a"), PauliX(1), PauliZ(0) @ PauliZ(2)]
-        n_qubits_invalid = 3
-
-        assert pytest.raises(
-            ValueError, observables_to_binary_matrix, observables, n_qubits_invalid
-        )
-
-    def test_is_qwc(self):
-        """Determining if two Pauli words are qubit-wise commuting."""
-
-        n_qubits = 3
-        wire_map = {0: 0, "a": 1, "b": 2}
-        p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
-        p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
-        p3_vec = pauli_to_binary(PauliX(0) @ PauliZ("a") @ Identity("b"), wire_map=wire_map)
-        identity = pauli_to_binary(Identity("a") @ Identity(0), wire_map=wire_map)
-
-        assert is_qwc(p1_vec, p2_vec)
-        assert not is_qwc(p1_vec, p3_vec)
-        assert is_qwc(p2_vec, p3_vec)
-        assert (
-            is_qwc(p1_vec, identity)
-            == is_qwc(p2_vec, identity)
-            == is_qwc(p3_vec, identity)
-            == is_qwc(identity, identity)
-            == True
-        )
-
-    def test_is_qwc_not_equal_lengths(self):
-        """Tests ValueError is raised when input Pauli vectors are not of equal length."""
-
-        pauli_vec_1 = [0, 1, 0, 1]
-        pauli_vec_2 = [1, 1, 0, 1, 0, 1]
-
-        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
-
-    def test_is_qwc_not_even_lengths(self):
-        """Tests ValueError is raised when input Pauli vectors are not of even length."""
-
-        pauli_vec_1 = [1, 0, 1]
-        pauli_vec_2 = [1, 1, 1]
-
-        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
-
-    def test_is_qwc_not_binary_vectors(self):
-        """Tests ValueError is raised when input Pauli vectors do not have binary
-        components."""
-
-        pauli_vec_1 = [1, 3.2, 1, 1 + 2j]
-        pauli_vec_2 = [1, 0, 0, 0]
-
-        assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
-
     def test_is_pauli_word(self):
         """Test for determining whether input ``Observable`` instance is a Pauli word."""
 
@@ -260,44 +189,6 @@ class TestGroupingUtils:
 
         with pytest.raises(TypeError):
             are_identical_pauli_words(non_pauli_word, non_pauli_word)
-
-    def test_qwc_complement_adj_matrix(self):
-        """Tests that the ``qwc_complement_adj_matrix`` function returns the correct
-        adjacency matrix."""
-        binary_observables = np.array(
-            [
-                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0],
-                [0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
-                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-            ]
-        )
-        adj = qwc_complement_adj_matrix(binary_observables)
-
-        expected = np.array([[0.0, 1.0, 1.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-
-        assert np.all(adj == expected)
-
-        binary_obs_list = list(binary_observables)
-        adj = qwc_complement_adj_matrix(binary_obs_list)
-        assert np.all(adj == expected)
-
-        binary_obs_tuple = tuple(binary_observables)
-        adj = qwc_complement_adj_matrix(binary_obs_tuple)
-        assert np.all(adj == expected)
-
-    def test_qwc_complement_adj_matrix_exception(self):
-        """Tests that the ``qwc_complement_adj_matrix`` function raises an exception if
-        the matrix is not binary."""
-        not_binary_observables = np.array(
-            [
-                [1.1, 0.5, 1.0, 0.0, 0.0, 1.0],
-                [0.0, 1.3, 1.0, 1.0, 0.0, 1.0],
-                [2.2, 0.0, 0.0, 1.0, 0.0, 0.0],
-            ]
-        )
-
-        with pytest.raises(ValueError, match="Expected a binary array, instead got"):
-            qwc_complement_adj_matrix(not_binary_observables)
 
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_string",
@@ -419,7 +310,7 @@ class TestGroupingUtils:
             ),
         ],
     )
-    def test_are_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
         """Test that Pauli words are correctly converted into strings."""
-        do_they_commute = are_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert do_they_commute == commute_status
