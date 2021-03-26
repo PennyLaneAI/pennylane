@@ -2519,7 +2519,6 @@ class Carry(Operation):
     * Number of wires: 4
     * Number of parameters: 0
     TODO consider gradient
-    * Gradient recipe: TODO
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
@@ -2553,6 +2552,16 @@ class Carry(Operation):
     
     def adjoint(self, do_queue=False):
         return Carry(wires=self.wires,do_queue=do_queue)
+    
+    def expand(self):
+        tape = qml.tape.QuantumTape(do_queue=False)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Toffoli(wires = self.wires[1:])
+            qml.CNOT(wires=self.wires[1:3])
+            qml.Toffoli(wires=[self.wires[0],self.wires[2],self.wires[3]])
+
+        return tape
 
 class Sum(Operation):
     r"""Sum()
@@ -2590,6 +2599,17 @@ class Sum(Operation):
     
     def adjoint(self, do_queue=False):
         return Sum(wires=self.wires,do_queue=do_queue)
+
+    def expand(self):
+        
+        tape = qml.tape.QuantumTape(do_queue=False)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CNOT(wires=self.wires[1:3])
+            qml.CNOT(wires=[self.wires[0],self.wires[2]])
+            
+
+        return tape
 
 
 ops = {
