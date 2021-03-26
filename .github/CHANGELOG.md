@@ -17,9 +17,11 @@
       qml.Sum(wires=range(3))
       return qml.probs(wires=range(4))
 
-  result = int(circuit())
-  print("input: ", binary)
-  print("output:",format(result,"04b"))
+  probs = circuit()
+  bitstrings = tuple(itertools.product([0, 1], repeat=wires))
+  indx = np.argwhere(probs == 1).flatten()[0]
+  output = bitstrings[indx]
+  print(output)
   ```
 
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
