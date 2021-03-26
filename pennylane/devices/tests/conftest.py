@@ -223,6 +223,9 @@ def pytest_generate_tests(metafunc):
             # translate command line string to None if necessary
             device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
 
+        # store user defined device kwargs
+        device_kwargs.update(opt.device_kwargs)
+
         list_of_device_kwargs.append(device_kwargs)
 
     # define the device_kwargs parametrization:
