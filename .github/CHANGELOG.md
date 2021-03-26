@@ -9,12 +9,10 @@
 
   ```python
   dev = qml.device('default.qubit', wires=4)
-  input = np.zeros(16)
-  input[5] = 1
 
   @qml.qnode(dev)
   def circuit():
-      qml.templates.state_preparations.MottonenStatePreparation(input,wires=range(4))
+      qml.BasisState([0, 1, 1, 0], wires=range(4))
       qml.Carry(wires=range(4))
       qml.Sum(wires=range(3))
       return qml.probs(wires=range(4))
