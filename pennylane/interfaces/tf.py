@@ -138,6 +138,13 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
+        # The following dictionary caches the Jacobian and Hessian matrices,
+        # so that they can be re-used for different vjp/vhp computations
+        # within the same backpropagation call.
+        # This dictionary is tied to an instance of the inner function jacobian_product
+        # called within tf_tape.gradient or tf_tape.jacobian,
+        # via closure. Once tf_tape.gradient/ jacobian has returned, the jacobian_product instance
+        # will no longer be in scope and the memory will be freed.
         saved_grad_matrices = {}
 
         def _evaluate_grad_matrix(grad_matrix_fn):
@@ -158,7 +165,6 @@ class TFInterface(AnnotatedQueue):
               functions will result in multiple backward passes.
 
             Args:
-                p (Sequence): quantum tape parameter values use to evaluate the gradient matrix
                 grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
                     tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
 
