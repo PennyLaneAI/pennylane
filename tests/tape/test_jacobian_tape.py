@@ -606,7 +606,7 @@ class TestHessian:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0,1])
+            qml.probs(wires=[0, 1])
 
         # by default all parameters are assumed to be trainable
         with pytest.raises(
