@@ -91,6 +91,7 @@ class JacobianTape(QuantumTape):
     def __init__(self, name=None, do_queue=True):
         super().__init__(name=name, do_queue=do_queue)
         self.jacobian_options = {}
+        self.hessian_options = {}
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.

@@ -3,6 +3,32 @@
 <h3>New features since last release</h3>
 
 * Computing second derivatives and Hessians of QNodes is now supported when
+  using the Autograd interface.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
+  >>> hessian_fn(x)
+  [[0.2248451 0.7651474]
+   [0.7651474 0.2248451]]
+  ```
+
+* Computing second derivatives and Hessians of QNodes is now supported when
   using the PyTorch interface.
   [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129/files)
 
