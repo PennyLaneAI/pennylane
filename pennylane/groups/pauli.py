@@ -21,6 +21,7 @@ import numpy as np
 from pennylane import Identity
 from pennylane.groups.pauli_utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
+
 def _pauli_group_generator(n_qubits, wire_map=None):
     """Generator function for the Pauli group.
 
