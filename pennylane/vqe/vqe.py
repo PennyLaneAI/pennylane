@@ -436,7 +436,7 @@ class ExpvalCost:
 
         Setting ``optimize=True`` can be used to decrease the number of device executions. The
         observables composing the Hamiltonian can be separated into groups that are qubit-wise
-        commuting using the :mod:`~.groups` module. These groups can be executed together on a
+        commuting using the :mod:`~.pauli` module. These groups can be executed together on a
         *single* qnode, resulting in a lower device overhead:
 
         .. code-block:: python
@@ -504,7 +504,7 @@ class ExpvalCost:
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
-            obs_groupings, coeffs_groupings = qml.groups.group_observables(observables, coeffs)
+            obs_groupings, coeffs_groupings = qml.pauli.group_observables(observables, coeffs)
             d = device[0] if self._multiple_devices else device
             w = d.wires.tolist()
 

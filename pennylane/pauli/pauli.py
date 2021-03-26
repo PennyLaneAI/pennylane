@@ -19,7 +19,7 @@ group operation (multiplication).
 import numpy as np
 
 from pennylane import Identity
-from pennylane.groups.pauli_utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+from pennylane.pauli.pauli_utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
 
 def _pauli_group_generator(n_qubits, wire_map=None):
@@ -79,7 +79,7 @@ def pauli_group(n_qubits, wire_map=None):
 
     .. code-block:: python
 
-        from pennylane.groups.pauli import pauli_group
+        from pennylane.pauli import pauli_group
 
         n_qubits = 3
 
@@ -136,7 +136,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     This function enables multiplication of Pauli group elements at the level of
     Pauli words, rather than matrices. For example,
 
-    >>> from pennylane.groups.pauli import pauli_mult
+    >>> from pennylane.pauli import pauli_mult
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product = pauli_mult(pauli_1, pauli_2)
@@ -194,7 +194,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     phase accumulated as a result of the Pauli product rules
     :math:`\sigma_i \sigma_j = i \sigma_k`.
 
-    >>> from pennylane.groups.pauli import pauli_mult_with_phase
+    >>> from pennylane.pauli import pauli_mult_with_phase
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product, phase = pauli_mult_with_phase(pauli_1, pauli_2)

@@ -1,5 +1,5 @@
-qml.groups
-==========
+qml.pauli
+=========
 
 This subpackage defines functions and classes for generating and manipulating
 elements of the Pauli group. It also contains Pauli-word partitioning
@@ -21,14 +21,14 @@ the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
 :math:`4^n` (neglecting the four possible global phases that may arise from
 multiplication of its elements).
 
-.. currentmodule:: pennylane.groups
+.. currentmodule:: pennylane.pauli
 
-.. automodapi:: pennylane.groups.pauli
+.. automodapi:: pennylane.pauli.pauli
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
-.. automodapi:: pennylane.groups.pauli_utils
+.. automodapi:: pennylane.pauli.pauli_utils
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: reduce
@@ -66,28 +66,28 @@ the groups of observables:
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
 
-.. currentmodule:: pennylane.groups
+.. currentmodule:: pennylane.pauli
 
-.. automodapi:: pennylane.groups.graph_colouring
+.. automodapi:: pennylane.pauli.graph_colouring
     :no-inheritance-diagram:
     :no-inherited-members:
 
-.. automodapi:: pennylane.groups.group_observables
+.. automodapi:: pennylane.pauli.group_observables
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: binary_to_pauli, are_identical_pauli_words
 
-.. automodapi:: pennylane.groups.grouping_utils
+.. automodapi:: pennylane.pauli.grouping_utils
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: pauli_to_binary
 
-.. automodapi:: pennylane.groups.optimize_measurements
+.. automodapi:: pennylane.pauli.optimize_measurements
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: diagonalize_qwc_groupings
 
-.. automodapi:: pennylane.groups.transformations
+.. automodapi:: pennylane.pauli.transformations
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: are_identical_pauli_words, is_pauli_word, is_qwc, pauli_to_binary, template

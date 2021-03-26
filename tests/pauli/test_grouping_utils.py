@@ -17,8 +17,8 @@ Unit tests for the :mod:`grouping` utility functions in ``groups/grouping_utils.
 import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.groups.pauli_utils import pauli_to_binary
-from pennylane.groups.grouping_utils import (
+from pennylane.pauli.pauli_utils import pauli_to_binary
+from pennylane.pauli.grouping_utils import (
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,

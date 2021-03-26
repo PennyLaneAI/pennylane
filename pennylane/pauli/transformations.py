@@ -19,12 +19,12 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
 from pennylane.templates import template
-from pennylane.groups.pauli_utils import (
+from pennylane.pauli.pauli_utils import (
     pauli_to_binary,
     are_identical_pauli_words,
     is_pauli_word,
 )
-from pennylane.groups.grouping_utils import is_qwc
+from pennylane.pauli.grouping_utils import is_qwc
 import numpy as np
 
 

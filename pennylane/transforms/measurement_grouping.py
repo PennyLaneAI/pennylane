@@ -35,7 +35,7 @@ def measurement_grouping(tape, obs_list, coeffs_list):
 
     **Example**
     """
-    obs_groupings, coeffs_groupings = qml.groups.group_observables(obs_list, coeffs_list)
+    obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs_list, coeffs_list)
     tapes = []
 
     for obs in obs_groupings:

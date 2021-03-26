@@ -352,7 +352,11 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
     """
-    assert is_pauli_word(pauli_word)
+
+    if not is_pauli_word(pauli_word):
+        raise TypeError(
+            "Expected Pauli word observables, instead got {}".format(pauli_word)
+        )
 
     character_map = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
@@ -464,8 +468,10 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
     """
-
-    assert is_pauli_word(pauli_word)
+    if not is_pauli_word(pauli_word):
+        raise TypeError(
+            "Expected Pauli word observables, instead got {}".format(pauli_word)
+        )
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
@@ -520,8 +526,10 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
         TypeError: if either of the Pauli words is not valid.
     """
 
-    assert is_pauli_word(pauli_word_1)
-    assert is_pauli_word(pauli_word_2)
+    if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
+        raise TypeError(
+            "Expected Pauli word observables, instead got {} and {}".format(pauli_word_1, pauli_word_2)
+        )
 
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.

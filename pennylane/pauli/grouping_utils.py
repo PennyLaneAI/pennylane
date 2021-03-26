@@ -22,7 +22,7 @@ representation of Pauli words and applications, see:
 """
 
 from pennylane.wires import Wires
-from pennylane.groups.pauli_utils import pauli_to_binary
+from pennylane.pauli.pauli_utils import pauli_to_binary
 
 import numpy as np
 

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`grouping` utility functions in ``groups/pauli_utils.py``.
+Unit tests for the :mod:`grouping` utility functions in ``pauli/pauli_utils.py``.
 """
 import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
 
-from pennylane.groups.pauli_utils import (
+from pennylane.pauli.pauli_utils import (
     is_pauli_word,
     are_identical_pauli_words,
     is_commuting,

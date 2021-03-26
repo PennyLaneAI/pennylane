@@ -17,8 +17,8 @@ Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``grouping
 import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.groups.pauli_utils import are_identical_pauli_words
-from pennylane.groups.group_observables import PauliGroupingStrategy, group_observables
+from pennylane.pauli.pauli_utils import are_identical_pauli_words
+from pennylane.pauli.group_observables import PauliGroupingStrategy, group_observables
 
 
 class TestPauliGroupingStrategy:
