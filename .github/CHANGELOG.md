@@ -8,7 +8,7 @@
   A simple example (does not produce meaningful results):
 
   ```python
-  dev = qml.device('default.qubit',4,shots=1)
+  dev = qml.device('default.qubit', wires=4)
   input = np.zeros(16)
   input[5] = 1
 
