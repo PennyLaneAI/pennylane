@@ -21,9 +21,38 @@ import numpy as np
 from pennylane import Identity
 from pennylane.groups.pauli_utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
+def _pauli_group_generator(n_qubits, wire_map=None):
+    """Generator function for the Pauli group.
+
+    This function is called by ``pauli_group`` in order to actually generate the
+    group elements. They are split so that the outer function can handle input
+    validation, while this generator is responsible for performing the actual
+    operations.
+
+    Args:
+        n_qubits (int): The number of qubits for which to create the group.
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels
+            used in the Pauli word as keys, and unique integer labels as their values.
+            If no wire map is provided, wires will be labeled by integers between 0 and ``n_qubits``.
+
+    Returns:
+        .Operation: The next Pauli word in the group.
+    """
+
+    element_idx = 0
+
+    if not wire_map:
+        wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
+
+    while element_idx < 4 ** n_qubits:
+        binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
+        binary_vector = [float(b) for b in binary_string]
+        yield binary_to_pauli(binary_vector, wire_map=wire_map)
+        element_idx += 1
+
 
 def pauli_group(n_qubits, wire_map=None):
-    """Generator for iterating over the :math:`n`-qubit Pauli group.
+    """Iterating over the :math:`n`-qubit Pauli group.
 
     This function allows for iteration over elements of the Pauli group with no
     storage involved.  The :math:`n`-qubit Pauli group has size :math:`4^n`,
@@ -80,16 +109,7 @@ def pauli_group(n_qubits, wire_map=None):
     if n_qubits <= 0:
         raise ValueError("Number of qubits must be at least 1 to construct Pauli group.")
 
-    element_idx = 0
-
-    if not wire_map:
-        wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
-
-    while element_idx < 4 ** n_qubits:
-        binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
-        binary_vector = [float(b) for b in binary_string]
-        yield binary_to_pauli(binary_vector, wire_map=wire_map)
-        element_idx += 1
+    return _pauli_group_generator(n_qubits, wire_map=wire_map)
 
 
 def pauli_mult(pauli_1, pauli_2, wire_map=None):

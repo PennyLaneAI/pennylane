@@ -408,7 +408,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
 
     # String can only consist of I, X, Y, Z
-    if any([char not in ["I", "X", "Y", "Z"] for char in pauli_string]):
+    if any(char not in ["I", "X", "Y", "Z"] for char in pauli_string]):
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
