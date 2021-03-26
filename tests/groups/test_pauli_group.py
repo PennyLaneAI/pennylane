@@ -126,6 +126,8 @@ class TestPauliGroup:
         [
             (PauliX(0), Identity(0), {0: 0}, 1),
             (PauliZ(0), PauliY(0), {0: 0}, -1j),
+            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, 1),
+            (PauliZ(0), PauliY("b"), None, 1),
             (
                 PauliZ("a") @ PauliY("b"),
                 PauliX("a") @ PauliZ("b"),

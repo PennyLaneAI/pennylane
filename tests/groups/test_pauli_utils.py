@@ -208,6 +208,11 @@ class TestPauliUtils:
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
 
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_pauli_word_to_string_invalid_input(self, non_pauli_word):
+        with pytest.raises(TypeError):
+            pauli_word_to_string(non_pauli_word)
+
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [
@@ -222,6 +227,13 @@ class TestPauliUtils:
         """Test that Pauli words are correctly converted into strings."""
         obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
         assert obtained_pauli.compare(expected_pauli)
+
+    @pytest.mark.parametrize(
+        "non_pauli_string,error_type", [(Identity("a"), TypeError), ("XAYZ", ValueError)]
+    )
+    def test_string_to_pauli_word_invalid_input(self, non_pauli_string, error_type):
+        with pytest.raises(error_type):
+            string_to_pauli_word(non_pauli_string)
 
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",
@@ -290,6 +302,11 @@ class TestPauliUtils:
         obtained_matrix = pauli_word_to_matrix(pauli_word, wire_map)
         assert np.allclose(obtained_matrix, expected_matrix)
 
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_pauli_word_to_matrix_invalid_input(self, non_pauli_word):
+        with pytest.raises(TypeError):
+            pauli_word_to_matrix(non_pauli_word)
+
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,commute_status",
         [
@@ -315,3 +332,11 @@ class TestPauliUtils:
         """Test that Pauli words are correctly converted into strings."""
         do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert do_they_commute == commute_status
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2",
+        [(non_pauli_words[0], PauliX(0) @ PauliY(2)), (PauliX(0) @ PauliY(2), non_pauli_words[0])],
+    )
+    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
+        with pytest.raises(TypeError):
+            is_commuting(pauli_word_1, pauli_word_2)
