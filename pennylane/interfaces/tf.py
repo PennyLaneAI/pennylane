@@ -168,8 +168,8 @@ class TFInterface(AnnotatedQueue):
                 grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
                     tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
 
-                Returns:
-                    array[float]: the gradient matrix
+            Returns:
+                array[float]: the gradient matrix
             """
             if grad_matrix_fn in saved_grad_matrices:
                 return saved_grad_matrices[grad_matrix_fn]
