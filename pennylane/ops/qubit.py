@@ -1907,6 +1907,11 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        # Saving for the circuit drawer
+        self.control_wires = control_wires
+        self.U = U
+
         wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
