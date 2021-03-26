@@ -17,7 +17,7 @@
       qml.templates.state_preparations.MottonenStatePreparation(input,wires=range(4))
       qml.Carry(wires=range(4))
       qml.Sum(wires=range(3))
-      return qml.sample(qml.Hermitian(np.diag(range(16)),wires=range(4)))
+      return qml.probs(wires=range(4))
 
   result = int(circuit())
   print("input: ", binary)
