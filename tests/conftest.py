@@ -189,9 +189,6 @@ def tear_down_hermitian():
 def circuit_basic():
     """ A basic circuit with a single number input and single number output """
 
-    dev = qml.device('default.qubit', wires=1)
-    
-    @qml.qnode(dev)
     def circuit(x):
         qml.RY(x, wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -211,9 +208,6 @@ def circuit_basic():
 def circuit_prob_output():
     """ A circuit taking a single number input and returning the probability """
 
-    dev = qml.device('default.qubit', wires=1)
-
-    @qml.qnode(dev)
     def circuit(x):
         qml.RY(x, wires=0)
         return qml.probs(wires=[0])
@@ -233,9 +227,6 @@ def circuit_prob_output():
 def circuit_state_output():
     """A circuit taking a single number input and returning the state """
 
-    dev = qml.device('default.qubit', wires=1)
-
-    @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
         return qml.state()
@@ -249,9 +240,6 @@ def circuit_state_output():
 def circuit_vec_input():
     """ A circuit taking an array of length two as input and returning one number"""
 
-    dev = qml.device('default.qubit', wires=1)
-
-    @qml.qnode(dev)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
