@@ -75,7 +75,8 @@ the groups of observables:
 .. automodapi:: pennylane.pauli.group_observables
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: binary_to_pauli, are_identical_pauli_words
+    :skip: Wires, observables_to_binary_matrix, qwc_complement_adj_matrix, binary_to_pauli
+    :skip: are_identical_pauli_words, largest_first, recursive_largest_first
 
 .. automodapi:: pennylane.pauli.grouping_utils
     :no-inheritance-diagram:
@@ -85,7 +86,7 @@ the groups of observables:
 .. automodapi:: pennylane.pauli.optimize_measurements
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: diagonalize_qwc_groupings
+    :skip: diagonalize_qwc_groupings, group_observables
 
 .. automodapi:: pennylane.pauli.transformations
     :no-inheritance-diagram:

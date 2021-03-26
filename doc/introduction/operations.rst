@@ -172,7 +172,7 @@ observables found.
 
 For further details on measurement optimization, grouping observables through
 solving the minimum clique cover problem, and auxiliary functions, refer to the
-:doc:`/code/qml_groups` subpackage.
+:doc:`/code/qml_pauli` subpackage.
 
 
 .. _intro_ref_ops_cv:
