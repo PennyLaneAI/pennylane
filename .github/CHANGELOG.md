@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Adds Carry and Sum operations for basic arithmetic.
+* Adds `Carry` and `Sum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
   A simple example (does not produce meaningful results):
