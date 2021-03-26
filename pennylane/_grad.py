@@ -14,8 +14,10 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+import numpy as onp
+
+from pennylane import numpy as np
 from functools import partial
-import numpy as _np
 
 from autograd.core import make_vjp as _make_vjp
 from autograd.wrap_util import unary_to_nary
@@ -153,7 +155,7 @@ def jacobian(func, argnum=None):
         if isinstance(argnum, int):
             return _jacobian(func, argnum)
 
-        return lambda *args, **kwargs: _np.stack(
+        return lambda *args, **kwargs: np.stack(
             [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
         ).T
 
@@ -179,7 +181,7 @@ def jacobian(func, argnum=None):
         if len(argnum) == 1:
             return _jacobian(func, argnum[0])(*args, **kwargs)
 
-        return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+        return np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
 
     return _jacobian_function
 
@@ -209,8 +211,8 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
         )
 
-    x = _np.array(args[argnum])
-    gradient = _np.zeros_like(x, dtype="O")
+    x = onp.array(args[argnum])
+    gradient = onp.zeros_like(x, dtype="O")
 
     if x.ndim == 0 and idx is not None:
         raise ValueError(
@@ -219,10 +221,10 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         )
 
     if idx is None:
-        idx = list(_np.ndindex(*x.shape))
+        idx = list(onp.ndindex(*x.shape))
 
     for i in idx:
-        shift = _np.zeros_like(x)
+        shift = onp.zeros_like(x)
         shift[i] += 0.5 * delta
         gradient[i] = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
@@ -257,7 +259,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
         )
 
-    x = _np.array(args[argnum])
+    x = onp.array(args[argnum])
 
     if x.ndim == 0 and idx is not None:
         raise ValueError(
@@ -284,7 +286,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     # diagonal
     if i == j:
-        shift = _np.zeros_like(x)
+        shift = onp.zeros_like(x)
         shift[i] += delta
         deriv2 = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
@@ -294,10 +296,10 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     # off-diagonal
     if i != j:
-        shift_i = _np.zeros_like(x)
+        shift_i = onp.zeros_like(x)
         shift_i[i] += 0.5 * delta
 
-        shift_j = _np.zeros_like(x)
+        shift_j = onp.zeros_like(x)
         shift_j[j] += 0.5 * delta
 
         deriv2 = (

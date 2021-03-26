@@ -195,18 +195,82 @@ class AutogradInterface(AnnotatedQueue):
             gradient output vector, and computes the vector-Jacobian product
         """
 
-        def gradient_product(g):
-            # In autograd, the forward pass is always performed prior to the backwards
-            # pass, so we do not need to re-unwrap the parameters.
+        # The following dictionary caches the Jacobian and Hessian matrices,
+        # so that they can be re-used for different vjp/vhp computations
+        # within the same backpropagation call.
+        # This dictionary will exist in memory when autograd.grad is called,
+        # via closure. Once autograd.grad has returned, this dictionary
+        # will no longer be in scope and the memory will be freed.
+        saved_grad_matrices = {}
+
+        def _evaluate_grad_matrix(p, grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping.
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the ``saved_grad_matrices`` attribute, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because Autograd requests the vector-grad matrix product,
+              and *not* the full grad matrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+
+            Args:
+                p (Sequence): quantum tape parameter values use to evaluate the gradient matrix
+                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
+                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
+
+                Returns:
+                    array[float]: the gradient matrix
+            """
+            if grad_matrix_fn in saved_grad_matrices:
+                return saved_grad_matrices[grad_matrix_fn]
+
             self.set_parameters(self._all_params_unwrapped, trainable_only=False)
-            jac = self.jacobian(device, params=params, **self.jacobian_options)
+            grad_matrix = getattr(self, grad_matrix_fn)(device, params=p, **self.jacobian_options)
             self.set_parameters(self._all_parameter_values, trainable_only=False)
 
-            # only flatten g if all parameters are single values
+            saved_grad_matrices[grad_matrix_fn] = grad_matrix
+            return grad_matrix
+
+        def gradient_product(dy):
+            """Returns the vector-Jacobian product with given
+            parameter values p and output gradient dy"""
+
             if all(np.ndim(p) == 0 for p in params):
-                vjp = g.flatten() @ jac
-            else:
-                vjp = g @ jac
+                # only flatten dy if all parameters are single values
+                dy = dy.flatten()
+
+            @autograd.extend.primitive
+            def jacobian(p):
+                """Returns the Jacobian for parameters p"""
+                return _evaluate_grad_matrix(p, "jacobian")
+
+            def vhp(ans, p):
+                def hessian_product(ddy):
+                    """Returns the vector-Hessian product with given
+                    parameter values p, output gradient dy, and output
+                    second-order gradient ddy"""
+                    hessian = _evaluate_grad_matrix(p, "hessian")
+
+                    if dy.size > 1:
+                        vhp = dy @ ddy @ hessian @ dy.T
+                    else:
+                        vhp = np.squeeze(ddy @ hessian)
+
+                    return vhp
+
+                return hessian_product
+
+            # register vhp as the backward method of the jacobian function
+            autograd.extend.defvjp(jacobian, vhp, argnums=[0])
+
+            vjp = dy @ jacobian(params)
             return vjp
 
         return gradient_product
