@@ -1,13 +1,40 @@
 qml.groups
 ==========
 
-This subpackage defines functions and classes for Pauli-word partitioning
+This subpackage defines functions and classes for generating and manipulating
+elements of the Pauli group. It also contains Pauli-word partitioning
 functionality used in measurement optimization.
 
-A Pauli word is defined as :math:`P_J = \prod_{i=1}^{N}\sigma_i^{(J)}`, where
-:math:`\sigma_i^{(J)}` is one of the Pauli operators (:class:`~pennylane.PauliX`,
-:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ`) or identity
-(:class:`~pennylane.Identity`) acting on the :math:`i^{th}` qubit.
+Pauli group
+-----------
+
+The single-qubit Pauli group consists of the four single-qubit Pauli operations
+:class:`~pennylane.Identity`, :class:`~pennylane.PauliX`,
+:class:`~pennylane.PauliY` , and :class:`~pennylane.PauliZ`. The :math:`n`-qubit
+Pauli group is constructed by taking all possible :math:`N`-fold tensor products
+of these elements. Elements of the :math:`n`-qubit Pauli group are often known
+as Pauli words, and have the form :math:`P_J = \otimes_{i=1}^{n}\sigma_i^{(J)}`,
+where :math:`\sigma_i^{(J)}` is one of the Pauli operators
+(:class:`~pennylane.PauliX`, :class:`~pennylane.PauliY`,
+:class:`~pennylane.PauliZ`) or identity (:class:`~pennylane.Identity`) acting on
+the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
+:math:`4^n` (neglecting the four possible global phases that may arise from
+multiplication of its elements).
+
+.. currentmodule:: pennylane.groups
+
+.. automodapi:: pennylane.groups.pauli
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+
+.. automodapi:: pennylane.groups.pauli_utils
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: reduce
+
+Grouping observables
+--------------------
 
 Pauli words can be used for expressing a qubit :class:`~pennylane.Hamiltonian`.
 A qubit Hamiltonian has the form :math:`H_{q} = \sum_{J} C_J P_J` where
@@ -41,16 +68,26 @@ the groups of observables:
 
 .. currentmodule:: pennylane.groups
 
-
-.. automodapi:: pennylane.groups
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
 .. automodapi:: pennylane.groups.graph_colouring
     :no-inheritance-diagram:
     :no-inherited-members:
 
-.. automodapi:: pennylane.groups.pauli
+.. automodapi:: pennylane.groups.group_observables, pennylane.groups.graph_colouring
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+    :skip: binary_to_pauli, are_identical_pauli_words
+
+.. automodapi:: pennylane.groups.grouping_utils
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: pauli_to_binary
+
+.. automodapi:: pennylane.groups.optimize_measurements
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: diagonalize_qwc_groupings
+
+.. automodapi:: pennylane.groups.transformations
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: are_identical_pauli_words, is_pauli_word, is_qwc, pauli_to_binary, template
