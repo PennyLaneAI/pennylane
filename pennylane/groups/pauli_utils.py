@@ -333,7 +333,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
 
 def pauli_word_to_string(pauli_word, wire_map=None):
-    """Convert a Pauli operation from a tensor to a string.
+    """Convert a Pauli word from a tensor to a string.
 
     Given a Pauli in observable form, convert it into string of
     characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
@@ -383,7 +383,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
 
 def string_to_pauli_word(pauli_string, wire_map=None):
-    """Convert a string in terms of I, X, Y, and Z into a Pauli word
+    """Convert a string in terms of ``I``, ``X``, ``Y``, and ``Z`` into a Pauli word
     for the given wire map.
 
     Args:
@@ -447,7 +447,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
 
 def pauli_word_to_matrix(pauli_word, wire_map=None):
-    """Convert a Pauli operation from a tensor to its matrix representation.
+    """Convert a Pauli word from a tensor to its matrix representation.
 
     The matrix representation of a Pauli word has dimension :math:`2^n \times 2^n`,
     where :math:`n` is the number of qubits provided in ``wire_map``. For wires
@@ -482,13 +482,17 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     if n_qubits == 1:
         return pauli_word.matrix
 
-    # If there is more than one qubit, we must go through the wire map wire
-    # by wire and pick out the relevant matrices
-    pauli_mats = [np.eye(2) for x in range(n_qubits)]
-
     # There may be more than one qubit in the Pauli but still only
     # one of them with anything acting on it, so take that into account
     pauli_names = [pauli_word.name] if isinstance(pauli_word.name, str) else pauli_word.name
+
+    # Special case: the identity Pauli
+    if pauli_names == ['Identity']:
+        return np.eye(2 ** n_qubits)
+
+    # If there is more than one qubit, we must go through the wire map wire
+    # by wire and pick out the relevant matrices
+    pauli_mats = [np.eye(2) for x in range(n_qubits)]
 
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:

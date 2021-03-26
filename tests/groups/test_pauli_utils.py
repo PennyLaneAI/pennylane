@@ -233,6 +233,7 @@ class TestPauliUtils:
                 {0: 0, 1: 1},
                 np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
             ),
+            (Identity(0), {0: 0, 1: 1}, np.eye(4)),
             (PauliX(2), None, PauliX.matrix),
             (
                 PauliX(2),
