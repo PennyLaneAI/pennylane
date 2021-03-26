@@ -185,6 +185,21 @@ def tear_down_hermitian():
 #    * function computing expected gradient/ jacobian (None if not applicable)
 #    * function computing expected hessian (None if not applicable)
 
+class CircuitFixture():
+
+    def __init__(self):
+        self.circuit_func = None
+        self.res = None
+        self.jac = None
+        self.hess = None
+        
+        self.input_shape = None
+        self.output_shape = None
+
+        self.input = None
+
+    
+
 @pytest.fixture(scope="function")
 def circuit_basic():
     """ A basic circuit with a single number input and single number output """
@@ -202,7 +217,18 @@ def circuit_basic():
     def expected_hess(x):
         return -np.cos(x)
 
-    return circuit, expected_res, expected_grad, expected_hess
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = tuple()
+
+    circuit_data.input = 1.0
+
+    return circuit_data
 
 @pytest.fixture(scope="function")
 def circuit_prob_output():
@@ -221,7 +247,18 @@ def circuit_prob_output():
     def expected_hess(x):
         return np.array([-np.cos(x)/2.0, np.cos(x)/2.0])
 
-    return circuit, expected_res, expected_jacobian, expected_hess
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = (2, )
+
+    circuit_data.input = 1.0
+
+    return circuit_data
 
 @pytest.fixture(scope="function")
 def circuit_state_output():
@@ -234,7 +271,16 @@ def circuit_state_output():
     def expected_res(x):
         return np.array([np.cos(x/2.0), -1j * np.sin(x/2.0)])
 
-    return circuit, expected_res, None, None
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = (2, )
+
+    circuit_data.input = 1.0
+
+    return circuit_data
 
 @pytest.fixture(scope="function")
 def circuit_vec_input():
@@ -255,7 +301,18 @@ def circuit_vec_input():
         return np.array([[-np.cos(x[0]) * np.cos(x[1]),  np.sin(x[0]) * np.sin(x[1])],
                          [ np.sin(x[0]) * np.sin(x[1]), -np.cos(x[0]) * np.cos(x[1])]])
 
-    return circuit, expected_res, expected_grad, expected_hess
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = (2,)
+    circuit_data.output_shape = tuple()
+
+    circuit_data.input = [1.0, 2.0]
+
+    return circuit_data
 
 
     
