@@ -489,7 +489,7 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-        if any([m.return_type is State for m in self.measurements]):
+        if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
         if self.is_sampled:
@@ -663,7 +663,7 @@ class JacobianTape(QuantumTape):
         >>> tape.hessian(dev)
         array([], shape=(0, 0), dtype=float64)
         """
-        if any([m.return_type is State for m in self.measurements]):
+        if any(m.return_type is State for m in self.measurements):
             raise ValueError("The Hessian method does not support circuits that return the state")
 
         method = options.get("method", "analytic")
