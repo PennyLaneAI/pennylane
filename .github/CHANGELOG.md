@@ -2,6 +2,39 @@
 
 <h3>New features since last release</h3>
 
+* Computing second derivatives and Hessians of QNodes is now supported when
+  using the PyTorch interface.
+  [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129/files)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  from torch.autograd.functional import jacobian, hessian
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, interface='torch', diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = torch.tensor([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> circuit(x)
+  tensor([0.3876, 0.6124], dtype=torch.float64, grad_fn=<SqueezeBackward0>)
+  >>> jacobian(circuit, x)
+  tensor([[ 0.1751, -0.2456],
+          [-0.1751,  0.2456]], grad_fn=<ViewBackward>)
+  >>> hessian(circuit, x)
+  tensor([[[ 0.1124,  0.3826],
+           [ 0.3826,  0.1124]],
+          [[-0.1124, -0.3826],
+           [-0.3826, -0.1124]]])
+  ```
+
 - The TensorFlow interface now supports computing second derivatives and Hessians of hybrid quantum models.
   Second derivatives are supported on both hardware and simulators.
   [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
