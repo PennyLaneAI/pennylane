@@ -156,11 +156,11 @@ class TFInterface(AnnotatedQueue):
             * Avoids duplicating logic surrounding parameter unwrapping/wrapping
 
             * Takes advantage of closure, to cache computed gradient matrices via
-              the ``saved_grad_matrices`` attribute, to avoid gradient matrices being
+              the ``saved_grad_matrices`` dictionary, to avoid gradient matrices being
               computed multiple redundant times.
 
               This is particularly useful when differentiating vector-valued QNodes.
-              Because Autograd requests the vector-grad matrix product,
+              Because tensorflow requests the vector-grad matrix product,
               and *not* the full grad matrix, differentiating vector-valued
               functions will result in multiple backward passes.
 
