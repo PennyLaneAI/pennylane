@@ -61,6 +61,93 @@
            [-0.3826, -0.1124]]])
   ```
 
+- The TensorFlow interface now supports computing second derivatives and Hessians of hybrid quantum models.
+  Second derivatives are supported on both hardware and simulators.
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev, interface='tf', diff_method='parameter-shift')
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+  with tf.GradientTape() as tape1:
+      with tf.GradientTape() as tape2:
+          y = circuit(x)
+      grad = tape2.gradient(res, x)
+
+  hessian = tape1.jacobian(grad, x)
+  ```
+
+  To compute just the diagonal of the Hessian, the gradient of the
+  first derivatives can be taken:
+
+  ```python
+  hessian_diagonals = tape1.gradient(grad, x)
+  ```
+
+* Adds a new transform `qml.ctrl` that adds control wires to subroutines.
+  [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
+
+  Here's a simple usage example:
+
+  ```python
+  def my_ansatz(params):
+     qml.RX(params[0], wires=0)
+     qml.RZ(params[1], wires=1)
+
+  # Create a new method that applies `my_ansatz`
+  # controlled by the "2" wire.
+  my_anzats2 = qml.ctrl(my_ansatz, control=2)
+
+  @qml.qnode(...)
+  def circuit(params):
+      my_ansatz2(params)
+      return qml.state()
+  ```
+
+  The above `circuit` would be equivalent to:
+
+  ```python
+  @qml.qnode(...)
+  def circuit(params):
+      qml.CRX(params[0], wires=[2, 0])
+      qml.CRZ(params[1], wires=[2, 1])
+      return qml.state()
+  ```
+
+  The `qml.ctrl` transform is especially useful to repeatedly apply an
+  operation which is controlled by different qubits in each repetition. A famous example is Shor's algorithm.
+
+  ```python
+  def modmul(a, mod, wires):
+      # Some complex set of gates that implements modular multiplcation.
+      # qml.CNOT(...); qml.Toffoli(...); ... 
+ 
+  @qml.qnode(...)
+  def shor(a, mod, scratch_wires, qft_wires):
+      for i, wire in enumerate(qft_wires):
+          qml.Hadamard(wire)
+
+          # Create the controlled modular multiplication 
+          # subroutine based on the control wire.
+          cmodmul = qml.ctrl(modmul, control=wire)
+
+          # Execute the controlled modular multiplication.
+          cmodmul(a ** i, mod, scratch_wires)
+ 
+      qml.adjoint(qml.QFT)(qft_wires)
+      return qml.sample()
+
+  ```
+
+  In the future, devices will be able to exploit the sparsity of controlled operations to 
+  improve simulation performance. 
+
 * Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
   the shot rate is adaptively calculated using the variances of the parameter-shift gradient.
   [(#1139)](https://github.com/PennyLaneAI/pennylane/pull/1139)
@@ -397,6 +484,32 @@
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
 <h3>Improvements</h3>
+
+* Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
+  by reducing the number of redundant CNOT gates at the end of a circuit.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  
+  inputstate = [np.sqrt(0.2), np.sqrt(0.3), np.sqrt(0.4), np.sqrt(0.1)]
+  
+  @qml.qnode(dev)
+  def circuit():
+    mottonen.MottonenStatePreparation(inputstate,wires=[0, 1])
+    return qml.expval(qml.PauliZ(0))
+  ```
+  Previously returned:
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩ 
+  1: ──RY(1.35)──╰X──RY(0.422)──╰X──╰X──╰X──┤   
+  ```
+  Now returns:
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩ 
+  1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
+  ```
 
 - The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
   from `Operation`, and define the ansatz in their `expand()` method. This 

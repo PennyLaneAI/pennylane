@@ -94,6 +94,13 @@ class _TorchInterface(torch.autograd.Function):
               Because PyTorch requests the vector-GradMatrix product,
               and *not* the full GradMatrix, differentiating vector-valued
               functions will result in multiple backward passes.
+
+            Args:
+                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
+                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
+
+                Returns:
+                    array[float]: the gradient matrix
             """
             if grad_matrix_fn in ctx.saved_grad_matrices:
                 return ctx.saved_grad_matrices[grad_matrix_fn]

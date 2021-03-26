@@ -485,6 +485,18 @@ class TestKerasLayer:
         assert grad is not None
         spy.assert_not_called()
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_compute_output_shape(self, get_circuit, output_dim):
+        """Test that the compute_output_shape method returns the expected shape"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        inputs = tf.keras.Input(shape=(2,))
+        inputs_shape = inputs.shape
+
+        output_shape = layer.compute_output_shape(inputs_shape)
+        assert output_shape.as_list() == [None, 1]
+
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
