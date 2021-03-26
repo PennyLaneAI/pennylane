@@ -34,7 +34,7 @@ from torch.autograd.functional import hessian, jacobian
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
 
-    def test_import_error(self, mocker):
+    def test_import_error(self, dev_name, diff_method, mocker):
         """Test that an exception is caught on import error"""
         torch = pytest.importorskip("torch", minversion="1.3")
         mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
@@ -46,8 +46,8 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="torch")
+        dev = qml.device(dev_name, wires=2)
+        qn = QNode(func, dev, interface="torch", diff_method=diff_method)
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -138,7 +138,7 @@ class TestQNode:
         assert np.allclose(res1, res2.detach().numpy(), atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_drawing(self):
+    def test_drawing(self, dev_name, diff_method):
         """Test circuit drawing when using the torch interface"""
         torch = pytest.importorskip("torch", minversion="1.3")
 

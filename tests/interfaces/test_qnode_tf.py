@@ -34,7 +34,7 @@ from pennylane.tape import JacobianTape
 class TestQNode:
     """Tests the tensorflow interface used with a QNode."""
 
-    def test_import_error(self, mocker):
+    def test_import_error(self, dev_name, diff_method, mocker):
         """Test that an exception is caught on import error"""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
         mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
@@ -46,8 +46,8 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="tf", diff_method="parameter-shift")
+        dev = qml.device(dev_name, wires=2)
+        qn = QNode(func, dev, interface="tf", diff_method=diff_method)
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -159,7 +159,7 @@ class TestQNode:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_drawing(self):
+    def test_drawing(self, dev_name, diff_method):
         """Test circuit drawing when using the TF interface"""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
 
@@ -167,9 +167,9 @@ class TestQNode:
         y = tf.Variable([0.2, 0.3], dtype=tf.float64)
         z = tf.Variable(0.4, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(p1, p2=y, **kwargs):
             qml.RX(p1, wires=0)
             qml.RY(p2[0] * p2[1], wires=1)
