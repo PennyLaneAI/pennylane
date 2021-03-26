@@ -180,7 +180,7 @@ def tear_down_hermitian():
 ########################### Analytic Circuits ###########################
 # The following fixtures return qnodes and their analytic forms
 # Returns:
-#    * A QNode
+#    * A quantum function
 #    * function computing expected result
 #    * function computing expected gradient/ jacobian (None if not applicable)
 #    * function computing expected hessian (None if not applicable)
