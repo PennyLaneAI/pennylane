@@ -176,3 +176,98 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+########################### Analytic Circuits ###########################
+# The following fixtures return qnodes and their analytic forms
+# Returns:
+#    * A QNode
+#    * function computing expected result
+#    * function computing expected gradient/ jacobian (None if not applicable)
+#    * function computing expected hessian (None if not applicable)
+
+@pytest.fixture(scope="function")
+def circuit_basic():
+    """ A basic circuit with a single number input and single number output """
+
+    dev = qml.device('default.qubit', wires=1)
+    
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def expected_res(x):
+        return np.cos(x)
+
+    def expected_grad(x):
+        return -np.sin(x)
+
+    def expected_hess(x):
+        return -np.cos(x)
+
+    return circuit, expected_res, expected_grad, expected_hess
+
+@pytest.fixture(scope="function")
+def circuit_prob_output():
+    """ A circuit taking a single number input and returning the probability """
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.probs(wires=[0])
+
+    def expected_res(x):
+        return np.array([np.cos(x/2.0)**2, np.sin(x/2.0)**2])
+
+    def expected_jacobian(x):
+        return np.array([-np.sin(x)/2.0, np.sin(x)/2.0])
+
+    def expected_hess(x):
+        return np.array([-np.cos(x)/2.0, np.cos(x)/2.0])
+
+    return circuit, expected_res, expected_jacobian, expected_hess
+
+@pytest.fixture(scope="function")
+def circuit_state_output():
+    """A circuit taking a single number input and returning the state """
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.state()
+
+    def expected_res(x):
+        return np.array([np.cos(x/2.0), -1j * np.sin(x/2.0)])
+
+    return circuit, expected_res, None, None
+
+@pytest.fixture(scope="function")
+def circuit_vec_input():
+    """ A circuit taking an array of length two as input and returning one number"""
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x[0], wires=0)
+        qml.RX(x[1], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def expected_res(x):
+        return np.cos(x[0]) * np.cos(x[1])
+
+    def expected_grad(x):
+        return np.array([-np.sin(x[0]) * np.cos(x[1]), -np.cos(x[0]) * np.sin(x[1])])
+
+    def expected_hess(x):
+        return np.array([[-np.cos(x[0]) * np.cos(x[1]),  np.sin(x[0]) * np.sin(x[1])],
+                         [ np.sin(x[0]) * np.sin(x[1]), -np.cos(x[0]) * np.cos(x[1])]])
+
+    return circuit, expected_res, expected_grad, expected_hess
+
+
+    
