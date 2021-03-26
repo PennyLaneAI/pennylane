@@ -579,7 +579,7 @@ class TestHessian:
 
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
-    def test_vector_output(self):
+    def test_vector_output(self, tol):
         """Tests that a vector valued output tape has a hessian with the proper result. """
 
         dev = qml.device('default.qubit', wires=1)
@@ -593,7 +593,7 @@ class TestHessian:
 
         hess = tape.hessian(dev)
 
-        expected_hess = expected_hess = [
+        expected_hess = expected_hess = np.array([
             [
                 [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])],
                 [ 0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])]
@@ -602,9 +602,9 @@ class TestHessian:
                 [0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])],
                 [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])]
             ]
-       ]
+        ])
 
-       assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_no_trainable_params_hessian(self):
         """Test that an empty Hessian is returned when there are no trainable
