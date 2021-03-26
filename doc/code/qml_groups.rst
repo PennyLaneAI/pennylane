@@ -72,7 +72,7 @@ the groups of observables:
     :no-inheritance-diagram:
     :no-inherited-members:
 
-.. automodapi:: pennylane.groups.group_observables, pennylane.groups.graph_colouring
+.. automodapi:: pennylane.groups.group_observables
     :no-inheritance-diagram:
     :no-inherited-members:
     :skip: binary_to_pauli, are_identical_pauli_words
