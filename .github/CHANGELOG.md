@@ -2,6 +2,35 @@
 
 <h3>New features since last release</h3>
 
+- The TensorFlow interface now supports computing second derivatives and Hessians of hybrid quantum models.
+  Second derivatives are supported on both hardware and simulators.
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev, interface='tf', diff_method='parameter-shift')
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+  with tf.GradientTape() as tape1:
+      with tf.GradientTape() as tape2:
+          y = circuit(x)
+      grad = tape2.gradient(res, x)
+
+  hessian = tape1.jacobian(grad, x)
+  ```
+
+  To compute just the diagonal of the Hessian, the gradient of the
+  first derivatives can be taken:
+
+  ```python
+  hessian_diagonals = tape1.gradient(grad, x)
+  ```
+
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
   [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 

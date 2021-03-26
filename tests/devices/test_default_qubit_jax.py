@@ -161,6 +161,9 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
+            qml.CRX(0.0, wires=[0, 1])
+            qml.PhaseShift(0.0, wires=0)
+            qml.ControlledPhaseShift(0.0, wires=[1, 0])
             qml.CRot(1.0, 0.0, 0.0, wires=[0, 1])
             qml.CRY(0.0, wires=[0, 1])
             return qml.sample(qml.PauliZ(wires=0))
@@ -259,13 +262,38 @@ class TestPassthruIntegration:
 
         def cost(a):
             """A function of the device quantum state, as a function
-            of ijnput QNode parameters."""
+            of input QNode parameters."""
             res = jnp.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = jax.grad(cost)(a)
         expected = jnp.sin(a)
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+def test_CRot_gradient(theta, tol):
+    """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
+    gate is correct."""
+    dev = qml.device("default.qubit.jax", wires=2)
+    a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+    @qml.qnode(dev, diff_method="backprop", interface="jax")
+    def circuit(a, b, c):
+        qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+        qml.CRot(a, b, c, wires=[0, 1])
+        return qml.expval(qml.PauliX(0))
+
+    res = circuit(a, b, c)
+    expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    grad = jax.grad(circuit, argnums=(0, 1, 2))(a, b, c)
+    expected = np.array([[
+        0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+        0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+        0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+    ]])
+    assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
