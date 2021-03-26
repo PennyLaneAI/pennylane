@@ -178,7 +178,7 @@ def tear_down_hermitian():
     qml.Hermitian._eigs = {}
 
 ########################### Analytic Circuits ###########################
-# The following fixtures return qnodes and their analytic forms
+# The following fixtures return quantum functions and their analytic forms
 # Returns:
 #    * A quantum function
 #    * function computing expected result
