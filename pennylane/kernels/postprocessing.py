@@ -50,7 +50,7 @@ def displace_matrix(K):
     Returns:
         array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
     """
-    wmin = np.min(np.linalg.eigvals(K))
+    wmin = np.min(np.linalg.eigvalsh(K))
 
     if wmin < 0:
         return K - np.eye(K.shape[0]) * wmin
@@ -58,31 +58,49 @@ def displace_matrix(K):
     return K
 
 
-# The below actually does the same as thresholding
-# import cvxpy as cp
+def closest_psd_matrix(K, fix_diagonal=True, solver=None):
+    """Return the closest positive semidefinite matrix to the given kernel matrix.
 
-# def closest_psd_matrix(K, solver=cp.CVXOPT):
-#     """Return the closest positive semidefinite matrix to the given kernel matrix.
+    Args:
+        K (array[float]): Kernel matrix assumed to be symmetric.
+        fix_diagonal (bool): Whether to fix the diagonal to 1.
+        solver (str, optional): Solver to be used by cvxpy. Defaults to CVXOPT.
 
-#     Args:
-#         K (array[float]): Kernel matrix assumed to be symmetric
-#         solver (str, optional): Solver to be used by cvxpy. Defaults to CVXOPT.
+    Returns:
+        array[float]: closest positive semidefinite matrix in Frobenius norm.
 
-#     Returns:
-#         array[float]: closest positive semidefinite matrix in Frobenius norm.
-#     """
-#     wmin = np.min(np.linalg.eigvals(K))
+    Comments:
+        Requires cvxpy and the used solver (default CVXOPT) to be installed.
+    """
+    try:
+        import cvxpy as cp
+        if solver is None:
+            solver = cp.CVXOPT
+    except ImportError:
+        # TODO: Make these proper warnings
+        print("CVXPY is required for this post-processing method.", end="")
+        if fix_diagonal:
+            print(" As you want to fix the diagonal, task is impossible. Returning input...")
+            return K
+        else:
+            print(" As you don't want to fix the diagonal, using threshold_matrix instead...")
+            return threshold_matrix(K)
 
-#     if wmin >= 0:
-#         return K
+    if fix_diagonal:
+        constraint = [cp.diag(X) == 1.]
+    else:
+        wmin = np.min(np.linalg.eigvalsh(K))
+        if wmin >= 0:
+            return K
+        constraint = []
 
-#     X = cp.Variable(K.shape, PSD=True)
-#     objective_fn = cp.norm(X - K, "fro")
-#     problem = cp.Problem(cp.Minimize(objective_fn))
+    X = cp.Variable(K.shape, PSD=True)
+    objective_fn = cp.norm(X - K, "fro")
+    problem = cp.Problem(cp.Minimize(objective_fn), constraint)
 
-#     try:
-#         problem.solve(solver=solver)
-#     except Exception as e:
-#         problem.solve(verbose=True, solver=solver)
+    try:
+        problem.solve(solver=solver)
+    except Exception as e:
+        problem.solve(verbose=True, solver=solver)
 
-#     return X.value
+    return X.value
