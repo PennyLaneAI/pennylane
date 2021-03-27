@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
+from torch.autograd.functional import hessian, jacobian
 
 
 @pytest.mark.parametrize(
@@ -526,6 +527,149 @@ class TestQNode:
         assert res[0].shape == (10,)
         assert isinstance(res[0], torch.Tensor)
         assert isinstance(res[1], torch.Tensor)
+
+    def test_hessian(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        res.backward()
+        g = x.grad
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = hessian(circuit, x)
+        spy.assert_called_once()
+
+        a, b = x.detach().numpy()
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        ]
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_vector_valued(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.probs(wires=0)
+
+        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+        jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+
+        g = jac_fn(x)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = jacobian(jac_fn, x)
+        spy.assert_called_once()
+
+        a, b = x.detach().numpy()
+
+        expected_res = [
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b)
+        ]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)]
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)]
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)]
+            ]
+        ]
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_ragged(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a ragged QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=1)
+            qml.RX(x[1], wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=1)
+
+        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+        jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+
+        g = jac_fn(x)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = jacobian(jac_fn, x)
+        spy.assert_called_once()
+
+        a, b = x.detach().numpy()
+
+        expected_res = [
+            np.cos(a) * np.cos(b),
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b)
+        ]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+        expected_g = [
+            [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)],
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)]
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [
+                [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+                [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+            ],
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)]
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)]
+            ]
+        ]
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
 
 def qtransform(qnode, a, framework=torch):
