@@ -72,6 +72,10 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed.
     """
+    if not fix_diagonal:
+        wmin = np.min(np.linalg.eigvalsh(K))
+        if wmin >= 0:
+            return K
     try:
         import cvxpy as cp
         if solver is None:
@@ -86,15 +90,8 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
             print(" As you don't want to fix the diagonal, using threshold_matrix instead...")
             return threshold_matrix(K)
 
-    if fix_diagonal:
-        constraint = [cp.diag(X) == 1.]
-    else:
-        wmin = np.min(np.linalg.eigvalsh(K))
-        if wmin >= 0:
-            return K
-        constraint = []
-
     X = cp.Variable(K.shape, PSD=True)
+    constraint = [cp.diag(X) == 1.] if fix_diagonal else []
     objective_fn = cp.norm(X - K, "fro")
     problem = cp.Problem(cp.Minimize(objective_fn), constraint)
 
