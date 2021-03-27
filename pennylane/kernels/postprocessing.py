@@ -78,6 +78,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
             return K
     try:
         import cvxpy as cp
+
         if solver is None:
             solver = cp.CVXOPT
     except ImportError:
@@ -91,7 +92,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
             return threshold_matrix(K)
 
     X = cp.Variable(K.shape, PSD=True)
-    constraint = [cp.diag(X) == 1.] if fix_diagonal else []
+    constraint = [cp.diag(X) == 1.0] if fix_diagonal else []
     objective_fn = cp.norm(X - K, "fro")
     problem = cp.Problem(cp.Minimize(objective_fn), constraint)
 
@@ -101,3 +102,54 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
         problem.solve(verbose=True, solver=solver)
 
     return X.value
+
+
+def mitigate_depolarization(K, num_wires, method, use_entries=None):
+    """Estimate depolarizing noise rate(s) using on the diagonal entries of a kernel
+    matrix and mitigate the noise, assuming a global depolarizing noise model.
+
+    Args:
+        K (array[float]): Noisy kernel matrix.
+        num_wires (int): Number of wires/qubits of the quantum embedding kernel.
+        method ('single'|'average'|'split_channel'): Strategy for mitigation
+            'single': An alias for 'average' with len(use_entries)=1.
+            'average': Estimate a globale noise rate based on the average of the diagonal
+                entries in use_entries.
+            'split_channel': Estimate individual noise rates per embedding.
+        use_entries=None (array[int]): Diagonal entries to use if method in ['single', 'average'].
+            If None, defaults to [0] ('single') or range(len(K)) ('average').
+    Returns:
+        K_bar (array[float]): Mitigated kernel matrix.
+    Comments:
+        If method=='average', diagonal entries use_entries have to be measured on the QC.
+        If method=='split_channel', all diagonal entries are required.
+    """
+    dim = 2 ** num_wires
+
+    if method == "single":
+        if use_entries is None:
+            use_entries = (0,)
+        diagonal_element = K[use_entries[0], use_entries[0]]
+        noise_rate = (1 - diagonal_element) * dim / (dim - 1)
+        mitigated_matrix = (K - noise_rate / dim) / (1 - noise_rate)
+
+    elif method == "average":
+        if use_entries is None:
+            diagonal_elements = np.diag(K)
+        else:
+            diagonal_elements = np.diag(K)[use_entries]
+        noise_rates = (1 - diagonal_elements) * dim / (dim - 1)
+        mean_noise_rate = np.mean(noise_rates)
+        mitigated_matrix = (K - mean_noise_rate / dim) / (1 - mean_noise_rate)
+
+    elif method == "split_channel":
+        eff_noise_rates = np.clip((1 - np.diag(K)) * dim / (dim - 1), 0.0, 1.0)
+        noise_rates = 1 - np.sqrt(1 - eff_noise_rates)
+        inverse_noise = (
+            -np.outer(noise_rates, noise_rates)
+            + noise_rates.reshape((1, len(K)))
+            + noise_rates.reshape((len(K), 1))
+        )
+        mitigated_matrix = (K - inverse_noise / dim) / (1 - inverse_noise)
+
+    return mitigated_matrix
