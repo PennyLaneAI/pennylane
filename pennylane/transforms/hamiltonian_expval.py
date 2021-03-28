@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ def hamiltonian_expval(tape):
 
     Args:
         tape (.QuantumTape) the tape used when calculating the expectation value
-        of the Hamiltonian.
+            of the Hamiltonian.
 
     Returns:
-        tuple[list[.QuantumTape], func]: Returns a tuple containing a list of
+        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
-        tape results to compute the expectation value.
+        tape executions to compute the expectation value.
 
     **Example**
 
@@ -50,7 +50,7 @@ def hamiltonian_expval(tape):
     We can use the ``hamiltonian_expval`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
 
-    >>> tapes, fn = qml.tape.transforms.hamiltonian_expval(tape)
+    >>> tapes, fn = qml.transforms.hamiltonian_expval(tape)
 
     We can evaluate these tapes on a device:
 
