@@ -729,6 +729,36 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
 
+    @pytest.mark.parametrize(("H1", "H2", "queue"), add_queue)
+    def test_arithmetic_queue_addition(self, H1, H2, queue):
+        """Tests that addition between Hamiltonians and
+        Hamiltonians/Observables/Tensors is queued correctly"""
+
+        with qml.tape.QuantumTape() as tape:
+            Hamiltonian = H1 + H2
+
+        assert tape.queue == queue
+
+    @pytest.mark.parametrize(("H", "a", "queue"), mul_queue)
+    def test_arithemtic_queue_multiplication(self, H, a, queue):
+        """Tests that scalar multiplication between Hamiltonians and
+        Hamiltonians/Observables/Tensors is queued correctly"""
+
+        with qml.tape.QuantumTape() as tape:
+            Hamiltonian = a * H
+
+        assert tape.queue == queue
+
+    @pytest.mark.parametrize(("H1", "H2", "queue"), ten_queue)
+    def test_arithmetic_queue_tensor(self, H1, H2, queue):
+        """Tests that the tensor product between Hamiltonians and
+        Hamiltonians/Observables/Tensors is queued correctly"""
+
+        with qml.tape.QuantumTape() as tape:
+            Hamiltonian = H1 @ H2
+
+        assert tape.queue == queue
+
 
 class TestVQE:
     """Test the core functionality of the VQE module"""

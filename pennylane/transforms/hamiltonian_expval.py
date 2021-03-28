@@ -71,4 +71,4 @@ def hamiltonian_expval(tape):
         )
 
     hamiltonian.simplify()
-    return qml.transforms.measurement_grouping(tape, H.ops, H.coeffs)
+    return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
