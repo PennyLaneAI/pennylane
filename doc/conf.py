@@ -35,6 +35,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
+    'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.inheritance_diagram',
@@ -399,6 +400,14 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+doctest_global_setup = '''
+import pennylane as qml
+dev = qml.device('default.qubit', wires=5)
+from pennylane.operation import Tensor
+
+from numpy import array
+import numpy as np
+'''
 
 #============================================================
 
