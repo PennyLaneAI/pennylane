@@ -408,7 +408,18 @@ class TestRegularization:
         ],
     )
     def test_closest_psd_matrix(self, input, expected_output):
-        output = kern.closest_psd_matrix(input, feastol=1e-10)
+        try:
+            import cvxpy as cp
+            output = kern.closest_psd_matrix(input, feastol=1e-10)
+        except ModuleNotFoundError:
+            pytest.skip("cvxpy seems to not be installed on the system."
+                    "It is required for qml.kernels.closest_psd_matrix"
+                    " and can be installed via `pip install cvxpy`.")
+        except cp.error.SolverError:
+            pytest.skip("The cvxopt solver seems to not be installed on the system."
+                    "It is the default solver for qml.kernels.closest_psd_matrix"
+                    " and can be installed via `pip install cvxopt`.")
+
         assert np.allclose(output, expected_output, atol=1e-5)
 
 
