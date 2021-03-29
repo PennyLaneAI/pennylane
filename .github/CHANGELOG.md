@@ -601,7 +601,7 @@
   For example, we can iterate through the 3-qubit Pauli group like so:
 
   ```python
-  from pennylane.groups import pauli_group
+  from pennylane.pauli import pauli_group
 
   pauli_group_3_qubits = list(pauli_group(3))
   print(pauli_group_3_qubits)
@@ -613,7 +613,7 @@
   arbitrarily-labeled wires as well, by defining a wire map.
 
   ```python
-  from pennylane.groups import pauli_group, pauli_mult
+  from pennylane.pauli import pauli_group, pauli_mult
 
   wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
   pg = list(pauli_group(3, wire_map=wire_map))
@@ -632,7 +632,7 @@
   are included.
 
   ```python
-  from pennylane.groups import pauli_word_to_string, string_to_pauli_word
+  from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
   ```
 
   ```pycon
@@ -646,7 +646,7 @@
   also supported.
 
   ```python
-  from pennylane.groups import pauli_word_to_matrix
+  from pennylane.pauli import pauli_word_to_matrix
 
   wire_map = {'a' : 0, 'b' : 1}
   pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
@@ -734,7 +734,7 @@
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
-* The ``grouping`` module has been renamed to ``groups`` in
+* The ``grouping`` module has been renamed to ``pauli`` in
   [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159). There are
   no changes in the functionality or names of methods.
 
