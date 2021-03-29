@@ -158,20 +158,16 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
             for sigma in term.obs:
                 if sigma.name != "Identity":
                     if not any(
-                        [
-                            are_identical_pauli_words(sigma, existing_pauli)
-                            for existing_pauli in pauli_operators
-                        ]
+                        are_identical_pauli_words(sigma, existing_pauli)
+                        for existing_pauli in pauli_operators
                     ):
                         pauli_operators.append(sigma)
         elif isinstance(term, paulis_with_identity):
             sigma = term
             if sigma.name != "Identity":
                 if not any(
-                    [
-                        are_identical_pauli_words(sigma, existing_pauli)
-                        for existing_pauli in pauli_operators
-                    ]
+                    are_identical_pauli_words(sigma, existing_pauli)
+                    for existing_pauli in pauli_operators
                 ):
                     pauli_operators.append(sigma)
 
