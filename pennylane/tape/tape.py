@@ -15,10 +15,9 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import deque
+from collections import Counter, deque
 import contextlib
 import copy
-from collections import Counter
 from threading import RLock
 
 import numpy as np
