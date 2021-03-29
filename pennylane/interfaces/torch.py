@@ -76,6 +76,81 @@ class _TorchInterface(torch.autograd.Function):
         if hasattr(res, "numpy"):
             res = res.numpy()
 
+        ctx.saved_grad_matrices = {}
+
+        def _evaluate_grad_matrix(grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the ctx.saved_grad_matrices attribute, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because PyTorch requests the vector-GradMatrix product,
+              and *not* the full GradMatrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+
+            Args:
+                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
+                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
+
+                Returns:
+                    array[float]: the gradient matrix
+            """
+            if grad_matrix_fn in ctx.saved_grad_matrices:
+                return ctx.saved_grad_matrices[grad_matrix_fn]
+
+            tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
+            grad_matrix = getattr(tape, grad_matrix_fn)(
+                device, params=ctx.args, **tape.jacobian_options
+            )
+            tape.set_parameters(ctx.all_params, trainable_only=False)
+
+            grad_matrix = torch.as_tensor(torch.from_numpy(grad_matrix), dtype=tape.dtype)
+            ctx.saved_grad_matrices[grad_matrix_fn] = grad_matrix
+
+            return grad_matrix
+
+        class _Jacobian(torch.autograd.Function):
+            @staticmethod
+            def forward(ctx_, parent_ctx, *input_):
+                """Implements the forward pass QNode Jacobian evaluation"""
+                ctx_.dy = parent_ctx.dy
+                ctx_.save_for_backward(*input_)
+                jacobian = _evaluate_grad_matrix("jacobian")
+                return jacobian
+
+            @staticmethod
+            def backward(ctx_, ddy):  # pragma: no cover
+                """Implements the backward pass QNode vector-Hessian product"""
+                hessian = _evaluate_grad_matrix("hessian")
+
+                if torch.squeeze(ddy).ndim > 1:
+                    vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                else:
+                    vhp = ddy @ hessian
+
+                vhp = torch.unbind(vhp.view(-1))
+
+                grad_input = []
+
+                # match the type and device of the input tensors
+                for i, j in zip(vhp, ctx_.saved_tensors):
+                    res = torch.as_tensor(i, dtype=tape.dtype)
+                    if j.is_cuda:  # pragma: no cover
+                        cuda_device = j.get_device()
+                        res = torch.as_tensor(res, device=cuda_device)
+                    grad_input.append(res)
+
+                return (None,) + tuple(grad_input)
+
+        ctx.jacobian = _Jacobian
+
         # if any input tensor uses the GPU, the output should as well
         for i in input_:
             if isinstance(i, torch.Tensor):
@@ -94,30 +169,12 @@ class _TorchInterface(torch.autograd.Function):
         return torch.as_tensor(torch.from_numpy(res), dtype=tape.dtype)
 
     @staticmethod
-    def backward(ctx, grad_output):  # pragma: no cover
+    def backward(ctx, dy):  # pragma: no cover
         """Implements the backwards pass QNode vector-Jacobian product"""
-        tape = ctx.kwargs["tape"]
-        device = ctx.kwargs["device"]
-
-        tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
-        jacobian = tape.jacobian(device, params=ctx.args, **tape.jacobian_options)
-        tape.set_parameters(ctx.all_params, trainable_only=False)
-
-        jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype).to(grad_output)
-
-        vjp = grad_output.view(1, -1) @ jacobian
-        grad_input_list = torch.unbind(vjp.flatten())
-        grad_input = []
-
-        # match the type and device of the input tensors
-        for i, j in zip(grad_input_list, ctx.saved_tensors):
-            res = torch.as_tensor(i, dtype=tape.dtype)
-            if j.is_cuda:  # pragma: no cover
-                cuda_device = j.get_device()
-                res = torch.as_tensor(res, device=cuda_device)
-            grad_input.append(res)
-
-        return (None,) + tuple(grad_input)
+        ctx.dy = dy
+        vjp = dy.view(1, -1) @ ctx.jacobian.apply(ctx, *ctx.saved_tensors)
+        vjp = torch.unbind(vjp.view(-1))
+        return (None,) + tuple(vjp)
 
 
 class TorchInterface(AnnotatedQueue):
