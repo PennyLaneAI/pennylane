@@ -602,7 +602,6 @@
 
   ```python
   from pennylane.pauli import pauli_group
-
   pauli_group_3_qubits = list(pauli_group(3))
   print(pauli_group_3_qubits)
   ```
@@ -612,14 +611,10 @@
   `pauli_multi_with_phase` functions. This can be done on
   arbitrarily-labeled wires as well, by defining a wire map.
 
-  ```python
-  from pennylane.pauli import pauli_group, pauli_mult
-
-  wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-  pg = list(pauli_group(3, wire_map=wire_map))
-  ```
-
   ```pycon
+  >>> from pennylane.pauli import pauli_group, pauli_mult
+  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  >>> pg = list(pauli_group(3, wire_map=wire_map))
   >>> pg[3]
   PauliZ(wires=['b']) @ PauliZ(wires=['c'])
   >>> pg[55]
@@ -631,11 +626,8 @@
   Functions for conversion of Pauli observables to strings (and back),
   are included.
 
-  ```python
-  from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
-  ```
-
   ```pycon
+  >>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
   >>> pauli_word_to_string(pg[55], wire_map=wire_map)
   'YYZ'
   >>> string_to_pauli_word('ZXY', wire_map=wire_map)
@@ -646,13 +638,9 @@
   also supported.
 
   ```python
-  from pennylane.pauli import pauli_word_to_matrix
-
-  wire_map = {'a' : 0, 'b' : 1}
-  pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
-  ```
-
-  ```pycon
+  >>> from pennylane.pauli import pauli_word_to_matrix
+  >>> wire_map = {'a' : 0, 'b' : 1}
+  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
   >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
   array([[ 1.,  0.,  0.,  0.],
          [ 0., -1.,  0., -0.],
