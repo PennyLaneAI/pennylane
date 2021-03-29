@@ -58,19 +58,22 @@ def displace_matrix(K):
     return K
 
 
-def closest_psd_matrix(K, fix_diagonal=True, solver=None):
+def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
     """Return the closest positive semidefinite matrix to the given kernel matrix.
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.
         fix_diagonal (bool): Whether to fix the diagonal to 1.
         solver (str, optional): Solver to be used by cvxpy. Defaults to CVXOPT.
+        kwargs (kwarg dict): Passed to cvxpy.Problem.solve()
 
     Returns:
         array[float]: closest positive semidefinite matrix in Frobenius norm.
 
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed.
+        fix_diagonal=False typically leads to problems in the SDP/solving it.
+            Use `threshold_matrix()` instead.
     """
     if not fix_diagonal:
         wmin = np.min(np.linalg.eigvalsh(K))
@@ -97,14 +100,14 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None):
     problem = cp.Problem(cp.Minimize(objective_fn), constraint)
 
     try:
-        problem.solve(solver=solver)
+        problem.solve(solver=solver, **kwargs)
     except Exception as e:
-        problem.solve(verbose=True, solver=solver)
+        problem.solve(verbose=True, solver=solver, **kwargs)
 
     return X.value
 
 
-def mitigate_depolarization(K, num_wires, method, use_entries=None):
+def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     """Estimate depolarizing noise rate(s) using on the diagonal entries of a kernel
     matrix and mitigate the noise, assuming a global depolarizing noise model.
 

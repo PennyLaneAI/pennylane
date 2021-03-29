@@ -20,9 +20,15 @@ This subpackage defines functions that relate to quantum kernel methods.
 """
 from .embedding_kernel import EmbeddingKernel
 from .cost_functions import (
+    matrix_inner_product,
     kernel_polarization,
     kernel_target_alignment,
     kernel_matrix,
     square_kernel_matrix,
 )
-from .postprocessing import threshold_matrix, displace_matrix
+from .postprocessing import (
+    threshold_matrix,
+    displace_matrix,
+    closest_psd_matrix,
+    mitigate_depolarizing_noise,
+)
