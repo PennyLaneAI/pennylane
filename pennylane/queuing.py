@@ -18,6 +18,10 @@ import abc
 from collections import OrderedDict, deque
 
 
+class QueuingError(Exception):
+    """Exception that is raised when there is a queuing error"""
+
+
 class QueuingContext(abc.ABC):
     """Abstract base class for classes that exposes a queue for objects.
 
@@ -232,13 +236,13 @@ class AnnotatedQueue(QueuingContext):
 
     def _update_info(self, obj, **kwargs):
         if obj not in self._queue:
-            raise ValueError(f"Object {obj} not in the queue.")
+            raise QueuingError(f"Object {obj} not in the queue.")
 
         self._queue[obj].update(kwargs)
 
     def _get_info(self, obj):
         if obj not in self._queue:
-            raise ValueError(f"Object {obj} not in the queue.")
+            raise QueuingError(f"Object {obj} not in the queue.")
 
         return self._queue[obj]
 

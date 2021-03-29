@@ -596,6 +596,27 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
+* Two new utility methods are provided for working with quantum tapes.
+
+  - `qml.tape.get_tape()` gets the currently recording tape.
+
+  - `tape.stop_recording()` is a context manager that temporarily
+    stops the currently recording tape from recording additional
+    tapes or quantum operations.
+
+  For example:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape():
+  ...     qml.RX(0, wires=0)
+  ...     current_tape = qml.tape.get_tape()
+  ...     with current_tape.stop_recording():
+  ...         qml.RY(1.0, wires=1)
+  ...     qml.RZ(2, wires=1)
+  >>> current_tape.operations
+  [RX(0, wires=[0]), RZ(2, wires=[1])]
+  ```
+
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
