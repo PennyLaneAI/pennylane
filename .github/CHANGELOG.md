@@ -426,6 +426,7 @@
 - The embedding templates, as well as `BasicEntanglerLayers`, are now classes inheriting 
   from `Operation`, and define the ansatz in their `expand()` method. This 
   change does not affect the user interface.
+  [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
   
   For convenience, `BasicEntanglerLayers` has a method that returns the shape of the 
