@@ -18,13 +18,6 @@ functionality used in measurement optimization.
 
 from warnings import warn
 
-warn(
-    "The grouping module is deprecated and will be removed in the next release. "
-    "Please use the pauli module instead.",
-    DeprecationWarning,
-    2,
-)
-
 from . import graph_colouring
 from .group_observables import group_observables, PauliGroupingStrategy
 from .optimize_measurements import optimize_measurements
@@ -42,4 +35,11 @@ from .utils import (
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
+)
+
+warn(
+    "The grouping module is deprecated and will be removed in the next release. "
+    "Please use the pauli module instead.",
+    DeprecationWarning,
+    2,
 )
