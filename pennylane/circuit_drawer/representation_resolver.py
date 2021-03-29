@@ -135,6 +135,23 @@ class RepresentationResolver:
         return "{}{}".format(symbol, idx)
 
     @staticmethod
+    def _format_controlled_qubit_unitary(operation, symbol, cache):
+        """Format an operation that corresponds to a single matrix with controls.
+
+        Args:
+            operation (~.Operation): Operation that shall be formatted
+            symbol (str): The symbol that should be used to identify matrices
+            cache (List[numpy.ndarray]): The cache of already known matrices
+
+        Returns:
+            str: The formatted operation
+        """
+        mat = operation.U
+        idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+
+        return "{}{}".format(symbol, idx)
+
+    @staticmethod
     def _format_matrix_arguments(params, symbol, cache):
         """Format a sequence of matrix parameters.
 
@@ -348,6 +365,14 @@ class RepresentationResolver:
 
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(
+                op, "U", self.unitary_matrix_cache
+            )
+
+        elif base_name == "ControlledQubitUnitary":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+
+            representation = RepresentationResolver._format_controlled_qubit_unitary(
                 op, "U", self.unitary_matrix_cache
             )
 
