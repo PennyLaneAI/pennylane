@@ -138,34 +138,88 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
-        def grad(grad_output, **tfkwargs):
-            variables = tfkwargs.get("variables", None)
+        # The following dictionary caches the Jacobian and Hessian matrices,
+        # so that they can be re-used for different vjp/vhp computations
+        # within the same backpropagation call.
+        # This dictionary is tied to an instance of the inner function jacobian_product
+        # called within tf_tape.gradient or tf_tape.jacobian,
+        # via closure. Once tf_tape.gradient/ jacobian has returned, the jacobian_product instance
+        # will no longer be in scope and the memory will be freed.
+        saved_grad_matrices = {}
+
+        def _evaluate_grad_matrix(grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
+
+            This function serves two purposes:
+
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
+
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the ``saved_grad_matrices`` dictionary, to avoid gradient matrices being
+              computed multiple redundant times.
+
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because tensorflow requests the vector-grad matrix product,
+              and *not* the full grad matrix, differentiating vector-valued
+              functions will result in multiple backward passes.
+
+            Args:
+                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
+                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
+
+            Returns:
+                array[float]: the gradient matrix
+            """
+            if grad_matrix_fn in saved_grad_matrices:
+                return saved_grad_matrices[grad_matrix_fn]
 
             self.set_parameters(all_params_unwrapped, trainable_only=False)
-            jacobian = self.jacobian(input_kwargs["device"], params=args, **self.jacobian_options)
+            grad_matrix = getattr(self, grad_matrix_fn)(
+                input_kwargs["device"], params=args, **self.jacobian_options
+            )
             self.set_parameters(all_params, trainable_only=False)
 
-            jacobian = tf.constant(jacobian, dtype=self.dtype)
+            grad_matrix = tf.constant(grad_matrix, dtype=self.dtype)
+            saved_grad_matrices[grad_matrix_fn] = grad_matrix
 
-            # Reshape gradient output array as a 2D row-vector.
-            grad_output_row = tf.reshape(grad_output, [1, -1])
+            return grad_matrix
 
-            # Calculate the vector-Jacobian matrix product, and unstack the output.
-            grad_input = tf.matmul(grad_output_row, jacobian)
-            grad_input = tf.unstack(tf.reshape(grad_input, [-1]))
+        def jacobian_product(dy, **tfkwargs):
+            variables = tfkwargs.get("variables", None)
+            dy_row = tf.reshape(dy, [1, -1])
 
-            if variables is not None:
-                return grad_input, variables
+            @tf.custom_gradient
+            def jacobian(p):
+                def hessian_product(ddy, **tfkwargs):
+                    variables = tfkwargs.get("variables", None)
+                    hessian = _evaluate_grad_matrix("hessian")
 
-            return grad_input
+                    if self.output_dim == 1:
+                        hessian = tf.expand_dims(hessian, -1)
+
+                    vhp = tf.cond(
+                        tf.rank(hessian) > 2,
+                        lambda: dy_row @ ddy @ hessian @ tf.transpose(dy_row),
+                        lambda: ddy @ hessian,
+                    )
+
+                    vhp = tf.unstack(tf.reshape(vhp, [-1]))
+                    return (vhp, variables) if variables is not None else vhp
+
+                return _evaluate_grad_matrix("jacobian"), hessian_product
+
+            vjp = tf.matmul(dy_row, jacobian(params))
+            vjp = tf.unstack(tf.reshape(vjp, [-1]))
+            return (vjp, variables) if variables is not None else vjp
 
         if self.is_sampled:
-            return res, grad
+            return res, jacobian_product
 
         if res.dtype == np.dtype("object"):
             res = np.hstack(res)
 
-        return tf.convert_to_tensor(res, dtype=self.dtype), grad
+        return tf.convert_to_tensor(res, dtype=self.dtype), jacobian_product
 
     @classmethod
     def apply(cls, tape, dtype=tf.float64):
