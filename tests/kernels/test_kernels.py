@@ -130,13 +130,25 @@ class TestHelperFunctions:
         [
             (np.eye(2), np.eye(2), False, 2.0),
             (np.eye(2), np.zeros((2, 2)), False, 0.0),
-            (np.array([[1.0, 2.3], [-1.3, 2.4]]), np.array([[0.7, -7.3], [-1.0, -2.9]]), False, -21.75),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                False,
+                -21.75,
+            ),
             (np.eye(2), np.eye(2), True, 1.0),
-            (np.array([[1.0, 2.3], [-1.3, 2.4]]), np.array([[0.7, -7.3], [-1.0, -2.9]]), True, -0.7381450594),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
         ],
     )
     def test_matrix_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(kern.cost_functions.matrix_inner_product(A, B, normalize=normalize))
+        assert expected == pytest.approx(
+            kern.cost_functions.matrix_inner_product(A, B, normalize=normalize)
+        )
 
 
 class TestKernelMatrix:
@@ -391,7 +403,7 @@ class TestRegularization:
         "input, expected_output",
         [
             (np.diag([1, -1]), np.diag([1, 1])),
-            (np.array([[1, 1], [1, -1]]), np.array([[1., 1.],[1., 1.]])),
+            (np.array([[1, 1], [1, -1]]), np.array([[1.0, 1.0], [1.0, 1.0]])),
             (np.array([[0, 1], [1, 0]]), np.array([[1, 1], [1, 1]])),
         ],
     )
@@ -399,58 +411,79 @@ class TestRegularization:
         output = kern.closest_psd_matrix(input, feastol=1e-10)
         assert np.allclose(output, expected_output, atol=1e-5)
 
+
 def depolarize(mat, rates, num_wires, level):
-    if level=='per_circuit':
-        noisy_mat = (1-rates)*mat+rates/(2**num_wires)*np.ones_like(mat)
-    elif level=='per_embedding':
+    if level == "per_circuit":
+        noisy_mat = (1 - rates) * mat + rates / (2 ** num_wires) * np.ones_like(mat)
+    elif level == "per_embedding":
         noisy_mat = np.copy(mat)
         for i in range(len(mat)):
             for j in range(i, len(mat)):
-                rate = rates[i]+rates[j]-rates[i]*rates[j]
-                noisy_mat[i,j] *= (1-rate)
-                noisy_mat[i,j] += rate/(2**num_wires)
+                rate = rates[i] + rates[j] - rates[i] * rates[j]
+                noisy_mat[i, j] *= 1 - rate
+                noisy_mat[i, j] += rate / (2 ** num_wires)
 
     return noisy_mat
 
+
 class TestMitigation:
     num_wires = 1
-    
+
     @pytest.mark.parametrize(
         "input, use_entry, expected_output",
         [
-            (np.diag([0.9, 0.9]), 0, np.array([[1, -1/8], [-1/8, 1]])),
-            (np.diag([0.9, 0.9]), 1, np.array([[1, -1/8], [-1/8, 1]])),
-            (np.diag([1., 0.9]), 0, np.diag([1, 0.9])),
-            (np.diag([1., 0.9]), 1, np.array([[9/8, -1/8], [-1/8, 1.]])),
-            (depolarize(np.array([[1., 0.5], [0.5, 1.]]), 0.1, num_wires, 'per_circuit'), 0, np.array([[1., 0.5], [0.5, 1.]])),
-            (depolarize(np.array([[1., 0.5], [0.5, 1.]]), 0.1, num_wires, 'per_circuit'), 1, np.array([[1., 0.5], [0.5, 1.]])),
+            (np.diag([0.9, 0.9]), 0, np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([0.9, 0.9]), 1, np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([1.0, 0.9]), 0, np.diag([1, 0.9])),
+            (np.diag([1.0, 0.9]), 1, np.array([[9 / 8, -1 / 8], [-1 / 8, 1.0]])),
+            (
+                depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
+                0,
+                np.array([[1.0, 0.5], [0.5, 1.0]]),
+            ),
+            (
+                depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
+                1,
+                np.array([[1.0, 0.5], [0.5, 1.0]]),
+            ),
         ],
     )
     def test_mitigate_depolarizing_noise_single(self, input, use_entry, expected_output):
-        output = kern.mitigate_depolarizing_noise(input, self.num_wires, 'single', (use_entry,))
+        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "single", (use_entry,))
         assert np.allclose(output, expected_output)
 
     @pytest.mark.parametrize(
         "input, expected_output",
         [
-            (np.diag([0.9, 0.9]), np.array([[1, -1/8], [-1/8, 1]])),
-            (np.diag([1., 0.9]), np.array([[19/18, -1/18], [-1/18, 17/18]])),
-            (depolarize(np.array([[1., 0.5], [0.5, 1.]]), 0.1, num_wires, 'per_circuit'), np.array([[1., 0.5], [0.5, 1.]])),
+            (np.diag([0.9, 0.9]), np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([1.0, 0.9]), np.array([[19 / 18, -1 / 18], [-1 / 18, 17 / 18]])),
+            (
+                depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
+                np.array([[1.0, 0.5], [0.5, 1.0]]),
+            ),
         ],
     )
     def test_mitigate_depolarizing_noise_average(self, input, expected_output):
-        output = kern.mitigate_depolarizing_noise(input, self.num_wires, 'average')
+        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "average")
         assert np.allclose(output, expected_output)
 
     @pytest.mark.parametrize(
         "input, expected_output",
         [
-            (np.diag([0.9, 0.9]), np.array([[1, -1/8], [-1/8, 1]])),
-            (np.diag([1., 0.9]), np.array([[1, -0.059017], [-0.059017, 1.]])),
-            (depolarize(np.array([[1., 0.5], [0.5, 1.]]), 0.1, num_wires, 'per_circuit'), np.array([[1., 0.5], [0.5, 1.]])),
-            (depolarize(np.array([[1., 0.5], [0.5, 1.]]), [0.2, 0.1], num_wires, 'per_embedding'), np.array([[1., 0.5], [0.5, 1.]])),
+            (np.diag([0.9, 0.9]), np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([1.0, 0.9]), np.array([[1, -0.059017], [-0.059017, 1.0]])),
+            (
+                depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
+                np.array([[1.0, 0.5], [0.5, 1.0]]),
+            ),
+            (
+                depolarize(
+                    np.array([[1.0, 0.5], [0.5, 1.0]]), [0.2, 0.1], num_wires, "per_embedding"
+                ),
+                np.array([[1.0, 0.5], [0.5, 1.0]]),
+            ),
         ],
     )
     def test_mitigate_depolarizing_noise_split_channel(self, input, expected_output):
-        output = kern.mitigate_depolarizing_noise(input, self.num_wires, 'split_channel')
+        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)
