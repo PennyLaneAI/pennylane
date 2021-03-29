@@ -722,10 +722,6 @@
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
-* The ``grouping`` module has been renamed to ``pauli`` in
-  [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159). There are
-  no changes in the functionality or names of methods.
-
 
 <h3>Bug fixes</h3>
 
