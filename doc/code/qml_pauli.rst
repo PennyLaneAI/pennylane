@@ -21,17 +21,47 @@ the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
 :math:`4^n` (neglecting the four possible global phases that may arise from
 multiplication of its elements).
 
-.. currentmodule:: pennylane.pauli
+The Pauli group can be constructed using the :func:`~pennylane.pauli.pauli_group`
+function. To construct the group, it is recommended to provide a wire map in
+order to indicate the names and indices of the wires. (If none is provided, a
+default mapping of integers will be used.)
 
-.. automodapi:: pennylane.pauli.pauli
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+>>> from pennylane.pauli import pauli_group
+>>> pg_3 = list(pauli_group(3))
 
-.. automodapi:: pennylane.pauli.pauli_utils
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: reduce
+Multiplication of Pauli group elements can be performed using
+:func:`~pennylane.pauli.pauli_mult` or
+:func:`~pennylane.pauli.pauli_mult_with_phase`:
+
+>>> from pennylane.pauli import pauli_mult
+>>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+>>> pg = list(pauli_group(3, wire_map=wire_map))
+>>> pg[3]
+PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+>>> pg[55]
+PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+>>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+PauliY(wires=['a']) @ PauliX(wires=['b'])
+
+Pauli observables can be converted to strings (and vice versa):
+
+>>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+>>> pauli_word_to_string(pg[55], wire_map=wire_map)
+'YYZ'
+>>> string_to_pauli_word('ZXY', wire_map=wire_map)
+PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+
+The matrix representation for arbitrary Paulis and wire maps can also be performed.
+
+>>> pennylane.pauli import pauli_word_to_matrix
+>>> wire_map = {'a' : 0, 'b' : 1}
+>>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+>>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+array([[ 1.,  0.,  0.,  0.],
+       [ 0., -1.,  0., -0.],
+       [ 0.,  0.,  1.,  0.],
+       [ 0., -0.,  0., -1.]])
+
 
 Grouping observables
 --------------------
@@ -68,27 +98,10 @@ the groups of observables:
 
 .. currentmodule:: pennylane.pauli
 
+.. automodapi:: pennylane.pauli
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
 .. automodapi:: pennylane.pauli.graph_colouring
     :no-inheritance-diagram:
     :no-inherited-members:
-
-.. automodapi:: pennylane.pauli.group_observables
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: Wires, observables_to_binary_matrix, qwc_complement_adj_matrix, binary_to_pauli
-    :skip: are_identical_pauli_words, largest_first, recursive_largest_first
-
-.. automodapi:: pennylane.pauli.grouping_utils
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: pauli_to_binary
-
-.. automodapi:: pennylane.pauli.optimize_measurements
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: diagonalize_qwc_groupings, group_observables
-
-.. automodapi:: pennylane.pauli.transformations
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: are_identical_pauli_words, is_pauli_word, is_qwc, pauli_to_binary, template

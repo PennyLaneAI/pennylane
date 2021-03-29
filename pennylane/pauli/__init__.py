@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This subpackage defines functions and classes for Pauli-word partitioning
-functionality used in measurement optimization.
+This module contains functions and classes for manipulating the Pauli group.
 """
 
 from . import graph_colouring

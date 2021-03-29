@@ -53,9 +53,9 @@ def _pauli_group_generator(n_qubits, wire_map=None):
 
 
 def pauli_group(n_qubits, wire_map=None):
-    """Iterating over the :math:`n`-qubit Pauli group.
+    """Generate the :math:`n`-qubit Pauli group.
 
-    This function allows for iteration over elements of the Pauli group with no
+    This function enables the construction of the :math:`n`-qubit Pauli group with no
     storage involved.  The :math:`n`-qubit Pauli group has size :math:`4^n`,
     thus it may not be desirable to construct it in full and store.
 
