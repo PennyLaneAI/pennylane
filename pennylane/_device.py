@@ -264,6 +264,33 @@ class Device(abc.ABC):
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
+
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
