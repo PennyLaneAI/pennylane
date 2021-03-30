@@ -257,7 +257,7 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
 
     .. code-block:: python
 
