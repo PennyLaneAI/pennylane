@@ -16,6 +16,7 @@ Contains the mitigation transform
 """
 import pennylane as qml
 from pennylane.operation import Operation
+import numpy as np
 
 cirq_operation_map = None
 
@@ -143,7 +144,7 @@ def mitigate(tape, factory=None, scale_noise=None):
         raise ImportError("The mitiq package is required") from e
 
     if factory is None:
-        factory = RichardsonFactory
+        factory = RichardsonFactory(scale_factors=[1.0, 2.0, 3.0])
 
     if scale_noise is None:
         scale_noise = fold_gates_at_random
@@ -153,4 +154,9 @@ def mitigate(tape, factory=None, scale_noise=None):
     circuits = factory._generate_circuits(cirq_circuit, scale_noise=scale_noise)
     tapes = [_cirq_to_tape(circuit, measurements=tape.measurements) for circuit in circuits]
 
-    return tapes, lambda: None
+    def processing_fn(res):
+        expvals = np.array([list(qml.utils._flatten(r)) for r in res]).T
+        mitigated = [factory.extrapolate(factory.get_scale_factors(), e) for e in expvals]
+        return qml.utils.unflatten(mitigated, res[0].tolist())
+
+    return tapes, processing_fn
