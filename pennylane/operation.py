@@ -1121,7 +1121,7 @@ class Tensor(Observable):
 
             try:
                 qml.QueuingContext.update_info(o, owner=self)
-            except ValueError:
+            except qml.queuing.QueuingError:
                 o.queue()
                 qml.QueuingContext.update_info(o, owner=self)
             except NotImplementedError:
