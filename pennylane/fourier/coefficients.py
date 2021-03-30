@@ -18,6 +18,11 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from .utils import extract_evals
+from .custom_decompositions import *
+
+custom_decomps_required = {
+    "CRot" : custom_CRot_decomposition
+}
 
 def frequency_spectra(tape):
     r"""Return the frequency spectrum of a tape that returns the expectation value of
@@ -159,7 +164,10 @@ def frequency_spectra(tape):
 
             # Check if this is a gate should be unrolled into Pauli operators
             try:
-                decomp = obj.decomposition(*obj.parameters, wires=obj.wires)
+                if obj.name in custom_decomps_required.keys():
+                    decomp = custom_decomps_required[obj.name](*obj.parameters, wires=obj.wires)
+                else:
+                    decomp = obj.decomposition(*obj.parameters, wires=obj.wires)
             except NotImplementedError:
                 # If no decomposition required, simply get the eigenvalues of gate generator
                 evals = extract_evals(obj)
