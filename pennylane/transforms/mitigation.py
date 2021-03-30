@@ -16,7 +16,6 @@ Contains the mitigation transform
 """
 import pennylane as qml
 from pennylane.operation import Operation
-import numpy as np
 
 cirq_operation_map = None
 
@@ -155,7 +154,7 @@ def mitigate(tape, factory=None, scale_noise=None):
     tapes = [_cirq_to_tape(circuit, measurements=tape.measurements) for circuit in circuits]
 
     def processing_fn(res):
-        expvals = np.array([list(qml.utils._flatten(r)) for r in res]).T
+        expvals = qml.math.T(qml.math.toarray([list(qml.utils._flatten(r)) for r in res]))
         mitigated = [factory.extrapolate(factory.get_scale_factors(), e) for e in expvals]
         return qml.utils.unflatten(mitigated, res[0].tolist())
 
