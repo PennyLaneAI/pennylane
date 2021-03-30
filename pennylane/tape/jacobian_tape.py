@@ -48,8 +48,7 @@ class JacobianTape(QuantumTape):
 
     .. note::
 
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
+        See :mod:`pennylane.tape` for more details.
 
     Args:
         name (str): a name given to the quantum tape
