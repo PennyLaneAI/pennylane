@@ -113,3 +113,44 @@ def _cirq_to_tape(circuit, measurements=None):
             m.queue()
 
     return tape
+
+
+def mitigate(tape, factory=None, scale_noise=None):
+    """Returns a list of tapes to be executed, and a classical postprocessing function, for error
+    mitigation.
+
+    The `zero noise extrapolation <https://mitiq.readthedocs.io/en/stable/guide/guide-zne.html>`__
+    method is used by harnessing the `mitiq <https://mitiq.readthedocs.io/en/stable/index.html>`__
+    package.
+
+    Args:
+        tape (.QuantumTape): the tape whose output should be error mitigated
+        factory (mitiq.zne.inference.Factory): the ``mitiq`` factory used to specify the inference
+            method for zero noise extrapolation
+        scale_noise (Callable): A transformation that folds the circuit for a given scale factor. If
+            unspecified, defaults to ``mitiq.zne.scaling.fold_gates_at_random``.
+
+    Returns:
+        tuple[list[.QuantumTape], func]: The collection of quantum tapes to be executed, and the
+        classical postprocessing function that should be applied to the executed tape results and
+        will return the zero noise extrapolated values.
+    """
+    try:
+        import mitiq
+        from mitiq.zne.inference import RichardsonFactory
+        from mitiq.zne.scaling import fold_gates_at_random
+    except ImportError as e:
+        raise ImportError("The mitiq package is required") from e
+
+    if factory is None:
+        factory = RichardsonFactory
+
+    if scale_noise is None:
+        scale_noise = fold_gates_at_random
+
+    cirq_circuit = _tape_to_cirq(tape)
+    factory._batch_populate_instack()
+    circuits = factory._generate_circuits(cirq_circuit, scale_noise=scale_noise)
+    tapes = [_cirq_to_tape(circuit, measurements=tape.measurements) for circuit in circuits]
+
+    return tapes, lambda: None

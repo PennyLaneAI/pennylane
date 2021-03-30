@@ -18,3 +18,4 @@ from .classical_jacobian import classical_jacobian
 from .draw import draw
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
+from .mitigation import mitigate
