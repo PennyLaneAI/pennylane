@@ -2,6 +2,7 @@
 
 <h3>New features since last release</h3>
 
+<<<<<<< HEAD
 * Adds `Carry` and `Sum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
@@ -22,6 +23,94 @@
   indx = np.argwhere(probs == 1).flatten()[0]
   output = bitstrings[indx]
   print(output)
+=======
+* Computing second derivatives and Hessians of QNodes is now supported when
+  using the Autograd interface.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
+  >>> hessian_fn(x)
+  [[0.2248451 0.7651474]
+   [0.7651474 0.2248451]]
+  ```
+
+* Computing second derivatives and Hessians of QNodes is now supported when
+  using the PyTorch interface.
+  [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129/files)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  from torch.autograd.functional import jacobian, hessian
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, interface='torch', diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = torch.tensor([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> circuit(x)
+  tensor([0.3876, 0.6124], dtype=torch.float64, grad_fn=<SqueezeBackward0>)
+  >>> jacobian(circuit, x)
+  tensor([[ 0.1751, -0.2456],
+          [-0.1751,  0.2456]], grad_fn=<ViewBackward>)
+  >>> hessian(circuit, x)
+  tensor([[[ 0.1124,  0.3826],
+           [ 0.3826,  0.1124]],
+          [[-0.1124, -0.3826],
+           [-0.3826, -0.1124]]])
+  ```
+
+- The TensorFlow interface now supports computing second derivatives and Hessians of hybrid quantum models.
+  Second derivatives are supported on both hardware and simulators.
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev, interface='tf', diff_method='parameter-shift')
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+  with tf.GradientTape() as tape1:
+      with tf.GradientTape() as tape2:
+          y = circuit(x)
+      grad = tape2.gradient(res, x)
+
+  hessian = tape1.jacobian(grad, x)
+  ```
+
+  To compute just the diagonal of the Hessian, the gradient of the
+  first derivatives can be taken:
+
+  ```python
+  hessian_diagonals = tape1.gradient(grad, x)
+>>>>>>> master
   ```
 
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
@@ -605,6 +694,10 @@
     `shot_range=[35, 135]`, `bin_size=100`.
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
+  operation raised an error.
+  [(#1174)](https://github.com/PennyLaneAI/pennylane/pull/1174)
 
 * Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
   being updated.
