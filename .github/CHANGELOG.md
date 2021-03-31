@@ -672,6 +672,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
+  operation raised an error.
+  [(#1174)](https://github.com/PennyLaneAI/pennylane/pull/1174)
+
 * Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
   being updated.
   [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
