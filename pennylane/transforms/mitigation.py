@@ -14,6 +14,7 @@
 """
 Contains the mitigation transform
 """
+# pylint: disable=import-outside-toplevel,protected-access
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -78,9 +79,7 @@ def _tape_to_cirq(tape):
             cirq_operation.parametrize(*operation.parameters)
 
             q = [wires_to_qubits[wire] for wire in operation.wires]
-            circuit.append(
-                cirq_operation.apply(*q)
-            )
+            circuit.append(cirq_operation.apply(*q))
 
     return circuit
 
@@ -204,6 +203,8 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
     Returns:
         .QubitDevice: the error-mitigated device
     """
+
+    # pylint: disable=unused-argument
     def execute(tape, **kwargs):
         tapes, func = _mitigate_tape(tape, factory=factory, scale_noise=scale_noise)
         results = dev._batch_execute(tapes)
@@ -226,7 +227,7 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
 
         mitigated_results = []
         for func, shape in zip(funcs, shapes):
-            r = results[indx:indx + shape]
+            r = results[indx : indx + shape]
             mitigated_results.append(func(r))
             indx += shape
 
