@@ -1852,6 +1852,12 @@ class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
 
+    In addition to default ``Operation`` instance attributes, the following are
+    available for ``ControlledQubitUnitary``:
+
+    * ``control_wires``: wires that act as control for the operation
+    * ``U``: unitary applied to the target wires
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
@@ -1907,6 +1913,11 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        # Saving for the circuit drawer
+        self.control_wires = control_wires
+        self.U = U
+
         wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
