@@ -602,7 +602,7 @@
   For example, we can iterate through the 3-qubit Pauli group like so:
 
   ```python
-  from pennylane.pauli import pauli_group
+  from pennylane.grouping import pauli_group
   pauli_group_3_qubits = list(pauli_group(3))
   print(pauli_group_3_qubits)
   ```
@@ -613,7 +613,7 @@
   arbitrarily-labeled wires as well, by defining a wire map.
 
   ```pycon
-  >>> from pennylane.pauli import pauli_group, pauli_mult
+  >>> from pennylane.grouping import pauli_group, pauli_mult
   >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
   >>> pg = list(pauli_group(3, wire_map=wire_map))
   >>> pg[3]
@@ -628,7 +628,7 @@
   are included.
 
   ```pycon
-  >>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+  >>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
   >>> pauli_word_to_string(pg[55], wire_map=wire_map)
   'YYZ'
   >>> string_to_pauli_word('ZXY', wire_map=wire_map)
@@ -639,7 +639,7 @@
   also supported.
 
   ```python
-  >>> from pennylane.pauli import pauli_word_to_matrix
+  >>> from pennylane.grouping import pauli_word_to_matrix
   >>> wire_map = {'a' : 0, 'b' : 1}
   >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
   >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
