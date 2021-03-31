@@ -177,7 +177,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        self._circuit_hash = circuit.graph.hash
 
         if self._cache:
             circuit_hash = circuit.graph.hash
