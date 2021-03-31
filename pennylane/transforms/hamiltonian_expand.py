@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the hamiltonian expectation value tape transform
+Contains the hamiltonian expand tape transform
 """
 import itertools
 import numpy as np
 import pennylane as qml
 
 
-def hamiltonian_expval(tape):
+def hamiltonian_expand(tape):
     r"""
     Returns a list of tapes, and a classical processing function, for computing the expectation
     value of a Hamiltonian.
@@ -47,10 +47,10 @@ def hamiltonian_expval(tape):
             H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
             qml.expval(H)
 
-    We can use the ``hamiltonian_expval`` transform to generate new tapes and a classical
+    We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
 
-    >>> tapes, fn = qml.transforms.hamiltonian_expval(tape)
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
     We can evaluate these tapes on a device:
 

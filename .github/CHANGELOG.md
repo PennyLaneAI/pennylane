@@ -595,6 +595,26 @@
 
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
+  
+* `qml.Hamiltonian` objects can now be recorded inside quantum tapes. As a result, 
+  expectation values of `qml.Hamiltonian` objects can now be calculated inside QNodes. 
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+   
+  Example use:
+    
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(): 
+      qml.Hadamard(wires=1)
+      H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
+      return qml.expval(H)
+  ```
+  ```pycon
+  >>> circuit()
+  4.0
+  ```
 
 <h3>Breaking changes</h3>
 

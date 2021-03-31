@@ -581,6 +581,41 @@ def mock_device(monkeypatch):
 
         yield get_device
 
+#####################################################
+# Queues
+
+QUEUE_HAMILTONIANS_1 = [
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+]
+
+QUEUE_HAMILTONIANS_2 = [
+    qml.Hamiltonian([1], [qml.PauliX(0)]),
+    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)])
+]
+
+QUEUES = [
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)])
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)])
+    ]
+]
+
+add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 
 #####################################################
 # Tests
@@ -734,11 +769,14 @@ class TestHamiltonian:
         """Tests that addition between Hamiltonians and
         Hamiltonians/Observables/Tensors is queued correctly"""
 
+        print("hi")
+
         with qml.tape.QuantumTape() as tape:
             Hamiltonian = H1 + H2
 
-        assert tape.queue == queue
+        assert np.all([ob1 == ob2 for ob1, ob2 in zip(tape.queue, queue)])
 
+    '''
     @pytest.mark.parametrize(("H", "a", "queue"), mul_queue)
     def test_arithemtic_queue_multiplication(self, H, a, queue):
         """Tests that scalar multiplication between Hamiltonians and
@@ -758,6 +796,7 @@ class TestHamiltonian:
             Hamiltonian = H1 @ H2
 
         assert tape.queue == queue
+    '''
 
 
 class TestVQE:

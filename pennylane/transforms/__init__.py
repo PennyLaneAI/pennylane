@@ -18,4 +18,4 @@ from .classical_jacobian import classical_jacobian
 from .draw import draw
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .hamiltonian_expval import hamiltonian_expval
+from .hamiltonian_expand import hamiltonian_expand

@@ -199,14 +199,7 @@ class Hamiltonian:
 
     def __repr__(self):
         # Constructor-call-like representation
-        s = "coeffs=" + str(self._coeffs) + ", ops=["
-
-        for op in self._ops:
-            s += op.__repr__()
-            s += ", "
-        s = s[:-2]
-        s += "]"
-        return "Hamiltonian(" + s + ")"
+        return f"<Hamiltonian: terms={len(self.coeffs)}, wires={self.wires.tolist()}>"
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
@@ -235,7 +228,7 @@ class Hamiltonian:
             tensor = []
             for ob in obs:
                 parameters = tuple(
-                    param.tostring() for param in ob.parameters
+                    param.tobytes() for param in ob.parameters
                 )  # Converts params into immutable type
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
