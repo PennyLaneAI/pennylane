@@ -56,7 +56,7 @@ def pauli_group(n_qubits, wire_map=None):
     """Generate the :math:`n`-qubit Pauli group.
 
     This function enables the construction of the :math:`n`-qubit Pauli group with no
-    storage involved.  The :math:`n`-qubit Pauli group has size :math:`4^n`,
+    storage involved. The :math:`n`-qubit Pauli group has size :math:`4^n`,
     thus it may not be desirable to construct it in full and store.
 
     The order of iteration is based on the binary symplectic representation of
@@ -66,7 +66,7 @@ def pauli_group(n_qubits, wire_map=None):
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels
+        wire_map (dict[Union[str, int], int]): Dictionary containing all wire labels
             used in the Pauli word as keys, and unique integer labels as their values.
             If no wire map is provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
@@ -152,6 +152,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
     # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
     if are_identical_pauli_words(pauli_1, pauli_2):
+        # Return identity on a single wire just as with Tensor.prune
         first_wire = list(wire_map.keys())[0]
         return Identity(first_wire)
 

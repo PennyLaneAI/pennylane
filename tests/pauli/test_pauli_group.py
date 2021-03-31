@@ -46,12 +46,13 @@ class TestPauliGroup:
         assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
 
         # With an arbitrary wire map
-        wire_map = {"qubit": 0}
+        custom_wire = "qubit"
+        wire_map = { custom_wire : 0}
         expected_pg_1_wires = [
-            Identity("qubit"),
-            PauliZ("qubit"),
-            PauliX("qubit"),
-            PauliY("qubit"),
+            Identity(custom_wire),
+            PauliZ(custom_wire),
+            PauliX(custom_wire),
+            PauliY(custom_wire),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
         assert all(
