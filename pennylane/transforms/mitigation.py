@@ -226,7 +226,7 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
 
         mitigated_results = []
         for func, shape in zip(funcs, shapes):
-            r = results[indx, indx + shape]
+            r = results[indx:indx + shape]
             mitigated_results.append(func(r))
             indx += shape
 
