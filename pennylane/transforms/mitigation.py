@@ -115,13 +115,37 @@ def _cirq_to_tape(circuit, measurements=None):
     return tape
 
 
-def mitigate(tape, factory=None, scale_noise=None):
+def mitigate(input, factory=None, scale_noise=None):
     """Returns a list of tapes to be executed, and a classical postprocessing function, for error
     mitigation.
 
     The `zero noise extrapolation <https://mitiq.readthedocs.io/en/stable/guide/guide-zne.html>`__
     method is used by harnessing the `mitiq <https://mitiq.readthedocs.io/en/stable/index.html>`__
     package.
+
+    Args:
+        input (.QuantumTape): TODO
+        factory (mitiq.zne.inference.Factory): the ``mitiq`` factory used to specify the inference
+            method for zero noise extrapolation
+        scale_noise (Callable): A transformation that folds the circuit for a given scale factor. If
+            unspecified, defaults to ``mitiq.zne.scaling.fold_gates_at_random``.
+
+    Returns:
+        tuple[list[.QuantumTape], func]: The collection of quantum tapes to be executed, and the
+        classical postprocessing function that should be applied to the executed tape results and
+        will return the zero noise extrapolated values.
+    """
+    if isinstance(input, qml.tape.QuantumTape):
+        return _mitigate_tape(input, factory=factory, scale_noise=scale_noise)
+    elif isinstance(input, qml.QubitDevice):
+        return _mitigate_device(input, factory=factory, scale_noise=scale_noise)
+    else:
+        raise ValueError("Unknown input")
+
+
+def _mitigate_tape(tape, factory=None, scale_noise=None):
+    """Returns a list of tapes to be executed, and a classical postprocessing function, for error
+    mitigation.
 
     Args:
         tape (.QuantumTape): the tape whose output should be error mitigated
@@ -159,3 +183,54 @@ def mitigate(tape, factory=None, scale_noise=None):
         return qml.utils.unflatten(mitigated, res[0].tolist())
 
     return tapes, processing_fn
+
+
+def _mitigate_device(dev, factory=None, scale_noise=None):
+    """Returns a device whose ``execute`` and ``batch_execute`` functions are error mitigated.
+
+    Args:
+        dev (.QubitDevice): a PennyLane device such as ``default.qubit``
+        factory (mitiq.zne.inference.Factory): the ``mitiq`` factory used to specify the inference
+            method for zero noise extrapolation
+        scale_noise (Callable): A transformation that folds the circuit for a given scale factor. If
+            unspecified, defaults to ``mitiq.zne.scaling.fold_gates_at_random``.
+
+    Returns:
+        .QubitDevice: the error-mitigated device
+    """
+    dev._execute = dev.execute
+    dev._batch_execute = dev.batch_execute
+
+    def execute(tape, **kwargs):
+        tapes, func = _mitigate_tape(tape, factory=factory, scale_noise=scale_noise)
+        results = dev._batch_execute(tapes)
+        return func(results)
+
+    dev.execute = execute
+
+    def batch_execute(tapes):
+        all_tapes = []
+        funcs = []
+        shapes = []
+
+        for tape in tapes:
+            tapes_m, func = _mitigate_tape(tape, factory=factory, scale_noise=scale_noise)
+            all_tapes.extend(tapes_m)
+            funcs.append(func)
+            shapes.append(len(tapes_m))
+
+        results = dev._batch_execute(all_tapes)
+
+        indx = 0
+
+        mitigated_results = []
+        for func, shape in zip(funcs, shapes):
+            r = results[indx, indx + shape]
+            mitigated_results.append(func(r))
+            indx += shape
+
+        return mitigated_results
+
+    dev.batch_execute = batch_execute
+
+    return dev
