@@ -207,7 +207,7 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
     def execute(tape, **kwargs):
         tapes, func = _mitigate_tape(tape, factory=factory, scale_noise=scale_noise)
         results = dev._batch_execute(tapes)
-        return func(results)
+        return qml.math.toarray(func(results))
 
     def batch_execute(tapes):
         all_tapes = []
