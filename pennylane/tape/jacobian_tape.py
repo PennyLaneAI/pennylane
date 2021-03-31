@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,8 +48,7 @@ class JacobianTape(QuantumTape):
 
     .. note::
 
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
+        See :mod:`pennylane.tape` for more details.
 
     Args:
         name (str): a name given to the quantum tape
