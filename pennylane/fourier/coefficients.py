@@ -196,21 +196,23 @@ def frequency_spectra(tape):
     return frequency_dict
 
 
-def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
+def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True):
     """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
     function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
-    The Fourier coefficients are computed for the parameters in the *last*
-    argument of a quantum function.
+    By default, a low-pass filter is applied prior to computing the coefficients
+    in order to mitigate the effects of aliasing.
 
     Args:
         f (callable): function that takes an array of :math:`N` scalar inputs. Function should
             have structure ``f(weights, params)`` where params are the paramters that the
             Fourier coefficients are taken with respect to.
-        N (int): dimension of the input
+        n_inputs (int): number of function input
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
-        apply_rfftn (bool): If True, call rfftn instead of fftn.
+        lowpass_filter (bool): If True (default), a low-pass filter is applied prior to
+            computing the set of coefficients in order to filter out frequencies above the
+            given degree.
 
     Returns:
         (np.ndarray): The Fourier coefficients of the function f.
@@ -244,6 +246,67 @@ def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
 
     """
+
+    # number of integer values for the indices n_i = -degree,...,0,...,degree
+    k = 2 * (2 * degree) + 1
+
+    # create generator for indices nvec = (n1, ..., nN), ranging from (-d,...,-d) to (d,...,d).
+    n_range = np.array(range(-(2 * degree), 2 * degree + 1))
+    n_ranges = [n_range] * n_inputs
+    nvecs = product(*n_ranges)
+
+    # here we will collect the discretized values of function f
+    shp = tuple([k] * n_inputs)
+    f_discrete = np.zeros(shape=shp)
+
+    for nvec in nvecs:
+        nvec = np.array(nvec)
+
+        # compute the evaluation points for frequencies nvec
+        sample_points = 2 * np.pi / k * nvec
+
+        # fill discretized function array with value of f at inpts
+        f_discrete[tuple(nvec)] = f(sample_points)
+
+    # Compute the fft of the
+    unfiltered_coeffs = np.fft.fftn(f_discrete) / f_discrete.size
+
+    # Filter the frequencies larger than degree
+    # First, shift the frequencies so that the 0s are at the centre
+    shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
+
+    # Next, slice up the array so that we get only the coefficients we care about,
+    # those between -degree and degree
+    shifted_filtered_coeffs = shifted_unfiltered_coeffs.copy()
+
+    # Need to indicate which slice of coefficients we are taking
+    range_slices = list(range(degree, shifted_filtered_coeffs.shape[0] - degree))
+
+    # Go axis by axis and take only the central components
+    for axis in range(n_inputs - 1, -1, -1):
+        shifted_filtered_coeffs = np.take(
+            shifted_filtered_coeffs,
+            range_slices,
+            axis=axis
+        )
+
+    # Shift everything back into "normal" fft ordering
+    filtered_coeffs = np.fft.ifftshift(shifted_filtered_coeffs)
+
+    # Compute the inverse FFT
+    f_discrete_filtered = np.fft.ifftn(filtered_coeffs)
+
+    # Now compute the FFT again on the filtered data
+    coeffs = np.fft.fftn(f_discrete_filtered)
+
+    return coeffs
+
+
+def fourier_coefficients_no_filter(f, n_inputs, degree):
+    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
+    function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
+    """
+
     # number of integer values for the indices n_i = -degree,...,0,...,degree
     k = 2 * degree + 1
 
@@ -265,12 +328,6 @@ def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
         # fill discretized function array with value of f at inpts
         f_discrete[tuple(nvec)] = f(sample_points)
 
-    # Now we have a discretized verison of f we can use
-    # the discrete fourier transform.
-    # The normalization factor is the number of discrete points (??)
-    if apply_rfftn:
-        coeffs = np.fft.rfftn(f_discrete) / f_discrete.size
-    else:
-        coeffs = np.fft.fftn(f_discrete) / f_discrete.size
+    coeffs = np.fft.fftn(f_discrete) / f_discrete.size
 
     return coeffs
