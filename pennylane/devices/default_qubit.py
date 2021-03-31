@@ -21,7 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
-from collections import OrderedDict
 
 import numpy as np
 
@@ -172,7 +171,7 @@ class DefaultQubit(QubitDevice):
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
-        return OrderedDict(wire_map)
+        return dict(wire_map)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
