@@ -177,6 +177,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        return self._execute(circuit, **kwargs)
+
+    def _execute(self, circuit, **kwargs):
         self._circuit_hash = circuit.graph.hash
 
         if self._cache:
@@ -254,6 +257,9 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
+        return self._batch_execute(circuits)
+
+    def _batch_execute(self, circuits):
         # TODO: This method and the tests can be globally implemented by Device
         # once it has the same signature in the execute() method
 
@@ -263,7 +269,7 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit)
+            res = self._execute(circuit)
             results.append(res)
 
         return results

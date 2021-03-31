@@ -204,15 +204,10 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
     Returns:
         .QubitDevice: the error-mitigated device
     """
-    dev._execute = dev.execute
-    dev._batch_execute = dev.batch_execute
-
     def execute(tape, **kwargs):
         tapes, func = _mitigate_tape(tape, factory=factory, scale_noise=scale_noise)
         results = dev._batch_execute(tapes)
         return func(results)
-
-    dev.execute = execute
 
     def batch_execute(tapes):
         all_tapes = []
@@ -237,6 +232,7 @@ def _mitigate_device(dev, factory=None, scale_noise=None):
 
         return mitigated_results
 
+    dev.execute = execute
     dev.batch_execute = batch_execute
 
     return dev
