@@ -116,24 +116,30 @@ def _cirq_to_tape(circuit, measurements=None):
 
 
 def mitigate(input, factory=None, scale_noise=None):
-    """Returns a list of tapes to be executed, and a classical postprocessing function, for error
-    mitigation.
+    """Applies error mitigation to the input object.
+
+    If ``input`` is a :class:`~.QuantumTape`, this function returns a list of tapes to be executed,
+    and a classical postprocessing function, for error mitigation. Otherwise, if ``input`` is
+    a PennyLane device, this function returns the device with error mitigation added to the
+    ``execute`` and ``batch_execute`` methods.
 
     The `zero noise extrapolation <https://mitiq.readthedocs.io/en/stable/guide/guide-zne.html>`__
     method is used by harnessing the `mitiq <https://mitiq.readthedocs.io/en/stable/index.html>`__
     package.
 
     Args:
-        input (.QuantumTape): TODO
+        input (Union[.QuantumTape, .QubitDevice]): input quantum tape or PennyLane device
         factory (mitiq.zne.inference.Factory): the ``mitiq`` factory used to specify the inference
             method for zero noise extrapolation
         scale_noise (Callable): A transformation that folds the circuit for a given scale factor. If
             unspecified, defaults to ``mitiq.zne.scaling.fold_gates_at_random``.
 
     Returns:
-        tuple[list[.QuantumTape], func]: The collection of quantum tapes to be executed, and the
-        classical postprocessing function that should be applied to the executed tape results and
-        will return the zero noise extrapolated values.
+        Union[tuple[list[.QuantumTape], func], .QubitDevice]: If ``input`` is a
+        :class:`~.QuantumTape`, returns the collection of error-mitigated quantum tapes to be
+        executed, and the classical postprocessing function that should be applied to the executed
+        tape results. If ``input`` is a PennyLane device, the device will be returned with added
+        error mitigation.
     """
     if isinstance(input, qml.tape.QuantumTape):
         return _mitigate_tape(input, factory=factory, scale_noise=scale_noise)
