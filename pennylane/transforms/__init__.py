@@ -16,5 +16,6 @@ This subpackage contains tape and QNode transforms.
 """
 from .classical_jacobian import classical_jacobian
 from .draw import draw
+from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
