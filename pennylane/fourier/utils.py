@@ -11,8 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy as np
+
+"""Contains utility functions for the Fourier module."""
+
 from itertools import product
+import numpy as np
 
 
 def format_nvec(nvec):
@@ -27,6 +30,7 @@ def format_nvec(nvec):
 
 
 def to_dict(coeffs):
+    """Convert a set of indices to a dictionary."""
     # infer hyperparameters
     degree = coeffs.shape[0] // 2 - 1
     n_inputs = len(coeffs.shape)

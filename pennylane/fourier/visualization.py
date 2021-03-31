@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains visualization functions for Fourier series and coefficients."""
+from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
-from itertools import product
 
 
 def violin_plot(list_of_coeffs, figsize=None):
@@ -314,7 +314,6 @@ def radial_box_plots(
     savefig=False,
     title=None,
     showfliers=True,
-    print_radial_axis=True,
     merge_plots=False,
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
@@ -340,7 +339,7 @@ def radial_box_plots(
             be "FourierPlot.pdf".
         title (str): A title for the plot.
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.
-        merge_plots (bool): Whether to plot real/complex values on the same panel, or 
+        merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
     """
 

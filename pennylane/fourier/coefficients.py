@@ -196,7 +196,7 @@ def frequency_spectra(tape):
 
 
 def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
-    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
+    r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
     periodic function, where :math:`d` is the highest desired frequency in the
     Fourier spectrum.
 
@@ -290,7 +290,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_thresh
 
 
 def _fourier_coefficients_no_filter(f, n_inputs, degree):
-    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
+    r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
     function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
     This function computes the coefficients blindly without any filtering applied, and
