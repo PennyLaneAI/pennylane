@@ -195,23 +195,28 @@ def frequency_spectra(tape):
     return frequency_dict
 
 
-def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True):
-    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
-    function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
+def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
+    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
+    periodic function, where :math:`d` is the highest desired frequency in the
+    Fourier spectrum.
 
     By default, a low-pass filter is applied prior to computing the coefficients
-    in order to mitigate the effects of aliasing. Coefficients up to twice the size of the
-    maximum degree are computed, then filtered down to the desired degree before being
-    returned.
+    in order to mitigate the effects of aliasing. Coefficients up to a threshold
+    value are computed, and then frequencies higher than the degree are simply removed. This
+    ensures that the coefficients returned will have the correct values, though they
+    may not be the full set of coefficients. If no threshold value is provided, the
+    threshold will be set to ``2 * degree``.
 
     Args:
         f (callable): function that takes an array of :math:`N` scalar inputs
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
-        lowpass_filter (bool): If True (default), a low-pass filter is applied prior to
+        lowpass_filter (bool): If True (default), a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
             given degree.
+        filter_threshold (None or int): The integer frequency at which to filter. If no value is
+            specified, ``2 * degree`` is used.
 
     Returns:
         array[complex]: The Fourier coefficients of the function f up to the specified degree.
@@ -248,15 +253,23 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True):
     if not lowpass_filter:
         return _fourier_coefficients_no_filter(f, n_inputs, degree)
 
+    if filter_threshold is None:
+        filter_threshold = 2 * degree
+
     # Compute the fft of the function at 2x the specified degree
-    unfiltered_coeffs = _fourier_coefficients_no_filter(f, n_inputs, 2 * degree)
+    unfiltered_coeffs = _fourier_coefficients_no_filter(f, n_inputs, filter_threshold)
 
     # Shift the frequencies so that the 0s are at the centre
     shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
 
     # Next, slice up the array so that we get only the coefficients we care about,
     # those between -degree and degree
-    range_slices = list(range(degree, shifted_unfiltered_coeffs.shape[0] - degree))
+    range_slices = list(
+        range(
+            filter_threshold - degree,
+            shifted_unfiltered_coeffs.shape[0] - (filter_threshold - degree),
+        )
+    )
 
     shifted_filtered_coeffs = shifted_unfiltered_coeffs.copy()
 
