@@ -596,6 +596,59 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
+
+* Added functionality for constructing and manipulating the Pauli group
+  [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159).
+  For example, we can iterate through the 3-qubit Pauli group like so:
+
+  ```python
+  from pennylane.pauli import pauli_group
+  pauli_group_3_qubits = list(pauli_group(3))
+  print(pauli_group_3_qubits)
+  ```
+
+  We can also construct and store the full group, and multiply together
+  its members at the level of Pauli words using the `pauli_mult` and
+  `pauli_multi_with_phase` functions. This can be done on
+  arbitrarily-labeled wires as well, by defining a wire map.
+
+  ```pycon
+  >>> from pennylane.pauli import pauli_group, pauli_mult
+  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  >>> pg = list(pauli_group(3, wire_map=wire_map))
+  >>> pg[3]
+  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pg[55]
+  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  ```
+
+  Functions for conversion of Pauli observables to strings (and back),
+  are included.
+
+  ```pycon
+  >>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
+  'YYZ'
+  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
+  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+  ```
+
+  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
+  also supported.
+
+  ```python
+  >>> from pennylane.pauli import pauli_word_to_matrix
+  >>> wire_map = {'a' : 0, 'b' : 1}
+  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+  array([[ 1.,  0.,  0.,  0.],
+         [ 0., -1.,  0., -0.],
+         [ 0.,  0.,  1.,  0.],
+         [ 0., -0.,  0., -1.]])
+  ```
+
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
