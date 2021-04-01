@@ -75,7 +75,6 @@ class tensor(_np.ndarray):
             an array. This includes lists, lists of tuples, tuples, tuples of tuples,
             tuples of lists and ndarrays.
         requires_grad (bool): whether the tensor supports differentiation
-        is_input (bool): flags the tensor as an input to a quantum function
 
     **Example**
 
@@ -108,8 +107,8 @@ class tensor(_np.ndarray):
         [0., 0., 0.]], requires_grad=True)
     """
 
-    def __new__(cls, input_array, *args, requires_grad=True, is_input=None, **kwargs):
-        obj = _np.array(input_array, *args, **kwargs)
+    def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
+        obj = asarray(input_array, *args, **kwargs)
 
         if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
@@ -124,19 +123,14 @@ class tensor(_np.ndarray):
             return
 
         self.requires_grad = getattr(obj, "requires_grad", None)
-        self.is_input = getattr(obj, "is_input", None)
 
     def __repr__(self):
         string = super().__repr__()
-        if self.is_input is None:
-            return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+        return string[:-1] + ", requires_grad={})".format(self.requires_grad)
 
-        return string[:-1] + ", requires_grad={}, is_input={})".format(
-            self.requires_grad, self.is_input
-        )
 
     def __array_wrap__(self, obj):
-        out_arr = tensor(obj, requires_grad=self.requires_grad, is_input=self.is_input)
+        out_arr = tensor(obj, requires_grad=self.requires_grad)
         return super().__array_wrap__(out_arr)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -158,10 +152,6 @@ class tensor(_np.ndarray):
         # unwrap the input arguments to the ufunc
         args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
 
-        for i in args:
-            if hasattr(i, "unbox"):
-                return i.__array_ufunc__(ufunc, method, *args, **kwargs)
-
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
         res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
@@ -180,15 +170,10 @@ class tensor(_np.ndarray):
             isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
         )
 
-        # if any of the inputs were marked as inputs, the output should also be an input
-        is_input = any(isinstance(x, onp.ndarray) and getattr(x, "is_input", True) for x in inputs)
-
         # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
         # We also correctly set the requires_grad attribute.
         for i in range(len(ufunc_output)):  # pylint: disable=consider-using-enumerate
-            ufunc_output[i] = tensor(
-                ufunc_output[i], requires_grad=requires_grad, is_input=is_input
-            )
+            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad)
 
         if len(ufunc_output) == 1:
             # the ufunc has a single output so return a single tensor
@@ -201,7 +186,7 @@ class tensor(_np.ndarray):
         item = super().__getitem__(*args, **kwargs)
 
         if not isinstance(item, tensor):
-            item = tensor(item, requires_grad=self.requires_grad, is_input=self.is_input)
+            item = tensor(item, requires_grad=self.requires_grad)
 
         return item
 
@@ -210,7 +195,7 @@ class tensor(_np.ndarray):
             # Allowing hashing if the tensor is a scalar.
             # We hash both the scalar value *and* the differentiability information,
             # to match the behaviour of PyTorch.
-            return hash((self.item(), self.requires_grad, self.is_input))
+            return hash((self.item(), self.requires_grad))
 
         raise TypeError("unhashable type: 'numpy.tensor'")
 
