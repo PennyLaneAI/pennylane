@@ -18,30 +18,24 @@ Contains the mitigation transform
 import pennylane as qml
 from pennylane.operation import Operation
 
-cirq_operation_map = None
-
 
 def _load_operation_map():
-    """If not done already, this function loads the mapping between PennyLane operations and Cirq
-    operations.
-    """
-    global cirq_operation_map
-    if cirq_operation_map is None:
-        from pennylane_cirq.cirq_device import CirqOperation, CirqDevice
+    """Loads the mapping between PennyLane operations and Cirq operations."""
+    from pennylane_cirq.cirq_device import CirqOperation, CirqDevice
 
-        operation_map = CirqDevice._operation_map
-        inv_operation_map = {}
+    operation_map = CirqDevice._operation_map
+    inv_operation_map = {}
 
-        for key in operation_map:
-            if not operation_map[key]:
-                continue
+    for key in operation_map:
+        if not operation_map[key]:
+            continue
 
-            inverted_operation = CirqOperation(operation_map[key].parametrization)
-            inverted_operation.inv()
+        inverted_operation = CirqOperation(operation_map[key].parametrization)
+        inverted_operation.inv()
 
-            inv_operation_map[key + Operation.string_for_inverse] = inverted_operation
+        inv_operation_map[key + Operation.string_for_inverse] = inverted_operation
 
-        cirq_operation_map = {**operation_map, **inv_operation_map}
+    cirq_operation_map = {**operation_map, **inv_operation_map}
 
     return cirq_operation_map
 
@@ -98,7 +92,7 @@ def _cirq_to_tape(circuit, measurements=None):
         .QuantumTape: the corresponding :class:`~.QuantumTape`
     """
     try:
-        import qiskit
+        import qiskit  # pylint: disable=unused-import
     except ImportError as e:
         raise ImportError("The qiskit package is required") from e
     try:
@@ -146,10 +140,10 @@ def mitigate(input, factory=None, scale_noise=None):
     """
     if isinstance(input, qml.tape.QuantumTape):
         return _mitigate_tape(input, factory=factory, scale_noise=scale_noise)
-    elif isinstance(input, qml.QubitDevice):
+    if isinstance(input, qml.QubitDevice):
         return _mitigate_device(input, factory=factory, scale_noise=scale_noise)
-    else:
-        raise ValueError("Unknown input")
+
+    raise ValueError("Unknown input")
 
 
 def _mitigate_tape(tape, factory=None, scale_noise=None):
@@ -169,7 +163,6 @@ def _mitigate_tape(tape, factory=None, scale_noise=None):
         will return the zero noise extrapolated values.
     """
     try:
-        import mitiq
         from mitiq.zne.inference import RichardsonFactory
         from mitiq.zne.scaling import fold_gates_at_random
     except ImportError as e:
