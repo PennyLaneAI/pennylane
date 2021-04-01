@@ -113,7 +113,6 @@ class tensor(_np.ndarray):
         if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
             obj.requires_grad = requires_grad
-            obj.is_input = is_input
 
         return obj
 

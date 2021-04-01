@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.fourier.coefficients import frequency_spectra, fourier_coefficients
+from pennylane.fourier.coefficients import fourier_coefficients
 
 
 def fourier_function(freq_dict, x):
