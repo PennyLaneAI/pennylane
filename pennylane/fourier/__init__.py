@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Tools to compute and visualise the Fourier series representation of quantum circuits."""
-from .coefficients import frequency_spectra, fourier_coefficients
-from .visualization import (
-    violin_plot,
-    bar_plot,
-    complex_panel_plot,
-    radial_box_plots
-)
+from .coefficients import fourier_coefficients
+from .spectrum import spectrum
+from .visualization import violin_plot, bar_plot, complex_panel_plot, radial_box_plots
