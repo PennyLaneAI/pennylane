@@ -11,18 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Contains qnode transform that computes the fourier spectrum of a QNode."""
 import numpy as np
 import pennylane as qml
 from functools import wraps
 from itertools import product
+from copy import copy
 
 
 def _simplify_tape(tape, original_inputs):
-    """Expand the tape until every operation that an original input enters
-    is a single-parameter gate of the form exp(-i x_i G) where G is a Hermitian generator.
+    r"""Expand the tape until every operation that takes an original input
+    is a single-parameter gate.
 
-    If the expansion involves any processing on the parameters, the circuit is not of a form that
-    can be handled by the spectrum function, and an error is thrown.
+    A single-parameter gate is of the form :math:`\exp(-i x_i G)` where :math:`x_i` is a scalar input
+    and :math:`G` is a Hermitian operator called a "generator".
+
+    If the expansion involves any processing on the parameters (such as scalar multiplication)
+    the circuit is not of a form that can be handled by the spectrum function, and an error is thrown.
 
     Args:
         tape (~.tape.QuantumTape): tape to simplify
@@ -33,8 +38,14 @@ def _simplify_tape(tape, original_inputs):
     """
 
     def stop_at(obj):
-        """Accepts a queue object and returns ``True``
-           if this object should *not* be expanded."""
+        r"""Accepts a queue object and returns ``False`` if this object should be expanded.
+
+        An object should be expanded if it is not an operation, and if it is not a single-parameter gate but
+        takes inputs.
+
+        Before returning ``False`` it is checked that an expansion is possible, and that it will not perform processing
+        on the inputs.
+        """
 
         if isinstance(obj, qml.operation.Operation):
             takes_input = any(p in original_inputs for p in obj.parameters)
@@ -52,13 +63,13 @@ def _simplify_tape(tape, original_inputs):
 
                 new_inputs = expanded.get_parameters(trainable_only=True)
                 if any(i not in original_inputs for i in new_inputs):
-                    raise ValueError(f"{obj} transforms the inputs. "
-                                     f"Aborting the expansion of the tape.")
+                    raise ValueError(
+                        f"{obj} transforms the inputs. " f"Aborting the expansion of the tape."
+                    )
 
                 return False
 
             else:
-
                 return True
 
         # if object is not an op, it is probably a tape, so expand it
@@ -68,16 +79,22 @@ def _simplify_tape(tape, original_inputs):
 
 
 def _get_spectrum(op):
+    r"""Get the spectrum of the input x of a single-parameter operation :math:`\exp(-i x G)`.
+
+    The spectrum is the set of sums of :math:`G`'s eigenvalues.
+    """
 
     g, coeff = op.generator
 
+    # some generators are operations
     if not isinstance(g, np.ndarray) and g is not None:
         g = g.matrix
 
+    # the matrix or generator could be undefined
     if g is None:
         raise ValueError(f"no generator defined for operator {op}")
 
-    g = coeff*g
+    g = coeff * g
     evals = np.linalg.eigvals(g)
     # eigenvalues of hermitian ops are guaranteed to be real
     evals = np.real(evals)
@@ -91,7 +108,18 @@ def _get_spectrum(op):
 
 
 def _join_spectra(spec1, spec2):
-    sums = [s1+s2 for s1 in spec1 for s2 in spec2]
+    r"""Join two spectra that belong to the same input.
+
+    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, spectra are
+    joined by taking the set of sums of their elements.
+
+    Args:
+        spec1 (list[float]): first spectrum
+        spec2 (list[float]): second spectrum
+    Returns:
+        list[float]: joined spectrum
+    """
+    sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
     return sorted(list(set(sums)))
 
 
@@ -129,7 +157,7 @@ def spectrum(qnode):
 
     .. note::
         Differentiability of the inputs is not used here to compute
-        gradients, but to conveniently track inputs through classical
+        gradients, but to track inputs through classical
         pre-processing and circuit compilation procedures.
 
     Args:
@@ -145,39 +173,48 @@ def spectrum(qnode):
 
         import pennylane as qml
         from pennylane import numpy as pnp
-        from pennylane.beta.transforms import fourier
+        from pennylane.beta.transforms.fourier import spectrum
 
-        x = anp.array([0.1, 0.3], requires_grad=True)
-        z = anp.array([0.5, 0.2])
-
-        dev = qml.device('default.qubit', wires=['a'])
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
-        def circuit(x, z):
-            qml.RX(x[0], wires='a')
-            qml.Rot(-4.1, x[1], z[0], wires='a')
-            qml.RX(x[2], wires='a')
-            qml.Hadamard(wires='a')
-            qml.RX(z[1], wires='a')
-            qml.T(wires='a')
-            return qml.expval(qml.PauliZ(wires='a'))
+        def circuit(x):
+            qml.templates.AngleEmbedding(x[0:3], wires=[0, 1, 2])
+            qml.RX(x[0], wires=1)
+            qml.Rot(x[0], x[1], x[3], wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(x[3], wires=2)
+            return qml.expval(qml.PauliZ(wires=2))
 
-        x = pnp.array([0.1, 0.2, 0.3])
-        z = pnp.array([-0.1, 1.8])
+        x = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5], requires_grad=True)
 
-        frequencies = fourier.spectrum(circuit)(x, z)
 
-        for inp, freqs in frequencies.items():
+        res = spectrum(circuit)(x)
+
+        for inp, freqs in res.items():
             print(f"{inp}: {freqs}")
+
+        >>> 0.1: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+        >>> 0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]
+        >>> 0.3: [-1.0, 0.0, 1.0]
+        >>> 0.4: [-2.0, -1.0, 0.0, 1.0, 2.0]
+        >>> 0.5: [-1.0, 0.0, 1.0]
+
 
     """
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
 
+        qnode_copy = copy(qnode)
+
+        # hack: currently the tape only differentiates trainable/non-trainable params
+        # if the qnode uses non-backprop diff rules.
+        qnode.diff_options["method"] = "parameter-shift"
+
         # extract the tape
-        qnode.construct(args, kwargs)
-        tape = qnode.qtape
+        qnode_copy.construct(args, kwargs)
+        tape = qnode_copy.qtape
 
         inpts = tape.get_parameters(trainable_only=True)
 

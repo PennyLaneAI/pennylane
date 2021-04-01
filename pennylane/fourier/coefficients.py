@@ -18,7 +18,6 @@ from .custom_decompositions import *
 custom_decomps_required = {"CRot": custom_CRot_decomposition}
 
 
-
 def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
     periodic function, where :math:`d` is the highest desired frequency in the

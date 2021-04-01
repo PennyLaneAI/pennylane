@@ -39,8 +39,8 @@ class TestHelpers:
     @pytest.mark.parametrize("op, expected", [(qml.RX(0.1, wires=0), [-1, 0,  1]),
                                               (qml.RY(0.1, wires=0), [-1, 0, 1]),
                                               (qml.RZ(0.1, wires=0), [-1, 0, 1]),
-                                              (qml.PhaseShift(0.5, wires=0), [0, 1, 2]),
-                                              (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [0, 1, 2])])
+                                              (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),
+                                              (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1])])
     def test_get_spectrum(self, op, expected, tol):
         """Test that the spectrum is correctly extracted from an operator."""
         spec = _get_spectrum(op)
@@ -108,3 +108,39 @@ class TestSimplify:
         queue = [op.name for op in expanded.operations]
         assert queue == ["RZ", "RY", "RZ", "CRot"]
 
+
+class TestIntegration:
+    """Integration tests."""
+
+    def crazy_logic(self):
+        """Test that the spectra of a circuit with lots of edge cases is calculated correctly."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, z):
+            # use an embedding
+            qml.templates.AngleEmbedding(x[0:3], wires=[0, 1, 2])
+            qml.RX(x[0], wires=1)
+            qml.Rot(x[1], x[0], x[1], wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(x[4], wires=2)
+            qml.RX(z[0], wires=2)
+            # feed non-inputs into an operation that cannot be simplified by expansion
+            qml.CRot(z[0], z[0], z[1], wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=2))
+
+        x = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5], requires_grad=True)
+        z = pnp.array([-0.1, -0.2], requires_grad=False)
+
+        expected = {x[0]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+                    x[1]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+                    x[2]: [-1.0, 0.0, 1.0],
+                    x[4]: [-1.0, 0.0, 1.0]
+                    }
+
+        res = spectrum(circuit)(x, z)
+
+        for (k1, v1), (k2, v2) in zip(res.items(), expected.items()):
+            assert k1 == k2
+            assert v1 == v2
