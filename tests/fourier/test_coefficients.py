@@ -22,8 +22,6 @@ from pennylane.fourier.coefficients import frequency_spectra, fourier_coefficien
 
 dev_1 = qml.device("default.qubit", wires=1)
 dev_2 = qml.device("default.qubit", wires=2)
-dev_3 = qml.device("default.qubit", wires=3)
-
 
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_rx(inpt):
@@ -90,21 +88,14 @@ def circuit_two_qubits_repeated_param(inpt):
 def circuit_two_qubits_two_params(inpt):
     """Circuit with a single-qubit, two-param output function <Z>.
 
-    By-hand calculation of f(x) gives (1/2) cos(x_1) + (1/2) cos(x_1)cos(x_2)
-    Fourier coeffs are 0.25 for c_10 and c_{-1,0}, and 0.125 for all (n, m) where
-        n and m are either +/- 1.
+    By-hand calculation of f(x) gives <Z> = cos(x_1) cos(x_2)
+    Fourier coeffs are 0.25 for all +/-1 combinations, 0 elsewhere
+    (Same as the circuit with one qubit and two params)
     """
     qml.RY(inpt[0], wires=0)
     qml.RX(inpt[1], wires=1)
     qml.CNOT(wires=[1, 0])
     return qml.expval(qml.PauliZ(0))
-
-
-@qml.qnode(dev_2)
-def circuit_two_qubits_controlled_rot(inpt):
-    qml.Hadamard(wires=0)
-    qml.CRY(inpt[0], wires=[0, 1])
-    return qml.expval(qml.PauliZ(1))
 
 
 class TestFourierSpectra:
@@ -113,7 +104,7 @@ class TestFourierSpectra:
     @pytest.mark.parametrize(
         "circuit,inpt",
         [
-            (circuit_one_qubit_one_param, np.array([0.1])),
+            (circuit_one_qubit_one_param_rx, np.array([0.1])),
             (circuit_one_qubit_two_params, np.array([0.1, 0.3])),
             (circuit_two_qubits_two_params, np.array([-0.4, 0.8])),
             (circuit_two_qubits_controlled_rot, np.array([1.34])),
@@ -126,9 +117,13 @@ class TestFourierSpectra:
     @pytest.mark.parametrize(
         "circuit,inpt,spectra",
         [
-            (circuit_one_qubit_one_param, np.array([0.1], is_input=True), {0.1: [-1.0, 0.0, 1.0]}),
             (
-                circuit_one_qubit_one_param,
+                circuit_one_qubit_one_param_rx,
+                np.array([0.1], is_input=True),
+                {0.1: [-1.0, 0.0, 1.0]},
+            ),
+            (
+                circuit_one_qubit_one_param_h_ry,
                 np.array([-0.6], is_input=True),
                 {-0.6: [-1.0, 0.0, 1.0]},
             ),
@@ -207,14 +202,21 @@ class TestFourierCoefficient:
         coeffs = fourier_coefficients(circuit, len(inpt), degree)
         assert np.allclose(coeffs, expected_coeffs)
 
-
     @pytest.mark.parametrize(
         "circuit,inpt,degree,expected_coeffs",
         [
-            (circuit_two_qubits_two_params, np.array([0.1, 0.3]), 1,
-             np.array([[0, 0, 0], [0.25, 0.125, 0.125], [0.25, 0.125, 0.125]])),
-            (circuit_one_qubit_two_params, np.array([0.1, 0.3]), 1,
-             np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]])),
+            (
+                circuit_two_qubits_two_params,
+                np.array([0.1, 0.3]),
+                1,
+                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+            ),
+            (
+                circuit_one_qubit_two_params,
+                np.array([0.1, 0.3]),
+                1,
+                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+            ),
         ],
     )
     def test_coefficients_two_param_circuits(self, circuit, inpt, degree, expected_coeffs):
@@ -222,6 +224,7 @@ class TestFourierCoefficient:
         results regardless of input degree (max degree is 1)."""
         coeffs = fourier_coefficients(circuit, len(inpt), degree)
         assert np.allclose(coeffs, expected_coeffs)
+
 
 class TestAntiAliasing:
     """Test that anti-aliasing techniques give correct results."""
