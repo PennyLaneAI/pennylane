@@ -127,7 +127,6 @@ class tensor(_np.ndarray):
         string = super().__repr__()
         return string[:-1] + ", requires_grad={})".format(self.requires_grad)
 
-
     def __array_wrap__(self, obj):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
         return super().__array_wrap__(out_arr)
