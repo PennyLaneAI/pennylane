@@ -33,7 +33,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_thresh
         f (callable): function that takes an array of :math:`N` scalar inputs
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
-            the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
+            the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
         lowpass_filter (bool): If True (default), a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
             given degree.
@@ -54,7 +54,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_thresh
         num_inputs = 2
         degree = 1
 
-        weights = anp.array([0.5, 0.2], requires_grad=True, is_input=False)
+        weights = anp.array([0.5, 0.2])
 
         dev = qml.device('default.qubit', wires=['a'])
 
@@ -68,9 +68,8 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_thresh
 
             return qml.expval(qml.PauliZ(wires='a'))
 
-        # Coefficients of the "inpt" variable will be computed
+        # Coefficients of the `inpt` variable will be computed
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
-
     """
     if not lowpass_filter:
         return _fourier_coefficients_no_filter(f, n_inputs, degree)
