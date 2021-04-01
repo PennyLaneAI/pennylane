@@ -14,11 +14,62 @@
 """
 Unit tests for :mod:`fourier` coefficient and spectra calculations.
 """
+from functools import partial
+
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.fourier.coefficients import frequency_spectra, fourier_coefficients
+
+
+def fourier_function(freq_dict, x):
+    """Function to construct and evaluate a Fourier series given
+    a dictionary of frequencies and their coefficients.
+
+    Args:
+        freq_dict (dict[int, float]): Pairs of positive integer frequencies and corresponding
+            Fourier coefficients.
+
+    Returns:
+        float: The output of the function \sum(c_n e^{inx}).
+    """
+    result = 0
+
+    # Handle 0 coefficient separately
+    if 0 in freq_dict.keys():
+        result = freq_dict[0]
+
+    result += sum(
+        [
+            coeff * np.exp(1j * freq * x) + np.conj(coeff) * np.exp(-1j * freq * x)
+            for freq, coeff in freq_dict.items()
+            if freq != 0
+        ]
+    )
+    return result.real
+
+
+class TestFourierCoefficientSingleVariable:
+    """Test that the Fourier coefficients of a single-variable function are computed correctly"""
+
+    @pytest.mark.parametrize(
+        "freq_dict,expected_coeffs",
+        [
+            ({0: 0.5, 1: 2.3, 3: 0.4}, np.array([0.5, 2.3, 0, 0.4, 0.4, 0, 2.3])),
+            (
+                {3: 0.4, 4: 0.2 + 0.8j, 5: 1j},
+                np.array([0, 0, 0, 0.4, 0.2 + 0.8j, 1j, -1j, 0.2 - 0.8j, 0.4, 0.0, 0]),
+            ),
+        ],
+    )
+    def test_single_variable_fourier_coeffs(self, freq_dict, expected_coeffs):
+        degree = max(freq_dict.keys())
+        partial_func = partial(fourier_function, freq_dict)
+        coeffs = fourier_coefficients(partial_func, 1, degree)
+
+        assert np.allclose(coeffs, expected_coeffs)
+
 
 dev_1 = qml.device("default.qubit", wires=1)
 dev_2 = qml.device("default.qubit", wires=2)
@@ -99,58 +150,7 @@ def circuit_two_qubits_two_params(inpt):
     return qml.expval(qml.PauliZ(0))
 
 
-class TestFourierSpectra:
-    """Test cases for computing the Fourier spectrum."""
-
-    @pytest.mark.parametrize(
-        "circuit,inpt",
-        [
-            (circuit_one_qubit_one_param_rx, np.array([0.1])),
-            (circuit_one_qubit_two_params, np.array([0.1, 0.3])),
-            (circuit_two_qubits_two_params, np.array([-0.4, 0.8]))
-        ],
-    )
-    def test_no_input_fourier_spectra(self, circuit, inpt):
-        circuit(inpt)
-        assert frequency_spectra(circuit.qtape) == {}
-
-    @pytest.mark.parametrize(
-        "circuit,inpt,spectra",
-        [
-            (
-                circuit_one_qubit_one_param_rx,
-                np.array([0.1], is_input=True),
-                {0.1: [-1.0, 0.0, 1.0]},
-            ),
-            (
-                circuit_one_qubit_one_param_h_ry,
-                np.array([-0.6], is_input=True),
-                {-0.6: [-1.0, 0.0, 1.0]},
-            ),
-            (
-                circuit_one_qubit_two_params,
-                np.array([0.6, 0.3], is_input=True),
-                {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
-            ),
-            (
-                circuit_two_qubits_two_params,
-                np.array([0.6, 0.3], is_input=True),
-                {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
-            ),
-            (
-                circuit_two_qubits_repeated_param,
-                np.array([0.2], is_input=True),
-                {0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]},
-            )
-        ],
-    )
-    def test_compute_fourier_spectra(self, circuit, inpt, spectra):
-        """Test that Fourier spectra are correctly computed."""
-        circuit(inpt)
-        assert frequency_spectra(circuit.qtape) == spectra
-
-
-class TestFourierCoefficient:
+class TestFourierCoefficientCircuits:
     """Test calculation of Fourier coefficients for various circuits."""
 
     @pytest.mark.parametrize(
