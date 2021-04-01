@@ -24,10 +24,10 @@ def invisible(fn):
     or invisible within a QNode or quantum tape context.
 
     Args:
-        fn (function): a quantum function that applies quantum operations
+        fn (function): A quantum function that applies quantum operations.
 
     Returns:
-        function: the input function transformed, so that it will not be
+        function: The input function transformed, so that it will not be
         recorded by QNodes or quantum tapes.
 
     **Example**
