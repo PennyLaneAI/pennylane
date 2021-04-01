@@ -38,7 +38,7 @@ class TestReversibleTape:
             qml.RY(0.542, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(dev, "execute")
+        spy = mocker.spy(dev, "_execute")
         tape.jacobian(dev)
 
         tape0 = spy.call_args_list[0][0][0]
@@ -68,7 +68,7 @@ class TestReversibleTape:
             qml.Rot(0.1, 0.2, 0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(dev, "execute")
+        spy = mocker.spy(dev, "_execute")
         tape.jacobian(dev)
 
         tape0 = spy.call_args_list[0][0][0]

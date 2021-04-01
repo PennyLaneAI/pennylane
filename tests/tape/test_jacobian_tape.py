@@ -297,7 +297,7 @@ class TestJacobian:
         the tape is executed only once using the current parameter
         values."""
         dev = qml.device("default.qubit", wires=2)
-        execute_spy = mocker.spy(dev, "execute")
+        execute_spy = mocker.spy(dev, "_execute")
         numeric_spy = mocker.spy(JacobianTape, "numeric_pd")
 
         with JacobianTape() as tape:
