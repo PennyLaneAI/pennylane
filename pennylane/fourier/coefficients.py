@@ -14,6 +14,8 @@
 """Contains methods for computing Fourier coefficients and frequency spectra of quantum functions ."""
 from itertools import product
 
+import numpy as np
+
 
 def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
