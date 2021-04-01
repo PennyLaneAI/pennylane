@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def invisible(fn):
-    """A transform to make quantum function non-recordable
+    """A transform to make a quantum function non-recordable
     or invisible within a QNode or quantum tape context.
 
     Args:
@@ -76,7 +76,7 @@ def invisible(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.get_tape()
+        tape = qml.tape.get_active_tape()
 
         if tape is None:
             return fn(*args, **kwargs)

@@ -81,7 +81,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
-def get_tape():
+def get_active_tape():
     """Returns the currently recording tape.
     If no tape is currently recording, ``None`` is returned.
 
@@ -89,11 +89,11 @@ def get_tape():
 
     >>> with qml.tape.QuantumTape():
     ...     qml.RX(0.2, wires="a")
-    ...     tape = qml.get_tape()
+    ...     tape = qml.get_active_tape()
     ...     qml.RY(0.1, wires="b")
     >>> print(tape)
     <QuantumTape: wires=['a', 'b'], params=2>
-    >>> print(qml.tape.get_tape())
+    >>> print(qml.tape.get_active_tape())
     None
     """
     return QueuingContext.active_context()

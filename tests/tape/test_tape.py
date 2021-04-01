@@ -1398,16 +1398,16 @@ class TestStopRecording:
 
 
 def test_gate_tape():
-    """Test that the get_tape() function returns the currently
+    """Test that the get_active_tape() function returns the currently
     recording tape, or None if no tape is recording"""
-    assert qml.tape.get_tape() is None
+    assert qml.tape.get_active_tape() is None
 
     with QuantumTape() as tape1:
-        assert qml.tape.get_tape() is tape1
+        assert qml.tape.get_active_tape() is tape1
 
         with QuantumTape() as tape2:
-            assert qml.tape.get_tape() is tape2
+            assert qml.tape.get_active_tape() is tape2
 
-        assert qml.tape.get_tape() is tape1
+        assert qml.tape.get_active_tape() is tape1
 
-    assert qml.tape.get_tape() is None
+    assert qml.tape.get_active_tape() is None
