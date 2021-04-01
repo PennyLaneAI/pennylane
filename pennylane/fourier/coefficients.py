@@ -13,9 +13,6 @@
 # limitations under the License.
 """Contains methods for computing Fourier coefficients and frequency spectra of quantum functions ."""
 from itertools import product
-from .custom_decompositions import *
-
-custom_decomps_required = {"CRot": custom_CRot_decomposition}
 
 
 def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
