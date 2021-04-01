@@ -23,23 +23,31 @@ def _simplify_tape(tape, original_inputs):
            if this object should *not* be expanded."""
 
         if isinstance(obj, qml.operation.Operation):
-
             takes_input = any(p in original_inputs for p in obj.parameters)
-            is_one_param_gate = hasattr(obj, "generator")
+            is_one_param_gate = obj.generator[0] is not None
             if takes_input and not is_one_param_gate:
 
-                # check if the new trainable parameters are
-                # all identical to some original trainable
+                # check if the trainable parameters after expansion are
+                # all found in the original inputs
                 # parameters - this makes sure no new parameters
                 # were created that depend on the inputs
-                expanded = obj.expand()
+                try:
+                    expanded = obj.expand()
+                except NotImplementedError:
+                    raise ValueError(f"Cannot expand {obj}. Aborting the expansion of the tape.")
+
                 new_inputs = expanded.get_parameters(trainable_only=True)
                 if any(i not in original_inputs for i in new_inputs):
-                    raise ValueError(f"{obj} performs non-trivial manipulation of the inputs. "
-                                     f"Aborted the expansion of the tape.")
+                    raise ValueError(f"{obj} transforms the inputs. "
+                                     f"Aborting the expansion of the tape.")
+
+                return False
+
+            else:
 
                 return True
 
+        # if object is not an op, it is probably a tape, so expand it
         return False
 
     return tape.expand(depth=5, stop_at=stop_at)
@@ -160,16 +168,19 @@ def spectrum(qnode):
         freqs = {}
         for op in simple_tape.operations:
 
-            # make sure this is a one-parameter operation
-            assert len(op.parameters) == 1
+            if len(op.parameters) != 1:
+                # inputs can only enter one-parameter gates
+                continue
+            else:
+                inpt = op.parameters[0]
+                if inpt in inpts:
+                    spec = _get_spectrum(op)
 
-            inpt = op.parameters[0]
-            if inpt in inpts:
-                spec = _get_spectrum(op)
+                    if inpt in freqs:
+                        spec = _join_spectra(freqs[inpt], spec)
 
-                if inpt in freqs:
-                    spec = _join_spectra(freqs[inpt], spec)
+                    freqs[inpt] = spec
 
-                freqs[inpt] = spec
+        return freqs
 
     return wrapper

@@ -17,10 +17,11 @@ Tests for the fourier qnode transforms.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.beta.transforms.fourier import spectrum, _join_spectra, _get_spectrum, _simplify_tape
 
 
-class TestUnits:
+class TestHelpers:
 
     @pytest.mark.parametrize("spectrum1, spectrum2, expected", [([-1, 0, 1], [-1, 0, 1], [-2, -1, 0, 1, 2]),
                                                                 ([-3, 0, 3], [-5, 0, 5],
@@ -52,9 +53,11 @@ class TestUnits:
             _get_spectrum(op)
 
 
-class TestSimplifyTape:
+class TestSimplify:
+    """Tests for the _simplify_tape function."""
 
-    def test_already_simplified_tape(self):
+    def test_no_changes(self, tol):
+        """Test the _simplify_tape function for a tape that does not need to be changed"""
 
         x = [0.1, 0.2, 0.3]
 
@@ -64,7 +67,44 @@ class TestSimplifyTape:
             qml.PhaseShift(x[2], wires=0)
 
         new_tape = _simplify_tape(tape_already_simple, original_inputs=x)
-        assert new_tape is tape_already_simple
+        for op1, op2 in zip(new_tape.operations, tape_already_simple.operations):
+            assert op1.name == op2.name
+            assert np.allclose(op1.parameters, op2.parameters, atol=tol, rtol=0)
+            assert op1.wires == op2.wires
 
+    def test_new_trainable_parameter_created(self, tol):
+        """Test that the _simplify_tape function throws an error when the expansion of an operation
+        would change a parameter."""
 
+        x = [0.1, 0.2, 0.3]
+
+        with qml.tape.QuantumTape() as tape_not_simplifiable:
+            qml.RX(x[0], wires=0)
+            qml.CRot(x[0], x[1], x[2], wires=[0, 1])
+            qml.PhaseShift(x[2], wires=0)
+
+        with pytest.raises(ValueError, match="transforms the inputs"):
+            _simplify_tape(tape_not_simplifiable, original_inputs=x)
+
+    def test_track_inputs(self):
+        """Test that _simplify_tape can distinguish whether a map is performed on an
+        input (which is not allowed) or other parameters (which is fine)."""
+
+        no_input = pnp.array([0.1, 0.2, 0.3], requires_grad=False)
+        inpt = pnp.array([-0.1, -0.2, -0.3], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape_exception:
+            qml.Rot(no_input[0], no_input[1], no_input[2], wires=[0])
+            qml.CRot(inpt[0], inpt[1], inpt[2], wires=[0, 1])
+
+        with pytest.raises(ValueError, match="transforms the inputs"):
+            _simplify_tape(tape_exception, original_inputs=inpt)
+
+        with qml.tape.QuantumTape() as tape_ok:
+            qml.Rot(inpt[0], inpt[1], inpt[2], wires=[0])
+            qml.CRot(no_input[0], no_input[1], no_input[2], wires=[0, 1])
+
+        expanded = _simplify_tape(tape_ok, original_inputs=inpt)
+        queue = [op.name for op in expanded.operations]
+        assert queue == ["RX", "RY", "RZ", "CRot"]
 
