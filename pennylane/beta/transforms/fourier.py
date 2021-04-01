@@ -14,9 +14,23 @@
 import numpy as np
 import pennylane as qml
 from functools import wraps
+from itertools import product
 
 
 def _simplify_tape(tape, original_inputs):
+    """Expand the tape until every operation that an original input enters
+    is a single-parameter gate of the form exp(-i x_i G) where G is a Hermitian generator.
+
+    If the expansion involves any processing on the parameters, the circuit is not of a form that
+    can be handled by the spectrum function, and an error is thrown.
+
+    Args:
+        tape (~.tape.QuantumTape): tape to simplify
+        original_inputs (list): list of inputs, to check that they are conserved throughout expansion
+
+    Returns:
+        ~.tape.QuantumTape: expanded tape
+    """
 
     def stop_at(obj):
         """Accepts a queue object and returns ``True``
@@ -24,7 +38,7 @@ def _simplify_tape(tape, original_inputs):
 
         if isinstance(obj, qml.operation.Operation):
             takes_input = any(p in original_inputs for p in obj.parameters)
-            is_one_param_gate = obj.generator[0] is not None
+            is_one_param_gate = obj.generator[0] is not None and len(obj.parameters) == 1
             if takes_input and not is_one_param_gate:
 
                 # check if the trainable parameters after expansion are
@@ -65,8 +79,15 @@ def _get_spectrum(op):
 
     g = coeff*g
     evals = np.linalg.eigvals(g)
-    sums = [evals[i]+evals[j] for i in range(len(evals)) for j in range(len(evals))]
-    return sorted(list(set(sums)))
+    # eigenvalues of hermitian ops are guaranteed to be real
+    evals = np.real(evals)
+
+    # append negative to cater for the complex conjugate part which subtracts eigenvalues
+    evals = [evals, -evals]
+
+    frequencies = [np.round(sum(comb), decimals=8) for comb in product(*evals)]
+    unique_frequencies = list(set(frequencies))
+    return sorted(unique_frequencies)
 
 
 def _join_spectra(spec1, spec2):

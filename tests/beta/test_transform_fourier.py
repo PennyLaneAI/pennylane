@@ -106,5 +106,5 @@ class TestSimplify:
 
         expanded = _simplify_tape(tape_ok, original_inputs=inpt)
         queue = [op.name for op in expanded.operations]
-        assert queue == ["RX", "RY", "RZ", "CRot"]
+        assert queue == ["RZ", "RY", "RZ", "CRot"]
 
