@@ -49,14 +49,15 @@ def _get_spectrum(op):
 
     g, coeff = op.generator
 
-    if isinstance(g, qml.Operation):
+    if not isinstance(g, np.ndarray) and g is not None:
         g = g.matrix
 
     if g is None:
         raise ValueError(f"no generator defined for operator {op}")
 
-    evals = np.linalg.evals(g)
-    sums = [evals[i]+evals[j] for i in range(len(evals)) for j in range(len(evals)) if i <= j]
+    g = coeff*g
+    evals = np.linalg.eigvals(g)
+    sums = [evals[i]+evals[j] for i in range(len(evals)) for j in range(len(evals))]
     return sorted(list(set(sums)))
 
 
