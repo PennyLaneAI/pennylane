@@ -23,6 +23,7 @@ from pennylane.fourier.coefficients import frequency_spectra, fourier_coefficien
 dev_1 = qml.device("default.qubit", wires=1)
 dev_2 = qml.device("default.qubit", wires=2)
 
+
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_rx(inpt):
     """Circuit with a single-qubit, single-param, output function <Z>.
@@ -106,8 +107,7 @@ class TestFourierSpectra:
         [
             (circuit_one_qubit_one_param_rx, np.array([0.1])),
             (circuit_one_qubit_two_params, np.array([0.1, 0.3])),
-            (circuit_two_qubits_two_params, np.array([-0.4, 0.8])),
-            (circuit_two_qubits_controlled_rot, np.array([1.34])),
+            (circuit_two_qubits_two_params, np.array([-0.4, 0.8]))
         ],
     )
     def test_no_input_fourier_spectra(self, circuit, inpt):
@@ -141,12 +141,7 @@ class TestFourierSpectra:
                 circuit_two_qubits_repeated_param,
                 np.array([0.2], is_input=True),
                 {0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]},
-            ),
-            (
-                circuit_two_qubits_controlled_rot,
-                np.array([-1.0], is_input=True),
-                {-1.0: [-2.0, -1.0, 0.0, 1.0, 2.0]},
-            ),
+            )
         ],
     )
     def test_compute_fourier_spectra(self, circuit, inpt, spectra):
@@ -213,7 +208,7 @@ class TestFourierCoefficient:
             ),
             (
                 circuit_one_qubit_two_params,
-                np.array([0.1, 0.3]),
+                np.array([-0.25, -0.9]),
                 1,
                 np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
             ),
@@ -229,4 +224,39 @@ class TestFourierCoefficient:
 class TestAntiAliasing:
     """Test that anti-aliasing techniques give correct results."""
 
-    pass
+    @pytest.mark.parametrize(
+        "circuit,inpt,degree,expected_coeffs",
+        [
+            (
+                circuit_two_qubits_repeated_param,
+                np.array([0.5]),
+                1,
+                np.array([0.5, 0, 0]),
+            ),
+        ],
+    )
+    def test_anti_aliasing_incorrect(self, circuit, inpt, degree, expected_coeffs):
+        """Test that anti-aliasing function gives correct results when we ask for
+        coefficients below the maximum degree."""
+        coeffs_anti_aliased = fourier_coefficients(
+            circuit, len(inpt), degree, filter_threshold=degree + 2
+        )
+        assert np.allclose(coeffs_anti_aliased, expected_coeffs)
+
+        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree, lowpass_filter=False)
+        assert not np.allclose(coeffs_regular, expected_coeffs)
+
+    @pytest.mark.parametrize(
+        "circuit,inpt,degree",
+        [
+            (circuit_two_qubits_two_params, np.array([0.1, 0.3]), 1),
+            (circuit_one_qubit_two_params, np.array([-0.1, 0.25]), 1),
+        ],
+    )
+    def test_anti_aliasing(self, circuit, inpt, degree):
+        """Test that the coefficients obtained through anti-aliasing are the
+        same as the ones when we don't anti-alias at the correct degree."""
+        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree, lowpass_filter=False)
+        coeffs_anti_aliased = fourier_coefficients(circuit, len(inpt), degree)
+
+        assert np.allclose(coeffs_regular, coeffs_anti_aliased)
