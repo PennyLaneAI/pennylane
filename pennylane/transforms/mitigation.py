@@ -98,6 +98,10 @@ def _cirq_to_tape(circuit, measurements=None):
         .QuantumTape: the corresponding :class:`~.QuantumTape`
     """
     try:
+        import qiskit
+    except ImportError as e:
+        raise ImportError("The qiskit package is required") from e
+    try:
         from mitiq.mitiq_qiskit import to_qiskit
     except ImportError as e:
         raise ImportError("The mitiq package is required") from e
