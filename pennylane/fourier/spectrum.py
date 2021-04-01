@@ -173,7 +173,7 @@ def spectrum(qnode):
 
         import pennylane as qml
         from pennylane import numpy as pnp
-        from pennylane.beta.transforms.fourier import spectrum
+        from pennylane.fourier import spectrum
 
         dev = qml.device("default.qubit", wires=3)
 
