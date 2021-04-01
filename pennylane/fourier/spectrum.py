@@ -210,7 +210,7 @@ def spectrum(qnode):
 
         # hack: currently the tape only differentiates trainable/non-trainable params
         # if the qnode uses non-backprop diff rules.
-        qnode.diff_options["method"] = "parameter-shift"
+        qnode_copy.diff_options["method"] = "parameter-shift"
 
         # extract the tape
         qnode_copy.construct(args, kwargs)
