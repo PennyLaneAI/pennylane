@@ -421,6 +421,7 @@ class DefaultQubit(QubitDevice):
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
+                "sparse": "default.qubit.sparse"
             },
         )
         return capabilities

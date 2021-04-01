@@ -16,7 +16,6 @@ reference plugin.
 """
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
-from pennylane.devices import jax_ops
 import numpy as np
 
 try:
@@ -80,7 +79,7 @@ class DefaultQubitSparse(DefaultQubit):
     def __init__(self, wires, *, shots=None):
         super().__init__(wires, shots=shots, cache=0)
 
-        self._state = _cast(self._create_basis_state(0))
+        self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
@@ -98,3 +97,18 @@ class DefaultQubitSparse(DefaultQubit):
             return _cast(unitary.eigvals)
 
         return _cast(unitary.matrix)
+
+    def _create_basis_state(self, index):
+        """Return a computational basis state over all wires.
+
+        Args:
+            index (int): integer representing the computational basis state
+
+        Returns:
+            array[complex]: complex array of shape ``[2]*self.num_wires``
+            representing the statevector of the basis state
+        """
+        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state[index] = 1
+        state = self._asarray(state)
+        return self._reshape(state, [2] * self.num_wires)
