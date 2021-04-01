@@ -13,4 +13,5 @@
 # limitations under the License.
 r"""Tools to compute and visualise the Fourier series representation of quantum circuits."""
 from .coefficients import fourier_coefficients
+from .spectrum import spectrum
 from .visualization import violin_plot, bar_plot, complex_panel_plot, radial_box_plots
