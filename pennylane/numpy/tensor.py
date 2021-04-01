@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -131,7 +131,9 @@ class tensor(_np.ndarray):
         if self.is_input is None:
             return string[:-1] + ", requires_grad={})".format(self.requires_grad)
 
-        return string[:-1] + ", requires_grad={}, is_input={})".format(self.requires_grad, self.is_input)
+        return string[:-1] + ", requires_grad={}, is_input={})".format(
+            self.requires_grad, self.is_input
+        )
 
     def __array_wrap__(self, obj):
         out_arr = tensor(obj, requires_grad=self.requires_grad, is_input=self.is_input)
@@ -179,14 +181,14 @@ class tensor(_np.ndarray):
         )
 
         # if any of the inputs were marked as inputs, the output should also be an input
-        is_input = any(
-            isinstance(x, onp.ndarray) and getattr(x, "is_input", True) for x in inputs
-        )
+        is_input = any(isinstance(x, onp.ndarray) and getattr(x, "is_input", True) for x in inputs)
 
         # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
         # We also correctly set the requires_grad attribute.
         for i in range(len(ufunc_output)):  # pylint: disable=consider-using-enumerate
-            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad, is_input=is_input)
+            ufunc_output[i] = tensor(
+                ufunc_output[i], requires_grad=requires_grad, is_input=is_input
+            )
 
         if len(ufunc_output) == 1:
             # the ufunc has a single output so return a single tensor

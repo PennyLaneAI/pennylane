@@ -15,29 +15,35 @@
 from itertools import product
 from .custom_decompositions import *
 
-custom_decomps_required = {
-    "CRot" : custom_CRot_decomposition
-}
+custom_decomps_required = {"CRot": custom_CRot_decomposition}
 
 
-def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
-    """Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
-    function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
-    The Fourier coefficients are computed for the parameters in the *last*
-    argument of a quantum function.
+def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
+    r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
+    periodic function, where :math:`d` is the highest desired frequency in the
+    Fourier spectrum.
+
+    By default, a low-pass filter is applied prior to computing the coefficients
+    in order to mitigate the effects of aliasing. Coefficients up to a threshold
+    value are computed, and then frequencies higher than the degree are simply removed. This
+    ensures that the coefficients returned will have the correct values, though they
+    may not be the full set of coefficients. If no threshold value is provided, the
+    threshold will be set to ``2 * degree``.
 
     Args:
-        f (callable): function that takes an array of :math:`N` scalar inputs. Function should
-            have structure ``f(weights, params)`` where params are the paramters that the
-            Fourier coefficients are taken with respect to.
-        n_inputs (int): dimension of the input
+        f (callable): function that takes an array of :math:`N` scalar inputs
+        n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
-        apply_rfftn (bool): If True, call rfftn instead of fftn.
+        lowpass_filter (bool): If True (default), a simple low-pass filter is applied prior to
+            computing the set of coefficients in order to filter out frequencies above the
+            given degree.
+        filter_threshold (None or int): The integer frequency at which to filter. If no value is
+            specified, ``2 * degree`` is used.
 
     Returns:
-        (np.ndarray): The Fourier coefficients of the function f.
+        array[complex]: The Fourier coefficients of the function f up to the specified degree.
 
     **Example**
 
@@ -68,6 +74,62 @@ def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
 
     """
+    if not lowpass_filter:
+        return _fourier_coefficients_no_filter(f, n_inputs, degree)
+
+    if filter_threshold is None:
+        filter_threshold = 2 * degree
+
+    # Compute the fft of the function at 2x the specified degree
+    unfiltered_coeffs = _fourier_coefficients_no_filter(f, n_inputs, filter_threshold)
+
+    # Shift the frequencies so that the 0s are at the centre
+    shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
+
+    # Next, slice up the array so that we get only the coefficients we care about,
+    # those between -degree and degree
+    range_slices = list(
+        range(
+            filter_threshold - degree,
+            shifted_unfiltered_coeffs.shape[0] - (filter_threshold - degree),
+        )
+    )
+
+    shifted_filtered_coeffs = shifted_unfiltered_coeffs.copy()
+
+    # Go axis by axis and take only the central components
+    for axis in range(n_inputs - 1, -1, -1):
+        shifted_filtered_coeffs = np.take(shifted_filtered_coeffs, range_slices, axis=axis)
+
+    # Shift everything back into "normal" fft ordering
+    filtered_coeffs = np.fft.ifftshift(shifted_filtered_coeffs)
+
+    # Compute the inverse FFT
+    f_discrete_filtered = np.fft.ifftn(filtered_coeffs)
+
+    # Now compute the FFT again on the filtered data
+    coeffs = np.fft.fftn(f_discrete_filtered)
+
+    return coeffs
+
+
+def _fourier_coefficients_no_filter(f, n_inputs, degree):
+    r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
+    function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
+
+    This function computes the coefficients blindly without any filtering applied, and
+    is thus used as a helper function for the true ``fourier_coefficients`` function.
+
+    Args:
+        f (callable): function that takes an array of :math:`N` scalar inputs
+        n_inputs (int): number of function inputs
+        degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
+            the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
+
+    Returns:
+        array[complex]: The Fourier coefficients of the function f up to the specified degree.
+    """
+
     # number of integer values for the indices n_i = -degree,...,0,...,degree
     k = 2 * degree + 1
 
@@ -89,12 +151,6 @@ def fourier_coefficients(f, n_inputs, degree, apply_rfftn=False):
         # fill discretized function array with value of f at inpts
         f_discrete[tuple(nvec)] = f(sample_points)
 
-    # Now we have a discretized verison of f we can use
-    # the discrete fourier transform.
-    # The normalization factor is the number of discrete points (??)
-    if apply_rfftn:
-        coeffs = np.fft.rfftn(f_discrete) / f_discrete.size
-    else:
-        coeffs = np.fft.fftn(f_discrete) / f_discrete.size
+    coeffs = np.fft.fftn(f_discrete) / f_discrete.size
 
     return coeffs

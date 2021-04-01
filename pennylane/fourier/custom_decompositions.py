@@ -15,6 +15,7 @@
 
 from pennylane import RZ, RY, CNOT
 
+
 def custom_CRot_decomposition(phi, theta, omega, wires):
     decomp_ops = [
         RZ(phi / 2, wires=wires[1]),

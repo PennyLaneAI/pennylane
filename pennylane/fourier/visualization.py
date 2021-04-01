@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains visualization functions for Fourier series and coefficients."""
+from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
-from itertools import product
 
 
 def violin_plot(list_of_coeffs, figsize=None):
@@ -314,8 +314,7 @@ def radial_box_plots(
     savefig=False,
     title=None,
     showfliers=True,
-    print_radial_axis=True,
-    merge_plots=False
+    merge_plots=False,
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
 
@@ -340,7 +339,7 @@ def radial_box_plots(
             be "FourierPlot.pdf".
         title (str): A title for the plot.
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.
-        merge_plots (bool): Whether to plot real/complex values on the same panel, or 
+        merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
     """
 
@@ -406,7 +405,6 @@ def radial_box_plots(
         plot_real_angles = rearranged_angles
         plot_imag_angles = rearranged_angles
 
-
     # Set up the panels
     num_subplots = 1 if merge_plots else 2
     fig, ax = plt.subplots(
@@ -430,20 +428,20 @@ def radial_box_plots(
             plot_radii = plot_imag_radii_distributions
 
         a.boxplot(
-           plot_radii,
-           positions=plot_angles,
-           widths=width,
-           boxprops=dict(
-               facecolor=to_rgb(colour_dict[coeff_part]) + (0.4,),
-               color=colour_dict[coeff_part],
-               edgecolor=colour_dict[coeff_part],
-           ),
-           medianprops=dict(color=colour_dict[coeff_part], linewidth=1.5),
-           flierprops=dict(markeredgecolor=colour_dict[coeff_part]),
-           whiskerprops=dict(color=colour_dict[coeff_part]),
-           capprops=dict(color=colour_dict[coeff_part]),
-           patch_artist=True,
-           showfliers=showfliers,
+            plot_radii,
+            positions=plot_angles,
+            widths=width,
+            boxprops=dict(
+                facecolor=to_rgb(colour_dict[coeff_part]) + (0.4,),
+                color=colour_dict[coeff_part],
+                edgecolor=colour_dict[coeff_part],
+            ),
+            medianprops=dict(color=colour_dict[coeff_part], linewidth=1.5),
+            flierprops=dict(markeredgecolor=colour_dict[coeff_part]),
+            whiskerprops=dict(color=colour_dict[coeff_part]),
+            capprops=dict(color=colour_dict[coeff_part]),
+            patch_artist=True,
+            showfliers=showfliers,
         )
 
         # Rotate so that the 0 frequency is at the top
@@ -492,10 +490,12 @@ def radial_box_plots(
         plt.suptitle(title, fontsize=20)
 
     if num_subplots == 1:
-        avail_axes[0].set_title("Real (left) --- Imag (right)", fontsize=16,y=-0.025*len(full_labels[0]))
+        avail_axes[0].set_title(
+            "Real (left) --- Imag (right)", fontsize=16, y=-0.025 * len(full_labels[0])
+        )
     else:
-        avail_axes[0].set_title("Real", fontsize=16, y=-0.025*len(full_labels[0]))
-        avail_axes[1].set_title("Imag", fontsize=16, y=-0.025*len(full_labels[0]))
+        avail_axes[0].set_title("Real", fontsize=16, y=-0.025 * len(full_labels[0]))
+        avail_axes[1].set_title("Imag", fontsize=16, y=-0.025 * len(full_labels[0]))
 
     plt.tight_layout()
 
