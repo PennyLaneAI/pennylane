@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.beta.transforms.fourier import spectrum, _join_spectra, _get_spectrum, _simplify_tape
+from pennylane.fourier.spectrum import spectrum, _join_spectra, _get_spectrum, _simplify_tape
 
 
 class TestHelpers:
@@ -111,6 +111,9 @@ class TestSimplify:
 
 class TestIntegration:
     """Integration tests."""
+
+    # Todo: add tests in all interfaces
+    # Todo: make test pass for one op taking inputs and other parameters
 
     def crazy_logic(self):
         """Test that the spectra of a circuit with lots of edge cases is calculated correctly."""
