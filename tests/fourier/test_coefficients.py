@@ -107,57 +107,57 @@ def circuit_two_qubits_controlled_rot(inpt):
     return qml.expval(qml.PauliZ(1))
 
 
-# class TestFourierSpectra:
-#     """Test cases for computing the Fourier spectrum."""
+class TestFourierSpectra:
+    """Test cases for computing the Fourier spectrum."""
 
-#     @pytest.mark.parametrize(
-#         "circuit,inpt",
-#         [
-#             (circuit_one_qubit_one_param, np.array([0.1])),
-#             (circuit_one_qubit_two_params, np.array([0.1, 0.3])),
-#             (circuit_two_qubits_two_params, np.array([-0.4, 0.8])),
-#             (circuit_two_qubits_controlled_rot, np.array([1.34])),
-#         ],
-#     )
-#     def test_no_input_fourier_spectra(self, circuit, inpt):
-#         circuit(inpt)
-#         assert frequency_spectra(circuit.qtape) == {}
+    @pytest.mark.parametrize(
+        "circuit,inpt",
+        [
+            (circuit_one_qubit_one_param, np.array([0.1])),
+            (circuit_one_qubit_two_params, np.array([0.1, 0.3])),
+            (circuit_two_qubits_two_params, np.array([-0.4, 0.8])),
+            (circuit_two_qubits_controlled_rot, np.array([1.34])),
+        ],
+    )
+    def test_no_input_fourier_spectra(self, circuit, inpt):
+        circuit(inpt)
+        assert frequency_spectra(circuit.qtape) == {}
 
-#     @pytest.mark.parametrize(
-#         "circuit,inpt,spectra",
-#         [
-#             (circuit_one_qubit_one_param, np.array([0.1], is_input=True), {0.1: [-1.0, 0.0, 1.0]}),
-#             (
-#                 circuit_one_qubit_one_param,
-#                 np.array([-0.6], is_input=True),
-#                 {-0.6: [-1.0, 0.0, 1.0]},
-#             ),
-#             (
-#                 circuit_one_qubit_two_params,
-#                 np.array([0.6, 0.3], is_input=True),
-#                 {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
-#             ),
-#             (
-#                 circuit_two_qubits_two_params,
-#                 np.array([0.6, 0.3], is_input=True),
-#                 {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
-#             ),
-#             (
-#                 circuit_two_qubits_repeated_param,
-#                 np.array([0.2], is_input=True),
-#                 {0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]},
-#             ),
-#             (
-#                 circuit_two_qubits_controlled_rot,
-#                 np.array([-1.0], is_input=True),
-#                 {-1.0: [-2.0, -1.0, 0.0, 1.0, 2.0]},
-#             ),
-#         ],
-#     )
-#     def test_compute_fourier_spectra(self, circuit, inpt, spectra):
-#         """Test that Fourier spectra are correctly computed."""
-#         circuit(inpt)
-#         assert frequency_spectra(circuit.qtape) == spectra
+    @pytest.mark.parametrize(
+        "circuit,inpt,spectra",
+        [
+            (circuit_one_qubit_one_param, np.array([0.1], is_input=True), {0.1: [-1.0, 0.0, 1.0]}),
+            (
+                circuit_one_qubit_one_param,
+                np.array([-0.6], is_input=True),
+                {-0.6: [-1.0, 0.0, 1.0]},
+            ),
+            (
+                circuit_one_qubit_two_params,
+                np.array([0.6, 0.3], is_input=True),
+                {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
+            ),
+            (
+                circuit_two_qubits_two_params,
+                np.array([0.6, 0.3], is_input=True),
+                {0.6: [-1.0, 0.0, 1.0], 0.3: [-1.0, 0.0, 1.0]},
+            ),
+            (
+                circuit_two_qubits_repeated_param,
+                np.array([0.2], is_input=True),
+                {0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]},
+            ),
+            (
+                circuit_two_qubits_controlled_rot,
+                np.array([-1.0], is_input=True),
+                {-1.0: [-2.0, -1.0, 0.0, 1.0, 2.0]},
+            ),
+        ],
+    )
+    def test_compute_fourier_spectra(self, circuit, inpt, spectra):
+        """Test that Fourier spectra are correctly computed."""
+        circuit(inpt)
+        assert frequency_spectra(circuit.qtape) == spectra
 
 
 class TestFourierCoefficient:
