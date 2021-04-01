@@ -22,25 +22,30 @@ from pennylane.fourier.spectrum import spectrum, _join_spectra, _get_spectrum, _
 
 
 class TestHelpers:
-
-    @pytest.mark.parametrize("spectrum1, spectrum2, expected", [([-1, 0, 1], [-1, 0, 1], [-2, -1, 0, 1, 2]),
-                                                                ([-3, 0, 3], [-5, 0, 5],
-                                                                 [-8, -5, -3, -2, 0, 2, 3, 5, 8]),
-                                                                ([-2, -1, 0, 1, 2], [-1, 0, 1],
-                                                                 [-3, -2, -1, 0, 1, 2, 3]),
-                                                                ([-0.5, 0, 0.5], [-1, 0, 1],
-                                                                 [-1.5, -1, -0.5, 0, 0.5, 1., 1.5])
-                                                                ])
+    @pytest.mark.parametrize(
+        "spectrum1, spectrum2, expected",
+        [
+            ([-1, 0, 1], [-1, 0, 1], [-2, -1, 0, 1, 2]),
+            ([-3, 0, 3], [-5, 0, 5], [-8, -5, -3, -2, 0, 2, 3, 5, 8]),
+            ([-2, -1, 0, 1, 2], [-1, 0, 1], [-3, -2, -1, 0, 1, 2, 3]),
+            ([-0.5, 0, 0.5], [-1, 0, 1], [-1.5, -1, -0.5, 0, 0.5, 1.0, 1.5]),
+        ],
+    )
     def test_join_spectra(self, spectrum1, spectrum2, expected, tol):
         """Test that spectra are joined correctly."""
         joined = _join_spectra(spectrum1, spectrum2)
         assert np.allclose(joined, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op, expected", [(qml.RX(0.1, wires=0), [-1, 0,  1]),
-                                              (qml.RY(0.1, wires=0), [-1, 0, 1]),
-                                              (qml.RZ(0.1, wires=0), [-1, 0, 1]),
-                                              (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),
-                                              (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1])])
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (qml.RX(0.1, wires=0), [-1, 0, 1]),
+            (qml.RY(0.1, wires=0), [-1, 0, 1]),
+            (qml.RZ(0.1, wires=0), [-1, 0, 1]),
+            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),
+            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),
+        ],
+    )
     def test_get_spectrum(self, op, expected, tol):
         """Test that the spectrum is correctly extracted from an operator."""
         spec = _get_spectrum(op)
@@ -136,11 +141,12 @@ class TestIntegration:
         x = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5], requires_grad=True)
         z = pnp.array([-0.1, -0.2], requires_grad=False)
 
-        expected = {x[0]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
-                    x[1]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
-                    x[2]: [-1.0, 0.0, 1.0],
-                    x[4]: [-1.0, 0.0, 1.0]
-                    }
+        expected = {
+            x[0]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+            x[1]: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+            x[2]: [-1.0, 0.0, 1.0],
+            x[4]: [-1.0, 0.0, 1.0],
+        }
 
         res = spectrum(circuit)(x, z)
 

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains qnode transform that computes the fourier spectrum of a QNode."""
-import numpy as np
-import pennylane as qml
 from functools import wraps
 from itertools import product
 from copy import copy
+import numpy as np
+import pennylane as qml
 
 
 def _simplify_tape(tape, original_inputs):
@@ -69,8 +69,7 @@ def _simplify_tape(tape, original_inputs):
 
                 return False
 
-            else:
-                return True
+            return True
 
         # if object is not an op, it is probably a tape, so expand it
         return False
@@ -229,15 +228,15 @@ def spectrum(qnode):
             if len(op.parameters) != 1:
                 # inputs can only enter one-parameter gates
                 continue
-            else:
-                inpt = op.parameters[0]
-                if inpt in inpts:
-                    spec = _get_spectrum(op)
 
-                    if inpt in freqs:
-                        spec = _join_spectra(freqs[inpt], spec)
+            inpt = op.parameters[0]
+            if inpt in inpts:
+                spec = _get_spectrum(op)
 
-                    freqs[inpt] = spec
+                if inpt in freqs:
+                    spec = _join_spectra(freqs[inpt], spec)
+
+                freqs[inpt] = spec
 
         return freqs
 
