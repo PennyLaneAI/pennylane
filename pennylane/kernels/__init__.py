@@ -29,6 +29,7 @@ from .cost_functions import (
 from .postprocessing import (
     threshold_matrix,
     displace_matrix,
+    flip_matrix,
     closest_psd_matrix,
     mitigate_depolarizing_noise,
 )

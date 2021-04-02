@@ -382,7 +382,7 @@ class TestRegularization:
             (np.array([[0, 1], [1, 0]]), np.array([[1, 1], [1, 1]]) / 2.0),
         ],
     )
-    def test_threshold(self, input, expected_output):
+    def test_threshold_matrix(self, input, expected_output):
         assert np.allclose(kern.threshold_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
@@ -396,8 +396,22 @@ class TestRegularization:
             (np.array([[0, 1], [1, 0]]), np.array([[1, 1], [1, 1]])),
         ],
     )
-    def test_displacement(self, input, expected_output):
+    def test_displace_matrix(self, input, expected_output):
         assert np.allclose(kern.displace_matrix(input), expected_output)
+
+    @pytest.mark.parametrize(
+        "input,expected_output",
+        [
+            (np.diag([1, -1]), np.diag([1, 1])),
+            (
+                np.array([[1, 1], [1, -1]]),
+                np.array([[math.sqrt(2), 0], [0, math.sqrt(2)]]),
+            ),
+            (np.array([[0, 1], [1, 0]]), np.array([[1, 0], [0, 1]])),
+        ],
+    )
+    def test_flip_matrix(self, input, expected_output):
+        assert np.allclose(kern.flip_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
         "input, expected_output",
