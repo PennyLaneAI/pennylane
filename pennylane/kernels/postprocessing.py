@@ -32,9 +32,10 @@ def threshold_matrix(K):
     w, v = np.linalg.eigh(K)
 
     if np.min(w) < 0:
+        # Transform spectrum: Threshold/clip at 0.
         w0 = np.clip(w, 0, None)
 
-        return v @ np.diag(w0) @ np.transpose(v)
+        return (v * w0) @ np.transpose(v)
 
     return K
 
@@ -58,8 +59,36 @@ def displace_matrix(K):
     return K
 
 
+def flip_matrix(K):
+    """Remove negative eigenvalues from the given kernel matrix by taking the absolute value.
+
+    This method has the advantage that it keeps the eigenvectors intact.
+
+    Args:
+        K (array[float]): Kernel matrix assumed to be symmetric
+
+    Returns:
+        array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
+
+    Comments:
+        This method is introduced in https://arxiv.org/abs/2103.16774
+    """
+    w, v = np.linalg.eigh(K)
+
+    if np.min(w) < 0:
+        # Transform spectrum: absolute value
+        w0 = np.abs(w)
+
+        return (v * w0) @ np.transpose(v)
+
+    return K
+
+
 def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
     """Return the closest positive semidefinite matrix to the given kernel matrix.
+
+    This method has the advantage that it achieves the correct diagonal entries
+    (fix_diagonal=True) or keeps the eigenvectors intact (fix_diagonal=False).
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.
@@ -73,7 +102,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed.
         fix_diagonal=False typically leads to problems in the SDP/solving it.
-            Use `threshold_matrix()` instead.
+            Use `threshold_matrix()` instead, as it analytically is equivalent.
     """
     if not fix_diagonal:
         wmin = np.min(np.linalg.eigvalsh(K))
