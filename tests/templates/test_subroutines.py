@@ -17,8 +17,8 @@ Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
+from scipy.stats import unitary_group
 import pennylane as qml
-import pennylane._queuing
 from pennylane import numpy as np
 from pennylane.wires import Wires
 
@@ -30,6 +30,7 @@ from pennylane.templates.subroutines import (
     UCCSD,
     ApproxTimeEvolution,
     Permute,
+    QuantumPhaseEstimation,
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -37,9 +38,6 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _tuple_to_word,
     _n_k_gray_code,
 )
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 # fmt: off
@@ -151,12 +149,12 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec_rect:
+        with qml.tape.OperationRecorder() as rec_rect:
             Interferometer(
                 theta, phi, varphi, mesh="rectangular", beamsplitter="clements", wires=wires
             )
 
-        with pennylane._queuing.OperationRecorder() as rec_tria:
+        with qml.tape.OperationRecorder() as rec_tria:
             Interferometer(
                 theta, phi, varphi, mesh="triangular", beamsplitter="clements", wires=wires
             )
@@ -180,7 +178,7 @@ class TestInterferometer:
         """Test that a one mode interferometer correctly gives a rotation gate"""
         varphi = [0.42342]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
 
         assert len(rec.queue) == 1
@@ -197,7 +195,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         isinstance(rec.queue[0], qml.Beamsplitter)
@@ -219,7 +217,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 3
@@ -242,10 +240,10 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234]
         varphi = [0.42342, 0.234, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec_rect:
+        with qml.tape.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, wires=wires)
 
-        with pennylane._queuing.OperationRecorder() as rec_tria:
+        with qml.tape.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, wires=wires)
 
         for rec in [rec_rect, rec_tria]:
@@ -273,7 +271,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         assert len(rec.queue) == 10
@@ -299,7 +297,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 10
@@ -349,9 +347,6 @@ class TestInterferometer:
 
     def test_interferometer_wrong_dim(self):
         """Integration test for the CVNeuralNetLayers method."""
-        if not qml.tape_mode_active():
-            pytest.skip("Validation only performed in tape mode")
-
         dev = qml.device("default.gaussian", wires=4)
 
         @qml.qnode(dev)
@@ -445,7 +440,7 @@ class TestSingleExcitationUnitary:
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=single_wires)
 
         assert len(rec.queue) == sqg + cnots
@@ -519,7 +514,7 @@ class TestArbitraryUnitary:
         """Test that the correct gates are applied on a single wire."""
         weights = np.arange(3, dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0])
 
         assert all(op.name == "PauliRot" and op.wires == Wires([0]) for op in rec.queue)
@@ -534,7 +529,7 @@ class TestArbitraryUnitary:
         """Test that the correct gates are applied on two wires."""
         weights = np.arange(15, dtype=float)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0, 1])
 
         assert all(op.name == "PauliRot" and op.wires == Wires([0, 1]) for op in rec.queue)
@@ -564,9 +559,6 @@ class TestArbitraryUnitary:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -752,7 +744,7 @@ class TestDoubleExcitationUnitary:
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
         assert len(rec.queue) == sqg + cnots
@@ -914,7 +906,7 @@ class TestUCCSDUnitary:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
 
         assert len(rec.queue) == sqg + cnots + 1
@@ -1161,7 +1153,7 @@ class TestApproxTimeEvolution:
 
         n_wires = 2
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             ApproxTimeEvolution(hamiltonian, time, steps)
 
         for i, gate in enumerate(rec.operations):
@@ -1269,12 +1261,12 @@ class TestPermute:
 
         @qml.qnode(dev)
         def identity_permutation():
-            Permute([0, 1, 2, 3], wires=dev.wires)
+            ops = Permute([0, 1, 2, 3], wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         identity_permutation()
 
-        assert len(identity_permutation.ops) == 1
+        assert len(identity_permutation.qtape.operations) == 0
 
     def test_identity_permutation_tape(self):
         """ Test that identity permutations have no effect on tapes. """
@@ -1307,8 +1299,8 @@ class TestPermute:
         two_cycle()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in two_cycle.ops[:-1])
-        assert [op.wires.labels for op in two_cycle.ops[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in two_cycle.qtape.operations)
+        assert [op.wires.labels for op in two_cycle.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         # For tape need to specify the wire labels
@@ -1353,8 +1345,8 @@ class TestPermute:
         cycle()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in cycle.ops[:-1])
-        assert [op.wires.labels for op in cycle.ops[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in cycle.qtape.operations)
+        assert [op.wires.labels for op in cycle.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "permutation_order,wire_order,expected_wires",
@@ -1395,8 +1387,8 @@ class TestPermute:
         arbitrary_perm()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in arbitrary_perm.ops[:-1])
-        assert [op.wires.labels for op in arbitrary_perm.ops[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in arbitrary_perm.qtape.operations)
+        assert [op.wires.labels for op in arbitrary_perm.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "permutation_order,wire_order,expected_wires",
@@ -1447,8 +1439,8 @@ class TestPermute:
         subset_perm()
 
         # Ensure all operations are SWAPs, and that the wires are the same
-        assert all(op.name == "SWAP" for op in subset_perm.ops[:-1])
-        assert [op.wires.labels for op in subset_perm.ops[:-1]] == expected_wires
+        assert all(op.name == "SWAP" for op in subset_perm.qtape.operations)
+        assert [op.wires.labels for op in subset_perm.qtape.operations] == expected_wires
 
     @pytest.mark.parametrize(
         "wire_labels,permutation_order,wire_subset,expected_wires",
@@ -1477,3 +1469,124 @@ class TestPermute:
         # Make sure to start comparison after the set of RZs have been applied
         assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
         assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
+
+
+class TestQuantumPhaseEstimation:
+    """Tests for the QuantumPhaseEstimation template from the pennylane.templates.subroutine
+    module."""
+
+    def test_same_wires(self):
+        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+        common element"""
+
+        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
+            QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
+
+    def test_expected_tape(self):
+        """Tests if QuantumPhaseEstimation populates the tape as expected for a fixed example"""
+
+        m = qml.RX(0.3, wires=0).matrix
+
+        op = QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        tape = op.expand()
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.Hadamard(1),
+            qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
+            qml.Hadamard(2),
+            qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
+            qml.QFT(wires=[1, 2]).inv()
+
+        assert len(tape2.queue) == len(tape.queue)
+        assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
+        assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
+        assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
+
+    @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
+    def test_phase_estimated(self, phase):
+        """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
+        estimates = []
+        wire_range = range(2, 10)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+            m = qml.RX(phase, wires=0).matrix
+            target_wires = [0]
+            estimation_wires = range(1, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                # We want to prepare an eigenstate of RX, in this case |+>
+                qml.Hadamard(wires=target_wires)
+
+                qml.templates.QuantumPhaseEstimation(
+                    m, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                qml.probs(estimation_wires)
+
+            tape = tape.expand()
+            res = tape.execute(dev).flatten()
+            initial_estimate = np.argmax(res) / 2 ** (wires - 1)
+
+            # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
+            # form exp(2 pi i theta X)
+            rescaled_estimate = (1 - initial_estimate) * np.pi * 4
+            estimates.append(rescaled_estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)
+
+    def test_phase_estimated_two_qubit(self):
+        """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
+        unitary."""
+
+        unitary = unitary_group.rvs(4, random_state=1967)
+        eigvals, eigvecs = np.linalg.eig(unitary)
+
+        state = eigvecs[:, 0]
+        eigval = eigvals[0]
+        phase = np.real_if_close(np.log(eigval) / (2 * np.pi * 1j))
+
+        estimates = []
+        wire_range = range(3, 11)
+
+        for wires in wire_range:
+            dev = qml.device("default.qubit", wires=wires)
+
+            target_wires = [0, 1]
+            estimation_wires = range(2, wires)
+
+            with qml.tape.QuantumTape() as tape:
+                # We want to prepare an eigenstate of RX, in this case |+>
+                qml.QubitStateVector(state, wires=target_wires)
+
+                qml.templates.QuantumPhaseEstimation(
+                    unitary, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                qml.probs(estimation_wires)
+
+            tape = tape.expand()
+            res = tape.execute(dev).flatten()
+
+            if phase < 0:
+                estimate = np.argmax(res) / 2 ** (wires - 2) - 1
+            else:
+                estimate = np.argmax(res) / 2 ** (wires - 2)
+            estimates.append(estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is quite a large error, but we'd need to push the qubit number up more to get it
+        # lower
+        assert np.allclose(estimates[-1], phase, rtol=1e-2)

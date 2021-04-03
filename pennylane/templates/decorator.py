@@ -1,4 +1,4 @@
-# Copyright 2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 This module contains the template decorator.
 """
 from functools import wraps
-
-from pennylane._queuing import OperationRecorder
 
 
 def template(func):
@@ -54,18 +52,12 @@ def template(func):
     Returns:
         callable: The wrapper function
     """
-    # pylint: disable=import-outside-toplevel
+    import pennylane as qml  # pylint: disable=import-outside-toplevel
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        import pennylane as qml
 
-        recorder_class = OperationRecorder
-
-        if qml.tape_mode_active():
-            recorder_class = qml.tape.TapeOperationRecorder
-
-        with recorder_class() as rec:
+        with qml.tape.OperationRecorder() as rec:
             func(*args, **kwargs)
 
         return rec.queue

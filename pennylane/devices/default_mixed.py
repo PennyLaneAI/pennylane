@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,13 +39,9 @@ class DefaultMixed(QubitDevice):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers
             (i.e., ``[-1, 0, 2]``) or strings (``['ancilla', 'q1', 'q2']``).
-        shots (int): Number of times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically.
+        shots (None, int): Number of times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that
+            outputs are computed exactly.
         cache (int): Number of device executions to store in a cache to speed up subsequent
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
@@ -63,6 +59,7 @@ class DefaultMixed(QubitDevice):
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -95,15 +92,21 @@ class DefaultMixed(QubitDevice):
         "PhaseFlip",
         "QubitChannel",
         "QFT",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
     }
 
-    def __init__(self, wires, *, shots=1000, analytic=True, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
         # call QubitDevice init
-        super().__init__(wires, shots, analytic, cache=cache)
+        super().__init__(wires, shots, cache=cache)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions convert QNodes to interface with different machine
+This subpackage defines functions convert quantum tapes to interface with different machine
 learning libraries.
-
-.. currentmodule:: pennylane.interfaces
-.. autosummary::
-    :toctree: api
-
-    tf
-    torch
-    autograd
 """

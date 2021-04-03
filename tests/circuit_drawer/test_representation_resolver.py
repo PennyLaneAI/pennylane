@@ -20,11 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
-from pennylane.variable import Variable
-from pennylane.tape.measure import state
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
+from pennylane.measure import state
 
 
 @pytest.fixture
@@ -37,26 +33,6 @@ def unicode_representation_resolver():
 def ascii_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
     return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
-
-
-@pytest.fixture
-def unicode_representation_resolver_varnames():
-    """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
-    return RepresentationResolver(show_variable_names=True)
-
-
-@pytest.fixture
-def variable(monkeypatch):
-    """A mocked Variable instance for a non-keyword variable."""
-    monkeypatch.setattr(Variable, "positional_arg_values", [0, 1, 2, 3])
-    yield Variable(2, "test")
-
-
-@pytest.fixture
-def kwarg_variable(monkeypatch):
-    """A mocked Variable instance for a keyword variable."""
-    monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield Variable(1, "kwarg_test", True)
 
 
 class TestRepresentationResolver:
@@ -80,52 +56,6 @@ class TestRepresentationResolver:
     def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
         """Test that single parameters are properly resolved."""
         assert unicode_representation_resolver.single_parameter_representation(par) == expected
-
-    def test_single_parameter_representation_variable(
-        self, unicode_representation_resolver, variable
-    ):
-        """Test that variables are properly resolved."""
-
-        assert unicode_representation_resolver.single_parameter_representation(variable) == "2"
-
-    def test_single_parameter_representation_kwarg_variable(
-        self, unicode_representation_resolver, kwarg_variable
-    ):
-        """Test that kwarg variables are properly resolved."""
-
-        assert (
-            unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
-        )
-
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
-    def test_single_parameter_representation_varnames(
-        self, unicode_representation_resolver_varnames, par, expected
-    ):
-        """Test that single parameters are properly resolved when show_variable_names is True."""
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(par)
-            == expected
-        )
-
-    def test_single_parameter_representation_variable_varnames(
-        self, unicode_representation_resolver_varnames, variable
-    ):
-        """Test that variables are properly resolved when show_variable_names is True."""
-
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(variable)
-            == "test"
-        )
-
-    def test_single_parameter_representation_kwarg_variable_varnames(
-        self, unicode_representation_resolver_varnames, kwarg_variable
-    ):
-        """Test that kwarg variables are properly resolved when show_variable_names is True."""
-
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable)
-            == "kwarg_test"
-        )
 
     @pytest.mark.parametrize(
         "op,wire,target",

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -126,6 +126,9 @@ class GradientDescentOptimizer:
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
+
+        if len(args) == 1:
+            grad = (grad,)
 
         return grad, forward
 

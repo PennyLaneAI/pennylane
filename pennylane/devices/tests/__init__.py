@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -237,7 +237,6 @@ def cli():
 
     test_device(
         device_name=args.device,
-        analytic=args.analytic,
         shots=args.shots,
         skip_ops=args.skip_ops,
         flaky_report=flaky,

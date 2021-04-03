@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import pennylane as qml
 from scipy.linalg import block_diag
 from flaky import flaky
 
-pytestmark = [pytest.mark.skip_unsupported, pytest.mark.usefixtures("tape_mode")]
+pytestmark = pytest.mark.skip_unsupported
 
 np.random.seed(42)
 
@@ -57,6 +57,7 @@ ops = {
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
     "RX": qml.RX(0, wires=[0]),
     "RY": qml.RY(0, wires=[0]),
     "RZ": qml.RZ(0, wires=[0]),
@@ -67,6 +68,12 @@ ops = {
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.QFT(wires=[0, 1, 2]),
+    "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
+    "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
+    "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
+    "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
 }
 
 all_ops = ops.keys()
@@ -197,7 +204,7 @@ class TestSupportedGates:
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement all its supported gates."""
-        device_kwargs["wires"] = 3  # maximum size of current gates
+        device_kwargs["wires"] = 4  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
         assert hasattr(dev, "operations")
@@ -214,7 +221,7 @@ class TestSupportedGates:
     def test_inverse_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement the inverse of all its supported gates.
         This test is skipped for devices that do not support inverse operations."""
-        device_kwargs["wires"] = 3
+        device_kwargs["wires"] = 4
         dev = qml.device(**device_kwargs)
         supports_inv = (
             "supports_inverse_operations" in dev.capabilities()
@@ -262,7 +269,7 @@ class TestGatesQubit:
 
         expected = np.zeros([2 ** n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_qubit_state_vector(self, device, init_state, tol, skip_if):
         """Test QubitStateVector initialisation."""
@@ -280,7 +287,7 @@ class TestGatesQubit:
         res = circuit()
         expected = np.abs(rnd_state) ** 2
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
@@ -300,7 +307,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -321,7 +328,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(func(gamma) @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_rotation(self, device, init_state, tol, skip_if):
         """Test three axis rotation gate."""
@@ -343,7 +350,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(rot(a, b, c) @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
     def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
@@ -363,7 +370,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
@@ -384,7 +391,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(func(theta) @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("mat", [U, U2])
     def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
@@ -408,7 +415,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
@@ -429,7 +436,7 @@ class TestGatesQubit:
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -456,7 +463,7 @@ class TestInverseGatesQubit:
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -480,7 +487,7 @@ class TestInverseGatesQubit:
         mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_rotation(self, device, init_state, tol, skip_if):
         """Test inverse three axis rotation gate."""
@@ -505,7 +512,7 @@ class TestInverseGatesQubit:
         mat = rot(a, b, c)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
     def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
@@ -527,7 +534,7 @@ class TestInverseGatesQubit:
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
@@ -551,7 +558,7 @@ class TestInverseGatesQubit:
         mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("mat", [U, U2])
     def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
@@ -573,7 +580,7 @@ class TestInverseGatesQubit:
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
@@ -595,4 +602,4 @@ class TestInverseGatesQubit:
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))

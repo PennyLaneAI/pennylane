@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class RotosolveOptimizer:
 
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
 
-    >>> dev = qml.device("default.qubit", analytic=True, wires=2)
+    >>> dev = qml.device("default.qubit", shots=None, wires=2)
     ... @qml.qnode(dev)
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)

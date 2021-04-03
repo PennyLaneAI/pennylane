@@ -20,9 +20,7 @@ import pkg_resources
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane import Device, DeviceError
-from pennylane.qnodes import QuantumFunctionError
-from pennylane.qnodes.base import BaseQNode
+from pennylane import Device, DeviceError, QuantumFunctionError
 from pennylane.wires import Wires
 from collections import OrderedDict
 
@@ -165,6 +163,19 @@ def mock_device(monkeypatch):
             return Device(wires=wires)
 
         yield get_device
+
+def test_shot_vector_property():
+    dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+    shot_vector = dev.shot_vector
+    assert len(shot_vector) == 4
+    assert shot_vector[0].shots == 1
+    assert shot_vector[0].copies == 1
+    assert shot_vector[1].shots == 3
+    assert shot_vector[1].copies == 2
+    assert shot_vector[2].shots == 4
+    assert shot_vector[2].copies == 3
+    assert shot_vector[3].shots == 3
+    assert shot_vector[3].copies == 1
 
 
 class TestDeviceSupportedLogic:
@@ -446,7 +457,7 @@ class TestInternalFunctions:
             qml.Rotation(phi, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        node_gauss = BaseQNode(circuit_gauss, dev_gauss)
+        node_gauss = qml.QNode(circuit_gauss, dev_gauss)
         num_evals_gauss = 12
 
         for i in range(num_evals_gauss):
@@ -665,7 +676,7 @@ class TestObservables:
         obs.return_type = "SomeUnsupportedReturnType"
         observables = [obs]
 
-        with pytest.raises(QuantumFunctionError, match="Unsupported return type specified for observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type specified for observable"):
             dev.execute(queue, observables)
 
 

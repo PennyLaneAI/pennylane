@@ -20,7 +20,6 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-import pennylane._queuing
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
@@ -29,9 +28,6 @@ from pennylane.templates.embeddings import (AngleEmbedding,
                                             SqueezingEmbedding)
 from pennylane import Beamsplitter
 from pennylane.wires import Wires
-
-
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 
 class TestAmplitudeEmbedding:
@@ -314,9 +310,6 @@ class TestAngleEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 1
         dev = qml.device('default.qubit', wires=n_subsystems)
 
@@ -332,10 +325,13 @@ class TestAngleEmbedding:
 class TestBasisEmbedding:
     """ Tests the BasisEmbedding method."""
 
-    def test_state(self):
-        """Checks the state."""
+    @pytest.mark.parametrize("state", [[0, 1],
+                                       [1, 1],
+                                       [1, 0],
+                                       [0, 0]])
+    def test_state(self, state):
+        """Checks that the correct state is prepared."""
 
-        state = np.array([0, 1])
         n_qubits = 2
         dev = qml.device('default.qubit', wires=n_qubits)
 
@@ -345,7 +341,8 @@ class TestBasisEmbedding:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
-        assert np.allclose(res, [1, -1])
+        expected = [1 if s == 0 else -1 for s in state]
+        assert np.allclose(res, expected)
 
     def test_too_many_input_bits_exception(self):
         """Verifies that exception thrown if there are more features than qubits."""
@@ -393,8 +390,6 @@ class TestBasisEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
 
         n_subsystems = 2
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -422,7 +417,7 @@ class TestIQPEmbedding:
     def test_queue_default_pattern(self, n_wires, expected_queue, n_repeats):
         """Checks the queue for the default pattern."""
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(n_wires)), wires=range(n_wires), n_repeats=n_repeats)
 
         expected_queue = expected_queue * n_repeats
@@ -439,7 +434,7 @@ class TestIQPEmbedding:
     def test_queue_parameters(self, features, expected_params, wires):
         """Checks the queued parameters, for consecutive and non-consecutive ``wires`` argument."""
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=features, wires=wires)
 
         # compare all nonempty gate parameters to expected ones
@@ -457,7 +452,7 @@ class TestIQPEmbedding:
         """Checks the queued wires for a consecutive and non-consecutive sequence
            of indices in the ``wires`` argument."""
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(3)), wires=wires)
 
         # compare all gate wires to expected ones
@@ -469,7 +464,7 @@ class TestIQPEmbedding:
     def test_wires_custom_pattern(self, pattern):
         """Checks the queue for a custom pattern."""
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(4)), wires=range(4), pattern=pattern)
 
         counter = 0
@@ -495,22 +490,6 @@ class TestIQPEmbedding:
         with pytest.raises(ValueError, match="Features must be"):
             circuit(f=features)
 
-    def test_exception_incorrect_pattern(self):
-        """Verifies that an exception is raised if 'pattern' has the wrong shape."""
-        if qml.tape_mode_active():
-            pytest.skip("Check only done in non-tape mode")
-
-        dev = qml.device('default.qubit', wires=3)
-        features = [1., 2., 3.]
-
-        @qml.qnode(dev)
-        def circuit(f=None):
-            qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=[0., 0.2])
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-        with pytest.raises(ValueError, match="'pattern' must be a"):
-            circuit(f=features)
-
 
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""
@@ -519,16 +498,6 @@ class TestQAOAEmbedding:
               (2, (1, 3), [qml.RX, qml.RX, qml.MultiRZ, qml.RY, qml.RY, qml.RX, qml.RX]),
               (3, (1, 6), [qml.RX, qml.RX, qml.RX, qml.MultiRZ, qml.MultiRZ, qml.MultiRZ,
                    qml.RY, qml.RY, qml.RY, qml.RX, qml.RX, qml.RX])]
-
-    @pytest.mark.parametrize('n_wires, weight_shape, expected_queue', QUEUES)
-    def test_queue(self, n_wires, weight_shape, expected_queue):
-        """Checks the queue for the default settings."""
-
-        with pennylane._queuing.OperationRecorder() as rec:
-            QAOAEmbedding(features=list(range(n_wires)), weights=np.zeros(shape=weight_shape), wires=range(n_wires))
-
-        for gate, expected_gate in zip(rec.queue, expected_queue):
-            assert isinstance(gate, expected_gate)
 
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
@@ -674,16 +643,13 @@ class TestQAOAEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
         dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
@@ -754,9 +720,6 @@ class TestDisplacementEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 2
         dev = qml.device('default.gaussian', wires=n_subsystems)
 
@@ -833,9 +796,6 @@ class TestSqueezingEmbedding:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        if not qml.tape_mode_active():
-            pytest.skip("This validation is only performed in tape mode")
-
         n_subsystems = 2
         dev = qml.device('default.gaussian', wires=n_subsystems)
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -174,10 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if (
-            not isinstance(qnode, (qml.tape.QNode, qml.qnodes.BaseQNode, qml.ExpvalCost))
-            and metric_tensor_fn is None
-        ):
+        if not isinstance(qnode, (qml.QNode, qml.ExpvalCost)) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
                 "an ExpvalCost object for the natural gradient to be automatically computed. "

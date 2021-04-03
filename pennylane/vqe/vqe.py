@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -474,6 +474,9 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        if kwargs.get("measure", "expval") != "expval":
+            raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
+
         coeffs, observables = hamiltonian.terms
 
         self.hamiltonian = hamiltonian
@@ -490,7 +493,6 @@ class ExpvalCost:
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 
-        tape_mode = qml.tape_mode_active()
         self._optimize = optimize
 
         self.qnodes = qml.map(
@@ -498,12 +500,6 @@ class ExpvalCost:
         )
 
         if self._optimize:
-            if not tape_mode:
-                raise ValueError(
-                    "Observable optimization is only supported in tape mode. Tape "
-                    "mode can be enabled with the command:\n"
-                    "qml.enable_tape()"
-                )
 
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")

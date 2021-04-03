@@ -80,7 +80,8 @@ GATES = [
     [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0)],
     [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0), qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=[0])],
     [qml.RX(0.5, wires=0), qml.RX(0.5, wires=1), qml.MultiRZ(0.3, wires=[0, 1])],
-    [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.RX(0.4, wires=0), qml.RX(0.4, wires=1), qml.CNOT(wires=[0, 1]), qml.RY(0.5, wires=0), qml.RY(0.4, wires=1)]
+    [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.templates.BasicEntanglerLayers([[0.5, 0.4]], wires=[0, 1]),
+     qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.templates.BasicEntanglerLayers([[0.5, 0.4]], wires=[0, 1])]
 ]
 
 ARGS = [ [], [], [], [ [ [[0.5, 0.5], 0.3] ] ], [ [[0.5, 0.4], [0.5, 0.4]], [[0.4, 0.4], []], [True, False] ] ]
@@ -109,7 +110,7 @@ class TestLayer:
     def test_layer(self, unitary, depth, arguments, keywords, gates):
         """Tests that the layering function is yielding the correct sequence of gates"""
 
-        with qml._queuing.OperationRecorder() as rec:
+        with qml.tape.OperationRecorder() as rec:
             layer(unitary, depth, *arguments, **keywords)
 
         for i, gate in enumerate(rec.operations):

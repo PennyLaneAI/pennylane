@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ import pennylane as qml
 import pytest
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
@@ -63,4 +62,4 @@ class TestWiresIntegration:
         circuit1 = circuit_factory(dev1, wires1)
         circuit2 = circuit_factory(dev2, wires2)
 
-        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.analytic))
+        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.shots))
