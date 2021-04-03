@@ -769,12 +769,15 @@ class TestHamiltonian:
         """Tests that addition between Hamiltonians and
         Hamiltonians/Observables/Tensors is queued correctly"""
 
-        print("hi")
-
         with qml.tape.QuantumTape() as tape:
+            H1.queue()
+            H2.queue()
             Hamiltonian = H1 + H2
+            Hamiltonian.queue()
 
-        assert np.all([ob1 == ob2 for ob1, ob2 in zip(tape.queue, queue)])
+        print(tape.queue)
+        print(queue)
+        assert np.all([ob1.compare(ob2) for ob1, ob2 in zip(tape.queue, queue)])
 
     '''
     @pytest.mark.parametrize(("H", "a", "queue"), mul_queue)

@@ -1051,23 +1051,21 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            if isinstance(other, (Observable, Tensor)):
-                return qml.Hamiltonian([1, 1], [self, other], simplify=True)
+        if isinstance(other, (Observable, Tensor)):
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 
-            if isinstance(other, qml.Hamiltonian):
-                return other + self
+        if isinstance(other, qml.Hamiltonian):
+            return other + self
 
-            raise ValueError(f"Cannot add Observable and {type(other)}")
+        raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            if isinstance(a, (int, float)):
+        if isinstance(a, (int, float)):
 
-                return qml.Hamiltonian([a], [self], simplify=True)
+            return qml.Hamiltonian([a], [self], simplify=True)
 
-            raise ValueError(f"Cannot multiply Observable by {type(a)}")
+        raise ValueError(f"Cannot multiply Observable by {type(a)}")
 
     __rmul__ = __mul__
 

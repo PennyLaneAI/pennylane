@@ -97,8 +97,7 @@ class Hamiltonian:
         self.return_type = None
 
         if simplify:
-            with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-                self.simplify()
+            self.simplify()
 
         self.queue()
 
@@ -153,29 +152,30 @@ class Hamiltonian:
         >>> print(H)
         (1.0) [Y2] + (-1.0) [X0]
         """
-        coeffs = []
-        ops = []
+        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
+            coeffs = []
+            ops = []
 
-        for c, op in zip(self.coeffs, self.ops):
-            op = op if isinstance(op, Tensor) else Tensor(op)
+            for c, op in zip(self.coeffs, self.ops):
+                op = op if isinstance(op, Tensor) else Tensor(op)
 
-            ind = None
-            for i, other in enumerate(ops):
-                if op.compare(other):
-                    ind = i
-                    break
+                ind = None
+                for i, other in enumerate(ops):
+                    if op.compare(other):
+                        ind = i
+                        break
 
-            if ind is not None:
-                coeffs[ind] += c
-                if np.allclose([coeffs[ind]], [0]):
-                    del coeffs[ind]
-                    del ops[ind]
-            else:
-                ops.append(op.prune())
-                coeffs.append(c)
+                if ind is not None:
+                    coeffs[ind] += c
+                    if np.allclose([coeffs[ind]], [0]):
+                        del coeffs[ind]
+                        del ops[ind]
+                else:
+                    ops.append(op.prune())
+                    coeffs.append(c)
 
-        self._coeffs = coeffs
-        self._ops = ops
+            self._coeffs = coeffs
+            self._ops = ops
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -349,19 +349,20 @@ class Hamiltonian:
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        if isinstance(H, Hamiltonian):
-            self._coeffs.extend(H.coeffs.copy())
-            self._ops.extend(H.ops.copy())
-            self.simplify()
-            return self
+        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
+            if isinstance(H, Hamiltonian):
+                self._coeffs.extend(H.coeffs.copy())
+                self._ops.extend(H.ops.copy())
+                self.simplify()
+                return self
 
-        if isinstance(H, (Tensor, Observable)):
-            self._coeffs.append(1)
-            self._ops.append(H)
-            self.simplify()
-            return self
+            if isinstance(H, (Tensor, Observable)):
+                self._coeffs.append(1)
+                self._ops.append(H)
+                self.simplify()
+                return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+            raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
