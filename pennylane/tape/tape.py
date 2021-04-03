@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -257,7 +257,7 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
 
     .. code-block:: python
 
