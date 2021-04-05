@@ -740,6 +740,8 @@
   of a QNode.
   [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
+* When creating a generic observable with `qml.Hermitian`, initialization now sets the `num_wires` attribute. [(#1189)](https://github.com/PennyLaneAI/pennylane/pull/1189)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
