@@ -19,3 +19,4 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
+from .mitigation import mitigate

@@ -809,7 +809,7 @@ class TestBatchExecution:
         """Tests that the device's execute method is called the correct number of times."""
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
-        spy = mocker.spy(QubitDevice, "execute")
+        spy = mocker.spy(QubitDevice, "_execute")
 
         tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)

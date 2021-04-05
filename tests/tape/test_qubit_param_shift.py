@@ -387,7 +387,7 @@ class TestJacobianIntegration:
 
         spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(dev, "execute")
+        spy_execute = mocker.spy(dev, "_execute")
 
 
         with QubitParamShiftTape() as tape:
@@ -425,7 +425,7 @@ class TestJacobianIntegration:
 
         spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(dev, "execute")
+        spy_execute = mocker.spy(dev, "_execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -464,7 +464,7 @@ class TestJacobianIntegration:
 
         spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
-        spy_execute = mocker.spy(dev, "execute")
+        spy_execute = mocker.spy(dev, "_execute")
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
