@@ -54,7 +54,7 @@ autosummary_generate = True
 autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
-autodoc_warningiserror = False
+
 
 intersphinx_mapping = {"https://pennylane.ai/qml/": None}
 mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"

@@ -14,6 +14,9 @@
 """
 This subpackage contains QNode, quantum function, device, and tape transforms.
 
+
+.. currentmodule:: pennylane
+
 QNode transforms
 ----------------
 
@@ -23,9 +26,9 @@ that compute the desired quantity.
 .. autosummary::
     :toctree: api
 
-    ~pennylane.transforms.classical_jacobian
-    ~pennylane.draw
-    ~pennylane.metric_tensor
+    ~transforms.classical_jacobian
+    ~draw
+    ~metric_tensor
 
 Quantum function transforms
 ---------------------------
@@ -36,9 +39,9 @@ containing quantum operations) that are used *inside* QNodes.
 .. autosummary::
     :toctree: api
 
-    ~pennylane.adjoint
-    ~pennylane.ctrl
-    ~pennylane.transforms.invisible
+    ~adjoint
+    ~ctrl
+    ~transforms.invisible
 
 Tape transforms
 ---------------
@@ -49,8 +52,8 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
-    ~pennylane.transforms.measurement_grouping
-    ~pennylane.transforms.metric_tensor_tape
+    ~transforms.measurement_grouping
+    ~transforms.metric_tensor_tape
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
