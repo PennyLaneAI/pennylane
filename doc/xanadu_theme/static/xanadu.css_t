@@ -2212,8 +2212,8 @@ dd > .collapse-header {
 }
 
 a.copybtn {
-  top: 20px;
-  right: 14px;
+  top: 20px!important;
+  right: 14px!important;
   opacity: 0.5;
   padding: 0;
 }
