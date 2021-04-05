@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -293,10 +293,11 @@ def MottonenStatePreparation(state_vector, wires):
         target = wires_reverse[k - 1]
         _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
 
-    # Apply inverse z rotation cascade to prepare correct phases of amplitudes
-    for k in range(len(wires_reverse), 0, -1):
-        alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
-        control = wires_reverse[k:]
-        target = wires_reverse[k - 1]
-        if len(alpha_z_k) > 0:
-            _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
+    # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
+    if not qml.math.allclose(omega, 0):
+        for k in range(len(wires_reverse), 0, -1):
+            alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
+            control = wires_reverse[k:]
+            target = wires_reverse[k - 1]
+            if len(alpha_z_k) > 0:
+                _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)

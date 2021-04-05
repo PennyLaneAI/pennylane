@@ -838,7 +838,7 @@ class TestDefaultTensorIntegration:
 
         dev = qml.device("default.tensor", wires=2, representation=rep)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
+        assert dev.shots is None
         assert dev.short_name == "default.tensor"
 
     def test_args(self, rep):

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -202,6 +202,13 @@ class Device(abc.ABC):
         return self._shots
 
     @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        if self._shots is None:
+            return True
+        return False
+
+    @property
     def wires(self):
         """All wires that can be addressed on this device"""
         return self._wires
@@ -233,22 +240,56 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if isinstance(shots, int):
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
             if shots < 1:
                 raise DeviceError(
                     "The specified number of shots needs to be at least 1. Got {}.".format(shots)
                 )
 
-            self._shots = int(shots)
+            self._shots = shots
             self._shot_vector = None
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
 
         else:
             raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
+
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.

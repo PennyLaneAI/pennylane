@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ class JaxBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: jnp.angle(self.data))
     arcsin = wrap_output(lambda self: jnp.arcsin(self.data))
     cast = wrap_output(lambda self, dtype: jnp.array(self.data, dtype=dtype))
+    conj = wrap_output(lambda self: jnp.conj(self.data))
     diag = staticmethod(wrap_output(lambda values, k=0: jnp.diag(jnp.array(values), k=k)))
     expand_dims = wrap_output(lambda self, axis: jnp.expand_dims(self.data, axis=axis))
     gather = wrap_output(lambda self, indices: self.data[indices])

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -271,6 +271,24 @@ def concatenate(values, axis=0):
     array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
     return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
+
+
+def conj(tensor):
+    """Conjugate a tensor. Negate the imaginary part of a complex value.
+
+    Args:
+        tensor (tensor_like): A tensor-like object to conjugate.
+
+    Returns:
+        tensor_like: The conjugated tensor.
+
+    **Example**
+
+    >>> x = tf.constant([0.6 + 0.1j, 0.1 - 0.3j, 0.6])
+    >>> conj(x)
+    <tf.Tensor: shape=(3,), dtype=complex64, numpy=array([6.00e-01 + 1.00e-1j, 1.00e-01 + 3.00e-1j, 6.00e-01 + 0.00j], dtype=complex64)>
+    """
+    return TensorBox(tensor).conj(wrap_output=False)
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):

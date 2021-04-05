@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the ``QuantumPhaseEstimation`` template.
+Contains the QuantumPhaseEstimation template.
 """
 import pennylane as qml
-from pennylane.templates.decorator import template
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
-@template
-def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
+class QuantumPhaseEstimation(Operation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -104,21 +103,38 @@ def QuantumPhaseEstimation(unitary, target_wires, estimation_wires):
             # Need to rescale phase due to convention of RX gate
             phase_estimated = 4 * np.pi * (1 - phase_estimated)
     """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    target_wires = Wires(target_wires)
-    estimation_wires = Wires(estimation_wires)
+    def __init__(self, unitary, target_wires, estimation_wires, do_queue=True):
+        self.target_wires = Wires(target_wires)
+        self.estimation_wires = Wires(estimation_wires)
 
-    if len(Wires.shared_wires([target_wires, estimation_wires])) != 0:
-        raise qml.QuantumFunctionError("The target wires and estimation wires must be different")
+        wires = self.target_wires + self.estimation_wires
 
-    unitary_powers = [unitary]
+        if len(Wires.shared_wires([self.target_wires, self.estimation_wires])) != 0:
+            raise qml.QuantumFunctionError(
+                "The target wires and estimation wires must be different"
+            )
 
-    for _ in range(len(estimation_wires) - 1):
-        new_power = unitary_powers[-1] @ unitary_powers[-1]
-        unitary_powers.append(new_power)
+        super().__init__(unitary, wires=wires, do_queue=do_queue)
 
-    for wire in estimation_wires:
-        qml.Hadamard(wire)
-        qml.ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
+    def expand(self):
+        unitary = self.parameters[0]
+        unitary_powers = [unitary]
 
-    qml.QFT(wires=estimation_wires).inv()
+        for _ in range(len(self.estimation_wires) - 1):
+            new_power = unitary_powers[-1] @ unitary_powers[-1]
+            unitary_powers.append(new_power)
+
+        with qml.tape.QuantumTape() as tape:
+            for wire in self.estimation_wires:
+                qml.Hadamard(wire)
+                qml.ControlledQubitUnitary(
+                    unitary_powers.pop(), control_wires=wire, wires=self.target_wires
+                )
+
+            qml.QFT(wires=self.estimation_wires).inv()
+
+        return tape
