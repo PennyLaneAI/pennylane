@@ -23,7 +23,6 @@
   indx = np.argwhere(probs == 1).flatten()[0]
   output = bitstrings[indx]
   print(output)
-=======
 * Computing second derivatives and Hessians of QNodes is now supported when
   using the Autograd interface.
   [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
