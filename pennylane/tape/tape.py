@@ -15,14 +15,15 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, deque
+import contextlib
 import copy
-from collections import Counter
 from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
 
 # CV ops still need to support state preparation operations prior to any
@@ -78,6 +79,24 @@ Note that QASM has two native gates:
 All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+
+def get_active_tape():
+    """Returns the currently recording tape.
+    If no tape is currently recording, ``None`` is returned.
+
+    **Example**
+
+    >>> with qml.tape.QuantumTape():
+    ...     qml.RX(0.2, wires="a")
+    ...     tape = qml.get_active_tape()
+    ...     qml.RY(0.1, wires="b")
+    >>> print(tape)
+    <QuantumTape: wires=['a', 'b'], params=2>
+    >>> print(qml.tape.get_active_tape())
+    None
+    """
+    return QueuingContext.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -338,6 +357,31 @@ class QuantumTape(AnnotatedQueue):
     def interface(self):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
+
+    @contextlib.contextmanager
+    def stop_recording(self):
+        """Context manager to temporarily stop recording operations
+        onto the tape. This is useful is scratch space is needed.
+
+        **Example**
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(0, wires=0)
+        ...     with tape.stop_recording():
+        ...         qml.RY(1.0, wires=1)
+        ...     qml.RZ(2, wires=1)
+        >>> tape.operations
+        [RX(0, wires=[0]), RZ(2, wires=[1])]
+        """
+        if QueuingContext.active_context() is not self:
+            raise QueuingError(
+                "Cannot stop recording requested tape " "as it is not currently recording."
+            )
+
+        active_contexts = QueuingContext._active_contexts
+        QueuingContext._active_contexts = deque()
+        yield
+        QueuingContext._active_contexts = active_contexts
 
     # ========================================================
     # construction methods
