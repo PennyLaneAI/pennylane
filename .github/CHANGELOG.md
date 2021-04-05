@@ -109,7 +109,6 @@
 
   ```python
   hessian_diagonals = tape1.gradient(grad, x)
->>>>>>> master
   ```
 
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
