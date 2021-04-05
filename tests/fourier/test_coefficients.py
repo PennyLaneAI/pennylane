@@ -127,7 +127,7 @@ def circuit_two_qubits_repeated_param(inpt):
     """Circuit with two qubits, repeated single-param output function <Z>
 
     By-hand calculation of f(x) gives <Z> = 1/2 + 1/2 cos(2x)
-    Fourier coeffs are c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.5
+    Fourier coeffs are c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.25
     (Same as above circuit_one_qubit_one_param_rx_ry, just different qubits).
     """
     qml.RX(inpt[0], wires=0)

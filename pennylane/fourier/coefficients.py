@@ -17,7 +17,7 @@ from itertools import product
 import numpy as np
 
 
-def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_threshold=None):
+def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=None):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
     periodic function, where :math:`d` is the highest desired frequency in the
     Fourier spectrum.
@@ -34,7 +34,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=True, filter_thresh
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
-        lowpass_filter (bool): If True (default), a simple low-pass filter is applied prior to
+        lowpass_filter (bool): If True, a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
             given degree.
         filter_threshold (None or int): The integer frequency at which to filter. If no value is
