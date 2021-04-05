@@ -2460,6 +2460,12 @@ class Hermitian(Observable):
     grad_method = "F"
     _eigs = {}
 
+    def __init__(self, *params, wires=None, do_queue=True):
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+        self.num_wires = len(self._wires) # self._wires defined in Operator __init__
+
     @classmethod
     def _matrix(cls, *params):
         A = np.asarray(params[0])
