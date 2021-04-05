@@ -172,18 +172,18 @@ class Hamiltonian:
         # Lambda function that formats the wires
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
-        paired_coeff_op = list(zip(self.coeffs, self.ops))
-        paired_coeff_op.sort(key=lambda pair: (pair[1].num_wires, pair[0]))
+        paired_coeff_obs = list(zip(self.coeffs, self.ops))
+        paired_coeff_obs.sort(key=lambda pair: (pair[1].num_wires, pair[0]))
 
         terms_ls = []
 
-        for coeff, op in paired_coeff_op:
+        for coeff, ob in paired_coeff_obs:
 
-            if isinstance(op, Tensor):
-                obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in op.obs]
+            if isinstance(ob, Tensor):
+                obs_strs = [f"{OBS_MAP.get(ob_i.name, ob_i.name)}{wires_print(ob_i)}" for ob_i in ob.obs]
                 ob_str = " ".join(obs_strs)
-            elif isinstance(op, Observable):
-                ob_str = f"{OBS_MAP.get(op.name, op.name)}{wires_print(op)}"
+            elif isinstance(ob, Observable):
+                ob_str = f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}"
 
             term_str = f"({coeff}) [{ob_str}]"
 
