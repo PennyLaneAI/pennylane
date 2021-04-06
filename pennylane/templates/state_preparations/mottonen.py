@@ -214,10 +214,12 @@ class MottonenStatePreparation(Operation):
     by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
 
     The state is prepared via a sequence
-    of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
-    composed from all possible controlled rotations on said qubit and can be used to address individual
-    elements of the state vector. In the work of Möttönen et al., the inverse of their state preparation
-    is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations
+    of uniformly controlled rotations. A uniformly controlled rotation on a target qubit is
+    composed from all possible controlled rotations on the qubit and can be used to address individual
+    elements of the state vector.
+
+    In the work of Möttönen et al., inverse state preparation
+    is executed by first equalizing the phases of the state vector via uniformly controlled Z rotations,
     and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via
     uniformly controlled Y rotations.
 
@@ -227,15 +229,16 @@ class MottonenStatePreparation(Operation):
 
         The final state is only equal to the input state vector up to a global phase.
 
-    Args:
-        state_vector (tensor_like): Input array of shape ``(2^N,)``, where N is the number of wires
-            the state preparation acts on. The input array must be normalized, and ``N`` must be smaller
-            or equal to the total number of wires.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+    .. warning::
 
-    Raises:
-        ValueError: if inputs do not have the correct format
+        Due to non-trivial classical processing of the state vector,
+        this template is not always fully differentiable.
+
+    Args:
+        state_vector (tensor_like): Input array of shape ``(2^n,)``, where ``n`` is the number of wires
+            the state preparation acts on. The input array must be normalized.
+        wires (Iterable): wires that the template acts on
+
     """
 
     num_params = 1

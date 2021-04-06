@@ -21,23 +21,17 @@ from pennylane.operation import Operation, AnyWires
 
 class BasisStatePreparation(Operation):
     r"""
-    Prepares a basis state on the given wires using a sequence of Pauli X gates.
+    Prepares a basis state on the given wires using a sequence of Pauli-X gates.
 
     .. warning::
 
         ``basis_state`` influences the circuit architecture and is therefore incompatible with
-        gradient computations. Ensure that ``basis_state`` is not passed to the qnode by positional
-        arguments.
+        gradient computations.
 
     Args:
-        basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
-            the state preparation acts on. ``N`` must be smaller or equal to the total
-            number of wires of the device.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
+        basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
+            the state preparation acts on.
+        wires (Iterable): wires that the template acts on
     """
     num_params = 1
     num_wires = AnyWires

@@ -61,15 +61,21 @@ class ArbitraryStatePreparation(Operation):
 
         @qml.qnode(dev)
         def vqe(weights):
-            qml.ArbitraryStatePreparations(weights, wires=[0, 1, 2, 3])
+            qml.templates.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
 
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
+    The shape of the weights parameter can be computed as follows:
+
+    .. code-block:: python
+
+        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires=3)
+
+
     Args:
-        weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
+        weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^(n+1) - 2`
             where :math:`n` is the number of wires the template acts upon.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Iterable): wires that the template acts on
     """
 
     num_params = 1
@@ -104,4 +110,4 @@ class ArbitraryStatePreparation(Operation):
         Returns:
             tuple[int]: shape
         """
-        return (2 ** (n_wires + 1) - 2,)
+        return 2 ** (n_wires + 1) - 2,
