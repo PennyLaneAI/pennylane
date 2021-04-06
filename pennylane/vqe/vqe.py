@@ -177,15 +177,13 @@ class Hamiltonian:
 
         terms_ls = []
 
-        for coeff, ob in paired_coeff_obs:
+        for coeff, obs in paired_coeff_obs:
 
-            if isinstance(ob, Tensor):
-                obs_strs = [
-                    f"{OBS_MAP.get(ob_i.name, ob_i.name)}{wires_print(ob_i)}" for ob_i in ob.obs
-                ]
+            if isinstance(obs, Tensor):
+                obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)
-            elif isinstance(ob, Observable):
-                ob_str = f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}"
+            elif isinstance(obs, Observable):
+                ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
 
             term_str = f"({coeff}) [{ob_str}]"
 
