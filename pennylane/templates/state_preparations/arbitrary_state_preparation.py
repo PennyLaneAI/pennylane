@@ -12,28 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``ArbitraryStatePreparation`` template.
+Contains the ArbitraryStatePreparation template.
 """
 import functools
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.wires import Wires
-
-
-def _preprocess(weights, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the weights tensor.
-
-    Args:
-        weights (tensor_like): trainable parameters of the template
-        wires (Wires): wires that template acts on
-    """
-    shape = qml.math.shape(weights)
-    if shape != (2 ** (len(wires) + 1) - 2,):
-        raise ValueError(
-            f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
-        )
+from pennylane.operation import Operation, AnyWires
 
 
 @functools.lru_cache()
@@ -60,8 +43,7 @@ def _state_preparation_pauli_words(num_wires):
     return single_qubit_words + multi_qubit_words
 
 
-@template
-def ArbitraryStatePreparation(weights, wires):
+class ArbitraryStatePreparation(Operation):
     """Implements an arbitrary state preparation on the specified wires.
 
     An arbitrary state on :math:`n` wires is parametrized by :math:`2^{n+1} - 2`
@@ -89,9 +71,36 @@ def ArbitraryStatePreparation(weights, wires):
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
-    _preprocess(weights, wires)
+    def __init__(self, weights, wires, do_queue=True):
 
-    for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-        qml.PauliRot(weights[i], pauli_word, wires=wires)
+        shape = qml.math.shape(weights)
+        if shape != (2 ** (len(wires) + 1) - 2,):
+            raise ValueError(
+                f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
+            )
+
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        with qml.tape.QuantumTape() as tape:
+            for i, pauli_word in enumerate(_state_preparation_pauli_words(len(self.wires))):
+                qml.PauliRot(self.parameters[0][i], pauli_word, wires=self.wires)
+
+        return tape
+
+    @staticmethod
+    def shape(n_wires):
+        r"""Returns the required shape for the weight tensor.
+
+        Args:
+                n_wires (int): number of wires
+
+        Returns:
+            tuple[int]: shape
+        """
+        return 2**(n_wires + 1) - 2,

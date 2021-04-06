@@ -51,36 +51,6 @@ class TestHelperFunctions:
 
         assert gray_code(rank) == expected_gray_code
 
-    @pytest.mark.parametrize(
-        "num_wires,expected_pauli_words",
-        [
-            (1, ["X", "Y"]),
-            (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
-            (
-                3,
-                [
-                    "XII",
-                    "YII",
-                    "IXI",
-                    "IYI",
-                    "IIX",
-                    "IIY",
-                    "IXX",
-                    "IXY",
-                    "XXI",
-                    "XYI",
-                    "XIX",
-                    "XIY",
-                    "XXX",
-                    "XXY",
-                ],
-            ),
-        ],
-    )
-    def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
-        """Test that the correct Pauli words are returned."""
-        for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
-            assert expected_pauli_words[idx] == pauli_word
 
 
 class TestBasisStatePreparation:
