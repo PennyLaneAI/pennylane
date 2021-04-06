@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -142,6 +142,7 @@ class DefaultQubitJax(DefaultQubit):
         "CRX": jax_ops.CRX,
         "CRY": jax_ops.CRY,
         "CRZ": jax_ops.CRZ,
+        "CRot": jax_ops.CRot,
         "MultiRZ": jax_ops.MultiRZ,
         "SingleExcitation": jax_ops.SingleExcitation,
         "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
