@@ -71,6 +71,7 @@ class ArbitraryStatePreparation(Operation):
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
     """
+
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
@@ -103,4 +104,4 @@ class ArbitraryStatePreparation(Operation):
         Returns:
             tuple[int]: shape
         """
-        return 2**(n_wires + 1) - 2,
+        return (2 ** (n_wires + 1) - 2,)

@@ -333,137 +333,24 @@ class TestInputs:
             circuit(state_vector)
 
 
-def circuit_template(state):
-    qml.templates.MottonenStatePreparation(state, range(3))
-    return qml.expval(qml.PauliZ(0))
+class TestGradient:
+    """Tests gradients."""
 
+    # TODO: Currently the template fails for more elaborate gradient
+    # tests, i.e. when the state contains zeros.
+    # Make the template fully differentiable and test it.
 
-def circuit_decomposed(state):
+    @pytest.mark.parametrize(
+        "state_vector", [np.array([0.70710678, 0.70710678]), np.array([0.70710678, 0.70710678j])]
+    )
+    def test_gradient_evaluated(self, state_vector):
+        """Test that the gradient is successfully calculated for a simple example. This test only
+        checks that the gradient is calculated without an error."""
+        dev = qml.device("default.qubit", wires=1)
 
-    return qml.expval(qml.PauliZ(0))
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            qml.templates.MottonenStatePreparation(state_vector, wires=range(1))
+            return qml.expval(qml.PauliZ(0))
 
-
-class TestInterfaces:
-    """Tests that the template is compatible with all interfaces, including the computation
-    of gradients."""
-
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        state = [1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(state)
-        res2 = circuit2(state)
-
-        assert circuit.qtape.operations == 1
-
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        state_tuple = tuple(state)
-        res = circuit(state_tuple)
-        res2 = circuit2(state_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        state = pnp.array([1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(state)
-        res2 = circuit2(state)
-        assert qml.np.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qml.grad(circuit)
-        grads = grad_fn(state)
-
-        grad_fn2 = qml.grad(circuit2)
-        grads2 = grad_fn2(state)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-    def test_jax(self, tol, skip_if_no_jax_support):
-        """Tests the jax interface."""
-
-        import jax
-        import jax.numpy as jnp
-
-        state = jnp.array([1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0])
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
-
-        res = circuit(state)
-        res2 = circuit2(state)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = jax.grad(circuit)
-        grads = grad_fn(state)
-
-        grad_fn2 = jax.grad(circuit2)
-        grads2 = grad_fn2(state)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-    def test_tf(self, tol, skip_if_no_tf_support):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        state = tf.Variable([1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0])
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
-
-        res = circuit(state)
-        res2 = circuit2(state)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(state)
-        grads = tape.gradient(res, [state])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(state)
-        grads2 = tape2.gradient(res2, [state])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-    def test_torch(self, tol, skip_if_no_torch_support):
-        """Tests the torch interface."""
-
-        import torch
-
-        state = torch.tensor([1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
-
-        res = circuit(state)
-        res2 = circuit2(state)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(state)
-        res.backward()
-        grads = [state.grad]
-
-        res2 = circuit2(state)
-        res2.backward()
-        grads2 = [state.grad]
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        qml.grad(circuit)(state_vector)

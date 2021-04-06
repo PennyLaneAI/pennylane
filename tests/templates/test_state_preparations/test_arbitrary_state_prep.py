@@ -18,7 +18,9 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.arbitrary_state_preparation import _state_preparation_pauli_words
+from pennylane.templates.state_preparations.arbitrary_state_preparation import (
+    _state_preparation_pauli_words,
+)
 
 
 class TestDecomposition:
@@ -148,7 +150,7 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(2**4 - 2))
+        weights = np.random.random(size=(2 ** 4 - 2))
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -211,12 +213,12 @@ def circuit_template(weights):
 
 
 def circuit_decomposed(weights):
-    qml.PauliRot(weights[0], 'XI', wires=[0, 1])
-    qml.PauliRot(weights[1], 'YI', wires=[0, 1])
-    qml.PauliRot(weights[2], 'IX', wires=[0, 1])
-    qml.PauliRot(weights[3], 'IY', wires=[0, 1])
-    qml.PauliRot(weights[4], 'XX', wires=[0, 1])
-    qml.PauliRot(weights[5], 'XY', wires=[0, 1])
+    qml.PauliRot(weights[0], "XI", wires=[0, 1])
+    qml.PauliRot(weights[1], "YI", wires=[0, 1])
+    qml.PauliRot(weights[2], "IX", wires=[0, 1])
+    qml.PauliRot(weights[3], "IY", wires=[0, 1])
+    qml.PauliRot(weights[4], "XX", wires=[0, 1])
+    qml.PauliRot(weights[5], "XY", wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -227,7 +229,7 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
 
-        weights = [1]*6
+        weights = [1] * 6
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -247,7 +249,7 @@ class TestInterfaces:
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
-        weights = np.random.random(size=(6, ))
+        weights = np.random.random(size=(6,))
         weights = pnp.array(weights, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
@@ -273,7 +275,7 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        weights = jnp.array(np.random.random(size=(6, )))
+        weights = jnp.array(np.random.random(size=(6,)))
 
         dev = qml.device("default.qubit", wires=2)
 
