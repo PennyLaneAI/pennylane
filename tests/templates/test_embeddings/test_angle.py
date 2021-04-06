@@ -33,6 +33,7 @@ class TestDecomposition:
         assert len(tape.operations) == len(features)
         for gate in tape.operations:
             assert gate.name == "RX"
+            assert gate.parameters[0] == 1
 
     @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
     def test_rotations(self, rotation):

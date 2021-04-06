@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the DisplacementEmbedding template.HE
+Tests for the DisplacementEmbedding template.
 """
 import pytest
 import numpy as np
@@ -36,7 +36,7 @@ class TestDecomposition:
             assert gate.parameters[0] == features[idx]
 
     def test_state_execution_amplitude(self):
-        """Checks the state using the amplitude execution method."""
+        """Checks the state using the amplitude method."""
 
         features = np.array([0.1, 1.2])
         n_wires = 2
@@ -56,7 +56,7 @@ class TestDecomposition:
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
     def test_state_execution_phase(self):
-        """Checks the state using the phase execution method."""
+        """Checks the state using the phase method."""
 
         features = np.array([1.2, 0.3])
         n_wires = 2

@@ -46,6 +46,36 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
 
+    def test_repeat(self):
+        """Checks the queue for repetition of the template."""
+
+        features = list(range(3))
+
+        expected_names = self.QUEUES[2][1] + self.QUEUES[2][1]
+        expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
+
+        op = qml.templates.IQPEmbedding(features, wires=range(3), n_repeats=2)
+        tape = op.expand()
+
+        for i, gate in enumerate(tape.operations):
+            assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
+
+    def test_custom_pattern(self):
+        """Checks the queue for custom pattern for the entanglers."""
+
+        features = list(range(3))
+        pattern = [[0, 2], [0, 1]]
+        expected_names = ["Hadamard", "RZ", "Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ", "MultiRZ", "MultiRZ"]
+        expected_wires = [[0], [0], [1], [1], [2], [2], *pattern]
+
+        op = qml.templates.IQPEmbedding(features, wires=range(3), pattern=pattern)
+        tape = op.expand()
+
+        for i, gate in enumerate(tape.operations):
+            assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
@@ -76,7 +106,7 @@ class TestInputs:
         "features", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0], [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]]
     )
     def test_exception_wrong_number_of_features(self, features):
-        """Verifies that an exception is raised if 'feature' has the wrong shape."""
+        """Verifies that an exception is raised if 'features' has the wrong shape."""
 
         dev = qml.device("default.qubit", wires=3)
 

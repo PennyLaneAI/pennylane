@@ -25,7 +25,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("features", [[1, 0, 1], [1, 1, 1], [0, 1, 0]])
     def test_expansion(self, features):
-        """Checks the queue for the default settings."""
+        """Checks the queue."""
 
         op = qml.templates.BasisEmbedding(features=features, wires=range(3))
         tape = op.expand()

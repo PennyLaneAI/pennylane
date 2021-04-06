@@ -91,11 +91,11 @@ class IQPEmbedding(Operation):
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3))
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3))
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
+            circuit([1., 2., 3.])
 
         **Do not pass features as a positional argument to the qnode**
 
@@ -107,7 +107,7 @@ class IQPEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(features):
-               IQPEmbedding(features=features, wires=range(3), n_repeats=2)
+               IQPEmbedding(features, wires=range(3), n_repeats=2)
                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
@@ -121,11 +121,11 @@ class IQPEmbedding(Operation):
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3), n_repeats=4)
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3), n_repeats=4)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
+            circuit([1., 2., 3.])
 
         Every repetition uses exactly the same quantum circuit.
 
@@ -139,11 +139,11 @@ class IQPEmbedding(Operation):
             pattern = [[1, 2], [0, 2], [1, 0]]
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3), pattern=pattern)
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3), pattern=pattern)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
+            circuit([1., 2., 3.])
 
         Since diagonal gates commute, the order of the wire pairs has no effect on the result.
 
@@ -155,12 +155,12 @@ class IQPEmbedding(Operation):
             pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1
 
             @qml.qnode(dev)
-            def circuit(features=None, pattern=None):
-                IQPEmbedding(features=features, wires=range(3), pattern=pattern, n_repeats=3)
+            def circuit(features, pattern):
+                IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            res1 = circuit(features=[1., 2., 3.], pattern=pattern1)
-            res2 = circuit(features=[1., 2., 3.], pattern=pattern2)
+            res1 = circuit([1., 2., 3.], pattern1)
+            res2 = circuit([1., 2., 3.], pattern2)
 
             assert np.allclose(res1, res2)
 

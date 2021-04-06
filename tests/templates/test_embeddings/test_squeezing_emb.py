@@ -119,7 +119,7 @@ class TestInputs:
             circuit(x=[0.2, 0.3, 0.4])
 
     def test_strategy_not_recognized_exception(self):
-        """Verifies that an exception is thrown if is strategy unknown."""
+        """Verifies that an exception is thrown if the method is unknown."""
 
         n_wires = 2
         dev = qml.device("default.gaussian", wires=n_wires)
