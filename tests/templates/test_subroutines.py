@@ -1572,7 +1572,7 @@ class TestQuantumPhaseEstimation:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand()
+            tape = tape.expand(depth=2)
             res = tape.execute(dev).flatten()
 
             if phase < 0:
