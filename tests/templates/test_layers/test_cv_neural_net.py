@@ -44,20 +44,24 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     QUEUES = [
-        (1, ["Interferometer", "Squeezing", "Interferometer", "Displacement", "Kerr"], [[0]] * 5),
+        (1, ["Rotation", "Squeezing", "Rotation", "Displacement", "Kerr"], [[0]] * 5),
         (
             2,
             [
-                "Interferometer",
+                "Beamsplitter",  # Interferometer 1
+                "Rotation",  # Interferometer 1
+                "Rotation",  # Interferometer 1
                 "Squeezing",
                 "Squeezing",
-                "Interferometer",
+                "Beamsplitter",  # Interferometer 2
+                "Rotation",  # Interferometer 2
+                "Rotation",  # Interferometer 2
                 "Displacement",
                 "Displacement",
                 "Kerr",
                 "Kerr",
             ],
-            [[0, 1], [0], [1], [0, 1], [0], [1], [0], [1]],
+            [[0, 1], [0], [1], [0], [1], [0, 1], [0], [1], [0], [1], [0], [1]],
         ),
     ]
 
