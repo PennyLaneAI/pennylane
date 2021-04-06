@@ -66,7 +66,17 @@ class TestDecomposition:
 
         features = list(range(3))
         pattern = [[0, 2], [0, 1]]
-        expected_names = ["Hadamard", "RZ", "Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ", "MultiRZ", "MultiRZ"]
+        expected_names = [
+            "Hadamard",
+            "RZ",
+            "Hadamard",
+            "RZ",
+            "Hadamard",
+            "RZ",
+            "MultiRZ",
+            "MultiRZ",
+            "MultiRZ",
+        ]
         expected_wires = [[0], [0], [1], [1], [2], [2], *pattern]
 
         op = qml.templates.IQPEmbedding(features, wires=range(3), pattern=pattern)
