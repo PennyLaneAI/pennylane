@@ -23,6 +23,41 @@ from pennylane.templates.state_preparations.arbitrary_state_preparation import (
 )
 
 
+class TestHelpers:
+    """Tests for the Pauli-word helper function."""
+
+    @pytest.mark.parametrize(
+        "num_wires,expected_pauli_words",
+        [
+            (1, ["X", "Y"]),
+            (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
+            (
+                3,
+                [
+                    "XII",
+                    "YII",
+                    "IXI",
+                    "IYI",
+                    "IIX",
+                    "IIY",
+                    "IXX",
+                    "IXY",
+                    "XXI",
+                    "XYI",
+                    "XIX",
+                    "XIY",
+                    "XXX",
+                    "XXY",
+                ],
+            ),
+        ],
+    )
+    def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
+        """Test that the correct Pauli words are returned."""
+        for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
+            assert expected_pauli_words[idx] == pauli_word
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -99,7 +134,7 @@ class TestDecomposition:
         assert np.allclose(circuit.device.state, GHZ_state, atol=tol, rtol=0)
 
     def test_even_superposition_generation(self, qubit_device_3_wires, tol):
-        """Test that the template prepares a even superposition state."""
+        """Test that the template prepares an even superposition state."""
         even_superposition_state = np.ones(8) / np.sqrt(8)
 
         weights = np.zeros(14)
@@ -116,37 +151,6 @@ class TestDecomposition:
         circuit(weights)
 
         assert np.allclose(circuit.device.state, even_superposition_state, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize(
-        "num_wires,expected_pauli_words",
-        [
-            (1, ["X", "Y"]),
-            (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
-            (
-                3,
-                [
-                    "XII",
-                    "YII",
-                    "IXI",
-                    "IYI",
-                    "IIX",
-                    "IIY",
-                    "IXX",
-                    "IXY",
-                    "XXI",
-                    "XYI",
-                    "XIX",
-                    "XIY",
-                    "XXX",
-                    "XXY",
-                ],
-            ),
-        ],
-    )
-    def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
-        """Test that the correct Pauli words are returned."""
-        for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
-            assert expected_pauli_words[idx] == pauli_word
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

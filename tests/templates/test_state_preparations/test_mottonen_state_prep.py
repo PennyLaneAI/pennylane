@@ -123,8 +123,7 @@ class TestDecomposition:
     def test_state_preparation_fidelity(
             self, tol, qubit_device_3_wires, state_vector, wires, target_state
     ):
-        """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
-        and produces states with correct fidelity."""
+        """Tests that the template produces correct states with high fidelity."""
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
@@ -207,8 +206,7 @@ class TestDecomposition:
     def test_state_preparation_probability_distribution(
             self, tol, qubit_device_3_wires, state_vector, wires, target_state
     ):
-        """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
-        and produces states with correct probability distribution."""
+        """Tests that the template produces states with correct probability distribution."""
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
@@ -240,7 +238,7 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_RZ_skipped(self, state_vector, n_wires):
-        """Tests whether the cascade of RZ gates is skipped for real-valued states"""
+        """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
         n_CNOT = 2 ** n_wires - 2
 

@@ -38,8 +38,7 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_correct_pl_gates(self, basis_state, wires, target_wires):
-        """Tests that the template calls the correct
-        PennyLane gates on the correct wires."""
+        """Tests queue for simple cases."""
 
         op = qml.templates.BasisStatePreparation(basis_state, wires)
         queue = op.expand().operations
@@ -63,7 +62,7 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_state_preparation(self, tol, qubit_device_3_wires, basis_state, wires, target_state):
-        """Tests that the template integrates correctly with PennyLane."""
+        """Tests that the template produces the correct expectation values."""
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
