@@ -65,7 +65,7 @@ class CVNeuralNetLayers(Operation):
 
         **Parameter shapes**
 
-        A list of shapes for the 11 weight tensors can be computed by the static method
+        A list of shapes for the 11 input parameter tensors can be computed by the static method
         :meth:`~.CVNeuralNetLayers.shapes` and used when creating randomly
         initialised weights:
 
