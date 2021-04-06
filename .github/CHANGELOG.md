@@ -483,6 +483,32 @@
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
+* Adds a new transform `qml.invisible`.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  Marking a quantum function as invisible will inhibit any internal
+  quantum operation processing from being recorded by the QNode:
+
+  ```pycon
+  >>> @qml.transforms.invisible
+  ... def list_of_ops(params, wires):
+  ...     return [
+  ...         qml.RX(params[0], wires=wires),
+  ...         qml.RY(params[1], wires=wires),
+  ...         qml.RZ(params[2], wires=wires)
+  ...     ]
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     # list_of_ops is invisible, so quantum operations
+  ...     # instantiated within it will not be queued.
+  ...     ops = list_of_ops(params, wires=0)
+  ...     # apply only the last operation from the list
+  ...     ops[-1].queue()
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(qml.draw(circuit)([1, 2, 3]))
+   0: ──RZ(3)──┤ ⟨Z⟩
+  ```
+
 <h3>Improvements</h3>
 
 * Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
@@ -598,6 +624,28 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
+* Two new utility methods are provided for working with quantum tapes.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  - `qml.tape.get_active_tape()` gets the currently recording tape.
+
+  - `tape.stop_recording()` is a context manager that temporarily
+    stops the currently recording tape from recording additional
+    tapes or quantum operations.
+
+  For example:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape():
+  ...     qml.RX(0, wires=0)
+  ...     current_tape = qml.tape.get_active_tape()
+  ...     with current_tape.stop_recording():
+  ...         qml.RY(1.0, wires=1)
+  ...     qml.RZ(2, wires=1)
+  >>> current_tape.operations
+  [RX(0, wires=[0]), RZ(2, wires=[1])]
+  ```
+
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
@@ -673,6 +721,10 @@
     `shot_range=[35, 135]`, `bin_size=100`.
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
+  operation raised an error.
+  [(#1174)](https://github.com/PennyLaneAI/pennylane/pull/1174)
 
 * Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
   being updated.
