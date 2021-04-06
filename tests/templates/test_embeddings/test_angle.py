@@ -37,7 +37,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
     def test_rotations(self, rotation):
-        """Checks the queue for the default settings."""
+        """Checks the queue for the specified rotation settings."""
 
         op = qml.templates.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
         tape = op.expand()
