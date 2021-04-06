@@ -262,6 +262,12 @@ class TestAttributes:
         shape = qml.templates.ParticleConservingU1.shape(n_layers, n_wires)
         assert shape == expected_shape
 
+    def test_shape_exception_not_enough_qubits(self):
+        """Test that the shape function warns if there are not enough qubits."""
+
+        with pytest.raises(ValueError, match="The number of qubits must be greater than one"):
+            qml.templates.ParticleConservingU1.shape(3, 1)
+
 
 def circuit_template(weights):
     qml.templates.ParticleConservingU1(weights, range(2), init_state=np.array([1, 1]))
