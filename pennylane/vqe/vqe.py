@@ -173,7 +173,7 @@ class Hamiltonian:
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
         paired_coeff_obs = list(zip(self.coeffs, self.ops))
-        paired_coeff_obs.sort(key=lambda pair: (pair[1].num_wires, pair[0]))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
 
         terms_ls = []
 
