@@ -2464,7 +2464,7 @@ class Hermitian(Observable):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
-        self.num_wires = len(self._wires)  # self._wires defined in Operator __init__
+        self.num_wires = len(self._wires)  # self._wires defined in Operator.__init__
 
     @classmethod
     def _matrix(cls, *params):
