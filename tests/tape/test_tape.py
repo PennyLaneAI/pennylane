@@ -672,7 +672,7 @@ class TestExpand:
             qml.BasisState(np.array([1]), wires=0)
 
         # since expansion calls `BasisStatePreparation` we have to expand twice
-        new_tape = tape.expand().expand()
+        new_tape = tape.expand(depth=2)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"

@@ -1104,7 +1104,7 @@ class QuantumTape(AnnotatedQueue):
 
         # decompose the queue
         operations = tape.expand(
-            depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
+            depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES
         ).operations
 
         # create the QASM code representing the operations
