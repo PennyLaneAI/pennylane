@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
-def test_import_error(self, mocker):
+def test_import_error(mocker):
         """Test that an exception is caught on import error"""
         mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
         mock.side_effect = ImportError()
