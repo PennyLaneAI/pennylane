@@ -90,6 +90,7 @@ class ArbitraryUnitary(Operation):
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable): wires that the template acts on
     """
+
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
@@ -98,7 +99,9 @@ class ArbitraryUnitary(Operation):
 
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
-            raise ValueError(f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
+            raise ValueError(
+                f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
+            )
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
@@ -120,5 +123,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return 4 ** n_wires - 1,
-
+        return (4 ** n_wires - 1,)
