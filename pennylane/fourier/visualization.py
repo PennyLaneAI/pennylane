@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,17 +18,32 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
 
+# Matplotlib is not a hard requirement for PennyLane in general, but it *is*
+# a hard requirement for everything in this module.
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    print("Module matplotlib is required for visualization in the Fourier module.")
 
-def violin_plot(list_of_coeffs, figsize=None):
-    """Plots a list of sets of Fourier coefficients in a 1-dimensional plot."""
 
+def violin_plot(coeffs, colour_dict=None, figsize=None):
+    """Plots a list of sets of Fourier coefficients in a 1-dimensional violin plot.
+
+    Args:
+        coeffs (array[complex]):
+   
+    """
+
+    if colour_dict is None:
+        colour_dict = {"real": "purple", "imag": "green"}
+    
     # extract the x ticks
-    nvecs = list(to_dict(list_of_coeffs[0]).keys())
+    nvecs = list(to_dict(coeffs[0]).keys())
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # make data
-    data_real = np.array([[coeffs[nvec].real for nvec in nvecs] for coeffs in list_of_coeffs])
-    data_imag = np.array([[coeffs[nvec].imag for nvec in nvecs] for coeffs in list_of_coeffs])
+    data_real = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data_imag = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
     assert len(data_real[0]) == len(nvecs)
     assert len(data_imag[0]) == len(nvecs)
 
@@ -41,7 +56,7 @@ def violin_plot(list_of_coeffs, figsize=None):
 
     violin1 = ax1.violinplot(data_real, showextrema=False)
     for bd in violin1["bodies"]:
-        bd.set_color("purple")
+        bd.set_color(colour_dict["real"])
         bd.set_alpha(0.7)
     ax1.set_ylabel("real")
     ax1.xaxis.set_ticks(np.arange(1, len(nvecs) + 1))
@@ -54,7 +69,7 @@ def violin_plot(list_of_coeffs, figsize=None):
 
     violin2 = ax2.violinplot(data_imag, showextrema=False)
     for bd in violin2["bodies"]:
-        bd.set_color("green")
+        bd.set_color(colour_dict["imag"])
         bd.set_alpha(0.7)
     ax2.set_ylabel("imag")
     ax2.xaxis.grid()
@@ -188,15 +203,20 @@ def complex_panel_plot(coeffs, savefig=False, title=None):
         plt.show()
 
 
-def fourier_reconstruct_function_1D_plot(coeffs, savefig=False, title=None):
-    """Visualize the 1D periodic function given by the Fourier coefficients.
+def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
+    """Visualize a 1D periodic function given by a set of Fourier coefficients.
 
     Args:
-        coeffs (np.ndarray): Fourier coefficients.
-        savefig (bool): Whether or not to save the figure.
-        title (str): Title for the file of saved figure.
+        coeffs (np.ndarray): Fourier coefficients of a 1-dimensional function.
+        ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
+            current axis from ``plt.gca()`` will be used.
+
+    Returns:
+        matplotlib.axes._subplots.AxesSubplot: The axis after plotting is complete.
     """
 
+    ax = ax or plt.gca()
+    
     if len(coeffs.shape) != 1:
         raise ValueError("Function fourier_reconstruct_function_1D_plot takes 1-dimensional input.")
 
@@ -207,12 +227,15 @@ def fourier_reconstruct_function_1D_plot(coeffs, savefig=False, title=None):
         n_freqs = len(coeffs) // 2 + (len(coeffs) % 2)
 
         function_value = 0
-        # Start with positive coefficients
+
         for freq in range(n_freqs):
+            # Ignore tiny coefficients
+            if np.isclose(coeffs[freq], 0):
+                continue
+
             if freq == 0:
                 function_value += coeffs[freq]
             else:
-                if np.abs(coeffs[freq]) > 1e-8:
                     function_value += coeffs[freq] * np.exp(freq * 1j * x)
                     function_value += np.conj(coeffs[freq]) * np.exp(-freq * 1j * x)
 
@@ -221,24 +244,23 @@ def fourier_reconstruct_function_1D_plot(coeffs, savefig=False, title=None):
     n_points = 500
     grid_range = np.linspace(-np.pi, np.pi, n_points)
 
-    plt.plot(grid_range, reconstructed_function(grid_range))
-    if title:
-        plt.title(title)
+    ax.plot(grid_range, reconstructed_function(grid_range))
 
-    if savefig:
-        plt.savefig(title + ".pdf")
-    else:
-        plt.show()
+    return ax
 
 
-def fourier_reconstruct_function_2D_plot(coeffs, savefig=False, title=None):
-    """Visualize the 2D periodic function given by the Fourier coefficients.
+def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
+    """Visualize a 2D periodic function given by a set of Fourier coefficients.
 
     Args:
-        coeffs (np.ndarray): 2-dimensional Fourier coefficients.
-        savefig (bool): Whether or not to save the figure.
-        title (str): Title for the file of saved figure.
+        coeffs (np.ndarray): Fourier coefficients of a 2-dimensional function.
+        ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
+            current axis from ``plt.gca()`` will be used.
+
+    Returns:
+        matplotlib.axes._subplots.AxesSubplot: The axis after plotting is complete.
     """
+    ax = ax or plt.gca()
 
     if len(coeffs.shape) != 2:
         raise ValueError("Function fourier_reconstruct_function_2D_plot takes 2-dimensional input.")
@@ -249,9 +271,14 @@ def fourier_reconstruct_function_2D_plot(coeffs, savefig=False, title=None):
 
         n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
 
-        function_value = 0
-        # Start with positive coefficients
+        function_value = 0j
+
+        # Loop through only positive frequencies because the negative ones we get through complex conj.
         for freq_1, freq_2 in product(list(range(n_freqs)), list(range(n_freqs))):
+            # Ignore tiny coefficients
+            if np.isclose(coeffs[freq_1, freq_2], 0):
+                continue
+
             if freq_1 == 0 and freq_2 == 0:
                 function_value += coeffs[freq_1, freq_2]
             else:
@@ -272,20 +299,14 @@ def fourier_reconstruct_function_2D_plot(coeffs, savefig=False, title=None):
     function_values = np.zeros((n_points, n_points))
 
     # Fill each point in the grid with the value of model evaluated at that point
+    # Take only the real part because our function is real-valued
     for index in np.ndindex(*((n_points,) * 2)):
         coordinate_vector = [grid_range[i] for i in index]
-        function_values[index] = reconstructed_function(coordinate_vector)
+        function_values[index] = reconstructed_function(coordinate_vector).real
 
-    plt.figure(figsize=(8, 8))
-    plt.imshow(function_values)
+    ax.imshow(function_values)
 
-    if title:
-        plt.title(title)
-
-    if savefig:
-        plt.savefig(title + ".pdf")
-    else:
-        plt.show()
+    return ax
 
 
 def radial_box_plots(
