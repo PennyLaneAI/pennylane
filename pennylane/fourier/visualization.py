@@ -121,13 +121,11 @@ def bar_plot(coeffs, show_freq=True, figsize=None):
     return plt
 
 
-def complex_panel_plot(coeffs, real_fft=False, savefig=False, title=None):
+def complex_panel_plot(coeffs, savefig=False, title=None):
     """Plot coefficients in the complex plane for a 1- or 2-dimensional FFT.
 
     Args:
         coeffs (np.ndarray): Fourier coefficients.
-        real_fft (bool): Whether the coefficients are the result of rfftn instead of fftn.
-            Affects only plot size and axis labelling.
         savefig (bool): Whether or not to save the figure.
         title (str): Title for the file of saved figure.
     """
@@ -138,12 +136,8 @@ def complex_panel_plot(coeffs, real_fft=False, savefig=False, title=None):
     # Plot 1D case
     if len(coeffs.shape) == 2:
         # Range is (0, ..., degree) for rfft, (0, ... degree, -degree, ..., -1) for fft
-        if real_fft:
-            n_freqs = coeffs.shape[1]
-            frequency_range = list(range(n_freqs))
-        else:
-            n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
-            frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
+        n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
+        frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
 
         # Set up the grid
         fig, ax = plt.subplots(
@@ -157,10 +151,7 @@ def complex_panel_plot(coeffs, real_fft=False, savefig=False, title=None):
 
     # Plot 2D case
     else:
-        if real_fft:
-            n_freqs = coeffs.shape[2]
-        else:
-            n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
+        n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
 
         frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
 
@@ -197,12 +188,11 @@ def complex_panel_plot(coeffs, real_fft=False, savefig=False, title=None):
         plt.show()
 
 
-def fourier_reconstruct_function_1D_plot(coeffs, real_fft=False, savefig=False, title=None):
+def fourier_reconstruct_function_1D_plot(coeffs, savefig=False, title=None):
     """Visualize the 1D periodic function given by the Fourier coefficients.
 
     Args:
         coeffs (np.ndarray): Fourier coefficients.
-        real_fft (bool): Whether the coefficients are the result of rfftn instead of fftn.
         savefig (bool): Whether or not to save the figure.
         title (str): Title for the file of saved figure.
     """
@@ -214,10 +204,7 @@ def fourier_reconstruct_function_1D_plot(coeffs, real_fft=False, savefig=False, 
         # At each point x, the value of the function is given by
         # c_0 + c_1 e^{ix} + c_2 e^{2ix} + ... + c_{-n} e^{-inx} + ... c_{-1} e^{-ix}
 
-        if real_fft:
-            n_freqs = len(coeffs)
-        else:
-            n_freqs = len(coeffs) // 2 + (len(coeffs) % 2)
+        n_freqs = len(coeffs) // 2 + (len(coeffs) % 2)
 
         function_value = 0
         # Start with positive coefficients
@@ -244,12 +231,11 @@ def fourier_reconstruct_function_1D_plot(coeffs, real_fft=False, savefig=False, 
         plt.show()
 
 
-def fourier_reconstruct_function_2D_plot(coeffs, real_fft=False, savefig=False, title=None):
+def fourier_reconstruct_function_2D_plot(coeffs, savefig=False, title=None):
     """Visualize the 2D periodic function given by the Fourier coefficients.
 
     Args:
         coeffs (np.ndarray): 2-dimensional Fourier coefficients.
-        real_fft (bool): Whether the coefficients are the result of rfftn instead of fftn.
         savefig (bool): Whether or not to save the figure.
         title (str): Title for the file of saved figure.
     """
@@ -261,10 +247,7 @@ def fourier_reconstruct_function_2D_plot(coeffs, real_fft=False, savefig=False, 
         # At each point x, the value of the function is given by
         # c_0 + c_1 e^{ix} + c_2 e^{2ix} + ... + c_{-n} e^{-inx} + ... c_{-1} e^{-ix}
 
-        if real_fft:
-            n_freqs = coeffs.shape[1]
-        else:
-            n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
+        n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
 
         function_value = 0
         # Start with positive coefficients
