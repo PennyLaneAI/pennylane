@@ -260,7 +260,7 @@ class MottonenStatePreparation(Operation):
 
         norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
         if not qml.math.allclose(norm, 1.0, atol=1e-3):
-            raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
+            raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue)
 

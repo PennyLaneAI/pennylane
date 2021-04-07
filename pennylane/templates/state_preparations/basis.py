@@ -28,6 +28,21 @@ class BasisStatePreparation(Operation):
         ``basis_state`` influences the circuit architecture and is therefore incompatible with
         gradient computations.
 
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.templates.BasisStatePreparation(basis_state, wires=range(4))
+
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
+
+        basis_state = [0, 1, 1, 0]
+        print(circuit(basis_state)) # [ 1. -1. -1.  1.]
+
     Args:
         basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
             the state preparation acts on.

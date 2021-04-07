@@ -102,20 +102,6 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    def test_exception_wrong_dim(self):
-        """Verifies that exception is raised if the
-        number of dimensions of features is incorrect."""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, wires=range(3))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Weights tensor must be of shape"):
-            weights = np.zeros(12)
-            circuit(weights)
-
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
         ([0], [0, 1]),
