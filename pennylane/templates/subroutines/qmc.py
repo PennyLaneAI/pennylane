@@ -18,7 +18,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 
 
 def probs_to_unitary(probs):
@@ -343,8 +342,8 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        self.target_wires = Wires(target_wires)
-        self.estimation_wires = Wires(estimation_wires)
+        self.target_wires = list(target_wires)
+        self.estimation_wires = list(estimation_wires)
         wires = self.target_wires + self.estimation_wires
 
         if num_target_wires != len(self.target_wires):
