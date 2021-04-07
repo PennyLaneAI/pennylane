@@ -41,7 +41,6 @@ def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
         coeffs (array[complex]): A list of sets of Fourier coefficients.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
-            If None, the current axis from ``plt.gca()`` will be used.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
             "imag" : other_colour_string} indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
@@ -100,7 +99,6 @@ def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
         coeffs (array[complex]): A single set of Fourier coefficients.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
-            If None, the current axis from ``plt.gca()`` will be used.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
             "imag" : other_colour_string} indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
@@ -148,14 +146,24 @@ def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def complex_panel_plot(coeffs, ax):
-    """Plot coefficients in the complex plane for a 1- or 2-dimensional FFT.
+def fourier_panel_plot(coeffs, ax):
+    """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional FFT.
 
     Args:
-        coeffs (array[complex]): Fourier coefficients.
+        coeffs (array[complex]): A list set of Fourier coefficients. Must be
+            1- or 2-dimensional.
+        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
+            1-dimensional data, length must be the number of frequencies. For 2-dimensional
+            data, must be a grid that matches the dimensions of a single set of coefficients.
+
+    Returns:
+        ax: The axes on which the data is plotted.
     """
     if len(coeffs.shape) > 3:
         raise ValueError("Plotting not implemented for > 2-dimensional FFT outputs.")
+
+    if ax.shape != coeffs[0].shape:
+        raise ValueError("Shape of subplot axes must match the shape of the coefficient data.")
 
     # This could probably be more efficient.
     # Plot 1D case
@@ -163,11 +171,6 @@ def complex_panel_plot(coeffs, ax):
         # Range is (0, ..., degree) for rfft, (0, ... degree, -degree, ..., -1) for fft
         n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
         frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
-
-        # Set up the grid
-        fig, ax = plt.subplots(
-            1, coeffs.shape[1], sharex=True, sharey=True, figsize=(3 * coeffs.shape[1], 3)
-        )
 
         for coeff in range(coeffs.shape[1]):
             ax[coeff].scatter(coeffs[:, coeff].real, coeffs[:, coeff].imag)
@@ -180,15 +183,6 @@ def complex_panel_plot(coeffs, ax):
 
         frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
 
-        # Set up the grid
-        fig, ax = plt.subplots(
-            coeffs.shape[1],
-            coeffs.shape[2],
-            sharex=True,
-            sharey=True,
-            figsize=(3 * coeffs.shape[1], 3 * coeffs.shape[2]),
-        )
-
         for coeff_1, coeff_2 in product(list(range(coeffs.shape[1])), list(range(coeffs.shape[2]))):
             ax[coeff_1, coeff_2].scatter(
                 coeffs[:, coeff_1, coeff_2].real, coeffs[:, coeff_1, coeff_2].imag
@@ -197,7 +191,9 @@ def complex_panel_plot(coeffs, ax):
                 f"{frequency_range[coeff_1]}, {frequency_range[coeff_2]}", fontsize=14
             )
             ax[coeff_1, coeff_2].grid(True)
-            ax[coeff_1, coeff_2].set(aspect="equal", adjustable="box")
+            ax[coeff_1, coeff_2].set(aspect="equal")
+
+    return ax
 
 
 def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
@@ -306,14 +302,12 @@ def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
     return ax
 
 
-def radial_box_plots(
+def fourier_radial_box_plots(
     coeffs,
     n_inputs,
     degree,
-    print_freq_labels=True,
+    show_freqs=True,
     colour_dict=None,
-    savefig=False,
-    title=None,
     showfliers=True,
     merge_plots=False,
 ):
@@ -330,15 +324,11 @@ def radial_box_plots(
             from a full fft transform.
         n_inputs (int): Dimension of the transformed function.
         degree (int): The max Fourier frequency obtained.
-        print_freq_labels (bool): Whether or not to label the frequencies on
+        show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
         colour_dict (str : str): Specify a colour mapping for positive and negative
             real/imaginary components. If none specified, will default to:
             {"real" : "red", "imag" : "black"}
-        savefig (bool): Whether or not to save the figure. The filename of the saved figure
-            will be set to the figure title. If no title is given, the output file will
-            be "FourierPlot.pdf".
-        title (str): A title for the plot.
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.
         merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
@@ -462,7 +452,7 @@ def radial_box_plots(
 
     # Set and rotate the tickmarks; taken from SO
     # https://stackoverflow.com/questions/46719340/how-to-rotate-tick-labels-in-polar-matplotlib-plot
-    if print_freq_labels:
+    if show_freqs:
         for a in avail_axes[:num_subplots]:
             for label, angle in zip(a.get_xticklabels(), angles):
                 x, y = label.get_position()
@@ -486,10 +476,6 @@ def radial_box_plots(
             a.tick_params(pad=10)
             a.set_rlabel_position(0)
 
-    # Titles and labeling
-    if title is not None:
-        plt.suptitle(title, fontsize=20)
-
     if num_subplots == 1:
         avail_axes[0].set_title(
             "Real (left) --- Imag (right)", fontsize=16, y=-0.025 * len(full_labels[0])
@@ -500,9 +486,3 @@ def radial_box_plots(
 
     plt.tight_layout()
 
-    if savefig:
-        if title is None:
-            title = "FourierPlot"
-        plt.savefig(title + ".pdf")
-    else:
-        plt.show()
