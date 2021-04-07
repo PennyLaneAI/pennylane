@@ -69,9 +69,6 @@ class ApproxTimeEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
-    Raises:
-        ValueError: if inputs do not have the correct format
-
     .. UsageDetails::
 
         The template is used inside a qnode:
