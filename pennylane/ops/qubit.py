@@ -32,7 +32,6 @@ from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
-
 class AdjointError(Exception):
     """Exception for non-adjointable operations."""
 
@@ -1647,6 +1646,28 @@ class IsingXX(Operation):
     r"""
     Definition TO DO
     """
+    num_params=1
+    num_wires=2
+    par_domain = "R"
+    grad_method = "A"
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params
+        c = math.cos(phi)
+        s = math.sin(phi)
+
+        return np.array(
+            [
+                [c ,0 ,0 , -1j*s],
+                [0, c, -1j*s, 0],
+                [0,-1j*s,c,0]
+                [-1j*s, 0, 0, c]
+            ]
+        )
+    def adjoint(self, do_queue=False):
+        (phi,) = self.parameters
+        return IsingXX(-phi, wires=self.wires, do_queue=do_queue)
 
 
 
