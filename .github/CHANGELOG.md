@@ -537,11 +537,13 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+- The embedding templates, as well as `BasicEntanglerLayers`, are now classes inheriting 
   from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface. 
+  change does not affect the user interface.
+  [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
+  [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
   
-  For convenience, the class has a method that returns the shape of the 
+  For convenience, `BasicEntanglerLayers` has a method that returns the shape of the 
   trainable parameter tensor, i.e.,
   
   ```python
