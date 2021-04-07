@@ -27,49 +27,49 @@ class TestDecomposition:
         ("time", "hamiltonian", "steps", "gates"),
         [
             (
-                    2,
-                    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-                    2,
-                    [
-                        qml.PauliRot(2.0, "X", wires=[0]),
-                        qml.PauliRot(2.0, "X", wires=[1]),
-                        qml.PauliRot(2.0, "X", wires=[0]),
-                        qml.PauliRot(2.0, "X", wires=[1]),
-                    ],
+                2,
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                2,
+                [
+                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.PauliRot(2.0, "X", wires=[1]),
+                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.PauliRot(2.0, "X", wires=[1]),
+                ],
             ),
             (
-                    2,
-                    qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
-                    2,
-                    [
-                        qml.PauliRot(4.0, "X", wires=["a"]),
-                        qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
-                        qml.PauliRot(4.0, "X", wires=["a"]),
-                        qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
-                    ],
+                2,
+                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
+                2,
+                [
+                    qml.PauliRot(4.0, "X", wires=["a"]),
+                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(4.0, "X", wires=["a"]),
+                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                ],
             ),
             (
-                    2,
-                    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]),
-                    2,
-                    [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
+                2,
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]),
+                2,
+                [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
             ),
             (
-                    2,
-                    qml.Hamiltonian(
-                        [2, 0.5, 0.5],
-                        [
-                            qml.PauliX("a"),
-                            qml.PauliZ(-15) @ qml.PauliX("a"),
-                            qml.Identity(0) @ qml.PauliY(-15),
-                        ],
-                    ),
-                    1,
+                2,
+                qml.Hamiltonian(
+                    [2, 0.5, 0.5],
                     [
-                        qml.PauliRot(8.0, "X", wires=["a"]),
-                        qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
-                        qml.PauliRot(2.0, "IY", wires=[0, -15]),
+                        qml.PauliX("a"),
+                        qml.PauliZ(-15) @ qml.PauliX("a"),
+                        qml.Identity(0) @ qml.PauliY(-15),
                     ],
+                ),
+                1,
+                [
+                    qml.PauliRot(8.0, "X", wires=["a"]),
+                    qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
+                    qml.PauliRot(2.0, "IY", wires=[0, -15]),
+                ],
             ),
         ],
     )
@@ -90,33 +90,33 @@ class TestDecomposition:
         [
             (np.pi, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2, [1.0, 1.0]),
             (
-                    np.pi / 2,
-                    qml.Hamiltonian([0.5, 1], [qml.PauliY(0), qml.Identity(0) @ qml.PauliX(1)]),
-                    1,
-                    [0.0, -1.0],
+                np.pi / 2,
+                qml.Hamiltonian([0.5, 1], [qml.PauliY(0), qml.Identity(0) @ qml.PauliX(1)]),
+                1,
+                [0.0, -1.0],
             ),
             (
-                    np.pi / 4,
-                    qml.Hamiltonian(
-                        [1, 1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)]
-                    ),
-                    1,
-                    [0.0, 0.0],
+                np.pi / 4,
+                qml.Hamiltonian(
+                    [1, 1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)]
+                ),
+                1,
+                [0.0, 0.0],
             ),
             (
-                    1,
-                    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-                    2,
-                    [-0.41614684, -0.41614684],
+                1,
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                2,
+                [-0.41614684, -0.41614684],
             ),
             (
-                    2,
-                    qml.Hamiltonian(
-                        [1, 1, 1, 1],
-                        [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1)],
-                    ),
-                    2,
-                    [-0.87801124, 0.51725747],
+                2,
+                qml.Hamiltonian(
+                    [1, 1, 1, 1],
+                    [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1)],
+                ),
+                2,
+                [-0.87801124, 0.51725747],
             ),
         ],
     )
@@ -136,7 +136,9 @@ class TestDecomposition:
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        hamiltonian2 = qml.Hamiltonian([1, 1, 1], [qml.PauliX("z"), qml.PauliX("a"), qml.PauliX("k")])
+        hamiltonian2 = qml.Hamiltonian(
+            [1, 1, 1], [qml.PauliX("z"), qml.PauliX("a"), qml.PauliX("k")]
+        )
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -181,11 +183,11 @@ class TestInputs:
         [
             (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]), "Hadamard"),
             (
-                    qml.Hamiltonian(
-                        [1, 1],
-                        [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
-                    ),
-                    "Hermitian",
+                qml.Hamiltonian(
+                    [1, 1],
+                    [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
+                ),
+                "Hermitian",
             ),
         ],
     )
@@ -201,7 +203,7 @@ class TestInputs:
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(
-                ValueError, match="hamiltonian must be written in terms of Pauli matrices"
+            ValueError, match="hamiltonian must be written in terms of Pauli matrices"
         ):
             circuit()
 
@@ -218,10 +220,10 @@ def circuit_template(time):
 
 
 def circuit_decomposed(time):
-    qml.PauliRot(time, 'X', wires=[0])
-    qml.PauliRot(time, 'X', wires=[1])
-    qml.PauliRot(time, 'X', wires=[0])
-    qml.PauliRot(time, 'X', wires=[1])
+    qml.PauliRot(time, "X", wires=[0])
+    qml.PauliRot(time, "X", wires=[1])
+    qml.PauliRot(time, "X", wires=[0])
+    qml.PauliRot(time, "X", wires=[1])
     return qml.expval(qml.PauliZ(0))
 
 

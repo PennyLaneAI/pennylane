@@ -509,34 +509,20 @@ class DoubleExcitationUnitary(Operation):
         p = self.wires2[-1]
 
         # Sequence of the wires entering the CNOTs
-        cnots_occ = [self.wires1[l: l + 2] for l in range(len(self.wires1) - 1)]
-        cnots_unocc = [self.wires2[l: l + 2] for l in range(len(self.wires2) - 1)]
+        cnots_occ = [self.wires1[l : l + 2] for l in range(len(self.wires1) - 1)]
+        cnots_unocc = [self.wires2[l : l + 2] for l in range(len(self.wires2) - 1)]
 
         set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
 
         with qml.tape.QuantumTape() as tape:
-            # Apply the first layer
+
             _layer1(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the second layer
             _layer2(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the third layer
             _layer3(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the fourth layer
             _layer4(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the fifth layer
             _layer5(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the sixth layer
             _layer6(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the seventh layer
             _layer7(weight, s, r, q, p, set_cnot_wires)
-
-            # Apply the eighth layer
             _layer8(weight, s, r, q, p, set_cnot_wires)
 
         return tape

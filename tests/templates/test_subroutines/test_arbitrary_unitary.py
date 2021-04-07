@@ -60,6 +60,7 @@ GRAY_CODE_TEST_DATA = [
 
 # fmt: on
 
+
 class TestHelpers:
     """Tests the helper functions."""
 
@@ -229,7 +230,7 @@ class TestInterfaces:
         """Tests common iterables as inputs."""
 
         weights = list(range(15))
-        
+
         dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)

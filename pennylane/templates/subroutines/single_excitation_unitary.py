@@ -134,7 +134,7 @@ class SingleExcitationUnitary(Operation):
         p = self.wires[-1]
 
         # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-        set_cnot_wires = [self.wires[l: l + 2] for l in range(len(self.wires) - 1)]
+        set_cnot_wires = [self.wires[l : l + 2] for l in range(len(self.wires) - 1)]
 
         with qml.tape.QuantumTape() as tape:
 

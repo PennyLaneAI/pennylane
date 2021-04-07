@@ -184,14 +184,14 @@ class TestDecomposition:
         [
             ([1, 3, 0, 2], [0, 1, 2, 3], [(0, 1), (1, 3), (2, 3)]),
             (
-                    ["d", "a", "e", "b", "c"],
-                    ["a", "b", "c", "d", "e"],
-                    [("a", "d"), ("b", "d"), ("c", "e")],
+                ["d", "a", "e", "b", "c"],
+                ["a", "b", "c", "d", "e"],
+                [("a", "d"), ("b", "d"), ("c", "e")],
             ),
             (
-                    ["p", "f", 4, "q", "z", 0, "c", "d"],
-                    ["z", 0, "d", "c", 4, "f", "q", "p"],
-                    [("z", "p"), (0, "f"), ("d", 4), ("c", "q"), (4, "p")],
+                ["p", "f", 4, "q", "z", 0, "c", "d"],
+                ["z", 0, "d", "c", 4, "f", "q", "p"],
+                [("z", "p"), (0, "f"), ("d", 4), ("c", "q"), (4, "p")],
             ),
         ],
     )
@@ -217,7 +217,7 @@ class TestDecomposition:
         ],
     )
     def test_subset_permutations_qnode(
-            self, num_wires, permutation_order, wire_subset, expected_wires
+        self, num_wires, permutation_order, wire_subset, expected_wires
     ):
         """ Test permutation of wire subsets on QNodes. """
 
@@ -243,15 +243,15 @@ class TestDecomposition:
             ([0, 1, 2], [1, 0], [0, 1], [(0, 1)]),
             ([0, 1, 2, 3], [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
             (
-                    [0, 2, "a", "c", 1, 4],
-                    [4, "c", 2, "a"],
-                    [2, "a", "c", 4],
-                    [(2, 4), ("a", "c"), ("c", 4)],
+                [0, 2, "a", "c", 1, 4],
+                [4, "c", 2, "a"],
+                [2, "a", "c", 4],
+                [(2, 4), ("a", "c"), ("c", 4)],
             ),
         ],
     )
     def test_subset_permutations_tape(
-            self, wire_labels, permutation_order, wire_subset, expected_wires
+        self, wire_labels, permutation_order, wire_subset, expected_wires
     ):
         """ Test permutation of wire subsets on tapes. """
 
@@ -265,9 +265,9 @@ class TestDecomposition:
         tape = tape.expand()
 
         # Make sure to start comparison after the set of RZs have been applied
-        assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels):])
-        assert [op.wires.labels for op in tape.operations[len(wire_labels):]] == expected_wires
-        
+        assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
+        assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 

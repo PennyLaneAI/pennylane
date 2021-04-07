@@ -138,4 +138,6 @@ class TestInputs:
         common element"""
 
         with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
-            qml.templates.QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
+            qml.templates.QuantumPhaseEstimation(
+                np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2]
+            )

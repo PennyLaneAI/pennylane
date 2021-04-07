@@ -190,7 +190,9 @@ class UCCSD(Operation):
             qml.BasisState(self.init_state_flipped, wires=self.wires)
 
             for i, (w1, w2) in enumerate(self.d_wires):
-                qml.templates.DoubleExcitationUnitary(weights[len(self.s_wires) + i], wires1=w1, wires2=w2)
+                qml.templates.DoubleExcitationUnitary(
+                    weights[len(self.s_wires) + i], wires1=w1, wires2=w2
+                )
 
             for j, s_wires_ in enumerate(self.s_wires):
                 qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)

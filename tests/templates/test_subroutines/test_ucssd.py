@@ -27,73 +27,73 @@ class TestDecomposition:
         ("s_wires", "d_wires", "weights", "ref_gates"),
         [
             (
-                    [[0, 1, 2]],
-                    [],
-                    np.array([3.815]),
-                    [
-                        [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
-                        [1, qml.RX, [0], [-np.pi / 2]],
-                        [5, qml.RZ, [2], [1.9075]],
-                        [6, qml.CNOT, [1, 2], []],
-                    ],
+                [[0, 1, 2]],
+                [],
+                np.array([3.815]),
+                [
+                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
+                    [1, qml.RX, [0], [-np.pi / 2]],
+                    [5, qml.RZ, [2], [1.9075]],
+                    [6, qml.CNOT, [1, 2], []],
+                ],
             ),
             (
-                    [[0, 1, 2], [1, 2, 3]],
-                    [],
-                    np.array([3.815, 4.866]),
-                    [
-                        [2, qml.Hadamard, [2], []],
-                        [8, qml.RX, [0], [np.pi / 2]],
-                        [12, qml.CNOT, [0, 1], []],
-                        [23, qml.RZ, [3], [2.433]],
-                        [24, qml.CNOT, [2, 3], []],
-                        [26, qml.RX, [1], [np.pi / 2]],
-                    ],
+                [[0, 1, 2], [1, 2, 3]],
+                [],
+                np.array([3.815, 4.866]),
+                [
+                    [2, qml.Hadamard, [2], []],
+                    [8, qml.RX, [0], [np.pi / 2]],
+                    [12, qml.CNOT, [0, 1], []],
+                    [23, qml.RZ, [3], [2.433]],
+                    [24, qml.CNOT, [2, 3], []],
+                    [26, qml.RX, [1], [np.pi / 2]],
+                ],
             ),
             (
-                    [],
-                    [[[0, 1], [2, 3, 4, 5]]],
-                    np.array([3.815]),
-                    [
-                        [3, qml.RX, [2], [-np.pi / 2]],
-                        [29, qml.RZ, [5], [0.476875]],
-                        [73, qml.Hadamard, [0], []],
-                        [150, qml.RX, [1], [np.pi / 2]],
-                        [88, qml.CNOT, [3, 4], []],
-                        [121, qml.CNOT, [2, 3], []],
-                    ],
+                [],
+                [[[0, 1], [2, 3, 4, 5]]],
+                np.array([3.815]),
+                [
+                    [3, qml.RX, [2], [-np.pi / 2]],
+                    [29, qml.RZ, [5], [0.476875]],
+                    [73, qml.Hadamard, [0], []],
+                    [150, qml.RX, [1], [np.pi / 2]],
+                    [88, qml.CNOT, [3, 4], []],
+                    [121, qml.CNOT, [2, 3], []],
+                ],
             ),
             (
-                    [],
-                    [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                    np.array([3.815, 4.866]),
-                    [
-                        [4, qml.Hadamard, [3], []],
-                        [16, qml.RX, [0], [-np.pi / 2]],
-                        [38, qml.RZ, [3], [0.476875]],
-                        [78, qml.Hadamard, [2], []],
-                        [107, qml.RX, [1], [-np.pi / 2]],
-                        [209, qml.Hadamard, [4], []],
-                        [218, qml.RZ, [5], [-0.60825]],
-                        [82, qml.CNOT, [2, 3], []],
-                        [159, qml.CNOT, [4, 5], []],
-                    ],
+                [],
+                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+                np.array([3.815, 4.866]),
+                [
+                    [4, qml.Hadamard, [3], []],
+                    [16, qml.RX, [0], [-np.pi / 2]],
+                    [38, qml.RZ, [3], [0.476875]],
+                    [78, qml.Hadamard, [2], []],
+                    [107, qml.RX, [1], [-np.pi / 2]],
+                    [209, qml.Hadamard, [4], []],
+                    [218, qml.RZ, [5], [-0.60825]],
+                    [82, qml.CNOT, [2, 3], []],
+                    [159, qml.CNOT, [4, 5], []],
+                ],
             ),
             (
-                    [[0, 1, 2, 3, 4], [1, 2, 3]],
-                    [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                    np.array([3.815, 4.866, 1.019, 0.639]),
-                    [
-                        [16, qml.RX, [0], [-np.pi / 2]],
-                        [47, qml.Hadamard, [1], []],
-                        [74, qml.Hadamard, [2], []],
-                        [83, qml.RZ, [3], [-0.127375]],
-                        [134, qml.RX, [4], [np.pi / 2]],
-                        [158, qml.RZ, [5], [0.079875]],
-                        [188, qml.RZ, [5], [-0.079875]],
-                        [96, qml.CNOT, [1, 2], []],
-                        [235, qml.CNOT, [1, 4], []],
-                    ],
+                [[0, 1, 2, 3, 4], [1, 2, 3]],
+                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+                np.array([3.815, 4.866, 1.019, 0.639]),
+                [
+                    [16, qml.RX, [0], [-np.pi / 2]],
+                    [47, qml.Hadamard, [1], []],
+                    [74, qml.Hadamard, [2], []],
+                    [83, qml.RZ, [3], [-0.127375]],
+                    [134, qml.RX, [4], [np.pi / 2]],
+                    [158, qml.RZ, [5], [0.079875]],
+                    [188, qml.RZ, [5], [-0.079875]],
+                    [96, qml.CNOT, [1, 2], []],
+                    [235, qml.CNOT, [1, 4], []],
+                ],
             ),
         ],
     )
@@ -115,7 +115,9 @@ class TestDecomposition:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.templates.UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
+        op = qml.templates.UCCSD(
+            weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state
+        )
         raw_queue = op.expand().operations
 
         # hack to avoid updating the test data:
@@ -154,14 +156,24 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.UCCSD(weights, wires=range(4), s_wires=[[0, 1]], d_wires=[[[0, 1], [2, 3]]],
-                                init_state=np.array([0, 1, 0, 1]))
+            qml.templates.UCCSD(
+                weights,
+                wires=range(4),
+                s_wires=[[0, 1]],
+                d_wires=[[[0, 1], [2, 3]]],
+                init_state=np.array([0, 1, 0, 1]),
+            )
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.UCCSD(weights, wires=["z", "a", "k", "e"], s_wires=[["z", "a"]], d_wires=[[["z", "a"], ["k", "e"]]],
-                                init_state=np.array([0, 1, 0, 1]))
+            qml.templates.UCCSD(
+                weights,
+                wires=["z", "a", "k", "e"],
+                s_wires=[["z", "a"]],
+                d_wires=[[["z", "a"], ["k", "e"]]],
+                init_state=np.array([0, 1, 0, 1]),
+            )
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -172,7 +184,6 @@ class TestDecomposition:
 
 class TestInputs:
     """Test inputs and pre-processing."""
-
 
     @pytest.mark.parametrize(
         ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
@@ -260,7 +271,13 @@ class TestInputs:
 
 
 def circuit_template(weights):
-    qml.templates.UCCSD(weights, wires=range(4), s_wires=[[0,1]], d_wires=[[[0,1], [2,3]]], init_state=np.array([0, 0, 0, 1]))
+    qml.templates.UCCSD(
+        weights,
+        wires=range(4),
+        s_wires=[[0, 1]],
+        d_wires=[[[0, 1], [2, 3]]],
+        init_state=np.array([0, 0, 0, 1]),
+    )
     return qml.expval(qml.PauliZ(0))
 
 

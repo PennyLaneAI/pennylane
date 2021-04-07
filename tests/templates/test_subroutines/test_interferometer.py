@@ -30,7 +30,9 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            qml.templates.Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
+            qml.templates.Interferometer(
+                theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1]
+            )
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize mesh"):
@@ -44,7 +46,9 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            qml.templates.Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1])
+            qml.templates.Interferometer(
+                theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1]
+            )
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize beamsplitter"):
