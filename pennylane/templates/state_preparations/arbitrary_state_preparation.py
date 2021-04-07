@@ -70,7 +70,7 @@ class ArbitraryStatePreparation(Operation):
 
     .. code-block:: python
 
-        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires=3)
+        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires=4)
 
 
     Args:
