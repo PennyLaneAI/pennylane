@@ -32,7 +32,7 @@ def format_nvec(nvec):
 def to_dict(coeffs):
     """Convert a set of indices to a dictionary."""
     # infer hyperparameters
-    degree = coeffs.shape[0] // 2 - 1
+    degree = coeffs.shape[0] // 2
     n_inputs = len(coeffs.shape)
 
     # create generator for indices nvec = (n1, ..., nN),

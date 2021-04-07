@@ -14,8 +14,6 @@
 """Contains visualization functions for Fourier series and coefficients."""
 from itertools import product
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
@@ -25,124 +23,136 @@ try:
 except ModuleNotFoundError:
     print("Module matplotlib is required for visualization in the Fourier module.")
 
+from matplotlib.colors import to_rgb
 
-def violin_plot(coeffs, colour_dict=None, figsize=None):
+
+def _adjust_spine_placement(ax):
+    ax.xaxis.grid()
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_position("zero")
+    ax.spines["right"].set_visible(False)
+    ax.set_axisbelow(True)
+
+
+def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients in a 1-dimensional violin plot.
 
     Args:
-        coeffs (array[complex]):
-   
-    """
+        coeffs (array[complex]): A list of sets of Fourier coefficients.
+        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+            be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
+            If None, the current axis from ``plt.gca()`` will be used.
+        colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
+            "imag" : other_colour_string} indicating which colours should be used in the plot.
+        show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
 
+    Returns:
+        ax: The axes on which the data is plotted.
+
+    **Example usage**
+
+    ```
+    fig, ax = plt.subplots(2, 1, figsize=(15, 4))
+    fourier_violin_plot(coeffs, ax);
+    ```
+    """
+    # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
-    
+
     # extract the x ticks
     nvecs = list(to_dict(coeffs[0]).keys())
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # make data
-    data_real = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
-    data_imag = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
-    assert len(data_real[0]) == len(nvecs)
-    assert len(data_imag[0]) == len(nvecs)
+    data = {}
+    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+    assert len(data["real"][0]) == len(nvecs)
+    assert len(data["imag"][0]) == len(nvecs)
 
-    if figsize is None:
-        f, (ax1, ax2) = plt.subplots(
-            2, 1, sharex="row", sharey="col", figsize=(int(len(nvecs) / 10) + 4, 4)
-        )
+    for (data_type, axis) in zip(["real", "imag"], ax):
+        violin = axis.violinplot(data[data_type], showextrema=False)
+        for bd in violin["bodies"]:
+            bd.set_color(colour_dict[data_type])
+            bd.set_alpha(0.7)
+        axis.set_ylabel(data_type)
+        axis.xaxis.set_ticks(np.arange(1, len(data[data_type][0]) + 1))
+        _adjust_spine_placement(axis)
+
+    # Format axes
+    ax[0].tick_params(axis="x", colors="white")  # hack to get rid of ticks but keep grid
+
+    if show_freqs:
+        ax[1].tick_params(axis="x", which="both", length=0)  # remove ticks without removing labels
+        ax[1].xaxis.set_ticklabels(nvecs_formatted, fontsize=10, color="grey")
+        ax[1].xaxis.set_ticks_position("top")
     else:
-        f, (ax1, ax2) = plt.subplots(2, 1, sharex="row", sharey="col", figsize=figsize)
+        ax[1].tick_params(axis="x", colors="white")  # hack to get rid of ticks but keep grid
 
-    violin1 = ax1.violinplot(data_real, showextrema=False)
-    for bd in violin1["bodies"]:
-        bd.set_color(colour_dict["real"])
-        bd.set_alpha(0.7)
-    ax1.set_ylabel("real")
-    ax1.xaxis.set_ticks(np.arange(1, len(nvecs) + 1))
-    ax1.xaxis.grid()
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["bottom"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax1.tick_params(axis="x", colors="white")  # hack to get rid of ticks but keep grid
-    ax1.set_axisbelow(True)
-
-    violin2 = ax2.violinplot(data_imag, showextrema=False)
-    for bd in violin2["bodies"]:
-        bd.set_color(colour_dict["imag"])
-        bd.set_alpha(0.7)
-    ax2.set_ylabel("imag")
-    ax2.xaxis.grid()
-    ax2.xaxis.set_ticks(np.arange(1, len(nvecs) + 1))
-    ax2.xaxis.set_ticklabels(nvecs_formatted, fontsize=6, color="grey")
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["bottom"].set_visible(False)
-    ax2.spines["right"].set_visible(False)
-    ax2.set_axisbelow(True)
-    ax2.tick_params(axis="x", which="both", length=0)  # remove ticks without removing labels
-    ax2.xaxis.set_ticks_position("top")
-
-    plt.subplots_adjust(hspace=0.0)
-    plt.xticks(rotation="vertical")
-    plt.tight_layout()
-
-    return plt
+    return ax
 
 
-def bar_plot(coeffs, show_freq=True, figsize=None):
-    """Plots a list of sets of Fourier coefficients in a 1-dimensional plot."""
+def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
+    """Plots a set of Fourier coefficients as a bar plot.
+
+    Args:
+        coeffs (array[complex]): A single set of Fourier coefficients.
+        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+            be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
+            If None, the current axis from ``plt.gca()`` will be used.
+        colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
+            "imag" : other_colour_string} indicating which colours should be used in the plot.
+        show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
+
+    Returns:
+        ax: The axes on which the data is plotted.
+
+    **Example usage**
+
+    ```
+    fig, ax = plt.subplots(2, 1, figsize=(15, 4))
+    fourier_linear_violin_plot(coeffs, ax);
+    ```
+    """
+
+    # The axis received must be a pair of axes in a subplot.
+    if colour_dict is None:
+        colour_dict = {"real": "purple", "imag": "green"}
 
     # extract the x ticks
     nvecs = list(to_dict(coeffs).keys())
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # make data
-    coeffs_real = np.array([coeffs[nvec].real for nvec in nvecs])
-    coeffs_imag = np.array([coeffs[nvec].imag for nvec in nvecs])
+    data = {}
+    data["real"] = np.array([coeffs[nvec].real for nvec in nvecs])
+    data["imag"] = np.array([coeffs[nvec].imag for nvec in nvecs])
+    data_len = len(data["real"])
 
-    if figsize is None:
-        plt.figure(figsize=(int(len(nvecs) / 10) + 4, 4))
+    for (data_type, axis) in zip(["real", "imag"], ax):
+        axis.bar(list(range(data_len)), data[data_type], color=colour_dict[data_type], alpha=0.7)
+        axis.set_ylabel(data_type)
+        axis.xaxis.set_ticks(np.arange(data_len))
+        _adjust_spine_placement(axis)
+
+    ax[0].tick_params(axis="x", colors="white")  # hack to get rid of ticklabels but keep grid
+
+    if show_freqs:
+        ax[1].tick_params(axis="x", which="both", length=0)  # remove ticks without removing labels
+        ax[1].xaxis.set_ticklabels(nvecs_formatted, fontsize=10, color="grey")
+        ax[1].xaxis.set_ticks_position("top")
     else:
-        plt.figure(figsize=figsize)
+        ax[1].tick_params(axis="x", colors="white")  # hack to get rid of ticklabels but keep grid
 
-    ax1 = plt.subplot(2, 1, 1)
-    ax1.bar(np.arange(len(coeffs_real)), coeffs_real, color="purple", alpha=0.7)
-    ax1.set_ylabel("real")
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["bottom"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax1.tick_params(axis="x", colors="white")  # hack to get rid of ticklabels but keep grid
-    ax1.xaxis.set_ticks(np.arange(len(nvecs)))
-    ax1.xaxis.grid()
-    ax1.set_axisbelow(True)
-
-    ax2 = plt.subplot(2, 1, 2)
-    ax2.bar(np.arange(len(coeffs_imag)), coeffs_imag, color="green", alpha=0.6)
-    ax2.set_ylabel("imag")
-    ax2.xaxis.set_ticklabels(nvecs_formatted, fontsize=6)
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["bottom"].set_visible(False)
-    ax2.spines["right"].set_visible(False)
-    ax2.tick_params(axis="x", which="both", length=0)  # remove ticks without removing labels
-    ax2.xaxis.set_ticks(np.arange(len(nvecs)))
-    ax2.xaxis.grid()
-    ax2.set_axisbelow(True)
-
-    if not show_freq:
-        ax2.tick_params(axis="x", colors="white")  # hack to get rid of ticklabels but keep grid
-
-    plt.xticks(rotation="vertical")
-    plt.tight_layout()
-    return plt
+    return ax
 
 
-def complex_panel_plot(coeffs, savefig=False, title=None):
+def complex_panel_plot(coeffs, ax):
     """Plot coefficients in the complex plane for a 1- or 2-dimensional FFT.
 
     Args:
-        coeffs (np.ndarray): Fourier coefficients.
-        savefig (bool): Whether or not to save the figure.
-        title (str): Title for the file of saved figure.
+        coeffs (array[complex]): Fourier coefficients.
     """
     if len(coeffs.shape) > 3:
         raise ValueError("Plotting not implemented for > 2-dimensional FFT outputs.")
@@ -189,19 +199,6 @@ def complex_panel_plot(coeffs, savefig=False, title=None):
             ax[coeff_1, coeff_2].grid(True)
             ax[coeff_1, coeff_2].set(aspect="equal", adjustable="box")
 
-    # Sort out title and saving; autogenerate a title if one not provided
-    if title is None:
-        title = f"Fourier coefficients, first {coeffs.shape[1] - 1} frequencies."
-
-    fig.suptitle(title, fontsize=16)
-
-    plt.tight_layout()
-
-    if savefig:
-        plt.savefig(title + ".pdf")
-    else:
-        plt.show()
-
 
 def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
     """Visualize a 1D periodic function given by a set of Fourier coefficients.
@@ -216,7 +213,7 @@ def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
     """
 
     ax = ax or plt.gca()
-    
+
     if len(coeffs.shape) != 1:
         raise ValueError("Function fourier_reconstruct_function_1D_plot takes 1-dimensional input.")
 
@@ -236,8 +233,8 @@ def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
             if freq == 0:
                 function_value += coeffs[freq]
             else:
-                    function_value += coeffs[freq] * np.exp(freq * 1j * x)
-                    function_value += np.conj(coeffs[freq]) * np.exp(-freq * 1j * x)
+                function_value += coeffs[freq] * np.exp(freq * 1j * x)
+                function_value += np.conj(coeffs[freq]) * np.exp(-freq * 1j * x)
 
         return function_value
 
