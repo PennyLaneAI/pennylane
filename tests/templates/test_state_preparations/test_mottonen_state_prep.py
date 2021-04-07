@@ -290,7 +290,7 @@ class TestInputs:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(ValueError, match="State vector has to be of length"):
+        with pytest.raises(ValueError, match="State vector has to be of norm"):
             qml.templates.MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -307,28 +307,16 @@ class TestInputs:
         with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
             qml.templates.MottonenStatePreparation(state_vector, wires)
 
-    def test_exception_wrong_dim(self):
+    @pytest.mark.parametrize("state_vector", [
+        ([[0, 0, 1, 0]]),
+        ([[0, 1], [1, 0], [0, 0], [0, 0]]),
+    ])
+    def test_exception_wrong_shape(self, state_vector):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
 
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(state_vector):
-            qml.templates.MottonenStatePreparation(state_vector, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
-
         with pytest.raises(ValueError, match="State vector must be a one-dimensional"):
-            state_vector = np.array([[0, 1]])
-            circuit(state_vector)
-
-        with pytest.raises(ValueError, match="State vector must be of length"):
-            state_vector = np.array([0, 1])
-            circuit(state_vector)
-
-        with pytest.raises(ValueError, match="State vector has to be of length"):
-            state_vector = np.array([0, 2, 0, 0])
-            circuit(state_vector)
+            qml.templates.MottonenStatePreparation(state_vector, 2)
 
 
 class TestGradient:
