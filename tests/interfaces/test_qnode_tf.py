@@ -36,7 +36,6 @@ class TestQNode:
 
     def test_import_error(self, dev_name, diff_method, mocker):
         """Test that an exception is caught on import error"""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
         mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
         mock.side_effect = ImportError()
 
@@ -161,7 +160,6 @@ class TestQNode:
 
     def test_drawing(self, dev_name, diff_method):
         """Test circuit drawing when using the TF interface"""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
 
         x = tf.Variable(0.1, dtype=tf.float64)
         y = tf.Variable([0.2, 0.3], dtype=tf.float64)

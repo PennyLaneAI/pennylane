@@ -36,7 +36,6 @@ class TestQNode:
 
     def test_import_error(self, dev_name, diff_method, mocker):
         """Test that an exception is caught on import error"""
-        torch = pytest.importorskip("torch", minversion="1.3")
         mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
         mock.side_effect = ImportError()
 
@@ -140,7 +139,6 @@ class TestQNode:
 
     def test_drawing(self, dev_name, diff_method):
         """Test circuit drawing when using the torch interface"""
-        torch = pytest.importorskip("torch", minversion="1.3")
 
         x = torch.tensor(0.1, requires_grad=True)
         y = torch.tensor([0.2, 0.3], requires_grad=True)
