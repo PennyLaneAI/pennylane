@@ -652,7 +652,7 @@
 
 * A deprecation warning is now raised when loading content from the `qnn` module. In release 
   `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
-  TensorFlow and Torch. Instead, users will need to additionally `import pennylane.qnn`.
+  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
   [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
 
 * Devices do not have an `analytic` argument or attribute anymore. 
