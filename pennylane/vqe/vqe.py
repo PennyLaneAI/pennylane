@@ -172,9 +172,12 @@ class Hamiltonian:
         # Lambda function that formats the wires
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
+        paired_coeff_obs = list(zip(self.coeffs, self.ops))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
+
         terms_ls = []
 
-        for i, obs in enumerate(self.ops):
+        for coeff, obs in paired_coeff_obs:
 
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
@@ -182,11 +185,11 @@ class Hamiltonian:
             elif isinstance(obs, Observable):
                 ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
 
-            term_str = f"({self.coeffs[i]}) [{ob_str}]"
+            term_str = f"({coeff}) [{ob_str}]"
 
             terms_ls.append(term_str)
 
-        return "\n+ ".join(terms_ls)
+        return "  " + "\n+ ".join(terms_ls)
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
