@@ -183,8 +183,8 @@ class TestInputs:
         [
             qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]),
             qml.Hamiltonian(
-                    [1, 1],
-                    [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
+                [1, 1],
+                [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
             ),
         ],
     )

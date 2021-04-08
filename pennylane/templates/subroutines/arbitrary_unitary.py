@@ -124,4 +124,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return 4 ** n_wires - 1,
+        return (4 ** n_wires - 1,)
