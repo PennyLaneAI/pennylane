@@ -593,6 +593,8 @@ class TestLayers:
         with qml.tape.OperationRecorder() as rec:
             qaoa.mixer_layer(alpha, mixer)
 
+        rec = rec.expand()
+
         for i, j in zip(rec.operations, gates):
 
             prep = [i.name, i.parameters, i.wires]
@@ -622,6 +624,8 @@ class TestLayers:
 
         with qml.tape.OperationRecorder() as rec:
             qaoa.cost_layer(gamma, cost)
+
+        rec = rec.expand()
 
         for i, j in zip(rec.operations, gates):
             prep = [i.name, i.parameters, i.wires]

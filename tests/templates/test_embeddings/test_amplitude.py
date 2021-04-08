@@ -292,9 +292,10 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_jax(self, tol, skip_if_no_jax_support):
+    def test_jax(self, tol):
         """Tests jax tensors."""
 
+        jax = pytest.importorskip("jax")
         import jax.numpy as jnp
 
         features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
@@ -309,10 +310,10 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_tf(self, tol, skip_if_no_tf_support):
+    def test_tf(self, tol):
         """Tests tf tensors."""
 
-        import tensorflow as tf
+        tf = pytest.importorskip("tensorflow")
 
         features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
@@ -326,10 +327,10 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_torch(self, tol, skip_if_no_torch_support):
+    def test_torch(self, tol):
         """Tests torch tensors."""
 
-        import torch
+        torch = pytest.importorskip("torch")
 
         features = torch.tensor([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
 
