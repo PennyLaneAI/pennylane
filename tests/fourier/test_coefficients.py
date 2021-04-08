@@ -239,11 +239,11 @@ class TestAntiAliasing:
         """Test that anti-aliasing function gives correct results when we ask for
         coefficients below the maximum degree."""
         coeffs_anti_aliased = fourier_coefficients(
-            circuit, len(inpt), degree, filter_threshold=degree + 2
+            circuit, len(inpt), degree, lowpass_filter=True, filter_threshold=degree + 2
         )
         assert np.allclose(coeffs_anti_aliased, expected_coeffs)
 
-        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree, lowpass_filter=False)
+        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree)
         assert not np.allclose(coeffs_regular, expected_coeffs)
 
     @pytest.mark.parametrize(
