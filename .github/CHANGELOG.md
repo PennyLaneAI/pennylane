@@ -537,6 +537,7 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
+<<<<<<< HEAD
 - The templates are now classes inheriting 
   from `Operation`, and define the ansatz in their `expand()` method. This 
   change does not affect the user interface. 
