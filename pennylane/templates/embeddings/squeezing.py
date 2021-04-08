@@ -12,56 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``SqueezingEmbedding`` template.
+Contains the SqueezingEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AnyWires
 
 
-def _preprocess(features, wires, method, c):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n` or less, where :math:`n` is the number of qubits.
-    * Create a parameter tensor which combines the features with a tensor of constants.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-        method (str): indicates whether amplitude or phase encoding is used
-        c (float): value of constant
-
-    Returns:
-        tensor_like: 2-dimensional tensor containing the features and constants
-    """
-    shape = qml.math.shape(features)
-    constants = [c] * shape[0]
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features != len(wires):
-        raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
-
-    if method == "amplitude":
-        pars = qml.math.stack([features, constants], axis=1)
-
-    elif method == "phase":
-        pars = qml.math.stack([constants, features], axis=1)
-
-    else:
-        raise ValueError(f"did not recognize method {method}")
-
-    return pars
-
-
-@template
-def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
+class SqueezingEmbedding(Operation):
     r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
     of :math:`M` modes, where :math:`N\leq M`.
 
@@ -77,9 +35,8 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     ``features`` than wires, the circuit does not apply the remaining squeezing gates.
 
     Args:
-        features (tensor_like): Array of features of size (N,)
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features
+        wires (Iterable): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
@@ -89,7 +46,41 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
         ValueError: if inputs do not have the correct format
     """
 
-    wires = Wires(wires)
-    pars = _preprocess(features, wires, method, c)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    broadcast(unitary=qml.Squeezing, pattern="single", wires=wires, parameters=pars)
+    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True):
+
+        shape = qml.math.shape(features)
+        constants = [c] * shape[0]
+        constants = qml.math.convert_like(constants, features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+
+        if method == "amplitude":
+            pars = qml.math.stack([features, constants], axis=1)
+
+        elif method == "phase":
+            pars = qml.math.stack([constants, features], axis=1)
+
+        else:
+            raise ValueError(f"did not recognize method {method}")
+
+        super().__init__(pars, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        pars = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for i in range(len(self.wires)):
+                qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
+
+        return tape

@@ -12,27 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``ArbitraryUnitary`` template.
+Contains the ArbitraryUnitary template.
 """
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import PauliRot
 
 _PAULIS = ["I", "X", "Y", "Z"]
-
-
-def _preprocess(weights, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the weights tensor.
-
-    Args:
-        weights (tensor_like): trainable parameters of the template
-        wires (Wires): wires that template acts on
-    """
-    shape = qml.math.shape(weights)
-    if shape != (4 ** len(wires) - 1,):
-        raise ValueError(f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}.")
 
 
 def _tuple_to_word(index_tuple):
@@ -82,8 +68,7 @@ def _all_pauli_words_but_identity(num_wires):
     yield from (_tuple_to_word(idx_tuple) for idx_tuple in _n_k_gray_code(4, num_wires, start=1))
 
 
-@template
-def ArbitraryUnitary(weights, wires):
+class ArbitraryUnitary(Operation):
     """Implements an arbitrary unitary on the specified wires.
 
     An arbitrary unitary on :math:`n` wires is parametrized by :math:`4^n - 1`
@@ -104,11 +89,39 @@ def ArbitraryUnitary(weights, wires):
     Args:
         weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Iterable): wires that the template acts on
     """
-    wires = Wires(wires)
-    _preprocess(weights, wires)
 
-    for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
-        qml.PauliRot(weights[i], pauli_word, wires=wires)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+
+    def __init__(self, weights, wires, do_queue=True):
+
+        shape = qml.math.shape(weights)
+        if shape != (4 ** len(wires) - 1,):
+            raise ValueError(
+                f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
+            )
+
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        weights = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
+                PauliRot(weights[i], pauli_word, wires=self.wires)
+
+        return tape
+
+    @staticmethod
+    def shape(n_wires):
+        """Compute the expected shape of the weights tensor.
+
+        Args:
+            n_wires (int): number of wires that template acts on
+        """
+        return (4 ** n_wires - 1,)

@@ -12,71 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``UCCSD`` template.
+Contains the UCCSD template.
 """
-import numpy as np
-
-import pennylane as qml
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
-from pennylane.templates.subroutines import DoubleExcitationUnitary, SingleExcitationUnitary
-from pennylane.wires import Wires
+import numpy as np
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import BasisState
 
 
-def _preprocess(init_state, weights, s_wires, d_wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check that not both wire sets are empty.
-    * Check that d_wires contains wire pairs.
-    * Check shaoe of the weights tensor.
-    * Cast initial state to numpy array.
-    * Check that initial state contains only zeros and ones.
-    * Flip bits in initial state.
-
-    Args:
-        init_state (tensor_like): shape ``(len(wires),)`` tensor
-        weights (tensor_like): trainable parameters of the template
-        s_wires (Wires): set of wires
-        d_wires (Wires): another set of wires
-
-    Returns:
-        array: preprocessed initial state
-    """
-
-    if (not s_wires) and (not d_wires):
-        raise ValueError(
-            "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-                s_wires, d_wires
-            )
-        )
-
-    for d_wires_ in d_wires:
-        if len(d_wires_) != 2:
-            raise ValueError(
-                "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                    d_wires_, len(d_wires_)
-                )
-            )
-
-    shape = qml.math.shape(weights)
-    if shape != (len(s_wires) + len(d_wires),):
-        raise ValueError(
-            f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
-        )
-
-    # we can extract the numpy representation here
-    # since init_state can never be differentiable
-    init_state = qml.math.toarray(init_state)
-
-    if init_state.dtype != np.dtype("int"):
-        raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
-
-    return np.flip(init_state)
-
-
-@template
-def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
+class UCCSD(Operation):
     r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
 
     The UCCSD ansatz calls the
@@ -121,8 +66,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             :func:`~.DoubleExcitationUnitary`. These parameters are the coupled-cluster
             amplitudes that need to be optimized for each single and double excitation generated
             with the :func:`~.excitations` function.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
-            or strings, or a Wires object.
+        wires (Iterable): wires that the template acts on
         s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
             :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
@@ -139,9 +83,6 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
@@ -199,17 +140,60 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
 
     """
 
-    wires = Wires(wires)
-    init_state_flipped = _preprocess(init_state, weights, s_wires, d_wires)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    qml.BasisState(init_state_flipped, wires=wires)
+    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True):
 
-    # turn wire arguments into Wires objects
-    s_wires = [Wires(w) for w in s_wires]
-    d_wires = [[Wires(w1), Wires(w2)] for w1, w2 in d_wires]
+        if (not s_wires) and (not d_wires):
+            raise ValueError(
+                "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
+                    s_wires, d_wires
+                )
+            )
 
-    for i, (w1, w2) in enumerate(d_wires):
-        DoubleExcitationUnitary(weights[len(s_wires) + i], wires1=w1, wires2=w2)
+        for d_wires_ in d_wires:
+            if len(d_wires_) != 2:
+                raise ValueError(
+                    "expected entries of d_wires to be of size 2; got {} of length {}".format(
+                        d_wires_, len(d_wires_)
+                    )
+                )
 
-    for j, s_wires_ in enumerate(s_wires):
-        SingleExcitationUnitary(weights[j], wires=s_wires_)
+        shape = qml.math.shape(weights)
+        if shape != (len(s_wires) + len(d_wires),):
+            raise ValueError(
+                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
+            )
+
+        # we can extract the numpy representation here
+        # since init_state can never be differentiable
+        self.init_state = qml.math.toarray(init_state)
+        self.s_wires = s_wires
+        self.d_wires = d_wires
+
+        if init_state.dtype != np.dtype("int"):
+            raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
+
+        self.init_state_flipped = np.flip(init_state)
+
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        weights = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            BasisState(self.init_state_flipped, wires=self.wires)
+
+            for i, (w1, w2) in enumerate(self.d_wires):
+                qml.templates.DoubleExcitationUnitary(
+                    weights[len(self.s_wires) + i], wires1=w1, wires2=w2
+                )
+
+            for j, s_wires_ in enumerate(self.s_wires):
+                qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)
+
+        return tape

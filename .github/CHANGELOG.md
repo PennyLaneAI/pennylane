@@ -537,12 +537,16 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+- The embedding templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface. 
-  
-  For convenience, the class has a method that returns the shape of the 
-  trainable parameter tensor, i.e.,
+  change does not affect the user interface.
+  [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
+  [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
+  [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
+
+  For convenience, some templates now have a method that returns the expected
+  shape of the trainable parameter tensor, which can be used to create 
+  random tensors.
   
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
@@ -643,6 +647,9 @@
   >>> current_tape.operations
   [RX(0, wires=[0]), RZ(2, wires=[1])]
   ```
+
+* When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
+  [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
 <h3>Breaking changes</h3>
 
@@ -750,6 +757,9 @@
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
+- Upgraded the documentation to use Sphinx 3.5.3 and the new m2r2 package.
+  [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
+
 - Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
 
 <h3>Contributors</h3>
@@ -757,7 +767,8 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Christina Lee, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld,
+Antal Száva.
 
 # Release 0.14.1 (current release)
 
