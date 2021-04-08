@@ -79,7 +79,7 @@ class TestDecomposition:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         expectations = circuit(weights)
-        assert np.allclose(expectations, target, atol=tol, rtol=0)
+        np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
