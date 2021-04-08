@@ -22,12 +22,12 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
     periodic function, where :math:`d` is the highest desired frequency in the
     Fourier spectrum.
 
-    By default, a low-pass filter is applied prior to computing the coefficients
-    in order to mitigate the effects of aliasing. Coefficients up to a threshold
-    value are computed, and then frequencies higher than the degree are simply removed. This
-    ensures that the coefficients returned will have the correct values, though they
-    may not be the full set of coefficients. If no threshold value is provided, the
-    threshold will be set to ``2 * degree``.
+    In order to mitigate aliasing, there is an the option to apply a low-pass
+    filter prior to computing the coefficients. Coefficients up to a specified
+    value are computed, and then frequencies higher than the degree are simply
+    removed. This ensures that the coefficients returned will have the correct
+    values, though they may not be the full set of coefficients. If no threshold
+    value is provided, the threshold will be set to ``2 * degree``.
 
     Args:
         f (callable): function that takes an array of :math:`N` scalar inputs
@@ -70,6 +70,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
 
         # Coefficients of the `inpt` variable will be computed
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
+
     """
     if not lowpass_filter:
         return _fourier_coefficients_no_filter(f, n_inputs, degree)
