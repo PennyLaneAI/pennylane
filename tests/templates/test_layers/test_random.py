@@ -198,10 +198,10 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
-    def test_jax(self, tol, skip_if_no_jax_support):
+    def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
+        jax = pytest.importorskip("jax")
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 3)))
@@ -223,10 +223,10 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
-    def test_tf(self, tol, skip_if_no_tf_support):
+    def test_tf(self, tol):
         """Tests the tf interface."""
 
-        import tensorflow as tf
+        tf = pytest.importorskip("tensorflow")
 
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
@@ -249,10 +249,10 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
-    def test_torch(self, tol, skip_if_no_torch_support):
+    def test_torch(self, tol):
         """Tests the torch interface."""
 
-        import torch
+        torch = pytest.importorskip("torch")
 
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 

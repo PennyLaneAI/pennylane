@@ -166,145 +166,154 @@ def circuit_template(*weights):
     return qml.expval(qml.X(0))
 
 
-# def circuit_decomposed(*weights):
-#     qml.templates.Interferometer(weights[0][0], weights[1][0], weights[2][0], wires=[0, 1])
-#     qml.Squeezing(weights[3][0, 0], weights[4][0, 0], wires=0)
-#     qml.Squeezing(weights[3][0, 1], weights[4][0, 1], wires=1)
-#     qml.templates.Interferometer(weights[5][0], weights[6][0], weights[7][0], wires=[0, 1])
-#     qml.Displacement(weights[8][0, 0], weights[9][0, 0], wires=0)
-#     qml.Displacement(weights[8][0, 1], weights[9][0, 1], wires=1)
-#     qml.Kerr(weights[10][0, 0], wires=0)
-#     qml.Kerr(weights[10][0, 1], wires=1)
-#     return qml.expval(qml.X(0))
-#
-#
-# class TestInterfaces:
-#     """Tests that the template is compatible with all interfaces, including the computation
-#     of gradients."""
-#
-#     def test_list_and_tuples(self, tol):
-#         """Tests common iterables as inputs."""
-#
-#         shapes = expected_shapes(1, 2)
-#         weights = [np.random.random(shape) for shape in shapes]
-#
-#         dev = DummyDevice(wires=2)
-#
-#         circuit = qml.QNode(circuit_template, dev)
-#         circuit2 = qml.QNode(circuit_decomposed, dev)
-#
-#         res = circuit(*weights)
-#         res2 = circuit2(*weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         weights_tuple = tuple(w for w in weights)
-#         res = circuit(*weights_tuple)
-#         res2 = circuit2(*weights_tuple)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#     def test_autograd(self, tol):
-#         """Tests the autograd interface."""
-#
-#         shapes = expected_shapes(1, 2)
-#         weights = [np.random.random(shape) for shape in shapes]
-#         weights = [pnp.array(w, requires_grad=True) for w in weights]
-#
-#         dev = DummyDevice(wires=2)
-#
-#         circuit = qml.QNode(circuit_template, dev)
-#         circuit2 = qml.QNode(circuit_decomposed, dev)
-#
-#         res = circuit(*weights)
-#         res2 = circuit2(*weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         grad_fn = qml.grad(circuit)
-#         grads = grad_fn(*weights)
-#
-#         grad_fn2 = qml.grad(circuit2)
-#         grads2 = grad_fn2(*weights)
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_jax(self, tol, skip_if_no_jax_support):
-#         """Tests the jax interface."""
-#
-#         import jax
-#         import jax.numpy as jnp
-#
-#         shapes = expected_shapes(1, 2)
-#         weights = [np.random.random(shape) for shape in shapes]
-#         weights = [jnp.array(w) for w in weights]
-#
-#         dev = DummyDevice(wires=2)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="jax")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
-#
-#         res = circuit(*weights)
-#         res2 = circuit2(*weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         grad_fn = jax.grad(circuit)
-#         grads = grad_fn(*weights)
-#
-#         grad_fn2 = jax.grad(circuit2)
-#         grads2 = grad_fn2(*weights)
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_tf(self, tol, skip_if_no_tf_support):
-#         """Tests the tf interface."""
-#
-#         import tensorflow as tf
-#
-#         shapes = expected_shapes(1, 2)
-#         weights = [np.random.random(shape) for shape in shapes]
-#         weights = [tf.Variable(w) for w in weights]
-#
-#         dev = DummyDevice(wires=2)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="tf")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
-#
-#         res = circuit(*weights)
-#         res2 = circuit2(*weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         with tf.GradientTape() as tape:
-#             res = circuit(*weights)
-#         grads = tape.gradient(res, [*weights])
-#
-#         with tf.GradientTape() as tape2:
-#             res2 = circuit2(*weights)
-#         grads2 = tape2.gradient(res2, [*weights])
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-#
-#     def test_torch(self, tol, skip_if_no_torch_support):
-#         """Tests the torch interface."""
-#
-#         import torch
-#
-#         shapes = expected_shapes(1, 2)
-#         weights = [np.random.random(size=shape) for shape in shapes]
-#         weights = [torch.tensor(w, requires_grad=True) for w in weights]
-#
-#         dev = DummyDevice(wires=2)
-#
-#         circuit = qml.QNode(circuit_template, dev, interface="torch")
-#         circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
-#
-#         res = circuit(*weights)
-#         res2 = circuit2(*weights)
-#         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-#
-#         res = circuit(*weights)
-#         res.backward()
-#         grads = [w.grad for w in weights]
-#
-#         res2 = circuit2(*weights)
-#         res2.backward()
-#         grads2 = [w.grad for w in weights]
-#
-#         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+def circuit_decomposed(*weights):
+    # Interferometer (replace with operation once this template is refactored)
+    qml.Beamsplitter(weights[0][0, 0], weights[1][0, 0], wires=[0, 1])
+    qml.Rotation(weights[2][0, 0], wires=0)
+    qml.Rotation(weights[2][0, 1], wires=1)
+
+    qml.Squeezing(weights[3][0, 0], weights[4][0, 0], wires=0)
+    qml.Squeezing(weights[3][0, 1], weights[4][0, 1], wires=1)
+
+    # Interferometer
+    qml.Beamsplitter(weights[5][0, 0], weights[6][0, 0], wires=[0, 1])
+    qml.Rotation(weights[7][0, 0], wires=0)
+    qml.Rotation(weights[7][0, 1], wires=1)
+
+    qml.Displacement(weights[8][0, 0], weights[9][0, 0], wires=0)
+    qml.Displacement(weights[8][0, 1], weights[9][0, 1], wires=1)
+    qml.Kerr(weights[10][0, 0], wires=0)
+    qml.Kerr(weights[10][0, 1], wires=1)
+    return qml.expval(qml.X(0))
+
+
+class TestInterfaces:
+    """Tests that the template is compatible with all interfaces, including the computation
+    of gradients."""
+
+    def test_list_and_tuples(self, tol):
+        """Tests common iterables as inputs."""
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(shape) for shape in shapes]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        weights_tuple = tuple(w for w in weights)
+        res = circuit(*weights_tuple)
+        res2 = circuit2(*weights_tuple)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_autograd(self, tol):
+        """Tests the autograd interface."""
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(shape) for shape in shapes]
+        weights = [pnp.array(w, requires_grad=True) for w in weights]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        grads = grad_fn(*weights)
+
+        grad_fn2 = qml.grad(circuit2)
+        grads2 = grad_fn2(*weights)
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_jax(self, tol):
+        """Tests the jax interface."""
+
+        jax = pytest.importorskip("jax")
+        import jax.numpy as jnp
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(shape) for shape in shapes]
+        weights = [jnp.array(w) for w in weights]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(*weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(*weights)
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_tf(self, tol):
+        """Tests the tf interface."""
+
+        tf = pytest.importorskip("tensorflow")
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(shape) for shape in shapes]
+        weights = [tf.Variable(w) for w in weights]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        with tf.GradientTape() as tape:
+            res = circuit(*weights)
+        grads = tape.gradient(res, [*weights])
+
+        with tf.GradientTape() as tape2:
+            res2 = circuit2(*weights)
+        grads2 = tape2.gradient(res2, [*weights])
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    def test_torch(self, tol):
+        """Tests the torch interface."""
+
+        torch = pytest.importorskip("torch")
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(size=shape) for shape in shapes]
+        weights = [torch.tensor(w, requires_grad=True) for w in weights]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(*weights)
+        res.backward()
+        grads = [w.grad for w in weights]
+
+        res2 = circuit2(*weights)
+        res2.backward()
+        grads2 = [w.grad for w in weights]
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
