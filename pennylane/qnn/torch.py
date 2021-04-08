@@ -35,10 +35,8 @@ except ImportError:
 
 WARNING_STRING = (
     "TorchLayer will no longer be directly imported in PennyLane from "
-    "release 0.16.0. It will be accessible by importing the qnn "
-    "module:\n\nimport pennylane as qml\nimport pennylane.qnn\n\n"
-    "qml.qnn.TorchLayer\n\nConsider adding 'import pennylane.qnn' "
-    "to your existing code now."
+    "release 0.16.0. It will be accessible by importing the qnn module. Consider adding "
+    "'from pennylane import qnn' to your existing code now."
 )
 
 
