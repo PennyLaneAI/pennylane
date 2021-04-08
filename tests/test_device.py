@@ -184,11 +184,13 @@ def test_analytic_deprecation():
     msg = "The attribute `analytic` has been replaced by `shots=None`. "
     msg += "Please use `shots=None` instead of `analytic=True`."
 
+    dev = mock_device()
+
     with pytest.raises(
                 DeviceError,
                 match=msg,
         ):
-          qml.device("default.qubit", wires=1, shots=1, analytic=True)
+          dev(wires=1, shots=1, analytic=True)
 
 
 class TestDeviceSupportedLogic:
