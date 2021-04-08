@@ -650,6 +650,9 @@
 
 <h3>Breaking changes</h3>
 
+* Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
+  [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
+
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
@@ -758,7 +761,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
 Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
