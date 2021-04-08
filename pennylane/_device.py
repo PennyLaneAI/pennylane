@@ -123,7 +123,7 @@ class Device(abc.ABC):
         self.shots = shots
 
         if analytic is not None:
-            msg = "The attribute `analytic` has been replaced by `shots=None`.\n"
+            msg = "The attribute `analytic` has been replaced by `shots=None`. "
             msg += "Please use `shots=None` instead of `analytic=True`."
             raise DeviceError(msg)
 
