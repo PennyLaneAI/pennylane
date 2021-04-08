@@ -19,6 +19,8 @@ reference plugin.
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
+from pennylane import DeviceError
+
 import numpy as np
 
 try:
