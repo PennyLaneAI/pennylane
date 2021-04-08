@@ -1643,6 +1643,11 @@ class U3(Operation):
         new_phi = (np.pi - lam) % (2 * np.pi)
         return U3(theta, new_phi, new_lam, wires=self.wires, do_queue=do_queue)
 
+class IsingZZ:
+    """
+        TODO
+    """
+
 
 # =============================================================================
 # Quantum chemistry
