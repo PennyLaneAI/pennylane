@@ -77,4 +77,4 @@ Utility functions for quantum Monte Carlo
 .. automodapi:: pennylane.templates.subroutines.qmc
     :no-heading:
     :no-main-docstr:
-    :skip: QuantumMonteCarlo, Operation
+    :skip: QuantumMonteCarlo, Operation, QubitUnitary
