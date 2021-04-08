@@ -648,6 +648,9 @@
   [RX(0, wires=[0]), RZ(2, wires=[1])]
   ```
 
+* When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
+  [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
+
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
@@ -759,7 +762,8 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Christina Lee, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld,
+Antal Száva.
 
 # Release 0.14.1 (current release)
 
