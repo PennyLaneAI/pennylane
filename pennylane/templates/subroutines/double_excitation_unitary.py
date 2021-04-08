@@ -14,11 +14,11 @@
 r"""
 Contains the DoubleExcitationUnitary template.
 """
-import numpy as np
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import RZ, RX, CNOT, Hadamard
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -41,27 +41,27 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.Hadamard(wires=r)
-    qml.RX(-np.pi / 2, wires=q)
-    qml.Hadamard(wires=p)
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=q)
+    Hadamard(wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(weight / 8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.Hadamard(wires=r)
-    qml.RX(np.pi / 2, wires=q)
-    qml.Hadamard(wires=p)
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=q)
+    Hadamard(wires=p)
 
 
 def _layer2(weight, s, r, q, p, set_cnot_wires):
@@ -84,27 +84,27 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(-np.pi / 2, wires=s)
-    qml.Hadamard(wires=r)
-    qml.RX(-np.pi / 2, wires=q)
-    qml.RX(-np.pi / 2, wires=p)
+    RX(-np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(weight / 8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(np.pi / 2, wires=s)
-    qml.Hadamard(wires=r)
-    qml.RX(np.pi / 2, wires=q)
-    qml.RX(np.pi / 2, wires=p)
+    RX(np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
 
 
 def _layer3(weight, s, r, q, p, set_cnot_wires):
@@ -127,27 +127,27 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.RX(-np.pi / 2, wires=r)
-    qml.RX(-np.pi / 2, wires=q)
-    qml.RX(-np.pi / 2, wires=p)
+    Hadamard(wires=s)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(weight / 8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.RX(np.pi / 2, wires=r)
-    qml.RX(np.pi / 2, wires=q)
-    qml.RX(np.pi / 2, wires=p)
+    Hadamard(wires=s)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
 
 
 def _layer4(weight, s, r, q, p, set_cnot_wires):
@@ -170,27 +170,27 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.Hadamard(wires=r)
-    qml.Hadamard(wires=q)
-    qml.RX(-np.pi / 2, wires=p)
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(weight / 8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.Hadamard(wires=r)
-    qml.Hadamard(wires=q)
-    qml.RX(np.pi / 2, wires=p)
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    RX(np.pi / 2, wires=p)
 
 
 def _layer5(weight, s, r, q, p, set_cnot_wires):
@@ -213,27 +213,27 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(-np.pi / 2, wires=s)
-    qml.Hadamard(wires=r)
-    qml.Hadamard(wires=q)
-    qml.Hadamard(wires=p)
+    RX(-np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(-weight / 8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(np.pi / 2, wires=s)
-    qml.Hadamard(wires=r)
-    qml.Hadamard(wires=q)
-    qml.Hadamard(wires=p)
+    RX(np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
 
 
 def _layer6(weight, s, r, q, p, set_cnot_wires):
@@ -256,27 +256,27 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.RX(-np.pi / 2, wires=r)
-    qml.Hadamard(wires=q)
-    qml.Hadamard(wires=p)
+    Hadamard(wires=s)
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(-weight / 8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.Hadamard(wires=s)
-    qml.RX(np.pi / 2, wires=r)
-    qml.Hadamard(wires=q)
-    qml.Hadamard(wires=p)
+    Hadamard(wires=s)
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
 
 
 def _layer7(weight, s, r, q, p, set_cnot_wires):
@@ -299,27 +299,27 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(-np.pi / 2, wires=s)
-    qml.RX(-np.pi / 2, wires=r)
-    qml.RX(-np.pi / 2, wires=q)
-    qml.Hadamard(wires=p)
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
+    Hadamard(wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(-weight / 8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(np.pi / 2, wires=s)
-    qml.RX(np.pi / 2, wires=r)
-    qml.RX(np.pi / 2, wires=q)
-    qml.Hadamard(wires=p)
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
+    Hadamard(wires=p)
 
 
 def _layer8(weight, s, r, q, p, set_cnot_wires):
@@ -342,27 +342,27 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(-np.pi / 2, wires=s)
-    qml.RX(-np.pi / 2, wires=r)
-    qml.Hadamard(wires=q)
-    qml.RX(-np.pi / 2, wires=p)
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    qml.RZ(-weight / 8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        qml.CNOT(wires=cnot_wires)
+        CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    qml.RX(np.pi / 2, wires=s)
-    qml.RX(np.pi / 2, wires=r)
-    qml.Hadamard(wires=q)
-    qml.RX(np.pi / 2, wires=p)
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    RX(np.pi / 2, wires=p)
 
 
 class DoubleExcitationUnitary(Operation):

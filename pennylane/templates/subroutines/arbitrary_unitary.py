@@ -16,6 +16,7 @@ Contains the ArbitraryUnitary template.
 """
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import PauliRot
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -112,7 +113,7 @@ class ArbitraryUnitary(Operation):
         with qml.tape.QuantumTape() as tape:
 
             for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
-                qml.PauliRot(weights[i], pauli_word, wires=self.wires)
+                PauliRot(weights[i], pauli_word, wires=self.wires)
 
         return tape
 
@@ -123,4 +124,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return (4 ** n_wires - 1,)
+        return 4 ** n_wires - 1,

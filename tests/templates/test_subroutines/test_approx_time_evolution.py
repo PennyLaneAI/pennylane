@@ -24,7 +24,7 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("time", "hamiltonian", "steps", "gates"),
+        ("time", "hamiltonian", "steps", "expected_queue"),
         [
             (
                 2,
@@ -73,15 +73,15 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_evolution_operations(self, time, hamiltonian, steps, gates):
+    def test_evolution_operations(self, time, hamiltonian, steps, expected_queue):
         """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
 
         op = qml.templates.ApproxTimeEvolution(hamiltonian, time, steps)
         queue = op.expand().operations
 
-        for i, gate in enumerate(queue):
+        for expected_gate, gate in zip(expected_queue, queue):
             prep = [gate.parameters, gate.wires]
-            target = [gates[i].parameters, gates[i].wires]
+            target = [expected_gate.parameters, expected_gate.wires]
 
             assert prep == target
 
@@ -179,19 +179,16 @@ class TestInputs:
             circuit()
 
     @pytest.mark.parametrize(
-        ("hamiltonian", "output"),
+        ("hamiltonian"),
         [
-            (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]), "Hadamard"),
-            (
-                qml.Hamiltonian(
+            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]),
+            qml.Hamiltonian(
                     [1, 1],
                     [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
-                ),
-                "Hermitian",
             ),
         ],
     )
-    def test_non_pauli_error(self, hamiltonian, output):
+    def test_non_pauli_error(self, hamiltonian):
         """Tests if the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
 
         n_wires = 2
@@ -231,8 +228,8 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
+    def test_float(self, tol):
+        """Tests float as input."""
 
         time = 0.5
 

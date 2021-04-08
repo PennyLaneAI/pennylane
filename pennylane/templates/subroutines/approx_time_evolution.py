@@ -17,6 +17,7 @@ Contains the ApproxTimeEvolution template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import PauliRot
 
 
 class ApproxTimeEvolution(Operation):
@@ -153,6 +154,6 @@ class ApproxTimeEvolution(Operation):
 
             for i in range(n):
                 for j, term in enumerate(pauli_words):
-                    qml.PauliRot(theta[j], term, wires=wires[j])
+                    PauliRot(theta[j], term, wires=wires[j])
 
         return tape

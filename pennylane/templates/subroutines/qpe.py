@@ -16,6 +16,7 @@ Contains the QuantumPhaseEstimation template.
 """
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.ops import Hadamard, ControlledQubitUnitary, QFT
 
 
 class QuantumPhaseEstimation(Operation):
@@ -129,11 +130,11 @@ class QuantumPhaseEstimation(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for wire in self.estimation_wires:
-                qml.Hadamard(wire)
-                qml.ControlledQubitUnitary(
+                Hadamard(wire)
+                ControlledQubitUnitary(
                     unitary_powers.pop(), control_wires=wire, wires=self.target_wires
                 )
 
-            qml.QFT(wires=self.estimation_wires).inv()
+            QFT(wires=self.estimation_wires).inv()
 
         return tape

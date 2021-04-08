@@ -16,8 +16,8 @@ Contains the Permute template.
 """
 
 import pennylane as qml
-
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import SWAP
 
 
 class Permute(Operation):
@@ -184,7 +184,7 @@ class Permute(Operation):
                     idx_there = working_order.index(permutation[idx_here])
 
                     # SWAP based on the labels of the wires
-                    qml.SWAP(wires=self.wires.subset([idx_here, idx_there]))
+                    SWAP(wires=self.wires.subset([idx_here, idx_there]))
 
                     # Update the working order to account for the SWAP
                     working_order[idx_here], working_order[idx_there] = (

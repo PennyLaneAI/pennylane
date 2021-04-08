@@ -18,6 +18,7 @@ Contains the SingleExcitationUnitary template.
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import RZ, RX, CNOT, Hadamard
 
 
 class SingleExcitationUnitary(Operation):
@@ -142,44 +143,44 @@ class SingleExcitationUnitary(Operation):
             # Apply the first layer
 
             # U_1, U_2 acting on wires 'r' and 'p'
-            qml.RX(-np.pi / 2, wires=r)
-            qml.Hadamard(wires=p)
+            RX(-np.pi / 2, wires=r)
+            Hadamard(wires=p)
 
             # Applying CNOTs between wires 'r' and 'p'
             for cnot_wires in set_cnot_wires:
-                qml.CNOT(wires=cnot_wires)
+                CNOT(wires=cnot_wires)
 
             # Z rotation acting on wire 'p'
-            qml.RZ(weight / 2, wires=p)
+            RZ(weight / 2, wires=p)
 
             # Applying CNOTs in reverse order
             for cnot_wires in reversed(set_cnot_wires):
-                qml.CNOT(wires=cnot_wires)
+                CNOT(wires=cnot_wires)
 
             # U_1^+, U_2^+ acting on wires 'r' and 'p'
-            qml.RX(np.pi / 2, wires=r)
-            qml.Hadamard(wires=p)
+            RX(np.pi / 2, wires=r)
+            Hadamard(wires=p)
 
             # ------------------------------------------------------------------
             # Apply the second layer
 
             # U_1, U_2 acting on wires 'r' and 'p'
-            qml.Hadamard(wires=r)
-            qml.RX(-np.pi / 2, wires=p)
+            Hadamard(wires=r)
+            RX(-np.pi / 2, wires=p)
 
             # Applying CNOTs between wires 'r' and 'p'
             for cnot_wires in set_cnot_wires:
-                qml.CNOT(wires=cnot_wires)
+                CNOT(wires=cnot_wires)
 
             # Z rotation acting on wire 'p'
-            qml.RZ(-weight / 2, wires=p)
+            RZ(-weight / 2, wires=p)
 
             # Applying CNOTs in reverse order
             for cnot_wires in reversed(set_cnot_wires):
-                qml.CNOT(wires=cnot_wires)
+                CNOT(wires=cnot_wires)
 
             # U_1^+, U_2^+ acting on wires 'r' and 'p'
-            qml.Hadamard(wires=r)
-            qml.RX(np.pi / 2, wires=p)
+            Hadamard(wires=r)
+            RX(np.pi / 2, wires=p)
 
         return tape

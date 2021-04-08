@@ -14,12 +14,11 @@
 r"""
 Contains the UCCSD template.
 """
-import numpy as np
-
-import pennylane as qml
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
+import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import BasisState
 
 
 class UCCSD(Operation):
@@ -187,7 +186,7 @@ class UCCSD(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.BasisState(self.init_state_flipped, wires=self.wires)
+            BasisState(self.init_state_flipped, wires=self.wires)
 
             for i, (w1, w2) in enumerate(self.d_wires):
                 qml.templates.DoubleExcitationUnitary(
