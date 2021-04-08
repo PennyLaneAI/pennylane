@@ -178,6 +178,19 @@ def test_shot_vector_property():
     assert shot_vector[3].copies == 1
 
 
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The attribute `analytic` has been replaced by `shots=None`. "
+    msg += "Please use `shots=None` instead of `analytic=True`."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.qubit", wires=1, shots=1, analytic=True)
+
+
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
