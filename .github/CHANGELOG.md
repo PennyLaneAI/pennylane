@@ -648,6 +648,9 @@
   [RX(0, wires=[0]), RZ(2, wires=[1])]
   ```
 
+* When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
+  [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
+
 <h3>Breaking changes</h3>
 
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
