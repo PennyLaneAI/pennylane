@@ -500,6 +500,9 @@ class TestKerasLayer:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_deprecation_warning(self, get_circuit, output_dim):
         """Test if deprecation warning is raised"""
+        if int(qml.__version__.split(".")[1]) >= 16:
+            pytest.fail("Deprecation warnings for the qnn module should be removed")
+
         c, w = get_circuit
         with pytest.warns(DeprecationWarning, match=WARNING_STRING):
             KerasLayer(c, w, output_dim)

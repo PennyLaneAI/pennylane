@@ -95,6 +95,9 @@ class TestSquaredErrorLoss:
 
 def test_deprecation_warning():
     """Test if deprecation warning is raised"""
+    if int(qml.__version__.split(".")[1]) >= 16:
+        pytest.fail("Deprecation warnings for the qnn module should be removed")
+
     dev = qml.device("default.qubit", wires=3)
     observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
 
