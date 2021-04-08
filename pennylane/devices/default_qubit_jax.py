@@ -174,7 +174,11 @@ class DefaultQubitJax(DefaultQubit):
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
 
-    def __init__(self, wires, *, shots=None, prng_key=None):
+    def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        if analytic is not None:
+            msg = "The attribute `analytic` has been replaced by `shots=None`. "
+            msg += "Please use `shots=None` instead of `analytic=True`."
+            raise DeviceError(msg)
         super().__init__(wires, shots=shots, cache=0)
 
         # prevent using special apply methods for these gates due to slowdown in jax

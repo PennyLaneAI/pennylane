@@ -100,11 +100,17 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitationMinus",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
+
+        if analytic is not None:
+            msg = "The attribute `analytic` has been replaced by `shots=None`. "
+            msg += "Please use `shots=None` instead of `analytic=True`."
+            raise DeviceError(msg)
+
         # call QubitDevice init
         super().__init__(wires, shots, cache=cache)
 

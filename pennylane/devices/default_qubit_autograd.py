@@ -127,7 +127,11 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=None):
+    def __init__(self, wires, *, shots=None, analytic=None):
+        if analytic is not None:
+            msg = "The attribute `analytic` has been replaced by `shots=None`. "
+            msg += "Please use `shots=None` instead of `analytic=True`."
+            raise DeviceError(msg)
         super().__init__(wires, shots=shots, cache=0)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
