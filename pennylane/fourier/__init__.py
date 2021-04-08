@@ -21,5 +21,5 @@ from .visualization import (
     fourier_panel_plot,
     fourier_radial_box_plot,
     fourier_reconstruct_function_1D_plot,
-    fourier_reconstruct_function_2D_plot
+    fourier_reconstruct_function_2D_plot,
 )
