@@ -1577,7 +1577,7 @@ class U2(Operation):
 class U3(Operation):
     r"""U3(theta, phi, lambda, wires)
     Arbitrary single qubit unitary.
-
+   
     .. math::
 
         U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
@@ -1643,11 +1643,28 @@ class U3(Operation):
         return U3(theta, new_phi, new_lam, wires=self.wires, do_queue=do_queue)
 
 class IsingXX(Operation):
-    r"""
-    Definition TO DO
+    r"""IsingXX(phi, wires)
+    Ising XX coupling gate
+
+    .. math:: \mathtt{XX}(\phi) = \begin{bmatrix}
+            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d \phi} \mathtt{XX}(\phi) = \frac{1}{2} \left[ \mathtt{XX}(\phi + \pi / 2) + \mathtt{XX}(\phi - \pi / 2) \right]`
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
     """
-    num_params=1
-    num_wires=2
+    num_params = 1
+    num_wires = 2
     par_domain = "R"
     grad_method = "A"
 
@@ -1661,10 +1678,20 @@ class IsingXX(Operation):
             [
                 [c ,0 ,0 , -1j*s],
                 [0, c, -1j*s, 0],
-                [0,-1j*s,c,0]
+                [0 ,-1j*s , c, 0],
                 [-1j*s, 0, 0, c]
             ]
         )
+
+    @staticmethod    
+    def decomposition(phi, wires):
+        decomp_ops = [
+            CNOT(wires=wires),
+            RX(phi, wires=[wires[0]]),
+            CNOT(wires=wires),
+        ]
+        return decomp_ops
+
     def adjoint(self, do_queue=False):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires, do_queue=do_queue)
@@ -2573,7 +2600,7 @@ ops = {
     "U1",
     "U2",
     "U3",
-    "IsingXX"
+    "IsingXX",
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
