@@ -16,9 +16,14 @@ import pytest
 from scipy.stats import norm
 
 import pennylane as qml
-from pennylane.templates.subroutines.qmc import (QuantumMonteCarlo, _make_V,
-                                                 _make_Z, func_to_unitary,
-                                                 make_Q, probs_to_unitary)
+from pennylane.templates.subroutines.qmc import (
+    QuantumMonteCarlo,
+    _make_V,
+    _make_Z,
+    func_to_unitary,
+    make_Q,
+    probs_to_unitary,
+)
 from pennylane.wires import Wires
 
 
@@ -267,7 +272,8 @@ class TestQuantumMonteCarlo:
         assert len(queue_after_qpe) == len(qpe_tape.operations)
         assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
         assert all(
-            np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.operations)
+            np.allclose(o1.matrix, o2.matrix)
+            for o1, o2 in zip(queue_after_qpe, qpe_tape.operations)
         )
         assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
 
