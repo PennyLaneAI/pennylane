@@ -174,7 +174,7 @@ class TestInterfaces:
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        np.testing.assert_allclose(res, res2, atol=tol, rtol=0)
 
         weights_tuple = [tuple(weights[0])]
         res = circuit(weights_tuple)
