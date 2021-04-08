@@ -537,14 +537,14 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The embedding and state preparation templates, 
-  as well as `BasicEntanglerLayers`, are now classes inheriting 
+- The embedding templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
   change does not affect the user interface.
   [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
-  
-  For convenience, some templates now have a method that returns the expected 
+  [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
+
+  For convenience, some templates now have a method that returns the expected
   shape of the trainable parameter tensor, which can be used to create 
   random tensors.
   
