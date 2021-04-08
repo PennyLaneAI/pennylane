@@ -1,8 +1,8 @@
 qml.fourier
 ===========
 
-This module contains methods and visualization tools for computing Fourier
-series representations of quantum circuits.
+This module contains methods for computing Fourier series representations of
+quantum circuits.
 
 Fourier series of quantum circuits
 ----------------------------------
@@ -105,108 +105,7 @@ for multiple dimensions.
    filter that will cut off frequencies higher than a given threshold. This can
    be configured by setting the ``lowpass_filter`` option to ``True``, and optionally
    specifying the ``frequency_threshold`` argument (if none is specified, 2 times
-   the specified degree will be used as the threshold).
-
-
-Fourier coefficient visualization
----------------------------------
-
-A key application of the Fourier module is to analyze the *expressivity* of
-classes of quantum circuit families. The set of accessible frequencies is a
-measure of how expressive a given circuit is; more frequencies means a wider
-range of functions and thus the potential for greater applicability in, e.g.,
-quantum machine learning applications.
-
-The `fourier` module contains methods to visualize the distribution of Fourier
-coefficients for a single circuit, as well as many members of a circuit family
-with different weights.
-
-The function :func:`~.pennylane.fourier.radial_box_plots` display the real and
-imaginary portions of the coefficients using circular box plot
-distributions. For example, let's visualize the circuit from earlier:
-
-.. code::
-
-   >>> from pennylane.fourier import radial_box_plots
-   >>> radial_box_plots(np.array([coeffs]), n_inputs=len(x), degree=2)
-
-.. image:: ../_static/fourier_vis_1.png
-    :align: center
-    :width: 700px
-    :target: javascript:void(0);
-
-|
-
-The left plot displays the real portion, and the right the imaginary
-portion. The labels on the "spokes" of the wheels represent the particular
-frequencies; we see that this matches the coefficients we found earlier.
-
-Since the negative frequencies contain redundant information (they are simply
-the complex conjugates of their positive partners), we can condense the
-information and visualize both real and complex portions on a single plot:
-
-.. code::
-
-   >>> radial_box_plots(np.array([coeffs]), n_inputs=len(x), degree=2, merge_plots=True)
-
-.. image:: ../_static/fourier_vis_2.png
-    :align: center
-    :width: 400px
-    :target: javascript:void(0);
-
-|
-
-For each coefficient, its real and complex components occur as their "mirrors"
-across the main diagonal.
-
-As mentioned above, it is also possible to visualize the distribution of
-coefficients for a family of circuits. For example, let's consider a set of
-circuits with two types of parameters: weights ``w``, and some data inputs
-``x``. Suppose the weights are chosen randomly (as they would be in, for
-example, a variational algorithm), while the ``x`` are a fixed set of data
-inputs. If we compute the Fourier coefficients with respect to the ``x``
-parameters, how the ``x`` are used in the circuit will dictate the accessible
-frequencies, while the ``w`` will modify the actual values of the
-coefficients. Consider the circuit below:
-
-.. code::
-
-    @qml.qnode(dev)
-    def circuit_with_weights(w, x):
-        qml.RX(x[0], wires=0)
-        qml.RY(x[1], wires=1)
-        qml.CNOT(wires=[1, 0])
-
-	qml.Rot(*w[0], wires=0)
-	qml.Rot(*w[1], wires=1)
-	qml.CNOT(wires=[1, 0])
-
-	qml.RX(x[0], wires=0)
-        qml.RY(x[1], wires=1)
-
-	return qml.expval(qml.PauliZ(0))
-
-    coeffs = []
-
-    for _ in range(100):
-        weights = np.random.normal(0, 1, size=(2, 3))
-        c = fourier_coefficients(partial(circuit_with_weights, weights), 2, degree=2)
-        coeffs.append(np.round(c, decimals=8))
-
-    radial_box_plots(np.array(coeffs), 2, 2, merge_plots=True)
-
-.. image:: ../_static/fourier_vis_3.png
-    :align: center
-    :width: 500px
-    :target: javascript:void(0);
-
-|
-
-We observe here that this ansatz family never yields, e.g., the coefficients
-:math:`c_{01}, c_{12}`, and a few others, while for the coefficients that do
-appear, there are varying ranges of values.
-
-.. currentmodule:: pennylane.fourier
+   the specified degree will be used as the threshold)... currentmodule:: pennylane.fourier
 
 .. automodapi:: pennylane.fourier
     :include-all-objects:
