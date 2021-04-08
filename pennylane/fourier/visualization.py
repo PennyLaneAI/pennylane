@@ -14,7 +14,6 @@
 """Contains visualization functions for Fourier series and coefficients."""
 from itertools import product
 import numpy as np
-from .utils import to_dict, format_nvec
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.
@@ -25,6 +24,8 @@ except ModuleNotFoundError:
 
 from matplotlib.colors import to_rgb
 
+from .utils import to_dict, format_nvec
+
 
 def _adjust_spine_placement(ax):
     ax.xaxis.grid()
@@ -34,11 +35,12 @@ def _adjust_spine_placement(ax):
     ax.set_axisbelow(True)
 
 
-def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
+def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients in a 1-dimensional violin plot.
 
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients.
+        n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
@@ -55,6 +57,11 @@ def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     fourier_violin_plot(coeffs, ax);
     ```
     """
+    # Check dimensionality; it's possible a user has provided only a single set
+    # of coefficients to this function.
+    if len(coeffs.shape) == n_inputs:
+        coeffs = np.array([coeffs])
+
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
@@ -67,8 +74,6 @@ def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     data = {}
     data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
     data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
-    assert len(data["real"][0]) == len(nvecs)
-    assert len(data["imag"][0]) == len(nvecs)
 
     for (data_type, axis) in zip(["real", "imag"], ax):
         violin = axis.violinplot(data[data_type], showextrema=False)
@@ -92,11 +97,80 @@ def fourier_violin_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
+def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True):
+    """Plots a set of Fourier coefficients as a box plot.
+
+    Args:
+        coeffs (array[complex]): A single set of Fourier coefficients.
+        n_inputs (int): The number of input variables in the function.
+        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+            be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
+        colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
+            "imag" : other_colour_string} indicating which colours should be used in the plot.
+        show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
+        show_fliers (bool): Whether to display the box plot outliers.
+
+    Returns:
+        ax: The axes on which the data is plotted.
+
+    **Example usage**
+
+    """
+    # Check dimensionality; it's possible a user has provided only a single set
+    # of coefficients to this function.
+    if len(coeffs.shape) == n_inputs:
+        coeffs = np.array([coeffs])
+
+    # The axis received must be a pair of axes in a subplot.
+    if colour_dict is None:
+        colour_dict = {"real": "purple", "imag": "green"}
+
+    # extract the x ticks
+    nvecs = list(to_dict(coeffs[0]).keys())
+    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
+
+    # Make data
+    data = {}
+    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+
+    for (data_type, axis) in zip(["real", "imag"], ax):
+        data_colour = colour_dict[data_type]
+        axis.boxplot(
+            data[data_type],
+            boxprops=dict(
+                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
+            ),
+            medianprops=dict(color=data_colour, linewidth=1.5),
+            flierprops=dict(markeredgecolor=data_colour),
+            whiskerprops=dict(color=data_colour),
+            capprops=dict(color=data_colour),
+            patch_artist=True,
+            showfliers=show_fliers,
+        )
+
+        _adjust_spine_placement(axis)
+        axis.set_ylabel(data_type)
+        axis.xaxis.set_ticks(np.arange(1, len(nvecs) + 1))
+
+    ax[0].tick_params(axis="x", colors="white")  # hack to get rid of ticks but keep grid
+
+    if show_freqs:
+        ax[1].tick_params(axis="x", which="both", length=0)  # remove ticks without removing labels
+        ax[1].xaxis.set_ticklabels(nvecs_formatted, fontsize=10, color="grey")
+        ax[1].xaxis.set_ticks_position("top")
+    else:
+        ax[1].tick_params(axis="x", colors="white")  # hack to get rid of ticks but keep grid
+
+    return ax
+
+
+def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a set of Fourier coefficients as a bar plot.
 
     Args:
         coeffs (array[complex]): A single set of Fourier coefficients.
+        n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
@@ -113,6 +187,9 @@ def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     fourier_linear_violin_plot(coeffs, ax);
     ```
     """
+    # This function plots only a single set of coefficients, so dimensions must match
+    if len(coeffs.shape) != n_inputs:
+        raise ValueError("Function fourier_bar_plot accepts only one set of Fourier coefficients.")
 
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
@@ -129,7 +206,7 @@ def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     data_len = len(data["real"])
 
     for (data_type, axis) in zip(["real", "imag"], ax):
-        axis.bar(list(range(data_len)), data[data_type], color=colour_dict[data_type], alpha=0.7)
+        axis.bar(np.arange(data_len), data[data_type], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
         _adjust_spine_placement(axis)
@@ -146,12 +223,13 @@ def fourier_bar_plot(coeffs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def fourier_panel_plot(coeffs, ax):
+def fourier_panel_plot(coeffs, n_inputs, ax):
     """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional FFT.
 
     Args:
         coeffs (array[complex]): A list set of Fourier coefficients. Must be
             1- or 2-dimensional.
+        n_inputs (int): The number of variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
             1-dimensional data, length must be the number of frequencies. For 2-dimensional
             data, must be a grid that matches the dimensions of a single set of coefficients.
@@ -159,7 +237,11 @@ def fourier_panel_plot(coeffs, ax):
     Returns:
         ax: The axes on which the data is plotted.
     """
-    if len(coeffs.shape) > 3:
+    # In case a single set of coefficients is sent
+    if len(coeffs.shape) == n_inputs:
+        coeffs = np.array([coeffs])
+
+    if n_inputs > 2:
         raise ValueError("Plotting not implemented for > 2-dimensional FFT outputs.")
 
     if ax.shape != coeffs[0].shape:
@@ -167,7 +249,7 @@ def fourier_panel_plot(coeffs, ax):
 
     # This could probably be more efficient.
     # Plot 1D case
-    if len(coeffs.shape) == 2:
+    if n_inputs == 1:
         # Range is (0, ..., degree) for rfft, (0, ... degree, -degree, ..., -1) for fft
         n_freqs = coeffs.shape[1] // 2 + (coeffs.shape[1] % 2)
         frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
@@ -302,14 +384,8 @@ def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
     return ax
 
 
-def fourier_radial_box_plots(
-    coeffs,
-    n_inputs,
-    degree,
-    show_freqs=True,
-    colour_dict=None,
-    showfliers=True,
-    merge_plots=False,
+def fourier_radial_box_plot(
+    coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
 
@@ -323,7 +399,6 @@ def fourier_radial_box_plots(
         coeffs (np.ndarray): A set of Fourier coefficients. Assumed to be
             from a full fft transform.
         n_inputs (int): Dimension of the transformed function.
-        degree (int): The max Fourier frequency obtained.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
         colour_dict (str : str): Specify a colour mapping for positive and negative
@@ -333,127 +408,56 @@ def fourier_radial_box_plots(
         merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
     """
+    # Take care of single-input case
+    if len(coeffs.shape) == n_inputs:
+        coeffs = np.array([coeffs])
 
     if colour_dict is None:
         colour_dict = {"real": "red", "imag": "black"}
 
-    # How many pie slices - need to look at a single thing
+    # Number, width, and placement of pie slices
     N = coeffs[0].size
-
-    # Width and placement of pie slices
     angles = np.linspace(0, 2 * np.pi, N, endpoint=False)
+    angles = np.concatenate((angles[-N // 2 + 1 :], angles[: -N // 2 + 1]))[::-1]
     width = (angles[1] - angles[0]) / 2
 
-    # Get labels; reearrange so that the 0 is in the middle
-    # (Will have to change if the extra Nyquist frequency is there)
-    if n_inputs == 1:
-        frequencies = list(range(-degree, degree + 1))
-    else:
-        frequencies = list(product(list(range(-degree, degree + 1)), repeat=n_inputs))
+    # Extract the radial ticks
+    nvecs = list(to_dict(coeffs[0]).keys())
+    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
-    # We're going to rearrange all the coefficients, of each sample
-    rearranged_coeffs = np.zeros((coeffs.shape[0], N), dtype=np.complex)
-
-    split_point = None
-
-    for idx, frequency in enumerate(frequencies):
-        if n_inputs == 1:
-            if frequency == 0:
-                split_point = idx
-        else:
-            if frequency == (0,) * n_inputs:
-                split_point = idx
-
-        for coeff_sample_idx in range(coeffs.shape[0]):
-            rearranged_coeffs[coeff_sample_idx][idx] = coeffs[coeff_sample_idx][frequency]
-
-    real_radii_distributions = []
-    imag_radii_distributions = []
-    # For each frequency, make a list of this coefficient from each sample
-    for idx, frequency in enumerate(frequencies):
-        real_radii_distributions.append(
-            [rearranged_coeffs.real[x, idx] for x in range(len(coeffs))]
-        )
-        imag_radii_distributions.append(
-            [rearranged_coeffs.imag[x, idx] for x in range(len(coeffs))]
-        )
-
-    if merge_plots:
-        full_radii_distributions = list(real_radii_distributions[split_point:]) + list(
-            imag_radii_distributions[split_point + 1 :][::-1]
-        )
-
-        plot_real_radii_distributions = full_radii_distributions[: split_point + 1]
-        plot_imag_radii_distributions = full_radii_distributions[split_point + 1 :]
-
-        plot_real_angles = angles[: split_point + 1]
-        plot_imag_angles = angles[split_point + 1 :]
-    else:
-        plot_real_radii_distributions = real_radii_distributions
-        plot_imag_radii_distributions = imag_radii_distributions
-
-        rearranged_angles = np.concatenate((angles[-split_point:], angles[: split_point + 1]))
-        plot_real_angles = rearranged_angles
-        plot_imag_angles = rearranged_angles
-
-    # Set up the panels
-    num_subplots = 1 if merge_plots else 2
-    fig, ax = plt.subplots(
-        1, num_subplots, figsize=(20, 8), sharex=True, sharey=True, subplot_kw=dict(polar=True)
-    )
-
-    if merge_plots:
-        avail_axes = [ax, ax]
-    else:
-        avail_axes = [ax[0], ax[1]]
+    # Make data
+    data = {}
+    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
 
     # Set up the violin plots
-    for idx, a in enumerate(avail_axes):
-        if idx == 0:
-            coeff_part = "real"
-            plot_angles = plot_real_angles
-            plot_radii = plot_real_radii_distributions
-        else:
-            coeff_part = "imag"
-            plot_angles = plot_imag_angles
-            plot_radii = plot_imag_radii_distributions
+    for data_type, a in zip(["real", "imag"], ax):
+        data_colour = colour_dict[data_type]
 
         a.boxplot(
-            plot_radii,
-            positions=plot_angles,
+            data[data_type],
+            positions=angles,
             widths=width,
             boxprops=dict(
-                facecolor=to_rgb(colour_dict[coeff_part]) + (0.4,),
-                color=colour_dict[coeff_part],
-                edgecolor=colour_dict[coeff_part],
+                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
             ),
-            medianprops=dict(color=colour_dict[coeff_part], linewidth=1.5),
-            flierprops=dict(markeredgecolor=colour_dict[coeff_part]),
-            whiskerprops=dict(color=colour_dict[coeff_part]),
-            capprops=dict(color=colour_dict[coeff_part]),
+            medianprops=dict(color=data_colour, linewidth=1.5),
+            flierprops=dict(markeredgecolor=data_colour),
+            whiskerprops=dict(color=data_colour),
+            capprops=dict(color=data_colour),
             patch_artist=True,
-            showfliers=showfliers,
+            showfliers=show_fliers,
         )
 
-        # Rotate so that the 0 frequency is at the top
+        # Rotate so that the 0 frequency is at the to
+        a.set_thetagrids((180 / np.pi) * angles, labels=nvecs_formatted)
         a.set_theta_zero_location("N")
-
-    frequency_labels = [" " + format_nvec(f) + " " for f in frequencies]
-
-    full_labels = frequencies[split_point:] + frequencies[split_point + 1 :][::-1]
-    full_labels = [format_nvec(x) for x in full_labels]
-
-    # Set and rotate the tickmarks
-    if merge_plots:
-        avail_axes[0].set_thetagrids((180 / np.pi) * angles, labels=full_labels)
-    else:
-        for a in avail_axes:
-            a.set_thetagrids((180 / np.pi) * rearranged_angles, labels=frequency_labels)
+        a.set_rlabel_position(0)
 
     # Set and rotate the tickmarks; taken from SO
     # https://stackoverflow.com/questions/46719340/how-to-rotate-tick-labels-in-polar-matplotlib-plot
-    if show_freqs:
-        for a in avail_axes[:num_subplots]:
+    for a in ax:
+        if show_freqs:
             for label, angle in zip(a.get_xticklabels(), angles):
                 x, y = label.get_position()
                 lab = a.text(
@@ -471,18 +475,8 @@ def fourier_radial_box_plots(
                 else:
                     lab.set_rotation((180 / np.pi) * angle + 270)
 
-            # Make sure the labels are well-spaced
-            a.set_xticklabels([])
             a.tick_params(pad=10)
-            a.set_rlabel_position(0)
 
-    if num_subplots == 1:
-        avail_axes[0].set_title(
-            "Real (left) --- Imag (right)", fontsize=16, y=-0.025 * len(full_labels[0])
-        )
-    else:
-        avail_axes[0].set_title("Real", fontsize=16, y=-0.025 * len(full_labels[0]))
-        avail_axes[1].set_title("Imag", fontsize=16, y=-0.025 * len(full_labels[0]))
+        a.set_xticklabels([])
 
-    plt.tight_layout()
-
+    return ax
