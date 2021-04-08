@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,14 +46,6 @@ class OperationRecorder(QuantumTape):
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
     to directly access the applied :class:`~.Operation` and :class:`~.Observable`
     objects.
-
-    Attributes:
-        queue (List[Operator]): list of operators applied within
-            the OperatorRecorder context, includes operations and observables
-        operations (List[Operation]): list of operations applied within
-            the OperatorRecorder context
-        observables (List[Observable]): list of observables applied within
-            the OperatorRecorder context
     """
 
     def __init__(self):

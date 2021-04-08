@@ -2,6 +2,94 @@
 
 <h3>New features since last release</h3>
 
+* Computing second derivatives and Hessians of QNodes is now supported when
+  using the Autograd interface.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
+  >>> hessian_fn(x)
+  [[0.2248451 0.7651474]
+   [0.7651474 0.2248451]]
+  ```
+
+* Computing second derivatives and Hessians of QNodes is now supported when
+  using the PyTorch interface.
+  [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129/files)
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  from torch.autograd.functional import jacobian, hessian
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, interface='torch', diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = torch.tensor([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> circuit(x)
+  tensor([0.3876, 0.6124], dtype=torch.float64, grad_fn=<SqueezeBackward0>)
+  >>> jacobian(circuit, x)
+  tensor([[ 0.1751, -0.2456],
+          [-0.1751,  0.2456]], grad_fn=<ViewBackward>)
+  >>> hessian(circuit, x)
+  tensor([[[ 0.1124,  0.3826],
+           [ 0.3826,  0.1124]],
+          [[-0.1124, -0.3826],
+           [-0.3826, -0.1124]]])
+  ```
+
+- The TensorFlow interface now supports computing second derivatives and Hessians of hybrid quantum models.
+  Second derivatives are supported on both hardware and simulators.
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+  @qml.qnode(dev, interface='tf', diff_method='parameter-shift')
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+  with tf.GradientTape() as tape1:
+      with tf.GradientTape() as tape2:
+          y = circuit(x)
+      grad = tape2.gradient(res, x)
+
+  hessian = tape1.jacobian(grad, x)
+  ```
+
+  To compute just the diagonal of the Hessian, the gradient of the
+  first derivatives can be taken:
+
+  ```python
+  hessian_diagonals = tape1.gradient(grad, x)
+  ```
+
 * Adds a new transform `qml.ctrl` that adds control wires to subroutines.
   [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 
@@ -395,6 +483,32 @@
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
+* Adds a new transform `qml.invisible`.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  Marking a quantum function as invisible will inhibit any internal
+  quantum operation processing from being recorded by the QNode:
+
+  ```pycon
+  >>> @qml.transforms.invisible
+  ... def list_of_ops(params, wires):
+  ...     return [
+  ...         qml.RX(params[0], wires=wires),
+  ...         qml.RY(params[1], wires=wires),
+  ...         qml.RZ(params[2], wires=wires)
+  ...     ]
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     # list_of_ops is invisible, so quantum operations
+  ...     # instantiated within it will not be queued.
+  ...     ops = list_of_ops(params, wires=0)
+  ...     # apply only the last operation from the list
+  ...     ops[-1].queue()
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(qml.draw(circuit)([1, 2, 3]))
+   0: ──RZ(3)──┤ ⟨Z⟩
+  ```
+
 <h3>Improvements</h3>
 
 * Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
@@ -423,12 +537,16 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+- The embedding templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface. 
-  
-  For convenience, the class has a method that returns the shape of the 
-  trainable parameter tensor, i.e.,
+  change does not affect the user interface.
+  [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
+  [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
+  [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
+
+  For convenience, some templates now have a method that returns the expected
+  shape of the trainable parameter tensor, which can be used to create 
+  random tensors.
   
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
@@ -507,6 +625,28 @@
 
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
+
+* Two new utility methods are provided for working with quantum tapes.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  - `qml.tape.get_active_tape()` gets the currently recording tape.
+
+  - `tape.stop_recording()` is a context manager that temporarily
+    stops the currently recording tape from recording additional
+    tapes or quantum operations.
+
+  For example:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape():
+  ...     qml.RX(0, wires=0)
+  ...     current_tape = qml.tape.get_active_tape()
+  ...     with current_tape.stop_recording():
+  ...         qml.RY(1.0, wires=1)
+  ...     qml.RZ(2, wires=1)
+  >>> current_tape.operations
+  [RX(0, wires=[0]), RZ(2, wires=[1])]
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -589,6 +729,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
+  operation raised an error.
+  [(#1174)](https://github.com/PennyLaneAI/pennylane/pull/1174)
+
 * Fixes a bug and a test where the ``QuantumTape.is_sampled`` attribute was not
   being updated.
   [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
@@ -609,6 +753,9 @@
 
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
+
+- Upgraded the documentation to use Sphinx 3.5.3 and the new m2r2 package.
+  [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
 
 - Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
 
