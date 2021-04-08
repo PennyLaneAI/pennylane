@@ -18,32 +18,6 @@ from itertools import product
 import numpy as np
 
 
-def format_nvec(nvec):
-    """Nice strings representing tuples of integers."""
-
-    if isinstance(nvec, int):
-        return str(nvec)
-
-    nvec_str = ["{}".format(n) if n < 0 else " {}".format(n) for n in nvec]
-
-    return " ".join(nvec_str)
-
-
-def to_dict(coeffs):
-    """Convert a set of indices to a dictionary."""
-    # infer hyperparameters
-    degree = coeffs.shape[0] // 2 - 1
-    n_inputs = len(coeffs.shape)
-
-    # create generator for indices nvec = (n1, ..., nN),
-    # ranging from (-d,...,-d) to (d,...,d).
-    n_range = np.array(range(-degree, degree + 1))
-    n_ranges = [n_range] * n_inputs
-    nvecs = product(*n_ranges)
-
-    return {nvec: coeffs[nvec] for nvec in nvecs}
-
-
 def extract_evals(obj):
     """Extract pair of eigenvalues of from generator of an operation."""
 
