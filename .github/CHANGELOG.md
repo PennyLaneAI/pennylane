@@ -749,6 +749,9 @@
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
+- Upgraded the documentation to use Sphinx 3.5.3 and the new m2r2 package.
+  [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
+
 - Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
 
 <h3>Contributors</h3>
