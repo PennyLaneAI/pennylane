@@ -372,12 +372,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             """
             res = np.array(results)[0]
             grad = np.zeros_like(res)
-
-            if len(res) == 0:
-                grad[transformed_obs_idx] = res
-            else:
-                grad[transformed_obs_idx] = res[transformed_obs_idx]
-
+            grad[transformed_obs_idx] = res[transformed_obs_idx]
             return grad
 
         return tapes, processing_fn
