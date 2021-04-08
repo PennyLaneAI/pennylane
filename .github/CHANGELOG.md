@@ -740,6 +740,11 @@
   of a QNode.
   [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
+* Fixes a bug where the second-order CV parameter-shift rule would error
+  if attempting to compute the gradient of a QNode with more than one
+  second-order observable.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.

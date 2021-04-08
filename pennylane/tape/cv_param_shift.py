@@ -370,9 +370,14 @@ class CVParamShiftTape(QubitParamShiftTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            res = results[0]
+            res = np.array(results)[0]
             grad = np.zeros_like(res)
-            grad[transformed_obs_idx] = res
+
+            if len(res) == 0:
+                grad[transformed_obs_idx] = res
+            else:
+                grad[transformed_obs_idx] = res[transformed_obs_idx]
+
             return grad
 
         return tapes, processing_fn
