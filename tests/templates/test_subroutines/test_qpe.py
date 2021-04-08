@@ -110,7 +110,7 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand()
+            tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
             res = tape.execute(dev).flatten()
 
             if phase < 0:
