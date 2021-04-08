@@ -123,8 +123,8 @@ def _join_spectra(spec1, spec2):
 
 
 def spectrum(qnode):
-    r"""Create a function that computes the frequency spectra of the qnode
-    with respect to all differentiable inputs.
+    r"""Computes the frequency spectra of the qnode with respect to all
+    differentiable inputs.
 
     If the circuit represented by the qnode returns the expectation value of an
     observable, it can be interpreted as a function
@@ -198,7 +198,6 @@ def spectrum(qnode):
         >>> 0.3: [-1.0, 0.0, 1.0]
         >>> 0.4: [-2.0, -1.0, 0.0, 1.0, 2.0]
         >>> 0.5: [-1.0, 0.0, 1.0]
-
 
     """
 

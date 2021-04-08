@@ -9,8 +9,8 @@ Fourier series of quantum circuits
 
 Consider a quantum circuit that depends on a parameter vector :math:`x` with
 length :math:`N`. The circuit involves application of some unitary operations
-:math:`U(x)`, and then measurement a particular expectation value
-:math:`P`. Analytically the expectation value can be computed as
+:math:`U(x)`, and then measurement of a particular expectation value
+:math:`P`. Analytically, the expectation value can be computed as
 
 .. math::
 
@@ -18,19 +18,20 @@ length :math:`N`. The circuit involves application of some unitary operations
    \psi(x) | P | \psi (x)\rangle.
 
 This output is simply a function :math:`f(x) = \langle \psi(x) | P | \psi
-(x)\rangle`. More specifically it is a periodic function of the parameters, and
-it can thus be expressed as a multidimensional *Fourier series*:
+(x)\rangle`. Notably, it is a periodic function of the parameters, and
+it can thus be expressed as a multidimensional Fourier series: 
 
 .. math::
 
     f(x) = \sum \limits_{n_1\in \Omega_1} \dots \sum \limits_{n_N \in \Omega_N}
     c_{n_1,\dots, n_N} e^{-i x_1 n_1} \dots e^{-i x_N n_N},
 
-where the :math:`n_i` are integer-valued frequencies, and the :math:`c_n` are
-Fourier coefficients attached to each combination of frequencies.
+where :math:`n_i` are integer-valued frequencies, :math:`\Omega_i` are the set
+of available values for the integer frequencies, and the
+:math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
-As a simple example, consider ``simple_circuit`` below in terms of a single
-parameter.
+As a simple example, consider ``simple_circuit`` below, which is a function of a
+single parameter.
 
 .. code::
 
@@ -51,13 +52,23 @@ We can mathematically evaluate the expectation value of this function to be
 of this function are :math:`c_0 = 0.5`, :math:`c_1 = c^*_{-1} = 0`, and \
 :math:`c_2 = c^*_{-2} = 0.25`.
 
-The Fourier module enables calculation of two important aspects of the Fourier
-series: the *spectrum*, i.e., the accessible frequencies where the Fourier
-coefficients may be non-zero; and the values of the *coefficients* themselves.
+The PennyLane ``fourier`` module enables calculation of two important aspects of
+the Fourier series: the *spectrum*, i.e., the accessible frequencies where the
+Fourier coefficients may be non-zero; and the values of the *coefficients*
+themselves. Knowledge of the coefficients and accessible spectra is important
+for the study of expressivity of quantum circuits, as described in `Schuld,
+Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__ and `Vidal and
+Theis, 2019 <https://arxiv.org/abs/1901.11434>`__ -- the more coefficients
+available to a quantum model, the larger the class of functions that model can
+represent, potentially leading to greater utility for quantum machine learning
+applications.
+
+Calculating the Fourier spectrum
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The frequency spectra can be calculated using the :func:`~.pennylane.fourier.spectrum`
 function. As one may be interested only in the spectra of a subset of the input
-parameters, only the spectrum of differentiable parameters will be calculated.
+parameters, **only the spectrum of differentiable parameters will be calculated**.
 
 .. code::
 
@@ -68,9 +79,14 @@ parameters, only the spectrum of differentiable parameters will be calculated.
 
 The set of available frequencies above matches the result we obtained by hand of
 :math:`-2, 0, 2`. Note that the :func:`~.pennylane.fourier.spectrum` function
-returns the *maximum* possible spectra with respect to the given inputs.
+returns the *maximum* possible spectra with respect to the given inputs. It is
+possible that certain Fourier coefficients will nevertheless be zero.
 
-Knowledge of the frequency spectra also enables us to compute the Fourier
+
+Calculating the Fourier coefficients
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Knowledge of the frequency spectra enables us to compute the Fourier
 coefficients themselves. This can be done using the
 :func:`~.pennylane.fourier.fourier_coefficients` function:
 
@@ -83,7 +99,7 @@ coefficients themselves. This can be done using the
 
 The input to the :func:`~.pennylane.fourier.fourier_coefficients` function are
 the function in question, the length of the input vector, and the maximum
-frequency for which to calculate the coefficients. (For a quantum function with
+frequency for which to calculate the coefficients (also known as the *degree*). (For a quantum function of
 multiple inputs with varying order, it may be necessary to use a wrapper
 function to ensure the Fourier coefficients are calculated with respect to the
 correct input values.)
@@ -105,7 +121,7 @@ for multiple dimensions.
    filter that will cut off frequencies higher than a given threshold. This can
    be configured by setting the ``lowpass_filter`` option to ``True``, and optionally
    specifying the ``frequency_threshold`` argument (if none is specified, 2 times
-   the specified degree will be used as the threshold)... currentmodule:: pennylane.fourier
+   the specified degree will be used as the threshold).
 
 .. automodapi:: pennylane.fourier
     :include-all-objects:

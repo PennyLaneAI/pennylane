@@ -19,38 +19,40 @@ import numpy as np
 
 def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=None):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
-    periodic function, where :math:`d` is the highest desired frequency in the
-    Fourier spectrum.
+    periodic function, where :math:`d` is the highest desired frequency (the
+    degree) of the Fourier spectrum.
 
-    In order to mitigate aliasing, there is an the option to apply a low-pass
-    filter prior to computing the coefficients. Coefficients up to a specified
-    value are computed, and then frequencies higher than the degree are simply
+    In order to mitigate aliasing, there is an option to apply a low-pass filter
+    prior to computing the coefficients. Coefficients up to a specified value
+    are computed, and then frequencies higher than the degree are simply
     removed. This ensures that the coefficients returned will have the correct
     values, though they may not be the full set of coefficients. If no threshold
     value is provided, the threshold will be set to ``2 * degree``.
 
     Args:
-        f (callable): function that takes an array of :math:`N` scalar inputs
+        f (callable): function that takes an array of `n_inputs` scalar inputs
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
-        lowpass_filter (bool): If True, a simple low-pass filter is applied prior to
+        lowpass_filter (bool): If ``True``, a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
             given degree.
-        filter_threshold (None or int): The integer frequency at which to filter. If no value is
-            specified, ``2 * degree`` is used.
+        filter_threshold (None or int): The integer frequency at which to filter. If
+            ``lowpass_filter`` is set to ``True,`` but no value is specified, ``2 * degree`` is used.
 
     Returns:
-        array[complex]: The Fourier coefficients of the function f up to the specified degree.
+        array[complex]: The Fourier coefficients of the function ``f`` up to the specified degree.
 
     **Example**
 
     .. code-block:: python
 
+        from functools import partial
         import pennylane as qml
         from pennylane import numpy as anp
+        from pennylane.fourier import fourier_coefficients
 
-        # Expected Fourier series over 2 parameters with frequencies 0 and 1
+        # Expected Fourier series over 2 parameters with frequencies -1, 0, and 1
         num_inputs = 2
         degree = 1
 
@@ -68,9 +70,13 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
 
             return qml.expval(qml.PauliZ(wires='a'))
 
-        # Coefficients of the `inpt` variable will be computed
+        # Use partial function to compute coefficients of the `inpt` variable
         coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
 
+        >>> print(coeffs)
+        [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
+         [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
+         [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
     """
     if not lowpass_filter:
         return _fourier_coefficients_no_filter(f, n_inputs, degree)
