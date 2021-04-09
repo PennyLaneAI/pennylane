@@ -93,7 +93,6 @@ class Hadamard(Observable, Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return Hadamard(wires=self.wires)
 
 
@@ -149,7 +148,6 @@ class PauliX(Observable, Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return PauliX(wires=self.wires)
 
     def _controlled(self, wire):
@@ -210,7 +208,6 @@ class PauliY(Observable, Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return PauliY(wires=self.wires)
 
     def _controlled(self, wire):
@@ -254,7 +251,6 @@ class PauliZ(Observable, DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return PauliZ(wires=self.wires)
 
     def _controlled(self, wire):
@@ -296,7 +292,6 @@ class S(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return S(wires=self.wires).inv()
 
 
@@ -335,7 +330,6 @@ class T(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return T(wires=self.wires).inv()
 
 
@@ -379,7 +373,6 @@ class SX(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return SX(wires=self.wires).inv()
 
 
@@ -414,7 +407,6 @@ class CNOT(Operation):
         return CNOT.matrix
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CNOT(wires=self.wires)
 
     def _controlled(self, wire):
@@ -457,7 +449,6 @@ class CZ(DiagonalOperation):
         return cls.eigvals
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CZ(wires=self.wires)
 
 
@@ -504,7 +495,6 @@ class CY(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CY(wires=self.wires)
 
 
@@ -537,7 +527,6 @@ class SWAP(Operation):
         return cls.matrix
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
@@ -590,7 +579,6 @@ class CSWAP(Operation):
         return cls.matrix
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CSWAP(wires=self.wires)
 
 
@@ -641,7 +629,6 @@ class Toffoli(Operation):
         return cls.matrix
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return Toffoli(wires=self.wires)
 
 
@@ -680,7 +667,6 @@ class RX(Operation):
         return np.array([[c, js], [js, c]])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return RX(-self.data[0], wires=self.wires)
 
     def _controlled(self, wire):
@@ -722,7 +708,6 @@ class RY(Operation):
         return np.array([[c, -s], [s, c]])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return RY(-self.data[0], wires=self.wires)
 
     def _controlled(self, wire):
@@ -770,7 +755,6 @@ class RZ(DiagonalOperation):
         return np.array([p, p.conjugate()])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return RZ(-self.data[0], wires=self.wires)
 
     def _controlled(self, wire):
@@ -819,7 +803,6 @@ class PhaseShift(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return PhaseShift(-self.data[0], wires=self.wires)
 
     def _controlled(self, wire):
@@ -878,7 +861,6 @@ class ControlledPhaseShift(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
 
@@ -936,7 +918,6 @@ class Rot(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
@@ -1032,7 +1013,6 @@ class MultiRZ(DiagonalOperation):
             CNOT(wires=[wires[i + 1], wires[i]])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
 
@@ -1219,7 +1199,6 @@ class PauliRot(Operation):
                 RX(-np.pi / 2, wires=[wire])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
 
@@ -1287,7 +1266,6 @@ class CRX(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CRX(-self.data[0], wires=self.wires)
 
 
@@ -1345,7 +1323,6 @@ class CRY(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CRY(-self.data[0], wires=self.wires)
 
 
@@ -1422,7 +1399,6 @@ class CRZ(DiagonalOperation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return CRZ(-self.data[0], wires=self.wires)
 
 
@@ -1488,7 +1464,6 @@ class CRot(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
 
@@ -1533,7 +1508,6 @@ class U1(Operation):
         return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return U1(-self.data[0], wires=self.wires)
 
 
@@ -1593,7 +1567,6 @@ class U2(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         phi, lam = self.parameters
         new_lam = (np.pi - phi) % (2 * np.pi)
         new_phi = (np.pi - lam) % (2 * np.pi)
@@ -1663,7 +1636,6 @@ class U3(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         theta, phi, lam = self.parameters
         new_lam = (np.pi - phi) % (2 * np.pi)
         new_phi = (np.pi - lam) % (2 * np.pi)
@@ -1739,7 +1711,6 @@ class SingleExcitation(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
@@ -1783,7 +1754,6 @@ class SingleExcitationMinus(Operation):
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
 
@@ -1827,7 +1797,6 @@ class SingleExcitationPlus(Operation):
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
 
@@ -1869,7 +1838,6 @@ class QubitUnitary(Operation):
         return U
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return QubitUnitary(qml.math.T(qml.math.conj(self.data[0])), wires=self.wires)
 
     def _controlled(self, wire):
@@ -2072,7 +2040,6 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
     def _controlled(self, control):
@@ -2250,7 +2217,6 @@ class DoubleExcitation(Operation):
         return decomp_ops
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
@@ -2311,7 +2277,6 @@ class DoubleExcitationPlus(Operation):
         return U
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
@@ -2372,7 +2337,6 @@ class DoubleExcitationMinus(Operation):
         return U
 
     def adjoint(self):
-        """Returns an operation that is equal to the adjoint of `self`"""
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
 
@@ -2413,8 +2377,7 @@ class BasisState(Operation):
     def decomposition(n, wires):
         return BasisStatePreparation(n, wires)
 
-    def adjoint(self):  # pylint: disable=no-self-use
-        """Returns an operation that is equal to the adjoint of `self`"""
+    def adjoint(self):
         raise AdjointError("No adjoint exists for BasisState operations.")
 
 
@@ -2448,8 +2411,7 @@ class QubitStateVector(Operation):
     def decomposition(state, wires):
         return MottonenStatePreparation(state, wires)
 
-    def adjoint(self):  # pylint: disable=no-self-use
-        """Returns an operation that is equal to the adjoint of `self`"""
+    def adjoint(self):
         raise AdjointError("No adjoint exists for QubitStateVector operations.")
 
 
