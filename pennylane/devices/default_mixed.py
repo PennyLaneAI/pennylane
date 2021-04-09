@@ -106,13 +106,8 @@ class DefaultMixed(QubitDevice):
                 "This device does not currently support computations on more than 23 wires"
             )
 
-        if analytic is not None:
-            msg = "The attribute `analytic` has been replaced by `shots=None`. "
-            msg += "Please use `shots=None` instead of `analytic=True`."
-            raise DeviceError(msg)
-
         # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)

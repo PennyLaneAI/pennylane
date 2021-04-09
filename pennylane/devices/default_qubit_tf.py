@@ -180,11 +180,7 @@ class DefaultQubitTF(DefaultQubit):
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        if analytic is not None:
-            msg = "The attribute `analytic` has been replaced by `shots=None`. "
-            msg += "Please use `shots=None` instead of `analytic=True`."
-            raise DeviceError(msg)
-        super().__init__(wires, shots=shots, cache=0)
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]

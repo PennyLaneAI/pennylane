@@ -131,12 +131,7 @@ class DefaultQubit(QubitDevice):
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        if analytic is not None:
-            msg = "The attribute `analytic` has been replaced by `shots=None`. "
-            msg += "Please use `shots=None` instead of `analytic=True`."
-            raise DeviceError(msg)
-        # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
