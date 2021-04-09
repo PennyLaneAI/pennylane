@@ -45,6 +45,26 @@ def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True)
 
     Returns:
         ax: The axes on which the data is plotted.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_violin_plot
+
+        f = ... # A function
+        n_inputs = ... # Number of inputs to the function
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients; may be a single set or a list of
+        # multiple sets of coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # Set up subplots and plot
+        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+        fourier_violin_plot(coeffs, n_inputs, ax, show_freqs=True);
+
     """
     # Check dimensionality; it's possible a user has provided only a single set
     # of coefficients to this function.
@@ -101,6 +121,25 @@ def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sh
 
     Returns:
         ax: The axes on which the data is plotted.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_box_plot
+
+        f = ... # A function
+        n_inputs = ... # Number of inputs to the function
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients; may be a single set or a list of
+        # multiple sets of coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # Set up subplots and plot
+        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+        fourier_box_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
     # Check dimensionality; it's possible a user has provided only a single set
     # of coefficients to this function.
@@ -165,6 +204,24 @@ def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     Returns:
         ax: The axes on which the data is plotted.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_bar_plot
+
+        f = ... # A function
+        n_inputs = ... # Number of inputs to the function
+        degree = ... # Degree to which coefficients should be calculated
+
+        # A single set of Fourier coefficients only for the bar plot
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # Set up subplots and plot
+        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+        fourier_box_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
     # This function plots only a single set of coefficients, so dimensions must match
     if len(coeffs.shape) != n_inputs:
@@ -215,7 +272,28 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
         colour (str): The outline colour of the points on the plot.
 
     Returns:
-        ax: The axes on which the data is plotted.
+        matplotlib.AxesSubplot: The axes on which the data is plotted.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_panel_plot
+
+        f = ... # A function in 1 or 2 variables
+        n_inputs = ... # Number of inputs to the function
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients; may be a single set or a list of
+        # multiple sets of coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # Set up subplots and plot; need as many plots as there are coefficients
+        fig, ax = plt.subplots(
+            2*degree+1, 2*degree+1, sharex=True, sharey=True, figsize=(15, 4)
+        )
+        fourier_panel_plot(coeffs, n_inputs, ax);
     """
     if colour is None:
         colour = "tab:blue"
@@ -276,7 +354,24 @@ def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
             current axis from ``plt.gca()`` will be used.
 
     Returns:
-        matplotlib.axes._subplots.AxesSubplot: The axis after plotting is complete.
+        matplotlib.AxesSubplot: The axis after plotting is complete.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_reconstruct_function_1D_plot
+
+        f = ... # A function in 1 variable
+        n_inputs = 1
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # It is not necessary to create subplots; the current axis will be used here
+        fourier_reconstruct_function_1D_plot(coeffs)
     """
 
     ax = ax or plt.gca()
@@ -322,7 +417,24 @@ def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
             current axis from ``plt.gca()`` will be used.
 
     Returns:
-        matplotlib.axes._subplots.AxesSubplot: The axis after plotting is complete.
+        matplotlib.AxesSubplot: The axis after plotting is complete.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_reconstruct_function_2D_plot
+
+        f = ... # A function in 2 variables
+        n_inputs = 2
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        # It is not necessary to create subplots; the current axis may be used here
+        fourier_reconstruct_function_2D_plot(coeffs)
     """
     ax = ax or plt.gca()
 
@@ -396,6 +508,29 @@ def fourier_radial_box_plot(
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.
         merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
+
+    Returns:
+        matplotlib.AxesSubplot: The axis after plotting is complete.
+
+    **Example**
+
+    .. code-block:: python
+
+        import matplotlib as plt
+        from pennylane.fourier import fourier_coefficients, fourier_radial_box_plot
+
+        f = ... # A function
+        n_inputs = ... # Number of inputs to the function
+        degree = ... # Degree to which coefficients should be calculated
+
+        # Calculate the Fourier coefficients; may be a single set or a list of
+        # multiple sets of coefficients
+        coeffs = fourier_coefficients(f, n_inputs, degree)
+
+        fig, ax = plt.subplots(
+            1, 2, sharex=True, sharey=True, subplot_kw=dict(polar=True), figsize=(15, 8)
+        )
+        fourier_radial_box_plot(coeffs, n_inputs, ax)
     """
     # Take care of single-input case
     if len(coeffs.shape) == n_inputs:
