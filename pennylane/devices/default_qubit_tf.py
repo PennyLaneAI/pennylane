@@ -18,7 +18,6 @@ import numpy as np
 import semantic_version
 
 from pennylane.operation import DiagonalOperation
-from pennylane import DeviceError
 
 try:
     import tensorflow as tf

@@ -19,7 +19,6 @@ from pennylane import numpy as np
 
 from pennylane.devices import DefaultQubit
 from pennylane.devices import autograd_ops
-from pennylane import DeviceError
 
 
 class DefaultQubitAutograd(DefaultQubit):
