@@ -17,11 +17,7 @@ import numpy as np
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.
-try:
-    import matplotlib.pyplot as plt
-except ModuleNotFoundError:
-    print("Module matplotlib is required for visualization in the Fourier module.")
-
+import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 
 from .utils import to_dict, format_nvec
@@ -222,8 +218,8 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
         ax: The axes on which the data is plotted.
     """
     if colour is None:
-        colour = 'tab:blue'
-    
+        colour = "tab:blue"
+
     # In case a single set of coefficients is sent
     if len(coeffs.shape) == n_inputs:
         coeffs = np.array([coeffs])
@@ -243,10 +239,7 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
 
         for coeff in range(coeffs.shape[1]):
             ax[coeff].scatter(
-                coeffs[:, coeff].real,
-                coeffs[:, coeff].imag,
-                facecolor='white',
-                edgecolor=colour
+                coeffs[:, coeff].real, coeffs[:, coeff].imag, facecolor="white", edgecolor=colour
             )
             ax[coeff].set_title(f"{frequency_range[coeff]}", fontsize=14)
             ax[coeff].grid(True)
@@ -262,15 +255,15 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
             ax[coeff_1, coeff_2].scatter(
                 coeffs[:, coeff_1, coeff_2].real,
                 coeffs[:, coeff_1, coeff_2].imag,
-                facecolor='white',
-                edgecolor=colour
+                facecolor="white",
+                edgecolor=colour,
             )
             ax[coeff_1, coeff_2].set_title(
                 f"{frequency_range[coeff_1]}, {frequency_range[coeff_2]}", fontsize=14
             )
             ax[coeff_1, coeff_2].grid(True)
             ax[coeff_1, coeff_2].set_aspect("equal")
-            
+
     return ax
 
 

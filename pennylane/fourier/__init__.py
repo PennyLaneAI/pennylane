@@ -14,12 +14,18 @@
 r"""Tools to compute and visualise the Fourier series representation of quantum circuits."""
 from .coefficients import fourier_coefficients
 from .spectrum import spectrum
-from .visualization import (
-    fourier_violin_plot,
-    fourier_bar_plot,
-    fourier_box_plot,
-    fourier_panel_plot,
-    fourier_radial_box_plot,
-    fourier_reconstruct_function_1D_plot,
-    fourier_reconstruct_function_2D_plot,
-)
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    print("Module matplotlib is required for visualization in the Fourier module.")
+else:
+    from .visualization import (
+        fourier_violin_plot,
+        fourier_bar_plot,
+        fourier_box_plot,
+        fourier_panel_plot,
+        fourier_radial_box_plot,
+        fourier_reconstruct_function_1D_plot,
+        fourier_reconstruct_function_2D_plot,
+    )
