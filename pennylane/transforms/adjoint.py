@@ -95,6 +95,6 @@ def adjoint(fn):
                 # Decompose the operation and adjoint the result.
                 # We do not do anything with the output since
                 # decomposition will automatically queue the new operations.
-                adjoint(op.decomposition)()
+                adjoint(op.decomposition)(wires=op.wires)
 
     return wrapper

@@ -384,15 +384,15 @@ class TestOperations:
         assert op.wires == op_d.wires
 
     @pytest.mark.parametrize(
-        "op", 
+        "op_builder", 
         [
-            qml.QFT(wires=[1, 2, 3])
+            lambda: qml.QFT(wires=[1, 2, 3])
         ])
-    def test_adjoint_with_decomposition(self, op):
+    def test_adjoint_with_decomposition(self, op_builder):
+        op = op_builder()
         decomposed_ops = op.decomposition(wires=op.wires)
         with qml.tape.QuantumTape() as adjoint_tape:
-            qml.adjoint(op.decomposition)(wires=op.wires)
-        adjoint_tape.operations
+            qml.adjoint(op_builder)()
         for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
             np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
 
