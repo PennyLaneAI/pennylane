@@ -12,47 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``Permute`` template.
+Contains the Permute template.
 """
 
 import pennylane as qml
-
-from pennylane.templates.decorator import template
-from pennylane.wires import Wires
-
-
-def _preprocess(permutation, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check that we have more than 1 qubit.
-    * Check that permutation and wires have same length.
-    * Check uniqueness of wire labels in permutation.
-    * Check that wire labels of permutation exist.
-
-    Args:
-        permutation (list): list of wire labels
-        wires (Wires): wires that template acts on
-    """
-
-    if len(permutation) <= 1 or len(wires) <= 1:
-        raise ValueError("Permutations must involve at least 2 qubits.")
-
-        # Make sure the lengths of permutation and wires are the same
-    if len(permutation) != len(wires):
-        raise ValueError("Permutation must specify outcome of all wires.")
-
-        # Permutation order must contain all unique values
-    if len(set(permutation)) != len(permutation):
-        raise ValueError("Values in a permutation must all be unique.")
-
-        # Make sure everything in the permutation has an associated label in wires
-    for label in permutation:
-        if label not in wires.labels:
-            raise ValueError(f"Cannot permute wire {label} not present in wire set.")
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import SWAP
 
 
-@template
-def Permute(permutation, wires):
+class Permute(Operation):
     r"""Applies a permutation to a set of wires.
 
     Args:
@@ -177,23 +145,50 @@ def Permute(permutation, wires):
 
     """
 
-    wires = Wires(wires)
-    _preprocess(permutation, wires)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    # Temporary storage to keep track as we permute
-    working_order = list(wires.labels)
+    def __init__(self, permutation, wires, do_queue=True):
 
-    # Go through the new order and shuffle things one by one
-    for idx_here, here in enumerate(permutation):
-        if working_order[idx_here] != here:
-            # Where do we need to send the qubit at this location?
-            idx_there = working_order.index(permutation[idx_here])
+        if len(permutation) <= 1 or len(wires) <= 1:
+            raise ValueError("Permutations must involve at least 2 qubits.")
 
-            # SWAP based on the labels of the wires
-            qml.SWAP(wires=[wires.labels[idx_here], wires.labels[idx_there]])
+            # Make sure the lengths of permutation and wires are the same
+        if len(permutation) != len(wires):
+            raise ValueError("Permutation must specify outcome of all wires.")
 
-            # Update the working order to account for the SWAP
-            working_order[idx_here], working_order[idx_there] = (
-                working_order[idx_there],
-                working_order[idx_here],
-            )
+            # Permutation order must contain all unique values
+        if len(set(permutation)) != len(permutation):
+            raise ValueError("Values in a permutation must all be unique.")
+
+            # Make sure everything in the permutation has an associated label in wires
+        for label in permutation:
+            if label not in wires:
+                raise ValueError(f"Cannot permute wire {label} not present in wire set.")
+
+        super().__init__(permutation, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        permutation = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+            # Temporary storage to keep track as we permute
+            working_order = self.wires.tolist()
+
+            # Go through the new order and shuffle things one by one
+            for idx_here, here in enumerate(permutation):
+                if working_order[idx_here] != here:
+                    # Where do we need to send the qubit at this location?
+                    idx_there = working_order.index(permutation[idx_here])
+
+                    # SWAP based on the labels of the wires
+                    SWAP(wires=self.wires.subset([idx_here, idx_there]))
+
+                    # Update the working order to account for the SWAP
+                    working_order[idx_here], working_order[idx_there] = (
+                        working_order[idx_there],
+                        working_order[idx_here],
+                    )
+        return tape
