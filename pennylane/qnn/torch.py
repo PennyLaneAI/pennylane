@@ -18,6 +18,7 @@ import inspect
 import math
 from collections.abc import Iterable
 from typing import Callable, Optional
+from warnings import warn
 
 try:
     import torch
@@ -31,6 +32,12 @@ except ImportError:
 
     Module = Mock
     TORCH_IMPORTED = False
+
+WARNING_STRING = (
+    "TorchLayer will no longer be directly imported in PennyLane from "
+    "release 0.16.0. It will be accessible by importing the qnn module. Consider adding "
+    "'from pennylane import qnn' to your existing code now."
+)
 
 
 class TorchLayer(Module):
@@ -204,6 +211,9 @@ class TorchLayer(Module):
                 "visit https://pytorch.org/get-started/locally/ for detailed "
                 "instructions."
             )
+
+        warn(WARNING_STRING, DeprecationWarning, stacklevel=2)
+
         super().__init__()
 
         weight_shapes = {

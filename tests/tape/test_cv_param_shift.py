@@ -545,6 +545,44 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
+    def test_multiple_second_order_observables(self, mocker, tol):
+        """Test that the gradient of a circuit with multiple
+        second order observables is correct"""
+
+        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        r = [0.4, -0.7, 0.1, 0.2]
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with CVParamShiftTape() as tape:
+            qml.Squeezing(r[0], p[0], wires=[0])
+            qml.Squeezing(r[1], p[1], wires=[0])
+            qml.Squeezing(r[2], p[2], wires=[1])
+            qml.Squeezing(r[3], p[3], wires=[1])
+            qml.expval(qml.NumberOperator(0))  # second order
+            qml.expval(qml.NumberOperator(1))  # second order
+
+        tape._update_gradient_info()
+
+        spy2 = mocker.spy(CVParamShiftTape, "parameter_shift_second_order")
+        grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)
+        spy2.assert_called()
+
+        # check against the known analytic formula
+
+        def expected_grad(r, p):
+            return np.array([
+                np.cosh(2 * r[1]) * np.sinh(2 * r[0]) + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0]) + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+            ])
+
+        expected = np.zeros([2, 8])
+        expected[0, :4] = expected_grad(r[:2], p[:2])
+        expected[1, 4:] = expected_grad(r[2:], p[2:])
+
+        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+
     cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
     analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 

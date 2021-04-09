@@ -16,6 +16,7 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Optional
+from warnings import warn
 
 try:
     import tensorflow as tf
@@ -29,6 +30,12 @@ except ImportError:
 
     Layer = ABC
     CORRECT_TF_VERSION = False
+
+WARNING_STRING = (
+    "KerasLayer will no longer be directly imported in PennyLane from "
+    "release 0.16.0. It will be accessible by importing the qnn module. Consider adding "
+    "'from pennylane import qnn' to your existing code now."
+)
 
 
 class KerasLayer(Layer):
@@ -204,6 +211,8 @@ class KerasLayer(Layer):
                 "pip install tensorflow --upgrade\nAlternatively, visit "
                 "https://www.tensorflow.org/install for detailed instructions."
             )
+
+        warn(WARNING_STRING, DeprecationWarning, stacklevel=2)
 
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())

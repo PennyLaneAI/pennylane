@@ -680,8 +680,8 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=None, hbar=2):
-        super().__init__(wires, shots)
+    def __init__(self, wires, *, shots=None, hbar=2, analytic=None):
+        super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
 

@@ -537,20 +537,25 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The embedding templates are now classes inheriting
+
+- The templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface.
+  change does not affect the user interface. 
   [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
+  [(#1163)](https://github.com/PennyLaneAI/pennylane/pull/1163)
   [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
 
-  For convenience, some templates now have a method that returns the expected
+  For convenience, some templates have a new method that returns the expected
   shape of the trainable parameter tensor, which can be used to create 
   random tensors.
   
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
   weights = np.random.random(shape)
+  
+  # use in the template
+  qml.templates.BasicEntanglerLayers(weights, wires=range(4))
   ```
 
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
@@ -653,6 +658,14 @@
 
 <h3>Breaking changes</h3>
 
+* Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
+  [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
+
+* A deprecation warning is now raised when loading content from the `qnn` module. In release 
+  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
+  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
+  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
+
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
@@ -747,6 +760,11 @@
   of a QNode.
   [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
+* Fixes a bug where the second-order CV parameter-shift rule would error
+  if attempting to compute the gradient of a QNode with more than one
+  second-order observable.
+  [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
@@ -761,9 +779,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Christina Lee, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld,
-Antal Száva.
+Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
