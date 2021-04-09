@@ -599,7 +599,7 @@ def fourier_radial_box_plot(
                 else:
                     lab.set_rotation((180 / np.pi) * angle + 270)
 
-            a.tick_params(pad=10)
+            a.tick_params(pad=7*n_inputs)
 
         a.set_xticklabels([])
 
