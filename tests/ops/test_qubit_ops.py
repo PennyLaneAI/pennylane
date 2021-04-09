@@ -375,6 +375,8 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+            qml.Carry(wires=[0,1,2,3]),
+            qml.Sum(wires=[0,1,2]),
         ])
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
@@ -2010,3 +2012,77 @@ class TestMultiControlledX:
         pauli_x_state = circuit_pauli_x()
 
         assert np.allclose(mpmct_state, pauli_x_state)
+
+class TestArithmetic:
+
+    @pytest.mark.parametrize(
+        "wires,input_string,output_string",
+        [
+            ([0, 1, 2, 3], '0000', '0000'),
+            ([0, 1, 2, 3], '0010', '0010'),
+            ([0, 1, 2, 3], '0100', '0110'),
+            ([0, 1, 2, 3], '0110', '0101'),
+            ([0, 1, 2, 3], '1010', '1011'),
+            ([3, 1, 2, 0], '0110', '1100'),
+            ([3, 2, 0, 1], '1010', '0110'),
+        ],
+    )
+
+    def test_carry(self,wires,input_string, output_string):
+        # TODO
+        dev = qml.device("default.qubit", wires=len(wires))
+        @qml.qnode(dev)
+        def circuit():
+            for i in range(len(input_string)):
+                if input_string[i]=='1':
+                    qml.PauliX(i)
+            qml.Carry(wires=wires)
+            return qml.probs(wires=[0, 1, 2, 3])
+        result = circuit()
+        result = np.argmax(result)
+        result = format(result,'04b')
+        assert result==output_string
+
+
+    def test_carry_superposition(self):
+        dev = qml.device("default.qubit", wires=4)
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.Hadamard(wires=2)
+            qml.Carry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=3)
+
+        result = circuit()
+        assert np.allclose(result, 0.5)
+
+    # fmt: off
+    @pytest.mark.parametrize(
+        "wires,input_state,output_state",
+        [
+            ([0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
+            ([0, 1, 2], [0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0]),
+            ([0, 1, 2], [0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0]),
+            ([0, 1, 2], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0]),
+            ([0, 1, 2], [0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0]),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0]),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 1]),
+            ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0]),
+            ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0]),
+            ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0]),
+            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
+            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)]),
+        ],
+    )
+    # fmt: on
+    def test_sum(self, wires, input_state, output_state):
+        dev = qml.device("default.qubit", wires=3)
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.state_preparations.MottonenStatePreparation(input_state,wires=[0, 1, 2])
+            qml.Sum(wires=wires)
+            return qml.state()
+        
+        assert np.allclose(circuit(),output_state)
+        

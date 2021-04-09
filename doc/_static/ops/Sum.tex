@@ -1,0 +1,13 @@
+\documentclass[12pt]{article}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.5em {
+\lstick{ \ket{C_{i-1}}} & \multigate{2}{Sum} & \rstick{C_{i-1}} \qw \\
+\lstick{\ket{a}} &\ghost{Sum} & \rstick{\ket{a}} \qw \\
+\lstick{ \ket{b}} & \ghost{Sum} & \rstick{\ket{a \oplus b}} \qw
+}
+
+\end{document}

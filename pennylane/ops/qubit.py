@@ -2516,20 +2516,36 @@ class Hermitian(Observable):
 
 class Carry(Operation):
     r"""Carry()
-    Apply a ``Carry`` operation on input wires
-    TODO add more information
+    Apply the ``Carry`` operation to the input wires.
+
+    .. figure:: ../../_static/ops/Carry.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+    
+    .. note:: The first wire provided corresponds to a **previous carry qubit**.
+    The second wire corresponds to the **first qubit value** to be added.
+    The third wire corresponds to a **second qubit** value to be added.
+    The fourth wire takes the **carried value**.
+
+    
 
     **Details:**
 
     * Number of wires: 4
     * Number of parameters: 0
-    TODO consider gradient
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    TODO
+    The following circuit performs the carry operation on wires ``0`` to ``3``.
+    .. code-block::
+        dev = qml.device('default.qubit',wires=4)
+        @qml.qndoe(dev)
+        def circuit():
+            qml.Carry(wires=[0,1,2,3])
+            return probs(wires=[0,1,2,3])
     """
     num_params = 0
     num_wires = 4
@@ -2554,9 +2570,6 @@ class Carry(Operation):
     @classmethod
     def _matrix(self, *params):
         return Carry.matrix
-    
-    def adjoint(self, do_queue=False):
-        return Carry(wires=self.wires,do_queue=do_queue)
     
     def expand(self):
         tape = qml.tape.QuantumTape(do_queue=False)
@@ -2601,9 +2614,6 @@ class Sum(Operation):
     @classmethod
     def _matrix(self, *params):
         return Sum.matrix
-    
-    def adjoint(self, do_queue=False):
-        return Sum(wires=self.wires,do_queue=do_queue)
 
     def expand(self):
         
@@ -2612,9 +2622,11 @@ class Sum(Operation):
         with qml.tape.QuantumTape() as tape:
             qml.CNOT(wires=self.wires[1:3])
             qml.CNOT(wires=[self.wires[0],self.wires[2]])
-            
 
         return tape
+
+    def adjoint(self):
+        return Sum(wires=self.wires).inv()
 
 
 ops = {
