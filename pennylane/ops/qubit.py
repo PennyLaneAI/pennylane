@@ -2519,16 +2519,21 @@ class Hermitian(Observable):
 class Carry(Operation):
     r"""Carry()
     Apply the ``Carry`` operation to the input wires.
+    This performs the transformation:
+
+    .. math::
+        |C_{i-1}\rangle |a\rangle |b\rangle |0\rangle \rightarrow |C_{i}\rangle |a\rangle |a\oplus b\rangle |(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle
 
     .. figure:: ../../_static/ops/Carry.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    .. note:: The first wire provided corresponds to a **previous carry qubit**.
-    The second wire corresponds to the **first qubit value** to be added.
-    The third wire corresponds to a **second qubit** value to be added.
-    The fourth wire takes the **carried value**.
+    .. note::
+        The first wire provided corresponds to a **previous carry qubit** :math:`|C_{i-1}\rangle`.
+        The second wire corresponds to the **first qubit value** to be added :math:`|a\rangle`.
+        The third wire corresponds to a **second qubit** value to be added :math:`|b\rangle`.
+        The fourth wire should start in :math:`|0\rangle` and takes the **carried value** :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
 
 
 
@@ -2591,15 +2596,21 @@ class Carry(Operation):
 class Sum(Operation):
     r"""Sum()
     Apply a ``Sum`` operation on the input wires.
+    This performs the operation:
+
+    .. math::
+        |C_{i-1}\rangle |a\rangle |b\rangle \rightarrow |C_{i}\rangle |a\rangle |a\oplus b\rangle
+
 
     .. figure:: ../../_static/ops/Sum.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    .. note:: The first wire provided corresponds to a **previous carry qubit**.
-    The second wire corresponds to the **first qubit value** to be added.
-    The third wire corresponds to a **second qubit** value to be added.
+    .. note::
+        The first wire provided corresponds to a **previous carry qubit** :math:`|C_{i-1}\rangle`.
+        The second wire corresponds to the **first qubit value** to be added :math:`|a\rangle`.
+        The third wire corresponds to the **second qubit** value to be added :math:`|b\rangle` and takes the modulo sum :math:`a\oplus b`.
 
     **Details:**
 

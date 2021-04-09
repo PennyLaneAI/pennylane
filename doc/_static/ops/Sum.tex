@@ -6,10 +6,19 @@
 
 \Qcircuit @C=1em @R=0.5em {
 &&&& \\
-&&&&\lstick{ \ket{C_{i-1}}} & \multigate{2}{Sum} & \rstick{C_{i-1}} \qw \\
-&&&&\lstick{\ket{a}} &\ghost{Sum} & \rstick{\ket{a}} \qw \\
+&&&&\lstick{ \ket{C_{i-1}}} & \multigate{2}{Sum} & \rstick{\ket{C_{i-1}}} \qw \\
+&&&&\lstick{\ket{a}} &\ghost{Sum} & \rstick{\ket{a}} \qw & \push{\rule{5em}{0em}=} \\
 &&&&\lstick{ \ket{b}} & \ghost{Sum} & \rstick{\ket{a \oplus b}} \qw
 &&&&\\
+}
+
+
+\Qcircuit @C=1em @R=0.9em {
+&&&&\\
+&&&&\lstick{ \ket{C_{i-1}}}& \qw & \ctrl{2} & \rstick{\ket{C_{i-1}}} \qw &&&&\\
+&&&&\lstick{\ket{a}}]& \ctrl{1} & \qw & \rstick{\ket{a}} \qw &&&&\\
+&&&&\lstick{ \ket{b}}& \targ & \targ & \rstick{\ket{a \oplus b}} \qw &&&&\\
+&&&&
 }
 
 \end{document}
