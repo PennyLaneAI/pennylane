@@ -36,7 +36,7 @@ def _adjust_spine_placement(ax):
 
 
 def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
-    """Plots a list of sets of Fourier coefficients in a 1-dimensional violin plot.
+    """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients.
@@ -49,13 +49,6 @@ def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True)
 
     Returns:
         ax: The axes on which the data is plotted.
-
-    **Example usage**
-
-    ```
-    fig, ax = plt.subplots(2, 1, figsize=(15, 4))
-    fourier_violin_plot(coeffs, ax);
-    ```
     """
     # Check dimensionality; it's possible a user has provided only a single set
     # of coefficients to this function.
@@ -112,9 +105,6 @@ def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sh
 
     Returns:
         ax: The axes on which the data is plotted.
-
-    **Example usage**
-
     """
     # Check dimensionality; it's possible a user has provided only a single set
     # of coefficients to this function.
@@ -179,13 +169,6 @@ def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     Returns:
         ax: The axes on which the data is plotted.
-
-    **Example usage**
-
-    ```
-    fig, ax = plt.subplots(2, 1, figsize=(15, 4))
-    fourier_linear_violin_plot(coeffs, ax);
-    ```
     """
     # This function plots only a single set of coefficients, so dimensions must match
     if len(coeffs.shape) != n_inputs:
@@ -223,8 +206,8 @@ def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def fourier_panel_plot(coeffs, n_inputs, ax):
-    """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional FFT.
+def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
+    """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
         coeffs (array[complex]): A list set of Fourier coefficients. Must be
@@ -233,10 +216,14 @@ def fourier_panel_plot(coeffs, n_inputs, ax):
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
             1-dimensional data, length must be the number of frequencies. For 2-dimensional
             data, must be a grid that matches the dimensions of a single set of coefficients.
+        colour (str): The outline colour of the points on the plot.
 
     Returns:
         ax: The axes on which the data is plotted.
     """
+    if colour is None:
+        colour = 'tab:blue'
+    
     # In case a single set of coefficients is sent
     if len(coeffs.shape) == n_inputs:
         coeffs = np.array([coeffs])
@@ -255,9 +242,15 @@ def fourier_panel_plot(coeffs, n_inputs, ax):
         frequency_range = list(range(n_freqs)) + list(range(-n_freqs + 1, 0))
 
         for coeff in range(coeffs.shape[1]):
-            ax[coeff].scatter(coeffs[:, coeff].real, coeffs[:, coeff].imag)
+            ax[coeff].scatter(
+                coeffs[:, coeff].real,
+                coeffs[:, coeff].imag,
+                facecolor='white',
+                edgecolor=colour
+            )
             ax[coeff].set_title(f"{frequency_range[coeff]}", fontsize=14)
             ax[coeff].grid(True)
+            ax[coeff].set_aspect("equal")
 
     # Plot 2D case
     else:
@@ -267,14 +260,17 @@ def fourier_panel_plot(coeffs, n_inputs, ax):
 
         for coeff_1, coeff_2 in product(list(range(coeffs.shape[1])), list(range(coeffs.shape[2]))):
             ax[coeff_1, coeff_2].scatter(
-                coeffs[:, coeff_1, coeff_2].real, coeffs[:, coeff_1, coeff_2].imag
+                coeffs[:, coeff_1, coeff_2].real,
+                coeffs[:, coeff_1, coeff_2].imag,
+                facecolor='white',
+                edgecolor=colour
             )
             ax[coeff_1, coeff_2].set_title(
                 f"{frequency_range[coeff_1]}, {frequency_range[coeff_2]}", fontsize=14
             )
             ax[coeff_1, coeff_2].grid(True)
-            ax[coeff_1, coeff_2].set(aspect="equal")
-
+            ax[coeff_1, coeff_2].set_aspect("equal")
+            
     return ax
 
 
