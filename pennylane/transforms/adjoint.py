@@ -94,7 +94,7 @@ def adjoint(fn):
             else:
                 # Decompose the operation and adjoint the result.
                 # We do not do anything with the output since
-                # adjoint will automatically queue operations.
+                # decomposition will automatically queue the new operations.
                 adjoint(op.decomposition)()
 
     return wrapper
