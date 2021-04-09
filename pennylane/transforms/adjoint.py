@@ -89,6 +89,12 @@ def adjoint(fn):
         with QuantumTape(do_queue=False) as tape:
             fn(*args, **kwargs)
         for op in reversed(tape.queue):
-            op.adjoint(do_queue=True)
+            if hasattr(op, "adjoint"):
+                op.adjoint()
+            else:
+                # Decompose the operation and adjoint the result.
+                # We do not do anything with the output since
+                # adjoint will automatically queue operations.
+                adjoint(op.decomposition)()
 
     return wrapper
