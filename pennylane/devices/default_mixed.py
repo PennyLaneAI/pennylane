@@ -100,13 +100,14 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitationMinus",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
+
         # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)

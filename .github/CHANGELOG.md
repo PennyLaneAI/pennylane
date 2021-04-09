@@ -658,6 +658,9 @@
 
 <h3>Breaking changes</h3>
 
+* Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
+  [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
+
 * A deprecation warning is now raised when loading content from the `qnn` module. In release 
   `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
   TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
@@ -776,9 +779,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Christina Lee, Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld,
-Antal Száva.
+Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
 
 # Release 0.14.1 (current release)
 
