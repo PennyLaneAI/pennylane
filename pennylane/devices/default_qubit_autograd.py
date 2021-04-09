@@ -127,8 +127,8 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=None):
-        super().__init__(wires, shots=shots, cache=0)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation
