@@ -64,7 +64,7 @@ represent, potentially leading to greater utility for quantum machine learning
 applications.
 
 Calculating the Fourier spectrum
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The frequency spectra can be calculated using the :func:`~.pennylane.fourier.spectrum`
 function. As one may be interested only in the spectra of a subset of the input
@@ -84,7 +84,7 @@ possible that certain Fourier coefficients will nevertheless be zero.
 
 
 Calculating the Fourier coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Knowledge of the frequency spectra enables us to compute the Fourier
 coefficients themselves. This can be done using the
@@ -146,7 +146,7 @@ circuit family with different weights.
    should be created for each function.
 
 Visualizing a single set of coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 While all the functions available for visualizing multiple sets of coefficients
 can be used for a single set, the primary tool for this purpose is the
@@ -246,11 +246,10 @@ Fourier coefficients, so we can plot its output:
     :width: 400px
     :target: javascript:void(0);
 
-|
-
 
 Visualizing multiple sets of coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 Suppose we have not just one set of coefficients, but many sets due to
 differences in the value of ``weights`` in the circuit above. While the
@@ -313,7 +312,6 @@ coefficients as above:
 
 |
 
-
 The left plot displays the real portion, and the right the imaginary
 portion. The labels on the "spokes" of the wheels represent the particular
 frequencies; we see that this matches the coefficients we found earlier. Note
@@ -340,7 +338,6 @@ individual coefficients on the complex plane.
    )
    plt.tight_layout()
 
-  
 .. image:: ../_static/fourier_vis_panel.png
     :align: center
     :width: 700px
@@ -350,4 +347,3 @@ individual coefficients on the complex plane.
 .. automodapi:: pennylane.fourier
     :include-all-objects:
     :no-inheritance-diagram:
-
