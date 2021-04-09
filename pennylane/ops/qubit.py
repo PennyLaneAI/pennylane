@@ -2579,7 +2579,7 @@ class Carry(Operation):
     )
 
     @classmethod
-    def _matrix(self, *params):
+    def _matrix(cls, *params):
         return Carry.matrix
 
     def expand(self):
