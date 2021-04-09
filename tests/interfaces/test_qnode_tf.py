@@ -22,25 +22,6 @@ import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
-def test_import_error(mocker):
-        """Test that an exception is caught on import error"""
-        mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
-        mock.side_effect = ImportError()
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device('default.qubit', wires=2)
-        qn = QNode(func, dev, interface="tf", diff_method="parameter-shift")
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
-        ):
-            qn(0.1, 0.1)
 
 @pytest.mark.parametrize(
     "dev_name,diff_method", [
@@ -52,6 +33,29 @@ def test_import_error(mocker):
 )
 class TestQNode:
     """Tests the tensorflow interface used with a QNode."""
+
+    def test_import_error(self, dev_name, diff_method, mocker):
+        """Test that an exception is caught on import error"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
+        mock.side_effect = ImportError()
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device(dev_name, wires=2)
+        qn = QNode(func, dev, interface='tf', diff_method=diff_method)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
+        ):
+            qn(0.1, 0.1)
 
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface, and that trainable parameters
