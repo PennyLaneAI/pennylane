@@ -2510,9 +2510,11 @@ class Hermitian(Observable):
         """
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
+
 
 class Carry(Operation):
     r"""Carry()
@@ -2522,13 +2524,13 @@ class Carry(Operation):
         :align: center
         :width: 60%
         :target: javascript:void(0);
-    
+
     .. note:: The first wire provided corresponds to a **previous carry qubit**.
     The second wire corresponds to the **first qubit value** to be added.
     The third wire corresponds to a **second qubit** value to be added.
     The fourth wire takes the **carried value**.
 
-    
+
 
     **Details:**
 
@@ -2550,41 +2552,54 @@ class Carry(Operation):
     num_params = 0
     num_wires = 4
     par_domain = None
-    matrix = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        ]
+    )
 
     @classmethod
     def _matrix(self, *params):
         return Carry.matrix
-    
+
     def expand(self):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with qml.tape.QuantumTape() as tape:
-            qml.Toffoli(wires = self.wires[1:])
+            qml.Toffoli(wires=self.wires[1:])
             qml.CNOT(wires=self.wires[1:3])
-            qml.Toffoli(wires=[self.wires[0],self.wires[2],self.wires[3]])
+            qml.Toffoli(wires=[self.wires[0], self.wires[2], self.wires[3]])
 
         return tape
 
+
 class Sum(Operation):
     r"""Sum()
-    Apply a ``Sum`` operation on input wires
-    TODO add more information
+    Apply a ``Sum`` operation on the input wires.
+
+    .. figure:: ../../_static/ops/Sum.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    .. note:: The first wire provided corresponds to a **previous carry qubit**.
+    The second wire corresponds to the **first qubit value** to be added.
+    The third wire corresponds to a **second qubit** value to be added.
 
     **Details:**
 
@@ -2602,31 +2617,32 @@ class Sum(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    matrix = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1]])
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
 
     @classmethod
     def _matrix(self, *params):
         return Sum.matrix
 
     def expand(self):
-        
+
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with qml.tape.QuantumTape() as tape:
             qml.CNOT(wires=self.wires[1:3])
-            qml.CNOT(wires=[self.wires[0],self.wires[2]])
+            qml.CNOT(wires=[self.wires[0], self.wires[2]])
 
         return tape
-
-    def adjoint(self):
-        return Sum(wires=self.wires).inv()
 
 
 ops = {
