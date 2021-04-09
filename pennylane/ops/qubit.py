@@ -2448,7 +2448,7 @@ class QubitStateVector(Operation):
     def decomposition(state, wires):
         return MottonenStatePreparation(state, wires)
 
-    def adjoint(self):  # pytline: disable=no-self-use
+    def adjoint(self):  # pyline: disable=no-self-use
         """Returns an operation that is equal to the adjoint of `self`"""
         raise AdjointError("No adjoint exists for QubitStateVector operations.")
 
