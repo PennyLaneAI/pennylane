@@ -2517,7 +2517,7 @@ class Hermitian(Observable):
 
 
 class Carry(Operation):
-    r"""Carry()
+    r"""Carry(wires)
     Apply the ``Carry`` operation to the input wires.
     This performs the transformation:
 
