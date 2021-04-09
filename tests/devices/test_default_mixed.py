@@ -733,8 +733,8 @@ class TestInit:
     def test_analytic_deprecation(self):
         """Tests if the kwarg `analytic` is used and displays error message.
         """
-        msg = "The attribute `analytic` has been replaced by `shots=None`. "
-        msg += "Please use `shots=None` instead of `analytic=True`."
+        msg = "The analytic argument has been replaced by shots=None. "
+        msg += "Please use shots=None instead of analytic=True."
 
         with pytest.raises(
                     DeviceError,
