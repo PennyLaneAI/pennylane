@@ -537,20 +537,25 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The embedding templates are now classes inheriting
+
+- The templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface.
+  change does not affect the user interface. 
   [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
+  [(#1163)](https://github.com/PennyLaneAI/pennylane/pull/1163)
   [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
 
-  For convenience, some templates now have a method that returns the expected
+  For convenience, some templates have a new method that returns the expected
   shape of the trainable parameter tensor, which can be used to create 
   random tensors.
   
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
   weights = np.random.random(shape)
+  
+  # use in the template
+  qml.templates.BasicEntanglerLayers(weights, wires=range(4))
   ```
 
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
