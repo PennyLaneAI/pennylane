@@ -2620,7 +2620,7 @@ class Sum(Operation):
     * Gradient recipe: TODO
 
     Args:
-        wires (Union[Wires or int]): the wires the operation acts on
+        wires (Sequence[int]): the wires the operation acts on
 
     **Example**
     TODO
