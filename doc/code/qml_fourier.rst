@@ -64,7 +64,7 @@ represent, potentially leading to greater utility for quantum machine learning
 applications.
 
 Calculating the Fourier spectrum
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The frequency spectra can be calculated using the :func:`~.pennylane.fourier.spectrum`
 function. As one may be interested only in the spectra of a subset of the input
@@ -84,7 +84,7 @@ possible that certain Fourier coefficients will nevertheless be zero.
 
 
 Calculating the Fourier coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Knowledge of the frequency spectra enables us to compute the Fourier
 coefficients themselves. This can be done using the
