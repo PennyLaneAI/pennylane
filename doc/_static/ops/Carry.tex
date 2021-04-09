@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+\documentclass{standalone}
 \usepackage{qcircuit}
 \usepackage{braket}
 
@@ -6,10 +6,13 @@
 \begin{document}
 
 \Qcircuit @C=1em @R=0.5em {
-\lstick{ \ket{C_{i-1}}} & \multigate{3}{Carry} & \rstick{C_{i-1}} \qw  \\
-\lstick{\ket{a}} &\ghost{Carry} & \rstick{a} \qw \\
-\lstick{ \ket{b}} & \ghost{Carry} & \rstick{\ket{a \oplus b}} \qw  \\
-\lstick{ \ket{0}} & \ghost{Carry}  &  \rstick{\ket{(ab\oplus C_i)\oplus((a\oplus b)C_{i-1})}}\qw 
+&&&&&&&&&&&&&\\
+&&&&&&&\lstick{ \ket{C_{i-1}}} & \multigate{3}{Carry} & \rstick{C_{i-1}} \qw  \\
+&&&&&&&\lstick{\ket{a}} &\ghost{Carry} & \rstick{a} \qw \\
+&&&&&&&\lstick{ \ket{b}} & \ghost{Carry} & \rstick{\ket{a \oplus b}} \qw  \\
+&&&&&&&\lstick{ \ket{0}} & \ghost{Carry}  &  \rstick{\ket{(ab\oplus C_i)\oplus((a\oplus b)C_{i-1})}}\qw 
+&&&&&&&&&&&&&\\
+&&&&&&&&&&&&&\\
 }
 
 \end{document}
