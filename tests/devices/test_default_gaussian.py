@@ -23,6 +23,7 @@ import numpy as np
 import numpy.random
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_gaussian import (
     fock_prob,
@@ -77,6 +78,17 @@ def gaussian_device_3_wires():
 
 gaussian_dev = gaussian_device_2_wires  # alias
 
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.gaussian", wires=1, shots=1, analytic=True)
 
 
 class TestExceptions:
