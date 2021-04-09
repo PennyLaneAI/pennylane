@@ -91,6 +91,7 @@ class ControlledOperation(Operation):
         return tape
 
     def adjoint(self):
+        """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
         with get_active_tape().stop_recording(), QuantumTape() as new_tape:
             # Execute all ops adjointed.
             adjoint(requeue_ops_in_tape)(self.subtape)
