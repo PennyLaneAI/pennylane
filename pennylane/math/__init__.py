@@ -54,6 +54,9 @@ from .fn import (
 )
 
 
+sum = ar.numpy.sum
+
+
 def __getattr__(name):
     if name in globals():
         return globals()[name]
