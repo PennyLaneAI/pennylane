@@ -71,6 +71,19 @@ def _scatter_element_add_autograd(tensor, index, value):
 ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
 
 
+def _take_autograd(tensor, indices, axis=None):
+    indices = __import__("pennylane").numpy.asarray(indices)
+
+    if axis is None:
+        return tensor.flatten()[indices]
+
+    fancy_indices = [slice(None)] * axis + [indices]
+    return tensor[tuple(fancy_indices)]
+
+
+ar.register_function("autograd", "take", _take_autograd)
+
+
 # -------------------------------- TensorFlow --------------------------------- #
 
 
