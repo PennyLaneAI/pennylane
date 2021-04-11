@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Function wrappers for the TensorBox API"""
+"""Multiple dispatch functions"""
 # pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
 from collections.abc import Sequence
 import itertools

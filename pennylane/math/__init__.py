@@ -23,16 +23,13 @@ differentiation to be preserved.
     Furthermore, the names and behaviour of these functions may differ from similar
     functions in common frameworks; please refer to the function docstrings for more details.
 
-Internally, these functions dispatch by using the :class:`TensorBox` class, a container and API for
-array-like objects that allows array manipulation to be performed in a unified manner for supported
-tensor/array manipulation frameworks.
-
 The following frameworks are currently supported:
 
 * NumPy
 * Autograd
 * TensorFlow
 * PyTorch
+* JAX
 """
 import autoray as ar
 
