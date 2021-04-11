@@ -53,7 +53,10 @@ ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 # -------------------------------- Autograd --------------------------------- #
 
 
+ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
+
+
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
@@ -107,6 +110,8 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
+ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
+ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
