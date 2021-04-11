@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Multiple dispatch functions"""
-# pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
-from collections.abc import Sequence
+# pylint: disable=import-outside-toplevel,too-many-return-statements
 import itertools
-import numbers
 import warnings
 
 import autoray as ar
@@ -193,7 +191,7 @@ def cast(tensor, dtype):
     if not isinstance(dtype, str):
         try:
             dtype = np.dtype(dtype).name
-        except:
+        except AttributeError, TypeError:
             try:
                 dtype = dtype.name
             except AttributeError:
@@ -435,7 +433,6 @@ def diag(values, k=0):
 
     if isinstance(values, (list, tuple)):
         values = np.stack(np.coerce(values, like=interface), like=interface)
-        res = np.diag(values, k=k, like=interface)
 
     return np.diag(values, k=k, like=interface)
 
