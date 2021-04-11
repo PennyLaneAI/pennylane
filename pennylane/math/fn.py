@@ -21,7 +21,7 @@ from autoray import numpy as np
 import numpy as _np
 
 
-from . import registrations
+from . import registrations  # pylint:disable=unused-import
 
 
 def _multi_dispatch(values):
