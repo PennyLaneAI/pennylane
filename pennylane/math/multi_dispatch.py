@@ -104,11 +104,7 @@ def block_diag(values):
             [ 0,  0,  0,  0,  0,  5]])
     """
     interface = _multi_dispatch(values)
-
-    if isinstance(values, (list, tuple)):
-        values = np.coerce(values, like=interface)
-        return np.block_diag(values, like=interface)
-
+    values = np.coerce(values, like=interface)
     return np.block_diag(values, like=interface)
 
 

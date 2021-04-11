@@ -97,10 +97,7 @@ def cast(tensor, dtype):
         try:
             dtype = np.dtype(dtype).name
         except (AttributeError, TypeError):
-            try:
-                dtype = dtype.name
-            except AttributeError:
-                pass
+            dtype = getattr(dtype, "name", dtype)
 
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
@@ -254,4 +251,4 @@ def requires_grad(tensor):
     if interface == "jax":
         return True
 
-    return False
+    raise ValueError(f"Argument {tensor} is an unknown object")

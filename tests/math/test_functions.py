@@ -683,6 +683,11 @@ class TestRequiresGrad:
             assert fn.requires_grad(t1)
             assert fn.requires_grad(t2)
 
+    def test_unknown_interface(self):
+        """Test that an error is raised if the interface is unknown"""
+        with pytest.raises(ValueError, match="unknown object"):
+            fn.requires_grad(type("hello", tuple(), {})())
+
 
 shape_test_data = [
     tuple(),

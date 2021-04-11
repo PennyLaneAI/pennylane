@@ -58,15 +58,11 @@ from .utils import (
 
 
 sum = ar.numpy.sum
+toarray = ar.numpy.to_numpy
+T = ar.numpy.transpose
 
 
 def __getattr__(name):
-    if name == "T":
-        return getattr(ar.numpy, "transpose")
-
-    if name == "toarray":
-        return getattr(ar, "to_numpy")
-
     return getattr(ar.numpy, name)
 
 
