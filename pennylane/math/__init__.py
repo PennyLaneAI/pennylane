@@ -33,24 +33,27 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
-from .fn import (
+from .multi_dispatch import (
     _multi_dispatch,
-    allclose,
-    allequal,
     block_diag,
-    cast,
-    cast_like,
     concatenate,
-    convert_like,
-    cov_matrix,
     diag,
     dot,
-    get_interface,
-    marginal_prob,
     ones_like,
-    requires_grad,
     stack,
     where,
+)
+
+from .quantum import cov_matrix, marginal_prob
+
+from .utils import (
+    allclose,
+    allequal,
+    cast,
+    cast_like,
+    convert_like,
+    get_interface,
+    requires_grad,
 )
 
 

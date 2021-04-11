@@ -13,11 +13,23 @@
 # limitations under the License.
 """Autoray registrations"""
 # pylint:disable=protected-access,import-outside-toplevel
+from importlib import import_module
 import numbers
 
 import autoray as ar
-from autoray import numpy as np
-import numpy as _np
+import numpy as np
+
+
+def _i(name):
+    """Convenience function to import PennyLane
+    interfaces via a string pattern"""
+    if name == "tf":
+        return import_module("tensorflow")
+
+    if name == "qml":
+        return import_module("pennylane")
+
+    return import_module(name)
 
 
 # -------------------------------- NumPy --------------------------------- #
@@ -27,7 +39,7 @@ ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
-ar.register_function("numpy", "gather", lambda x, indices: x[_np.array(indices)])
+ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -45,7 +57,7 @@ ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
-ar.register_function("autograd", "gather", lambda x, indices: x[_np.array(indices)])
+ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 
 
 def _to_numpy_autograd(x):
@@ -62,17 +74,17 @@ ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 def _scatter_element_add_autograd(tensor, index, value):
     size = tensor.size
-    flat_index = __import__("pennylane").numpy.ravel_multi_index(index, tensor.shape)
+    flat_index = _i("qml").numpy.ravel_multi_index(index, tensor.shape)
     t = [0] * size
     t[flat_index] = value
-    return tensor + __import__("pennylane").numpy.array(t).reshape(tensor.shape)
+    return tensor + _i("qml").numpy.array(t).reshape(tensor.shape)
 
 
 ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
 
 
 def _take_autograd(tensor, indices, axis=None):
-    indices = __import__("pennylane").numpy.asarray(indices)
+    indices = _i("qml").numpy.asarray(indices)
 
     if axis is None:
         return tensor.flatten()[indices]
@@ -98,32 +110,29 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function(
-    "tensorflow", "asarray", lambda x: __import__("tensorflow").convert_to_tensor(x)
-)
-ar.register_function("tensorflow", "flatten", lambda x: np.reshape(x, [-1]))
-ar.register_function("tensorflow", "flatten", lambda x: np.reshape(x, [-1]))
+ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
+ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
     "tensorflow",
     "sqrt",
-    lambda x: __import__("tensorflow").math.sqrt(
-        __import__("tensorflow").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
+    lambda x: _i("tf").math.sqrt(
+        _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
 )
 
 
 def _take_tf(tensor, indices, axis=None):
-    tf = __import__("tensorflow")
+    tf = _i("tf")
 
     if isinstance(indices, numbers.Number):
         indices = [indices]
 
     indices = tf.convert_to_tensor(indices)
 
-    if _np.any(indices < 0):
+    if np.any(indices < 0):
         # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else np.shape(tensor)[axis]
+        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
         indices = tf.where(indices >= 0, indices, indices + dim_length)
 
     if axis is None:
@@ -139,7 +148,7 @@ ar.register_function("tensorflow", "take", _take_tf)
 
 
 def _coerce_types_tf(tensors):
-    tf = __import__("tensorflow")
+    tf = _i("tf")
     tensors = [tf.convert_to_tensor(t) for t in tensors]
     dtypes = {i.dtype for i in tensors}
 
@@ -160,7 +169,7 @@ ar.register_function("tensorflow", "coerce", _coerce_types_tf)
 
 
 def _block_diag_tf(tensors):
-    tf = __import__("tensorflow")
+    tf = _i("tf")
     int_dtype = None
 
     if tensors[0].dtype in (tf.int32, tf.int64):
@@ -194,15 +203,23 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 # -------------------------------- Torch --------------------------------- #
 
 
-ar.register_function("torch", "asarray", lambda x: __import__("torch").as_tensor(x))
-ar.register_function("torch", "diag", lambda x, k=0: __import__("torch").diag(x, diagonal=k))
-ar.register_function("torch", "expand_dims", lambda x, axis: np.unsqueeze(x, dim=axis))
+ar.register_function("torch", "asarray", lambda x: _i("torch").as_tensor(x))
+ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
+ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
+ar.register_function(
+    "torch",
+    "sqrt",
+    lambda x: _i("torch").sqrt(
+        x.to(_i("torch").float64) if x.dtype in (_i("torch").int64, _i("torch").int32) else x
+    ),
+)
+
 
 def _take_torch(tensor, indices, axis=None):
-    torch = __import__("torch")
+    torch = _i("torch")
 
     if not isinstance(indices, torch.Tensor):
         indices = torch.as_tensor(indices)
@@ -226,7 +243,7 @@ ar.register_function("torch", "take", _take_torch)
 
 
 def _coerce_types_torch(tensors):
-    torch = __import__("torch")
+    torch = _i("torch")
     tensors = [torch.as_tensor(t) for t in tensors]
     dtypes = {i.dtype for i in tensors}
 
@@ -251,16 +268,16 @@ ar.register_function("torch", "coerce", _coerce_types_torch)
 
 
 def _block_diag_torch(tensors):
-    torch = __import__("torch")
-    sizes = _np.array([t.shape for t in tensors])
-    res = torch.zeros(_np.sum(sizes, axis=0).tolist(), dtype=tensors[0].dtype)
+    torch = _i("torch")
+    sizes = np.array([t.shape for t in tensors])
+    res = torch.zeros(np.sum(sizes, axis=0).tolist(), dtype=tensors[0].dtype)
 
     p = np.cumsum(sizes, axis=0)
-    ridx, cidx = _np.stack([p - sizes, p]).T
+    ridx, cidx = np.stack([p - sizes, p]).T
 
     for t, r, c in zip(tensors, ridx, cidx):
-        row = _np.arange(*r).reshape(-1, 1)
-        col = _np.arange(*c).reshape(1, -1)
+        row = np.arange(*r).reshape(-1, 1)
+        col = np.arange(*c).reshape(1, -1)
         res[row, col] = t
 
     return res
@@ -286,14 +303,14 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: __import__("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
+    lambda x, indices, axis=None: _i("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", lambda x: x)
-ar.register_function("jax", "block_diag", lambda x: __import__("jax").scipy.linalg.block_diag(*x))
-ar.register_function("jax", "gather", lambda x, indices: x[_np.array(indices)])
+ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
+ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: __import__("jax").ops.index_add(x, tuple(index), value),
+    lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
 )
