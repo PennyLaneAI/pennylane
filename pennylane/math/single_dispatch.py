@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-# pylint:disable=protected-access,import-outside-toplevel
+# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position
 from importlib import import_module
 import numbers
 

@@ -13,13 +13,9 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
-import itertools
 import warnings
 
-import autoray as ar
 from autoray import numpy as np
-from numpy import float64
-
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, get_interface

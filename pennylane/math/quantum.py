@@ -17,7 +17,6 @@ import itertools
 from autoray import numpy as np
 from numpy import float64
 
-
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import cast, diag, dot
 
