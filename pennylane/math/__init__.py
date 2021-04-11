@@ -57,9 +57,6 @@ from .fn import (
 )
 
 
-from .tensorbox import TensorBox, wrap_output
-
-
 def __getattr__(name):
     if name in globals():
         return globals()[name]
