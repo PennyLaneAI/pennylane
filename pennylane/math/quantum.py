@@ -19,7 +19,7 @@ from numpy import float64
 
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import cast, dot
+from .multi_dispatch import cast, diag, dot
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
