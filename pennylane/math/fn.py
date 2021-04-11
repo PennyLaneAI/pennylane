@@ -15,14 +15,15 @@
 # pylint:disable=abstract-class-instantiated,unexpected-keyword-arg
 from collections.abc import Sequence
 import itertools
+import numbers
 import warnings
 
-import numpy as np
+import autoray as ar
+from autoray import numpy as np
+import numpy as _np
 
-from .tensorbox import TensorBox
 
-
-def _get_multi_tensorbox(values):
+def _multi_dispatch(values):
     """Determines the correct framework to dispatch to given a
     sequence of tensor-like objects.
 
@@ -30,10 +31,7 @@ def _get_multi_tensorbox(values):
         values (Sequence[tensor_like]): a sequence of tensor like objects
 
     Returns:
-        .TensorBox: A TensorBox that will dispatch to the correct framework
-        given the rules of precedence. This TensorBox will contain the *first*
-        tensor-like object in ``values`` that corresponds to the highest-priority
-        framework.
+        str: the name of the interface
 
     To determine the framework to dispatch to, the following rules
     are applied:
@@ -49,6 +47,9 @@ def _get_multi_tensorbox(values):
     * Vanilla NumPy arrays can be used alongside other tensor objects; they will
       always be treated as non-differentiable constants.
     """
+    if "resource_variable" in getattr(values, "__module__", tuple()):
+        values = np.asarray(values)
+
     interfaces = [get_interface(v) for v in values]
 
     if len(set(interfaces) - {"numpy", "autograd"}) > 1:
@@ -65,37 +66,19 @@ def _get_multi_tensorbox(values):
             UserWarning,
         )
 
-    if "tf" in interfaces:
-        return TensorBox(values[interfaces.index("tf")])
+    if "tensorflow" in interfaces:
+        return "tensorflow"
 
     if "torch" in interfaces:
-        return TensorBox(values[interfaces.index("torch")])
+        return "torch"
 
     if "autograd" in interfaces:
-        return TensorBox(values[interfaces.index("autograd")])
+        return "autograd"
 
     if "jax" in interfaces:
-        return TensorBox(values[interfaces.index("jax")])
+        return "jax"
 
-    return TensorBox(values[interfaces.index("numpy")])
-
-
-def abs_(tensor):
-    """Returns the element-wise absolute value.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        tensor_like:
-
-    **Example**
-
-    >>> a = torch.tensor([1., -2.], requires_grad=True)
-    >>> abs(a)
-    tensor([1., 2.], grad_fn=<AbsBackward>)
-    """
-    return TensorBox(tensor).abs(wrap_output=False)
+    return "numpy"
 
 
 def allequal(tensor1, tensor2, **kwargs):
@@ -124,43 +107,20 @@ def allequal(tensor1, tensor2, **kwargs):
     >>> allequal(a, b)
     True
     """
-    t1 = toarray(tensor1)
-    t2 = toarray(tensor2)
+    t1 = ar.to_numpy(tensor1)
+    t2 = ar.to_numpy(tensor2)
     return np.all(t1 == t2, **kwargs)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
-    t1 = toarray(a)
-    t2 = toarray(b)
+    t1 = ar.to_numpy(a)
+    t2 = ar.to_numpy(b)
     return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
 
 allclose.__doc__ = np.allclose.__doc__
-
-
-def angle(tensor):
-    """Returns the element-wise angle of a complex tensor.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        tensor_like:
-
-    **Example**
-
-    >>> a = torch.tensor([1.0, 1.0j, 1+1j], requires_grad=True)
-    >>> angle(a)
-    tensor([0.0000, 1.5708, 0.7854], grad_fn=<AngleBackward>)
-    """
-    return TensorBox(tensor).angle(wrap_output=False)
-
-
-def arcsin(tensor):
-    """Returns the element-wise inverse sine of the tensor"""
-    return TensorBox(tensor).arcsin(wrap_output=False)
 
 
 def block_diag(values):
@@ -187,7 +147,13 @@ def block_diag(values):
             [ 0,  0, -1, -6, -3,  0],
             [ 0,  0,  0,  0,  0,  5]])
     """
-    return _get_multi_tensorbox(values).block_diag(values, wrap_output=False)
+    interface = _multi_dispatch(values)
+
+    if isinstance(values, (list, tuple)):
+        values = np.coerce(values, like=interface)
+        return np.block_diag(values, like=interface)
+
+    return np.block_diag(values, like=interface)
 
 
 def cast(tensor, dtype):
@@ -218,29 +184,19 @@ def cast(tensor, dtype):
     >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
-    return TensorBox(tensor).cast(dtype, wrap_output=False)
+    if isinstance(tensor, (list, tuple)):
+        tensor = np.asarray(tensor)
 
+    if not isinstance(dtype, str):
+        try:
+            dtype = np.dtype(dtype).name
+        except:
+            try:
+                dtype = dtype.name
+            except AttributeError:
+                pass
 
-def cast_like(tensor1, tensor2):
-    """Casts a tensor to the same dtype as another.
-
-    Args:
-        tensor1 (tensor_like): tensor to cast
-        tensor2 (tensor_like): tensor with corresponding dtype to cast to
-
-    Returns:
-        tensor_like: a tensor with the same shape and values as ``tensor1`` and the
-        same dtype as ``tensor2``
-
-    **Example**
-
-    >>> x = torch.tensor([1, 2])
-    >>> y = torch.tensor([3., 4.])
-    >>> cast(x, y)
-    tensor([1., 2.])
-    """
-    dtype = toarray(tensor2).dtype.type
-    return cast(tensor1, dtype)
+    return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
 
 def concatenate(values, axis=0):
@@ -267,28 +223,51 @@ def concatenate(values, axis=0):
     >>> y = tf.Variable([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> concatenate([x, y, z])
-    TensorBox: <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
+    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
-    return _get_multi_tensorbox(values).concatenate(values, axis=axis, wrap_output=False)
+    interface = _multi_dispatch(values)
+
+    if interface == "torch":
+        import torch
+
+        if axis is None:
+            # flatten and then concatenate zero'th dimension
+            # to reproduce numpy's behaviour
+            values = [np.flatten(torch.as_tensor(t)) for t in values]
+            axis = 0
+        else:
+            values = [torch.as_tensor(t) for t in values]
+
+    if interface == "tensorflow" and axis is None:
+        # flatten and then concatenate zero'th dimension
+        # to reproduce numpy's behaviour
+        values = [np.flatten(np.array(t)) for t in values]
+        axis = 0
+
+    return np.concatenate(values, axis=axis, like=interface)
 
 
-def conj(tensor):
-    """Conjugate a tensor. Negate the imaginary part of a complex value.
+def cast_like(tensor1, tensor2):
+    """Casts a tensor to the same dtype as another.
 
     Args:
-        tensor (tensor_like): A tensor-like object to conjugate.
+        tensor1 (tensor_like): tensor to cast
+        tensor2 (tensor_like): tensor with corresponding dtype to cast to
 
     Returns:
-        tensor_like: The conjugated tensor.
+        tensor_like: a tensor with the same shape and values as ``tensor1`` and the
+        same dtype as ``tensor2``
 
     **Example**
 
-    >>> x = tf.constant([0.6 + 0.1j, 0.1 - 0.3j, 0.6])
-    >>> conj(x)
-    <tf.Tensor: shape=(3,), dtype=complex64, numpy=array([6.00e-01 + 1.00e-1j, 1.00e-01 + 3.00e-1j, 6.00e-01 + 0.00j], dtype=complex64)>
+    >>> x = torch.tensor([1, 2])
+    >>> y = torch.tensor([3., 4.])
+    >>> cast(x, y)
+    tensor([1., 2.])
     """
-    return TensorBox(tensor).conj(wrap_output=False)
+    dtype = ar.to_numpy(tensor2).dtype.type
+    return cast(tensor1, dtype)
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -358,7 +337,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     # diagonal variances
     for i, o in enumerate(obs):
-        l = cast(o.eigvals, dtype=np.float64)
+        l = cast(o.eigvals, dtype=_np.float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
@@ -378,9 +357,9 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
         o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
         shared_wires = set(o1wires + o2wires)
 
-        l1 = cast(o1.eigvals, dtype=np.float64)
-        l2 = cast(o2.eigvals, dtype=np.float64)
-        l12 = cast(np.kron(l1, l2), dtype=np.float64)
+        l1 = cast(o1.eigvals, dtype=_np.float64)
+        l2 = cast(o2.eigvals, dtype=_np.float64)
+        l12 = cast(_np.kron(l1, l2), dtype=_np.float64)
 
         p1 = marginal_prob(prob, o1wires)
         p2 = marginal_prob(prob, o2wires)
@@ -388,8 +367,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
 
-        cov = scatter_element_add(cov, [i, j], res)
-        cov = scatter_element_add(cov, [j, i], res)
+        cov = np.scatter_element_add(cov, [i, j], res)
+        cov = np.scatter_element_add(cov, [j, i], res)
 
     return cov
 
@@ -412,7 +391,7 @@ def convert_like(tensor1, tensor2):
     >>> cast(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    return TensorBox(tensor2).astensor(tensor1)
+    return np.asarray(tensor1, like=get_interface(tensor2))
 
 
 def diag(values, k=0):
@@ -444,16 +423,18 @@ def diag(values, k=0):
            [0.  , 0.2 , 0.  , 0.  ],
            [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
     >>> z = torch.tensor([0.1, 0.2])
-    >>> qml.diag(z, k=1)
     >>> qml.math.diag(z, k=1)
     tensor([[0.0000, 0.1000, 0.0000],
             [0.0000, 0.0000, 0.2000],
             [0.0000, 0.0000, 0.0000]])
     """
-    if isinstance(values, Sequence):
-        return _get_multi_tensorbox(values).diag(values, k=k, wrap_output=False)
+    interface = _multi_dispatch(values)
 
-    return TensorBox(values).diag(values, k=k, wrap_output=False)
+    if isinstance(values, (list, tuple)):
+        values = np.stack(np.coerce(values, like=interface), like=interface)
+        res = np.diag(values, k=k, like=interface)
+
+    return np.diag(values, k=k, like=interface)
 
 
 def dot(tensor1, tensor2):
@@ -477,75 +458,31 @@ def dot(tensor1, tensor2):
         tensor1 (tensor_like): input tensor
         tensor2 (tensor_like): input tensor
     """
-    return _get_multi_tensorbox([tensor1, tensor2]).dot(tensor1, tensor2, wrap_output=False)
+    interface = _multi_dispatch([tensor1, tensor2])
+    x, y = np.coerce([tensor1, tensor2], like=interface)
 
+    if interface == "torch":
+        if x.ndim == 0 and y.ndim == 0:
+            return x * y
 
-def expand_dims(tensor, axis):
-    """Expand the shape of an array by adding a new dimension of size 1
-    at the specified axis location.
+        if x.ndim <= 2 and y.ndim <= 2:
+            return x @ y
 
-    .. warning::
+        return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
 
-        This function differs from ``np.expand_dims``.
+    if interface == "tensorflow":
+        if x.ndim == 0 and y.ndim == 0:
+            return x * y
 
-    Args:
-        tensor (tensor_like): tensor to expand
-        axis (int): location in the axes to place the new dimension
+        if y.ndim == 1:
+            return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
-    Returns:
-        tensor_like: a tensor with the expanded shape
+        if x.ndim == 2 and y.ndim == 2:
+            return x @ y
 
-    **Example**
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
-    >>> x = tf.Variable([3, 4])
-    >>> expand_dims(x, axis=1)
-    <tf.Tensor: shape=(2, 1), dtype=int32, numpy=
-    array([[3],
-           [4]], dtype=int32)>
-    """
-    return TensorBox(tensor).expand_dims(axis, wrap_output=False)
-
-
-def flatten(tensor):
-    """Flattens an N-dimensional tensor to a 1-dimensional tensor.
-
-    Args:
-        tensor (tensor_like): tensor to flatten
-
-    Returns:
-        tensor_like: the flattened tensor
-
-    **Example**
-
-    >>> x = tf.Variable([[1, 3], [2, 4]])
-    >>> flatten(x)
-    <tf.Tensor: shape=(4,), dtype=int32, numpy=array([1, 3, 2, 4], dtype=int32)>
-    """
-    return reshape(tensor, (-1,))
-
-
-def gather(tensor, indices):
-    """Gather tensor values given a tuple of indices.
-
-    This is equivalent to the following NumPy fancy indexing:
-
-    ..code-block:: python
-
-        tensor[array(indices)]
-
-    Args:
-        tensor (tensor_like): tensor to gather from
-        indices (Sequence[int]): the indices of the values to extract
-
-    Returns:
-
-        tensor_like: the gathered tensor values
-
-    .. seealso::
-
-        :func:`~.take`
-    """
-    return TensorBox(tensor).gather(np.array(indices), wrap_output=False)
+    return np.dot(x, y, like=interface)
 
 
 def get_interface(tensor):
@@ -569,7 +506,17 @@ def get_interface(tensor):
     >>> get_interface(x)
     'autograd'
     """
-    return TensorBox(tensor).interface
+    namespace = tensor.__class__.__module__.split(".")[0]
+
+    if namespace in ("pennylane", "autograd"):
+        return "autograd"
+
+    res = ar.infer_backend(tensor)
+
+    if res == "builtins":
+        return "numpy"
+
+    return res
 
 
 def marginal_prob(prob, axis):
@@ -598,36 +545,16 @@ def marginal_prob(prob, axis):
     >>> marginal_prob(x, axis=[0])
     <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.70710678, 0.70710678])>
     """
-    prob = flatten(prob)
+    prob = np.flatten(prob)
     num_wires = int(np.log2(len(prob)))
 
     if num_wires == len(axis):
         return prob
 
     inactive_wires = tuple(set(range(num_wires)) - set(axis))
-    prob = reshape(prob, [2] * num_wires)
-    prob = sum_(prob, axis=inactive_wires)
-    return flatten(prob)
-
-
-def toarray(tensor):
-    """Returns the tensor as a NumPy ``ndarray``. No copying
-    is performed; the tensor and the returned array share the
-    same storage.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        array: a ``ndarray`` view into the same data
-
-    **Example**
-
-    >>> x = torch.tensor([1., 2.])
-    >>> toarray(x)
-    array([1, 2])
-    """
-    return TensorBox(tensor).numpy()
+    prob = np.reshape(prob, [2] * num_wires)
+    prob = np.sum(prob, axis=inactive_wires)
+    return np.flatten(prob)
 
 
 def ones_like(tensor, dtype=None):
@@ -659,36 +586,9 @@ def ones_like(tensor, dtype=None):
            [1.+0.j]])>
     """
     if dtype is not None:
-        return TensorBox(tensor).ones_like().cast(dtype, wrap_output=False)
+        return cast(np.ones_like(tensor), dtype)
 
-    return TensorBox(tensor).ones_like(wrap_output=False)
-
-
-def reshape(tensor, shape):  # pylint: disable=redefined-outer-name
-    """Gives a new shape to a tensor without changing its data.
-
-    Args:
-        tensor (tensor_like): input tensor
-        shape (tuple[int]): The new shape. The special value of -1 indicates
-            that the size of that dimension is computed so that the total size
-            remains constant. A dimension of -1 can only be specified once.
-
-    Returns:
-        tensor_like: a new view into the input tensor with
-        shape ``shape``
-
-    **Example**
-
-    >>> a = tf.range(4.)
-    >>> reshape(a, (2, 2))
-    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
-    array([[0., 1.],
-           [2., 3.]], dtype=float32)>
-    >>> b = torch.tensor([[0, 1], [2, 3]])
-    >>> torch.reshape(b, (-1,))
-    tensor([0, 1, 2, 3])
-    """
-    return TensorBox(tensor).reshape(shape, wrap_output=False)
+    return np.ones_like(tensor)
 
 
 def requires_grad(tensor):
@@ -742,67 +642,28 @@ def requires_grad(tensor):
     ...     print(requires_grad(x))
     True
     """
-    return TensorBox(tensor).requires_grad
+    interface = get_interface(tensor)
 
+    if interface == "tensorflow":
+        import tensorflow as tf
 
-def scatter_element_add(tensor, index, value):
-    """Adds a scalar value to a specific index of a tensor.
+        try:
+            from tensorflow.python.eager.tape import should_record_backprop
+        except ImportError:  # pragma: no cover
+            from tensorflow.python.eager.tape import should_record as should_record_backprop
 
-    This is a pure equivalent of ``tensor[index] += value``.
+        return should_record_backprop([tf.convert_to_tensor(tensor)])
 
-    Args:
-        tensor (tensor_like): the input tensor to be updated
-        index (tuple[int]): the index of the input tensor to update
-        value (scalar): the scalar value to add to the tensor element
+    if interface in ("torch", "autograd"):
+        return tensor.requires_grad
 
-    Returns:
-        tensor_like: the output tensor
+    if interface == "numpy":
+        return False
 
-    **Example**
+    if interface == "jax":
+        return True
 
-    >>> x = torch.ones((2, 3))
-    >>> qml.math.scatter_element_add(x, [1, 2], 3)
-    tensor([[1., 1., 1.],
-            [1., 1., 4.]])
-    """
-    value = convert_like(value, tensor)
-    return TensorBox(tensor).scatter_element_add(index, value, wrap_output=False)
-
-
-def shape(tensor):
-    """Returns the shape of the tensor.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        tuple[int]: shape of the tensor
-
-    **Example**
-
-    >>> x = tf.constant([[0.6, 0.1, 0.6], [1., 2., 3.]])
-    >>> shape(x)
-    (2, 3)
-    """
-    return TensorBox(tensor).shape
-
-
-def sqrt(tensor):
-    """Returns the element-wise square root.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        tensor_like:
-
-    **Example**
-
-    >>> a = torch.tensor([4., 9.], requires_grad=True)
-    >>> sqrt(a)
-    tensor([2., 3.], grad_fn=<SqrtBackward>)
-    """
-    return TensorBox(tensor).sqrt(wrap_output=False)
+    return False
 
 
 def stack(values, axis=0):
@@ -834,116 +695,9 @@ def stack(values, axis=0):
            [1.00e-01, 2.00e-01, 3.00e-01],
            [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
     """
-    return _get_multi_tensorbox(values).stack(values, axis=axis, wrap_output=False)
-
-
-def squeeze(tensor):
-    """Remove single-dimensional entries from the shape of an array.
-
-    Args:
-        tensor (tensor_like): A tensor-like object.
-
-    Returns:
-        The input array, but with all or a subset of the dimensions of length 1 removed.
-        This is always a itself or a view into a. Note that if all axes are squeezed,
-        the result is a 0d array and not a scalar.
-
-    **Example**
-
-    >>> x = torch.ones((2, 1, 3, 4, 1))
-    >>> y = squeeze(x)
-    >>> y.shape
-    (2, 3, 4)
-    """
-    return TensorBox(tensor).squeeze(wrap_output=False)
-
-
-def sum_(tensor, axis=None, keepdims=False):
-    """TensorBox: Returns the sum of the tensor elements across the specified dimensions.
-
-    Args:
-        tensor (tensor_like): input tensor
-        axis (int or tuple[int]): The axis or axes along which to perform the sum.
-            If not specified, all elements of the tensor across all dimensions
-            will be summed, returning a tensor.
-        keepdims (bool): If True, retains all summed dimensions.
-
-    Returns:
-        tensor_like: The tensor with specified dimensions summed over. Note that
-        if all elements are summed, then a 0-dimensional tensor is returned, rather
-        than a Python scalar.
-
-    **Example**
-
-    Summing over all dimensions:
-
-    >>> x = tf.Variable([[1., 2.], [3., 4.]])
-    >>> sum(x)
-    <tf.Tensor: shape=(), dtype=float32, numpy=10.0>
-
-    Summing over specified dimensions:
-
-    >>> x = np.array([[[1, 1], [5, 3]], [[1, 4], [-6, -1]]])
-    >>> x.shape
-    (2, 2, 2)
-    >>> sum(x, axis=(0, 2))
-    tensor([7, 1], requires_grad=True)
-    >>> sum(x, axis=(0, 2), keepdims=True)
-    tensor([[[7],
-             [1]]], requires_grad=True)
-    """
-    return TensorBox(tensor).sum(axis=axis, keepdims=keepdims, wrap_output=False)
-
-
-def T(tensor):
-    """Returns the transpose of the tensor by reversing the order
-    of the axes. For a 2D tensor, this corresponds to the matrix transpose.
-
-    Args:
-        tensor (tensor_like): input tensor
-
-    Returns:
-        tensor_like: input tensor with axes reversed
-
-    **Example**
-
-    >>> x = tf.Variable([[1, 2], [3, 4]])
-    >>> T(x)
-    <tf.Tensor: shape=(2, 2), dtype=int32, numpy=
-    array([[1, 3],
-           [2, 4]], dtype=int32)>
-    """
-    return TensorBox(tensor).T(wrap_output=False)
-
-
-def take(tensor, indices, axis=None):
-    """Gather elements from a tensor.
-
-    Note that ``take(indices, axis=3)`` is equivalent
-    to ``tensor[:, :, :, indices, ...]`` for frameworks that support
-    NumPy-like fancy indexing.
-
-    This function is roughly equivalent to ``np.take`` and ``tf.gather``.
-    In the case of a 1-dimensional set of indices, it is roughly equivalent
-    to ``torch.index_select``, but deviates for multi-dimensional indices.
-
-    Args:
-        tensor (tensor_like): input tensor
-        indices (Sequence[int]): the indices of the values to extract
-        axis: The axis over which to select the values. If not provided,
-            the tensor is flattened before value extraction.
-
-    **Example**
-
-    >>> x = torch.tensor([[1, 2], [3, 4]])
-    >>> take(y, indices=[[0, 0], [1, 0]], axis=1)
-    tensor([[[1, 1],
-             [2, 1]],
-
-            [[3, 3],
-             [4, 3]]])
-    """
-    return TensorBox(tensor).take(indices, axis=axis, wrap_output=False)
+    interface = _multi_dispatch(values)
+    values = np.coerce(values, like=interface)
+    return np.stack(values, axis=axis, like=interface)
 
 
 def where(condition, x, y):
@@ -968,4 +722,272 @@ def where(condition, x, y):
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
     """
-    return _get_multi_tensorbox([x, y]).where(condition, x, y, wrap_output=False)
+    return np.where(condition, x, y, like=_multi_dispatch([x, y]))
+
+
+# -------------------------------- NumPy --------------------------------- #
+from scipy.linalg import block_diag as _scipy_block_diag
+
+ar.register_function("numpy", "flatten", lambda x: x.flatten())
+ar.register_function("numpy", "coerce", lambda x: x)
+ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
+ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
+ar.register_function("numpy", "gather", lambda x, indices: x[_np.array(indices)])
+
+
+def _scatter_element_add_numpy(tensor, index, value):
+    tensor[tuple(index)] += value
+    return tensor
+
+
+ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
+
+
+# -------------------------------- Autograd --------------------------------- #
+
+
+ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
+ar.register_function("autograd", "flatten", lambda x: x.flatten())
+ar.register_function("autograd", "coerce", lambda x: x)
+ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
+ar.register_function("autograd", "gather", lambda x, indices: x[_np.array(indices)])
+
+
+def _to_numpy_autograd(x):
+    if hasattr(x, "_value"):
+        # Catches the edge case where the data is an Autograd arraybox,
+        # which only occurs during backpropagation.
+        return x._value
+
+    return x.numpy()
+
+
+ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
+
+
+def _scatter_element_add_autograd(tensor, index, value):
+    size = tensor.size
+    flat_index = __import__("pennylane").numpy.ravel_multi_index(index, tensor.shape)
+    t = [0] * size
+    t[flat_index] = value
+    return tensor + __import__("pennylane").numpy.array(t).reshape(tensor.shape)
+
+
+ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
+
+
+# -------------------------------- TensorFlow --------------------------------- #
+
+
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "angle"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
+
+
+ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
+ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
+
+
+ar.register_function(
+    "tensorflow", "asarray", lambda x: __import__("tensorflow").convert_to_tensor(x)
+)
+ar.register_function("tensorflow", "flatten", lambda x: np.reshape(x, [-1]))
+ar.register_function("tensorflow", "flatten", lambda x: np.reshape(x, [-1]))
+ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
+ar.register_function(
+    "tensorflow",
+    "sqrt",
+    lambda x: __import__("tensorflow").math.sqrt(
+        cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
+    ),
+)
+
+
+def _take_tf(tensor, indices, axis=None):
+    tf = __import__("tensorflow")
+
+    if isinstance(indices, numbers.Number):
+        indices = [indices]
+
+    indices = tf.convert_to_tensor(indices)
+
+    if _np.any(indices < 0):
+        # Unlike NumPy, TensorFlow doesn't support negative indices.
+        dim_length = tf.size(tensor).numpy() if axis is None else np.shape(tensor)[axis]
+
+        indices = where(indices >= 0, indices, indices + dim_length)
+
+    if axis is None:
+        # Unlike NumPy, if axis=None TensorFlow defaults to the first
+        # dimension rather than flattening the array.
+        data = tf.reshape(tensor, [-1])
+        return tf.gather(data, indices)
+
+    return tf.gather(tensor, indices, axis=axis)
+
+
+ar.register_function("tensorflow", "take", _take_tf)
+
+
+def _coerce_types_tf(tensors):
+    tf = __import__("tensorflow")
+    tensors = [tf.convert_to_tensor(t) for t in tensors]
+    dtypes = {i.dtype for i in tensors}
+
+    if len(dtypes) == 1:
+        return tensors
+
+    complex_type = dtypes.intersection({tf.complex64, tf.complex128})
+    float_type = dtypes.intersection({tf.float16, tf.float32, tf.float64})
+    int_type = dtypes.intersection({tf.int8, tf.int16, tf.int32, tf.int64})
+
+    cast_type = complex_type or float_type or int_type
+    cast_type = list(cast_type)[-1]
+
+    return [tf.cast(t, cast_type) for t in tensors]
+
+
+ar.register_function("tensorflow", "coerce", _coerce_types_tf)
+
+
+def _block_diag_tf(tensors):
+    tf = __import__("tensorflow")
+    int_dtype = None
+
+    if tensors[0].dtype in (tf.int32, tf.int64):
+        int_dtype = tensors[0].dtype
+        tensors = [tf.cast(t, tf.float32) for t in tensors]
+
+    linop_blocks = [tf.linalg.LinearOperatorFullMatrix(block) for block in tensors]
+    linop_block_diagonal = tf.linalg.LinearOperatorBlockDiag(linop_blocks)
+    res = linop_block_diagonal.to_dense()
+
+    if int_dtype is None:
+        return res
+
+    return tf.cast(res, int_dtype)
+
+
+ar.register_function("tensorflow", "block_diag", _block_diag_tf)
+
+
+def _scatter_element_add_tf(tensor, index, value):
+    import tensorflow as tf
+
+    indices = tf.expand_dims(index, 0)
+    value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
+    return tf.tensor_scatter_nd_add(tensor, indices, value)
+
+
+ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
+
+
+# -------------------------------- Torch --------------------------------- #
+
+
+ar.register_function("torch", "asarray", lambda x: __import__("torch").as_tensor(x))
+ar.register_function("torch", "diag", lambda x, k=0: __import__("torch").diag(x, diagonal=k))
+ar.register_function("torch", "expand_dims", lambda x, axis: np.unsqueeze(x, dim=axis))
+ar.register_function("torch", "shape", lambda x: tuple(x.shape))
+ar.register_function("torch", "gather", lambda x, indices: x[indices])
+
+
+def _take_torch(tensor, indices, axis=None):
+    torch = __import__("torch")
+
+    if not isinstance(indices, torch.Tensor):
+        indices = torch.as_tensor(indices)
+
+    if axis is None:
+        return tensor.flatten()[indices]
+
+    if indices.ndim == 1:
+        if (indices < 0).any():
+            # index_select doesn't allow negative indices
+            dim_length = tensor.size()[0] if axis is None else tensor.shape[axis]
+
+            indices = where(indices >= 0, indices, indices + dim_length)
+
+        return torch.index_select(tensor, dim=axis, index=indices)
+
+    fancy_indices = [slice(None)] * axis + [indices]
+    return tensor[fancy_indices]
+
+
+ar.register_function("torch", "take", _take_torch)
+
+
+def _coerce_types_torch(tensors):
+    torch = __import__("torch")
+    tensors = [torch.as_tensor(t) for t in tensors]
+    dtypes = {i.dtype for i in tensors}
+
+    if len(dtypes) == 1:
+        return tensors
+
+    complex_priority = [torch.complex64, torch.complex128]
+    float_priority = [torch.float16, torch.float32, torch.float64]
+    int_priority = [torch.int8, torch.int16, torch.int32, torch.int64]
+
+    complex_type = [i for i in complex_priority if i in dtypes]
+    float_type = [i for i in float_priority if i in dtypes]
+    int_type = [i for i in int_priority if i in dtypes]
+
+    cast_type = complex_type or float_type or int_type
+    cast_type = list(cast_type)[-1]
+
+    return [t.to(cast_type) for t in tensors]
+
+
+ar.register_function("torch", "coerce", _coerce_types_torch)
+
+
+def _block_diag_torch(tensors):
+    torch = __import__("torch")
+    sizes = _np.array([t.shape for t in tensors])
+    res = torch.zeros(_np.sum(sizes, axis=0).tolist(), dtype=tensors[0].dtype)
+
+    p = np.cumsum(sizes, axis=0)
+    ridx, cidx = _np.stack([p - sizes, p]).T
+
+    for t, r, c in zip(tensors, ridx, cidx):
+        row = _np.arange(*r).reshape(-1, 1)
+        col = _np.arange(*c).reshape(1, -1)
+        res[row, col] = t
+
+    return res
+
+
+ar.register_function("torch", "block_diag", _block_diag_torch)
+
+
+def _scatter_element_add_torch(tensor, index, value):
+    if tensor.is_leaf:
+        tensor = tensor.clone()
+    tensor[tuple(index)] += value
+    return tensor
+
+
+ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
+
+
+# -------------------------------- JAX --------------------------------- #
+
+
+ar.register_function("jax", "flatten", lambda x: x.flatten())
+ar.register_function(
+    "jax",
+    "take",
+    lambda x, indices, axis=None: __import__("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
+)
+ar.register_function("jax", "coerce", lambda x: x)
+ar.register_function("jax", "to_numpy", lambda x: x)
+ar.register_function("jax", "block_diag", lambda x: __import__("jax").scipy.linalg.block_diag(*x))
+ar.register_function("jax", "gather", lambda x, indices: x[_np.array(indices)])
+ar.register_function(
+    "jax",
+    "scatter_element_add",
+    lambda x, index, value: __import__("jax").ops.index_add(x, tuple(index), value),
+)

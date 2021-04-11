@@ -34,38 +34,40 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 """
+import autoray as ar
+
 from .fn import (
-    T,
-    abs_ as abs,
+    _multi_dispatch,
     allclose,
     allequal,
-    angle,
-    arcsin,
     block_diag,
     cast,
     cast_like,
     concatenate,
-    conj,
     convert_like,
     cov_matrix,
     diag,
     dot,
-    expand_dims,
-    flatten,
-    gather,
     get_interface,
     marginal_prob,
     ones_like,
-    reshape,
     requires_grad,
-    scatter_element_add,
-    shape,
-    sqrt,
     stack,
-    squeeze,
-    sum_ as sum,
-    take,
-    toarray,
     where,
 )
+
+
 from .tensorbox import TensorBox, wrap_output
+
+
+def __getattr__(name):
+    if name in globals():
+        return globals()[name]
+
+    if name == "T":
+        return getattr(ar.numpy, "transpose")
+
+    if name == "toarray":
+        return getattr(ar, "to_numpy")
+
+    return getattr(ar.numpy, name)
