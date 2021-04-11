@@ -191,7 +191,7 @@ def cast(tensor, dtype):
     if not isinstance(dtype, str):
         try:
             dtype = np.dtype(dtype).name
-        except AttributeError, TypeError:
+        except (AttributeError, TypeError):
             try:
                 dtype = dtype.name
             except AttributeError:
