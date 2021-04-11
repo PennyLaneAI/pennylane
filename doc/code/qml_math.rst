@@ -3,8 +3,7 @@ qml.math
 
 .. currentmodule:: pennylane.math
 
-.. autosummary::
-	:toctree: api
-	:recursive:
-
-	~pennylane.math
+.. automodapi:: pennylane.math
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:

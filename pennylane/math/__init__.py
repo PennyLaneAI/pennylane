@@ -71,3 +71,24 @@ def __getattr__(name):
         return getattr(ar, "to_numpy")
 
     return getattr(ar.numpy, name)
+
+
+__all__ = [
+    "_multi_dispatch",
+    "block_diag",
+    "concatenate",
+    "diag",
+    "dot",
+    "ones_like",
+    "stack",
+    "where",
+    "allclose",
+    "allequal",
+    "cast",
+    "cast_like",
+    "convert_like",
+    "get_interface",
+    "requires_grad",
+    "cov_matrix",
+    "marginal_prob",
+]

@@ -1045,9 +1045,7 @@ class TestScatterElementAdd:
 class TestDiag:
     """Tests for the diag function"""
 
-    @pytest.mark.parametrize("a, interface", [
-        # [np.array(0.5), "autograd"],
-        [tf.Variable(0.5), "tensorflow"], [torch.tensor(0.5), "torch"]])
+    @pytest.mark.parametrize("a, interface", [[np.array(0.5), "autograd"], [tf.Variable(0.5), "tensorflow"], [torch.tensor(0.5), "torch"]])
     def test_sequence(self, a, interface):
         """Test that a sequence is automatically converted into
         a diagonal tensor"""
