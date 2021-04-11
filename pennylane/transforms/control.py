@@ -15,7 +15,7 @@
 Contains the control transform.
 """
 from functools import wraps
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
@@ -90,11 +90,12 @@ class ControlledOperation(Operation):
             tape = expand_with_control(tape, wire)
         return tape
 
-    def adjoint(self, do_queue=False):
-        with QuantumTape(do_queue=False) as new_tape:
+    def adjoint(self):
+        """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
+        with get_active_tape().stop_recording(), QuantumTape() as new_tape:
             # Execute all ops adjointed.
             adjoint(requeue_ops_in_tape)(self.subtape)
-        return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
+        return ControlledOperation(new_tape, self.control_wires)
 
     def _controlled(self, wires):
         ControlledOperation(tape=self.subtape, control_wires=Wires(wires) + self.control_wires)
