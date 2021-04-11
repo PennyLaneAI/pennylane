@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-# pylint:disable=protected-access
+# pylint:disable=protected-access,import-outside-toplevel
 import numbers
 
 import autoray as ar
