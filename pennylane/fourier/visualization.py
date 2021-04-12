@@ -23,7 +23,80 @@ from matplotlib.colors import to_rgb
 from .utils import to_dict, format_nvec
 
 
+def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
+    """Helper function to validate input coefficients of plotting functions.
+    
+    Args:
+        coeffs (array[complex]): A set (or list of sets) of Fourier coefficients of a 
+            n_inputs-dimensional function.
+        n_inputs (int): The number of inputs (dimension) of the function the coefficients are for.
+        can_be_list (bool): Whether or not the plotting function accepts a list of 
+            coefficients, or only a single set.
+            
+    Raises:
+        TypeError: If the coefficients are not a list, or numpy array.
+        ValueError: if the coefficients are not a suitable type for the plotting function.
+    """
+    # Make sure we have a list or numpy array
+    if not isinstance(coeffs, list) and not isinstance(coeffs, np.ndarray):
+        raise TypeError("Input to coefficient plotting functions must be a list of numerical "
+                        f"Fourier coefficients. Received input of type {type(coeffs)}")
+
+    # In case we have a list, turn it into a numpy array
+    if isinstance(coeffs, list):
+        coeffs = np.array(coeffs)
+
+    # Check if the user provided a single set of coefficients to a function that is
+    # meant to accept multiple samples; add an extra dimension around it if needed
+    if len(coeffs.shape) == n_inputs and can_be_list:
+        coeffs = np.array([coeffs])
+
+    # Check now that we have the right number of axes for the type of function
+    required_shape_size = n_inputs + 1 if can_be_list else n_inputs
+    if len(coeffs.shape) != required_shape_size:
+        raise ValueError(f"Plotting function expected a list of {n_inputs}-dimensional inputs. "
+                         f"Received coefficients of {len(coeffs.shape)}-dimensional function.")
+
+    # Shape in all dimensions of a single set of coefficients must be the same
+    shape_set = set(coeffs.shape[1:]) if can_be_list else set(coeffs.shape)
+    if len(shape_set) != 1:
+        raise ValueError("All dimensions of coefficient array must be the same. "
+                         f"Received array with dimensions {coeffs.shape}")
+
+    # Size of each sample dimension must be 2d + 1 where d is the degree
+    shape_dim = coeffs.shape[1] if can_be_list else coeffs.shape[0]
+    if (shape_dim - 1) % 2 != 0:
+        raise ValueError("Shape of input coefficients must be 2d + 1, where d is the largest frequency. "
+                        f"Coefficient array with shape {coeffs.shape} is invalid." )        
+
+    # Return the coefficients; we may have switched to a numpy array or added a needed extra dimension
+    return coeffs
+
+
+def _extract_data_and_labels(coeffs):
+    """Helper function for creating frequency labels and partitionining data.
+
+    Args:
+        coeffs (array[complex]): A list of sets of Fourier coefficients.
+
+    Returns:
+        (list(str), dict[str, array[complex]): The set of frequency labels, and a data
+            dictionary split into real and imaginary parts.
+    """
+    # extract the x ticks
+    nvecs = list(to_dict(coeffs[0]).keys())
+    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
+
+    # make data
+    data = {}
+    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+
+    return nvecs_formatted, data
+
+
 def _adjust_spine_placement(ax):
+    """Helper function to set some common axis properties when plotting."""
     ax.xaxis.grid()
     ax.spines["top"].set_visible(False)
     ax.spines["bottom"].set_position("zero")
@@ -35,7 +108,9 @@ def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True)
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
-        coeffs (array[complex]): A list of sets of Fourier coefficients.
+        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+            should resemble that of the output of numpy/scipy's ``fftn`` function, or 
+            :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -66,23 +141,13 @@ def fourier_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True)
         fourier_violin_plot(coeffs, n_inputs, ax, show_freqs=True);
 
     """
-    # Check dimensionality; it's possible a user has provided only a single set
-    # of coefficients to this function.
-    if len(coeffs.shape) == n_inputs:
-        coeffs = np.array([coeffs])
+    coeffs = _validate_coefficients(coeffs, n_inputs, True)
 
-    # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
 
-    # extract the x ticks
-    nvecs = list(to_dict(coeffs[0]).keys())
-    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
-
-    # make data
-    data = {}
-    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
-    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+    # Get the labels and data
+    nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
     for (data_type, axis) in zip(["real", "imag"], ax):
         violin = axis.violinplot(data[data_type], showextrema=False)
@@ -110,7 +175,9 @@ def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sh
     """Plots a set of Fourier coefficients as a box plot.
 
     Args:
-        coeffs (array[complex]): A list of sets of Fourier coefficients.
+        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+            should resemble that of the output of numpy/scipy's ``fftn`` function, or 
+            :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -141,23 +208,14 @@ def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sh
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
         fourier_box_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
-    # Check dimensionality; it's possible a user has provided only a single set
-    # of coefficients to this function.
-    if len(coeffs.shape) == n_inputs:
-        coeffs = np.array([coeffs])
+    _validate_coefficients(coeffs, n_inputs, True)
 
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
 
-    # extract the x ticks
-    nvecs = list(to_dict(coeffs[0]).keys())
-    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
-
-    # Make data
-    data = {}
-    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
-    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+    # Get the labels and data
+    nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
     for (data_type, axis) in zip(["real", "imag"], ax):
         data_colour = colour_dict[data_type]
@@ -194,7 +252,10 @@ def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a set of Fourier coefficients as a bar plot.
 
     Args:
-        coeffs (array[complex]): A single set of Fourier coefficients.
+
+        coeffs (array[complex]): A single set of Fourier coefficients. The dimensions of the
+            array should be          
+
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -223,26 +284,18 @@ def fourier_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
         fourier_box_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
-    # This function plots only a single set of coefficients, so dimensions must match
-    if len(coeffs.shape) != n_inputs:
-        raise ValueError("Function fourier_bar_plot accepts only one set of Fourier coefficients.")
-
+    coeffs = _validate_coefficients(coeffs, n_inputs, False)
+    
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
 
-    # extract the x ticks
-    nvecs = list(to_dict(coeffs).keys())
-    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
-
-    # make data
-    data = {}
-    data["real"] = np.array([coeffs[nvec].real for nvec in nvecs])
-    data["imag"] = np.array([coeffs[nvec].imag for nvec in nvecs])
-    data_len = len(data["real"])
+    # Get the labels and data
+    nvecs_formatted, data = _extract_data_and_labels(np.array([coeffs]))
+    data_len = len(data["real"][0])
 
     for (data_type, axis) in zip(["real", "imag"], ax):
-        axis.bar(np.arange(data_len), data[data_type], color=colour_dict[data_type], alpha=0.7)
+        axis.bar(np.arange(data_len), data[data_type][0], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
         _adjust_spine_placement(axis)
@@ -263,8 +316,12 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
     """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
-        coeffs (array[complex]): A list set of Fourier coefficients. Must be
-            1- or 2-dimensional.
+        coeffs (array[complex]): A list set of Fourier coefficients. Must be 1-
+            or 2-dimensional, i.e., the array should have shape ``(2d + 1,)``
+            for 1-dimensional, or ``(2d + 1, 2d + 1)`` where ``d`` is the
+            degree, i.e., the maximum frequency of present in the coefficients.
+            Such an array may be the output of the numpy/scipy ``fft``/``fft2`` functions,
+            or :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
             1-dimensional data, length must be the number of frequencies. For 2-dimensional
@@ -294,16 +351,17 @@ def fourier_panel_plot(coeffs, n_inputs, ax, colour=None):
             2*degree+1, 2*degree+1, sharex=True, sharey=True, figsize=(15, 4)
         )
         fourier_panel_plot(coeffs, n_inputs, ax);
+
     """
+    if n_inputs in [1, 2]:
+        coeffs = _validate_coefficients(coeffs, n_inputs, True)
+    else:
+        raise ValueError(
+            "Panel plot function accepts input coefficients for only 1- or 2-dimensional functions."
+        )
+        
     if colour is None:
         colour = "tab:blue"
-
-    # In case a single set of coefficients is sent
-    if len(coeffs.shape) == n_inputs:
-        coeffs = np.array([coeffs])
-
-    if n_inputs > 2:
-        raise ValueError("Plotting not implemented for > 2-dimensional FFT outputs.")
 
     if ax.shape != coeffs[0].shape:
         raise ValueError("Shape of subplot axes must match the shape of the coefficient data.")
@@ -349,7 +407,11 @@ def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
     """Visualize a 1D periodic function given by a set of Fourier coefficients.
 
     Args:
-        coeffs (np.ndarray): Fourier coefficients of a 1-dimensional function.
+        coeffs (array[complex]): Fourier coefficients of a 1-dimensional
+            function. The array should have length ``2d + 1`` where ``d`` is the
+            degree, i.e., the maximum frequency of present in the coefficients. 
+            Such an array may be the output of the numpy/scipy ``fft`` function, or
+            :func:`~.pennylane.fourier.fourier_coefficients`.
         ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
@@ -372,12 +434,11 @@ def fourier_reconstruct_function_1D_plot(coeffs, ax=None):
 
         # It is not necessary to create subplots; the current axis will be used here
         fourier_reconstruct_function_1D_plot(coeffs)
+
     """
+    coeffs = _validate_coefficients(coeffs, 1, False)
 
     ax = ax or plt.gca()
-
-    if len(coeffs.shape) != 1:
-        raise ValueError("Function fourier_reconstruct_function_1D_plot takes 1-dimensional input.")
 
     def reconstructed_function(x):
         # At each point x, the value of the function is given by
@@ -412,7 +473,12 @@ def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
     """Visualize a 2D periodic function given by a set of Fourier coefficients.
 
     Args:
-        coeffs (np.ndarray): Fourier coefficients of a 2-dimensional function.
+        coeffs (array[complex]): Fourier coefficients of a 2-dimensional
+            function. Shape should match the output of a 2-dimensional Fourier
+            transform, ``(2d + 1, 2d + 1)``, where ``d`` is the degree, i.e., the
+            maximum frequency of present in the coefficients. Such an array may
+            be the output of the numpy/scipy ``fft2`` function, or
+            :func:`~.pennylane.fourier.fourier_coefficients`.           
         ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
@@ -435,12 +501,12 @@ def fourier_reconstruct_function_2D_plot(coeffs, ax=None):
 
         # It is not necessary to create subplots; the current axis may be used here
         fourier_reconstruct_function_2D_plot(coeffs)
+
     """
-    ax = ax or plt.gca()
-
-    if len(coeffs.shape) != 2:
-        raise ValueError("Function fourier_reconstruct_function_2D_plot takes 2-dimensional input.")
-
+    coeffs = _validate_coefficients(coeffs, 2, False)
+    
+    ax = ax or plt.gca() 
+                         
     def reconstructed_function(x):
         # At each point x, the value of the function is given by
         # c_0 + c_1 e^{ix} + c_2 e^{2ix} + ... + c_{-n} e^{-inx} + ... c_{-1} e^{-ix}
@@ -490,15 +556,14 @@ def fourier_radial_box_plot(
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
 
-    Produces either 2-panel plot in which the left panel represents the real
-    parts of Fourier coefficients, and the right the imaginary parts, or a
-    1-panel plot in which half the panel shows the real part and the other half
-    shows the complex. This method accepts multiple sets of coefficients, and
+    Produces a 2-panel plot in which the left panel represents the real parts of
+    Fourier coefficients. This method accepts multiple sets of coefficients, and
     plots the distribution of each coefficient as a boxplot.
 
     Args:
-        coeffs (np.ndarray): A set of Fourier coefficients. Assumed to be
-            from a full fft transform.
+        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+            should resemble that of the output of numpy/scipy's ``fftn`` function, or 
+            :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): Dimension of the transformed function.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
@@ -531,10 +596,9 @@ def fourier_radial_box_plot(
             1, 2, sharex=True, sharey=True, subplot_kw=dict(polar=True), figsize=(15, 8)
         )
         fourier_radial_box_plot(coeffs, n_inputs, ax)
+
     """
-    # Take care of single-input case
-    if len(coeffs.shape) == n_inputs:
-        coeffs = np.array([coeffs])
+    coeffs = _validate_coefficients(coeffs, n_inputs, True)
 
     if colour_dict is None:
         colour_dict = {"real": "red", "imag": "black"}
@@ -545,15 +609,9 @@ def fourier_radial_box_plot(
     angles = np.concatenate((angles[-N // 2 + 1 :], angles[: -N // 2 + 1]))[::-1]
     width = (angles[1] - angles[0]) / 2
 
-    # Extract the radial ticks
-    nvecs = list(to_dict(coeffs[0]).keys())
-    nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
-
-    # Make data
-    data = {}
-    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
-    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
-
+    # Get the labels and data
+    nvecs_formatted, data = _extract_data_and_labels(coeffs)
+    
     # Set up the violin plots
     for data_type, a in zip(["real", "imag"], ax):
         data_colour = colour_dict[data_type]
