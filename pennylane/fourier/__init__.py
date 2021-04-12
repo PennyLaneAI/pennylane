@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,3 +15,4 @@ r"""Tools to compute and visualise the Fourier series representation of quantum 
 from .coefficients import fourier_coefficients
 from .spectrum import spectrum
 from .visualization import violin_plot, bar_plot, complex_panel_plot, radial_box_plots
+

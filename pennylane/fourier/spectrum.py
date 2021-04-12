@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -173,7 +173,7 @@ def spectrum(qnode):
 
         import pennylane as qml
         from pennylane import numpy as pnp
-        from pennylane.beta.transforms.fourier import spectrum
+        from pennylane.fourier import spectrum
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -199,8 +199,6 @@ def spectrum(qnode):
         >>> 0.3: [-1.0, 0.0, 1.0]
         >>> 0.4: [-2.0, -1.0, 0.0, 1.0, 2.0]
         >>> 0.5: [-1.0, 0.0, 1.0]
-
-
     """
 
     @wraps(qnode)
@@ -210,7 +208,7 @@ def spectrum(qnode):
 
         # hack: currently the tape only differentiates trainable/non-trainable params
         # if the qnode uses non-backprop diff rules.
-        qnode.diff_options["method"] = "parameter-shift"
+        qnode_copy.diff_options["method"] = "parameter-shift"
 
         # extract the tape
         qnode_copy.construct(args, kwargs)
@@ -229,15 +227,15 @@ def spectrum(qnode):
             if len(op.parameters) != 1:
                 # inputs can only enter one-parameter gates
                 continue
-            else:
-                inpt = op.parameters[0]
-                if inpt in inpts:
-                    spec = _get_spectrum(op)
 
-                    if inpt in freqs:
-                        spec = _join_spectra(freqs[inpt], spec)
+            inpt = op.parameters[0]
+            if inpt in inpts:
+                spec = _get_spectrum(op)
 
-                    freqs[inpt] = spec
+                if inpt in freqs:
+                    spec = _join_spectra(freqs[inpt], spec)
+
+                freqs[inpt] = spec
 
         return freqs
 
