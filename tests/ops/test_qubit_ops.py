@@ -2086,35 +2086,67 @@ class TestMultiControlledX:
 
 
 class TestArithmetic:
+    """Tests the arithmetic operations."""
     @pytest.mark.parametrize(
-        "wires,input_string,output_string",
+        "wires,input_string,output_string,expand",
         [
-            ([0, 1, 2, 3], "0000", "0000"),
-            ([0, 1, 2, 3], "0010", "0010"),
-            ([0, 1, 2, 3], "0100", "0110"),
-            ([0, 1, 2, 3], "0110", "0101"),
-            ([0, 1, 2, 3], "1010", "1011"),
-            ([3, 1, 2, 0], "0110", "1100"),
-            ([3, 2, 0, 1], "1010", "0110"),
+            ([0, 1, 2, 3], "0000", "0000", True),
+            ([0, 1, 2, 3], "0001", "0001", True),
+            ([0, 1, 2, 3], "0010", "0010", True),
+            ([0, 1, 2, 3], "0011", "0011", True),
+            ([0, 1, 2, 3], "0100", "0110", True),
+            ([0, 1, 2, 3], "0101", "0111", True),
+            ([0, 1, 2, 3], "0110", "0101", True),
+            ([0, 1, 2, 3], "0111", "0100", True),
+            ([0, 1, 2, 3], "1000", "1000", True),
+            ([0, 1, 2, 3], "1001", "1001", True),
+            ([0, 1, 2, 3], "1010", "1011", True),
+            ([0, 1, 2, 3], "1011", "1010", True),
+            ([0, 1, 2, 3], "1100", "1111", True),
+            ([0, 1, 2, 3], "1101", "1110", True),
+            ([0, 1, 2, 3], "1110", "1101", True),
+            ([0, 1, 2, 3], "1111", "1100", True),
+            ([3, 1, 2, 0], "0110", "1100", True),
+            ([3, 2, 0, 1], "1010", "0110", True),
+            ([0, 1, 2, 3], "0000", "0000", False),
+            ([0, 1, 2, 3], "0001", "0001", False),
+            ([0, 1, 2, 3], "0010", "0010", False),
+            ([0, 1, 2, 3], "0011", "0011", False),
+            ([0, 1, 2, 3], "0100", "0110", False),
+            ([0, 1, 2, 3], "0101", "0111", False),
+            ([0, 1, 2, 3], "0110", "0101", False),
+            ([0, 1, 2, 3], "0111", "0100", False),
+            ([0, 1, 2, 3], "1000", "1000", False),
+            ([0, 1, 2, 3], "1001", "1001", False),
+            ([0, 1, 2, 3], "1010", "1011", False),
+            ([0, 1, 2, 3], "1011", "1010", False),
+            ([0, 1, 2, 3], "1100", "1111", False),
+            ([0, 1, 2, 3], "1101", "1110", False),
+            ([0, 1, 2, 3], "1110", "1101", False),
+            ([0, 1, 2, 3], "1111", "1100", False),
+            ([3, 1, 2, 0], "0110", "1100", False),
+            ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_carry(self, wires, input_string, output_string):
-        dev = qml.device("default.qubit", wires=len(wires))
-
-        @qml.qnode(dev)
-        def circuit():
+    def test_carry(self, wires, input_string, output_string, expand):
+        """Test if Carry produces the right output and is expandable."""
+        dev = qml.device("default.qubit",wires=4)
+        with qml.tape.QuantumTape() as tape:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
                     qml.PauliX(i)
             qml.Carry(wires=wires)
-            return qml.probs(wires=[0, 1, 2, 3])
-
-        result = circuit()
+            qml.probs(wires=[0,1,2,3])
+        
+        if expand:
+            tape=tape.expand()
+        result = dev.execute(tape)
         result = np.argmax(result)
         result = format(result, "04b")
         assert result == output_string
 
-    def test_carry_superposition(self):
+def test_carry_superposition(self):
+        """Test if Carry works for superposition input states."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
@@ -2126,6 +2158,7 @@ class TestArithmetic:
 
         result = circuit()
         assert np.allclose(result, 0.5)
+        
 
     # fmt: off
     @pytest.mark.parametrize(
@@ -2148,6 +2181,7 @@ class TestArithmetic:
     )
     # fmt: on
     def test_sum(self, wires, input_state, output_state):
+        """Test if Sum produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)

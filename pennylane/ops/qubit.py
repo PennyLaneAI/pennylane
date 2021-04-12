@@ -2530,10 +2530,10 @@ class Carry(Operation):
         :target: javascript:void(0);
 
     .. note::
-        The first wire provided corresponds to a **previous carry qubit** :math:`|C_{i-1}\rangle`.
-        The second wire corresponds to the **first qubit value** to be added :math:`|a\rangle`.
-        The third wire corresponds to a **second qubit** value to be added :math:`|b\rangle`.
-        The fourth wire should start in :math:`|0\rangle` and takes the **carried value** :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
+        The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
+        The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
+        The third wire corresponds to a second qubit value to be added :math:`|b\rangle`.
+        The fourth wire should start in :math:`|0\rangle` and takes the carried value :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
 
 
 
@@ -2546,9 +2546,9 @@ class Carry(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    The following circuit performs the carry operation on wires ``0`` to ``3``.
+    The following circuit performs the ``Carry`` operation on four wires:
+
     .. code-block::
-        dev = qml.device('default.qubit',wires=4)
         @qml.qndoe(dev)
         def circuit():
             qml.Carry(wires=[0,1,2,3])
@@ -2594,12 +2594,12 @@ class Carry(Operation):
 
 
 class Sum(Operation):
-    r"""Sum()
+    r"""Sum(wires)
     Apply a ``Sum`` operation on the input wires.
     This performs the operation:
 
     .. math::
-        |C_{i-1}\rangle |a\rangle |b\rangle \rightarrow |C_{i}\rangle |a\rangle |a\oplus b\rangle
+        |C\rangle |a\rangle |b\rangle \rightarrow |C\rangle |a\rangle |a\oplus b\oplus c\rangle
 
 
     .. figure:: ../../_static/ops/Sum.svg
@@ -2608,22 +2608,25 @@ class Sum(Operation):
         :target: javascript:void(0);
 
     .. note::
-        The first wire provided corresponds to a **previous carry qubit** :math:`|C_{i-1}\rangle`.
-        The second wire corresponds to the **first qubit value** to be added :math:`|a\rangle`.
-        The third wire corresponds to the **second qubit** value to be added :math:`|b\rangle` and takes the modulo sum :math:`a\oplus b`.
+        The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
+        The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
+        The third wire corresponds to the second qubit value to be added :math:`|b\rangle` and takes the modulo sum :math:`a\oplus b`.
 
     **Details:**
 
     * Number of wires: 3
     * Number of parameters: 0
-    TODO consider gradient
-    * Gradient recipe: TODO
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    TODO
+    The following circuit performs the carry operation on wires three wires:
+
+    .. code-block::
+        def circuit():
+            qml.Sum(wires=[0, 1, 2])
+            return probs(wires=[0, 1, 2])
     """
     num_params = 0
     num_wires = 3
