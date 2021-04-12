@@ -110,7 +110,7 @@ def fourier_box_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sh
     """Plots a set of Fourier coefficients as a box plot.
 
     Args:
-        coeffs (array[complex]): A single set of Fourier coefficients.
+        coeffs (array[complex]): A list of sets of Fourier coefficients.
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
