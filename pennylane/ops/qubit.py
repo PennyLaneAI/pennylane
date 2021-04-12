@@ -2516,24 +2516,25 @@ class Hermitian(Observable):
 # =============================================================================
 
 
-class Carry(Operation):
-    r"""Carry(wires)
-    Apply the ``Carry`` operation to the input wires.
+class QubitCarry(Operation):
+    r"""QubitCarry(wires)
+    Apply the ``QubitCarry`` operation to the input wires.
     This performs the transformation:
 
     .. math::
         |C_{i-1}\rangle |a\rangle |b\rangle |0\rangle \rightarrow |C_{i}\rangle |a\rangle |a\oplus b\rangle |(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle
 
-    .. figure:: ../../_static/ops/Carry.svg
+    .. figure:: ../../_static/ops/QubitCarry.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    .. note::
-        The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
-        The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
-        The third wire corresponds to a second qubit value to be added :math:`|b\rangle`.
-        The fourth wire should start in :math:`|0\rangle` and takes the carried value :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
+    The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
+    The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
+    The third wire corresponds to a second qubit value to be added :math:`|b\rangle`.
+    The fourth wire should start in :math:`|0\rangle` and takes the carried value :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
+
+    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
 
 
 
@@ -2546,12 +2547,12 @@ class Carry(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    The following circuit performs the ``Carry`` operation on four wires:
+    The following circuit performs the ``QubitCarry`` operation on four wires:
 
     .. code-block::
         @qml.qndoe(dev)
         def circuit():
-            qml.Carry(wires=[0,1,2,3])
+            qml.QubitCarry(wires=[0,1,2,3])
             return probs(wires=[0,1,2,3])
     """
     num_params = 0
@@ -2580,7 +2581,7 @@ class Carry(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return Carry.matrix
+        return QubitCarry.matrix
 
     def expand(self):
         tape = qml.tape.QuantumTape(do_queue=False)
@@ -2593,16 +2594,16 @@ class Carry(Operation):
         return tape
 
 
-class Sum(Operation):
-    r"""Sum(wires)
-    Apply a ``Sum`` operation on the input wires.
+class QubitSum(Operation):
+    r"""QubitSum(wires)
+    Apply a ``QubitSum`` operation on the input wires.
     This performs the operation:
 
     .. math::
         |C\rangle |a\rangle |b\rangle \rightarrow |C\rangle |a\rangle |a\oplus b\oplus c\rangle
 
 
-    .. figure:: ../../_static/ops/Sum.svg
+    .. figure:: ../../_static/ops/QubitSum.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -2625,7 +2626,7 @@ class Sum(Operation):
 
     .. code-block::
         def circuit():
-            qml.Sum(wires=[0, 1, 2])
+            qml.QubitSum(wires=[0, 1, 2])
             return probs(wires=[0, 1, 2])
     """
     num_params = 0
@@ -2646,7 +2647,7 @@ class Sum(Operation):
 
     @classmethod
     def _matrix(self, *params):
-        return Sum.matrix
+        return QubitSum.matrix
 
     def expand(self):
 
@@ -2701,8 +2702,8 @@ ops = {
     "DoubleExcitation",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
-    "Carry",
-    "Sum",
+    "QubitCarry",
+    "QubitSum",
 }
 
 

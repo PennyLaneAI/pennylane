@@ -392,8 +392,8 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
-            qml.Carry(wires=[0, 1, 2, 3]),
-            qml.Sum(wires=[0, 1, 2]),
+            qml.QubitCarry(wires=[0, 1, 2, 3]),
+            qml.QubitSum(wires=[0, 1, 2]),
         ],
     )
     def test_adjoint_unitaries(self, op, tol):
@@ -2128,14 +2128,14 @@ class TestArithmetic:
             ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_carry(self, wires, input_string, output_string, expand):
-        """Test if Carry produces the right output and is expandable."""
+    def test_QubitCarry(self, wires, input_string, output_string, expand):
+        """Test if ``QubitCarry`` produces the right output and is expandable."""
         dev = qml.device("default.qubit",wires=4)
         with qml.tape.QuantumTape() as tape:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
                     qml.PauliX(i)
-            qml.Carry(wires=wires)
+            qml.QubitCarry(wires=wires)
             qml.probs(wires=[0,1,2,3])
         
         if expand:
@@ -2145,15 +2145,15 @@ class TestArithmetic:
         result = format(result, "04b")
         assert result == output_string
 
-def test_carry_superposition(self):
-        """Test if Carry works for superposition input states."""
+    def test_QubitCarry_superposition(self):
+        """Test if ``QubitCarry`` works for superposition input states."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(wires=1)
             qml.Hadamard(wires=2)
-            qml.Carry(wires=[0, 1, 2, 3])
+            qml.QubitCarry(wires=[0, 1, 2, 3])
             return qml.probs(wires=3)
 
         result = circuit()
@@ -2180,14 +2180,14 @@ def test_carry_superposition(self):
         ],
     )
     # fmt: on
-    def test_sum(self, wires, input_state, output_state):
-        """Test if Sum produces the correct output"""
+    def test_QubitSum(self, wires, input_state, output_state):
+        """Test if ``QubitSum`` produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit():
             qml.templates.state_preparations.MottonenStatePreparation(input_state, wires=[0, 1, 2])
-            qml.Sum(wires=wires)
+            qml.QubitSum(wires=wires)
             return qml.state()
 
         assert np.allclose(circuit(), output_state)
