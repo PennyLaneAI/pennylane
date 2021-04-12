@@ -150,7 +150,7 @@ Visualizing a single set of coefficients
 
 While all the functions available for visualizing multiple sets of Fourier coefficients
 can be used for a single set, the primary tool for this purpose is the
-``fourier_bar_plot`` function.
+``coefficients_bar_plot`` function.
 
 .. code::
 
@@ -176,7 +176,7 @@ can be used for a single set, the primary tool for this purpose is the
    
    # Set up the axes
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True)
-   fourier_bar_plot(coeffs, 1, ax)
+   coefficients_bar_plot(coeffs, 1, ax)
    plt.suptitle("Simple circuit bar plot")
 
 .. image:: ../_static/fourier_vis_bar_plot.png
@@ -218,7 +218,7 @@ customization options available:
 
    # Number of inputs is now two; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
-   fourier_bar_plot(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
+   coefficients_bar_plot(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
    plt.suptitle("Circuit with weights bar plot", fontsize=14)
 
 
@@ -231,13 +231,13 @@ customization options available:
 	     
 Two convenience functions are also provided to visualize 1- and 2-dimensional
 functions given a set of Fourier coefficients:
-:func:`~.pennylane.fourier.fourier_reconstruct_function_1D_plot` and
-:func:`~.pennylane.fourier.fourier_reconstruct_function_2D_plot`. For example,
+:func:`~.pennylane.fourier.reconstruct_function_1D_plot` and
+:func:`~.pennylane.fourier.reconstruct_function_2D_plot`. For example,
 ``circuit_with_weights`` has two input parameters `x[0]` and `x[1]`, and so we can plot its output:
 
 .. code::
 
-   fourier_reconstruct_function_2D_plot(coeffs)
+   reconstruct_function_2D_plot(coeffs)
    plt.title("Expectation value for circuit with weights", fontsize=14)
    
 .. image:: ../_static/fourier_vis_2D_func.png
@@ -266,12 +266,12 @@ when the weights are randomly sampled. For each `weights` sample we get a differ
    coeffs = np.array(coeffs)
 
 
-One option to plot the distribution is :func:`~.pennylane.fourier.fourier_violin_plot`:
+One option to plot the distribution is :func:`~.pennylane.fourier.coefficients_violin_plot`:
 
 .. code::
 
    fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-   fourier_violin_plot(coeffs, 2, ax, show_freqs=True);
+   coefficients_violin_plot(coeffs, 2, ax, show_freqs=True);
    plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
       
    
@@ -282,11 +282,11 @@ One option to plot the distribution is :func:`~.pennylane.fourier.fourier_violin
 
 |
 	     
-A similar option is the :func:`~.pennylane.fourier.fourier_box_plot`, which
+A similar option is the :func:`~.pennylane.fourier.coefficients_box_plot`, which
 produces a plot of the same format but using a box plot.
 	    
 A different view can obtained using the	     
-:func:`~.pennylane.fourier.fourier_radial_box_plot` function. This "rolls up"
+:func:`~.pennylane.fourier.coefficients_radial_box_plot` function. This "rolls up"
 the coefficients onto a polar grid. Let us use it to visualize the same set of
 coefficients as above:
 
@@ -298,7 +298,7 @@ coefficients as above:
        subplot_kw=dict(polar=True),
        figsize=(15, 8)
    )
-   fourier_radial_box_plot(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+   coefficients_radial_box_plot(coeffs, 2, ax, show_freqs=True, show_fliers=False)
    plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
    plt.tight_layout()
 
@@ -323,14 +323,14 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.fourier_panel_plot` to plot the distributions of the
+:func:`~.pennylane.fourier.coefficients_panel_plot` to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
 
    # Need a grid large enough to hold all coefficients up to frequency 2
    fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
-   fourier_panel_plot(coeffs, 2, ax)
+   coefficients_panel_plot(coeffs, 2, ax)
    plt.suptitle(
       "Fourier coefficients of circuit with weights in the complex plane",
       fontsize=16
