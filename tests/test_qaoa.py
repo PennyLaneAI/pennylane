@@ -19,8 +19,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
+import networkx as nx
 from pennylane.wires import Wires
-
+from pennylane.qaoa.cycles import *
 
 
 #####################################################
@@ -667,3 +668,23 @@ class TestIntegration:
         expected = -1.8260274380964299
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestCycles:
+
+    """Test Cycles functions are behaving correctly"""
+
+    def test_edges_to_wires(self):
+        """Test that map_edges_to_wires returns the correct mapping"""
+        g = nx.lollipop_graph(4, 1)
+        r = edges_to_wires(g)
+
+        assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
+
+
+    def test_wires_to_edges(self):
+        """Test that map_wires_to_edges returns the correct mapping"""
+        g = nx.lollipop_graph(4, 1)
+        r = wires_to_edges(g)
+
+        assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
