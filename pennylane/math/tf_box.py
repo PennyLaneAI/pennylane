@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ class TensorFlowBox(qml.math.TensorBox):
     angle = wrap_output(lambda self: tf.math.angle(self.data))
     arcsin = wrap_output(lambda self: tf.math.asin(self.data))
     cast = wrap_output(lambda self, dtype: tf.cast(self.data, dtype))
+    conj = wrap_output(lambda self: tf.math.conj(self.data))
     diag = staticmethod(wrap_output(lambda values, k=0: tf.linalg.diag(values, k=k)))
     expand_dims = wrap_output(lambda self, axis: tf.expand_dims(self.data, axis=axis))
     gather = wrap_output(lambda self, indices: tf.gather(self.data, indices))

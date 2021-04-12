@@ -19,6 +19,20 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
+from pennylane import DeviceError
+
+
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
 
 
 class TestQNodeIntegration:
@@ -52,8 +66,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.autograd", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots == None
         assert dev.short_name == "default.qubit.autograd"
         assert dev.capabilities()["passthru_interface"] == "autograd"
 

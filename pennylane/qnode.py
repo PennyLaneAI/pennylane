@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -313,7 +313,8 @@ class QNode:
                 f"{backprop_interface} interface."
             )
 
-        if getattr(device, "analytic", False) and backprop_devices is not None:
+        if device.shots is None and backprop_devices is not None:
+
             # device is analytic and has child devices that support backpropagation natively
 
             if interface in backprop_devices:
@@ -323,7 +324,6 @@ class QNode:
                     backprop_devices[interface],
                     wires=device.wires,
                     shots=device.shots,
-                    analytic=True,
                 )
                 return JacobianTape, interface, device, {"method": "backprop"}
 

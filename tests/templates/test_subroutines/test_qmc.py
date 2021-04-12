@@ -16,9 +16,14 @@ import pytest
 from scipy.stats import norm
 
 import pennylane as qml
-from pennylane.templates.subroutines.qmc import (QuantumMonteCarlo, _make_V,
-                                                 _make_Z, func_to_unitary,
-                                                 make_Q, probs_to_unitary)
+from pennylane.templates.subroutines.qmc import (
+    QuantumMonteCarlo,
+    _make_V,
+    _make_Z,
+    func_to_unitary,
+    make_Q,
+    probs_to_unitary,
+)
 from pennylane.wires import Wires
 
 
@@ -240,11 +245,11 @@ class TestQuantumMonteCarlo:
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
-        with qml.tape.QuantumTape() as tape:
-            QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+        tape = op.expand().expand()
 
-        queue_before_qpe = tape.queue[:2]
-        queue_after_qpe = tape.queue[2:]
+        queue_before_qpe = tape.operations[:2]
+        queue_after_qpe = tape.operations[2:]
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -262,12 +267,15 @@ class TestQuantumMonteCarlo:
         with qml.tape.QuantumTape() as qpe_tape:
             qml.templates.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
-        assert len(queue_after_qpe) == len(qpe_tape.queue)
-        assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+        qpe_tape = qpe_tape.expand()
+
+        assert len(queue_after_qpe) == len(qpe_tape.operations)
+        assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
         assert all(
-            np.allclose(o1.matrix, o2.matrix) for o1, o2 in zip(queue_after_qpe, qpe_tape.queue)
+            np.allclose(o1.matrix, o2.matrix)
+            for o1, o2 in zip(queue_after_qpe, qpe_tape.operations)
         )
-        assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.queue))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
 
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value

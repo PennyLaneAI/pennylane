@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,11 +69,9 @@ class DefaultQubitAutograd(DefaultQubit):
 
     Args:
         wires (int): the number of wires to initialize the device with
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that the device
+            returns analytical results.
         analytic (bool): Indicates if the device should calculate expectations
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
@@ -95,6 +93,12 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRZ": autograd_ops.CRZ,
         "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
+        "SingleExcitation": autograd_ops.SingleExcitation,
+        "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
+        "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
+        "DoubleExcitation": autograd_ops.DoubleExcitation,
+        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = np.complex128
@@ -123,8 +127,8 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation

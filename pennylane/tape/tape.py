@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, deque
+import contextlib
 import copy
-from collections import Counter
 from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
 
 # CV ops still need to support state preparation operations prior to any
@@ -75,9 +76,27 @@ Note that QASM has two native gates:
 - ``U`` (equivalent to :class:`~.U3`)
 - ``CX`` (equivalent to :class:`~.CNOT`)
 
-All other gates are defined in the file qelib1.inc:
+All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+
+def get_active_tape():
+    """Returns the currently recording tape.
+    If no tape is currently recording, ``None`` is returned.
+
+    **Example**
+
+    >>> with qml.tape.QuantumTape():
+    ...     qml.RX(0.2, wires="a")
+    ...     tape = qml.get_active_tape()
+    ...     qml.RY(0.1, wires="b")
+    >>> print(tape)
+    <QuantumTape: wires=['a', 'b'], params=2>
+    >>> print(qml.tape.get_active_tape())
+    None
+    """
+    return QueuingContext.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -257,7 +276,7 @@ class QuantumTape(AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
 
     .. code-block:: python
 
@@ -339,6 +358,31 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    @contextlib.contextmanager
+    def stop_recording(self):
+        """Context manager to temporarily stop recording operations
+        onto the tape. This is useful is scratch space is needed.
+
+        **Example**
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(0, wires=0)
+        ...     with tape.stop_recording():
+        ...         qml.RY(1.0, wires=1)
+        ...     qml.RZ(2, wires=1)
+        >>> tape.operations
+        [RX(0, wires=[0]), RZ(2, wires=[1])]
+        """
+        if QueuingContext.active_context() is not self:
+            raise QueuingError(
+                "Cannot stop recording requested tape " "as it is not currently recording."
+            )
+
+        active_contexts = QueuingContext._active_contexts
+        QueuingContext._active_contexts = deque()
+        yield
+        QueuingContext._active_contexts = active_contexts
+
     # ========================================================
     # construction methods
     # ========================================================
@@ -417,6 +461,7 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
+        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -1058,7 +1103,7 @@ class QuantumTape(AnnotatedQueue):
                     op.inv()
 
         # decompose the queue
-        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
+        operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations
         for op in operations:

@@ -5,6 +5,20 @@ jnp = jax.numpy
 import numpy as np
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
+from pennylane import DeviceError
+
+
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
 class TestQNodeIntegration:
@@ -46,8 +60,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1000
-        assert dev.analytic
+        assert dev.shots == None
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
 
@@ -131,7 +144,7 @@ class TestQNodeIntegration:
         """Test that sampling works with a jax.jit"""
         @jax.jit
         def circuit(key):
-            dev = qml.device("default.qubit.jax", wires=1, prng_key=key)
+            dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
             @qml.qnode(dev, interface="jax", diff_method="backprop")
             def inner_circuit():
                 qml.Hadamard(0)
@@ -146,7 +159,7 @@ class TestQNodeIntegration:
 
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.Hadamard(0)
@@ -158,10 +171,13 @@ class TestQNodeIntegration:
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests. """
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
+            qml.CRX(0.0, wires=[0, 1])
+            qml.PhaseShift(0.0, wires=0)
+            qml.ControlledPhaseShift(0.0, wires=[1, 0])
             qml.CRot(1.0, 0.0, 0.0, wires=[0, 1])
             qml.CRY(0.0, wires=[0, 1])
             return qml.sample(qml.PauliZ(wires=0))
@@ -169,7 +185,7 @@ class TestQNodeIntegration:
 
     def test_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)
@@ -260,13 +276,38 @@ class TestPassthruIntegration:
 
         def cost(a):
             """A function of the device quantum state, as a function
-            of ijnput QNode parameters."""
+            of input QNode parameters."""
             res = jnp.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = jax.grad(cost)(a)
         expected = jnp.sin(a)
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+def test_CRot_gradient(theta, tol):
+    """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
+    gate is correct."""
+    dev = qml.device("default.qubit.jax", wires=2)
+    a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+    @qml.qnode(dev, diff_method="backprop", interface="jax")
+    def circuit(a, b, c):
+        qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+        qml.CRot(a, b, c, wires=[0, 1])
+        return qml.expval(qml.PauliX(0))
+
+    res = circuit(a, b, c)
+    expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    grad = jax.grad(circuit, argnums=(0, 1, 2))(a, b, c)
+    expected = np.array([[
+        0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+        0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+        0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+    ]])
+    assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""

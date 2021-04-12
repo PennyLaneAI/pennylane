@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,8 +48,7 @@ class JacobianTape(QuantumTape):
 
     .. note::
 
-        As the quantum tape is a *beta* feature. See :mod:`pennylane.tape`
-        for more details.
+        See :mod:`pennylane.tape` for more details.
 
     Args:
         name (str): a name given to the quantum tape
@@ -91,6 +90,7 @@ class JacobianTape(QuantumTape):
     def __init__(self, name=None, do_queue=True):
         super().__init__(name=name, do_queue=do_queue)
         self.jacobian_options = {}
+        self.hessian_options = {}
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.
@@ -489,7 +489,7 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-        if any([m.return_type is State for m in self.measurements]):
+        if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
         if self.is_sampled:
@@ -663,7 +663,7 @@ class JacobianTape(QuantumTape):
         >>> tape.hessian(dev)
         array([], shape=(0, 0), dtype=float64)
         """
-        if any([m.return_type is State for m in self.measurements]):
+        if any(m.return_type is State for m in self.measurements):
             raise ValueError("The Hessian method does not support circuits that return the state")
 
         method = options.get("method", "analytic")
@@ -730,11 +730,19 @@ class JacobianTape(QuantumTape):
 
             if hessian is None:
                 # create the Hessian matrix
-                hessian = np.zeros((len(params), len(params)), dtype=float)
+                if self.output_dim is not None:
+                    hessian = np.zeros(
+                        (len(params), len(params), np.prod(self.output_dim)), dtype=float
+                    )
+                else:
+                    hessian = np.zeros((len(params), len(params)), dtype=float)
 
             if i == j:
                 hessian[i, i] = g
             else:
                 hessian[i, j] = hessian[j, i] = g
+
+        if self.output_dim == 1:
+            hessian = np.squeeze(hessian, axis=-1)
 
         return hessian

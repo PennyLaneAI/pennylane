@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,7 +81,6 @@ class TestDeviceProperties:
         assert dev.num_wires == 2
         assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
-        assert hasattr(dev, "analytic")
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
@@ -246,6 +245,3 @@ class TestCapabilities:
         else:
             with pytest.raises(NotImplementedError):
                 qnode()
-
-    # TODO: Add tests for supports_finite_shots and supports_analytic_computation
-    # once the shots refactor is done

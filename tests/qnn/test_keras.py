@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn.keras import KerasLayer
+from pennylane.qnn.keras import KerasLayer, WARNING_STRING
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
@@ -484,6 +484,28 @@ class TestKerasLayer:
         grad = tape.gradient(out, qlayer.trainable_weights)
         assert grad is not None
         spy.assert_not_called()
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_compute_output_shape(self, get_circuit, output_dim):
+        """Test that the compute_output_shape method returns the expected shape"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        inputs = tf.keras.Input(shape=(2,))
+        inputs_shape = inputs.shape
+
+        output_shape = layer.compute_output_shape(inputs_shape)
+        assert output_shape.as_list() == [None, 1]
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_deprecation_warning(self, get_circuit, output_dim):
+        """Test if deprecation warning is raised"""
+        if int(qml.__version__.split(".")[1]) >= 16:
+            pytest.fail("Deprecation warnings for the qnn module should be removed")
+
+        c, w = get_circuit
+        with pytest.warns(DeprecationWarning, match=WARNING_STRING):
+            KerasLayer(c, w, output_dim)
 
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
