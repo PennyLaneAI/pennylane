@@ -46,14 +46,6 @@ class OperationRecorder(QuantumTape):
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
     to directly access the applied :class:`~.Operation` and :class:`~.Observable`
     objects.
-
-    Attributes:
-        queue (List[Operator]): list of operators applied within
-            the OperatorRecorder context, includes operations and observables
-        operations (List[Operation]): list of operations applied within
-            the OperatorRecorder context
-        observables (List[Observable]): list of observables applied within
-            the OperatorRecorder context
     """
 
     def __init__(self):

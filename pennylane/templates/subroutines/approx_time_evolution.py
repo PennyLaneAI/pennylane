@@ -12,32 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``ApproxTimeEvolution`` template.
+Contains the ApproxTimeEvolution template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import PauliRot
 
 
-def _preprocess(hamiltonian):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the hamiltonian is of the correct type.
-
-    Args:
-        hamiltonian (qml.vqe.vqe.Hamiltonian): Hamiltonian to simulate
-    """
-
-    if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
-        raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
-        )
-
-
-@template
-def ApproxTimeEvolution(hamiltonian, time, n):
+class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
@@ -87,9 +70,6 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
-    Raises:
-        ValueError: if inputs do not have the correct format
-
     .. UsageDetails::
 
         The template is used inside a qnode:
@@ -117,38 +97,63 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         [-0.41614684 -0.41614684]
     """
 
-    _preprocess(hamiltonian)
+    num_params = 3
+    num_wires = AnyWires
+    par_domain = "A"
 
-    pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
+    def __init__(self, hamiltonian, time, n, do_queue=True):
 
-    theta = []
-    pauli_words = []
-    wires = []
-
-    for i, term in enumerate(hamiltonian.ops):
-
-        word = ""
-
-        try:
-            if isinstance(term.name, str):
-                word = pauli[term.name]
-
-            if isinstance(term.name, list):
-                word = "".join(pauli[j] for j in term.name)
-
-        except KeyError as error:
+        if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
             raise ValueError(
-                "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
-            ) from error
+                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+                    type(hamiltonian).__name__
+                )
+            )
 
-        # Skips terms composed solely of identities
-        if word.count("I") != len(word):
+        # extract the wires that the op acts on
+        wire_list = [term.wires for term in hamiltonian.ops]
+        unique_wires = list(set(wire_list))
 
-            theta.append((2 * time * hamiltonian.coeffs[i]) / n)
-            pauli_words.append(word)
-            wires.append(term.wires)
+        super().__init__(hamiltonian, time, n, wires=unique_wires, do_queue=do_queue)
 
-    for i in range(n):
+    def expand(self):
 
-        for j, term in enumerate(pauli_words):
-            qml.PauliRot(theta[j], term, wires=wires[j])
+        hamiltonian = self.parameters[0]
+        time = self.parameters[1]
+        n = self.parameters[2]
+
+        pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
+
+        theta = []
+        pauli_words = []
+        wires = []
+
+        for i, term in enumerate(hamiltonian.ops):
+
+            word = ""
+
+            try:
+                if isinstance(term.name, str):
+                    word = pauli[term.name]
+
+                if isinstance(term.name, list):
+                    word = "".join(pauli[j] for j in term.name)
+
+            except KeyError as error:
+                raise ValueError(
+                    "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
+                ) from error
+
+            # skips terms composed solely of identities
+            if word.count("I") != len(word):
+                theta.append((2 * time * hamiltonian.coeffs[i]) / n)
+                pauli_words.append(word)
+                wires.append(term.wires)
+
+        with qml.tape.QuantumTape() as tape:
+
+            for i in range(n):
+                for j, term in enumerate(pauli_words):
+                    PauliRot(theta[j], term, wires=wires[j])
+
+        return tape

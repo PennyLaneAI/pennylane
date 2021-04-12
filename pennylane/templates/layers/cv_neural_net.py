@@ -12,79 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``CVNeuralNetLayers`` template.
+Contains the CVNeuralNetLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.ops import Squeezing, Displacement, Kerr
-from pennylane.templates.subroutines import Interferometer
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AnyWires
 
 
-def _preprocess(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the first dimensions of all weight tensors match
-    * Check that the other dimensions of all weight tensors are correct for the number of qubits.
-
-    Args:
-        heta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
-        phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
-        varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
-        r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
-        phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
-        phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
-        varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
-        a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
-        phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
-        k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
-        wires (Wires): wires that template acts on
-
-    Returns:
-        int: number of times that the ansatz is repeated
-    """
-
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-
-    # check that first dimension is the same
-    weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-    shapes = [qml.math.shape(w) for w in weights_list]
-
-    first_dims = [s[0] for s in shapes]
-    if len(set(first_dims)) > 1:
-        raise ValueError(
-            f"The first dimension of all parameters needs to be the same, got {first_dims}"
-        )
-    repeat = shapes[0][0]
-
-    second_dims = [s[1] for s in shapes]
-    expected = [
-        n_if,
-        n_if,
-        n_wires,
-        n_wires,
-        n_wires,
-        n_if,
-        n_if,
-        n_wires,
-        n_wires,
-        n_wires,
-        n_wires,
-    ]
-    if not all(e == d for e, d in zip(expected, second_dims)):
-        raise ValueError("Got unexpected shape for one or more parameters.")
-
-    return repeat
-
-
-@template
-def CVNeuralNetLayers(
-    theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
-):
+class CVNeuralNetLayers(Operation):
     r"""A sequence of layers of a continuous-variable quantum neural network,
     as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
@@ -124,27 +59,137 @@ def CVNeuralNetLayers(
         a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
         phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
-    Raises:
-        ValueError: if inputs do not have the correct format
+        wires (Iterable): wires that the template acts on
+
+    .. UsageDetails:
+
+        **Parameter shapes**
+
+        A list of shapes for the 11 input parameter tensors can be computed by the static method
+        :meth:`~.CVNeuralNetLayers.shapes` and used when creating randomly
+        initialised weights:
+
+        .. code-block:: python
+
+            shapes = CVNeuralNetLayers.shapes(n_layers=2, n_wires=2)
+            weights = [np.random.random(shape) for shape in shapes]
+
+            def circuit():
+              CVNeuralNetLayers(*weights, wires=[0, 1])
+              return qml.expval(qml.X(0))
+
     """
 
-    wires = Wires(wires)
-    repeat = _preprocess(
-        theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
-    )
+    num_params = 11
+    num_wires = AnyWires
+    par_domain = "A"
 
-    for l in range(repeat):
+    def __init__(
+        self,
+        theta_1,
+        phi_1,
+        varphi_1,
+        r,
+        phi_r,
+        theta_2,
+        phi_2,
+        varphi_2,
+        a,
+        phi_a,
+        k,
+        wires,
+        do_queue=True,
+    ):
 
-        Interferometer(theta=theta_1[l], phi=phi_1[l], varphi=varphi_1[l], wires=wires)
+        n_wires = len(wires)
+        n_if = n_wires * (n_wires - 1) // 2
 
-        r_and_phi_r = qml.math.stack([r[l], phi_r[l]], axis=1)
-        broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=r_and_phi_r)
+        # check that first dimension is the same
+        weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+        shapes = [qml.math.shape(w) for w in weights_list]
+        first_dims = [s[0] for s in shapes]
+        if len(set(first_dims)) > 1:
+            raise ValueError(
+                f"The first dimension of all parameters needs to be the same, got {first_dims}"
+            )
 
-        Interferometer(theta=theta_2[l], phi=phi_2[l], varphi=varphi_2[l], wires=wires)
+        # check second dimensions
+        second_dims = [s[1] for s in shapes]
+        expected = [n_if] * 2 + [n_wires] * 3 + [n_if] * 2 + [n_wires] * 4
+        if not all(e == d for e, d in zip(expected, second_dims)):
+            raise ValueError("Got unexpected shape for one or more parameters.")
 
-        a_and_phi_a = qml.math.stack([a[l], phi_a[l]], axis=1)
-        broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=a_and_phi_a)
+        self.n_layers = shapes[0][0]
 
-        broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k[l])
+        super().__init__(
+            theta_1,
+            phi_1,
+            varphi_1,
+            r,
+            phi_r,
+            theta_2,
+            phi_2,
+            varphi_2,
+            a,
+            phi_a,
+            k,
+            wires=wires,
+            do_queue=do_queue,
+        )
+
+    def expand(self):
+
+        with qml.tape.QuantumTape() as tape:
+
+            for l in range(self.n_layers):
+
+                qml.templates.Interferometer(
+                    theta=self.parameters[0][l],
+                    phi=self.parameters[1][l],
+                    varphi=self.parameters[2][l],
+                    wires=self.wires,
+                )
+
+                for i in range(len(self.wires)):
+                    qml.Squeezing(
+                        self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i]
+                    )
+
+                qml.templates.Interferometer(
+                    theta=self.parameters[5][l],
+                    phi=self.parameters[6][l],
+                    varphi=self.parameters[7][l],
+                    wires=self.wires,
+                )
+
+                for i in range(len(self.wires)):
+                    qml.Displacement(
+                        self.parameters[8][l, i], self.parameters[9][l, i], wires=self.wires[i]
+                    )
+
+                for i in range(len(self.wires)):
+                    qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
+
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns a list of shapes for the 11 parameter tensors.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of wires
+
+        Returns:
+            list[tuple[int]]: list of shapes
+        """
+        n_if = n_wires * (n_wires - 1) // 2
+
+        shapes = (
+            [(n_layers, n_if)] * 2
+            + [(n_layers, n_wires)] * 3
+            + [(n_layers, n_if)] * 2
+            + [(n_layers, n_wires)] * 4
+        )
+
+        return shapes

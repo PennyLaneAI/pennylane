@@ -671,7 +671,8 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        new_tape = tape.expand()
+        # since expansion calls `BasisStatePreparation` we have to expand twice
+        new_tape = tape.expand(depth=2)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -728,7 +729,7 @@ class TestExpand:
             qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 4
 
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
@@ -758,7 +759,7 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
     def test_stopping_criterion_with_depth(self):
@@ -794,7 +795,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 6
+        assert len(new_tape.operations) == 5
 
         expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
@@ -1299,3 +1300,115 @@ class TestTapeCopying:
         # check that the casting worked
         assert isinstance(copied_tape, qml.tape.JacobianTape)
         assert not isinstance(tape, qml.tape.JacobianTape)
+
+
+class TestStopRecording:
+    """Test that the stop_recording function works as expected"""
+
+    def test_tape_not_recording(self):
+        """Test that an error is raised if the tape is no
+        longer recording"""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+
+        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
+            with tape.stop_recording():
+                pass
+
+    def test_nested_tape_not_recording(self):
+        """Test that an error is raised if the tape is no
+        longer recording"""
+        with QuantumTape() as tape1:
+            qml.RX(0.1, wires=0)
+
+            with QuantumTape() as tape2:
+                qml.RX(0.1, wires=0)
+
+                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
+                    with tape1.stop_recording():
+                        pass
+
+    def test_recording_stopped(self):
+        """Test that recording is stopped within a tape context"""
+
+        with QuantumTape() as tape:
+            op0 = qml.RX(0, wires=0)
+            assert tape.active_context() is tape
+
+            with tape.stop_recording():
+                op1 = qml.RY(1.0, wires=1)
+                assert tape.active_context() is None
+
+            op2 = qml.RZ(2, wires=1)
+            assert tape.active_context() is tape
+
+        assert len(tape.operations) == 2
+        assert tape.operations[0] == op0
+        assert tape.operations[1] == op2
+
+    def test_nested_recording_stopped(self):
+        """Test that recording is stopped within a nested tape context"""
+
+        with QuantumTape() as tape1:
+            op0 = qml.RX(0, wires=0)
+            assert tape1.active_context() is tape1
+
+            with QuantumTape() as tape2:
+                assert tape1.active_context() is tape2
+                op1 = qml.RY(1.0, wires=1)
+
+                with tape2.stop_recording():
+                    assert tape1.active_context() is None
+                    op2 = qml.RZ(0.6, wires=2)
+                    op3 = qml.CNOT(wires=[0, 2])
+
+                op4 = qml.Hadamard(wires=0)
+
+            op5 = qml.RZ(2, wires=1)
+            assert tape1.active_context() is tape1
+
+        assert len(tape1.operations) == 3
+        assert tape1.operations[0] == op0
+        assert tape1.operations[1] == tape2
+        assert tape1.operations[2] == op5
+
+        assert len(tape2.operations) == 2
+        assert tape2.operations[0] == op1
+        assert tape2.operations[1] == op4
+
+    def test_creating_scratch_tape(self):
+        """Test that a tape created inside the 'scratch'
+        space is properly created and accessible"""
+        with QuantumTape() as tape:
+            op0 = qml.RX(0, wires=0)
+            assert tape.active_context() is tape
+
+            with tape.stop_recording(), QuantumTape() as temp_tape:
+                assert tape.active_context() is temp_tape
+                op1 = qml.RY(1.0, wires=1)
+
+            op2 = qml.RZ(2, wires=1)
+            assert tape.active_context() is tape
+
+        assert len(tape.operations) == 2
+        assert tape.operations[0] == op0
+        assert tape.operations[1] == op2
+
+        assert len(temp_tape.operations) == 1
+        assert temp_tape.operations[0] == op1
+
+
+def test_gate_tape():
+    """Test that the get_active_tape() function returns the currently
+    recording tape, or None if no tape is recording"""
+    assert qml.tape.get_active_tape() is None
+
+    with QuantumTape() as tape1:
+        assert qml.tape.get_active_tape() is tape1
+
+        with QuantumTape() as tape2:
+            assert qml.tape.get_active_tape() is tape2
+
+        assert qml.tape.get_active_tape() is tape1
+
+    assert qml.tape.get_active_tape() is None

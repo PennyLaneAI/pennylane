@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``BasicEntanglerLayers`` template.
+Contains the BasicEntanglerLayers template.
 """
 # pylint: disable=consider-using-enumerate
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.wires import Wires
 
 
 class BasicEntanglerLayers(Operation):
@@ -50,8 +49,7 @@ class BasicEntanglerLayers(Operation):
     Args:
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                                 for the rotation.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Iterable): wires that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
     Raises:
