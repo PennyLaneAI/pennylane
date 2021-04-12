@@ -21,11 +21,11 @@ except ModuleNotFoundError:
     print("Module matplotlib is required for visualization in the Fourier module.")
 else:
     from .visualization import (
-        fourier_violin_plot,
-        fourier_bar_plot,
-        fourier_box_plot,
-        fourier_panel_plot,
-        fourier_radial_box_plot,
-        fourier_reconstruct_function_1D_plot,
-        fourier_reconstruct_function_2D_plot,
+        coefficients_violin_plot,
+        coefficients_bar_plot,
+        coefficients_box_plot,
+        coefficients_panel_plot,
+        coefficients_radial_box_plot,
+        reconstruct_function_1D_plot,
+        reconstruct_function_2D_plot,
     )
