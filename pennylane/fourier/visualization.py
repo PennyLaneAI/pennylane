@@ -17,6 +17,7 @@ import numpy as np
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 
@@ -120,14 +121,14 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of input variables in the function.
-        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+        ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
             "imag" : other_colour_string} indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
 
     Returns:
-        ax: The axes on which the data is plotted.
+        array[matplotlib.axes.Axes]: The axes on which the data is plotted.
 
     **Example**
 
@@ -150,6 +151,10 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
 
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)
+
+    # Check axis shape
+    if ax.size != 2:
+        raise ValueError("Matplotlib axis should consist of two subplots.")
 
     if colour_dict is None:
         colour_dict = {"real": "purple", "imag": "green"}
@@ -189,7 +194,7 @@ def coefficients_box_plot(
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of input variables in the function.
-        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+        ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
             "imag" : other_colour_string} indicating which colours should be used in the plot.
@@ -197,7 +202,7 @@ def coefficients_box_plot(
         show_fliers (bool): Whether to display the box plot outliers.
 
     Returns:
-        ax: The axes on which the data is plotted.
+        array[matplotlib.axes.Axes]: The axes after plotting is complete.
 
     **Example**
 
@@ -219,6 +224,10 @@ def coefficients_box_plot(
         coefficients_box_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
     _validate_coefficients(coeffs, n_inputs, True)
+
+    # Check axis shape
+    if ax.size != 2:
+        raise ValueError("Matplotlib axis should consist of two subplots.")
 
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
@@ -266,14 +275,14 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
         coeffs (array[complex]): A single set of Fourier coefficients. The dimensions of the
             array should be ``(2d + 1, ) * n_inputs`` where ``d`` is the largest frequency.
         n_inputs (int): The number of input variables in the function.
-        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. Must
+        ax (list[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
         colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
             "imag" : other_colour_string} indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
 
-    Returns:
-        ax: The axes on which the data is plotted.
+     Returns:
+        array[matplotlib.axes.Axes]: The axes after plotting is complete.
 
     **Example**
 
@@ -294,6 +303,10 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
         coefficients_bar_plot(coeffs, n_inputs, ax, show_freqs=True);
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, False)
+
+    # Check axis shape
+    if ax.size != 2:
+        raise ValueError("Matplotlib axis should consist of two subplots.")
 
     # The axis received must be a pair of axes in a subplot.
     if colour_dict is None:
@@ -332,13 +345,13 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
             Such an array may be the output of the numpy/scipy ``fft``/``fft2`` functions,
             or :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of variables in the function.
-        ax (list[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
+        ax (array[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
             1-dimensional data, length must be the number of frequencies. For 2-dimensional
             data, must be a grid that matches the dimensions of a single set of coefficients.
         colour (str): The outline colour of the points on the plot.
 
     Returns:
-        matplotlib.AxesSubplot: The axes on which the data is plotted.
+        array[matplotlib.axes.Axes]: The axes after plotting is complete.
 
     **Example**
 
@@ -369,11 +382,11 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
             "Panel plot function accepts input coefficients for only 1- or 2-dimensional functions."
         )
 
-    if colour is None:
-        colour = "tab:blue"
-
     if ax.shape != coeffs[0].shape:
         raise ValueError("Shape of subplot axes must match the shape of the coefficient data.")
+
+    if colour is None:
+        colour = "tab:blue"
 
     # This could probably be more efficient.
     # Plot 1D case
@@ -421,11 +434,11 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
             degree, i.e., the maximum frequency of present in the coefficients.
             Such an array may be the output of the numpy/scipy ``fft`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
-        ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
+        ax (matplotlib.axes.Axes): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
     Returns:
-        matplotlib.AxesSubplot: The axis after plotting is complete.
+        matplotlib.axes.Axes: The axis after plotting is complete.
 
     **Example**
 
@@ -488,11 +501,11 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
             maximum frequency of present in the coefficients. Such an array may
             be the output of the numpy/scipy ``fft2`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
-        ax (matplotlib.axes._subplots.AxesSubplot): Axis on which to plot. If None, the
+        ax (matplotlib.axes.Axes): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
     Returns:
-        matplotlib.AxesSubplot: The axis after plotting is complete.
+        matplotlib.axes.Axes: The axis after plotting is complete.
 
     **Example**
 
@@ -574,6 +587,8 @@ def coefficients_radial_box_plot(
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): Dimension of the transformed function.
+        ax (array[matplotlib.axes.Axes]): Axes to plot on. For this function, subplots
+            must specify ``subplot_kw=dict(polar=True)`` upon construction.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
         colour_dict (str : str): Specify a colour mapping for positive and negative
@@ -584,7 +599,7 @@ def coefficients_radial_box_plot(
             on separate panels. Default is to plot real/complex values on separate panels.
 
     Returns:
-        matplotlib.AxesSubplot: The axis after plotting is complete.
+        array[matplotlib.axes.Axes]: The axes after plotting is complete.
 
     **Example**
 
@@ -608,6 +623,10 @@ def coefficients_radial_box_plot(
 
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)
+
+    # Check axis shape
+    if ax.size != 2:
+        raise ValueError("Matplotlib axis should consist of two subplots.")
 
     if colour_dict is None:
         colour_dict = {"real": "red", "imag": "black"}
