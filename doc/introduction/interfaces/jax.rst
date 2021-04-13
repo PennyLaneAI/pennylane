@@ -7,11 +7,6 @@ Born out of the autograd package, `JAX <https://jax.readthedocs.io/en/latest/ind
 adding support for powerful hardware accelerators like GPUs and TPUs via `XLA <https://www.tensorflow.org/xla>`_. In order to use PennyLane in combination with JAX, we have to generate JAX-compatible
 quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with JAX by using the ``interface='jax'`` flag in the QNode decorator.
 
-.. note::
-    
-    Currently, only the ``default.qubit.jax`` device supports the JAX interface, 
-    and only if `diff_method="backprop"` is used.
-
 
 .. note::
 

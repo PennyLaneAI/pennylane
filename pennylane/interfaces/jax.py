@@ -88,7 +88,7 @@ class JAXInterface(AnnotatedQueue):
         return_type = self.observables[0].return_type
         if return_type is not Variance and return_type is not Expectation:
             raise ValueError(
-                f"Only Variance and Expectation returns are support for the JAX interface, given {return_type}."
+                f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
             )
 
         @jax.custom_vjp
