@@ -2605,7 +2605,7 @@ class QubitCarry(Operation):
 
         with qml.tape.QuantumTape() as tape:
             qml.Toffoli(wires=self.wires[1:])
-            qml.CNOT(wires=self.wires[1:3])
+            qml.CNOT(wires=self.wires[1, 2])
             qml.Toffoli(wires=[self.wires[0], self.wires[2], self.wires[3]])
 
         return tape
