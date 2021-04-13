@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, edge_weight
 
 
 #####################################################
@@ -697,3 +697,25 @@ class TestCycles:
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
+
+    def test_edge_weight(self):
+        """Test if the edge_weight function returns the expected result on a
+        manually-calculated example of a 3-node complete digraph """
+        g = nx.complete_graph(3).to_directed()
+        edge_weight_data = {edge:(i+1)*0.5 for i, edge in enumerate(g.edges)}
+        for k,v in edge_weight_data.items():
+            g[k[0]][k[1]]['weight'] = v
+        h = edge_weight(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+        ]
+        expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
