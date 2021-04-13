@@ -1203,10 +1203,10 @@ class PauliRot(Operation):
 
 
 # Four term gradient recipe for controlled rotations
-c1 = INV_SQRT2 * (np.sqrt(2)+1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2)-1) / 4
-a = np.pi/2
-b = 3*np.pi/2
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
+a = np.pi / 2
+b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
@@ -1241,7 +1241,7 @@ class CRX(Operation):
 
       - :math:`a = \pi/2`
       - :math:`b = 3\pi/2`
-      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1310,7 +1310,7 @@ class CRY(Operation):
 
       - :math:`a = \pi/2`
       - :math:`b = 3\pi/2`
-      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1380,7 +1380,7 @@ class CRZ(DiagonalOperation):
 
       - :math:`a = \pi/2`
       - :math:`b = 3\pi/2`
-      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1461,7 +1461,7 @@ class CRot(Operation):
       - :math:`\mathbf{x} = (\phi, \theta, \omega)`
       - :math:`a = \pi/2`
       - :math:`b = 3\pi/2`
-      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
