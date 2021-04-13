@@ -2,26 +2,40 @@
 
 <h3>New features since last release</h3>
 
-* Adds `Carry` and `Sum` operations for basic arithmetic.
+* Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
-  A simple example:
+  `QubitSum` takes three wires as input. After the operation, the third qubit holds the modulo two sum of the three input qubits.
+  More precisely, `QubitSum` performs the transformation :math::`|a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle`
+  `QubitCarry` takes four wires as input. After the operation, the third qubit holds the modulo two sum of the middle two input qubits. 
+  If the sum of the first three wires results in a carry, the fourth qubit is flipped.
+  More precisely, `QubitCarry` performs the transformation :math::`|a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle`
+
+  The following example adds two 1-bit numbers, returning a 2-bit answer:
 
   ```python
   dev = qml.device('default.qubit', wires=4)
-
+  a = 0
+  b = 1
   @qml.qnode(dev)
   def circuit():
-      qml.BasisState([0, 1, 1, 0], wires=range(4))
-      qml.Carry(wires=range(4))
-      qml.Sum(wires=range(3))
-      return qml.probs(wires=range(4))
+      qml.BasisState(np.array([a,b]), wires=[1,2])
+      qml.QubitCarry(wires=[0,1,2,3])
+      qml.CNOT(wires=[1,2])
+      qml.QubitSum(wires=[0,1,2])
+      return qml.probs(wires=[3,2])
 
   probs = circuit()
-  bitstrings = tuple(itertools.product([0, 1], repeat=wires))
+  bitstrings = tuple(itertools.product([0, 1], repeat=2))
   indx = np.argwhere(probs == 1).flatten()[0]
   output = bitstrings[indx]
-  print(output)
+  ```
+
+  ```python
+  >>> print(output)
+  (0, 1)
+  ```
+
 * Computing second derivatives and Hessians of QNodes is now supported when
   using the Autograd interface.
   [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)

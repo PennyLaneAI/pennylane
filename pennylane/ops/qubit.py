@@ -2515,8 +2515,8 @@ class Hermitian(Observable):
 class QubitCarry(Operation):
     r"""QubitCarry(wires)
     Apply the ``QubitCarry`` operation to four input wires.
-    This stores the modulo two sum of the middle two wires in the third wire and (if the fourth wire is in state :math:`|0\rangle`)
-    stores the carry of summing the first three wires in the fourth wire.
+    This stores the modulo two sum of the middle two qubits in the third qubit and
+    flips the value of the fourth qubit if the modulo sum of the first three qubits results in a carry.
     More precisely, this operation performs the transformation:
 
     .. math::
@@ -2529,14 +2529,13 @@ class QubitCarry(Operation):
 
     The first wire corresponds to the first qubit value to be added :math:`|a\rangle`.
     The second wire corresponds to the second qubit value to be added :math:`|b\rangle`.
-    The third wire corresponds to the third qubit value to be added :math:`|c\rangle` and takes the the value :math:`|b \oplus c\rangle`.
-    The fourth wire corresponds to the fourth qubit :math:`|d\rangle` and takes the value :math:`|(bc \oplus d)\oplus((b\oplus c)a)\rangle`.
+    The third wire corresponds to the third qubit value to be added :math:`|c\rangle` and takes the state :math:`|b \oplus c\rangle`.
+    The fourth wire corresponds to the fourth qubit :math:`|d\rangle` and takes the state :math:`|(bc \oplus d)\oplus((b\oplus c)a)\rangle`.
 
     See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
 
-    .. note:: Starting the fourth wire in state :math:`|0>` results in it taking the carry value of the sum: :math:`bc\oplus (b\oplus c)a`.
-
-
+    .. note:: If the fourth wire starts in state :math:`|0\rangle`, its final state holds the carry value of the sum. 
+    This is the state: :math:`|bc\oplus (b\oplus c)a\rangle`.
 
     **Details:**
 
@@ -2547,13 +2546,31 @@ class QubitCarry(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    The following circuit performs the ``QubitCarry`` operation on four wires:
+    The following circuit performs the ``QubitCarry`` operation on a ``basis_state``.
+    Here we perform the modulo two sum :math:`1 \oplus 1 = 0` and get a carry value of 1.
 
     .. code-block::
+
         @qml.qnode(dev)
-        def circuit():
+        def circuit(basis_state):
+            qml.BasisState(basis_state,wires=[0,1,2,3])
             qml.QubitCarry(wires=[0,1,2,3])
-            return qml.probs(wires=[0,1,2,3])
+            return qml.probs(wires=[2]),qml.probs(wires=[3])
+
+        ab_sum,carry = circuit(np.array([0, 1, 1, 0]))
+        bitstrings = tuple(itertools.product([0, 1], repeat=1))
+        indx_ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
+        indx_carry =np.argwhere(carry == 1).flatten()[0]
+        ab_sum = bitstrings[indx_ab_sum]
+        carry = bitstrings[indx_carry]
+
+        >>> print(ab_sum)
+        (0,)
+        >>> print(carry)
+        (1,)
+        
+
+
     """
     num_params = 0
     num_wires = 4
@@ -2623,13 +2640,23 @@ class QubitSum(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    The following circuit performs the ``QubitSum`` operation on three wires:
+    The following circuit performs the ``QubitSum`` operation on a ``basis_state``.
+    Here we perform the modulo two sum :math:`1 \oplus 1 \oplus 0 = 0`:
 
     .. code-block::
+
         @qml.qnode(dev)
-        def circuit():
+        def circuit(basis_state):
+            qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.probs(wires = 2)
+
+        probs = circuit(np.array([1, 1, 0]))
+        bitstrings = tuple(itertools.product([0, 1], repeat=1))
+        indx = np.argwhere(probs == 1).flatten()[0]
+        output = bitstrings[indx]
+        >>> print(output)
+        (0,)
     """
     num_params = 0
     num_wires = 3
@@ -2648,7 +2675,7 @@ class QubitSum(Operation):
     )
 
     @classmethod
-    def _matrix(self, *params):
+    def _matrix(cls, *params):
         return QubitSum.matrix
 
     def expand(self):
@@ -2656,7 +2683,7 @@ class QubitSum(Operation):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with qml.tape.QuantumTape() as tape:
-            qml.CNOT(wires=self.wires[1:3])
+            qml.CNOT(wires=self.wires[1, 2])
             qml.CNOT(wires=[self.wires[0], self.wires[2]])
 
         return tape
