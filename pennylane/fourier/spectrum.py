@@ -48,7 +48,8 @@ def _simplify_tape(tape, original_inputs):
         """
 
         if isinstance(obj, qml.operation.Operation):
-            takes_input = any(p in original_inputs for p in obj.parameters)
+            trainable = tape.get_parameters(trainable_only=True)
+            takes_input = any(p in trainable for p in obj.parameters)
             is_one_param_gate = obj.generator[0] is not None and len(obj.parameters) == 1
             if takes_input and not is_one_param_gate:
 
@@ -57,14 +58,28 @@ def _simplify_tape(tape, original_inputs):
                 # parameters - this makes sure no new parameters
                 # were created that depend on the inputs
                 try:
+                    # we need to create a new tape here derived from the class
+                    # of the original tape (i.e., AutogradQuantumTape)
+                    # and queue the ops from the expansion,
+                    # since the get_parameters(trainable_only=True)
+                    # method only distinguishes trainable params
+                    # if the tape is interface-aware
+                    new_tape = tape.__class__()
                     expanded = obj.expand()
-                except NotImplementedError:
-                    raise ValueError(f"Cannot expand {obj}. Aborting the expansion of the tape.")
+                    for op in expanded.operations:
+                        getattr(new_tape, "_ops").append(op)
 
-                new_inputs = expanded.get_parameters(trainable_only=True)
+                except NotImplementedError:
+                    raise ValueError(f"Cannot expand {obj.name}. Aborting the expansion of the tape.")
+
+                # necessary to extract the parameters of the ops
+                # and get indices of the trainable ones
+                new_tape._update_par_info()
+                new_tape._update_trainable_params()
+                new_inputs = new_tape.get_parameters(trainable_only=True)
                 if any(i not in original_inputs for i in new_inputs):
                     raise ValueError(
-                        f"{obj} transforms the inputs. " f"Aborting the expansion of the tape."
+                        f"{obj} transforms the inputs. Aborting the expansion of the tape."
                     )
 
                 return False
@@ -99,7 +114,9 @@ def _get_spectrum(op):
     # eigenvalues of hermitian ops are guaranteed to be real
     evals = np.real(evals)
 
-    # append negative to cater for the complex conjugate part which subtracts eigenvalues
+    # append negative to cater for the
+    # complex conjugate part of the expectation,
+    # which subtracts eigenvalues
     evals = [evals, -evals]
 
     frequencies = [np.round(sum(comb), decimals=8) for comb in product(*evals)]
@@ -186,7 +203,7 @@ def spectrum(qnode):
             qml.RX(x[3], wires=2)
             return qml.expval(qml.PauliZ(wires=2))
 
-        x = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5], requires_grad=True)
+        x = pnp.array([1, 2, 3, 4, 5], requires_grad=True)
 
 
         res = spectrum(circuit)(x)
@@ -194,11 +211,11 @@ def spectrum(qnode):
         for inp, freqs in res.items():
             print(f"{inp}: {freqs}")
 
-        >>> 0.1: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
-        >>> 0.2: [-2.0, -1.0, 0.0, 1.0, 2.0]
-        >>> 0.3: [-1.0, 0.0, 1.0]
-        >>> 0.4: [-2.0, -1.0, 0.0, 1.0, 2.0]
-        >>> 0.5: [-1.0, 0.0, 1.0]
+        >>> 1: [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+        >>> 2: [-2.0, -1.0, 0.0, 1.0, 2.0]
+        >>> 3: [-1.0, 0.0, 1.0]
+        >>> 4: [-2.0, -1.0, 0.0, 1.0, 2.0]
+        >>> 5: [-1.0, 0.0, 1.0]
     """
 
     @wraps(qnode)
@@ -228,7 +245,10 @@ def spectrum(qnode):
                 # inputs can only enter one-parameter gates
                 continue
 
-            inpt = op.parameters[0]
+            # extract the parameter as a numpy scalar value,
+            # since some tensor objects are unhashable and
+            # can therefore not be used as dictionary keys
+            inpt = qml.math.toarray(op.parameters[0])
             if inpt in inpts:
                 spec = _get_spectrum(op)
 
