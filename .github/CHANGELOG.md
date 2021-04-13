@@ -295,8 +295,9 @@ fully differentiable.
   ...     return qml.expval(qml.PauliZ(0))
   ```
 
-  We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
-  \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
+  We can use this transform to extract the relationship
+  :math:`f: \mathbb{R}^n \rightarrow\mathbb{R}^m` between the input QNode
+  arguments :math:`w` and the gate arguments :math:`g`, for
   a given value of the QNode arguments:
 
   ```pycon
