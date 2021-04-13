@@ -280,37 +280,37 @@ fully differentiable.
 * Adds the `qml.transforms.classical_jacobian` transform.
   [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
 
-    This transform returns a function to extract the Jacobian matrix of the classical part of a
-    QNode, allowing the classical dependence between the QNode arguments and the quantum gate
-    arguments to be extracted.
+  This transform returns a function to extract the Jacobian matrix of the classical part of a
+  QNode, allowing the classical dependence between the QNode arguments and the quantum gate
+  arguments to be extracted.
 
-    For example, given the following QNode:
+  For example, given the following QNode:
 
-    ```pycon
-    >>> @qml.qnode(dev)
-    ... def circuit(weights):
-    ...     qml.RX(weights[0], wires=0)
-    ...     qml.RY(weights[0], wires=1)
-    ...     qml.RZ(weights[2] ** 2, wires=1)
-    ...     return qml.expval(qml.PauliZ(0))
-    ```
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def circuit(weights):
+  ...     qml.RX(weights[0], wires=0)
+  ...     qml.RY(weights[0], wires=1)
+  ...     qml.RZ(weights[2] ** 2, wires=1)
+  ...     return qml.expval(qml.PauliZ(0))
+  ```
 
-    We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
-    \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
-    a given value of the QNode arguments:
+  We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
+  \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
+  a given value of the QNode arguments:
 
-    ```pycon
-    >>> cjac_fn = qml.transforms.classical_jacobian(circuit)
-    >>> weights = np.array([1., 1., 1.], requires_grad=True)
-    >>> cjac = cjac_fn(weights)
-    >>> print(cjac)
-    [[1. 0. 0.]
-     [1. 0. 0.]
-     [0. 0. 2.]]
-    ```
+  ```pycon
+  >>> cjac_fn = qml.transforms.classical_jacobian(circuit)
+  >>> weights = np.array([1., 1., 1.], requires_grad=True)
+  >>> cjac = cjac_fn(weights)
+  >>> print(cjac)
+  [[1. 0. 0.]
+   [1. 0. 0.]
+   [0. 0. 2.]]
+  ```
 
-    The returned Jacobian has rows corresponding to gate arguments, and columns corresponding to
-    QNode arguments; that is, :math:`J_{ij} = \frac{\partial}{\partial g_i} f(w_j)`.
+  The returned Jacobian has rows corresponding to gate arguments, and columns corresponding to
+  QNode arguments; that is, :math:`J_{ij} = \frac{\partial}{\partial g_i} f(w_j)`.
 
 * Adds a new transform `qml.transforms.invisible`.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
