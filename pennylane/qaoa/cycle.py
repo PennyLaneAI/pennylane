@@ -17,8 +17,8 @@ Methods for finding max weighted cycle of weighted directed graphs
 
 from typing import Dict, Tuple
 import networkx as nx
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:

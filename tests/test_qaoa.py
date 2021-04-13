@@ -700,11 +700,11 @@ class TestCycles:
 
     def test_edge_weight(self):
         """Test if the edge_weight function returns the expected result on a
-        manually-calculated example of a 3-node complete digraph """
+        manually-calculated example of a 3-node complete digraph"""
         g = nx.complete_graph(3).to_directed()
-        edge_weight_data = {edge:(i+1)*0.5 for i, edge in enumerate(g.edges)}
-        for k,v in edge_weight_data.items():
-            g[k[0]][k[1]]['weight'] = v
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
         h = edge_weight(g)
 
         expected_ops = [
