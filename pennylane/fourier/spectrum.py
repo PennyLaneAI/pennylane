@@ -84,8 +84,7 @@ def _simplify_tape(tape, original_inputs):
 
                 return False
 
-            else:
-                return True
+            return True
 
         # if object is not an op, it is probably a tape, so expand it
         return False
