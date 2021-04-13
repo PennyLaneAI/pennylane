@@ -698,7 +698,7 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-    def test_edge_weight(self):
+    def test_edge_weight_complete(self):
         """Test if the edge_weight function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
         g = nx.complete_graph(3).to_directed()
@@ -716,6 +716,52 @@ class TestCycles:
             qml.PauliZ(5),
         ]
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_edge_weight_incomplete(self):
+        """Test if the edge_weight function returns the expected result on a
+        manually-calculated example of a 4-node incomplete digraph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+        h = edge_weight(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+            qml.PauliZ(6),
+            qml.PauliZ(7),
+            qml.PauliZ(8),
+            qml.PauliZ(9),
+            qml.PauliZ(10),
+            qml.PauliZ(11),
+            qml.PauliZ(12),
+            qml.PauliZ(13)
+        ]
+        expected_coeffs = [
+            np.log(0.5),
+            np.log(1),
+            np.log(1.5),
+            np.log(2),
+            np.log(2.5),
+            np.log(3),
+            np.log(3.5),
+            np.log(4),
+            np.log(4.5),
+            np.log(5),
+            np.log(5.5),
+            np.log(6),
+            np.log(6.5),
+            np.log(7)            
+        ]
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
