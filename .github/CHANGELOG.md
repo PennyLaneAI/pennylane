@@ -127,8 +127,6 @@
   to be course-grained with a single QNode evaluation.
   [(#1103)](https://github.com/PennyLaneAI/pennylane/pull/1103)
 
-  Consider
-
   ```pycon
   >>> shots_list = [5, 10, 1000]
   >>> dev = qml.device("default.qubit", wires=2, shots=shots_list)
@@ -183,6 +181,12 @@
   ```
 
 <h4>New differentiable quantum transforms</h4>
+
+A new module is available,
+[qml.transforms](https://pennylane.rtfd.io/en/stable/code/qml_transforms.html),
+which contains *differentiable quantum transforms*. These are functions that act
+on QNodes, quantum functions, devices, and tapes, transforming them while remaining
+fully differentiable.
 
 * A new adjoint transform has been added. 
   [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
@@ -271,9 +275,44 @@
   ```
 
   In the future, devices will be able to exploit the sparsity of controlled operations to 
-  improve simulation performance. 
+  improve simulation performance.
 
-* Adds a new transform `qml.invisible`.
+* Adds the `qml.transforms.classical_jacobian` transform.
+  [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
+
+    This transform returns a function to extract the Jacobian matrix of the classical part of a
+    QNode, allowing the classical dependence between the QNode arguments and the quantum gate
+    arguments to be extracted.
+
+    For example, given the following QNode:
+
+    ```python
+    >>> @qml.qnode(dev)
+    ... def circuit(weights):
+    ...     qml.RX(weights[0], wires=0)
+    ...     qml.RY(weights[0], wires=1)
+    ...     qml.RZ(weights[2] ** 2, wires=1)
+    ...     return qml.expval(qml.PauliZ(0))
+    ```
+
+    We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
+    \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
+    a given value of the QNode arguments:
+
+    ```pycon
+    >>> cjac_fn = qml.transforms.classical_jacobian(circuit)
+    >>> weights = np.array([1., 1., 1.], requires_grad=True)
+    >>> cjac = cjac_fn(weights)
+    >>> print(cjac)
+    [[1. 0. 0.]
+     [1. 0. 0.]
+     [0. 0. 2.]]
+    ```
+
+    The returned Jacobian has rows corresponding to gate arguments, and columns corresponding to
+    QNode arguments; that is, :math:`J_{ij} = \frac{\partial}{\partial g_i} f(w_j)`.
+
+* Adds a new transform `qml.transforms.invisible`.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
   Marking a quantum function as invisible will inhibit any internal
@@ -480,19 +519,6 @@
   [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
 <h3>Improvements</h3>
-  
-* Adds `qml.math.conj` to the PennyLane math module.
-  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
-
-  This new method will do elementwise conjugation to the given tensor-like object,
-  correctly dispatching to the required tensor-manipulation framework
-  to preserve differentiability.
-
-  ```python
-  >>> a = np.array([1.0 + 2.0j])
-  >>> qml.math.conj(a)
-  array([1.0 - 2.0j])
-  ```
 
 * The ``MottonenStatePreparation`` template has improved performance on states with only real
   amplitudes by reducing the number of redundant CNOT gates at the end of a circuit.
@@ -611,12 +637,21 @@
 * When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
-<h3>Breaking changes</h3>
+  
+* Adds `qml.math.conj` to the PennyLane math module.
+  [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
-* A deprecation warning is now raised when loading content from the `qnn` module. In release 
-  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
-  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
-  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
+  This new method will do elementwise conjugation to the given tensor-like object,
+  correctly dispatching to the required tensor-manipulation framework
+  to preserve differentiability.
+
+  ```python
+  >>> a = np.array([1.0 + 2.0j])
+  >>> qml.math.conj(a)
+  array([1.0 - 2.0j])
+  ```
+
+<h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
@@ -690,6 +725,36 @@
 
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
+
+* The old PennyLane core has been removed, including the following modules:
+  [(#1100)](https://github.com/PennyLaneAI/pennylane/pull/1100)
+
+  - `pennylane.variables`
+  - `pennylane.qnodes`
+
+  As part of this change, the location of the new core within the Python
+  module has been moved:
+
+  - Moves `pennylane.tape.interfaces` → `pennylane.interfaces`
+  - Merges `pennylane.CircuitGraph` and `pennylane.TapeCircuitGraph`  → `pennylane.CircuitGraph`
+  - Merges `pennylane.OperationRecorder` and `pennylane.TapeOperationRecorder`  →
+  - `pennylane.tape.operation_recorder`
+  - Merges `pennylane.measure` and `pennylane.tape.measure` → `pennylane.measure`
+  - Merges `pennylane.operation` and `pennylane.tape.operation` → `pennylane.operation`
+  - Merges `pennylane._queuing` and `pennylane.tape.queuing` → `pennylane.queuing`
+
+  This has no affect on import location.
+
+  In addition,
+
+  - All tape-mode functions have been removed (`qml.enable_tape()`, `qml.tape_mode_active()`),
+  - All tape fixtures have been deleted,
+  - Tests specifically for non-tape mode have been deleted.
+
+* A deprecation warning is now raised when loading content from the `qnn` module. In release 
+  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
+  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
+  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
 
 <h3>Bug fixes</h3>
 
