@@ -34,6 +34,26 @@ from torch.autograd.functional import hessian, jacobian
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
 
+    def test_import_error(self, dev_name, diff_method, mocker):
+        """Test that an exception is caught on import error"""
+        mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
+        mock.side_effect = ImportError()
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device(dev_name, wires=2)
+        qn = QNode(func, dev, interface="torch", diff_method=diff_method)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="PyTorch not found. Please install the latest version of PyTorch to enable the 'torch' interface",
+        ):
+            qn(0.1, 0.1)
+
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface"""
         dev = qml.device(dev_name, wires=1)
@@ -116,6 +136,33 @@ class TestQNode:
         grad2 = a.grad
         assert np.allclose(res1, res2.detach().numpy(), atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
+
+    def test_drawing(self, dev_name, diff_method):
+        """Test circuit drawing when using the torch interface"""
+
+        x = torch.tensor(0.1, requires_grad=True)
+        y = torch.tensor([0.2, 0.3], requires_grad=True)
+        z = torch.tensor(0.4, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="torch")
+        def circuit(p1, p2=y, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw()
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
+ 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
+"""
+
+        assert result == expected
 
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -680,8 +680,8 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=None, hbar=2):
-        super().__init__(wires, shots)
+    def __init__(self, wires, *, shots=None, hbar=2, analytic=None):
+        super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
 

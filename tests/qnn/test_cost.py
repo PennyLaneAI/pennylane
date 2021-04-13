@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 import pytest
 
-from pennylane.qnn.cost import SquaredErrorLoss
+from pennylane.qnn.cost import SquaredErrorLoss, WARNING_STRING
 
 
 ALLOWED_INTERFACES = ["tf", "jax", "autograd", "torch"]
@@ -91,3 +91,15 @@ class TestSquaredErrorLoss:
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
 
         assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.01, rtol=0.01)
+
+
+def test_deprecation_warning():
+    """Test if deprecation warning is raised"""
+    if int(qml.__version__.split(".")[1]) >= 16:
+        pytest.fail("Deprecation warnings for the qnn module should be removed")
+
+    dev = qml.device("default.qubit", wires=3)
+    observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+
+    with pytest.warns(DeprecationWarning, match=WARNING_STRING):
+        SquaredErrorLoss(rx_ansatz, observables, dev)

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -118,9 +118,14 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000):
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
 
         self.shots = shots
+
+        if analytic is not None:
+            msg = "The analytic argument has been replaced by shots=None. "
+            msg += "Please use shots=None instead of analytic=True."
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires

@@ -5,6 +5,20 @@ jnp = jax.numpy
 import numpy as np
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
+from pennylane import DeviceError
+
+
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
 class TestQNodeIntegration:

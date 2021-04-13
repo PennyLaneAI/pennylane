@@ -98,6 +98,19 @@ def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
 
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message.
+    """
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+                DeviceError,
+                match=msg,
+        ):
+          qml.device("default.qubit", wires=1, shots=1, analytic=True)
+
+
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.

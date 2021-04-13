@@ -382,8 +382,12 @@ class TestOperations:
             qml.PauliY(wires=0),
             qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
             qml.QubitUnitary(np.eye(2) * 1j, wires=0),
+<<<<<<< HEAD
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
             qml.QFT(wires=[1, 2, 3]),
+=======
+            qml.DiagonalQubitUnitary(np.array([1.0, 1.j]), wires=1),
+>>>>>>> master
             qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
             qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
             qml.SingleExcitation(0.123, wires=[0, 3]),
@@ -405,7 +409,24 @@ class TestOperations:
         assert op.wires == op_d.wires
 
     @pytest.mark.parametrize(
+<<<<<<< HEAD
         "op",
+=======
+        "op_builder", 
+        [
+            lambda: qml.QFT(wires=[1, 2, 3])
+        ])
+    def test_adjoint_with_decomposition(self, op_builder):
+        op = op_builder()
+        decomposed_ops = op.decomposition(wires=op.wires)
+        with qml.tape.QuantumTape() as adjoint_tape:
+            qml.adjoint(op_builder)()
+        for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
+            np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
+
+    @pytest.mark.parametrize(
+        "op", 
+>>>>>>> master
         [
             qml.BasisState(np.array([0, 1]), wires=0),
             qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),

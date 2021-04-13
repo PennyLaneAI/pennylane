@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn.torch import TorchLayer
+from pennylane.qnn.torch import TorchLayer, WARNING_STRING
 
 torch = pytest.importorskip("torch")
 
@@ -415,6 +415,16 @@ class TestTorchLayer:
                 loss.backward()
             except Exception:
                 pytest.fail("Exception raised in torch CUDA backward")
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_deprecation_warning(self, get_circuit):
+        """Test if deprecation warning is raised"""
+        if int(qml.__version__.split(".")[1]) >= 16:
+            pytest.fail("Deprecation warnings for the qnn module should be removed")
+
+        c, w = get_circuit
+        with pytest.warns(DeprecationWarning, match=WARNING_STRING):
+            TorchLayer(c, w)
 
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])

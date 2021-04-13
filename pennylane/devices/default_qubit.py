@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
-from collections import OrderedDict
 
 import numpy as np
 
@@ -133,9 +132,8 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=None, cache=0):
-        # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -174,7 +172,7 @@ class DefaultQubit(QubitDevice):
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
-        return OrderedDict(wire_map)
+        return dict(wire_map)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []

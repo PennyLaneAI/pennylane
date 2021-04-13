@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -370,9 +370,9 @@ class CVParamShiftTape(QubitParamShiftTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            res = results[0]
+            res = np.array(results)[0]
             grad = np.zeros_like(res)
-            grad[transformed_obs_idx] = res
+            grad[transformed_obs_idx] = res[transformed_obs_idx]
             return grad
 
         return tapes, processing_fn
