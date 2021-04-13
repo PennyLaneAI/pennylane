@@ -286,7 +286,7 @@ fully differentiable.
 
     For example, given the following QNode:
 
-    ```python
+    ```pycon
     >>> @qml.qnode(dev)
     ... def circuit(weights):
     ...     qml.RX(weights[0], wires=0)
