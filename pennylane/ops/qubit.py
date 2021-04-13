@@ -2518,23 +2518,27 @@ class Hermitian(Observable):
 
 class QubitCarry(Operation):
     r"""QubitCarry(wires)
-    Apply the ``QubitCarry`` operation to the input wires.
-    This performs the transformation:
+    Apply the ``QubitCarry`` operation to four input wires.
+    This stores the modulo two sum of the middle two wires in the third wire and (if the fourth wire is in state :math:`|0\rangle`)
+    stores the carry of summing the first three wires in the fourth wire.
+    More precisely, this operation performs the transformation:
 
     .. math::
-        |C_{i-1}\rangle |a\rangle |b\rangle |0\rangle \rightarrow |C_{i}\rangle |a\rangle |a\oplus b\rangle |(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle
+        |a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle
 
     .. figure:: ../../_static/ops/QubitCarry.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
-    The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
-    The third wire corresponds to a second qubit value to be added :math:`|b\rangle`.
-    The fourth wire should start in :math:`|0\rangle` and takes the carried value :math:`|(ab \oplus C_i)\oplus((a\oplus b)C_{i-1})\rangle`.
+    The first wire corresponds to the first qubit value to be added :math:`|a\rangle`.
+    The second wire corresponds to the second qubit value to be added :math:`|b\rangle`.
+    The third wire corresponds to the third qubit value to be added :math:`|c\rangle` and takes the the value :math:`|b \oplus c\rangle`.
+    The fourth wire corresponds to the fourth qubit :math:`|d\rangle` and takes the value :math:`|(bc \oplus d)\oplus((b\oplus c)a)\rangle`.
 
     See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
+
+    .. note:: Starting the fourth wire in state :math:`|0>` results in it taking the carry value of the sum: :math:`bc\oplus (b\oplus c)a`.
 
 
 
@@ -2550,10 +2554,10 @@ class QubitCarry(Operation):
     The following circuit performs the ``QubitCarry`` operation on four wires:
 
     .. code-block::
-        @qml.qndoe(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.QubitCarry(wires=[0,1,2,3])
-            return probs(wires=[0,1,2,3])
+            return qml.probs(wires=[0,1,2,3])
     """
     num_params = 0
     num_wires = 4
@@ -2596,11 +2600,11 @@ class QubitCarry(Operation):
 
 class QubitSum(Operation):
     r"""QubitSum(wires)
-    Apply a ``QubitSum`` operation on the input wires.
-    This performs the operation:
+    Apply a ``QubitSum`` operation on three input wires.
+    This stores the modulo two sum of the three input values in the third wire. More precisely, it performs the transformation:
 
     .. math::
-        |C\rangle |a\rangle |b\rangle \rightarrow |C\rangle |a\rangle |a\oplus b\oplus c\rangle
+        |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
 
 
     .. figure:: ../../_static/ops/QubitSum.svg
@@ -2608,10 +2612,11 @@ class QubitSum(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    .. note::
-        The first wire provided corresponds to a previous carry qubit :math:`|C_{i-1}\rangle`.
-        The second wire corresponds to the first qubit value to be added :math:`|a\rangle`.
-        The third wire corresponds to the second qubit value to be added :math:`|b\rangle` and takes the modulo sum :math:`a\oplus b`.
+    The first wire provided corresponds to the first qubit in the sum: :math:`|C\rangle`.
+    The second wire corresponds to the second qubit in the sum: :math:`|a\rangle`.
+    The third wire corresponds to the third qubit in the sum :math:`|b\rangle` and takes the modulo two sum :math:`a\oplus b \oplus c`.
+
+    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
 
     **Details:**
 
@@ -2622,12 +2627,13 @@ class QubitSum(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-    The following circuit performs the carry operation on wires three wires:
+    The following circuit performs the ``QubitSum`` operation on three wires:
 
     .. code-block::
+        @qml.qnode(dev)
         def circuit():
             qml.QubitSum(wires=[0, 1, 2])
-            return probs(wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
     """
     num_params = 0
     num_wires = 3

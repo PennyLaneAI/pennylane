@@ -6,9 +6,9 @@
 
 \Qcircuit @C=1em @R=0.9em {
 &&&&\\
-&&&&\lstick{ \ket{C_{i-1}}}& \qw & \ctrl{2} & \rstick{\ket{C_{i-1}}} \qw &&&&\\
-&&&&\lstick{\ket{a}}]& \ctrl{1} & \qw & \rstick{\ket{a}} \qw &&&&\\
-&&&&\lstick{ \ket{b}}& \targ & \targ & \rstick{\ket{a \oplus b}} \qw &&&&\\
+&&&&\lstick{ \ket{a}}& \qw & \ctrl{2} & \rstick{\ket{a}} \qw &&&&\\
+&&&&\lstick{\ket{b}}]& \ctrl{1} & \qw & \rstick{\ket{b}} \qw &&&&\\
+&&&&\lstick{ \ket{c}}& \targ & \targ & \rstick{\ket{a \oplus b \oplus c}} \qw &&&&&&&\\
 &&&&
 }
 
