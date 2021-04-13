@@ -11,12 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Dict, Tuple, Iterable, List
+r"""
+Methods for finding max weighted cycle of weighted directed graphs
+"""
+
+from typing import Dict, Tuple
 import networkx as nx
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
-    """Maps the edges of a graph to corresponding wires.
+    r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
 
@@ -45,7 +49,7 @@ def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
 
 
 def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
-    """Maps the wires of a register of qubits to corresponding edges.
+    r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
 
