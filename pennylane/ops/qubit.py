@@ -1304,7 +1304,7 @@ class CRY(Operation):
 
       .. math::
 
-          \frac{d}{d\phi}f(CR_y(\phi)) = c_+ \left[f(CR_y(\phi+a)) - f(CR_y(\phi-a))\right] + c_- \left[f(CR_y(\phi-b)) - f(CR_y(\phi+b))\right]
+          \frac{d}{d\phi}f(CR_y(\phi)) = c_+ \left[f(CR_y(\phi+a)) - f(CR_y(\phi-a))\right] - c_- \left[f(CR_y(\phi+b)) - f(CR_y(\phi-b))\right]
 
       where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`, and
 
@@ -1374,7 +1374,7 @@ class CRZ(DiagonalOperation):
 
       .. math::
 
-          \frac{d}{d\phi}f(CR_z(\phi)) = c_+ \left[f(CR_z(\phi+a)) - f(CR_z(\phi-a))\right] + c_- \left[f(CR_z(\phi-b)) - f(CR_z(\phi+b))\right]
+          \frac{d}{d\phi}f(CR_z(\phi)) = c_+ \left[f(CR_z(\phi+a)) - f(CR_z(\phi-a))\right] - c_- \left[f(CR_z(\phi+b)) - f(CR_z(\phi-b))\right]
 
       where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`, and
 
