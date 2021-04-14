@@ -1990,18 +1990,20 @@ class TestInverseDecomposition:
         expected = np.array([1., -1.j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
+@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_internal_apply_ops(self, inverse):
+    def test_internal_apply_ops_case(self, inverse):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation."""
         dev = qml.device('default.qubit', wires=1)
 
-        # Set the internal ops implementations dict
+        # Create a dummy operation
         expected_test_output = np.ones(1)
         paulix = lambda *args, **kwargs: expected_test_output
+
+        # Set the internal ops implementations dict
         dev._apply_ops = {"PauliX": paulix}
 
         test_state = np.array([1,0])
@@ -2009,3 +2011,111 @@ class TestApplyOperationUnit:
 
         res = dev._apply_operation(test_state, op)
         assert np.allclose(res, expected_test_output)
+
+    def test_diagonal_operation_case(self, inverse, mocker):
+        """Tests the case of applying a diagonal operation."""
+        dev = qml.device('default.qubit', wires=1)
+        par = 0.3
+
+        test_state = np.array([1,0])
+        wires = 0
+        op = qml.PhaseShift(par, wires=wires) if not inverse else qml.PhaseShift(par, wires=wires).inv()
+        assert op.name not in dev._apply_ops
+
+        # Set the internal _apply_diagonal_unitary
+        history = []
+        mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
+        dev._apply_diagonal_unitary = mock_apply_diag
+        assert dev._apply_diagonal_unitary == mock_apply_diag
+
+        dev._apply_operation(test_state, op)
+
+        res_state, res_mat, res_wires = history[0]
+
+        assert np.allclose(res_state, test_state)
+        assert np.allclose(res_mat, np.diag(op.matrix))
+        assert np.allclose(res_wires, wires)
+
+    def test_apply_einsum_case(self, inverse, mocker):
+        """Tests applying a diagonal operation."""
+        dev = qml.device('default.qubit', wires=1)
+
+        test_state = np.array([1,0])
+        wires = 0
+
+        # Recreate the S gate, so that it's an example for a one-qubit gate
+        # that doesn't inherit from DiagonalOperation
+        class TestSGate(qml.operation.Operation):
+            matrix = np.array([[0, 1], [1, 0]])
+            num_params = 0
+            num_wires = 1
+            par_domain = None
+
+            @classmethod
+            def _matrix(cls, *params):
+                return np.array([[1, 0], [0, 1j]])
+
+        dev.operations.add("TestSGate")
+        op = TestSGate(wires=wires)
+
+        assert op.name in dev.operations
+        assert op.name not in dev._apply_ops
+
+        if inverse:
+            op = op.inv()
+
+        # Set the internal _apply_unitary_einsum
+        history = []
+        mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
+        dev._apply_unitary_einsum = mock_apply_einsum
+        assert dev._apply_unitary_einsum == mock_apply_einsum
+
+        dev._apply_operation(test_state, op)
+
+        res_state, res_mat, res_wires = history[0]
+
+        assert np.allclose(res_state, test_state)
+        assert np.allclose(res_mat, op.matrix)
+        assert np.allclose(res_wires, wires)
+
+    def test_apply_tensordot_case(self, inverse, mocker):
+        """Tests applying a diagonal operation."""
+        dev = qml.device('default.qubit', wires=3)
+
+        test_state = np.array([1,0])
+        wires = [0, 1, 2]
+
+        # Recreate the Toffoli gate, so that it's an example for a gate with
+        # more than two wires
+        class TestToffoli(qml.operation.Operation):
+            num_params = 0
+            num_wires = 3
+            par_domain = None
+            matrix = U_toffoli
+
+            @classmethod
+            def _matrix(cls, *params):
+                return cls.matrix
+
+        dev.operations.add("TestToffoli")
+        op = TestToffoli(wires=wires)
+
+        assert op.name in dev.operations
+        assert op.name not in dev._apply_ops
+
+        if inverse:
+            op = op.inv()
+
+        # Set the internal _apply_unitary_tensordot
+        history = []
+        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
+        dev._apply_unitary = mock_apply_tensordot
+        assert dev._apply_unitary == mock_apply_tensordot
+
+        dev._apply_operation(test_state, op)
+
+        res_state, res_mat, res_wires = history[0]
+
+        assert np.allclose(res_state, test_state)
+        assert np.allclose(res_mat, op.matrix)
+        assert np.allclose(res_wires, wires)
