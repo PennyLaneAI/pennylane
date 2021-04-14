@@ -1989,3 +1989,23 @@ class TestInverseDecomposition:
 
         expected = np.array([1., -1.j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
+class TestApplyOperationUnit:
+    """Unit tests for the internal _apply_operation method."""
+
+    @pytest.mark.parametrize("inverse", [True, False])
+    def test_internal_apply_ops(self, inverse):
+        """Tests that if we provide an operation that has an internal
+        implementation, then we use that specific implementation."""
+        dev = qml.device('default.qubit', wires=1)
+
+        # Set the internal ops implementations dict
+        expected_test_output = np.ones(1)
+        paulix = lambda *args, **kwargs: expected_test_output
+        dev._apply_ops = {"PauliX": paulix}
+
+        test_state = np.array([1,0])
+        op = qml.PauliX(0) if not inverse else qml.PauliX(0).inv()
+
+        res = dev._apply_operation(test_state, op)
+        assert np.allclose(res, expected_test_output)
