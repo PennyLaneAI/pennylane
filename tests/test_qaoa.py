@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, _inner_net_flow_constraint_hamiltonian
 
 
 #####################################################
@@ -764,3 +764,46 @@ class TestCycles:
         assert len(reduced_ops) == 1
         assert reduced_ops[0].name == "PauliZ"
         assert reduced_ops[0].wires.tolist() == [1]
+
+
+    def test_inner_net_flow_constraint_hamiltonian(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node"""
+        g = nx.complete_graph(3).to_directed()
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(4),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(4),
+            qml.PauliZ(2) @ qml.PauliZ(4),
+        ]
+        expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_inner_net_flow_constraint_hamiltonian_non_complete(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
+        g = nx.complete_graph(3).to_directed()
+        g.remove_edge(1, 0)
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+        ]
+        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
