@@ -771,6 +771,9 @@ class TestCycles:
         """Test graphs with self loop raises `ValueError`"""
         g = nx.complete_graph(3).to_directed()
         edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+            
         g.add_edge(1,1) # add self loop
 
         with pytest.raises(ValueError):
