@@ -1454,7 +1454,7 @@ class CRot(Operation):
 
       .. math::
 
-          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] + c_- \left[f(CR(\mathbf{x}_i-b)) - f(CR(\mathbf{x}_i+b))\right]
+          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] - c_- \left[f(CR(\mathbf{x}_i+b)) - f(CR(\mathbf{x}_i-b))\right]
 
       where :math:`f` is an expectation value depending on :math:`CR(\mathbf{x}_i)`, and
 
