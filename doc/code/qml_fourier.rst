@@ -123,7 +123,226 @@ for multiple dimensions.
    specifying the ``frequency_threshold`` argument (if none is specified, 2 times
    the specified degree will be used as the threshold).
 
+
+Fourier coefficient visualization
+---------------------------------
+
+A key application of the Fourier module is to analyze the *expressivity* of
+classes of quantum circuit families. The set of frequencies in the Fourier representation
+of a quantum circuit can be used to characterise the function 
+class that a parametrized circuit gives rise to. For example, if an embedding 
+leads to a Fourier representation with few and low-order frequencies, 
+a quantum circuit using this embedding can only express rather simple periodic functions.
+
+The Fourier module contains a number of methods to visualize the coefficients of the Fourier sum 
+representation of a single circuit, as well as distributions over Fourier coefficients for a parametrized circuit family.
+
+.. note::
+
+   The visualization functions are structured to accept ``matplotlib`` axes as
+   arguments so that additional configuration (such as adding titles, saving,
+   etc.) can be done outside the functions. Many of the plots, however, require
+   a specific number of subplots. The examples below demonstrate how the subplots
+   should be created for each function.
+
+Visualizing a single set of coefficients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+While all the functions available for visualizing multiple sets of Fourier coefficients
+can be used for a single set, the primary tool for this purpose is the
+``coefficients_bar_plot`` function.
+
+.. code::
+
+   from functools import partial
+   import matplotlib.pyplot as plt
+   import pennylane as qml
+   from pennylane.fourier import *
+
+   dev = qml.device('default.qubit', wires=2)
+
+   @qml.qnode(dev)
+   def simple_circuit(x):
+       qml.RY(x[0], wires=0)
+       qml.CNOT(wires=[1, 0])
+       qml.RX(x[0], wires=0)
+       return qml.expval(qml.PauliZ(0))
+
+   coeffs = fourier_coefficients(simple_circuit, 1, 2)
+
+   >>> coeffs
+   [0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
+
+   
+   # Set up the axes
+   fig, ax = plt.subplots(2, 1, sharex=True, sharey=True)
+   coefficients_bar_plot(coeffs, 1, ax)
+   plt.suptitle("Simple circuit bar plot")
+
+.. image:: ../_static/fourier_vis_bar_plot.png
+    :align: center
+    :width: 500px
+    :target: javascript:void(0);
+
+|
+	     
+In the bar plots, real coefficients are shown in the top panel, and complex in
+the bottom. The labels along the x-axis represent the coefficient frequencies
+(for large plots, it is sometimes convenient to remove these by passing
+``show_freqs=False`` to the plotting function.
+
+Below is a more complex example that demonstrates some of the additional
+customization options available:
+
+.. code::
+
+   weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+   
+   @qml.qnode(dev)
+   def circuit_with_weights(w, x):
+       qml.RX(x[0], wires=0)
+       qml.RY(x[1], wires=1)
+       qml.CNOT(wires=[1, 0])
+   
+       qml.Rot(*w[0], wires=0)
+       qml.Rot(*w[1], wires=1)
+       qml.CNOT(wires=[1, 0])
+       
+       qml.RX(x[0], wires=0)
+       qml.RY(x[1], wires=1)
+       qml.CNOT(wires=[1, 0])
+       
+       return qml.expval(qml.PauliZ(0))
+
+   coeffs = fourier_coefficients(partial(circuit_with_weights, weights), 2, 2)
+
+   # Number of inputs is now two; pass custom colours as well
+   fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
+   coefficients_bar_plot(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
+   plt.suptitle("Circuit with weights bar plot", fontsize=14)
+
+
+.. image:: ../_static/fourier_vis_bar_plot_2.png
+    :align: center 
+    :Width: 100%
+    :target: javascript:void(0);
+
+|
+	     
+Two convenience functions are also provided to visualize 1- and 2-dimensional
+functions given a set of Fourier coefficients:
+:func:`~.pennylane.fourier.reconstruct_function_1D_plot` and
+:func:`~.pennylane.fourier.reconstruct_function_2D_plot`. For example,
+``circuit_with_weights`` has two input parameters `x[0]` and `x[1]`, and so we can plot its output:
+
+.. code::
+
+   reconstruct_function_2D_plot(coeffs)
+   plt.title("Expectation value for circuit with weights", fontsize=14)
+   
+.. image:: ../_static/fourier_vis_2D_func.png
+    :align: center
+    :width: 400px
+    :target: javascript:void(0);
+
+
+Visualizing multiple sets of coefficients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Suppose we do not want to visualize the Fourier coefficients for a fixed 
+`weights` argument in `circuit_with_weights`, but the distribution over sets of Fourier coefficients 
+when the weights are randomly sampled. For each `weights` sample we get a different set of coefficients:
+
+.. code::
+
+   coeffs = []
+
+   for _ in range(100):
+       weights = np.random.normal(0, 1, size=(2, 3))
+       c = fourier_coefficients(partial(circuit_with_weights, weights), 2, degree=2)
+       coeffs.append(np.round(c, decimals=8))
+       
+   coeffs = np.array(coeffs)
+
+
+One option to plot the distribution is :func:`~.pennylane.fourier.coefficients_violin_plot`:
+
+.. code::
+
+   fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+   coefficients_violin_plot(coeffs, 2, ax, show_freqs=True);
+   plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
+      
+   
+.. image:: ../_static/fourier_vis_violin.png
+    :align: left
+    :width: 100%
+    :target: javascript:void(0);
+
+|
+	     
+A similar option is the :func:`~.pennylane.fourier.coefficients_box_plot`, which
+produces a plot of the same format but using a box plot.
+	    
+A different view can obtained using the	     
+:func:`~.pennylane.fourier.coefficients_radial_box_plot` function. This "rolls up"
+the coefficients onto a polar grid. Let us use it to visualize the same set of
+coefficients as above:
+
+.. code::
+
+   # The subplot axes must be *polar* for the radial plots
+   fig, ax = plt.subplots(
+       1, 2, sharex=True, sharey=True,
+       subplot_kw=dict(polar=True),
+       figsize=(15, 8)
+   )
+   coefficients_radial_box_plot(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+   plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
+   plt.tight_layout()
+
+   
+.. image:: ../_static/fourier_vis_radial_box.png
+    :align: center
+    :width: 700px
+    :target: javascript:void(0);
+
+|
+
+The left plot displays the real part, and the right the imaginary
+part of the distribution over a parametrized quantum circuit's 
+Fourier coefficients. The labels on the "spokes" of the wheels represent the particular
+frequencies; we see that this matches the coefficients we found earlier. Note
+how the coefficient :math:`c_0` appears in the top middle of each plot; the
+negative frequencies extend counterclockwise from that point, and the positive
+frequencies increase in the clockwise direction. Such plots allow for a more
+compact representation of a large number of frequencies than the linear violin
+and box plots discussed above. For a large number of frequencies, however, it is
+recommended to disable the frequency labelling by setting ``show_freqs=False``,
+and hiding box plot fliers as was done above.
+
+Finally, for the special case of 1- or 2-dimensional functions, we can use the
+:func:`~.pennylane.fourier.coefficients_panel_plot` to plot the distributions of the
+sampled sets of Fourier coefficients on the complex plane.
+
+.. code::
+
+   # Need a grid large enough to hold all coefficients up to frequency 2
+   fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
+   coefficients_panel_plot(coeffs, 2, ax)
+   plt.suptitle(
+      "Fourier coefficients of circuit with weights in the complex plane",
+      fontsize=16
+   )
+   plt.tight_layout()
+
+.. image:: ../_static/fourier_vis_panel.png
+    :align: center
+    :width: 700px
+    :target: javascript:void(0);
+
+
 .. automodapi:: pennylane.fourier
     :include-all-objects:
     :no-inheritance-diagram:
-
