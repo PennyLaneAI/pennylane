@@ -1203,10 +1203,10 @@ class PauliRot(Operation):
 
 
 # Four term gradient recipe for controlled rotations
-c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
-c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
 a = np.pi / 2
-b = 3 * np.pi / 4
+b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
@@ -1230,8 +1230,18 @@ class CRX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
+    * Gradient recipe: The controlled-RX operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_x(\phi)) = c_+ \left[f(CR_x(\phi+a)) - f(CR_x(\phi-a))\right] - c_- \left[f(CR_x(\phi+b)) - f(CR_x(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1289,8 +1299,18 @@ class CRY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
+    * Gradient recipe: The controlled-RY operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_y(\phi)) = c_+ \left[f(CR_y(\phi+a)) - f(CR_y(\phi-a))\right] - c_- \left[f(CR_y(\phi+b)) - f(CR_y(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1349,8 +1369,18 @@ class CRZ(DiagonalOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
+    * Gradient recipe: The controlled-RZ operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_z(\phi)) = c_+ \left[f(CR_z(\phi+a)) - f(CR_z(\phi-a))\right] - c_- \left[f(CR_z(\phi+b)) - f(CR_z(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1419,9 +1449,19 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR(\phi, \theta, \omega)) = \frac{1}{2}\left[f(CR(\phi+\pi/2, \theta, \omega)) - f(CR(\phi-\pi/2, \theta, \omega))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR(\phi, \theta, \omega)`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+    * Gradient recipe: The controlled-Rot operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] - c_- \left[f(CR(\mathbf{x}_i+b)) - f(CR(\mathbf{x}_i-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR(\mathbf{x}_i)`, and
+
+      - :math:`\mathbf{x} = (\phi, \theta, \omega)` and `i` is an index to :math:`\mathbf{x}`
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
