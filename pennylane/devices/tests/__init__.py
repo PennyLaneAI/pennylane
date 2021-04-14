@@ -41,7 +41,7 @@ Using pytest
 
 .. code-block:: console
 
-    pytest path_to_pennylane_src/devices/tests --device=default.qubit --shots=10000 --analytic=False
+    pytest path_to_pennylane_src/devices/tests --device=default.qubit --shots=10000
 
 The location of your PennyLane installation may differ depending on installation method and
 operating system. To find the location, you can use the :func:`~.get_device_tests` function:
@@ -56,7 +56,7 @@ Alternatively, PennyLane provides a command line interface for invoking the devi
 
 .. code-block:: console
 
-    pl-device-test --device default.qubit --shots 10000 --analytic False
+    pl-device-test --device default.qubit --shots 10000
 
 Within Python
 -------------
@@ -97,7 +97,6 @@ def get_device_tests():
 
 def test_device(
     device_name,
-    analytic=None,
     shots=None,
     skip_ops=True,
     flaky_report=False,
@@ -108,14 +107,11 @@ def test_device(
 
     Args:
         device_name (str): the name of the device to test
-        analytic (bool): Whether to run the device in analytic mode (where
-            expectation values and probabilities are computed exactly from the quantum state)
-            or non-analytic/"stochastic" mode (where probabilities and expectation
-            values are *estimated* using a finite number of shots.)
+        shots (int or None): The number of shots/samples used to estimate
+            expectation values and probability. If ``shots=None``, then the
+            device is run in analytic mode (where expectation values and
+            probabilities are computed exactly from the quantum state).
             If not provided, the device default is used.
-        shots (int): The number of shots/samples used to estimate expectation
-            values and probability. Only takes affect if ``analytic=False``. If not
-            provided, the device default is used.
         skip_ops (bool): whether to skip tests that use operations not supported
             by the device
         pytest_args (list[str]): additional PyTest arguments and flags
@@ -158,9 +154,6 @@ def test_device(
     if shots is not None:
         cmds.append(f"--shots={shots}")
 
-    if analytic is not None:
-        cmds.append(f"--analytic={analytic}")
-
     if skip_ops:
         cmds.append("--skip-ops")
 
@@ -200,7 +193,7 @@ def cli():
 
         $ pl-device-test --help
         usage: pl-device-test [-h] [--device DEVICE] [--shots SHOTS]
-                              [--analytic ANALYTIC] [--skip-ops]
+                              [--skip-ops]
 
         See below for available options and commands for working with the PennyLane
         device tests.
@@ -209,7 +202,6 @@ def cli():
           -h, --help           show this help message and exit
           --device DEVICE      The device to test.
           --shots SHOTS        Number of shots to use in stochastic mode.
-          --analytic ANALYTIC  Whether to run the tests in stochastic or exact mode.
           --skip-ops           Skip tests that use unsupported device operations.
           --flaky-report       Show the flaky report in the terminal
           --device-kwargs KEY=VAL [KEY=VAL ...]
@@ -219,7 +211,7 @@ def cli():
 
     .. code-block:: console
 
-        $ pl-device-test --device default.qubit --shots 1234 --analytic False --tb=short -x
+        $ pl-device-test --device default.qubit --shots 1234 --tb=short -x
     """
     from .conftest import pytest_addoption
 
