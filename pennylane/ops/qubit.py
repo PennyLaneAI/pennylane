@@ -1235,7 +1235,7 @@ class CRX(Operation):
 
       .. math::
 
-          \frac{d}{d\phi}f(CR_x(\phi)) = c_+ \left[f(CR_x(\phi+a)) - f(CR_x(\phi-a))\right] + c_- \left[f(CR_x(\phi-b)) - f(CR_x(\phi+b))\right]
+          \frac{d}{d\phi}f(CR_x(\phi)) = c_+ \left[f(CR_x(\phi+a)) - f(CR_x(\phi-a))\right] - c_- \left[f(CR_x(\phi+b)) - f(CR_x(\phi-b))\right]
 
       where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`, and
 
@@ -1454,11 +1454,11 @@ class CRot(Operation):
 
       .. math::
 
-          \frac{d}{dx_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] + c_- \left[f(CR(\mathbf{x}_i-b)) - f(CR(\mathbf{x}_i+b))\right]
+          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] + c_- \left[f(CR(\mathbf{x}_i-b)) - f(CR(\mathbf{x}_i+b))\right]
 
       where :math:`f` is an expectation value depending on :math:`CR(\mathbf{x}_i)`, and
 
-      - :math:`\mathbf{x} = (\phi, \theta, \omega)`
+      - :math:`\mathbf{x} = (\phi, \theta, \omega)` and `i` is an index to :math:`\mathbf{x}`
       - :math:`a = \pi/2`
       - :math:`b = 3\pi/2`
       - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
