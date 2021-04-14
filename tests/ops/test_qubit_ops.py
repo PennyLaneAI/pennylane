@@ -2210,12 +2210,19 @@ class TestArithmetic:
         """Test if ``QubitSum`` produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
 
+
         with qml.tape.QuantumTape() as tape:
-            qml.templates.MottonenStatePreparation(input_state, wires=[0, 1, 2])
             qml.QubitSum(wires=wires)
-            qml.state()
 
         if expand:
             tape=tape.expand()
-        result = dev.execute(tape)
-        assert np.allclose(result, output_state)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.QubitStateVector(input_state,wires=[0,1,2])
+            qml.state()
+
+        for i in tape.operations:
+            tape2._ops.append(i)
+
+        result = dev.execute(tape2)
+        assert qml.math.allclose(result, output_state)

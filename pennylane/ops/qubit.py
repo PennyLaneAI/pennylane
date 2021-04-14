@@ -2589,7 +2589,7 @@ class QubitCarry(Operation):
     The following circuit performs the ``QubitCarry`` operation on a ``basis_state``.
     Here we perform the modulo two sum :math:`1 \oplus 1 = 0` and get a carry value of 1.
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(basis_state):
@@ -2642,7 +2642,7 @@ class QubitCarry(Operation):
 
         with qml.tape.QuantumTape() as tape:
             qml.Toffoli(wires=self.wires[1:])
-            qml.CNOT(wires=self.wires[1, 2])
+            qml.CNOT(wires=[self.wires[1], self.wires[2]])
             qml.Toffoli(wires=[self.wires[0], self.wires[2], self.wires[3]])
 
         return tape
@@ -2680,7 +2680,7 @@ class QubitSum(Operation):
     The following circuit performs the ``QubitSum`` operation on a ``basis_state``.
     Here we perform the modulo two sum :math:`1 \oplus 1 \oplus 0 = 0`:
 
-    .. code-block::
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circuit(basis_state):
@@ -2721,7 +2721,7 @@ class QubitSum(Operation):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with qml.tape.QuantumTape() as tape:
-            qml.CNOT(wires=self.wires[1, 2])
+            qml.CNOT(wires=[self.wires[1], self.wires[2]])
             qml.CNOT(wires=[self.wires[0], self.wires[2]])
 
         return tape
