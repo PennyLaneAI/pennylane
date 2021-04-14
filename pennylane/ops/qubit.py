@@ -2604,10 +2604,10 @@ class QubitCarry(Operation):
         ab_sum = bitstrings[indx_ab_sum]
         carry = bitstrings[indx_carry]
 
-        >>> print(ab_sum)
-        (0,)
-        >>> print(carry)
-        (1,)
+    >>> print(ab_sum)
+    (0,)
+    >>> print(carry)
+    (1,)
     """
     num_params = 0
     num_wires = 4
@@ -2692,8 +2692,9 @@ class QubitSum(Operation):
         bitstrings = tuple(itertools.product([0, 1], repeat=1))
         indx = np.argwhere(probs == 1).flatten()[0]
         output = bitstrings[indx]
-        >>> print(output)
-        (0,)
+        
+    >>> print(output)
+    (0,)
     """
     num_params = 0
     num_wires = 3
