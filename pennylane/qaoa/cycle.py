@@ -121,9 +121,6 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     edges_data = graph.edges(data=True)
     edges = [edge[:2] for edge in graph.edges]
 
-    if len(edges) != len(set(edges)):
-        raise ValueError("Graph contains parallel edges")
-
     for edge_data in edges_data:
         edge = edge_data[:2]
 
