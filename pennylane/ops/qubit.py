@@ -2608,9 +2608,6 @@ class QubitCarry(Operation):
         (0,)
         >>> print(carry)
         (1,)
-
-
-
     """
     num_params = 0
     num_wires = 4
