@@ -119,7 +119,6 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     ops = []
 
     edges_data = graph.edges(data=True)
-    edges = [edge[:2] for edge in graph.edges]
 
     for edge_data in edges_data:
         edge = edge_data[:2]
