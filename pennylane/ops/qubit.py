@@ -2692,7 +2692,7 @@ class QubitSum(Operation):
         bitstrings = tuple(itertools.product([0, 1], repeat=1))
         indx = np.argwhere(probs == 1).flatten()[0]
         output = bitstrings[indx]
-        
+
     >>> print(output)
     (0,)
     """
