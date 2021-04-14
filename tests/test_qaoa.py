@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates
 
 
 #####################################################
@@ -697,3 +697,70 @@ class TestCycles:
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
+
+
+    def test_square_hamiltonian_terms(self):
+        """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
+        example"""
+        coeffs = [1, -1, -1, 1]
+        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
+
+        expected_coeffs = [
+            1, -1, -1, 1,
+            -1, 1, 1, -1,
+            -1, 1, 1, -1,
+            1, -1, -1, 1,
+        ]
+        expected_ops = [
+            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
+            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+        ]
+
+        squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
+
+        assert squared_coeffs == expected_coeffs
+        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, squared_ops)])
+
+
+    def test_collect_duplicates(self):
+        """Test if the _collect_duplicates function returns the expected result on a fixed
+        example"""
+        coeffs = [
+            1, -1, -1, 1,
+            -1, 1, 1, -1,
+            -1, 1, 1, -1,
+            1, -1, -1, 1,
+        ]
+        ops = [
+            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
+            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+        ]
+
+        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
+
+        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
+        expected_ops = [
+            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+        ]
+
+        assert expected_coeffs == reduced_coeffs
+        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, reduced_ops)])
+
+
+    def test_duplicates_remove_zeros(self):
+        """Test if the _collect_duplicates function removes terms with a zero coefficient"""
+        coeffs = [1, -1, 1]
+        ops = [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(1)]
+
+        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
+
+        assert reduced_coeffs == [1]
+        assert len(reduced_ops) == 1
+        assert reduced_ops[0].name == "PauliZ"
+        assert reduced_ops[0].wires.tolist() == [1]

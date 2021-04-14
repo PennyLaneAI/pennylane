@@ -14,9 +14,10 @@
 r"""
 Methods for finding max weighted cycle of weighted directed graphs
 """
-
-from typing import Dict, Tuple
+import itertools
+from typing import Dict, Tuple, Iterable, List
 import networkx as nx
+import pennylane as qml
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
@@ -75,3 +76,80 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
         Dict[Tuple[int], int]: a mapping from wires to graph edges
     """
     return {i: edge for i, edge in enumerate(graph.edges)}
+
+
+def _square_hamiltonian_terms(
+    coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
+) -> Tuple[List[float], List[qml.operation.Observable]]:
+    """Calculates the coefficients and observables that compose the squared Hamiltonian.
+
+    Args:
+        coeffs (Iterable[float]): coeffients of the input Hamiltonian
+        ops (Iterable[qml.operation.Observable]): observables of the input Hamiltonian
+
+    Returns:
+        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of observables
+            of the squared Hamiltonian.
+    """
+    squared_coeffs, squared_ops = [], []
+    pairs = [(coeff, op) for coeff, op in zip(coeffs, ops)]
+    products = itertools.product(pairs, repeat=2)
+
+    for (coeff1, op1), (coeff2, op2) in products:
+        squared_coeffs.append(coeff1 * coeff2)
+
+        if isinstance(op1, qml.Identity):
+            squared_ops.append(op2)
+        elif isinstance(op2, qml.Identity):
+            squared_ops.append(op1)
+        elif op1.wires == op2.wires and type(op1) == type(op2):
+            squared_ops.append(qml.Identity(0))
+        elif op2.wires[0] < op1.wires[0]:
+            squared_ops.append(op2 @ op1)
+        else:
+            squared_ops.append(op1 @ op2)
+
+    return squared_coeffs, squared_ops
+
+
+def _collect_duplicates(
+    coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
+) -> Tuple[List[float], List[qml.operation.Observable]]:
+    """Collects duplicate observables together into one observable.
+
+    Args:
+        coeffs (Iterable[float]): coeffients of the input Hamiltonian
+        ops (Iterable[qml.operation.Observable]): observables of the input Hamiltonian
+
+    Returns:
+        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
+            observables without any duplicates
+    """
+    # Create a new list of coefficients and operations to add to without duplicates present
+    reduced_coeffs, reduced_ops = [], []
+
+    for coeff, op in zip(coeffs, ops):
+
+        # We now loop through coefficients and operations from the input lists. The following checks
+        # if an operation is already present in reduced_ops. If so, it just adds to the
+        # corresponding coefficient
+        included = False
+        for i, op_red in enumerate(reduced_ops):
+            if type(op) == type(op_red) and op.wires == op_red.wires:
+                reduced_coeffs[i] += coeff
+                included = True
+
+        # If the operation is not already present in reduced_ops, we add to the reduces lists
+        if not included:
+            reduced_coeffs.append(coeff)
+            reduced_ops.append(op)
+
+    reduced_coeffs_no_zeros = []
+    reduced_ops_no_zeros = []
+
+    for coeff, op in zip(reduced_coeffs, reduced_ops):
+        if coeff != 0:
+            reduced_coeffs_no_zeros.append(coeff)
+            reduced_ops_no_zeros.append(op)
+
+    return reduced_coeffs_no_zeros, reduced_ops_no_zeros
