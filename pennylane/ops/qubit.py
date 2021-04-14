@@ -2586,10 +2586,11 @@ class QubitCarry(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
+
     The following circuit performs the ``QubitCarry`` operation on a ``basis_state``.
     Here we perform the modulo two sum :math:`1 \oplus 1 = 0` and get a carry value of 1.
 
-    .. code-block:: python
+    .. code-block::
 
         @qml.qnode(dev)
         def circuit(basis_state):
@@ -2603,11 +2604,6 @@ class QubitCarry(Operation):
         indx_carry =np.argwhere(carry == 1).flatten()[0]
         ab_sum = bitstrings[indx_ab_sum]
         carry = bitstrings[indx_carry]
-
-    >>> print(ab_sum)
-    (0,)
-    >>> print(carry)
-    (1,)
     """
     num_params = 0
     num_wires = 4
@@ -2677,10 +2673,11 @@ class QubitSum(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
+
     The following circuit performs the ``QubitSum`` operation on a ``basis_state``.
     Here we perform the modulo two sum :math:`1 \oplus 1 \oplus 0 = 0`:
 
-    .. code-block:: python
+    .. code-block::
 
         @qml.qnode(dev)
         def circuit(basis_state):
@@ -2692,9 +2689,6 @@ class QubitSum(Operation):
         bitstrings = tuple(itertools.product([0, 1], repeat=1))
         indx = np.argwhere(probs == 1).flatten()[0]
         output = bitstrings[indx]
-
-    >>> print(output)
-    (0,)
     """
     num_params = 0
     num_wires = 3
