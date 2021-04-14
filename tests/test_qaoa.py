@@ -760,8 +760,26 @@ class TestCycles:
             np.log(5.5),
             np.log(6),
             np.log(6.5),
-            np.log(7)            
+            np.log(7)
         ]
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_self_loop_raises_error(self):
+        """Test graphs with self loop raises `ValueError`"""
+        g = nx.complete_graph(3).to_directed()
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        g.add_edge(1,1) # add self loop
+
+        with pytest.raises(ValueError):
+            h = edge_weight(g)
+
+
+    def test_missing_edge_weight_data_raises_error(self):
+        """Test graphs with no edge weight data raises `ValueError`"""
+        g = nx.complete_graph(3).to_directed()
+
+        with pytest.raises(ValueError):
+            h = edge_weight(g)
