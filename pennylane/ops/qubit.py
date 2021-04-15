@@ -2678,14 +2678,18 @@ class QubitSum(Operation):
 
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.BasisState(basis_state, wires = [0, 1, 2])
+            qml.BasisState(basis_state, wires=[0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
-            return qml.probs(wires = 2)
+            return qml.probs(wires=2)
 
         probs = circuit(np.array([1, 1, 0]))
-        bitstrings = tuple(itertools.product([0, 1], repeat=1))
-        indx = np.argwhere(probs == 1).flatten()[0]
-        output = bitstrings[indx]
+        result = np.argwhere(probs == 1).flatten()[0]
+
+    The action of ``QubitSum`` is to add wires ``0`` and ``1``. The modulo-two result is output
+    in wire ``2``. In this case, :math:`1 \oplus 1 = 0`, so we have:
+
+    >>> result
+    0
     """
     num_params = 0
     num_wires = 3
