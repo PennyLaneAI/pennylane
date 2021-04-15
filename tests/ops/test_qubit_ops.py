@@ -2141,9 +2141,11 @@ class TestArithmetic:
             ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_QubitCarry(self, wires, input_string, output_string, expand):
+    def test_QubitCarry(self, wires, input_string, output_string, expand, mocker):
         """Test if ``QubitCarry`` produces the right output and is expandable."""
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitCarry, "decomposition")
+
         with qml.tape.QuantumTape() as tape:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
@@ -2157,6 +2159,9 @@ class TestArithmetic:
         result = np.argmax(result)
         result = format(result, "04b")
         assert result == output_string
+
+        # checks that decomposition is only used when intended
+        assert expand is (len(spy.call_args_list) != 0)
 
     def test_QubitCarry_superposition(self):
         """Test if ``QubitCarry`` works for superposition input states."""
@@ -2205,9 +2210,10 @@ class TestArithmetic:
         ],
     )
     # fmt: on
-    def test_QubitSum(self, wires, input_state, output_state, expand):
+    def test_QubitSum(self, wires, input_state, output_state, expand, mocker):
         """Test if ``QubitSum`` produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
+        spy = mocker.spy(qml.QubitSum, "decomposition")
 
         with qml.tape.QuantumTape() as tape:
             qml.QubitSum(wires=wires)
@@ -2224,6 +2230,9 @@ class TestArithmetic:
 
         result = dev.execute(tape2)
         assert np.allclose(result, output_state)
+
+        # checks that decomposition is only used when intended
+        assert expand is (len(spy.call_args_list) != 0)
 
     def test_qubit_sum_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
