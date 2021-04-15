@@ -15,13 +15,14 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
+import itertools
 import numpy as np
 import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, out_flow_constraint, _inner_out_flow_constraint_hamiltonian
 
 
 #####################################################
@@ -764,3 +765,87 @@ class TestCycles:
         assert len(reduced_ops) == 1
         assert reduced_ops[0].name == "PauliZ"
         assert reduced_ops[0].wires.tolist() == [1]
+
+
+    def test_inner_out_flow_constraint_hamiltonian(self):
+        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result on a
+        manually-calculated example of a 3-node complete digraph relative to the 0 node"""
+
+        g = nx.complete_graph(3).to_directed()
+        h = _inner_out_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+        qml.Identity(0),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.PauliZ(0),
+        qml.PauliZ(1)
+        ]
+
+        expected_coeffs = [2, 2, -2, -2]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_inner_out_flow_constraint_hamiltonian_non_complete(self):
+        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node, with the (0, 1) edge removed"""
+        g = nx.complete_graph(3).to_directed()
+        g.remove_edge(0, 1)
+        h = _inner_out_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = []
+
+        expected_coeffs = []
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_out_flow_constraint(self):
+        """Test the out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
+        that only ever have 0 or 1 edge leaving each node
+        """
+        g = nx.complete_graph(3).to_directed()
+        h = out_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # We use PL to find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def states(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        bitstrings = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+
+        for energy, bs in energies_bitstrings:
+
+            # convert binary string to wires then wires to edges
+            wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            # find the number of edges leaving each node
+            num_edges_leaving_node = {node:0 for node in g.nodes }
+            for e in edges:
+                num_edges_leaving_node[e[0]] += 1
+
+            # check that if the max number of edges is <=1 it corresponds to a state that minimized the out_flow_constraint Hamiltonian
+            if max(num_edges_leaving_node.values()) > 1:
+                assert energy > min(energies_bitstrings)[0]
+            elif max(num_edges_leaving_node.values()) <= 1:
+                assert energy == min(energies_bitstrings)[0]
+
+
+    def test_out_flow_constraint_undirected_raises_error(self):
+        """Test `out_flow_constraint` raises ValueError if input graph is not directed """
+        g = nx.complete_graph(3) # undirected graph
+
+        with pytest.raises(ValueError):
+            h = out_flow_constraint(g)

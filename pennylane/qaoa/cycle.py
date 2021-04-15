@@ -153,3 +153,99 @@ def _collect_duplicates(
             reduced_ops_no_zeros.append(op)
 
     return reduced_coeffs_no_zeros, reduced_ops_no_zeros
+
+
+def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
+    r"""Calculates the Hamiltonian which imposes the constraint that each node has
+    an outflow of at most one.
+
+    The out flow constraint is, for all :math:`i`:
+
+    .. math:: \sum_{j,(i,j)\in E}x_{ij} \leq 1,
+
+    where :math:`E` are the edges of the graph and :math:`x_{ij}` is a binary number that selects
+    whether to include the edge :math:`(i, j)`.
+
+    The corresponding qubit Hamiltonian is:
+
+    .. math::
+
+        \frac{1}{4}\sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
+        \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right)
+
+
+    where :math:`V` are the graph vertices and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
+    upon the qubit specified by the pair :math:`(i, j)`. Note that this function omits the
+    :math:`1/4` constant factor.
+
+    This Hamiltonian is minimized by selecting edges such that each node has an outflow of at most one.
+
+    Args:
+        graph (nx.DiGraph): the graph specifying possible edges
+
+    Returns:
+        qml.Hamiltonian: the out flow constraint Hamiltonian
+
+    Raises:
+        ValueError: if the input graph is not directed
+    """
+    if not hasattr(graph, "out_edges"):
+        raise ValueError("Input graph must be directed")
+
+    hamiltonian = qml.Hamiltonian([], [])
+
+    for node in graph.nodes:
+        hamiltonian += _inner_out_flow_constraint_hamiltonian(graph, node)
+
+    return hamiltonian
+
+
+def _inner_out_flow_constraint_hamiltonian(
+    graph: nx.DiGraph, node: int
+) -> Tuple[List[float], List[qml.operation.Observable]]:
+    r"""Calculates the expanded inner portion of the Hamiltonian in :func:`out_flow_constraint`.
+
+    For a given :math:`i`, this function returns:
+
+    .. math::
+
+        d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
+        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij}) )^{2}
+
+    Args:
+        graph (nx.DiGraph): the graph specifying possible edges
+        node (int): a fixed node
+
+    Returns:
+        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
+        observables of the inner part of the node-constraint Hamiltonian.
+    """
+    coeffs = []
+    ops = []
+
+    edges_to_qubits = edges_to_wires(graph)
+    out_edges = graph.out_edges(node)
+    d = len(out_edges)
+
+    for edge in out_edges:
+        wire = (edges_to_qubits[edge],)
+        coeffs.append(1)
+        ops.append(qml.PauliZ(wire))
+
+    coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
+
+    for edge in out_edges:
+        wire = (edges_to_qubits[edge],)
+        coeffs.append(-2 * (d - 1))
+        ops.append(qml.PauliZ(wire))
+
+    coeffs.append(d * (d - 2))
+    ops.append(qml.Identity(0))
+
+    coeffs, ops = _collect_duplicates(coeffs, ops)
+
+    hamiltonian = qml.Hamiltonian(coeffs, ops)
+
+    return hamiltonian
