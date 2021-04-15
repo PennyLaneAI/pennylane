@@ -97,7 +97,7 @@ def get_device_tests():
 
 def test_device(
     device_name,
-    shots=None,
+    shots=0,
     skip_ops=True,
     flaky_report=False,
     pytest_args=None,
@@ -151,7 +151,8 @@ def test_device(
     cmds.append(test_dir)
     cmds.append(f"--device={device_name}")
 
-    if shots is not None:
+    # Note: None is a valid setting for shots
+    if shots != 0:
         cmds.append(f"--shots={shots}")
 
     if skip_ops:
