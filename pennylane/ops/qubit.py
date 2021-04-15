@@ -2737,7 +2737,8 @@ class QubitSum(Operation):
         decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
         return decomp_ops
 
-
+def adjoint(self):
+    return QubitSum(wires=self.wires)
 ops = {
     "Hadamard",
     "PauliX",
