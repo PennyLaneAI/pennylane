@@ -245,7 +245,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
         # Use Pauli commutation rules to determine the phase
         pauli_ordering = (pauli_1_op_name, pauli_2_op_name)
 
-        pos_phases =  [("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX")]
+        pos_phases = [("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX")]
         if pauli_ordering in pos_phases:
             phase *= 1j
         else:
