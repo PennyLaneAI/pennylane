@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Tools to compute and visualise the Fourier series representation of quantum circuits."""
 from .coefficients import fourier_coefficients
-from .spectrum import spectrum
 
 try:
     import matplotlib.pyplot as plt

@@ -52,42 +52,21 @@ We can mathematically evaluate the expectation value of this function to be
 of this function are :math:`c_0 = 0.5`, :math:`c_1 = c^*_{-1} = 0`, and \
 :math:`c_2 = c^*_{-2} = 0.25`.
 
-The PennyLane ``fourier`` module enables calculation of two important aspects of
-the Fourier series: the *spectrum*, i.e., the accessible frequencies where the
-Fourier coefficients may be non-zero; and the values of the *coefficients*
-themselves. Knowledge of the coefficients and accessible spectra is important
-for the study of expressivity of quantum circuits, as described in `Schuld,
+The PennyLane ``fourier`` module enables calculation of
+the values of the Fourier coefficients :math:`c_{n_1,\dots, n_N}`.
+Knowledge of the coefficients, and thereby the spectrum of frequencies
+where the coefficients are non-zero, is important
+for the study of the expressivity of quantum circuits, as described in `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__ and `Vidal and
 Theis, 2019 <https://arxiv.org/abs/1901.11434>`__ -- the more coefficients
 available to a quantum model, the larger the class of functions that model can
 represent, potentially leading to greater utility for quantum machine learning
 applications.
 
-Calculating the Fourier spectrum
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The frequency spectra can be calculated using the :func:`~.pennylane.fourier.spectrum`
-function. As one may be interested only in the spectra of a subset of the input
-parameters, **only the spectrum of differentiable parameters will be calculated**.
-
-.. code::
-
-   >>> from pennylane.fourier import spectrum
-   >>> x = np.array([0.5], requires_grad=True)
-   >>> spectrum(simple_circuit)
-   {tensor(0.5, requires_grad=True): [-2.0, -1.0, 0.0, 1.0, 2.0]}
-
-The set of available frequencies above matches the result we obtained by hand of
-:math:`-2, 0, 2`. Note that the :func:`~.pennylane.fourier.spectrum` function
-returns the *maximum* possible spectra with respect to the given inputs. It is
-possible that certain Fourier coefficients will nevertheless be zero.
-
-
 Calculating the Fourier coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Knowledge of the frequency spectra enables us to compute the Fourier
-coefficients themselves. This can be done using the
+The Fourier coefficients can be numerically calculated with the
 :func:`~.pennylane.fourier.fourier_coefficients` function:
 
 .. code::
@@ -99,7 +78,8 @@ coefficients themselves. This can be done using the
 
 The input to the :func:`~.pennylane.fourier.fourier_coefficients` function are
 the function in question, the length of the input vector, and the maximum
-frequency for which to calculate the coefficients (also known as the *degree*). (For a quantum function of
+frequency for which to calculate the coefficients (also known as the *degree*).
+(For a quantum function of
 multiple inputs with varying order, it may be necessary to use a wrapper
 function to ensure the Fourier coefficients are calculated with respect to the
 correct input values.)
@@ -115,9 +95,7 @@ for multiple dimensions.
    If a frequency lower than the true maximum frequency is used to calculate the
    coefficients, it is possible that `aliasing
    <https://en.wikipedia.org/wiki/Aliasing>`__ will be present in the
-   output. Thus, it is good practice to first estimate the maximum frequency of
-   a quantum circuit using the :func:`~.pennylane.fourier.spectrum` function. In
-   addition, the coefficient calculator also contains a simple anti-aliasing
+   output. The coefficient calculator also contains a simple anti-aliasing
    filter that will cut off frequencies higher than a given threshold. This can
    be configured by setting the ``lowpass_filter`` option to ``True``, and optionally
    specifying the ``frequency_threshold`` argument (if none is specified, 2 times
