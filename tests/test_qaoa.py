@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, _inner_net_flow_constraint_hamiltonian
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, _inner_net_flow_constraint_hamiltonian, net_flow_constraint
 
 
 #####################################################
@@ -807,3 +807,42 @@ class TestCycles:
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_net_flow_constraint(self):
+        """Test `net_flow_constraint` produces expected result on a manually calcualted example
+        of a 3-node complete digraph """
+        g = nx.complete_graph(3).to_directed()
+        h = net_flow_constraint(g)
+
+        expected_ops = [
+            qml.Identity(wires=[0]),
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[4]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[4]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[5]),
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]),
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[5]),
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[5]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[4]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[5]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3])
+        ]
+
+        expected_coeffs = [12, 2, -4, -2, -2, -4, 2, 2, -2, -2, -4, 2, 2, -2, -2, 2]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+
+    def test_net_flow_constraint_undirected_raises_error(self):
+        """Test `net_flow_constraint` raises ValueError if input graph is not directed """
+        g = nx.complete_graph(3) # undirected graph
+
+        with pytest.raises(ValueError):
+            h = net_flow_constraint(g)
