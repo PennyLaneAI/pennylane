@@ -114,7 +114,7 @@ def pauli_group(n_qubits, wire_map=None):
 
 
 def pauli_mult(pauli_1, pauli_2, wire_map=None):
-    """Multiply two Pauli words together.
+    """Multiply two Pauli words together and return the product as a Pauli word.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations.
@@ -169,7 +169,8 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
 
 def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
-    r"""Multiply two Pauli words together including the global phase.
+    r"""Multiply two Pauli words together, and return both their product as a Pauli word
+    and the global phase.
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
@@ -213,6 +214,8 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     # Get the product; use our earlier function
     pauli_product = pauli_mult(pauli_1, pauli_2, wire_map)
 
+    # Get the names of the operations; in cases where only a single non-identity Pauli
+    # is present, the operation name is stored as a string rather than a list, so convert it
     pauli_1_names = [pauli_1.name] if isinstance(pauli_1.name, str) else pauli_1.name
     pauli_2_names = [pauli_2.name] if isinstance(pauli_2.name, str) else pauli_2.name
 
