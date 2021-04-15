@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Support for higher order derivatives on hardware</h4> 
+<h4>Support for higher-order derivatives on hardware</h4> 
 
 * Computing second derivatives and Hessians of QNodes is now supported with
   the parameter-shift differentiation method, on all machine learning interfaces.
@@ -51,7 +51,7 @@
   >>> grad_fn = qml.finite_diff(H, N=1)
   >>> grad = grad_fn(x)
   >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
-  >>> deriv2 = deriv2_fn(x)
+  >>> deriv2_fn(x)
   ```
 
 - The JAX interface now supports all devices, including hardware devices,
@@ -72,7 +72,7 @@
   ```
 
   Currently, when used with the parameter-shift differentiation method,
-  only a single returned expectation value of variance is supported.
+  only a single returned expectation value or variance is supported.
   Multiple expectations/variances, as well as probability and state returns,
   are not currently allowed.
 
@@ -91,7 +91,10 @@
   constructed.
 
   This optimizer is based on both the [iCANS1](https://quantum-journal.org/papers/q-2020-05-11-263)
-  and [Rosalin](https://arxiv.org/abs/2004.06252) shot adaptive optimizers.
+  and [Rosalin](https://arxiv.org/abs/2004.06252) shot-adaptive optimizers.
+
+  Once constructed, the cost function can be passed directly to the optimizer's `step` method.  The
+  attribute `opt.total_shots_used` can be used to track the number of shots per iteration.
 
   ```pycon
   >>> coeffs = [2, 4, -1, 5, 2]
@@ -106,12 +109,7 @@
   >>> dev = qml.device("default.qubit", wires=2, shots=100)
   >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
   >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
-  ```
-
-  Once constructed, the cost function can be passed directly to the optimizer's `step` method.  The
-  attribute `opt.total_shots_used` can be used to track the number of shots per iteration.
-
-  ```pycon
+  >>> 
   >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
   >>> for i in range(5):
   ...    params = opt.step(cost, params)
@@ -136,19 +134,15 @@
   However, three sets of measurement statistics will be returned; using the first 5 shots,
   second set of 10 shots, and final 1000 shots, separately.
 
-  For example:
+  For example, executing a circuit with two outputs will lead to a result of shape `(3, 2)`:
 
   ```python
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
-  ```
+  >>> @qml.qnode(dev)
+  >>> def circuit(x):
+  >>>     qml.RX(x, wires=0)
+  >>>     qml.CNOT(wires=[0, 1])
+  >>>     return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-  Executing this, we will get an output of size `(3, 2)`:
-
-  ```pycon
   >>> circuit(0.5)
   [[0.33333333 1.        ]
    [0.2        1.        ]
@@ -157,21 +151,20 @@
 
   This output remains fully differentiable.
 
-- The number of shots can now be specified on a temporary basis when evaluating a QNode.
-  [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
+- The number of shots can now be specified on a per-call basis when evaluating a QNode.
+  [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075).
+  
+  
+  For this, the qnode should be called with an additional `shots` keyword argument:
 
   ```python
   dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
 
   @qml.qnode(dev)
-  def circuit(a):
-      qml.RX(a, wires=0)
-      return qml.sample(qml.PauliZ(wires=0))
-  ```
-
-  For this, the qnode is called with an additional `shots` keyword argument:
-
-  ```pycon
+  >>> def circuit(a):
+  >>>     qml.RX(a, wires=0)
+  >>>     return qml.sample(qml.PauliZ(wires=0))
+  >>>
   >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
@@ -220,7 +213,7 @@ fully differentiable.
   qml.adjoint(qml.RX)(0.123, wires=0) # applies RX(-0.123)
   ```
 
-* Adds a new transform `qml.ctrl` that adds control wires to subroutines.
+* A new transform `qml.ctrl` is now available that adds control wires to subroutines.
   [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 
   ```python
@@ -228,9 +221,9 @@ fully differentiable.
      qml.RX(params[0], wires=0)
      qml.RZ(params[1], wires=1)
 
-  # Create a new method that applies `my_ansatz`
+  # Create a new operation that applies `my_ansatz`
   # controlled by the "2" wire.
-  my_anzats2 = qml.ctrl(my_ansatz, control=2)
+  my_ansatz2 = qml.ctrl(my_ansatz, control=2)
 
   @qml.qnode(dev)
   def circuit(params):
@@ -248,36 +241,7 @@ fully differentiable.
       return qml.state()
   ```
 
-  The `qml.ctrl` transform is especially useful to repeatedly apply an
-  operation which is controlled by different qubits in each repetition. A famous example is Shor's algorithm.
-
-  ```python
-  def modmul(a, mod, wires):
-      # Some complex set of gates that implements modular multiplcation.
-      qml.CNOT(wires=[wires[0], wires[2]])
-      qml.Toffoli(wires=wires[:3])
- 
-  @qml.qnode(dev)
-  def shor(a, mod, scratch_wires, qft_wires):
-      for i, wire in enumerate(qft_wires):
-          qml.Hadamard(wire)
-
-          # Create the controlled modular multiplication 
-          # subroutine based on the control wire.
-          cmodmul = qml.ctrl(modmul, control=wire)
-
-          # Execute the controlled modular multiplication.
-          cmodmul(a ** i, mod, scratch_wires)
- 
-      qml.adjoint(qml.QFT)(qft_wires)
-      return qml.sample()
-
-  ```
-
-  In the future, devices will be able to exploit the sparsity of controlled operations to 
-  improve simulation performance.
-
-* Adds the `qml.transforms.classical_jacobian` transform.
+* The `qml.transforms.classical_jacobian` transform has been added.
   [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
 
   This transform returns a function to extract the Jacobian matrix of the classical part of a
@@ -313,7 +277,7 @@ fully differentiable.
   The returned Jacobian has rows corresponding to gate arguments, and columns corresponding to
   QNode arguments; that is, :math:`J_{ij} = \frac{\partial}{\partial g_i} f(w_j)`.
 
-* Adds a new transform `qml.transforms.invisible`.
+* A new transform `qml.transforms.invisible` has been added.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
   Marking a quantum function as invisible will inhibit any internal
