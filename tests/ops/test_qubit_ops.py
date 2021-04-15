@@ -383,7 +383,6 @@ class TestOperations:
             qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
             qml.QubitUnitary(np.eye(2) * 1j, wires=0),
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-            qml.QFT(wires=[1, 2, 3]),
             qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
             qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
             qml.SingleExcitation(0.123, wires=[0, 3]),
@@ -392,8 +391,6 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
-            qml.QubitCarry(wires=[0, 1, 2, 3]),
-            qml.QubitSum(wires=[0, 1, 2]),
         ],
     )
     def test_adjoint_unitaries(self, op, tol):
@@ -405,10 +402,13 @@ class TestOperations:
         assert op.wires == op_d.wires
 
     @pytest.mark.parametrize(
-        "op_builder", 
+        "op_builder",
         [
-            lambda: qml.QFT(wires=[1, 2, 3])
-        ])
+            lambda: qml.QFT(wires=[1, 2, 3]),
+            lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
+            lambda: qml.QubitSum(wires=[0, 1, 2]),
+        ],
+    )
     def test_adjoint_with_decomposition(self, op_builder):
         op = op_builder()
         decomposed_ops = op.decomposition(wires=op.wires)
@@ -418,7 +418,7 @@ class TestOperations:
             np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
 
     @pytest.mark.parametrize(
-        "op", 
+        "op",
         [
             qml.BasisState(np.array([0, 1]), wires=0),
             qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
@@ -2100,6 +2100,7 @@ class TestMultiControlledX:
 
 class TestArithmetic:
     """Tests the arithmetic operations."""
+
     @pytest.mark.parametrize(
         "wires,input_string,output_string,expand",
         [
@@ -2143,16 +2144,16 @@ class TestArithmetic:
     )
     def test_QubitCarry(self, wires, input_string, output_string, expand):
         """Test if ``QubitCarry`` produces the right output and is expandable."""
-        dev = qml.device("default.qubit",wires=4)
+        dev = qml.device("default.qubit", wires=4)
         with qml.tape.QuantumTape() as tape:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
-            qml.probs(wires=[0,1,2,3])
-        
+            qml.probs(wires=[0, 1, 2, 3])
+
         if expand:
-            tape=tape.expand()
+            tape = tape.expand()
         result = dev.execute(tape)
         result = np.argmax(result)
         result = format(result, "04b")
@@ -2171,7 +2172,6 @@ class TestArithmetic:
 
         result = circuit()
         assert np.allclose(result, 0.5)
-        
 
     # fmt: off
     @pytest.mark.parametrize(
@@ -2210,19 +2210,18 @@ class TestArithmetic:
         """Test if ``QubitSum`` produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
 
-
         with qml.tape.QuantumTape() as tape:
             qml.QubitSum(wires=wires)
 
         if expand:
-            tape=tape.expand()
+            tape = tape.expand()
 
         with qml.tape.QuantumTape() as tape2:
-            qml.QubitStateVector(input_state,wires=[0,1,2])
+            qml.QubitStateVector(input_state, wires=[0, 1, 2])
             qml.state()
 
         for i in tape.operations:
             tape2._ops.append(i)
 
         result = dev.execute(tape2)
-        assert qml.math.allclose(result, output_state)
+        assert np.allclose(result, output_state)
