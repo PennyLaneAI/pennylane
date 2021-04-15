@@ -2583,27 +2583,37 @@ class QubitCarry(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitCarry`` operation on an input state
-    :math:`|0110\rangle`.
+    The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
+    the last qubit denotes the carry value:
 
     .. code-block::
+
+        input_bitstring = (0, 1, 1, 0)
 
         @qml.qnode(dev)
         def circuit(basis_state):
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
             qml.QubitCarry(wires=[0, 1, 2, 3])
-            return qml.probs(wires=[2]), qml.probs(wires=[3])
+            return qml.probs(wires=[0, 1, 2, 3])
 
-        bc_sum, carry = circuit(np.array([0, 1, 1, 0]))
-        bc_sum = np.argwhere(bc_sum == 1).flatten()[0]
-        carry = np.argwhere(carry == 1).flatten()[0]
+        probs =  circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=4))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 0, 1)
 
     The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
     in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
     a carry, so we have:
 
+    >>> bc_sum = output_bitstring[2]
     >>> bc_sum
     0
+    >>> carry = output_bitstring[3]
     >>> carry
     1
     """
@@ -2673,7 +2683,7 @@ class QubitSum(Operation):
     **Example**
 
     The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
-    final wire holding the modulo-two sum of the first two wires.
+    final wire holding the modulo-two sum of the first two wires:
 
     .. code-block::
 
@@ -2688,7 +2698,7 @@ class QubitSum(Operation):
         probs = circuit(input_bitstring)
         probs_indx = np.argwhere(probs == 1).flatten()[0]
         bitstrings = list(itertools.product(range(2), repeat=3))
-        output_bitstring = basis_states[probs_indx]
+        output_bitstring = bitstrings[probs_indx]
 
     The output bitstring is
 
