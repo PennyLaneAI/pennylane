@@ -2594,15 +2594,15 @@ class QubitCarry(Operation):
             qml.QubitCarry(wires=[0, 1, 2, 3])
             return qml.probs(wires=[2]), qml.probs(wires=[3])
 
-        ab_sum, carry = circuit(np.array([0, 1, 1, 0]))
-        ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
+        bc_sum, carry = circuit(np.array([0, 1, 1, 0]))
+        bc_sum = np.argwhere(bc_sum == 1).flatten()[0]
         carry = np.argwhere(carry == 1).flatten()[0]
 
     The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
     in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
     a carry, so we have:
 
-    >>> ab_sum
+    >>> bc_sum
     0
     >>> carry
     1
