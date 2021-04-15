@@ -726,3 +726,124 @@ class TestGatesQubitExpval:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+
+@flaky(max_runs=10)
+class TestGateInverseExpval:
+    """Test some expectation values obtained from qubit-based devices after
+    applying the inverse of gates."""
+
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", 1),
+        ("PauliY", 1),
+        ("S", -1),
+    ])
+    def test_inverse_circuit(self, device, tol, name, expected_output):
+        """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
+
+        n_wires = 1
+        dev = device(n_wires)
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisState(np.array([1]), wires=[0])
+            op(wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", 1),
+        ("PauliY", 1),
+        ("S", -1),
+    ])
+    def test_inverse_circuit_calling_inv_multiple_times(self, device, tol, name, expected_output):
+        """Tests that multiple calls to the inverse of an operation works"""
+
+        n_wires = 1
+        dev = device(n_wires)
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisState(np.array([1]), wires=[0])
+            op(wires=0).inv().inv().inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
+                                                           multiplier * 0.5432) for multiplier in range(8)
+                                                          ])
+    def test_inverse_circuit_with_parameters(self, device, tol, name, expected_output, phi):
+        """Tests the inverse of supported gates that act on a single wire and are parameterized"""
+        n_wires = 1
+        dev = device(n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+
+    # This test is ran against the state |0> with one Z expval
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", -1),
+        ("PauliY", -1),
+        ("PauliZ", 1),
+        ("Hadamard", 0),
+    ])
+    def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
+        """Tests supported gates that act on a single wire that are not parameterized"""
+        n_wires = 1
+        dev = device(n_wires)
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(dev)
+        def circuit():
+            op(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+
+    # This test is ran against the state |Phi+> with two Z expvals
+    @pytest.mark.parametrize("name,expected_output", [
+        ("CNOT", [-1/2, 1]),
+        ("SWAP", [-1/2, -1/2]),
+        ("CZ", [-1/2, -1/2]),
+    ])
+    def test_supported_gate_two_wires_no_parameters(self, device, tol, name, expected_output):
+        """Tests supported gates that act on two wires that are not parameterized"""
+        n_wires = 2
+        dev = device(n_wires)
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitStateVector(np.array([1/2, 0, 0, math.sqrt(3)/2]), wires=[0, 1])
+            op(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize("name,expected_output", [
+        ("CSWAP", [-1, -1, 1]),
+    ])
+    def test_supported_gate_three_wires_no_parameters(self, device, tol, name, expected_output):
+        """Tests supported gates that act on three wires that are not parameterized"""
+        n_wires = 3
+        dev = device(n_wires)
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
+            op(wires=[0, 1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
