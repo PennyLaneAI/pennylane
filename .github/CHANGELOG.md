@@ -14,19 +14,19 @@
   The following example adds two 1-bit numbers, returning a 2-bit answer:
 
   ```python
-  dev = qml.device('default.qubit', wires=4)
+  dev = qml.device('default.qubit', wires = 4)
   a = 0
   b = 1
   @qml.qnode(dev)
   def circuit():
-      qml.BasisState(np.array([a,b]), wires=[1,2])
-      qml.QubitCarry(wires=[0,1,2,3])
-      qml.CNOT(wires=[1,2])
-      qml.QubitSum(wires=[0,1,2])
-      return qml.probs(wires=[3,2])
+      qml.BasisState(np.array([a,b]), wires = [1, 2])
+      qml.QubitCarry(wires = [0, 1, 2, 3])
+      qml.CNOT(wires = [1, 2])
+      qml.QubitSum(wires = [0, 1, 2])
+      return qml.probs(wires = [3, 2])
 
   probs = circuit()
-  bitstrings = tuple(itertools.product([0, 1], repeat=2))
+  bitstrings = tuple(itertools.product([0, 1], repeat = 2))
   indx = np.argwhere(probs == 1).flatten()[0]
   output = bitstrings[indx]
   ```
