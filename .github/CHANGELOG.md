@@ -137,11 +137,11 @@
   For example, executing a circuit with two outputs will lead to a result of shape `(3, 2)`:
 
   ```python
-  >>> @qml.qnode(dev)
-  >>> def circuit(x):
-  >>>     qml.RX(x, wires=0)
-  >>>     qml.CNOT(wires=[0, 1])
-  >>>     return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
   >>> circuit(0.5)
   [[0.33333333 1.        ]
@@ -161,10 +161,10 @@
   dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
 
   @qml.qnode(dev)
-  >>> def circuit(a):
-  >>>     qml.RX(a, wires=0)
-  >>>     return qml.sample(qml.PauliZ(wires=0))
-  >>>
+  def circuit(a):
+      qml.RX(a, wires=0)
+      return qml.sample(qml.PauliZ(wires=0))
+
   >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
@@ -390,13 +390,6 @@ fully differentiable.
   phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
   expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
   ```
-  
-  The theoretical value is roughly `0.432332`, which compares closely to the estimated value:
-  
-  ```pycon
-  >>> expectation_estimated
-  0.4327096457464369
-  ```
 
 * Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
@@ -436,13 +429,6 @@ fully differentiable.
 
   # Need to rescale phase due to convention of RX gate
   phase_estimated = 4 * np.pi * (1 - phase)
-  ```
-
-  The resulting phase is a close approximation to the true value:
-  
-  ```pycon
-  >>> phase_estimated
-  5.105088062083414
   ```
 
 - Added the `ControlledPhaseShift` gate as well as the `QFT` operation for applying quantum Fourier
@@ -684,7 +670,7 @@ fully differentiable.
   * All measurement statistics will first be computed using the
     first 5 shots --- that is, `shots_range=[0, 5]`, `bin_size=5`.
 
-  * Next, the tuple `(10, 3)` indicates 10 shots, repeated 3 times. We will want to use
+  * Next, the tuple `(10, 3)` indicates 10 shots, repeated 3 times. This will use
     `shot_range=[5, 35]`, performing the expectation value in bins of size 10
     (`bin_size=10`).
 
@@ -717,7 +703,7 @@ fully differentiable.
   - Tests specifically for non-tape mode have been deleted.
 
 * A deprecation warning is now raised when loading content from the `qnn` module. In release 
-  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
+  `0.16.0`, the `qnn` module will no longer be automatically loaded due to its dependency on
   TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
   [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
 
