@@ -2555,9 +2555,8 @@ class Hermitian(Observable):
 class QubitCarry(Operation):
     r"""QubitCarry(wires)
     Apply the ``QubitCarry`` operation to four input wires.
-    This stores the modulo two sum of the middle two qubits in the third qubit and
-    flips the value of the fourth qubit if the modulo sum of the first three qubits results in a carry.
-    More precisely, this operation performs the transformation:
+
+    This operation performs the transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle
@@ -2567,16 +2566,12 @@ class QubitCarry(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The first wire corresponds to the first qubit value to be added :math:`|a\rangle`.
-    The second wire corresponds to the second qubit value to be added :math:`|b\rangle`.
-    The third wire corresponds to the third qubit value to be added :math:`|c\rangle` and takes the state :math:`|b \oplus c\rangle`.
-    The fourth wire corresponds to the fourth qubit :math:`|d\rangle` and takes the state :math:`|(bc \oplus d)\oplus((b\oplus c)a)\rangle`.
-
-    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
 
     .. note::
-        If the fourth wire starts in state :math:`|0\rangle`, its final state holds the carry value of the sum.
-        This is the state: :math:`|bc\oplus (b\oplus c)a\rangle`.
+        The first wire should be used to input a carry bit from previous operations. The final wire
+        holds the carry bit of this operation and the input state on this wire should be
+        :math:`|0\rangle`.
 
     **Details:**
 
@@ -2588,23 +2583,39 @@ class QubitCarry(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitCarry`` operation on a ``basis_state``.
-    Here we perform the modulo two sum :math:`1 \oplus 1 = 0` and get a carry value of 1.
+    The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
+    the last qubit denotes the carry value:
 
     .. code-block::
 
+        input_bitstring = (0, 1, 1, 0)
+
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.BasisState(basis_state,wires=[0,1,2,3])
-            qml.QubitCarry(wires=[0,1,2,3])
-            return qml.probs(wires=[2]),qml.probs(wires=[3])
+            qml.BasisState(basis_state, wires=[0, 1, 2, 3])
+            qml.QubitCarry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=[0, 1, 2, 3])
 
-        ab_sum,carry = circuit(np.array([0, 1, 1, 0]))
-        bitstrings = tuple(itertools.product([0, 1], repeat=1))
-        indx_ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
-        indx_carry =np.argwhere(carry == 1).flatten()[0]
-        ab_sum = bitstrings[indx_ab_sum]
-        carry = bitstrings[indx_carry]
+        probs =  circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=4))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 0, 1)
+
+    The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
+    in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
+    a carry, so we have:
+
+    >>> bc_sum = output_bitstring[2]
+    >>> bc_sum
+    0
+    >>> carry = output_bitstring[3]
+    >>> carry
+    1
     """
     num_params = 0
     num_wires = 4
@@ -2635,7 +2646,7 @@ class QubitCarry(Operation):
         return QubitCarry.matrix
 
     @staticmethod
-    def decomposition(*params, wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -2647,7 +2658,8 @@ class QubitCarry(Operation):
 class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
-    This stores the modulo two sum of the three input values in the third wire. More precisely, it performs the transformation:
+
+    This operation performs the transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
@@ -2658,11 +2670,7 @@ class QubitSum(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The first wire provided corresponds to the first qubit in the sum: :math:`|C\rangle`.
-    The second wire corresponds to the second qubit in the sum: :math:`|a\rangle`.
-    The third wire corresponds to the third qubit in the sum :math:`|b\rangle` and takes the modulo two sum :math:`a\oplus b \oplus c`.
-
-    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
 
     **Details:**
 
@@ -2674,21 +2682,35 @@ class QubitSum(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitSum`` operation on a ``basis_state``.
-    Here we perform the modulo two sum :math:`1 \oplus 1 \oplus 0 = 0`:
+    The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
+    final wire holding the modulo-two sum of the first two wires:
 
     .. code-block::
+
+        input_bitstring = (0, 1, 0)
 
         @qml.qnode(dev)
         def circuit(basis_state):
             qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
-            return qml.probs(wires = 2)
+            return qml.probs(wires=[0, 1, 2])
 
-        probs = circuit(np.array([1, 1, 0]))
-        bitstrings = tuple(itertools.product([0, 1], repeat=1))
-        indx = np.argwhere(probs == 1).flatten()[0]
-        output = bitstrings[indx]
+        probs = circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=3))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 1)
+
+    The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
+    output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
+
+    >>> abc_sum = output_bitstring[2]
+    >>> abc_sum
+    1
     """
     num_params = 0
     num_wires = 3
@@ -2711,7 +2733,7 @@ class QubitSum(Operation):
         return QubitSum.matrix
 
     @staticmethod
-    def decomposition(*params, wires):
+    def decomposition(wires):
         decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
         return decomp_ops
 
