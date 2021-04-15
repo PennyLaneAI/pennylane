@@ -350,7 +350,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     Returns:
         str: The string representation of the observable in terms of ``I``, ``X``, ``Y``,
-            and/or ``Z``.
+        and/or ``Z``.
 
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
@@ -396,7 +396,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     Returns:
         .Observable: The Pauli word representing of ``pauli_string`` on the wires
-            enumerated in the wire map.
+        enumerated in the wire map.
 
     **Example**
 
@@ -464,7 +464,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     Returns:
         array[complex]: The matrix representation of the multi-qubit Pauli over the
-            specified wire map.
+        specified wire map.
 
     Raises:
         TypeError: if the input observable is not a proper Pauli word.

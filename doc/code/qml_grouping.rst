@@ -21,18 +21,19 @@ the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
 :math:`4^n` (neglecting the four possible global phases that may arise from
 multiplication of its elements).
 
-The Pauli group can be constructed using the :func:`~pennylane.pauli.pauli_group`
+The Pauli group can be constructed using the :func:`~.pauli_group`
 function. To construct the group, it is recommended to provide a wire map in
 order to indicate the names and indices of the wires. (If none is provided, a
 default mapping of integers will be used.)
 
->>> from pennylane.pauli import pauli_group
+>>> from pennylane.grouping import pauli_group
 >>> pg_3 = list(pauli_group(3))
-Multiplication of Pauli group elements can be performed using
-:func:`~pennylane.pauli.pauli_mult` or
-:func:`~pennylane.pauli.pauli_mult_with_phase`:
 
->>> from pennylane.pauli import pauli_mult
+Multiplication of Pauli group elements can be performed using
+:func:`~.pauli_mult` or
+:func:`~.pauli_mult_with_phase`:
+
+>>> from pennylane.grouping import pauli_mult
 >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
 >>> pg = list(pauli_group(3, wire_map=wire_map))
 >>> pg[3]
@@ -41,16 +42,18 @@ PauliZ(wires=['b']) @ PauliZ(wires=['c'])
 PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
 >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
 PauliY(wires=['a']) @ PauliX(wires=['b'])
+
 Pauli observables can be converted to strings (and vice versa):
 
->>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+>>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
 >>> pauli_word_to_string(pg[55], wire_map=wire_map)
 'YYZ'
 >>> string_to_pauli_word('ZXY', wire_map=wire_map)
 PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+
 The matrix representation for arbitrary Paulis and wire maps can also be performed.
 
->>> pennylane.pauli import pauli_word_to_matrix
+>>> pennylane.grouping import pauli_word_to_matrix
 >>> wire_map = {'a' : 0, 'b' : 1}
 >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
 >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)

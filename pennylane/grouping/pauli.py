@@ -62,7 +62,7 @@ def pauli_group(n_qubits, wire_map=None):
     The order of iteration is based on the binary symplectic representation of
     the Pauli group as :math:`2n`-bit strings. Ordering is done by converting
     the integers :math:`0` to :math:`2^{2n}` to binary strings, and converting those
-    strings to Pauli operators using the ``binary_to_pauli`` method.
+    strings to Pauli operators using the :func`~.binary_to_pauli` method.
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
@@ -79,7 +79,7 @@ def pauli_group(n_qubits, wire_map=None):
 
     .. code-block:: python
 
-        from pennylane.pauli import pauli_group
+        from pennylane.grouping import pauli_group
 
         n_qubits = 3
 
@@ -129,14 +129,14 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
     Returns:
         .Operation: The product of pauli_1 and pauli_2 as a Pauli word
-            (ignoring the global phase).
+        (ignoring the global phase).
 
     **Example**
 
     This function enables multiplication of Pauli group elements at the level of
     Pauli words, rather than matrices. For example,
 
-    >>> from pennylane.pauli import pauli_mult
+    >>> from pennylane.grouping import pauli_mult
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product = pauli_mult(pauli_1, pauli_2)
@@ -186,15 +186,15 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
 
     Returns:
         tuple[.Operation, complex]: The product of ``pauli_1`` and ``pauli_2``, and the
-            global phase.
+        global phase.
 
     **Example**
 
-    This function works the same as ``pauli_mult`` but also returns the global
+    This function works the same as :func:`~.pauli_mult` but also returns the global
     phase accumulated as a result of the Pauli product rules
     :math:`\sigma_i \sigma_j = i \sigma_k`.
 
-    >>> from pennylane.pauli import pauli_mult_with_phase
+    >>> from pennylane.grouping import pauli_mult_with_phase
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
