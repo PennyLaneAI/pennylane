@@ -873,7 +873,7 @@ class TestGateInverseExpval:
             ("S", -1),
         ],
     )
-    def test_inverse_circuit(self, device, tol, name, expected_output):
+    def test_inverse_circuit(self, device, tol, name, expected_output, skip_if):
         """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
 
         n_wires = 1
@@ -898,7 +898,7 @@ class TestGateInverseExpval:
             ("S", -1),
         ],
     )
-    def test_inverse_circuit_calling_inv_multiple_times(self, device, tol, name, expected_output):
+    def test_inverse_circuit_calling_inv_multiple_times(self, device, tol, name, expected_output, skip_if):
         """Tests that multiple calls to the inverse of an operation works"""
 
         n_wires = 1
@@ -918,7 +918,7 @@ class TestGateInverseExpval:
     @pytest.mark.parametrize(
         "expected_output,param", [(1, multiplier * 0.5432) for multiplier in range(8)]
     )
-    def test_inverse_circuit_with_parameters(self, device, tol, expected_output, param):
+    def test_inverse_circuit_with_parameters(self, device, tol, expected_output, param, skip_if):
         """Tests the inverse of supported gates that act on a single wire and are parameterized"""
         n_wires = 1
         dev = device(n_wires)
