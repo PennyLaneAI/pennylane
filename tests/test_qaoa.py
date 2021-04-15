@@ -809,35 +809,52 @@ class TestCycles:
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
 
-    def test_net_flow_constraint(self):
-        """Test `net_flow_constraint` produces expected result on a manually calcualted example
-        of a 3-node complete digraph """
-        g = nx.complete_graph(3).to_directed()
-        h = net_flow_constraint(g)
+def test_net_flow_constraint():
+    """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
+    collection of edges with zero flow"""
+    g = nx.complete_graph(3).to_directed()
+    h = net_flow_constraint(g)
+    m = map_wires_to_edges(g)
+    wires = len(g.edges)
 
-        expected_ops = [
-            qml.Identity(wires=[0]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3])
-        ]
+    # We use PL to find the energies corresponding to each possible bitstring
+    dev = qml.device("default.qubit", wires=wires)
 
-        expected_coeffs = [12, 2, -4, -2, -2, -4, 2, 2, -2, -2, -4, 2, 2, -2, -2, 2]
+    def energy(basis_state, **kwargs):
+        qml.BasisState(basis_state, wires=range(wires))
 
-        assert expected_coeffs == h.coeffs
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+    cost = qml.ExpvalCost(energy, h, dev, optimize=True)
+
+    # Calculate the set of all bitstrings
+    states = itertools.product([0, 1], repeat=wires)
+
+    # Calculate the corresponding energies
+    energies_states = ((cost(state).numpy(), state) for state in states)
+
+    # We now have the energies of each bitstring/state. We also want to calculate the net flow of
+    # the corresponding edges
+    for energy, state in energies_states:
+
+        # This part converts from a binary string of wires selected to graph edges
+        wires_ = tuple(i for i, s in enumerate(state) if s != 0)
+        edges = tuple(m[w] for w in wires_)
+
+        # Calculates the number of edges entering and leaving a given node
+        in_flows = np.zeros(len(g.nodes))
+        out_flows = np.zeros(len(g.nodes))
+
+        for e in edges:
+            in_flows[e[0]] += 1
+            out_flows[e[1]] += 1
+
+        net_flow = np.sum(np.abs(in_flows - out_flows))
+
+        # The test requires that a set of edges with zero net flow must have a corresponding
+        # bitstring that minimized the energy of the Hamiltonian
+        if net_flow == 0:
+            assert energy == min(energies_states)[0]
+        else:
+            assert energy > min(energies_states)[0]
 
 
     def test_net_flow_constraint_undirected_raises_error(self):
