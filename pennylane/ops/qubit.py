@@ -2667,7 +2667,7 @@ class QubitSum(Operation):
 
     .. figure:: ../../_static/ops/QubitSum.svg
         :align: center
-        :width: 60%
+        :width: 40%
         :target: javascript:void(0);
 
     See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
