@@ -35,12 +35,12 @@ class QuantumAdder(Operation):
                 "The value a wires, value b wires, and carry wires must be different"
             )
 
-        if length(self.a_wires)!=length(self.b_wires):
+        if len(self.a_wires)!=len(self.b_wires):
             raise qml.QuantumFunctionError(
                 "The value a wires and value b wires must be of the same length"
             )
 
-        if length(self.carry_wires)!=(length(a_wires)+1):
+        if len(self.carry_wires)!=(len(a_wires)+1):
             raise qml.QuantumFunctionError(
                 "The carry wires must have one more wire than the a and b wires"
             )
@@ -52,7 +52,7 @@ class QuantumAdder(Operation):
     def expand(self):
         temp = [self.carry_wires[0]]+list(self.b_wires)
         # need to know if b_wires or a_wires is larger
-        ab_wires = [length(self.a_wires),length(self.b_wires)]
+        ab_wires = [len(self.a_wires),len(self.b_wires)]
         ab_wires.sort()
         loga = ab_wires[1]
         
