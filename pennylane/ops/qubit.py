@@ -2583,23 +2583,29 @@ class QubitCarry(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitCarry`` operation on a ``basis_state``.
-    Here we perform the modulo two sum :math:`1 \oplus 1 = 0` and get a carry value of 1.
+    The following circuit performs the ``QubitCarry`` operation on an input state
+    :math:`|0110\rangle`.
 
     .. code-block::
 
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.BasisState(basis_state,wires=[0,1,2,3])
-            qml.QubitCarry(wires=[0,1,2,3])
-            return qml.probs(wires=[2]),qml.probs(wires=[3])
+            qml.BasisState(basis_state, wires=[0, 1, 2, 3])
+            qml.QubitCarry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=[2]), qml.probs(wires=[3])
 
-        ab_sum,carry = circuit(np.array([0, 1, 1, 0]))
-        bitstrings = tuple(itertools.product([0, 1], repeat=1))
-        indx_ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
-        indx_carry =np.argwhere(carry == 1).flatten()[0]
-        ab_sum = bitstrings[indx_ab_sum]
-        carry = bitstrings[indx_carry]
+        ab_sum, carry = circuit(np.array([0, 1, 1, 0]))
+        ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
+        carry = np.argwhere(carry == 1).flatten()[0]
+
+    The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
+    in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
+    a carry, so we have:
+
+    >>> ab_sum
+    0
+    >>> carry
+    1
     """
     num_params = 0
     num_wires = 4
