@@ -406,7 +406,6 @@ class TestOperations:
         [
             lambda: qml.QFT(wires=[1, 2, 3]),
             lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
-            lambda: qml.QubitSum(wires=[0, 1, 2]),
         ],
     )
     def test_adjoint_with_decomposition(self, op_builder):
@@ -2225,3 +2224,17 @@ class TestArithmetic:
 
         result = dev.execute(tape2)
         assert np.allclose(result, output_state)
+
+    def test_qubit_sum_adjoint(self):
+        """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
+        if it is equal to qml.QubitSum.matrix (recall that the operation is self-adjoint)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f(state):
+            qml.QubitStateVector(state, wires=range(3))
+            qml.adjoint(qml.QubitSum)(wires=range(3))
+            return qml.probs(wires=range(3))
+
+        u = np.array([f(state) for state in np.eye(2 ** 3)]).T
+        assert np.allclose(u, qml.QubitSum.matrix)
