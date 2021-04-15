@@ -2574,8 +2574,9 @@ class QubitCarry(Operation):
 
     See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
 
-    .. note:: If the fourth wire starts in state :math:`|0\rangle`, its final state holds the carry value of the sum.
-    This is the state: :math:`|bc\oplus (b\oplus c)a\rangle`.
+    .. note::
+        If the fourth wire starts in state :math:`|0\rangle`, its final state holds the carry value of the sum.
+        This is the state: :math:`|bc\oplus (b\oplus c)a\rangle`.
 
     **Details:**
 
