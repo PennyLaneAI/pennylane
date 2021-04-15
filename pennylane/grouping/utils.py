@@ -354,6 +354,13 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
+
+    **Example**
+
+    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> pauli_word = qml.PauliX('a') @ qml.PauliY('c')
+    >>> pauli_word_to_string(pauli_word, wire_map=wire_map)
+    'XIY'
     """
 
     if not is_pauli_word(pauli_word):
@@ -468,6 +475,16 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
+
+    **Example**
+
+    >>> wire_map = {'a' : 0, 'b' : 1}
+    >>> pauli_word = qml.PauliX('a') @ qml.PauliY('b')
+    >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+    array([[0.+0.j, 0.-0.j, 0.+0.j, 0.-1.j],
+           [0.+0.j, 0.+0.j, 0.+1.j, 0.+0.j],
+           [0.+0.j, 0.-1.j, 0.+0.j, 0.-0.j],
+           [0.+1.j, 0.+0.j, 0.+0.j, 0.+0.j]])
     """
     if not is_pauli_word(pauli_word):
         raise TypeError("Expected Pauli word observables, instead got {}".format(pauli_word))
@@ -523,6 +540,14 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
 
     Raises:
         TypeError: if either of the Pauli words is not valid.
+
+    **Example**
+
+    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> pauli_word_1 = qml.PauliX('a') @ qml.PauliY('b')
+    >>> pauli_word_2 = qml.PauliZ('a') @ qml.PauliZ('c')
+    >>> is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+    False
     """
 
     if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
