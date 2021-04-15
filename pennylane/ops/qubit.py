@@ -2634,16 +2634,14 @@ class QubitCarry(Operation):
     def _matrix(cls, *params):
         return QubitCarry.matrix
 
-    def expand(self):
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Toffoli(wires=self.wires[1:])
-            qml.CNOT(wires=[self.wires[1], self.wires[2]])
-            qml.Toffoli(wires=[self.wires[0], self.wires[2], self.wires[3]])
-
-        return tape
-
+    @staticmethod
+    def decomposition(*params, wires):
+        decomp_ops = [
+            qml.Toffoli(wires=wires[1:]),
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]])
+        ]
+        return decomp_ops
 
 class QubitSum(Operation):
     r"""QubitSum(wires)
@@ -2711,15 +2709,13 @@ class QubitSum(Operation):
     def _matrix(cls, *params):
         return QubitSum.matrix
 
-    def expand(self):
-
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.CNOT(wires=[self.wires[1], self.wires[2]])
-            qml.CNOT(wires=[self.wires[0], self.wires[2]])
-
-        return tape
+    @staticmethod
+    def decomposition(*params, wires):
+        decomp_ops = [
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.CNOT(wires=[wires[0], wires[2]])
+        ]
+        return decomp_ops
 
 
 ops = {
