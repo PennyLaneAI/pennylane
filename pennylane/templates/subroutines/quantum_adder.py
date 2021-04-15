@@ -20,8 +20,19 @@ from pennylane import numpy as np
 
 class QuantumAdder(Operation):
     r"""
+    Quantum Plain Adder circuit <https://arxiv.org/abs/quant-ph/0008033v1>
 
+    Given two sets of wires for input values and a third set of wires to act as ancillas for carry operations,
+    this template applies the circuit for the quantum plain adder.
+
+    .. figure:: ../../_static/templates/subroutines/qpe.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
     """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
 
     def __init__(self, a_wires, b_wires, carry_wires, do_queue=True):
         self.a_wires = list(a_wires)
@@ -35,12 +46,12 @@ class QuantumAdder(Operation):
                 "The value a wires, value b wires, and carry wires must be different"
             )
 
-        if len(self.a_wires)!=len(self.b_wires):
+        if len(self.a_wires)>len(self.b_wires):
             raise qml.QuantumFunctionError(
-                "The value a wires and value b wires must be of the same length"
+                "The longer bit string should go in b_wires"
             )
 
-        if len(self.carry_wires)!=(len(a_wires)+1):
+        if len(self.carry_wires)!=(max(len(self.a_wires),len(self.b_wires))+1):
             raise qml.QuantumFunctionError(
                 "The carry wires must have one more wire than the a and b wires"
             )
@@ -50,24 +61,29 @@ class QuantumAdder(Operation):
 
     #support different size input summands
     def expand(self):
-        temp = [self.carry_wires[0]]+list(self.b_wires)
-        # need to know if b_wires or a_wires is larger
-        ab_wires = [len(self.a_wires),len(self.b_wires)]
-        ab_wires.sort()
-        loga = ab_wires[1]
-        
         # if they're equal, run normally
         # if one is larger, use carry_0 as replacement for smaller one in later instances
-        with qml.tape.QuantumTape as tape:
-            #carry operations
-            for i in range(ab_wires[1]-1,-1,-1):
-                qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i],self.b_wires[i],self.carry_wires[i]])
-            #CNOT and Sum in middle
-            qml.CNOT(wires=[self.a_wires[0],self.b_wires[0]])
-            qml.QubitSum(wires=[self.carry_wires[1],self.a_wires[0],self.b_wires[0]])
+        temp = len(self.a_wires) - len(self.b_wires)
+        with qml.tape.QuantumTape() as tape:
+            #Initial carry operations
+            for i in range(len(self.b_wires)-1,-1,-1):
+                if i<temp:
+                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i],self.carry_wires[i]])
+                else:
+                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i],self.carry_wires[i]])
 
-            for i in range(1,ab_wires[1]):
-                qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i],self.b_wires[i],self.carry_wires[i]]).inv()
-                qml.QubitSum(wires=[self.carry_wires[i+1],self.a_wires[i],self.b_wires[i]])
+            #CNOT and Sum in the middle
+            qml.CNOT(wires=[self.a_wires[0],self.b_wires[temp]])
+            qml.QubitSum(wires=[self.carry_wires[1],self.a_wires[0],self.b_wires[temp]])
+
+            #Final carry and sum cascade
+            for i in range(1,len(self.b_wires)):
+                if i<temp:
+                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i],self.carry_wires[i]]).inv()
+                    qml.QubitSum(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i]])
+                else:
+                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i],self.carry_wires[i]]).inv()
+                    qml.QubitSum(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i]])
 
         return tape
+        

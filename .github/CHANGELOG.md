@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* Adds the `QuantumAdder` template.
+
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
