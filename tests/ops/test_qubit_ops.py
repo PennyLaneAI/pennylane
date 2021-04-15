@@ -383,7 +383,6 @@ class TestOperations:
             qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
             qml.QubitUnitary(np.eye(2) * 1j, wires=0),
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-            qml.QFT(wires=[1, 2, 3]),
             qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
             qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
             qml.SingleExcitation(0.123, wires=[0, 3]),
@@ -392,8 +391,6 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
-            qml.QubitCarry(wires=[0, 1, 2, 3]),
-            qml.QubitSum(wires=[0, 1, 2]),
         ],
     )
     def test_adjoint_unitaries(self, op, tol):
@@ -407,7 +404,9 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op_builder", 
         [
-            lambda: qml.QFT(wires=[1, 2, 3])
+            lambda: qml.QFT(wires=[1, 2, 3]),
+            lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
+            lambda: qml.QubitSum(wires=[0, 1, 2]),
         ])
     def test_adjoint_with_decomposition(self, op_builder):
         op = op_builder()
@@ -2225,4 +2224,4 @@ class TestArithmetic:
             tape2._ops.append(i)
 
         result = dev.execute(tape2)
-        assert qml.math.allclose(result, output_state)
+        assert np.allclose(result, output_state)
