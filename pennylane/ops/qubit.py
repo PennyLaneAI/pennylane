@@ -2555,9 +2555,8 @@ class Hermitian(Observable):
 class QubitCarry(Operation):
     r"""QubitCarry(wires)
     Apply the ``QubitCarry`` operation to four input wires.
-    This stores the modulo two sum of the middle two qubits in the third qubit and
-    flips the value of the fourth qubit if the modulo sum of the first three qubits results in a carry.
-    More precisely, this operation performs the transformation:
+
+    This operation performs the transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle
@@ -2567,16 +2566,12 @@ class QubitCarry(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The first wire corresponds to the first qubit value to be added :math:`|a\rangle`.
-    The second wire corresponds to the second qubit value to be added :math:`|b\rangle`.
-    The third wire corresponds to the third qubit value to be added :math:`|c\rangle` and takes the state :math:`|b \oplus c\rangle`.
-    The fourth wire corresponds to the fourth qubit :math:`|d\rangle` and takes the state :math:`|(bc \oplus d)\oplus((b\oplus c)a)\rangle`.
-
-    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
 
     .. note::
-        If the fourth wire starts in state :math:`|0\rangle`, its final state holds the carry value of the sum.
-        This is the state: :math:`|bc\oplus (b\oplus c)a\rangle`.
+        The first wire should be used to input a carry bit from previous operations. The final wire
+        holds the carry bit of this operation and the input state on this wire should be
+        :math:`|0\rangle`.
 
     **Details:**
 
