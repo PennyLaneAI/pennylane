@@ -483,6 +483,32 @@
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
+* Adds a new transform `qml.invisible`.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  Marking a quantum function as invisible will inhibit any internal
+  quantum operation processing from being recorded by the QNode:
+
+  ```pycon
+  >>> @qml.transforms.invisible
+  ... def list_of_ops(params, wires):
+  ...     return [
+  ...         qml.RX(params[0], wires=wires),
+  ...         qml.RY(params[1], wires=wires),
+  ...         qml.RZ(params[2], wires=wires)
+  ...     ]
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     # list_of_ops is invisible, so quantum operations
+  ...     # instantiated within it will not be queued.
+  ...     ops = list_of_ops(params, wires=0)
+  ...     # apply only the last operation from the list
+  ...     ops[-1].queue()
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(qml.draw(circuit)([1, 2, 3]))
+   0: ──RZ(3)──┤ ⟨Z⟩
+  ```
+
 <h3>Improvements</h3>
 
 * Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
@@ -511,16 +537,25 @@
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
-- The `QAOAEmbedding` and `BasicEntanglerLayers` are now classes inheriting 
+
+- The templates are now classes inheriting
   from `Operation`, and define the ansatz in their `expand()` method. This 
   change does not affect the user interface. 
-  
-  For convenience, the class has a method that returns the shape of the 
-  trainable parameter tensor, i.e.,
+  [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
+  [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
+  [(#1163)](https://github.com/PennyLaneAI/pennylane/pull/1163)
+  [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
+
+  For convenience, some templates have a new method that returns the expected
+  shape of the trainable parameter tensor, which can be used to create 
+  random tensors.
   
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
   weights = np.random.random(shape)
+  
+  # use in the template
+  qml.templates.BasicEntanglerLayers(weights, wires=range(4))
   ```
 
 - ``QubitUnitary`` now validates to ensure the input matrix is two dimensional.
@@ -596,60 +631,45 @@
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
 
+* Two new utility methods are provided for working with quantum tapes.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
-* Added functionality for constructing and manipulating the Pauli group
-  [(#1159)](https://github.com/PennyLaneAI/pennylane/pull/1159).
-  For example, we can iterate through the 3-qubit Pauli group like so:
+  - `qml.tape.get_active_tape()` gets the currently recording tape.
 
-  ```python
-  from pennylane.grouping import pauli_group
-  pauli_group_3_qubits = list(pauli_group(3))
-  print(pauli_group_3_qubits)
-  ```
+  - `tape.stop_recording()` is a context manager that temporarily
+    stops the currently recording tape from recording additional
+    tapes or quantum operations.
 
-  We can also construct and store the full group, and multiply together
-  its members at the level of Pauli words using the `pauli_mult` and
-  `pauli_multi_with_phase` functions. This can be done on
-  arbitrarily-labeled wires as well, by defining a wire map.
+  For example:
 
   ```pycon
-  >>> from pennylane.grouping import pauli_group, pauli_mult
-  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-  >>> pg = list(pauli_group(3, wire_map=wire_map))
-  >>> pg[3]
-  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
-  >>> pg[55]
-  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
-  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
-  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  >>> with qml.tape.QuantumTape():
+  ...     qml.RX(0, wires=0)
+  ...     current_tape = qml.tape.get_active_tape()
+  ...     with current_tape.stop_recording():
+  ...         qml.RY(1.0, wires=1)
+  ...     qml.RZ(2, wires=1)
+  >>> current_tape.operations
+  [RX(0, wires=[0]), RZ(2, wires=[1])]
   ```
 
-  Functions for conversion of Pauli observables to strings (and back),
-  are included.
+* When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
+  [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
-  ```pycon
-  >>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
-  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
-  'YYZ'
-  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
-  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
-  ```
-
-  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
-  also supported.
-
-  ```python
-  >>> from pennylane.grouping import pauli_word_to_matrix
-  >>> wire_map = {'a' : 0, 'b' : 1}
-  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
-  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
-  array([[ 1.,  0.,  0.,  0.],
-         [ 0., -1.,  0., -0.],
-         [ 0.,  0.,  1.,  0.],
-         [ 0., -0.,  0., -1.]])
-  ```
+* The four-term parameter-shift rule, as used by the controlled rotation operations,
+  has been updated to use coefficients that minimize the variance as per
+  https://arxiv.org/abs/2104.05695.
+  [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
 
 <h3>Breaking changes</h3>
+
+* Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
+  [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
+
+* A deprecation warning is now raised when loading content from the `qnn` module. In release 
+  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
+  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
+  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
 
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
@@ -745,10 +765,18 @@
   of a QNode.
   [(#1117)](https://github.com/PennyLaneAI/pennylane/pull/1117)
 
+* Fixes a bug where the second-order CV parameter-shift rule would error
+  if attempting to compute the gradient of a QNode with more than one
+  second-order observable.
+  [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
+
+- Upgraded the documentation to use Sphinx 3.5.3 and the new m2r2 package.
+  [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
 
 - Added `flaky` as dependency for running tests in documentation. [(#1113)](https://github.com/PennyLaneAI/pennylane/pull/1113)
 
@@ -756,8 +784,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva, David Wierichs.
 
 # Release 0.14.1 (current release)
 

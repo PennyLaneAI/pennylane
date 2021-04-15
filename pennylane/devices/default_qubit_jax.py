@@ -19,6 +19,7 @@ reference plugin.
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
+
 import numpy as np
 
 try:
@@ -174,8 +175,8 @@ class DefaultQubitJax(DefaultQubit):
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
 
-    def __init__(self, wires, *, shots=None, prng_key=None):
-        super().__init__(wires, shots=shots, cache=0)
+    def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
         # implementation
