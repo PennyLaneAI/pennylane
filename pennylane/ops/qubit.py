@@ -2672,26 +2672,28 @@ class QubitSum(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitSum`` operation on an input state
-    :math:`|110\rangle`.
+    The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
+    final wire holding the modulo-two sum of the first two wires.
 
     .. code-block::
 
+        input_bitstring = (0, 1, 0)
+
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.BasisState(basis_state, wires=[0, 1, 2])
+            qml.BasisState(basis_state, wires = [0, 1, 2])
             qml.QubitSum(wires=[0, 1, 2])
-            return qml.probs(wires=2)
+            return qml.probs(wires=[0, 1, 2])
 
-        ab_sum = circuit(np.array([1, 1, 0]))
-        ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
+        probs = circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=3))
+        output_bitstring = basis_states[probs_indx]
 
-    The action of ``QubitSum`` is to add wires ``0`` and ``1``. If wire ``2`` has input state
-    :math:`|0\rangle`, the modulo-two result is output in wire ``2``.
-    In this case, :math:`1 \oplus 1 = 0`, so we have:
+    The output bitstring is
 
-    >>> ab_sum
-    0
+    >>> output_bitstring
+    (0, 1, 1)
     """
     num_params = 0
     num_wires = 3
