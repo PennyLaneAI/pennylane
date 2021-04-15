@@ -2636,8 +2636,6 @@ class QubitCarry(Operation):
         return QubitCarry.matrix
 
     def expand(self):
-        tape = qml.tape.QuantumTape(do_queue=False)
-
         with qml.tape.QuantumTape() as tape:
             qml.Toffoli(wires=self.wires[1:])
             qml.CNOT(wires=[self.wires[1], self.wires[2]])
@@ -2713,9 +2711,6 @@ class QubitSum(Operation):
         return QubitSum.matrix
 
     def expand(self):
-
-        tape = qml.tape.QuantumTape(do_queue=False)
-
         with qml.tape.QuantumTape() as tape:
             qml.CNOT(wires=[self.wires[1], self.wires[2]])
             qml.CNOT(wires=[self.wires[0], self.wires[2]])
