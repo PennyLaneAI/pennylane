@@ -2682,14 +2682,14 @@ class QubitSum(Operation):
             qml.QubitSum(wires=[0, 1, 2])
             return qml.probs(wires=2)
 
-        probs = circuit(np.array([1, 1, 0]))
-        result = np.argwhere(probs == 1).flatten()[0]
+        ab_sum = circuit(np.array([1, 1, 0]))
+        ab_sum = np.argwhere(ab_sum == 1).flatten()[0]
 
-    The action of ``QubitSum`` is to add wires ``0`` and ``1``. If wire ``2`` is in state
+    The action of ``QubitSum`` is to add wires ``0`` and ``1``. If wire ``2`` has input state
     :math:`|0\rangle`, the modulo-two result is output in wire ``2``.
     In this case, :math:`1 \oplus 1 = 0`, so we have:
 
-    >>> result
+    >>> ab_sum
     0
     """
     num_params = 0
