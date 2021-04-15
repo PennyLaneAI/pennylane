@@ -708,22 +708,6 @@ class TestDefaultQubitIntegration:
         }
         assert cap == capabilities
 
-    def test_load_default_qubit_device(self):
-        """Test that the default plugin loads correctly"""
-
-        dev = qml.device("default.qubit", wires=2)
-        assert dev.num_wires == 2
-        assert dev.shots == None
-        assert dev.short_name == "default.qubit"
-
-    def test_args(self):
-        """Test that the plugin requires correct arguments"""
-
-        with pytest.raises(
-            TypeError, match="missing 1 required positional argument: 'wires'"
-        ):
-            qml.device("default.qubit")
-
     def test_qubit_circuit(self, qubit_device_1_wire, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 
@@ -755,7 +739,7 @@ class TestDefaultQubitIntegration:
         """Test that the default qubit plugin provides correct result for high shot number"""
 
         shots = 10 ** 5
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
 
         p = 0.543
 
