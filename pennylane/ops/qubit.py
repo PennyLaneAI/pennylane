@@ -2685,8 +2685,9 @@ class QubitSum(Operation):
         probs = circuit(np.array([1, 1, 0]))
         result = np.argwhere(probs == 1).flatten()[0]
 
-    The action of ``QubitSum`` is to add wires ``0`` and ``1``. The modulo-two result is output
-    in wire ``2``. In this case, :math:`1 \oplus 1 = 0`, so we have:
+    The action of ``QubitSum`` is to add wires ``0`` and ``1``. If wire ``2`` is in state
+    :math:`|0\rangle`, the modulo-two result is output in wire ``2``.
+    In this case, :math:`1 \oplus 1 = 0`, so we have:
 
     >>> result
     0
