@@ -2704,6 +2704,13 @@ class QubitSum(Operation):
 
     >>> output_bitstring
     (0, 1, 1)
+
+    The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
+    output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
+
+    >>> abc_sum = output_bitstring[2]
+    >>> abc_sum
+    1
     """
     num_params = 0
     num_wires = 3
