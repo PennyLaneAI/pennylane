@@ -898,7 +898,9 @@ class TestGateInverseExpval:
             ("S", -1),
         ],
     )
-    def test_inverse_circuit_calling_inv_multiple_times(self, device, tol, name, expected_output, skip_if):
+    def test_inverse_circuit_calling_inv_multiple_times(
+        self, device, tol, name, expected_output, skip_if
+    ):
         """Tests that multiple calls to the inverse of an operation works"""
 
         n_wires = 1
