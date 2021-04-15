@@ -2620,7 +2620,7 @@ class QubitCarry(Operation):
     num_params = 0
     num_wires = 4
     par_domain = None
-    matrix = np.array(
+    _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -2643,7 +2643,7 @@ class QubitCarry(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return QubitCarry.matrix
+        return QubitCarry._mat
 
     @staticmethod
     def decomposition(wires):
@@ -2715,7 +2715,7 @@ class QubitSum(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    matrix = np.array(
+    _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -2730,7 +2730,7 @@ class QubitSum(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return QubitSum.matrix
+        return QubitSum._mat
 
     @staticmethod
     def decomposition(wires):

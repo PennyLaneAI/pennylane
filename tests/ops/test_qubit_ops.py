@@ -2237,4 +2237,4 @@ class TestArithmetic:
             return qml.probs(wires=range(3))
 
         u = np.array([f(state) for state in np.eye(2 ** 3)]).T
-        assert np.allclose(u, qml.QubitSum.matrix)
+        assert np.allclose(u, qml.QubitSum._matrix())
