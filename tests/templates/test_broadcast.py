@@ -64,73 +64,88 @@ def KwargTemplateDouble(par, wires, a=True):
     CRX(par, wires=wires)
 
 
-TARGET_OUTPUTS = [("single", 4, [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
-                  ("double", 4, [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
-                  ("double", 4, None, CNOT, [-1, 1, -1, 1]),
-                  ("double_odd", 4, [pi / 2], CRX, [-1, -1, 0, -1]),
-                  ("chain", 4, [pi, pi, pi / 2], CRX, [-1, 1, -1, 0]),
-                  ("ring", 4, [pi, pi, pi / 2, pi], CRX, [0, 1, -1, 0]),
-                  ("pyramid", 4, [0, pi, pi / 2], CRX, [-1, -1, 0, 1]),
-                  ("all_to_all", 4, [pi / 2, pi / 2, pi / 2, pi / 2, pi / 2, pi / 2], CRX, [-1, 0, 1 / 2, 3 / 4])
-                  ]
+TARGET_OUTPUTS = [
+    ("single", 4, [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
+    ("double", 4, [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
+    ("double", 4, None, CNOT, [-1, 1, -1, 1]),
+    ("double_odd", 4, [pi / 2], CRX, [-1, -1, 0, -1]),
+    ("chain", 4, [pi, pi, pi / 2], CRX, [-1, 1, -1, 0]),
+    ("ring", 4, [pi, pi, pi / 2, pi], CRX, [0, 1, -1, 0]),
+    ("pyramid", 4, [0, pi, pi / 2], CRX, [-1, -1, 0, 1]),
+    ("all_to_all", 4, [pi / 2, pi / 2, pi / 2, pi / 2, pi / 2, pi / 2], CRX, [-1, 0, 1 / 2, 3 / 4]),
+]
 
-GATE_PARAMETERS = [("single", 0, T, []),
-                   ("single", 1, T, [[]]),
-                   ("single", 2, T, [[], []]),
-                   ("single", 3, T, [[], [], []]),
-                   ("single", 3, RX, [[0.1], [0.2], [0.3]]),
-                   ("single", 3, Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
-                   ("double", 0, CNOT, []),
-                   ("double", 1, CNOT, []),
-                   ("double", 3, CNOT, [[]]),
-                   ("double", 2, CNOT, [[]]),
-                   ("double", 3, CRX, [[0.1]]),
-                   ("double", 3, CRot, [[0.1, 0.2, 0.3]]),
-                   ("double_odd", 0, CNOT, []),
-                   ("double_odd", 1, CNOT, []),
-                   ("double_odd", 2, CNOT, []),
-                   ("double_odd", 3, CNOT, [[]]),
-                   ("double_odd", 3, CRX, [[0.1]]),
-                   ("double_odd", 3, CRot, [[0.3, 0.2, 0.1]]),
-                   ("chain", 0, CNOT, []),
-                   ("chain", 1, CNOT, []),
-                   ("chain", 2, CNOT, [[]]),
-                   ("chain", 3, CNOT, [[], []]),
-                   ("chain", 3, CRX, [[0.1], [0.1]]),
-                   ("chain", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("ring", 0, CNOT, []),
-                   ("ring", 1, CNOT, []),
-                   ("ring", 2, CNOT, [[]]),
-                   ("ring", 3, CNOT, [[], [], []]),
-                   ("ring", 3, CRX, [[0.1], [0.1], [0.1]]),
-                   ("ring", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("pyramid", 0, CNOT, []),
-                   ("pyramid", 1, CNOT, []),
-                   ("pyramid", 2, CNOT, [[]]),
-                   ("pyramid", 4, CNOT, [[], [], []]),
-                   ("pyramid", 3, CRX, [[0.1]]),
-                   ("pyramid", 4, CRX, [[0.1], [0.1], [0.1]]),
-                   ("pyramid", 4, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("all_to_all", 0, CNOT, []),
-                   ("all_to_all", 1, CNOT, []),
-                   ("all_to_all", 2, CNOT, [[]]),
-                   ("all_to_all", 4, CNOT, [[], [], [], [], [], []]),
-                   ("all_to_all", 3, CRX, [[0.1], [0.1], [0.1]]),
-                   ("all_to_all", 4, CRX, [[0.1], [0.1], [0.1], [0.1], [0.1], [0.1]]),
-                   ("all_to_all", 4, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1],
-                                            [0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ]
+GATE_PARAMETERS = [
+    ("single", 0, T, []),
+    ("single", 1, T, [[]]),
+    ("single", 2, T, [[], []]),
+    ("single", 3, T, [[], [], []]),
+    ("single", 3, RX, [[0.1], [0.2], [0.3]]),
+    ("single", 3, Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
+    ("double", 0, CNOT, []),
+    ("double", 1, CNOT, []),
+    ("double", 3, CNOT, [[]]),
+    ("double", 2, CNOT, [[]]),
+    ("double", 3, CRX, [[0.1]]),
+    ("double", 3, CRot, [[0.1, 0.2, 0.3]]),
+    ("double_odd", 0, CNOT, []),
+    ("double_odd", 1, CNOT, []),
+    ("double_odd", 2, CNOT, []),
+    ("double_odd", 3, CNOT, [[]]),
+    ("double_odd", 3, CRX, [[0.1]]),
+    ("double_odd", 3, CRot, [[0.3, 0.2, 0.1]]),
+    ("chain", 0, CNOT, []),
+    ("chain", 1, CNOT, []),
+    ("chain", 2, CNOT, [[]]),
+    ("chain", 3, CNOT, [[], []]),
+    ("chain", 3, CRX, [[0.1], [0.1]]),
+    ("chain", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+    ("ring", 0, CNOT, []),
+    ("ring", 1, CNOT, []),
+    ("ring", 2, CNOT, [[]]),
+    ("ring", 3, CNOT, [[], [], []]),
+    ("ring", 3, CRX, [[0.1], [0.1], [0.1]]),
+    ("ring", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+    ("pyramid", 0, CNOT, []),
+    ("pyramid", 1, CNOT, []),
+    ("pyramid", 2, CNOT, [[]]),
+    ("pyramid", 4, CNOT, [[], [], []]),
+    ("pyramid", 3, CRX, [[0.1]]),
+    ("pyramid", 4, CRX, [[0.1], [0.1], [0.1]]),
+    ("pyramid", 4, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+    ("all_to_all", 0, CNOT, []),
+    ("all_to_all", 1, CNOT, []),
+    ("all_to_all", 2, CNOT, [[]]),
+    ("all_to_all", 4, CNOT, [[], [], [], [], [], []]),
+    ("all_to_all", 3, CRX, [[0.1], [0.1], [0.1]]),
+    ("all_to_all", 4, CRX, [[0.1], [0.1], [0.1], [0.1], [0.1], [0.1]]),
+    (
+        "all_to_all",
+        4,
+        CRot,
+        [
+            [0.3, 0.2, 0.1],
+            [0.3, 0.2, 0.1],
+            [0.3, 0.2, 0.1],
+            [0.3, 0.2, 0.1],
+            [0.3, 0.2, 0.1],
+            [0.3, 0.2, 0.1],
+        ],
+    ),
+]
 
 
 class TestBuiltinPatterns:
     """Tests the built-in patterns ("single", "ring", etc) of the broadcast template constructor."""
 
-    @pytest.mark.parametrize("unitary, parameters", [(RX, [[0.1], [0.2], [0.3]]),
-                                                     (Rot,
-                                                      [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1],
-                                                       [0.3, 0.2, -0.1]]),
-                                                     (T, [[], [], []]),
-                                                     ])
+    @pytest.mark.parametrize(
+        "unitary, parameters",
+        [
+            (RX, [[0.1], [0.2], [0.3]]),
+            (Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
+            (T, [[], [], []]),
+        ],
+    )
     def test_correct_queue_for_gate_unitary(self, unitary, parameters):
         """Tests that correct gate queue is created when 'unitary' is a single gate."""
 
@@ -140,10 +155,13 @@ class TestBuiltinPatterns:
         for gate in rec.queue:
             assert isinstance(gate, unitary)
 
-    @pytest.mark.parametrize("unitary, gates, parameters",
-                             [(ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1], [0.1, 1]]),
-                              (ConstantTemplate, [T, S], [[], [], []]),
-                              ])
+    @pytest.mark.parametrize(
+        "unitary, gates, parameters",
+        [
+            (ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1], [0.1, 1]]),
+            (ConstantTemplate, [T, S], [[], [], []]),
+        ],
+    )
     def test_correct_queue_for_template_unitary(self, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'unitary' is a template."""
 
@@ -158,23 +176,37 @@ class TestBuiltinPatterns:
             else:
                 assert isinstance(gate, second_gate)
 
-    @pytest.mark.parametrize("template, kwarg, target_queue, parameters",
-                             [(KwargTemplate, True, [T, RY, T, RY], [[1], [2]]),
-                              (KwargTemplate, False, [RY, RY], [[1], [2]]),
-                              ])
-    def test_correct_queue_for_template_unitary_with_keyword(self, template, kwarg, target_queue, parameters):
+    @pytest.mark.parametrize(
+        "template, kwarg, target_queue, parameters",
+        [
+            (KwargTemplate, True, [T, RY, T, RY], [[1], [2]]),
+            (KwargTemplate, False, [RY, RY], [[1], [2]]),
+        ],
+    )
+    def test_correct_queue_for_template_unitary_with_keyword(
+        self, template, kwarg, target_queue, parameters
+    ):
         """Tests that correct gate queue is created when 'unitary' is a template that uses a keyword."""
 
         with qml.tape.OperationRecorder() as rec:
-            broadcast(unitary=template, pattern="single", wires=range(2),
-                      parameters=parameters, kwargs={'a': kwarg})
+            broadcast(
+                unitary=template,
+                pattern="single",
+                wires=range(2),
+                parameters=parameters,
+                kwargs={"a": kwarg},
+            )
 
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
 
-    @pytest.mark.parametrize("pars1, pars2, gate", [([[], [], []], None, T),
-                                                    ([1, 2, 3], [[1], [2], [3]], RX),
-                                                    ])
+    @pytest.mark.parametrize(
+        "pars1, pars2, gate",
+        [
+            ([[], [], []], None, T),
+            ([1, 2, 3], [[1], [2], [3]], RX),
+        ],
+    )
     def test_correct_queue_same_gate_unitary_different_parameter_formats(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
@@ -201,7 +233,7 @@ class TestBuiltinPatterns:
     def test_prepares_correct_state(self, pattern, n_wires, parameters, unitary, target):
         """Tests the state produced by different unitaries."""
 
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -213,13 +245,12 @@ class TestBuiltinPatterns:
         res = circuit()
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2),
-                                                     ([0, 0, 0, 1, 0], 3)])
+    @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2), ([0, 0, 0, 1, 0], 3)])
     def test_throws_error_when_mismatch_params_wires(self, parameters, n_wires):
         """Tests that error thrown when 'parameters' does not contain one set
-           of parameters for each wire."""
+        of parameters for each wire."""
 
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -231,9 +262,9 @@ class TestBuiltinPatterns:
 
     def test_throws_special_error_for_ring_pattern_2_wires(self):
         """Tests that the special error is thrown when 'parameters' does not contain one sequence
-           of parameters for a two-wire ring pattern."""
+        of parameters for a two-wire ring pattern."""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(pars):
@@ -245,20 +276,23 @@ class TestBuiltinPatterns:
         with pytest.raises(ValueError, match="the ring pattern with 2 wires is an exception"):
             circuit(pars)
 
-    @pytest.mark.parametrize("function, wires, target", [(wires_pyramid, [8, 2, 0, 4, 6, 1],
-                                                          [[8, 2], [0, 4], [6, 1], [2, 0], [4, 6], [0, 4]]),
-                                                         (wires_pyramid, [5, 10, 1, 0, 3, 4, 6],
-                                                          [[5, 10], [1, 0], [3, 4], [10, 1], [0, 3], [1, 0]]),
-                                                         (wires_pyramid, [0], []),
-                                                         (wires_ring, [8, 2, 0, 4, 6, 1],
-                                                          [[8, 2], [2, 0], [0, 4], [4, 6], [6, 1], [1, 8]]),
-                                                         (wires_ring, [0], []),
-                                                         (wires_ring, [4, 2], [[4, 2]]),
-                                                         (wires_all_to_all, [8, 2, 0, 4],
-                                                          [[8, 2], [8, 0], [8, 4], [2, 0], [2, 4], [0, 4]]),
-                                                         (wires_all_to_all, [0],
-                                                          []),
-                                                         ])
+    @pytest.mark.parametrize(
+        "function, wires, target",
+        [
+            (wires_pyramid, [8, 2, 0, 4, 6, 1], [[8, 2], [0, 4], [6, 1], [2, 0], [4, 6], [0, 4]]),
+            (
+                wires_pyramid,
+                [5, 10, 1, 0, 3, 4, 6],
+                [[5, 10], [1, 0], [3, 4], [10, 1], [0, 3], [1, 0]],
+            ),
+            (wires_pyramid, [0], []),
+            (wires_ring, [8, 2, 0, 4, 6, 1], [[8, 2], [2, 0], [0, 4], [4, 6], [6, 1], [1, 8]]),
+            (wires_ring, [0], []),
+            (wires_ring, [4, 2], [[4, 2]]),
+            (wires_all_to_all, [8, 2, 0, 4], [[8, 2], [8, 0], [8, 4], [2, 0], [2, 4], [0, 4]]),
+            (wires_all_to_all, [0], []),
+        ],
+    )
     def test_wire_sequence_generating_functions(self, function, wires, target):
         """Tests that the wire list generating functions for different patterns create the correct sequence."""
 
@@ -271,14 +305,18 @@ class TestBuiltinPatterns:
 class TestCustomPattern:
     """Additional tests for using broadcast with a custom pattern."""
 
-    @pytest.mark.parametrize("custom_pattern, pattern", [([[0, 1], [1, 2], [2, 3], [3, 0]], "ring"),
-                                                         ([[0, 1], [1, 2], [2, 3]], "chain"),
-                                                         ([[0, 1], [2, 3]], "double")
-                                                         ])
+    @pytest.mark.parametrize(
+        "custom_pattern, pattern",
+        [
+            ([[0, 1], [1, 2], [2, 3], [3, 0]], "ring"),
+            ([[0, 1], [1, 2], [2, 3]], "chain"),
+            ([[0, 1], [2, 3]], "double"),
+        ],
+    )
     def test_reproduce_builtin_patterns(self, custom_pattern, pattern):
         """Tests that the custom pattern can reproduce the built in patterns."""
 
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         # qnode using custom pattern
         @qml.qnode(dev)
@@ -296,13 +334,17 @@ class TestCustomPattern:
         built_in = circuit2()
         assert np.allclose(custom, built_in)
 
-    @pytest.mark.parametrize("custom_pattern, expected", [([[0], [2], [3], [2]], [-1., 1., 1., -1.]),
-                                                          ([[3], [2], [0]], [-1., 1., -1., -1.]),
-                                                         ])
+    @pytest.mark.parametrize(
+        "custom_pattern, expected",
+        [
+            ([[0], [2], [3], [2]], [-1.0, 1.0, 1.0, -1.0]),
+            ([[3], [2], [0]], [-1.0, 1.0, -1.0, -1.0]),
+        ],
+    )
     def test_correct_output(self, custom_pattern, expected):
         """Tests the output for simple cases."""
 
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit():
@@ -315,7 +357,7 @@ class TestCustomPattern:
 
 def test_unknown_pattern():
     """Test that an unknown pattern raises an error"""
-    dev = qml.device('default.qubit', wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
     def circuit(pars):

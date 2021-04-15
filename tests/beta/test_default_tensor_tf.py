@@ -496,7 +496,11 @@ class TestJacobianIntegration:
 
         res = qml.jacobian(circuit)(p)
         expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0,]
+            [
+                -np.cos(x) * np.sin(y) ** 2,
+                -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y),
+                0,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -576,14 +580,15 @@ class TestInterfaceDeviceIntegration:
 
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
         cap = dev.capabilities()
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": False,
-                        "supports_tensor_observables": True,
-                        "returns_probs": False,
-                        "returns_state": False,
-                        "supports_analytic_computation": True,
-                        "passthru_interface": 'tf',
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": False,
+            "supports_tensor_observables": True,
+            "returns_probs": False,
+            "returns_state": False,
+            "supports_analytic_computation": True,
+            "passthru_interface": "tf",
+        }
         assert cap == capabilities
 
     @pytest.mark.parametrize("interface", ["autograd"])
@@ -757,7 +762,10 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface",
+        ):
             res = cost_raising_error(params)
 
     def test_error_backprop_diff_autograd(self, tol, rep):
@@ -779,5 +787,8 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface",
+        ):
             res = cost_raising_error(params)

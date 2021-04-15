@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the JAX interface"""
 import pytest
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
@@ -20,71 +21,77 @@ import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape, QubitParamShiftTape
 
+
 def test_qnode_intergration():
-	"""Test a simple use of qnode with a JAX interface and non-JAX device"""
-	dev = qml.device("default.mixed", wires=2) # A non-JAX device
+    """Test a simple use of qnode with a JAX interface and non-JAX device"""
+    dev = qml.device("default.mixed", wires=2)  # A non-JAX device
 
-	@qml.qnode(dev, interface="jax")
-	def circuit(weights):
-		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[1], wires=1)
-		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    @qml.qnode(dev, interface="jax")
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RZ(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-	weights = jnp.array([0.1, 0.2])
-	val = circuit(weights)
-	assert "DeviceArray" in val.__repr__()
+    weights = jnp.array([0.1, 0.2])
+    val = circuit(weights)
+    assert "DeviceArray" in val.__repr__()
+
 
 def test_to_jax():
-	"""Test the to_jax method"""
-	dev = qml.device("default.mixed", wires=2) 
+    """Test the to_jax method"""
+    dev = qml.device("default.mixed", wires=2)
 
-	@qml.qnode(dev, interface="autograd")
-	def circuit(weights):
-		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[1], wires=1)
-		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    @qml.qnode(dev, interface="autograd")
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RZ(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-	circuit.to_jax()
-	weights = jnp.array([0.1, 0.2])
-	val = circuit(weights)
-	assert "DeviceArray" in val.__repr__()
+    circuit.to_jax()
+    weights = jnp.array([0.1, 0.2])
+    val = circuit(weights)
+    assert "DeviceArray" in val.__repr__()
 
 
 def test_simple_jacobian():
-	"""Test the use of jax.jaxrev"""
-	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
+    """Test the use of jax.jaxrev"""
+    dev = qml.device("default.mixed", wires=2)  # A non-JAX device.
 
-	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
-	def circuit(weights):
-		qml.RX(weights[0], wires=0)
-		qml.RY(weights[1], wires=1)
-		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-	weights = jnp.array([0.1, 0.2])
-	grads = jax.jacrev(circuit)(weights)
-	# This is the easiest way to ensure our object is a DeviceArray instead
-	# of a numpy array.
-	assert "DeviceArray" in grads.__repr__()
-	assert grads.shape == (2,)
-	np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]))
+    weights = jnp.array([0.1, 0.2])
+    grads = jax.jacrev(circuit)(weights)
+    # This is the easiest way to ensure our object is a DeviceArray instead
+    # of a numpy array.
+    assert "DeviceArray" in grads.__repr__()
+    assert grads.shape == (2,)
+    np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]))
+
 
 def test_simple_grad():
-	"""Test the use of jax.grad"""
-	dev = qml.device("default.mixed", wires=2) # A non-JAX device.
-	@qml.qnode(dev, interface="jax", diff_method="parameter-shift")
-	def circuit(weights):
-		qml.RX(weights[0], wires=0)
-		qml.RZ(weights[1], wires=1)
-		return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    """Test the use of jax.grad"""
+    dev = qml.device("default.mixed", wires=2)  # A non-JAX device.
 
-	weights = jnp.array([0.1, 0.2])
-	val = jax.grad(circuit)(weights)
-	assert "DeviceArray" in val.__repr__()
+    @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RZ(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-@pytest.mark.parametrize("diff_method", ['parameter-shift', 'finite-diff'])
+    weights = jnp.array([0.1, 0.2])
+    val = jax.grad(circuit)(weights)
+    assert "DeviceArray" in val.__repr__()
+
+
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
 def test_differentiable_expand(diff_method):
     """Test that operation and nested tapes expansion
     is differentiable"""
+
     class U3(qml.U3):
         def expand(self):
             theta, phi, lam = self.data
@@ -119,13 +126,12 @@ def test_differentiable_expand(diff_method):
         [
             np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
             np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-            - np.sin(p[1])
-            * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-            np.sin(a)
-            * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            - np.sin(p[1]) * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+            np.sin(a) * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
         ]
     )
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 def qtransform(qnode, a, framework=jnp):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""

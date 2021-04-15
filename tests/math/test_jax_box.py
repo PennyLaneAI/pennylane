@@ -104,6 +104,7 @@ def test_unbox_list():
 
     assert np.all(res == [y, x, x])
 
+
 def test_shape():
     """Test that arrays return the right shape"""
     x = jnp.array([[[1, 2], [3, 4]]])

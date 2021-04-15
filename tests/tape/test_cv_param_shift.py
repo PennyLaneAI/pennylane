@@ -570,12 +570,16 @@ class TestExpectationQuantumGradients:
         # check against the known analytic formula
 
         def expected_grad(r, p):
-            return np.array([
-                np.cosh(2 * r[1]) * np.sinh(2 * r[0]) + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
-                -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
-                np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0]) + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
-                0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
-            ])
+            return np.array(
+                [
+                    np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                    np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                ]
+            )
 
         expected = np.zeros([2, 8])
         expected[0, :4] = expected_grad(r[:2], p[:2])
@@ -809,17 +813,18 @@ class TestVarianceQuantumGradients:
 
         dev.operations.add(DummyOp)
 
-
         with CVParamShiftTape() as tape:
             DummyOp(1, wires=[0])
             qml.expval(qml.X(0))
 
         with monkeypatch.context() as m:
-            m.setattr(tape, "_grad_method_validation", lambda *args: ('A',))
-            tape._par_info[0]["grad_method"] = 'A'
+            m.setattr(tape, "_grad_method_validation", lambda *args: ("A",))
+            tape._par_info[0]["grad_method"] = "A"
             tape.trainable_params = {0}
 
-            with pytest.raises(NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"):
+            with pytest.raises(
+                NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
+            ):
                 tape.jacobian(dev, method="analytic", force_order2=True)
 
     cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]

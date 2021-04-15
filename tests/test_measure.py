@@ -107,7 +107,7 @@ class TestVar:
 
         x = 0.54
         res = circuit(x)
-        expected = np.sin(x)**2
+        expected = np.sin(x) ** 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -153,7 +153,7 @@ class TestSample:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,n_sample))
+        assert np.array_equal(sample.shape, (2, n_sample))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
@@ -193,7 +193,7 @@ class TestSample:
 
     def test_multi_wire_sample_regular_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
-           where a rectangular array is expected"""
+        where a rectangular array is expected"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
@@ -211,7 +211,7 @@ class TestSample:
 
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works
-           in combination with expvals and vars"""
+        in combination with expvals and vars"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
@@ -679,9 +679,7 @@ class TestState:
     @pytest.mark.parametrize(
         "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
     )
-    @pytest.mark.parametrize(
-        "diff_method", ["best", "finite-diff", "parameter-shift"]
-    )
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_devices(self, device, diff_method, skip_if_no_tf_support):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""

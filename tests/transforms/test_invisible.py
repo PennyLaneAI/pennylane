@@ -25,11 +25,7 @@ def test_invisible_on_function_inside_QNode():
 
     @invisible
     def my_op():
-        return [
-            qml.RX(0.123, wires=0),
-            qml.RY(2.32, wires=0),
-            qml.RZ(1.95, wires=0)
-        ]
+        return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
 
     res = []
 
@@ -52,8 +48,8 @@ def test_invisible_directly_on_op():
 
     @qml.qnode(dev)
     def my_circuit():
-        op1 = invisible(qml.RX)(np.pi/4.0, wires=0)
-        op2 = qml.RY(np.pi/4.0, wires=0)
+        op1 = invisible(qml.RX)(np.pi / 4.0, wires=0)
+        op2 = qml.RY(np.pi / 4.0, wires=0)
         res.extend([op1, op2])
         return qml.expval(qml.PauliZ(0))
 
@@ -82,6 +78,7 @@ def test_nested_invisible_on_function():
     assert len(res) == 3
 
     dev = qml.device("default.qubit", wires=1)
+
     @qml.qnode(dev)
     def my_circuit():
         my_op()

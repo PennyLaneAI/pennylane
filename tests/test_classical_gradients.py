@@ -49,11 +49,11 @@ class TestGradientUnivar:
     def test_poly(self, tol):
         """Tests a polynomial function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
-        func = lambda x: 2 * x**2 + 3 * x + 4
+        func = lambda x: 2 * x ** 2 + 3 * x + 4
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = 4 * x_vals + 3
-        
+
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
 
@@ -69,7 +69,7 @@ class TestGradientMultiVar:
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
-        
+
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
     def test_exp(self, tol):
@@ -333,10 +333,7 @@ class TestJacobian:
 
         jac_fn = qml.jacobian(cost_fn, argnum=[0, 1])
         res = jac_fn(x, y)
-        expected = np.array([
-            [np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)],
-            [y ** 2, 2 * x * y]
-        ])
+        expected = np.array([[np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)], [y ** 2, 2 * x * y]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_no_argnum_jacobian(self, tol):
@@ -348,10 +345,7 @@ class TestJacobian:
 
         jac_fn = qml.jacobian(cost_fn)
         res = jac_fn(x, y)
-        expected = np.array([
-            [np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)],
-            [y ** 2, 2 * x * y]
-        ])
+        expected = np.array([[np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)], [y ** 2, 2 * x * y]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         x = np.array(0.5, requires_grad=True)
@@ -360,4 +354,3 @@ class TestJacobian:
         res = jac_fn(x, y)
         expected = np.array([np.cos(x) * np.cos(y), y ** 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
-

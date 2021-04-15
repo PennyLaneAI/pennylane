@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the JAX interface"""
 import pytest
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
@@ -68,7 +69,6 @@ class TestJAXQuantumTape:
         # Easiest way to test object is a device array instead of np.array
         assert "DeviceArray" in res.__repr__()
 
-
     def test_state_raises(self):
         """Test returning state raises exception"""
         a = jnp.array(0.1)
@@ -121,4 +121,3 @@ class TestJAXQuantumTape:
 
         res = circuit(a, b)
         assert "DeviceArray" in res.__repr__()
-

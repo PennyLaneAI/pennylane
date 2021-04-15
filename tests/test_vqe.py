@@ -112,11 +112,10 @@ hamiltonians_with_expvals = [
 ]
 
 
-
 zero_hamiltonians_with_expvals = [
     ([], [], [0]),
     ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
-    ((0,0,0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
+    ((0, 0, 0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
 ]
 
 simplify_hamiltonians = [
@@ -151,14 +150,18 @@ simplify_hamiltonians = [
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"), qml.PauliX("b") @ qml.PauliY(1.3)],
         ),
     ),
-
     # Simplifies to zero Hamiltonian
     (
-        qml.Hamiltonian([1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]),
+        qml.Hamiltonian(
+            [1, -0.5, -0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(0)]
+        ),
         qml.Hamiltonian([], []),
     ),
     (
-        qml.Hamiltonian([1, -1], [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)]),
+        qml.Hamiltonian(
+            [1, -1],
+            [qml.PauliX(4) @ qml.Identity(0) @ qml.PauliX(1), qml.PauliX(4) @ qml.PauliX(1)],
+        ),
         qml.Hamiltonian([], []),
     ),
     (
@@ -253,13 +256,15 @@ add_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(5),
         qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
-
     # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
     (
         qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
-        qml.Hamiltonian(np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
         qml.Hamiltonian(
-            (1.5, 1.2, 1.1, 0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+            np.array([0.5, 0.3, 1]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        ),
+        qml.Hamiltonian(
+            (1.5, 1.2, 1.1, 0.3),
+            np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
 ]
@@ -307,7 +312,6 @@ sub_hamiltonians = [
         qml.PauliX("b") @ qml.Identity(1),
         qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     ),
-
     # The result is the zero Hamiltonian
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -319,14 +323,15 @@ sub_hamiltonians = [
         qml.Hamiltonian([1, 2], [qml.PauliX(4), qml.PauliZ(2)]),
         qml.Hamiltonian([], []),
     ),
-
-
     # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
     (
         qml.Hamiltonian((1, 1.2, 0.1), (qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2))),
-        qml.Hamiltonian(np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])),
         qml.Hamiltonian(
-            (0.5, 1.2, -1.5, -0.3), np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+            np.array([0.5, 0.3, 1.6]), np.array([qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        ),
+        qml.Hamiltonian(
+            (0.5, 1.2, -1.5, -0.3),
+            np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
 ]
@@ -353,7 +358,6 @@ mul_hamiltonians = [
             [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)],
         ),
     ),
-
     # The result is the zero Hamiltonian
     (
         0,
@@ -365,7 +369,6 @@ mul_hamiltonians = [
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
         qml.Hamiltonian([0, 0, 0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
     ),
-
     # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
     (
         3,
@@ -419,19 +422,20 @@ matmul_hamiltonians = [
         qml.PauliX(2),
         qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)]),
     ),
-
     # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
     (
         qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
         qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
         qml.Hamiltonian(
             (0.5, 0.5, 0.5, 0.5),
-            np.array([
-                qml.PauliX(0) @ qml.PauliZ(2),
-                qml.PauliX(0) @ qml.PauliZ(3),
-                qml.PauliZ(1) @ qml.PauliZ(2),
-                qml.PauliZ(1) @ qml.PauliZ(3),
-            ]),
+            np.array(
+                [
+                    qml.PauliX(0) @ qml.PauliZ(2),
+                    qml.PauliX(0) @ qml.PauliZ(3),
+                    qml.PauliZ(1) @ qml.PauliZ(2),
+                    qml.PauliZ(1) @ qml.PauliZ(3),
+                ]
+            ),
         ),
     ),
 ]
@@ -794,7 +798,9 @@ class TestVQE:
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals)
+    @pytest.mark.parametrize(
+        "coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals
+    )
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
@@ -841,7 +847,7 @@ class TestVQE:
             dev,
             optimize=True,
             interface=interface,
-            diff_method="parameter-shift"
+            diff_method="parameter-shift",
         )
         cost2 = qml.ExpvalCost(
             qml.templates.StronglyEntanglingLayers,
@@ -849,7 +855,7 @@ class TestVQE:
             dev,
             optimize=False,
             interface=interface,
-            diff_method="parameter-shift"
+            diff_method="parameter-shift",
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -873,10 +879,18 @@ class TestVQE:
         hamiltonian = big_hamiltonian
 
         cost = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, diff_method="parameter-shift"
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            diff_method="parameter-shift",
         )
         cost2 = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=False, diff_method="parameter-shift"
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            diff_method="parameter-shift",
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -892,7 +906,7 @@ class TestVQE:
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
 
-    @pytest.mark.parametrize('opt', [True, False])
+    @pytest.mark.parametrize("opt", [True, False])
     def test_grad_zero_hamiltonian(self, opt):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface with a zero Hamiltonian."""
@@ -900,7 +914,11 @@ class TestVQE:
         hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
 
         cost = qml.ExpvalCost(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=opt, diff_method="parameter-shift"
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=opt,
+            diff_method="parameter-shift",
         )
 
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -959,7 +977,7 @@ class TestVQE:
         """Test that the metric tensor can be calculated."""
 
         dev = qml.device("default.qubit", wires=2)
-        p = np.array([1., 1., 1.])
+        p = np.array([1.0, 1.0, 1.0])
 
         def ansatz(params, **kwargs):
             qml.RX(params[0], wires=0)
@@ -1015,12 +1033,7 @@ class TestVQE:
         hamiltonian = big_hamiltonian
 
         with pytest.raises(ValueError, match="sums of expectation values"):
-            qml.ExpvalCost(
-                qml.templates.StronglyEntanglingLayers,
-                hamiltonian,
-                dev,
-                measure="var"
-            )
+            qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var")
 
 
 class TestAutogradInterface:

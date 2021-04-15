@@ -26,7 +26,7 @@ class TestAdjointJacobian:
 
     @pytest.fixture
     def dev(self):
-        return qml.device('default.qubit', wires=2)
+        return qml.device("default.qubit", wires=2)
 
     def test_not_expval(self, dev):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
@@ -138,22 +138,13 @@ class TestAdjointJacobian:
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
     qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
-    ops = {
-        qml.RX,
-        qml.RY,
-        qml.RZ,
-        qml.PhaseShift,
-        qml.CRX,
-        qml.CRY,
-        qml.CRZ,
-        qml.Rot
-    }
+    ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
     @pytest.mark.parametrize("op", ops)
     def test_gradients(self, op, obs, tol, dev):
         """Tests that the gradients of circuits match between the finite difference and device
-         methods."""
+        methods."""
         args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
@@ -207,7 +198,7 @@ class TestAdjointJacobianQNode:
 
     @pytest.fixture
     def dev(self):
-        return qml.device('default.qubit', wires=2)
+        return qml.device("default.qubit", wires=2)
 
     def test_qnode(self, mocker, tol, dev):
         """Test that specifying diff_method allows the adjoint method to be selected"""

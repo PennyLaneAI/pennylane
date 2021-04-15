@@ -35,7 +35,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0))
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = np.array([1., 2., 3.])
+        params = np.array([1.0, 2.0, 3.0])
         tapes = qml.metric_tensor(circuit, only_construct=True)(params)
         assert len(tapes) == 3
 
@@ -110,7 +110,7 @@ class TestMetricTensor:
             m.setattr("pennylane.RX.generator", [qml.RX, 1])
 
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                circuit.metric_tensor(1., only_construct=True)
+                circuit.metric_tensor(1.0, only_construct=True)
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
@@ -124,7 +124,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor(1., 1., 1., only_construct=True)
+        tapes = circuit.metric_tensor(1.0, 1.0, 1.0, only_construct=True)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -402,7 +402,6 @@ class TestMetricTensor:
 
         assert np.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
 
-
         # =============================================
         # Test block diag metric tensor of third layer is correct.
         # We do this by computing the required expectation values
@@ -558,11 +557,9 @@ class TestDifferentiability:
         a, b, c = weights
 
         grad = qml.grad(cost)(weights)
-        expected = np.array([
-            np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2,
-            np.cos(a) ** 2 * np.sin(2 * b) / 4,
-            0
-        ])
+        expected = np.array(
+            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
+        )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_jax(self, diff_method, tol):
@@ -592,11 +589,9 @@ class TestDifferentiability:
         a, b, c = weights
 
         grad = jax.grad(cost)(weights)
-        expected = np.array([
-            np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2,
-            np.cos(a) ** 2 * np.sin(2 * b) / 4,
-            0
-        ])
+        expected = np.array(
+            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
+        )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_tf(self, diff_method, tol):
@@ -621,11 +616,9 @@ class TestDifferentiability:
             loss = qml.metric_tensor(circuit)(weights_t)[2, 2]
 
         grad = tape.gradient(loss, weights_t)
-        expected = np.array([
-            np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2,
-            np.cos(a) ** 2 * np.sin(2 * b) / 4,
-            0
-        ])
+        expected = np.array(
+            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
+        )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_torch(self, diff_method, tol):
@@ -653,9 +646,7 @@ class TestDifferentiability:
         loss.backward()
 
         grad = weights_t.grad
-        expected = np.array([
-            np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2,
-            np.cos(a) ** 2 * np.sin(2 * b) / 4,
-            0
-        ])
+        expected = np.array(
+            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
+        )
         assert np.allclose(grad, expected, atol=tol, rtol=0)

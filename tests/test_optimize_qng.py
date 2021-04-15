@@ -40,7 +40,8 @@ class TestExceptions:
         params = 0.5
 
         with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode or an ExpvalCost object"
+            ValueError,
+            match="The objective function must either be encoded as a single QNode or an ExpvalCost object",
         ):
             opt.step(cost, params)
 
@@ -98,7 +99,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
@@ -121,12 +122,9 @@ class TestOptimize:
             qml.RY(params[1], wires=wires)
 
         coeffs = [1, 1]
-        obs_list = [
-            qml.PauliX(0),
-            qml.PauliZ(0)
-        ]
+        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
-        qnodes = qml.map(circuit, obs_list, dev, measure='expval')
+        qnodes = qml.map(circuit, obs_list, dev, measure="expval")
         cost_fn = qml.dot(coeffs, qnodes)
 
         def gradient(params):
@@ -144,11 +142,13 @@ class TestOptimize:
 
         # optimization for 200 steps total
         for t in range(num_steps):
-            theta_new = opt.step(cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0]))
+            theta_new = opt.step(
+                cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0])
+            )
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
@@ -171,10 +171,7 @@ class TestOptimize:
             qml.RY(params[1], wires=wires)
 
         coeffs = [1, 1]
-        obs_list = [
-            qml.PauliX(0),
-            qml.PauliZ(0)
-        ]
+        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
         h = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
 
@@ -199,7 +196,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update

@@ -159,7 +159,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
-        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.])]
+        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.0])]
 
         tape.jacobian(dev, method="analytic")
         assert len(tape.analytic_pd.call_args_list) == 2
@@ -406,7 +406,7 @@ class TestJacobian:
 
         j2 = tape2.jacobian(dev)
 
-        exp = - np.sin(1)
+        exp = -np.sin(1)
 
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
@@ -592,6 +592,7 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestHessian:
     """Unit tests for the hessian method"""

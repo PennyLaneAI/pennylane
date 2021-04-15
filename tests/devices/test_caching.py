@@ -95,7 +95,7 @@ class TestCaching:
 
     def test_drop_from_cache(self):
         """Test that the first entry of the _cache_execute dictionary is the first to be dropped
-         from the dictionary once it becomes full"""
+        from the dictionary once it becomes full"""
         dev = qml.device("default.qubit", wires=2, cache=2)
         qn = QNode(qfunc, dev)
 

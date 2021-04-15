@@ -173,7 +173,15 @@ class TestCircuitDrawer:
         [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5
     )
 
-    multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"],])
+    multiwire_gate_representation_grid = Grid(
+        [
+            ["╭"],
+            ["╰"],
+            [""],
+            ["╭"],
+            ["╰"],
+        ]
+    )
 
     multi_and_single_wire_gate_grid = to_grid(
         [
@@ -189,7 +197,15 @@ class TestCircuitDrawer:
     )
 
     multi_and_single_wire_gate_representation_grid = Grid(
-        [["╭"], ["╰"], [""], ["╭"], ["│"], ["╰"], [""],]
+        [
+            ["╭"],
+            ["╰"],
+            [""],
+            ["╭"],
+            ["│"],
+            ["╰"],
+            [""],
+        ]
     )
 
     @pytest.mark.parametrize(
@@ -250,7 +266,7 @@ class TestCircuitDrawer:
         # make a dummy observable grid
         raw_observable_grid = [[None] for _ in range(len(raw_operator_grid))]
 
-        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid,  Wires(range(10)))
+        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid, Wires(range(10)))
         drawer.move_multi_wire_gates(operator_grid)
 
         assert_nested_lists_equal(operator_grid.raw_grid, target_grid.raw_grid)
@@ -302,6 +318,7 @@ def parameterized_qubit_qnode():
     qnode(0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6]))
 
     return qnode
+
 
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_variable_names():
@@ -623,11 +640,7 @@ def drawn_qubit_circuit_with_probs():
 @pytest.fixture
 def drawn_qubit_circuit_with_state():
     """The rendered circuit representation of the above qubit circuit."""
-    return (
-        " 0: ──X──╭X──╭┤ State \n"
-        + " 1: ─────├C──├┤ State \n"
-        + " 5: ──X──╰C──╰┤ State \n"
-    )
+    return " 0: ──X──╭X──╭┤ State \n" + " 1: ─────├C──├┤ State \n" + " 5: ──X──╰C──╰┤ State \n"
 
 
 @pytest.fixture
@@ -636,13 +649,13 @@ def qubit_circuit_with_interesting_wires():
 
     def qfunc():
         qml.PauliX(0)
-        qml.PauliX('b')
+        qml.PauliX("b")
         qml.PauliX(-1)
-        qml.Toffoli(wires=['b', 'q2', 0])
+        qml.Toffoli(wires=["b", "q2", 0])
 
         return qml.expval(qml.PauliY(0))
 
-    dev = qml.device("default.qubit", wires=[0, 'q2', -1, 2, 3, 'b'])
+    dev = qml.device("default.qubit", wires=[0, "q2", -1, 2, 3, "b"])
 
     qnode = qml.QNode(qfunc, dev)
     qnode()
@@ -758,7 +771,7 @@ class TestWireOrdering:
     def test_default_ordering(self):
         """Test that the default wire ordering matches the device"""
 
-        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
         @qml.qnode(dev)
         def circuit():
@@ -772,7 +785,7 @@ class TestWireOrdering:
         expected = [
             "  a: ─────╭C──RX(0.2)──┤     ",
             " -1: ──H──│────────────┤     ",
-            " q2: ─────╰X───────────┤ ⟨X⟩ \n"
+            " q2: ─────╰X───────────┤ ⟨X⟩ \n",
         ]
 
         assert res == "\n".join(expected)
@@ -780,7 +793,7 @@ class TestWireOrdering:
     def test_wire_reordering(self):
         """Test that wires are correctly reordered"""
 
-        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
         @qml.qnode(dev)
         def circuit():
@@ -794,7 +807,7 @@ class TestWireOrdering:
         expected = [
             " q2: ──╭X───────────┤ ⟨X⟩ ",
             "  a: ──╰C──RX(0.2)──┤     ",
-            " -1: ───H───────────┤     \n"
+            " -1: ───H───────────┤     \n",
         ]
 
         assert res == "\n".join(expected)
@@ -802,7 +815,7 @@ class TestWireOrdering:
     def test_include_empty_wires(self):
         """Test that empty wires are correctly included"""
 
-        dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+        dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
         @qml.qnode(dev)
         def circuit():
@@ -816,7 +829,7 @@ class TestWireOrdering:
             " -1: ──H──╭C──┤     ",
             "  a: ─────│───┤     ",
             " q2: ─────╰X──┤ ⟨X⟩ ",
-            "  0: ─────────┤     \n"
+            "  0: ─────────┤     \n",
         ]
 
         assert res == "\n".join(expected)
@@ -825,7 +838,7 @@ class TestWireOrdering:
         """Test that show_all_wires will raise an error if the provided wire
         order does not contain all wires on the device"""
 
-        dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+        dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
         @qml.qnode(dev)
         def circuit():
@@ -842,7 +855,7 @@ class TestWireOrdering:
         """Test that wires not specifically mentioned in the wire
         reordering are appended at the bottom of the circuit drawing"""
 
-        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
         @qml.qnode(dev)
         def circuit():
@@ -858,7 +871,7 @@ class TestWireOrdering:
         expected = [
             " q2: ──╭X───────────┤ ⟨X⟩ ",
             "  a: ──╰C──RX(0.2)──┤     ",
-            " -1: ───H───────────┤     \n"
+            " -1: ───H───────────┤     \n",
         ]
 
         assert res == "\n".join(expected)
@@ -868,7 +881,7 @@ class TestWireOrdering:
         expected = [
             " q2: ─────╭X───────────┤ ⟨X⟩ ",
             " -1: ──H──│────────────┤     ",
-            "  a: ─────╰C──RX(0.2)──┤     \n"
+            "  a: ─────╰C──RX(0.2)──┤     \n",
         ]
 
         assert res == "\n".join(expected)
@@ -878,7 +891,7 @@ class TestWireOrdering:
         expected = [
             " q2: ─────╭X───────────┤ ⟨X⟩ ",
             " -1: ──H──│────────────┤     ",
-            "  a: ─────╰C──RX(0.2)──┤     \n"
+            "  a: ─────╰C──RX(0.2)──┤     \n",
         ]
 
         assert res == "\n".join(expected)
@@ -886,7 +899,7 @@ class TestWireOrdering:
     def test_invalid_wires(self):
         """Test that an exception is raised if a wire in the wire
         ordering does not exist on the device"""
-        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
         @qml.qnode(dev)
         def circuit():

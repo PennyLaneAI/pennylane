@@ -25,10 +25,11 @@ from torch.autograd.functional import hessian, jacobian
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [
+    "dev_name,diff_method",
+    [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
-        ["default.qubit", "adjoint"]
+        ["default.qubit", "adjoint"],
     ],
 )
 class TestQNode:
@@ -608,7 +609,7 @@ class TestQNode:
 
         expected_hess = [
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
-            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
@@ -637,27 +638,24 @@ class TestQNode:
 
         a, b = x.detach().numpy()
 
-        expected_res = [
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b)
-        ]
+        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [
             [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)]
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
         ]
         assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
         expected_hess = [
             [
                 [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)]
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
             ],
             [
                 [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)]
-            ]
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
@@ -691,30 +689,30 @@ class TestQNode:
         expected_res = [
             np.cos(a) * np.cos(b),
             0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b)
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
         ]
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [
             [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)],
             [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)]
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
         ]
         assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
         expected_hess = [
             [
                 [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
-                [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+                [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
             ],
             [
                 [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)]
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
             ],
             [
                 [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)]
-            ]
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 

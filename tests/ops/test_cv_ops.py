@@ -29,6 +29,7 @@ s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0.0, 1.0, 7)
 
+
 class TestCV:
     """Tests the continuous variable based operations."""
 
@@ -41,23 +42,24 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
-    @pytest.mark.parametrize("op,size", [
+    @pytest.mark.parametrize(
+        "op,size",
+        [
             (cv.Squeezing(0.123, -0.456, wires=1), 3),
-            (cv.Squeezing(0.668, 10.0, wires=0), 3), # phi > 2pi
-            (cv.Squeezing(1.992, -9.782, wires=0), 3), # phi < -2pi
+            (cv.Squeezing(0.668, 10.0, wires=0), 3),  # phi > 2pi
+            (cv.Squeezing(1.992, -9.782, wires=0), 3),  # phi < -2pi
             (cv.Rotation(2.005, wires=1), 3),
             (cv.Rotation(-1.365, wires=1), 3),
             (cv.Displacement(2.841, 0.456, wires=0), 3),
-            (cv.Displacement(3.142, -7.221, wires=0), 3), # phi < -2pi
-            (cv.Displacement(2.004, 8.673, wires=0), 3), # phi > 2pi
+            (cv.Displacement(3.142, -7.221, wires=0), 3),  # phi < -2pi
+            (cv.Displacement(2.004, 8.673, wires=0), 3),  # phi > 2pi
             (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
             (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
-            (cv.Interferometer(
-                np.array([[1, 1], [1, -1]]) * -1.j / np.sqrt(2.0),
-                wires=1), 5),
+            (cv.Interferometer(np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1), 5),
             (cv.ControlledAddition(2.551, wires=[0, 2]), 5),
             (cv.ControlledPhase(2.189, wires=[3, 1]), 5),
-        ])
+        ],
+    )
     def test_adjoint_cv_ops(self, op, size, tol):
         op_d = op.adjoint()
         op_heis = op._heisenberg_rep(op.parameters)
@@ -68,11 +70,14 @@ class TestCV:
         np_testing.assert_allclose(res2, np.eye(size), atol=tol)
         assert op.wires == op_d.wires
 
-    @pytest.mark.parametrize("op", [
+    @pytest.mark.parametrize(
+        "op",
+        [
             cv.CrossKerr(-1.724, wires=[2, 0]),
             cv.CubicPhase(0.997, wires=2),
             cv.Kerr(2.568, wires=2),
-        ])
+        ],
+    )
     def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
         op_d = op.adjoint()
         assert op.parameters[0] == -op_d.parameters[0]
@@ -92,7 +97,6 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
-
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)
     def test_displacement_heisenberg(self, phi, mag):
@@ -108,7 +112,6 @@ class TestCV:
             ]
         )
         assert np.allclose(matrix, true_matrix)
-
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("theta", phis)
@@ -150,7 +153,6 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
-
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)
     def test_two_mode_squeezing_heisenberg(self, phi, mag):
@@ -168,7 +170,6 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
-
     @pytest.mark.parametrize("s", s_vals)
     def test_quadratic_phase_heisenberg(self, s):
         """ops: Tests the Heisenberg representation of the QuadraticPhase gate."""
@@ -176,11 +177,9 @@ class TestCV:
         true_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, s, 1]])
         assert np.allclose(matrix, true_matrix)
 
-
     @pytest.mark.parametrize("s", s_vals)
     def test_controlled_addition_heisenberg(self, s):
-        """ops: Tests the Heisenberg representation of ControlledAddition gate.
-        """
+        """ops: Tests the Heisenberg representation of ControlledAddition gate."""
         matrix = cv.ControlledAddition._heisenberg_rep([s])
         true_matrix = np.array(
             [
@@ -192,7 +191,6 @@ class TestCV:
             ]
         )
         assert np.allclose(matrix, true_matrix)
-
 
     @pytest.mark.parametrize("s", s_vals)
     def test_controlled_phase_heisenberg(self, s):

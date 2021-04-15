@@ -480,7 +480,6 @@ class TestScalarHashing:
 class TestNumpyConversion:
     """Tests for the tensor.unwrap() and tensor.numpy() methods"""
 
-
     def test_convert_scalar_array(self):
         """Test that a scalar array converts to a python literal"""
         data = np.array(1.543)
@@ -532,7 +531,6 @@ class TestNumpyConversion:
             return qml.expval(qml.PauliZ(0))
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
-
 
         with qml.tape.OperationRecorder() as rec:
             circuit(phi=phi)

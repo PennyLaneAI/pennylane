@@ -23,16 +23,15 @@ from pennylane import DeviceError
 
 
 def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message.
-    """
+    """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-                DeviceError,
-                match=msg,
-        ):
-          qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
+        DeviceError,
+        match=msg,
+    ):
+        qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
 
 
 class TestQNodeIntegration:
@@ -53,7 +52,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
-            "passthru_interface": 'autograd',
+            "passthru_interface": "autograd",
             "passthru_devices": {
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
@@ -390,6 +389,7 @@ class TestHighLevelIntegration:
         grad = qml.grad(cost)(weights)
         assert grad.shape == weights.shape
 
+
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
 
@@ -397,21 +397,21 @@ class TestOps:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device('default.qubit.autograd', wires=wires)
+        dev = qml.device("default.qubit.autograd", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
-            qml.MultiRZ(param, wires=[0,1])
-            return qml.probs(wires = list(range(wires)))
+            qml.MultiRZ(param, wires=[0, 1])
+            return qml.probs(wires=list(range(wires)))
 
         param = 0.3
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires **2))
+        assert np.allclose(res, np.zeros(wires ** 2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop
         mode"""
-        dev = qml.device('default.qubit.autograd', wires=1)
+        dev = qml.device("default.qubit.autograd", wires=1)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -427,9 +427,9 @@ class TestOps:
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubitAutograd(wires=['a', 'b', 'c'])
-        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.
-        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+        dev = DefaultQubitAutograd(wires=["a", "b", "c"])
+        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
@@ -440,9 +440,9 @@ class TestOps:
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultQubitAutograd(wires=['a', 'b', 'c'])
-        state = np.array([1, 0, 1, 0]) / np.sqrt(2.)
-        state_wires = qml.wires.Wires(['a', 'c'])
+        dev = DefaultQubitAutograd(wires=["a", "b", "c"])
+        state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)

@@ -17,6 +17,7 @@ def assert_equal_operations(ops1, ops2):
 
 def test_control_sanity_check():
     """Test that control works on a very standard usecase."""
+
     def make_ops():
         qml.RX(0.123, wires=0)
         qml.RY(0.456, wires=2)
@@ -28,7 +29,7 @@ def test_control_sanity_check():
 
     with QuantumTape() as tape:
         cmake_ops = ctrl(make_ops, control=1)
-        #Execute controlled version.
+        # Execute controlled version.
         cmake_ops()
 
     expected = [
@@ -49,6 +50,7 @@ def test_control_sanity_check():
 
 def test_adjoint_of_control():
     """Test adjoint(ctrl(fn)) and ctrl(adjoint(fn))"""
+
     def my_op(a, b, c):
         qml.RX(a, wires=2)
         qml.RY(b, wires=3)
@@ -76,6 +78,7 @@ def test_adjoint_of_control():
         expanded = ctrl_op.expand()
         assert_equal_operations(expanded.operations, expected)
 
+
 def test_nested_control():
     """Test nested use of control"""
     with QuantumTape() as tape:
@@ -87,6 +90,7 @@ def test_nested_control():
     new_tape = expand_tape(tape, 3)
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
 
+
 def test_multi_control():
     """Test control with a list of wires."""
     with QuantumTape() as tape:
@@ -97,6 +101,7 @@ def test_multi_control():
     assert isinstance(op, ControlledOperation)
     new_tape = expand_tape(tape, 3)
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
+
 
 def test_control_with_qnode():
     """Test ctrl works when in a qnode cotext."""
@@ -119,7 +124,7 @@ def test_control_with_qnode():
         qml.Toffoli(wires=[2, 1, 0])
 
     def circuit(ansatz, params):
-        qml.RX(np.pi/4.0, wires=2)
+        qml.RX(np.pi / 4.0, wires=2)
         ansatz(params)
         return qml.state()
 
@@ -128,11 +133,12 @@ def test_control_with_qnode():
     circuit2 = qml.qnode(dev)(partial(circuit, ansatz=controlled_ansatz))
     res1 = circuit1(params=params)
     res2 = circuit2(params=params)
-    np.testing.assert_allclose(res1, res2) 
+    np.testing.assert_allclose(res1, res2)
 
 
 def test_ctrl_within_ctrl():
     """Test using ctrl on a method that uses ctrl."""
+
     def ansatz(params):
         qml.RX(params[0], wires=0)
         ctrl(qml.PauliX, control=0)(wires=1)
@@ -148,9 +154,10 @@ def test_ctrl_within_ctrl():
     expected = [
         qml.CRX(0.123, wires=[2, 0]),
         qml.Toffoli(wires=[0, 2, 1]),
-        qml.CRX(0.456, wires=[2, 0])
+        qml.CRX(0.456, wires=[2, 0]),
     ]
     assert_equal_operations(tape.operations, expected)
+
 
 def test_diagonal_ctrl():
     """Test ctrl on diagonal gates."""
@@ -158,45 +165,39 @@ def test_diagonal_ctrl():
         ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
     tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
     assert_equal_operations(
-        tape.operations, 
-        [
-            qml.DiagonalQubitUnitary(
-                np.array([1.0, 1.0, -1.0, 1.0j]),
-                wires=[1, 0])
-        ])
+        tape.operations, [qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])]
+    )
+
 
 def test_qubit_unitary():
     """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
     with QuantumTape() as tape:
-        ctrl(qml.QubitUnitary, 1)(
-            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), 
-            wires=0)
+        ctrl(qml.QubitUnitary, 1)(np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), wires=0)
 
     tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
     assert_equal_operations(
-        tape.operations, 
+        tape.operations,
         [
             qml.ControlledQubitUnitary(
-                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
-                control_wires=1,
-                wires=0)
-        ])
+                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=1, wires=0
+            )
+        ],
+    )
 
     with QuantumTape() as tape:
         ctrl(qml.ControlledQubitUnitary, 1)(
-            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
-            control_wires=2,
-            wires=0)
+            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=2, wires=0
+        )
 
     tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
     assert_equal_operations(
-        tape.operations, 
+        tape.operations,
         [
             qml.ControlledQubitUnitary(
-                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0),
-                control_wires=[1, 2],
-                wires=0)
-        ])
+                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=[1, 2], wires=0
+            )
+        ],
+    )
 
 
 def test_no_control_defined():
@@ -209,4 +210,3 @@ def test_no_control_defined():
     # Check that all operations are updated to their controlled version.
     for op in tape.operations:
         assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP}
-

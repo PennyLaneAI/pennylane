@@ -260,14 +260,16 @@ class TestGroupingUtils:
     def test_qwc_complement_adj_matrix(self):
         """Tests that the ``qwc_complement_adj_matrix`` function returns the correct
         adjacency matrix."""
-        binary_observables = np.array([[1., 0., 1., 0., 0., 1.],
-                                       [0., 1., 1., 1., 0., 1.],
-                                       [0., 0., 0., 1., 0., 0.]])
+        binary_observables = np.array(
+            [
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            ]
+        )
         adj = qwc_complement_adj_matrix(binary_observables)
 
-        expected = np.array([[0., 1., 1.],
-                             [1., 0., 0.],
-                             [1., 0., 0.]])
+        expected = np.array([[0.0, 1.0, 1.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
 
         assert np.all(adj == expected)
 
@@ -282,9 +284,13 @@ class TestGroupingUtils:
     def test_qwc_complement_adj_matrix_exception(self):
         """Tests that the ``qwc_complement_adj_matrix`` function raises an exception if
         the matrix is not binary."""
-        not_binary_observables = np.array([[1.1, 0.5, 1., 0., 0., 1.],
-                                           [0., 1.3, 1., 1., 0., 1.],
-                                           [2.2, 0., 0., 1., 0., 0.]])
+        not_binary_observables = np.array(
+            [
+                [1.1, 0.5, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 1.3, 1.0, 1.0, 0.0, 1.0],
+                [2.2, 0.0, 0.0, 1.0, 0.0, 0.0],
+            ]
+        )
 
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
