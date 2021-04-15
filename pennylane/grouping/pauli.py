@@ -62,7 +62,7 @@ def pauli_group(n_qubits, wire_map=None):
     The order of iteration is based on the binary symplectic representation of
     the Pauli group as :math:`2n`-bit strings. Ordering is done by converting
     the integers :math:`0` to :math:`2^{2n}` to binary strings, and converting those
-    strings to Pauli operators using the :func`~.binary_to_pauli` method.
+    strings to Pauli operators using the :func:`~.binary_to_pauli` method.
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
@@ -77,31 +77,40 @@ def pauli_group(n_qubits, wire_map=None):
 
     The ``pauli_group`` generator can be used to loop over the Pauli group as follows:
 
-    .. code-block:: python
+    >>> from pennylane.grouping import pauli_group
+    >>> n_qubits = 3
+    >>> for p in pauli_group(n_qubits):
+    ...    print(p)
+    ...
+    Identity(wires=[0])
+    PauliZ(wires=[2])
+    PauliZ(wires=[1])
+    PauliZ(wires=[1]) @ PauliZ(wires=[2])
+    PauliZ(wires=[0])
+    PauliZ(wires=[0]) @ PauliZ(wires=[2])
+    PauliZ(wires=[0]) @ PauliZ(wires=[1])
+    ...
 
-        from pennylane.grouping import pauli_group
+    The full Pauli group can then be obtained like so:
 
-        n_qubits = 3
-
-        for p in pauli_group(n_qubits):
-            print(p)
-
-    The Pauli group in full can be obtained in full like so:
-
-    .. code-block:: python
-
-       full_pg = list(pauli_group(n_qubits))
+    >>> full_pg = list(pauli_group(n_qubits))
 
     The group can also be created using a custom wire map (if no map is
-    specified, a default map of label :math:`i` to wire ``i`` will be created).
+    specified, a default map of label :math:`i` to wire ``i`` as in the example
+    above will be created).
 
-    .. code-block:: python
-
-        n_qubits = 3
-        wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-
-        for p in pauli_group(n_qubits, wire_map=wire_map):
-            print(p)
+    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> for p in pauli_group(n_qubits, wire_map=wire_map):
+    ...     print(p)
+    ...
+    Identity(wires=['a'])
+    PauliZ(wires=['c'])
+    PauliZ(wires=['b'])
+    PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+    PauliZ(wires=['a'])
+    PauliZ(wires=['a']) @ PauliZ(wires=['c'])
+    PauliZ(wires=['a']) @ PauliZ(wires=['b'])
+    ...
 
     """
     if not isinstance(n_qubits, int):

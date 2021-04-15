@@ -392,11 +392,11 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
 
 def string_to_pauli_word(pauli_string, wire_map=None):
-    """Convert a string in terms of ``I``, ``X``, ``Y``, and ``Z`` into a Pauli word
+    """Convert a string in terms of ``'I'``, ``'X'``, ``'Y'``, and ``'Z'`` into a Pauli word
     for the given wire map.
 
     Args:
-        pauli_string (str): A string of characters consisting of "I", "X", "Y", "Z"
+        pauli_string (str): A string of characters consisting of ``'I'``, ``'X'``, ``'Y'``, and ``'Z'``
             indicating a Pauli word.
         wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -458,7 +458,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 def pauli_word_to_matrix(pauli_word, wire_map=None):
     """Convert a Pauli word from a tensor to its matrix representation.
 
-    The matrix representation of a Pauli word has dimension :math:`2^n \times 2^n`,
+    The matrix representation of a Pauli word has dimension :math:`2^n \\times 2^n`,
     where :math:`n` is the number of qubits provided in ``wire_map``. For wires
     that the Pauli word does not act on, identities must be inserted into the tensor
     product at the correct positions.
@@ -525,7 +525,7 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     To determine if two Pauli words commute, we can check the value of the
     symplectic inner product of their binary vector representations.
     For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
-    and :math:`p_2 = [x_2, z_2]`, the symplectic inner product is defined as
+    and :math:`p_2 = [x_2, z_2],` the symplectic inner product is defined as
     :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
     product is 0 they commute, while if it is 1, they don't commute.
 
