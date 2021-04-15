@@ -2647,7 +2647,8 @@ class QubitCarry(Operation):
 class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
-    This stores the modulo two sum of the three input values in the third wire. More precisely, it performs the transformation:
+
+    This operation performs the transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
@@ -2658,11 +2659,7 @@ class QubitSum(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The first wire provided corresponds to the first qubit in the sum: :math:`|C\rangle`.
-    The second wire corresponds to the second qubit in the sum: :math:`|a\rangle`.
-    The third wire corresponds to the third qubit in the sum :math:`|b\rangle` and takes the modulo two sum :math:`a\oplus b \oplus c`.
-
-    See <https://arxiv.org/abs/quant-ph/0008033v1> for more information.
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
 
     **Details:**
 
@@ -2674,8 +2671,8 @@ class QubitSum(Operation):
 
     **Example**
 
-    The following circuit performs the ``QubitSum`` operation on a ``basis_state``.
-    Here we perform the modulo two sum :math:`1 \oplus 1 \oplus 0 = 0`:
+    The following circuit performs the ``QubitSum`` operation on an input state
+    :math:`|110\rangle`.
 
     .. code-block::
 
