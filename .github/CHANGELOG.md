@@ -743,6 +743,9 @@
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
+* The device test suite no longer accepts the `analytic` keyword.
+  [(#1216)](https://github.com/PennyLaneAI/pennylane/pull/1216)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
