@@ -72,6 +72,6 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
         graph (nx.Graph): the graph specifying possible edges
 
     Returns:
-        Dict[Tuple[int], int]: a mapping from wires to graph edges
+        Dict[Tuple, int]: a mapping from wires to graph edges
     """
     return {i: edge for i, edge in enumerate(graph.edges)}
