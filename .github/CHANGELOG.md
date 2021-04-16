@@ -770,6 +770,9 @@
   second-order observable.
   [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
 
+* Fixes a bug where repeated Torch interface after expansion caused an error.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
