@@ -579,29 +579,6 @@ fully differentiable.
   to transform QNodes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
-  Marking a quantum function as invisible will inhibit any internal
-  quantum operation processing from being recorded by the QNode:
-
-  ```pycon
-  >>> @qml.transforms.invisible
-  ... def list_of_ops(params, wires):
-  ...     return [
-  ...         qml.RX(params[0], wires=wires),
-  ...         qml.RY(params[1], wires=wires),
-  ...         qml.RZ(params[2], wires=wires)
-  ...     ]
-  >>> @qml.qnode(dev)
-  ... def circuit(params):
-  ...     # list_of_ops is invisible, so quantum operations
-  ...     # instantiated within it will not be queued.
-  ...     ops = list_of_ops(params, wires=0)
-  ...     # apply only the last operation from the list
-  ...     ops[-1].queue()
-  ...     return qml.expval(qml.PauliZ(0))
-  >>> print(qml.draw(circuit)([1, 2, 3]))
-   0: ──RZ(3)──┤ ⟨Z⟩
-  ```
-
 <h3>Breaking changes</h3>
 
 * Devices do not have an `analytic` argument or attribute anymore. 
@@ -677,6 +654,7 @@ fully differentiable.
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
+
 * The old PennyLane core has been removed, including the following modules:
   [(#1100)](https://github.com/PennyLaneAI/pennylane/pull/1100)
 
@@ -707,6 +685,9 @@ fully differentiable.
   TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
   [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
 
+* The device test suite no longer accepts the `analytic` keyword.
+  [(#1216)](https://github.com/PennyLaneAI/pennylane/pull/1216)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where using the circuit drawer with a `ControlledQubitUnitary`
@@ -733,6 +714,9 @@ fully differentiable.
   if attempting to compute the gradient of a QNode with more than one
   second-order observable.
   [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
+
+* Fixes a bug where repeated Torch interface applications after expansion caused an error.
+  [(#1223)](https://github.com/PennyLaneAI/pennylane/pull/1223)
 
 <h3>Documentation</h3>
 
