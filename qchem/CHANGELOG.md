@@ -8,7 +8,7 @@
   - The `read_structure` function returns a list with the symbols of the atoms and
     the array with the atomic positions. 
 
-  - The `meanfield` and `molecular_hamiltonian` functions takes separately the
+  - The `meanfield` and `molecular_hamiltonian` functions take separately the
     list of atomic symbols and the array with the atomic coordinates.
 
   - Labelling the molecule is now optional as we have made `name` a keyword argument
