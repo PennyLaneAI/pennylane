@@ -104,7 +104,7 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
     hf_file = qchem.meanfield(
         symbols,
         coordinates,
-        name='water',exit()
+        name='water',
         charge=-1,
         mult=2,
         basis='6-31g',
