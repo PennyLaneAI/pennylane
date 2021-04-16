@@ -19,7 +19,7 @@ from typing import Dict, Tuple
 import networkx as nx
 
 
-def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
+def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
