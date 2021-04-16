@@ -63,24 +63,37 @@ class QuantumAdder(Operation):
     def expand(self):
         # if they're equal, run normally
         # if one is larger, use carry_0 as replacement for smaller one in later instances
-        temp = len(self.a_wires) - len(self.b_wires)
+        temp = len(self.b_wires) - len(self.a_wires)
         with qml.tape.QuantumTape() as tape:
             #Initial carry operations
             for i in range(len(self.b_wires)-1,-1,-1):
                 if i<temp:
-                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i],self.carry_wires[i]])
+                    #different length bit strings means we don't need to use full qubitcarry
+                    qml.Toffoli(wires=[self.carry_wires[i+1],self.b_wires[i],self.carry_wires[i]])
                 else:
                     qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i],self.carry_wires[i]])
 
             #CNOT and Sum in the middle
-            qml.CNOT(wires=[self.a_wires[0],self.b_wires[temp]])
-            qml.QubitSum(wires=[self.carry_wires[1],self.a_wires[0],self.b_wires[temp]])
+            #CNOT is between b and 0 value carry if len(b)!=len(a)
+            if temp>0:
+                #don't need the CNOT, it will never activate
+                #sum becomes a single CNOT
+                qml.CNOT(wires=[self.carry_wires[1],self.b_wires[0]])
+            else:
+            #CNOT is between a and b if they are the same length bit strings
+                qml.CNOT(wires=[self.a_wires[0],self.b_wires[0]])
+                qml.QubitSum(wires=[self.carry_wires[1],self.a_wires[0],self.b_wires[0]])
+                
+            
 
             #Final carry and sum cascade
             for i in range(1,len(self.b_wires)):
                 if i<temp:
-                    qml.QubitCarry(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i],self.carry_wires[i]]).inv()
-                    qml.QubitSum(wires=[self.carry_wires[i+1],self.carry_wires[-1],self.b_wires[i]])
+                    #here summing most significant bits, a doesn't contribute
+                    #carry becomes a toffoli
+                    #Sum becomes CNOT
+                    qml.Toffoli(wires=[self.carry_wires[i+1],self.b_wires[i],self.carry_wires[i]])
+                    qml.CNOT(wires=[self.carry_wires[i+1],self.b_wires[i]])
                 else:
                     qml.QubitCarry(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i],self.carry_wires[i]]).inv()
                     qml.QubitSum(wires=[self.carry_wires[i+1],self.a_wires[i-temp],self.b_wires[i]])
