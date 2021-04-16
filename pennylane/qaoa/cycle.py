@@ -48,7 +48,7 @@ def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
     return {edge: i for i, edge in enumerate(graph.edges)}
 
 
-def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
+def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
