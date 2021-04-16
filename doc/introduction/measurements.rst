@@ -33,6 +33,8 @@ The available measurement functions are
     ~pennylane.sample
     ~pennylane.var
     ~pennylane.probs
+    ~pennylane.state
+    ~pennylane.dm
 
 :html:`</div>`
 
