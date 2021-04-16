@@ -609,3 +609,9 @@ class TestKerasLayerIntegrationDM:
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
+
+
+def test_no_attribute():
+    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
+    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
+        qml.qnn.random
