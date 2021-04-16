@@ -743,6 +743,9 @@
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
+* The device test suite no longer accepts the `analytic` keyword.
+  [(#1216)](https://github.com/PennyLaneAI/pennylane/pull/1216)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
@@ -769,6 +772,9 @@
   if attempting to compute the gradient of a QNode with more than one
   second-order observable.
   [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
+
+* Fixes a bug where repeated Torch interface applications after expansion caused an error.
+  [(#1223)](https://github.com/PennyLaneAI/pennylane/pull/1223)
 
 <h3>Documentation</h3>
 
