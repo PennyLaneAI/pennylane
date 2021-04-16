@@ -511,6 +511,9 @@
 
 <h3>Improvements</h3>
 
+* PennyLane's test suite is now code-formatted using `black -l 100`.
+  [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
+
 * Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
   by reducing the number of redundant CNOT gates at the end of a circuit.
 
