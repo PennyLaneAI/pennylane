@@ -19,7 +19,7 @@ works correctly an a device.
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
 from cmath import exp
-from math import cos, sin, sqrt, pi
+from math import cos, sin, sqrt
 
 import pytest
 import numpy as np
