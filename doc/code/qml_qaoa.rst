@@ -95,6 +95,7 @@ QAOA Layers
 
 Cycle Optimization
 ------------------
+
 .. automodapi:: pennylane.qaoa.cycle
     :no-heading:
     :no-inheritance-diagram:
