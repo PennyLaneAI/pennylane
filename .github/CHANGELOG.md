@@ -663,7 +663,7 @@
 
 <h3>Breaking changes</h3>
 
-* Removes support for Python 3.6.
+* Removes support for Python 3.6 and begin testing for Python 3.9.
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
