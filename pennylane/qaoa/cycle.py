@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Methods for finding max weighted cycle of weighted directed graphs
+Functionality for finding the maximum weighted cycle of directed graphs.
 """
 
 from typing import Dict, Tuple
