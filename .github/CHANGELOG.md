@@ -587,7 +587,6 @@ fully differentiable.
 
 * When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
-
   
 * Adds `qml.math.conj` to the PennyLane math module.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
@@ -601,6 +600,11 @@ fully differentiable.
   >>> qml.math.conj(a)
   array([1.0 - 2.0j])
   ```
+
+* The four-term parameter-shift rule, as used by the controlled rotation operations,
+  has been updated to use coefficients that minimize the variance as per
+  https://arxiv.org/abs/2104.05695.
+  [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
 
 <h3>Breaking changes</h3>
 
@@ -751,7 +755,8 @@ This release contains contributions from (in alphabetical order):
 
 Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Alain Delgado Gran, Kyle
 Godbey, Diego Guala, Theodor Isacsson, Josh Izaac, Soran Jahangiri, Nathan Killoran, Christina Lee,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva, David Wierichs.
+
 
 # Release 0.14.1
 

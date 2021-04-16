@@ -1,13 +1,5 @@
 /* Sphinx themes
 -------------------------------------------------- */
-@font-face {
-  font-family: 'Product Sans';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Open Sans'), local('OpenSans'), url(https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2) format('woff2');
-}
-
-
 
 body {
   /*background-color: #edf0f2;*/
@@ -92,7 +84,7 @@ h1, h2, h3, h4, h5, h6 {
   color: black;
   font-weight: normal;
   padding: 0;
-  font-family: 'Product Sans', 'Roboto', sans-serif!important;
+  font-family: 'Noto Sans', 'Roboto', sans-serif!important;
 }
 
 h1, h2, h3 {
@@ -372,7 +364,7 @@ div.sphinxsidebar p {
   margin: 20px 0px 10px 21px;
   font-weight: normal;
   padding: 0;
-  font-family: 'Product Sans', 'Roboto', sans-serif!important;
+  font-family: 'Noto Sans', 'Roboto', sans-serif!important;
   font-size: 24px;
   color: #515151;
   /*text-align: center;*/
@@ -2013,7 +2005,7 @@ footer.page-footer .footer-copyright {
     margin-left: 20px;
     font-size: initial;
     color: black;
-    font-family: 'Product Sans', 'Roboto', sans-serif !important;
+    font-family: 'Noto Sans', 'Roboto', sans-serif !important;
     margin-bottom: -9px;
     border-bottom: 3px solid;
     border-bottom-color: white;
