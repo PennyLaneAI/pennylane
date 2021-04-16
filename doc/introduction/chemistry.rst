@@ -27,6 +27,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 .. code-block:: python
 
     from pennylane import qchem
+    import numpy as np
 
     symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     h, qubits = qchem.molecular_hamiltonian(
@@ -70,7 +71,7 @@ The atomic structure of a molecule can be imported from an external file using t
 
 .. code-block:: python
 
-    >>> symbols, coordinates = read_structure('h2.xyz')
+    >>> symbols, coordinates = qchem.read_structure('h2.xyz')
     >>> print(symbols, coordinates)
     ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
 
