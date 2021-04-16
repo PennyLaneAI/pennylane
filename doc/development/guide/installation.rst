@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.6
+* `Python <http://python.org/>`_ >= 3.7
 
 as well as the following Python packages:
 
