@@ -511,6 +511,10 @@
 
 <h3>Improvements</h3>
 
+* The device test suite now provides test cases for checking gates by comparing
+  expectation values.
+  [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
+
 * Edited the ``MottonenStatePreparation`` template to improve performance on states with only real amplitudes
   by reducing the number of redundant CNOT gates at the end of a circuit.
 
