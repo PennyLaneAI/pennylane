@@ -663,6 +663,9 @@
 
 <h3>Breaking changes</h3>
 
+* Removes support for Python 3.6.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
+
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
   [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
 
