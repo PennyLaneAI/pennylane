@@ -1684,8 +1684,9 @@ class TestApplyOperationUnit:
         res = dev._apply_operation(test_state, op)
         assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, inverse, mocker):
-        """Tests the case of applying a diagonal operation."""
+    def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
+        """Tests the case when the operation to be applied is a
+        DiagonalOperation and the _apply_diagonal_unitary method is used."""
         dev = qml.device('default.qubit', wires=1)
         par = 0.3
 
@@ -1697,18 +1698,19 @@ class TestApplyOperationUnit:
         # Set the internal _apply_diagonal_unitary
         history = []
         mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
-        dev._apply_diagonal_unitary = mock_apply_diag
-        assert dev._apply_diagonal_unitary == mock_apply_diag
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_apply_diagonal_unitary", mock_apply_diag)
+            assert dev._apply_diagonal_unitary == mock_apply_diag
 
-        dev._apply_operation(test_state, op)
+            dev._apply_operation(test_state, op)
 
-        res_state, res_mat, res_wires = history[0]
+            res_state, res_mat, res_wires = history[0]
 
-        assert np.allclose(res_state, test_state)
-        assert np.allclose(res_mat, np.diag(op.matrix))
-        assert np.allclose(res_wires, wires)
+            assert np.allclose(res_state, test_state)
+            assert np.allclose(res_mat, np.diag(op.matrix))
+            assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, inverse, mocker):
+    def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
         """Tests applying a diagonal operation."""
         dev = qml.device('default.qubit', wires=1)
 
@@ -1739,18 +1741,18 @@ class TestApplyOperationUnit:
         # Set the internal _apply_unitary_einsum
         history = []
         mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
-        dev._apply_unitary_einsum = mock_apply_einsum
-        assert dev._apply_unitary_einsum == mock_apply_einsum
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_apply_unitary_einsum", mock_apply_einsum)
 
-        dev._apply_operation(test_state, op)
+            dev._apply_operation(test_state, op)
 
-        res_state, res_mat, res_wires = history[0]
+            res_state, res_mat, res_wires = history[0]
 
-        assert np.allclose(res_state, test_state)
-        assert np.allclose(res_mat, op.matrix)
-        assert np.allclose(res_wires, wires)
+            assert np.allclose(res_state, test_state)
+            assert np.allclose(res_mat, op.matrix)
+            assert np.allclose(res_wires, wires)
 
-    def test_apply_tensordot_case(self, inverse, mocker):
+    def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
         """Tests applying a diagonal operation."""
         dev = qml.device('default.qubit', wires=3)
 
@@ -1781,13 +1783,14 @@ class TestApplyOperationUnit:
         # Set the internal _apply_unitary_tensordot
         history = []
         mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
-        dev._apply_unitary = mock_apply_tensordot
-        assert dev._apply_unitary == mock_apply_tensordot
 
-        dev._apply_operation(test_state, op)
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
 
-        res_state, res_mat, res_wires = history[0]
+            dev._apply_operation(test_state, op)
 
-        assert np.allclose(res_state, test_state)
-        assert np.allclose(res_mat, op.matrix)
-        assert np.allclose(res_wires, wires)
+            res_state, res_mat, res_wires = history[0]
+
+            assert np.allclose(res_state, test_state)
+            assert np.allclose(res_mat, op.matrix)
+            assert np.allclose(res_wires, wires)
