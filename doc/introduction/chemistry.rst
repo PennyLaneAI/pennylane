@@ -101,7 +101,7 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
 
 .. code-block:: python
 
-    symbols, coordinates = qchem.read_structure('h2o.SDF')
+    symbols, coordinates = qchem.read_structure('h2o.xyz')
     hf_file = qchem.meanfield(
         symbols,
         coordinates,
