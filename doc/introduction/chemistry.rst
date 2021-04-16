@@ -111,7 +111,7 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
         package='pyscf'
     )
 
-The output ``hf_file`` is the absolute path to the file ``'water.hd5'`` containing
+The output ``hf_file`` is the absolute path to the file containing
 the Hartree-Fock electronic structure of the water molecule.
 
 Mapping the Hamiltonian to the Pauli basis
