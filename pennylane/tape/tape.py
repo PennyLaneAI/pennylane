@@ -153,6 +153,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
