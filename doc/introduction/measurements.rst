@@ -34,7 +34,7 @@ The available measurement functions are
     ~pennylane.var
     ~pennylane.probs
     ~pennylane.state
-    ~pennylane.dm
+    ~pennylane.density_matrix
 
 :html:`</div>`
 
