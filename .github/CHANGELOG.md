@@ -2,80 +2,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>Support for higher-order derivatives on hardware</h4> 
-
-* Computing second derivatives and Hessians of QNodes is now supported with
-  the parameter-shift differentiation method, on all machine learning interfaces.
-  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
-  [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129)
-  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
-
-  Hessians are computed using the parameter-shift rule, and can be
-  evaluated on both hardware and simulator devices.
-
-  ```python
-  dev = qml.device('default.qubit', wires=1)
-
-  @qml.qnode(dev, diff_method="parameter-shift")
-  def circuit(p):
-      qml.RY(p[0], wires=0)
-      qml.RX(p[1], wires=0)
-      return qml.expval(qml.PauliZ(0))
-
-  x = np.array([1.0, 2.0], requires_grad=True)
-  ```
-
-  ```python
-  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
-  >>> hessian_fn(x)
-  [[0.2248451 0.7651474]
-   [0.7651474 0.2248451]]
-  ```
-
-* Added the function `finite_diff()` to compute finite-difference
-  approximations to the gradient and the second-order derivatives of
-  arbitrary callable functions.
-  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
-
-  This is useful to compute the derivative of parametrized
-  `pennylane.Hamiltonian` observables with respect to their parameters.
-
-  For example, in quantum chemistry simulations it can be used to evaluate
-  the derivatives of the electronic Hamiltonian with respect to the nuclear
-  coordinates:
-
-  ```pycon
-  >>> def H(x):
-  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
-  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-  >>> grad_fn = qml.finite_diff(H, N=1)
-  >>> grad = grad_fn(x)
-  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
-  >>> deriv2_fn(x)
-  ```
-
-- The JAX interface now supports all devices, including hardware devices,
-  via the parameter-shift differentiation method.
-  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
-
-  For example, using the JAX interface with Cirq:
-
-  ```python
-  dev = qml.device('cirq.simulator', wires=1)
-  @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
-  def circuit(x):
-      qml.RX(x[1], wires=0)
-      qml.Rot(x[0], x[1], x[2], wires=0)
-      return qml.expval(qml.PauliZ(0))
-  weights = jnp.array([0.2, 0.5, 0.1])
-  print(circuit(weights))
-  ```
-
-  Currently, when used with the parameter-shift differentiation method,
-  only a single returned expectation value or variance is supported.
-  Multiple expectations/variances, as well as probability and state returns,
-  are not currently allowed.
-
 <h4>Better and more flexible shot control</h4>
 
 * Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
@@ -109,7 +35,6 @@
   >>> dev = qml.device("default.qubit", wires=2, shots=100)
   >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
   >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
-  >>> 
   >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
   >>> for i in range(5):
   ...    params = opt.step(cost, params)
@@ -136,13 +61,12 @@
 
   For example, executing a circuit with two outputs will lead to a result of shape `(3, 2)`:
 
-  ```python
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
-
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
   >>> circuit(0.5)
   [[0.33333333 1.        ]
    [0.2        1.        ]
@@ -154,17 +78,14 @@
 - The number of shots can now be specified on a per-call basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075).
   
-  
   For this, the qnode should be called with an additional `shots` keyword argument:
 
-  ```python
-  dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
-
-  @qml.qnode(dev)
-  def circuit(a):
-      qml.RX(a, wires=0)
-      return qml.sample(qml.PauliZ(wires=0))
-
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
+  >>> @qml.qnode(dev)
+  ... def circuit(a):
+  ...     qml.RX(a, wires=0)
+  ...     return qml.sample(qml.PauliZ(wires=0))
   >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
@@ -276,32 +197,6 @@ fully differentiable.
 
   The returned Jacobian has rows corresponding to gate arguments, and columns corresponding to
   QNode arguments; that is, :math:`J_{ij} = \frac{\partial}{\partial g_i} f(w_j)`.
-
-* A new transform `qml.transforms.invisible` has been added.
-  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
-
-  Marking a quantum function as invisible will inhibit any internal
-  quantum operation processing from being recorded by the QNode:
-
-  ```pycon
-  >>> @qml.transforms.invisible
-  ... def list_of_ops(params, wires):
-  ...     return [
-  ...         qml.RX(params[0], wires=wires),
-  ...         qml.RY(params[1], wires=wires),
-  ...         qml.RZ(params[2], wires=wires)
-  ...     ]
-  >>> @qml.qnode(dev)
-  ... def circuit(params):
-  ...     # list_of_ops is invisible, so quantum operations
-  ...     # instantiated within it will not be queued.
-  ...     ops = list_of_ops(params, wires=0)
-  ...     # apply only the last operation from the list
-  ...     ops[-1].queue()
-  ...     return qml.expval(qml.PauliZ(0))
-  >>> print(qml.draw(circuit)([1, 2, 3]))
-   0: ──RZ(3)──┤ ⟨Z⟩
-  ```
 
 <h4>More operations and templates</h4>
 
@@ -469,6 +364,80 @@ fully differentiable.
   control qubits.
   [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
+<h4>Support for higher-order derivatives on hardware</h4> 
+
+* Computing second derivatives and Hessians of QNodes is now supported with
+  the parameter-shift differentiation method, on all machine learning interfaces.
+  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
+  [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129)
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+
+  Hessians are computed using the parameter-shift rule, and can be
+  evaluated on both hardware and simulator devices.
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(p):
+      qml.RY(p[0], wires=0)
+      qml.RX(p[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([1.0, 2.0], requires_grad=True)
+  ```
+
+  ```python
+  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
+  >>> hessian_fn(x)
+  [[0.2248451 0.7651474]
+   [0.7651474 0.2248451]]
+  ```
+
+* Added the function `finite_diff()` to compute finite-difference
+  approximations to the gradient and the second-order derivatives of
+  arbitrary callable functions.
+  [(#1090)](https://github.com/PennyLaneAI/pennylane/pull/1090)
+
+  This is useful to compute the derivative of parametrized
+  `pennylane.Hamiltonian` observables with respect to their parameters.
+
+  For example, in quantum chemistry simulations it can be used to evaluate
+  the derivatives of the electronic Hamiltonian with respect to the nuclear
+  coordinates:
+
+  ```pycon
+  >>> def H(x):
+  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+  >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad = grad_fn(x)
+  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2_fn(x)
+  ```
+
+* The JAX interface now supports all devices, including hardware devices,
+  via the parameter-shift differentiation method.
+  [(#1076)](https://github.com/PennyLaneAI/pennylane/pull/1076)
+
+  For example, using the JAX interface with Cirq:
+
+  ```python
+  dev = qml.device('cirq.simulator', wires=1)
+  @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+  def circuit(x):
+      qml.RX(x[1], wires=0)
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+  weights = jnp.array([0.2, 0.5, 0.1])
+  print(circuit(weights))
+  ```
+
+  Currently, when used with the parameter-shift differentiation method,
+  only a single returned expectation value or variance is supported.
+  Multiple expectations/variances, as well as probability and state returns,
+  are not currently allowed.
+
 <h3>Improvements</h3>
 
 * The ``MottonenStatePreparation`` template has improved performance on states with only real
@@ -605,6 +574,33 @@ fully differentiable.
   has been updated to use coefficients that minimize the variance as per
   https://arxiv.org/abs/2104.05695.
   [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
+
+* A new transform `qml.transforms.invisible` has been added, to make it easier
+  to transform QNodes.
+  [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
+
+  Marking a quantum function as invisible will inhibit any internal
+  quantum operation processing from being recorded by the QNode:
+
+  ```pycon
+  >>> @qml.transforms.invisible
+  ... def list_of_ops(params, wires):
+  ...     return [
+  ...         qml.RX(params[0], wires=wires),
+  ...         qml.RY(params[1], wires=wires),
+  ...         qml.RZ(params[2], wires=wires)
+  ...     ]
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     # list_of_ops is invisible, so quantum operations
+  ...     # instantiated within it will not be queued.
+  ...     ops = list_of_ops(params, wires=0)
+  ...     # apply only the last operation from the list
+  ...     ops[-1].queue()
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(qml.draw(circuit)([1, 2, 3]))
+   0: ──RZ(3)──┤ ⟨Z⟩
+  ```
 
 <h3>Breaking changes</h3>
 
