@@ -296,6 +296,15 @@ class Device(abc.ABC):
         """
         return self._shot_vector
 
+    @property
+    def has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return isinstance(self._shot_vector, list) and len(self._shot_vector) > 1
+
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
