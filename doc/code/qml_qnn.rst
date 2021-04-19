@@ -12,7 +12,16 @@ with Keras and PyTorch.
     and `Torch <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch.html>`__ tutorials for
     further details.
 
-.. autosummary::
+.. automodapi:: pennylane.qnn.keras
+    :no-heading:
+    :no-main-docstr:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: Iterable, Layer
 
-    ~pennylane.qnn.keras.KerasLayer
-    ~pennylane.qnn.torch.TorchLayer
+.. automodapi:: pennylane.qnn.torch
+    :no-heading:
+    :no-main-docstr:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: Iterable, Module
