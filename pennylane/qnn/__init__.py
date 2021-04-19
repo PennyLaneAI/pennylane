@@ -24,9 +24,9 @@ mods = ("keras", "torch")
 def __getattr__(name):
     """Allow for lazy-loading of KerasLayer and TorchLayer so that TensorFlow and PyTorch are not
     automatically loaded with PennyLane"""
-    if name in mods:
-        return importlib.import_module("." + name, __name__)
     if name in class_map:
         mod = importlib.import_module("." + class_map[name], __name__)
         return getattr(mod, name)
+    if name in mods:
+        return importlib.import_module("." + name, __name__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
