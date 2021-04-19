@@ -82,7 +82,7 @@ class DefaultQubitJax(DefaultQubit):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=1)
+            dev = qml.device("default.qubit.jax", wires=1, shots=10)
 
             @jax.jit
             @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -101,7 +101,7 @@ class DefaultQubitJax(DefaultQubit):
 
             @jax.jit
             def keyed_circuit(key):
-                dev = qml.device("default.qubit.jax", prng_key=key, wires=1)
+                dev = qml.device("default.qubit.jax", prng_key=key, wires=1, shots=10)
                 @qml.qnode(dev, interface="jax", diff_method="backprop")
                 def circuit():
                     qml.Hadamard(0)
