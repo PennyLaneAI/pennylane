@@ -18,6 +18,7 @@ import importlib
 import pennylane.qnn.cost
 
 class_map = {"KerasLayer": "keras", "TorchLayer": "torch"}
+mods = ("keras", "torch")
 
 
 def __getattr__(name):
@@ -26,4 +27,6 @@ def __getattr__(name):
     if name in class_map:
         mod = importlib.import_module("." + class_map[name], __name__)
         return getattr(mod, name)
+    if name in mods:
+        return importlib.import_module("." + name, __name__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
