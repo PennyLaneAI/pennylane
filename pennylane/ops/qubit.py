@@ -1721,11 +1721,13 @@ class SingleExcitation(Operation):
     \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
 
     .. code-block::
+        dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
+            return qml.state()
     """
 
     num_params = 1
@@ -2026,7 +2028,7 @@ class MultiControlledX(ControlledQubitUnitary):
     ``ControlledQubitUnitary``, but there is no need to specify a matrix
     argument:
 
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
     num_params = 1
@@ -2119,12 +2121,15 @@ class QFT(Operation):
 
         wires = 3
 
+        dev = qml.device('default.qubit',wires=wires)
+
         @qml.qnode(dev)
         def circuit_qft(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
             qml.QFT(wires=range(wires))
             return qml.state()
 
+        circuit_qft([1.0, 0.0, 0.0])
     """
     num_params = 0
     num_wires = AnyWires
@@ -2216,12 +2221,16 @@ class DoubleExcitation(Operation):
     \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
+        dev = qml.device('default.qubit', wires=4)
 
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+            return qml.state()
+
+        circuit(0.1)
     """
 
     num_params = 1
