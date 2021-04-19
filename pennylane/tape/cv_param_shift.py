@@ -76,10 +76,9 @@ class CVParamShiftTape(QubitParamShiftTape):
               qml.Kerr(0.654, wires=1)
 
               # differentiable Gaussian operations
-              qml.Displacement(0.6, wires=0)
               qml.Displacement(0.6, 0.5, wires=0)
               qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
-              expval(qml.NumberOperator(0))
+              qml.expval(qml.NumberOperator(0))
 
           tape.trainable_params = {2, 3, 4}
 
@@ -89,10 +88,10 @@ class CVParamShiftTape(QubitParamShiftTape):
       .. code-block:: python
 
           with CVParamShiftTape() as tape:
-              qml.Displacement(0.6, wires=0)
+              qml.Displacement(0.6, 0.5, wires=0)
               qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
               qml.Kerr(0.654, wires=1)  # there is no measurement on wire 1
-              expval(qml.NumberOperator(0))
+              qml.expval(qml.NumberOperator(0))
 
           tape.trainable_params = {0, 1, 2}
 
