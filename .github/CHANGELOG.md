@@ -3,6 +3,39 @@
 <h3>New features since last release</h3>
 
 * Adds the `QuantumAdder` template.
+  The following example adds any two bit strings:
+
+  ```python
+  a_input = '111'
+  b_input = '111'
+  a_input = np.array([int(item) for item in list(a_input)])
+  b_input = np.array([int(item) for item in list(b_input)])
+  a_wires=list(range(len(a_input)))
+  b_wires=list(range(len(a_input),len(b_input)+len(a_input)))
+  carry_wires=list(range(len(a_input)+len(b_input),max(len(a_input),len(b_input)+1+len(a_input)+len(b_input))))
+  dev = qml.device('default.qubit',wires=(len(a_wires)+len(b_wires)+len(carry_wires)))
+  @qml.qnode(dev)
+  def circuit():
+    qml.BasisState(np.append(a_input,b_input),wires=(a_wires+b_wires))
+    qml.templates.QuantumAdder(a_wires=a_wires,b_wires=b_wires,carry_wires=carry_wires)
+    return qml.state()
+
+  state=circuit()
+  state_value=np.argmax(state)
+  binary_format_string = "0"+str(dev.num_wires)+"b"
+  state_binary=format(state_value,binary_format_string)
+  result = [carry_wires[0]]+b_wires
+  result_string=""
+  for i in result:
+    result_string=result_string+state_binary[i]
+  ```
+
+  ```pycon
+  >>> print(a_input,"+",b_input, "=",result_string)
+  [1 1 1] + [1 1 1] = 1110
+  ```
+
+print(a_input,"+",b_input, "=",result_string)
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)

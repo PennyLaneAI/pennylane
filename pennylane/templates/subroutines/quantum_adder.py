@@ -16,19 +16,69 @@ Contains the QuantumAdder template.
 """
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane import numpy as np
 
 class QuantumAdder(Operation):
     r"""
-    Quantum Plain Adder circuit <https://arxiv.org/abs/quant-ph/0008033v1>
+    Quantum Plain Adder circuit.
 
-    Given two sets of wires for input values and a third set of wires to act as ancillas for carry operations,
-    this template applies the circuit for the quantum plain adder.
+    This performs the transformation: 
 
-    .. figure:: ../../_static/templates/subroutines/qpe.svg
+    .. math::
+        |a_0...a_n\rangle |b_0...b_n\rangle |0\rangle ^{\oplus (n+1)}\rightarrow |a_0...a_n\rangle |a_1+b_1...a_n+b_n\rangle |a_0+b_0\rangle |0\rangle ^{n}
+
+    .. figure:: ../../_static/templates/subroutines/QuantumAdder.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
+
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+
+    Args:
+        a_wires (Sequence[int]): wires containing the first value to be added
+        b_wires (Sequence[int]): wires containing the second value to be added
+        carry_wires (Sequence[int]): wires containing ancilla carry wires, must have one more carry wire than a or b wires
+
+    Raises:
+        ValueError: if `a_wires`, `b_wires`, and `carry_wires` share wires, `b_wires` contains less wires than `a_wires`, or
+            there are not enough carry wires.
+
+    .. UsageDetails::
+
+        Consider the addition of :math:`a = 2 = '10'` and :math:`b = 7 = '111'`. We can do this using the ``QuantumAdder`` template as follows:
+
+        .. code-block:: python
+
+            a_wires = [0, 1]
+            a_value = np.array([1, 0])
+            b_wires = [2, 3, 4]
+            b_value = np.array([1, 1, 1])
+            carry_wires = [5, 6, 7, 8]
+
+            dev = qml.device('default.qubit',wires = (len(a_wires)+len(b_wires)+len(carry_wires)))
+            @qml.qnode(dev)
+            def circuit():
+                qml.BasisState(np.append(a_value, b_value), wires = (a_wires + b_wires))
+                qml.templates.QuantumAdder(a_wires, b_wires, carry_wires)
+                return qml.state()
+
+            result = np.argmax(circuit())
+
+        The most significant bit goes into `carry_wires[0]` and the rest into `b_wires`. We can read the result of the sum as:
+
+        .. code-block:: python
+
+            result = format(result, '09b')
+            sum_result = result[carry_wires[0]] + result[b_wires[0]] + result[b_wires[1]] + result[b_wires[2]]
+
+        >>> sum_result
+        '1001'
+        >>> int(sum_result,2)
+        9
+    
+    
+
+
+
     """
     num_params = 0
     num_wires = AnyWires
@@ -41,18 +91,13 @@ class QuantumAdder(Operation):
 
         wires = self.a_wires + self.b_wires + self.carry_wires
 
-        if any(set(a_wires) & set(b_wires) & set(carry_wires)):
-            raise qml.QuantumFunctionError(
-                "The value a wires, value b wires, and carry wires must be different"
-            )
-
         if len(self.a_wires)>len(self.b_wires):
-            raise qml.QuantumFunctionError(
-                "The longer bit string should go in b_wires"
+            raise ValueError(
+                "The longer bit string must be in b_wires"
             )
 
         if len(self.carry_wires)!=(max(len(self.a_wires),len(self.b_wires))+1):
-            raise qml.QuantumFunctionError(
+            raise ValueError(
                 "The carry wires must have one more wire than the a and b wires"
             )
 
