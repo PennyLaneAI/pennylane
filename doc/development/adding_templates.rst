@@ -18,12 +18,12 @@ Templates are just gates
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Conceptually, there is no difference in PennyLane between a template or ansatz and a :mod:`gate <pennylane.ops>`.
-Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an `expand()` function
+Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an ``expand()`` function
 that can be used to define a decomposition into other gates. If a device does not recognise the name of the operation,
-it calls the `expand` function which returns a :class:`pennylane.tape.QuantumTape` instance that
+it calls the ``expand`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
 queues the decomposing gates.
 
-For example, the following shows a simple template for a layer of of `RX` rotation gates:
+For example, the following shows a simple template for a layer of of ``RX`` rotation gates:
 
 .. code-block:: python
 
@@ -54,13 +54,15 @@ For example, the following shows a simple template for a layer of of `RX` rotati
             return tape
 
 
-The `num_params` and `num_wires` arguments determine that an instance of this template can be created
+The ``num_params`` and ``num_wires`` arguments determine that an instance of this template can be created
 by passing a single parameter (of arbitrary shape and type), as well as an arbitrary number of wires:
 
->>> weights = np.array([0.1, 0.2, 0.3])
->>> MyNewTemplate(weights, wires=['a', 'b', 'd'])
+.. code-block:: python
 
-As an `Operation`, templates can define other methods and attributes, such as a matrix representation,
+    weights = np.array([0.1, 0.2, 0.3])
+    MyNewTemplate(weights, wires=['a', 'b', 'd'])
+
+As an ``Operation``, templates can define other methods and attributes, such as a matrix representation,
 a generator, or a a gradient rule.
 
 .. note::
@@ -72,19 +74,12 @@ Classical pre-processing
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Templates often perform extensive pre-processing on the arguments they get.
-The template should make as many arguments differentiable as possible.
 
-Differentiable arguments can be expected to always be tensors
-of the allowed :doc:`interfaces </introduction/interfaces>`, such as `tf.Variable`, or `pennylane.numpy.array`.
-This means that we have to use interface-agnostic pre-processing methods inside the templates. A lot of functionality
-is provided by the :mod:`pennylane.math` module - for example, the length of the weights in the code above
-was computed with the `qml.math.shape(weights)` function.
+Non-trivial pre-processing should be implemented by overwriting the ``__init__`` function of the ``Operator`` class.
+This also allows us to define templates with more flexible signatures than the ``(*params, wires)``
+signature expected by the ``Operator`` class.
 
-Non-trivial pre-processing should be implemented by overwriting the `__init__` function of the `Operator` class.
-This also allows us to define templates with more flexible signatures than the `(*params, wires)`
-signature expected by the `Operator` class.
-
-As an illustration, let us check that the first parameter in `MyNewTemplate` is one-dimensional,
+As an illustration, let us check that the first parameter in ``MyNewTemplate`` is one-dimensional,
 apply a sine function to each weight, and invert the wires that the operation acts on.
 
 .. code-block:: python
@@ -94,7 +89,7 @@ apply a sine function to each weight, and invert the wires that the operation ac
         num_params = 1
         num_wires = AnyWires
         par_domain = "A"  # note: this attribute will be deprecated soon
-
+    
         def __init__(weights, raw_wires)
 
             shp = qml.math.shape(weights)
@@ -119,18 +114,25 @@ apply a sine function to each weight, and invert the wires that the operation ac
 
             return tape
 
-The `parameters` and `wires` attributes used in the `expand` functions are now the `new_weights` and `inverted_wires`.
+The ``parameters`` and ``wires`` attributes used in the ``expand`` functions are now the ``new_weights`` and ``inverted_wires``.
 
+The template should make as many arguments differentiable as possible.
+Differentiable arguments can be expected to always be tensors
+of the allowed :doc:`interfaces </introduction/interfaces>`, such as ``tf.Variable``, or ``pennylane.numpy.array``.
+This means that we have to process them with interface-agnostic pre-processing methods inside the templates.
+A lot of functionality
+is provided by the :mod:`pennylane.math` module - for example, the length of the weights in the code above
+was computed with the ``qml.math.shape(weights)`` function.
 
 .. warning::
 
-    Not all tensor types support iteration. Avoid expressions like `for w in weights` and
-    rather iterate over ranges like `for i in range(num_weights)`.
+    Not all tensor types support iteration. Avoid expressions like ``for w in weights`` and
+    rather iterate over ranges like ``for i in range(num_weights)``.
 
 .. note::
 
-    Use multi-indexing where possible - expressions like `weights[6][5][2]` are usually a
-    lot slower than `weights[6, 5, 2]`. 
+    Use multi-indexing where possible - expressions like ``weights[6][5][2]`` are usually a
+    lot slower than ``weights[6, 5, 2]``.
 
 
 Adding the template
@@ -144,7 +146,7 @@ Make sure you consider the following:
 * *Choose the name carefully.* Good names tell the user what a template is good for,
   or what architecture it implements. The class name (i.e., ``MyNewTemplate``) is written in camel case.
 
-* *Explicit decompositions.* Try to implement the decomposition in the `expand` function
+* *Explicit decompositions.* Try to implement the decomposition in the ``expand`` function
   without the use of convenient methods like the :func:`~.broadcast` function - this avoids
   unnecessary overhead.
 
