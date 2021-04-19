@@ -89,7 +89,7 @@ apply a sine function to each weight, and invert the wires that the operation ac
         num_params = 1
         num_wires = AnyWires
         par_domain = "A"  # note: this attribute will be deprecated soon
-    
+
         def __init__(weights, raw_wires)
 
             shp = qml.math.shape(weights)
@@ -198,6 +198,5 @@ Adding tests
 ~~~~~~~~~~~~
 
 Don't forget to add tests for your new template to the test suite. Create a separate file
-``tests/templates/<templ_type>/test_my_new_template.py`` with all tests. You can get some inspiration from
- :mod:`existing tests <tests.templates.test_embeddings/test_qaoa_emb>`.
+``tests/templates/<templ_type>/test_my_new_template.py`` with all tests. You can get some inspiration from :mod:`existing tests <tests.templates.test_embeddings/test_qaoa_emb>`.
 
