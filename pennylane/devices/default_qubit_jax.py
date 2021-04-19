@@ -15,6 +15,7 @@
 reference plugin.
 """
 
+import warnings
 
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
@@ -241,12 +242,23 @@ class DefaultQubitJax(DefaultQubit):
         Returns:
             List[int]: the sampled basis states
         """
+        if self.shots is None:
+            warnings.warn(
+                "The number of shots has to be explicitly set on the jax device "
+                "when using sample-based measurements. Since no shots are specified, "
+                "a default of 1000 shots is used.\n"
+                "This warning will replaced with an error in a future release.",
+                DeprecationWarning,
+            )
+
+        shots = self.shots or 1000
+
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
             key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
         else:
             key = self._prng_key
-        return jax.random.choice(key, number_of_states, shape=(self.shots,), p=state_probability)
+        return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
     def states_to_binary(samples, num_wires, dtype=jnp.int32):
