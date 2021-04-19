@@ -656,6 +656,11 @@
 * When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
+* The four-term parameter-shift rule, as used by the controlled rotation operations,
+  has been updated to use coefficients that minimize the variance as per
+  https://arxiv.org/abs/2104.05695.
+  [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
+
 <h3>Breaking changes</h3>
 
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
@@ -738,6 +743,9 @@
   * Finally, we repeat the measurement statistics for the final 100 shots,
     `shot_range=[35, 135]`, `bin_size=100`.
 
+* The device test suite no longer accepts the `analytic` keyword.
+  [(#1216)](https://github.com/PennyLaneAI/pennylane/pull/1216)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where using the circuit drawer with a ``ControlledQubitUnitary``
@@ -765,6 +773,9 @@
   second-order observable.
   [(#1197)](https://github.com/PennyLaneAI/pennylane/pull/1197)
 
+* Fixes a bug where repeated Torch interface applications after expansion caused an error.
+  [(#1223)](https://github.com/PennyLaneAI/pennylane/pull/1223)
+
 <h3>Documentation</h3>
 
 - Typos addressed in templates documentation.
@@ -780,7 +791,7 @@
 This release contains contributions from (in alphabetical order):
 
 Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva, David Wierichs.
 
 # Release 0.14.1 (current release)
 
