@@ -164,10 +164,10 @@ it can sometimes be convenient to execute the same QNode with differing
 number of shots.
 
 For simulators like ``default.qubit``, finite shots will be simulated if
-we set ``shots=None`` in the device.
+we set ``shots`` to a positive integer.
 
-The shot number can be changed on the device itself, or temporarily
-by specifying the ``shots`` keyword argument when executing the QNode:
+The shot number can be changed on the device itself, or temporarily altered
+by the ``shots`` keyword argument when executing the QNode:
 
 
 .. code-block:: python
@@ -203,7 +203,7 @@ circuit:
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(0))
 
-Running the simulator when ``shots=None`` returns the exact expectation.
+Running the simulator with ``shots=None`` returns the exact expectation.
 
 >>> circuit(shots=None)
 0.0

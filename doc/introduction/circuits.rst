@@ -113,9 +113,9 @@ devices, the options are:
   and/or strings (``['ancilla', 'q1', 'q2']``).
 
 * ``shots`` (*None* or *int* or *list[int]*): How many times the circuit should be evaluated (or
-  sampled) to estimate statistical quantities. On some supported simulator devices, if
-  ``shots=None``, then the measurement statistics will be computed *exactly*. Note that this
-  argument can be temporarily overwritten when a QNode is called; for example ``my_qnode(shots=3)``
+  sampled) to estimate statistical quantities. On some supported simulator devices,
+  ``shots=None`` indicates to compute measurement statistics *exactly*. Note that this
+  argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
   will temporarily evaluate ``my_qnode`` using three shots.
 
 For a plugin device, refer to the plugin documentation for available device options.
