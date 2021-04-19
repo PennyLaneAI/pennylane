@@ -244,9 +244,10 @@ class DefaultQubitJax(DefaultQubit):
         """
         if self.shots is None:
             warnings.warn(
-                "The number of shots has to be explicitly set on the device "
+                "The number of shots has to be explicitly set on the jax device "
                 "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.",
+                "a default of 1000 shots is used.\n"
+                "This warning will replaced with an error in a future release.",
                 DeprecationWarning,
             )
 
