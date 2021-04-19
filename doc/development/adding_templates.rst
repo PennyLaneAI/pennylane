@@ -20,10 +20,10 @@ Templates are just gates
 Conceptually, there is no difference in PennyLane between a template or ansatz and a :mod:`gate <pennylane.ops>`.
 Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an ``expand()`` function
 that can be used to define a decomposition into other gates. If a device does not recognise the name of the operation,
-it calls the ``expand`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
-queues the decomposing gates.
+it calls the ``expand()`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
+represents the queue of the decomposing gates.
 
-For example, the following shows a simple template for a layer of of ``RX`` rotation gates:
+For example, the following shows a simple template for a layer of of Pauli-X rotations:
 
 .. code-block:: python
 
@@ -46,6 +46,7 @@ For example, the following shows a simple template for a layer of of ``RX`` rota
             # the interface-agnostic `math` module
             num_weights = qml.math.shape(weights)[0]
 
+            # record the ansatz in a tape
             with qml.tape.QuantumTape() as tape:
 
                 for i in range(num_weights):
@@ -54,7 +55,7 @@ For example, the following shows a simple template for a layer of of ``RX`` rota
             return tape
 
 
-The ``num_params`` and ``num_wires`` arguments determine that an instance of this template can be created
+The ``num_params`` and ``num_wires`` class attributes determine that an instance of this template can be created
 by passing a single parameter (of arbitrary shape and type), as well as an arbitrary number of wires:
 
 .. code-block:: python
@@ -63,7 +64,7 @@ by passing a single parameter (of arbitrary shape and type), as well as an arbit
     MyNewTemplate(weights, wires=['a', 'b', 'd'])
 
 As an ``Operation``, templates can define other methods and attributes, such as a matrix representation,
-a generator, or a a gradient rule.
+a generator, or even a gradient rule.
 
 .. note::
 
@@ -73,14 +74,15 @@ a generator, or a a gradient rule.
 Classical pre-processing
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Templates often perform extensive pre-processing on the arguments they get.
+Templates often perform extensive pre-processing on the arguments they receive.
 
-Non-trivial pre-processing should be implemented by overwriting the ``__init__`` function of the ``Operator`` class.
+Any substantial pre-processing should be implemented by overwriting the ``__init__`` function of the ``Operator`` class.
 This also allows us to define templates with more flexible signatures than the ``(*params, wires)``
 signature expected by the ``Operator`` class.
 
-As an illustration, let us check that the first parameter in ``MyNewTemplate`` is one-dimensional,
-apply a sine function to each weight, and invert the wires that the operation acts on.
+As an illustration, let us extend ``MyNewTemplate`` and check that the first
+parameter it receives is one-dimensional, apply a sine function to each weight,
+and invert the wires that the operation acts on.
 
 .. code-block:: python
 
@@ -96,10 +98,13 @@ apply a sine function to each weight, and invert the wires that the operation ac
             if len(shp) != 1:
                 raise ValueError("Expected one-dimensional weights tensor.")
 
+            # pre-process weights
             new_weights = qml.math.sin(weights)
 
+            # pre-process wires
             inverted_wires = wires[::-1]
 
+            # initialise operation with pre-processed parameters and wires
             super().__init__(new_weights, wires=inverted_wires)
 
 
@@ -114,24 +119,23 @@ apply a sine function to each weight, and invert the wires that the operation ac
 
             return tape
 
-The ``parameters`` and ``wires`` attributes used in the ``expand`` functions are now the ``new_weights`` and ``inverted_wires``.
+The ``parameters`` and ``wires`` attributes used in the ``expand()`` function
+refer to the ``new_weights`` and ``inverted_wires`` that were used to initialize the parent class.
 
-The template should make as many arguments differentiable as possible.
-Differentiable arguments can be expected to always be tensors
-of the allowed :doc:`interfaces </introduction/interfaces>`, such as ``tf.Variable``, or ``pennylane.numpy.array``.
+The template design should make as many arguments differentiable as possible.
+Differentiable arguments are always tensors of the allowed :doc:`interfaces </introduction/interfaces>`,
+such as ``tf.Variable``, or ``pennylane.numpy.array``.
 This means that we have to process them with interface-agnostic pre-processing methods inside the templates.
 A lot of functionality
 is provided by the :mod:`pennylane.math` module - for example, the length of the weights in the code above
-was computed with the ``qml.math.shape(weights)`` function.
-
-.. warning::
-
-    Not all tensor types support iteration. Avoid expressions like ``for w in weights`` and
-    rather iterate over ranges like ``for i in range(num_weights)``.
+was computed with the ``qml.math.shape(weights)`` function, since some tensor types do not support ``len(weights)``.
 
 .. note::
 
-    Use multi-indexing where possible - expressions like ``weights[6][5][2]`` are usually a
+    To retrieve elements from a tensor, keep in mind that not all tensor types support
+    iteration. Avoid expressions like ``for w in weights`` and
+    rather iterate over ranges like ``for i in range(num_weights)``. When indexing into the tensor,
+    use multi-indexing where possible - expressions like ``weights[6][5][2]`` are usually a
     lot slower than ``weights[6, 5, 2]``.
 
 
@@ -143,28 +147,22 @@ subdirectory. The file contains your new template class.
 
 Make sure you consider the following:
 
-* *Choose the name carefully.* Good names tell the user what a template is good for,
+* *Choose the name carefully.* Good names tell the user what a template is used for,
   or what architecture it implements. The class name (i.e., ``MyNewTemplate``) is written in camel case.
 
-* *Explicit decompositions.* Try to implement the decomposition in the ``expand`` function
+* *Explicit decompositions.* Try to implement the decomposition in the ``expand()`` function
   without the use of convenient methods like the :func:`~.broadcast` function - this avoids
   unnecessary overhead.
 
 * *Write an extensive docstring that explains how to use the template.* Include a sketch of the template (add the
-  file to the ``doc/_static/templates/<templ_type>/`` directory). You can also display a small usage example
-  at the beginning of the docstring.
-
-  You should include an illustrative example of how to use the template before listing the arguments,
-  headed by a bold **Example** title.
-  If you want to explain the behaviour in more detail, add a section starting
-  with the ``.. UsageDetails::`` directive at the end of the docstring,
-  where you demonstrate with code examples how to use the templates with different
-  settings, for example varying the number of wires, explaining keyword arguments and special cases.
+  file to the ``doc/_static/templates/<templ_type>/`` directory). You should also display a small usage example
+  at the beginning of the docstring. If you want to explain the behaviour in more detail, add a section starting
+  with the ``.. UsageDetails::`` directive at the end of the docstring.
   Use the docstring of one of the existing templates for inspiration, such as
   :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`.
 
-* **Input checks.** While checking the inputs of the template for consistency introduces an overhead,
-  it is still advised to do some basic sanity checks, for example making sure that the shape of the
+* *Input checks.* While checking the inputs of the template for consistency introduces an overhead and should be
+  kept to a minimum, it is still advised to do some basic sanity checks, for example making sure that the shape of the
   parameters is correct.
 
 Importing the new template
@@ -191,12 +189,13 @@ Add your template to the documentation by adding a ``customgalleryitem`` to the 
 
 .. note::
 
-  This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/`` in Step 1. Make sure that
+  This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
   this image has the same dimensions and style as other template icons in the folder.
 
 Adding tests
 ~~~~~~~~~~~~
 
 Don't forget to add tests for your new template to the test suite. Create a separate file
-``tests/templates/<templ_type>/test_my_new_template.py`` with all tests. You can get some inspiration from :mod:`existing tests <tests.templates.test_embeddings/test_qaoa_emb>`.
+``tests/templates/<templ_type>/test_my_new_template.py`` with all tests.
+You can draw some inspiration from :mod:`existing tests <tests/templates/test_embeddings/test_qaoa_emb>`.
 
