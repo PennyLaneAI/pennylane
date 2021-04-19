@@ -67,10 +67,10 @@ class Permute(Operation):
 
         >>> apply_perm()
         >>> print(apply_perm.draw(wire_order=[0,1,2,3]))
-        0: ─────────╭SWAP─────────┤ ⟨Z⟩ 
-        1: ──╭SWAP──│─────────────┤     
-        2: ──╰SWAP──│──────╭SWAP──┤     
-        3: ─────────╰SWAP──╰SWAP──┤     
+        0: ─────────╭SWAP─────────┤ ⟨Z⟩
+        1: ──╭SWAP──│─────────────┤
+        2: ──╰SWAP──│──────╭SWAP──┤
+        3: ─────────╰SWAP──╰SWAP──┤
 
         ``Permute`` can also be used with quantum tapes. For example, suppose we
         have a tape with 5 wires ``[0, 1, 2, 3, 4]``, and we'd like to reorder them
@@ -86,11 +86,11 @@ class Permute(Operation):
 
         >>> tape_expanded = qml.tape.tape.expand_tape(tape)
         >>> print(tape_expanded.draw(wire_order=qml.wires.Wires([0,1,2,3,4])))
-        0: ─────────╭SWAP────────────────┤  
-        1: ──╭SWAP──│────────────────────┤  
-        2: ──╰SWAP──│──────╭SWAP─────────┤  
-        3: ─────────│──────│──────╭SWAP──┤  
-        4: ─────────╰SWAP──╰SWAP──╰SWAP──┤ 
+        0: ─────────╭SWAP────────────────┤
+        1: ──╭SWAP──│────────────────────┤
+        2: ──╰SWAP──│──────╭SWAP─────────┤
+        3: ─────────│──────│──────╭SWAP──┤
+        4: ─────────╰SWAP──╰SWAP──╰SWAP──┤
 
         ``Permute`` can also be applied to wires with arbitrary labels, like so:
 
@@ -109,10 +109,10 @@ class Permute(Operation):
 
         >>> circuit()
         >>> print(circuit.draw(wire_order=wire_labels))
-        3: ──╭SWAP────────────────┤  
-        2: ──│──────╭SWAP─────────┤  
-        0: ──│──────│──────╭SWAP──┤  
-        c: ──╰SWAP──╰SWAP──╰SWAP──┤  
+        3: ──╭SWAP────────────────┤
+        2: ──│──────╭SWAP─────────┤
+        0: ──│──────│──────╭SWAP──┤
+        c: ──╰SWAP──╰SWAP──╰SWAP──┤
 
         It is also possible to permute a subset of wires by
         specifying a subset of labels. For example,
@@ -133,10 +133,10 @@ class Permute(Operation):
 
         >>> circuit()
         >>> print(circuit.draw(wire_order=wire_labels))
-        3: ──╭SWAP────────────────┤     
-        2: ──│──────╭SWAP─────────┤     
-        0: ──│──────│──────╭SWAP──┤     
-        c: ──╰SWAP──╰SWAP──╰SWAP──┤ ⟨Z⟩ 
+        3: ──╭SWAP────────────────┤
+        2: ──│──────╭SWAP─────────┤
+        0: ──│──────│──────╭SWAP──┤
+        c: ──╰SWAP──╰SWAP──╰SWAP──┤ ⟨Z⟩
 
     """
 
