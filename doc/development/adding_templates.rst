@@ -133,10 +133,13 @@ was computed with the ``qml.math.shape(weights)`` function, since some tensor ty
 .. note::
 
     To retrieve elements from a tensor, keep in mind that not all tensor types support
-    iteration. Avoid expressions like ``for w in weights`` and
-    rather iterate over ranges like ``for i in range(num_weights)``. When indexing into the tensor,
-    use multi-indexing where possible - expressions like ``weights[6][5][2]`` are usually a
-    lot slower than ``weights[6, 5, 2]``.
+    iteration.
+    
+    - Avoid expressions like ``for w in weights`` and
+      rather iterate over ranges like ``for i in range(num_weights)``.
+      
+    - When indexing into the tensor, use multi-indexing where possible --- expressions
+      like ``weights[6][5][2]`` are usually a lot slower than ``weights[6, 5, 2]``.
 
 
 Adding the template
