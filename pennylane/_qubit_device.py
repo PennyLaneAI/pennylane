@@ -187,7 +187,7 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
-        multiple_sampled_jobs = circuit.is_sampled and self.has_partitioned_shots
+        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:

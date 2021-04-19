@@ -574,7 +574,7 @@ class QNode:
                 self._original_device._state = self.device._state
 
         if isinstance(self.qfunc_output, Sequence) or (
-            self.qtape.is_sampled and self.device.has_partitioned_shots
+            self.qtape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
 
