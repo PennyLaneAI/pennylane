@@ -656,6 +656,11 @@
 * When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
+* The four-term parameter-shift rule, as used by the controlled rotation operations,
+  has been updated to use coefficients that minimize the variance as per
+  https://arxiv.org/abs/2104.05695.
+  [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
+
 <h3>Breaking changes</h3>
 
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
@@ -780,7 +785,7 @@
 This release contains contributions from (in alphabetical order):
 
 Shahnawaz Ahmed, Juan Miguel Arrazola, Thomas Bromley, Olivia Di Matteo, Kyle Godbey, Diego Guala, Josh Izaac,
-Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva.
+Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld, Antal Száva, David Wierichs.
 
 # Release 0.14.1 (current release)
 

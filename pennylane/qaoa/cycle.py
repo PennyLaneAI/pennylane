@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Methods for finding max weighted cycle of weighted directed graphs
+Functionality for finding the maximum weighted cycle of directed graphs.
 """
 
 from typing import Dict, Tuple
 import networkx as nx
 
 
-def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
+def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
@@ -43,12 +43,12 @@ def edges_to_wires(graph: nx.Graph) -> Dict[Tuple[int], int]:
         graph (nx.Graph): the graph specifying possible edges
 
     Returns:
-        Dict[Tuple[int], int]: a mapping from graph edges to wires
+        Dict[Tuple, int]: a mapping from graph edges to wires
     """
     return {edge: i for i, edge in enumerate(graph.edges)}
 
 
-def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
+def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
@@ -72,6 +72,6 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
         graph (nx.Graph): the graph specifying possible edges
 
     Returns:
-        Dict[Tuple[int], int]: a mapping from wires to graph edges
+        Dict[Tuple, int]: a mapping from wires to graph edges
     """
     return {i: edge for i, edge in enumerate(graph.edges)}
