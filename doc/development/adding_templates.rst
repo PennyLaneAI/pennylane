@@ -17,7 +17,7 @@ PennyLane's :mod:`template <pennylane.template>` library.
 Templates are just gates
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Conceptually, there is no difference in PennyLane between a template or ansatz and a :mod:`gate <pennylane.ops>`.
+Conceptually, there is no difference in PennyLane between a template or ansatz and a :doc:`operation </introduction/operations>`.
 Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an ``expand()`` function
 that can be used to define a decomposition into other gates. If a device does not recognise the name of the operation,
 it calls the ``expand()`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
@@ -198,4 +198,3 @@ Adding tests
 Don't forget to add tests for your new template to the test suite. Create a separate file
 ``tests/templates/<templ_type>/test_my_new_template.py`` with all tests.
 You can draw some inspiration from :mod:`existing tests <tests/templates/test_embeddings/test_qaoa_emb>`.
-
