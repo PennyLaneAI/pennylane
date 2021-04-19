@@ -205,7 +205,7 @@ class QubitDevice(Device):
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
-                    results.append(r)
+                    results.append(r.T)
 
                 s1 = s2
 
