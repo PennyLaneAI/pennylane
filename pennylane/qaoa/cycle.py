@@ -121,7 +121,7 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
         graph (nx.Graph): the graph specifying possible edges
 
     Returns:
-        qml.Hamiltonian: the product of edge weights Hamiltonian
+        qml.Hamiltonian: the loss Hamiltonian
 
     Raises:
         ValueError: if the graph contains self-loops
