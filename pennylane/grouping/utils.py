@@ -560,7 +560,7 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
-        wire_labels = set(pauli_word_1.wires.labels + pauli_word_2.wires.labels)
+        wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
         wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     n_qubits = len(wire_map)

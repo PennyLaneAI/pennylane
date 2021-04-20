@@ -18,6 +18,7 @@ group operation (multiplication).
 
 import numpy as np
 
+from pennylane.wires import Wires
 from pennylane import Identity
 from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
 
@@ -156,7 +157,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
-        wire_labels = set(pauli_1.wires.labels + pauli_2.wires.labels)
+        wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
         wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
@@ -217,7 +218,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     # If no wire map is specified, generate one from the union of wires
     # in both Paulis.
     if wire_map is None:
-        wire_labels = set(pauli_1.wires.labels + pauli_2.wires.labels)
+        wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
         wire_map = {label: i for i, label in enumerate(wire_labels)}
 
     # Get the product; use our earlier function
