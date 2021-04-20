@@ -118,7 +118,7 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
         mixer Hamiltonian that only transitions between states that correspond to cycles.
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.Graph): the graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the product of edge weights Hamiltonian
