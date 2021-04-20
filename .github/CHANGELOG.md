@@ -31,6 +31,8 @@
   (0, 1)
   ```
 
+<h3>Improvements</h3>
+
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
