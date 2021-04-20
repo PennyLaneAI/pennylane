@@ -781,7 +781,7 @@ class TestCycles:
 
 
     def test_missing_edge_weight_data_raises_error(self):
-        """Test graphs with no edge weight data raises `ValueError`"""
+        """Test graphs with no edge weight data raises `KeyError`"""
         g = nx.complete_graph(3).to_directed()
 
         with pytest.raises(KeyError, match="does not contain weight data"):
