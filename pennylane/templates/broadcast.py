@@ -509,7 +509,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
               @qml.qnode(dev)
               def circuit(pars):
-                  broadcast(unitary=qml.CRot, pattern='ring',
+                  broadcast(unitary=qml.CRot, pattern="all_to_all",
                             wires=[0,1,2,3], parameters=pars)
                   return qml.expval(qml.PauliZ(0))
 
