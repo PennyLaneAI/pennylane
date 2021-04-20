@@ -23,4 +23,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Run Black
-        run: black -l 100 pennylane/ --check
+        run: |
+          black -l 100 pennylane/ --check
+          black -l 100 tests/ --check
