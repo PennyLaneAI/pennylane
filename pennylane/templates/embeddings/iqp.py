@@ -97,23 +97,6 @@ class IQPEmbedding(Operation):
 
             circuit([1., 2., 3.])
 
-        **Do not pass features as a positional argument to the qnode**
-
-        The ``features`` argument cannot be passed to the quantum node
-        as a positional argument. This is due to the fact that the embedding performs non-trivial calculations
-        on the features. As a consequence, the following code **will produce an error**:
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit(features):
-               IQPEmbedding(features, wires=range(3), n_repeats=2)
-               return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-            circuit([1., 2., 3.])
-
-        >>> ValueError: 'features' cannot be differentiable
-
         **Repeating the embedding**
 
         The embedding can be repeated by specifying the ``n_repeats`` argument:
@@ -159,8 +142,8 @@ class IQPEmbedding(Operation):
                 IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            res1 = circuit([1., 2., 3.], pattern1)
-            res2 = circuit([1., 2., 3.], pattern2)
+            res1 = circuit([1., 2., 3.], pattern=pattern1)
+            res2 = circuit([1., 2., 3.], pattern=pattern2)
 
             assert np.allclose(res1, res2)
 

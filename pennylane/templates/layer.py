@@ -91,8 +91,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit()
         >>> print(circuit.draw())
-        0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-        1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        0: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
+        1: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
         **Static Arguments**
 
@@ -122,8 +122,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit()
         >>> print(circuit.draw())
-        1: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-        2: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        1: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
+        2: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
         **Dynamic Arguments**
 
@@ -164,8 +164,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit(params)
         >>> print(circuit.draw())
-        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)──RX(0.3)──╭RZ(0.3)───────────┤ ⟨Z⟩
-        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──╰RZ(0.3)──RY(0.3)──┤ ⟨Z⟩
+        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)───────────┤ ⟨Z⟩
+        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──┤ ⟨Z⟩
 
         **Passing Multiple Static and Dynamic Arguments**
 
@@ -204,7 +204,7 @@ def layer(template, depth, *args, **kwargs):
 
         This gives us the following circuit:
 
-        >>> circuit(parm1, param2)
+        >>> circuit(param1, param2)
         >>> print(circuit.draw())
         1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
         2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩

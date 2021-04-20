@@ -36,8 +36,16 @@ def adjoint(fn):
             qml.RX(0.123, wires=0)
             qml.RY(0.456, wires=0)
 
-        adj_my_ops = qml.adjoint(my_ops)
-        adj_my_ops() # This will queue ops [qml.RY(-0.456), qml.RX(-0.123)]
+        with qml.tape.QuantumTape() as tape:
+            my_ops()
+
+        with qml.tape.QuantumTape() as tape_adj:
+            qml.adjoint(my_ops)()
+
+    >>> print(tape.operations)
+    [RX(0.123, wires=[0]), RY(0.456, wires=[0])]
+    >>> print(tape_adj.operatioins)
+    [RY(-0.456, wires=[0]), RX(-0.123, wires=[0])]
 
     .. UsageDetails::
 
@@ -62,7 +70,8 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
 
         **Single operation**
@@ -80,7 +89,8 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
 

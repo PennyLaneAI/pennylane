@@ -85,17 +85,18 @@ class RandomLayers(Operation):
                 return qml.expval(qml.PauliZ(0))
 
         >>> np.allclose(circuit1(weights), circuit2(weights))
-        >>> True
+        True
 
         You can verify this by drawing the circuits.
 
             >>> print(circuit1.draw())
-            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
-            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
+            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
             >>> print(circuit2.draw())
-            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
-            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
+            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
+
 
         **Changing the seed**
 
@@ -118,12 +119,12 @@ class RandomLayers(Operation):
         >>> False
 
         >>> print(circuit_9.draw())
-        >>>  0: ──╭X──RY(-2.1)──RX(1.4)──┤ ⟨Z⟩
-        ...  1: ──╰C──RX(0.1)────────────┤
+        0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
+        1: ──╰C──RY(-2.1)──RX(1.4)──┤
 
         >>> print(circuit_12.draw())
-        >>>  0: ──╭X──RX(-2.1)──╭C──╭X──RZ(1.4)──┤ ⟨Z⟩
-        ...  1: ──╰C──RZ(0.1)───╰X──╰C───────────┤
+        0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
+        1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
 
 
         **Automatic creation of random circuits**
@@ -145,7 +146,7 @@ class RandomLayers(Operation):
             second_call = circuit_rnd(weights)
 
         >>> np.allclose(first_call, second_call)
-        >>> False
+        False
 
         This can be rectified by making the quantum node **immutable**.
 
@@ -160,7 +161,7 @@ class RandomLayers(Operation):
             second_call = circuit_rnd(weights)
 
         >>> np.allclose(first_call, second_call)
-        >>> True
+        True
 
         **Parameter shape**
 
