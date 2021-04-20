@@ -51,6 +51,7 @@ def test_qchem_not_installed_error(monkeypatch):
 
     class Entry:
         """Dummy entry point for mocking"""
+
         name = None
 
     with monkeypatch.context() as m:
