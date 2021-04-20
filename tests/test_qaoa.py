@@ -785,4 +785,4 @@ class TestCycles:
         g = nx.complete_graph(3).to_directed()
 
         with pytest.raises(KeyError, match="does not contain weight data"):
-            h = edge_weight(g)
+            edge_weight(g)
