@@ -71,6 +71,9 @@ def tensor_wrapper(obj):
                 # and I'm not sure why. Using ``np.any`` works fine.
                 tensor_kwargs["requires_grad"] = _np.any([i.requires_grad for i in tensor_args])
 
+        if "is_input" in kwargs:
+            tensor_kwargs["is_input"] = kwargs.pop("is_input")
+
         # evaluate the original object
         res = obj(*args, **kwargs)
 

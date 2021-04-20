@@ -55,7 +55,7 @@ from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 from .collections import QNodeCollection, apply, dot, map, sum
 from .queuing import QueuingContext
 import pennylane.grouping  # pylint:disable=wrong-import-order
-
+import pennylane.fourier  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
