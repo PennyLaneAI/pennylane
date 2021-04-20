@@ -291,7 +291,7 @@ class TestGroupObservables:
 
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
-         wire map correctly."""
+        wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")

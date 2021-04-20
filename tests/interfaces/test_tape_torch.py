@@ -287,7 +287,7 @@ class TestTorchQuantumTape:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self,  tol):
+    def test_differentiable_expand(self, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
@@ -451,5 +451,28 @@ class TestTorchQuantumTape:
 
         with monkeypatch.context() as m:
             m.setattr(qml.interfaces.torch, "COMPLEX_SUPPORT", False)
-            with pytest.raises(qml.QuantumFunctionError, match=r"Version 1\.6\.0 or above of PyTorch"):
+            with pytest.raises(
+                qml.QuantumFunctionError, match=r"Version 1\.6\.0 or above of PyTorch"
+            ):
                 TorchInterface.apply(JacobianTape(), dtype=torch.complex128)
+
+    def test_repeated_application_after_expand(self, tol):
+        """Test that the Torch interface continues to work after
+        tape expansions, and repeated torch application"""
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        weights = torch.ones((3,))
+
+        with TorchInterface.apply(qml.tape.QuantumTape()) as tape:
+            qml.U3(*weights, wires=0)
+            qml.expval(qml.PauliZ(wires=0))
+
+        tape = tape.expand()
+
+        res1 = tape.execute(dev)
+
+        TorchInterface.apply(tape)
+        res2 = tape.execute(dev)
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
