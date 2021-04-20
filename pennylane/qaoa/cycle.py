@@ -82,7 +82,9 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple[int]]:
 def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the product of edge weights Hamiltonian.
 
-    The product of weights of a subset of edges in a graph is given by
+    We consider the problem of selecting a cycle from a graph that has the greatest product of edge
+    weights, as outlined `here <https://1qbit.com/whitepaper/arbitrage/>`__. The product of weights
+    of a subset of edges in a graph is given by
 
     .. math:: \prod_{(i, j) \in E} x_{ij} c_{ij}
 
