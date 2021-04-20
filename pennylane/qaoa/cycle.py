@@ -157,29 +157,27 @@ def _collect_duplicates(
 
 def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
-    Hamiltonian.
+    Hamiltonian for the maximum-weighted cycle problem.
 
-    The net-zero flow constraint is, for all :math:`i`:
+    Given a subset of edges in a directed graph, the net-flow constraint imposes that the number of
+    edges leaving any given node is equal to the number of edges entering the node, i.e.,
 
     .. math:: \sum_{j, (i, j) \in E} x_{ij} = \sum_{j, (j, i) \in E} x_{ji},
 
-    where :math:`E` are the edges of the graph and :math:`x_{ij}` is a binary number that selects
-    whether to include the edge :math:`(i, j)`.
+    for all nodes :math:`i`, where :math:`E` are the edges of the graph and :math:`x_{ij}` is a
+    binary number that selects whether to include the edge :math:`(i, j)`.
 
-    The corresponding qubit Hamiltonian is:
+    A set of edges has zero net flow whenever the following Hamiltonian is minimized:
 
     .. math::
 
-        \frac{1}{4}\sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
         \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
 
     where :math:`V` are the graph vertices, :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
-    the outdegree and indegree, respectively, and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
-    upon the qubit specified by the pair :math:`(i, j)`. Note that this function omits the
-    :math:`1/4` constant factor.
-
-    This Hamiltonian is minimized by selecting edges such that each node has a net zero flow.
-
+    the outdegree and indegree, respectively, of node :math:`i` and :math:`Z_{ij}` is a qubit
+    Pauli-Z matrix acting upon the wire specified by the pair :math:`(i, j)`. Mapping from edges to
+    wires can be achieved using :func:`~.edges_to_wires`.
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
 
@@ -244,5 +242,4 @@ def _inner_net_flow_constraint_hamiltonian(
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
     coeffs, ops = _collect_duplicates(coeffs, ops)
 
-    hamiltonian = qml.Hamiltonian(coeffs, ops)
-    return hamiltonian
+    return qml.Hamiltonian(coeffs, ops)
