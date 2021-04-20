@@ -33,6 +33,8 @@ The available measurement functions are
     ~pennylane.sample
     ~pennylane.var
     ~pennylane.probs
+    ~pennylane.state
+    ~pennylane.density_matrix
 
 :html:`</div>`
 
@@ -162,14 +164,15 @@ it can sometimes be convenient to execute the same QNode with differing
 number of shots.
 
 For simulators like ``default.qubit``, finite shots will be simulated if
-we set ``analytic=False`` in the device.
+we set ``shots`` to a positive integer.
 
-The shot number can be changed by modifying the value of :attr:`.Device.shots`:
+The shot number can be changed on the device itself, or temporarily altered
+by the ``shots`` keyword argument when executing the QNode:
 
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1, shots=10, analytic=False)
+    dev = qml.device("default.qubit", wires=1, shots=10)
 
     @qml.qnode(dev)
     def circuit(x, y):
@@ -181,8 +184,7 @@ The shot number can be changed by modifying the value of :attr:`.Device.shots`:
     result = circuit(0.54, 0.1)
 
     # execute the QNode again, now using 1 shot
-    dev.shots = 1
-    result = circuit(0.54, 0.1)
+    result = circuit(0.54, 0.1, shots=1)
 
 
 With an increasing number of shots, the average over
@@ -201,23 +203,20 @@ circuit:
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(0))
 
-Running the simulator when ``analytic`` is set to ``True`` returns the exact expectation.
+Running the simulator with ``shots=None`` returns the exact expectation.
 
->>> circuit()
+>>> circuit(shots=None)
 0.0
 
 Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
->>> dev.shots = 10
->>> circuit()
+>>> circuit(shots=10)
 0.2
 
->>> dev.shots = 1000
->>> circuit()
+>>> circuit(shots=1000)
 -0.062
 
->>> dev.shots = 100000
->>> circuit()
+>>> circuit(shots=100000)
 0.00056
 
 The result converges to the exact expectation.

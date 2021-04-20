@@ -214,9 +214,8 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings
-    [[Tensor(PauliZ(wires=[1])),
-      Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
-     [Tensor(PauliY(wires=[0]))]]
+    [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
+     [PauliY(wires=[0])]]
     >>> coeffs_groupings
     [[0.97, 4.21], [1.43]]
     """
