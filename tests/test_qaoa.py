@@ -735,7 +735,7 @@ class TestCycles:
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-
+        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
     def test_edge_weight_incomplete(self):
         """Test if the edge_weight function returns the expected result on a
@@ -781,7 +781,7 @@ class TestCycles:
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-
+        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
     def test_self_loop_raises_error(self):
         """Test graphs with self loop raises `ValueError`"""
@@ -802,4 +802,3 @@ class TestCycles:
 
         with pytest.raises(KeyError, match="does not contain weight data"):
             edge_weight(g)
-
