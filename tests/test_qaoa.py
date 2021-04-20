@@ -776,8 +776,8 @@ class TestCycles:
             
         g.add_edge(1,1) # add self loop
 
-        with pytest.raises(ValueError):
-            h = edge_weight(g)
+        with pytest.raises(ValueError, match="Graph contains self-loops"):
+            edge_weight(g)
 
 
     def test_missing_edge_weight_data_raises_error(self):
