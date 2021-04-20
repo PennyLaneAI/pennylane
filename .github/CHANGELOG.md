@@ -44,7 +44,7 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from:
 
 Thomas Bromley, Diego Guala 
 
