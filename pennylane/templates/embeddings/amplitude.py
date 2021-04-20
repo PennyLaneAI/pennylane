@@ -119,26 +119,6 @@ class AmplitudeEmbedding(Operation):
         >>> dev.state
         [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
 
-        **Operations before the embedding**
-
-        On some devices, ``AmplitudeEmbedding`` must be the first operation in the quantum node.
-        For example, ``'default.qubit'`` complains when running the following circuit:
-
-        .. code-block:: python
-
-            dev = qml.device('default.qubit', wires=2)
-
-            @qml.qnode(dev)
-            def circuit(f=None):
-                qml.Hadamard(wires=0)
-                AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
-
-
-        >>> circuit(f=[1/2, 1/2, 1/2, 1/2])
-        pennylane._device.DeviceError: Operation QubitStateVector cannot be used
-        after other Operations have already been applied on a default.qubit device.
-
     """
 
     num_params = 1

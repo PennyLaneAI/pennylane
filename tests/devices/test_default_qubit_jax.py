@@ -169,6 +169,21 @@ class TestQNodeIntegration:
         b = circuit()
         assert not np.all(a == b)
 
+    def test_sampling_analytic_mode(self):
+        """Test that when sampling with shots=None, dev uses 1000 shots and
+        raises deprecation warning.
+        """
+        dev = qml.device('default.qubit.jax', wires=1, shots=None)
+        
+        @qml.qnode(dev, interface='jax', diff_method='backprop')
+        def circuit():
+            return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.deprecated_call():
+            res = circuit()
+
+        assert len(res) == 1000
+
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests. """
         dev = qml.device("default.qubit.jax", wires=2, shots=1000)

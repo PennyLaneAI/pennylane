@@ -718,7 +718,14 @@ fully differentiable.
 * Fixes a bug where repeated Torch interface applications after expansion caused an error.
   [(#1223)](https://github.com/PennyLaneAI/pennylane/pull/1223)
 
+* Sampling works correctly with batches of shots specified as a list.
+  [(#1232)](https://github.com/PennyLaneAI/pennylane/pull/1232)
+
 <h3>Documentation</h3>
+
+- Updated the diagram used in the Architectural overview page of the
+  Development guide such that it doesn't mention Variables.
+  [(#1235)](https://github.com/PennyLaneAI/pennylane/pull/1235)
 
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
