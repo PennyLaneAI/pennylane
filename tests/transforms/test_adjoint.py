@@ -17,6 +17,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.transforms.adjoint import adjoint
 
+
 def test_adjoint_on_function():
     """Test that adjoint works when applied to a function"""
 
@@ -38,29 +39,31 @@ def test_adjoint_on_function():
 
     np.testing.assert_allclose(my_circuit(), np.array([1.0j, 0.0]), atol=1e-6, rtol=1e-6)
 
+
 def test_adjoint_directly_on_op():
     """Test that adjoint works when directly applyed to an op"""
 
     dev = qml.device("default.qubit", wires=1)
+
     @qml.qnode(dev)
     def my_circuit():
-        adjoint(qml.RX)(np.pi/4.0, wires=0)
+        adjoint(qml.RX)(np.pi / 4.0, wires=0)
         return qml.state()
 
     np.testing.assert_allclose(my_circuit(), np.array([0.92388, 0.382683j]), atol=1e-6, rtol=1e-6)
 
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)
+
     @qml.qnode(dev)
     def my_circuit():
-        adjoint(adjoint(qml.RX))(np.pi/4.0, wires=0)
+        adjoint(adjoint(qml.RX))(np.pi / 4.0, wires=0)
         return qml.state()
 
-    np.testing.assert_allclose(
-        my_circuit(),
-        np.array([0.92388, -0.382683j]),
-        atol=1e-6, rtol=1e-6)
+    np.testing.assert_allclose(my_circuit(), np.array([0.92388, -0.382683j]), atol=1e-6, rtol=1e-6)
+
 
 def test_nested_adjoint_on_function():
     """Test that adjoint works when nested with other adjoints"""
@@ -71,6 +74,7 @@ def test_nested_adjoint_on_function():
         qml.RZ(1.95, wires=0)
 
     dev = qml.device("default.qubit", wires=1)
+
     @qml.qnode(dev)
     def my_circuit():
         adjoint(my_op)()
@@ -79,6 +83,5 @@ def test_nested_adjoint_on_function():
         return qml.state()
 
     np.testing.assert_allclose(
-        my_circuit(),
-        np.array([-0.995707,  0.068644+6.209710e-02j]),
-        atol=1e-6, rtol=1e-6)
+        my_circuit(), np.array([-0.995707, 0.068644 + 6.209710e-02j]), atol=1e-6, rtol=1e-6
+    )
