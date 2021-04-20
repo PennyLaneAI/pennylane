@@ -151,7 +151,7 @@ def edge_driver(graph, reward):
 
     allowed = ["00", "01", "10", "11"]
 
-    if not all([e in allowed for e in reward]):
+    if not all(e in allowed for e in reward):
         raise ValueError("Encountered invalid entry in 'reward', expected 2-bit bitstrings.")
 
     if "01" in reward and "10" not in reward or "10" in reward and "01" not in reward:

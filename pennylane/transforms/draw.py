@@ -38,7 +38,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
     Given the following definition of a QNode,
 
     .. code-block:: python3
-        
+
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
@@ -105,7 +105,5 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
         return qnode.qtape.draw(
             charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires
         )
-
-        return qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper

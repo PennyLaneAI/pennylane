@@ -35,13 +35,14 @@ def wires_ring(wires):
 
     if len(wires) in [0, 1]:
         return []
-    elif len(wires) == 2:
+        
+    if len(wires) == 2:
         # deviation from the rule: for 2 wires ring is set equal to chain,
         # to avoid duplication of single gate
         return [wires.subset([0, 1])]
-    else:
-        sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
-        return sequence
+
+    sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
+    return sequence
 
 
 def wires_pyramid(wires):

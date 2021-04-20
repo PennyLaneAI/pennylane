@@ -119,12 +119,12 @@ class RandomLayers(Operation):
         >>> False
 
         >>> print(circuit_9.draw())
-        0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩ 
-        1: ──╰C──RY(-2.1)──RX(1.4)──┤     
+        0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
+        1: ──╰C──RY(-2.1)──RX(1.4)──┤
 
         >>> print(circuit_12.draw())
-        0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩ 
-        1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤   
+        0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
+        1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
 
 
         **Automatic creation of random circuits**
