@@ -739,8 +739,7 @@ class TestCycles:
             12: (3, 4),
             13: (4, 3),
         }
-        
-        
+
     def test_edge_weight_complete(self):
         """Test if the edge_weight function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
@@ -787,7 +786,7 @@ class TestCycles:
             qml.PauliZ(10),
             qml.PauliZ(11),
             qml.PauliZ(12),
-            qml.PauliZ(13)
+            qml.PauliZ(13),
         ]
         expected_coeffs = [
             np.log(0.5),
@@ -803,7 +802,7 @@ class TestCycles:
             np.log(5.5),
             np.log(6),
             np.log(6.5),
-            np.log(7)
+            np.log(7),
         ]
 
         assert expected_coeffs == h.coeffs
@@ -816,12 +815,11 @@ class TestCycles:
         edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
         for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
-            
-        g.add_edge(1,1) # add self loop
+
+        g.add_edge(1, 1)  # add self loop
 
         with pytest.raises(ValueError, match="Graph contains self-loops"):
             edge_weight(g)
-
 
     def test_missing_edge_weight_data_raises_error(self):
         """Test graphs with no edge weight data raises `KeyError`"""

@@ -112,7 +112,7 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
     .. note::
         The expectation value of the returned Hamiltonian :math:`H` is not equal to :math:`P`, but
         minimizing the expectation value of :math:`H` is equivalent to maximizing :math:`P`.
-        
+
         Also note that the returned Hamiltonian does not impose that the selected set of edges is
         a cycle. This constraint can be enforced using a penalty term or by selecting a QAOA
         mixer Hamiltonian that only transitions between states that correspond to cycles.
