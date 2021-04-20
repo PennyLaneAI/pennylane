@@ -176,9 +176,9 @@ class TestQNodeIntegration:
         """Test that when sampling with shots=None, dev uses 1000 shots and
         raises deprecation warning.
         """
-        dev = qml.device('default.qubit.jax', wires=1, shots=None)
-        
-        @qml.qnode(dev, interface='jax', diff_method='backprop')
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
 
