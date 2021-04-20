@@ -391,6 +391,7 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+            qml.QubitSum(wires=[0, 1, 2])
         ],
     )
     def test_adjoint_unitaries(self, op, tol):
