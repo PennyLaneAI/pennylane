@@ -75,8 +75,8 @@ def diagonalize_pauli_word(pauli_word):
 
     **Example**
 
-    >>> diagonalize_pauli_word(PauliX('a') @ PauliY('b') @ PauliZ('c'))
-    Tensor(PauliZ(wires=['a']), PauliZ(wires=['b']), PauliZ(wires=['c']))
+    >>> diagonalize_pauli_word(qml.PauliX('a') @ qml.PauliY('b') @ qml.PauliZ('c'))
+    PauliZ(wires=['a']) @ PauliZ(wires=['b']) @ PauliZ(wires=['c'])
     """
 
     if not is_pauli_word(pauli_word):
@@ -129,9 +129,9 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
                      qml.PauliZ(1) @ qml.PauliY(3)]
     >>> diagonalize_qwc_pauli_words(qwc_group)
     ([RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
-     [Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
-     Tensor(PauliZ(wires=[0]), PauliZ(wires=[3])),
-     Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))])
+     [PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+      PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+      PauliZ(wires=[1]) @ PauliZ(wires=[3])])
     """
     m_paulis = len(qwc_grouping)
     all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
@@ -204,14 +204,19 @@ def diagonalize_qwc_groupings(qwc_groupings):
     >>> qwc_group_2 = [qml.PauliY(0),
                        qml.PauliY(0) @ qml.PauliX(2),
                        qml.PauliX(1) @ qml.PauliZ(3)]
-    >>> diagonalize_qwc_groupings([qwc_group_1, qwc_group_2])
-    ([[RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
-     [RX(1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[2]),
-     RY(-1.5707963267948966, wires=[1])]],
-     [[Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])), Tensor(PauliZ(wires=[0]), PauliZ(wires=[3])),
-       Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))], [Tensor(PauliZ(wires=[0])),
-       Tensor(PauliZ(wires=[0]), PauliZ(wires=[2])), Tensor(PauliZ(wires=[1]),
-       PauliZ(wires=[3]))]])
+    >>> post_rotations, diag_groupings = diagonalize_qwc_groupings([qwc_group_1, qwc_group_2])
+    >>> post_rotations
+    [[RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[3])],
+     [RX(1.5707963267948966, wires=[0]),
+      RY(-1.5707963267948966, wires=[2]),
+      RY(-1.5707963267948966, wires=[1])]]
+    >>> diag_groupings
+    [[PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+     PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+     PauliZ(wires=[1]) @ PauliZ(wires=[3])],
+    [PauliZ(wires=[0]),
+     PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+     PauliZ(wires=[1]) @ PauliZ(wires=[3])]]
     """
 
     post_rotations = []

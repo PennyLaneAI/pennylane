@@ -66,12 +66,12 @@ class CVNeuralNetLayers(Operation):
         **Parameter shapes**
 
         A list of shapes for the 11 input parameter tensors can be computed by the static method
-        :meth:`~.CVNeuralNetLayers.shapes` and used when creating randomly
+        :meth:`~.CVNeuralNetLayers.shape` and used when creating randomly
         initialised weights:
 
         .. code-block:: python
 
-            shapes = CVNeuralNetLayers.shapes(n_layers=2, n_wires=2)
+            shapes = CVNeuralNetLayers.shape(n_layers=2, n_wires=2)
             weights = [np.random.random(shape) for shape in shapes]
 
             def circuit():
