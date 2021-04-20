@@ -142,7 +142,7 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
         try:
             weight = edge_data[2]["weight"]
         except KeyError as e:
-            raise ValueError(f"Edge {edge} does not contain weight data") from e
+            raise KeyError(f"Edge {edge} does not contain weight data") from e
 
         coeffs.append(np.log(weight))
         wires = (edges_to_qubits[edge],)
