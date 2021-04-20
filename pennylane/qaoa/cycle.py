@@ -106,7 +106,7 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
         \sum_{(i, j) \in E} Z_{ij}\log c_{ij}.
 
     where :math:`Z_{ij}` is a qubit Pauli-Z matrix acting upon the wire specified by the pair
-    :math:`(i, j)`.
+    :math:`(i, j)`. Mapping from edges to wires can be achieved using :func:`~.edges_to_wires`.
 
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
