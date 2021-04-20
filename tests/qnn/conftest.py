@@ -71,8 +71,7 @@ def get_circuit_dm(n_qubits, output_dim, interface):
 
     @qml.qnode(dev, interface=interface)
     def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
-        """Sample circuit to be used for testing density_matrix() return type.
-        """
+        """Sample circuit to be used for testing density_matrix() return type."""
         qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
         qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
         qml.RX(w2[0], wires=0 % n_qubits)

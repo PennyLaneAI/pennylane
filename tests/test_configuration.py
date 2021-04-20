@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import Configuration
 
 
-log.getLogger('defaults')
+log.getLogger("defaults")
 
 
 config_filename = "default_config.toml"
@@ -144,13 +144,14 @@ class TestConfigurationFileInteraction:
         config = Configuration(name=config_filename)
 
         # make a change
-        config['strawberryfields.global']['shots'] = 10
+        config["strawberryfields.global"]["shots"] = 10
 
-        temp_config_path = tmp_path / 'test_config.toml'
+        temp_config_path = tmp_path / "test_config.toml"
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)
         config._config == result
+
 
 class TestProperties:
     """Test that the configuration class works as expected"""
@@ -158,49 +159,50 @@ class TestProperties:
     def test_get_item(self, default_config):
         """Test getting items."""
         # get existing options
-        assert default_config['main.shots'] == 1000
-        assert default_config['main']['shots'] == 1000
-        assert default_config['strawberryfields.global.hbar'] == 1
-        assert default_config['strawberryfields.global']['hbar'] == 1
+        assert default_config["main.shots"] == 1000
+        assert default_config["main"]["shots"] == 1000
+        assert default_config["strawberryfields.global.hbar"] == 1
+        assert default_config["strawberryfields.global"]["hbar"] == 1
 
         # get nested dictionaries
-        assert default_config['strawberryfields.fock'] == {'cutoff_dim': 10}
+        assert default_config["strawberryfields.fock"] == {"cutoff_dim": 10}
 
         # get key that doesn't exist
-        assert default_config['qiskit.ibmq.idonotexist'] == {}
+        assert default_config["qiskit.ibmq.idonotexist"] == {}
 
     def test_set_item(self, default_config):
         """Test setting items."""
 
         # set existing options
-        default_config['main.shots'] = 10
-        assert default_config['main.shots'] == 10
-        assert default_config['main']['shots'] == 10
+        default_config["main.shots"] = 10
+        assert default_config["main.shots"] == 10
+        assert default_config["main"]["shots"] == 10
 
-        default_config['strawberryfields.global']['hbar'] = 5
-        assert default_config['strawberryfields.global.hbar'] == 5
-        assert default_config['strawberryfields.global']['hbar'] == 5
+        default_config["strawberryfields.global"]["hbar"] = 5
+        assert default_config["strawberryfields.global.hbar"] == 5
+        assert default_config["strawberryfields.global"]["hbar"] == 5
 
         # set new options
-        default_config['qiskit.ibmq']['backend'] = 'ibmq_rome'
-        assert default_config['qiskit.ibmq.backend'] == 'ibmq_rome'
+        default_config["qiskit.ibmq"]["backend"] = "ibmq_rome"
+        assert default_config["qiskit.ibmq.backend"] == "ibmq_rome"
 
         # set nested dictionaries
-        default_config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}
-        assert default_config['strawberryfields.tf'] == {'batched': True, 'cutoff_dim': 6}
+        default_config["strawberryfields.tf"] = {"batched": True, "cutoff_dim": 6}
+        assert default_config["strawberryfields.tf"] == {"batched": True, "cutoff_dim": 6}
 
         # set nested keys that don't exist dictionaries
-        default_config['strawberryfields.another.hello.world'] = 5
-        assert default_config['strawberryfields.another'] == {'hello': {'world': 5}}
+        default_config["strawberryfields.another.hello.world"] = 5
+        assert default_config["strawberryfields.another"] == {"hello": {"world": 5}}
 
     def test_bool(self, default_config):
         """Test boolean value of the Configuration object."""
 
         # test false if no config is loaded
-        config = Configuration('noconfig')
+        config = Configuration("noconfig")
 
         assert not config
         assert default_config
+
 
 class TestPennyLaneInit:
     """Tests to ensure that the code in PennyLane/__init__.py
@@ -208,7 +210,7 @@ class TestPennyLaneInit:
 
     def test_device_load(self, default_config):
         """Test loading a device with a configuration."""
-        dev = qml.device('default.gaussian', wires=2, config=default_config)
+        dev = qml.device("default.gaussian", wires=2, config=default_config)
 
         assert dev.hbar == 2
         assert dev.shots == 1000

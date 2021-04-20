@@ -23,7 +23,7 @@ from pennylane.templates.state_preparations.mottonen import gray_code, _get_alph
 
 class TestHelpers:
     """Tests the helper functions for classical pre-processsing."""
-    
+
     # fmt: off
     @pytest.mark.parametrize("rank,expected_gray_code", [
         (1, ['0', '1']),
@@ -121,7 +121,7 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_state_preparation_fidelity(
-            self, tol, qubit_device_3_wires, state_vector, wires, target_state
+        self, tol, qubit_device_3_wires, state_vector, wires, target_state
     ):
         """Tests that the template produces correct states with high fidelity."""
 
@@ -204,7 +204,7 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_state_preparation_probability_distribution(
-            self, tol, qubit_device_3_wires, state_vector, wires, target_state
+        self, tol, qubit_device_3_wires, state_vector, wires, target_state
     ):
         """Tests that the template produces states with correct probability distribution."""
 
@@ -222,8 +222,7 @@ class TestDecomposition:
 
         assert np.allclose(probabilities, target_probabilities, atol=tol, rtol=0)
 
-        # fmt: off
-
+    # fmt: off
     @pytest.mark.parametrize("state_vector, n_wires", [
         ([1 / 2, 1 / 2, 1 / 2, 1 / 2], 2),
         ([1, 0, 0, 0], 2),
@@ -256,7 +255,7 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        state = np.array([1/2, 1/2, 0, 1/2, 0, 1/2, 0, 0])
+        state = np.array([1 / 2, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 0])
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -307,10 +306,13 @@ class TestInputs:
         with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
             qml.templates.MottonenStatePreparation(state_vector, wires)
 
-    @pytest.mark.parametrize("state_vector", [
-        ([[0, 0, 1, 0]]),
-        ([[0, 1], [1, 0], [0, 0], [0, 0]]),
-    ])
+    @pytest.mark.parametrize(
+        "state_vector",
+        [
+            ([[0, 0, 1, 0]]),
+            ([[0, 1], [1, 0], [0, 0], [0, 0]]),
+        ],
+    )
     def test_exception_wrong_shape(self, state_vector):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""

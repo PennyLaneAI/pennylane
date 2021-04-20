@@ -23,7 +23,6 @@ from networkx import Graph
 from pennylane.wires import Wires
 from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges
 
-
 #####################################################
 
 graph = Graph()
