@@ -785,6 +785,7 @@ class TestCycles:
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
 
         assert expected_coeffs == h.coeffs
+        assert [h.ops[i] == expected_op for i, expected_op in enumerate(expected_ops)]
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
 
@@ -807,6 +808,7 @@ class TestCycles:
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
 
         assert expected_coeffs == h.coeffs
+        assert [h.ops[i] == expected_op for i, expected_op in enumerate(expected_ops)]
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
 
