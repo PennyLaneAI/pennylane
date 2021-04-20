@@ -35,7 +35,7 @@ def wires_ring(wires):
 
     if len(wires) in [0, 1]:
         return []
-        
+
     if len(wires) == 2:
         # deviation from the rule: for 2 wires ring is set equal to chain,
         # to avoid duplication of single gate
