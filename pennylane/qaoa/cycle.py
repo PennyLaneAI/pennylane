@@ -108,6 +108,14 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     where :math:`Z_{ij}` is a qubit Pauli-Z matrix acting upon the wire specified by the pair
     :math:`(i, j)`. Mapping from edges to wires can be achieved using :func:`~.edges_to_wires`.
 
+    .. note::
+        The expectation value of the returned Hamiltonian :math:`H` is not equal to :math:`P`, but
+        minimizing the expectation value of :math:`H` is equivalent to maximizing :math:`P`.
+        
+        Also note that the returned Hamiltonian does not impose that the selected set of edges is
+        a cycle. This constraint can be enforced using a penalty term or by selecting a QAOA
+        mixer Hamiltonian that only transitions between states that correspond to cycles.
+
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
 
