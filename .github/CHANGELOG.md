@@ -2,6 +2,35 @@
 
 <h3>New features since last release</h3>
 
+* Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
+  [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
+
+  The following example adds two 1-bit numbers, returning a 2-bit answer:
+
+  ```python
+  dev = qml.device('default.qubit', wires = 4)
+  a = 0
+  b = 1
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([a, b]), wires=[1, 2])
+      qml.QubitCarry(wires=[0, 1, 2, 3])
+      qml.CNOT(wires=[1, 2])
+      qml.QubitSum(wires=[0, 1, 2])
+      return qml.probs(wires=[3, 2])
+
+  probs = circuit()
+  bitstrings = tuple(itertools.product([0, 1], repeat = 2))
+  indx = np.argwhere(probs == 1).flatten()[0]
+  output = bitstrings[indx]
+  ```
+
+  ```pycon
+  >>> print(output)
+  (0, 1)
+  ```
+
 <h3>Improvements</h3>
 
 * PennyLane's test suite is now code-formatted using `black -l 100`.
@@ -17,7 +46,7 @@
 
 This release contains contributions from:
 
-Thomas Bromley 
+Thomas Bromley, Diego Guala 
 
 # Release 0.15.0 (current release)
 
