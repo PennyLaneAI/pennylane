@@ -94,7 +94,7 @@ class ApproxTimeEvolution(Operation):
                 return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
 
         >>> circuit(1)
-        [-0.41614684 -0.41614684]
+        tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
     num_params = 3

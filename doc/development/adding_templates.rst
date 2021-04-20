@@ -6,75 +6,167 @@ Contributing templates
 The following steps will help you to add your favourite circuit ansatz to
 PennyLane's :mod:`template <pennylane.template>` library.
 
-PennyLane internally distinguishes :doc:`different types </introduction/templates>` of templates, such as
-:mod:`embeddings <pennylane.templates.embeddings>`, :mod:`layers <pennylane.templates.layers>`,
-:mod:`state_preparations <pennylane.templates.state_preparations>` or
-:mod:`subroutines <pennylane.templates.subroutines>`.
-Here we will use the template ``MyNewTemplate`` as an example, and you need to replace ``<templ_type>`` with the
-correct template type.
+.. note::
+
+    PennyLane internally loosely distinguishes :doc:`different types </introduction/templates>` of templates, such as
+    :mod:`embeddings <pennylane.templates.embeddings>`, :mod:`layers <pennylane.templates.layers>`,
+    :mod:`state_preparations <pennylane.templates.state_preparations>` or
+    :mod:`subroutines <pennylane.templates.subroutines>`. Below you need to replace ``<templ_type>`` with the
+    correct template type.
+
+Templates are just gates
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Conceptually, there is no difference in PennyLane between a template or ansatz and a :doc:`operation </introduction/operations>`.
+Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an ``expand()`` function
+that can be used to define a decomposition into other gates. If a device does not recognise the name of the operation,
+it calls the ``expand()`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
+represents the queue of the decomposing gates.
+
+For example, the following shows a simple template for a layer of of Pauli-X rotations:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane.operation import Operation, AnyWires
+
+    class MyNewTemplate(Operation):
+
+        num_params = 1
+        num_wires = AnyWires
+        par_domain = "A"  # note: this attribute will be deprecated soon
+
+        def expand(self):
+
+            # extract the weights as the first parameter
+            # passed to this operation
+            weights = self.parameters[0]
+
+            # extract the length of the weights vector using
+            # the interface-agnostic `math` module
+            num_weights = qml.math.shape(weights)[0]
+
+            # record the ansatz in a tape
+            with qml.tape.QuantumTape() as tape:
+
+                for i in range(num_weights):
+                    qml.RX(weights[i], wires=self.wires[i])
+
+            return tape
+
+
+The ``num_params`` and ``num_wires`` class attributes determine that an instance of this template can be created
+by passing a single parameter (of arbitrary shape and type), as well as an arbitrary number of wires:
+
+.. code-block:: python
+
+    weights = np.array([0.1, 0.2, 0.3])
+    MyNewTemplate(weights, wires=['a', 'b', 'd'])
+
+As an ``Operation``, templates can define other methods and attributes, such as a matrix representation,
+a generator, or even a gradient rule.
+
+.. note::
+
+    In principle, templates could also inherit from the :class:`Observable <pennylane.operation.Observable>`
+    class and define a sequence of diagonalising gates as an ansatz.
+
+Classical pre-processing
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Templates often perform extensive pre-processing on the arguments they receive.
+
+Any substantial pre-processing should be implemented by overwriting the ``__init__`` function of the ``Operator`` class.
+This also allows us to define templates with more flexible signatures than the ``(*params, wires)``
+signature expected by the ``Operator`` class.
+
+As an illustration, let us extend ``MyNewTemplate`` and check that the first
+parameter it receives is one-dimensional, apply a sine function to each weight,
+and invert the wires that the operation acts on.
+
+.. code-block:: python
+
+    def MyNewTemplate(Operation):
+
+        num_params = 1
+        num_wires = AnyWires
+        par_domain = "A"  # note: this attribute will be deprecated soon
+
+        def __init__(weights, raw_wires)
+
+            shp = qml.math.shape(weights)
+            if len(shp) != 1:
+                raise ValueError("Expected one-dimensional weights tensor.")
+
+            # pre-process weights
+            new_weights = qml.math.sin(weights)
+
+            # pre-process wires
+            inverted_wires = wires[::-1]
+
+            # initialise operation with pre-processed parameters and wires
+            super().__init__(new_weights, wires=inverted_wires)
+
+
+        def expand(self):
+
+            weights = self.parameters[0]
+            num_weights = qml.math.shape(weights)[0]
+
+            with qml.tape.QuantumTape() as tape:
+                for i in range(num_weights):
+                    qml.RX(weights[i], wires=self.wires[i])
+
+            return tape
+
+The ``parameters`` and ``wires`` attributes used in the ``expand()`` function
+refer to the ``new_weights`` and ``inverted_wires`` that were used to initialize the parent class.
+
+The template design should make as many arguments differentiable as possible.
+Differentiable arguments are always tensors of the allowed :doc:`interfaces </introduction/interfaces>`,
+such as ``tf.Variable``, or ``pennylane.numpy.array``.
+This means that we have to process them with interface-agnostic pre-processing methods inside the templates.
+A lot of functionality
+is provided by the :mod:`pennylane.math` module - for example, the length of the weights in the code above
+was computed with the ``qml.math.shape(weights)`` function, since some tensor types do not support ``len(weights)``.
+
+.. note::
+
+    To retrieve elements from a tensor, keep in mind that not all tensor types support
+    iteration.
+    
+    - Avoid expressions like ``for w in weights`` and
+      rather iterate over ranges like ``for i in range(num_weights)``.
+      
+    - When indexing into the tensor, use multi-indexing where possible --- expressions
+      like ``weights[6][5][2]`` are usually a lot slower than ``weights[6, 5, 2]``.
+
 
 Adding the template
 ~~~~~~~~~~~~~~~~~~~
 
 Add the template by adding a new file ``my_new_template.py`` to the correct ``templates/<templ_type>/``
-subdirectory. The file contains your new template, which is a function that defines a sequence of
-quantum gates (without measurements).
-
-For example, this is a very basic template applying an :class:`~.RX`
-gate to each wire:
-
-.. code-block:: python
-
-    import pennylane as qml
-    from pennylane.templates import template  # import the decorator
-
-    @template
-    def MyNewTemplate(weights, wires):
-
-        # Check that the inputs have the correct format
-        # ...
-
-        for wire, weight in zip(wires, weights):
-            qml.RX(weight, wires=wire)
-
-Since the template is called within a :ref:`quantum function <intro_vcirc_qfunc>`,
-it can only contain information processing that is allowed
-inside a quantum functions.
+subdirectory. The file contains your new template class.
 
 Make sure you consider the following:
 
-* *Choose the name carefully.* Good names tell the user what a template is good for,
-  or what architecture it implements. To be consistent with other quantum operations
-  (which are classes), the function name (i.e., ``MyNewTemplate``) is written in camel case.
+* *Choose the name carefully.* Good names tell the user what a template is used for,
+  or what architecture it implements. The class name (i.e., ``MyNewTemplate``) is written in camel case.
 
-* *Register the template.* A template is "registered" by using the :mod:`template <pennylane.template>`
-  decorator ``@template``. This allows us to record the queue of operations of a template,
-  which is very useful for testing:
-
-  .. code-block:: python
-
-    with qml.utils.OperationRecorder() as rec:
-        MyNewTemplate(...)
-
-    list_of_gates = rec.queue
-
-* Consider using the :func:`~.broadcast` function to make your
-  code more concise.
+* *Explicit decompositions.* Try to implement the decomposition in the ``expand()`` function
+  without the use of convenient methods like the :func:`~.broadcast` function - this avoids
+  unnecessary overhead.
 
 * *Write an extensive docstring that explains how to use the template.* Include a sketch of the template (add the
-  file to the ``doc/_static/templates/<templ_type>/`` directory). You can also display a small usage example
-  at the beginning of the docstring.
-
-  At the end of the docstring, add a section starting with the ``.. UsageDetails::`` directive,
-  where you demonstrate with code examples how to use the templates with different
-  settings, for example varying the number of wires, explaining keyword arguments and special cases.
+  file to the ``doc/_static/templates/<templ_type>/`` directory). You should also display a small usage example
+  at the beginning of the docstring. If you want to explain the behaviour in more detail, add a section starting
+  with the ``.. UsageDetails::`` directive at the end of the docstring.
   Use the docstring of one of the existing templates for inspiration, such as
   :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`.
 
-* Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
-  Don't forget that arguments may be passed by the user to the qnode as primary or auxiliary quantum function arguments, and
-  by using different interfaces (i.e., an input could be a ``numpy.ndarray`` or a list of
-  :class:`Variable <pennylane.variable.Variable>`, depending on how the user uses the template).
+* *Input checks.* While checking the inputs of the template for consistency introduces an overhead and should be
+  kept to a minimum, it is still advised to do some basic sanity checks, for example making sure that the shape of the
+  parameters is correct.
 
 Importing the new template
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,17 +192,12 @@ Add your template to the documentation by adding a ``customgalleryitem`` to the 
 
 .. note::
 
-  This loads the image of the template added to ``doc/_static/templates/<templ_type>/`` in Step 1. Make sure that
+  This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
   this image has the same dimensions and style as other template icons in the folder.
 
 Adding tests
 ~~~~~~~~~~~~
 
-Add tests for your new template to the test suite.
-
-* Integration tests, which check that your template can be called inside a quantum node and that PennyLane can
-  compute gradients with respect to differentiable parameters, are added to ``tests/test_templates.py``.
-  Simply add your template to the fixtures as explained in the docstring.
-
-* Add a new test class to ``tests/test_templates_<templ_type>.py`` that contains the unit tests for the template.
-  Make sure you test all keyword arguments and edge cases like using a single wire.
+Don't forget to add tests for your new template to the test suite. Create a separate file
+``tests/templates/<templ_type>/test_my_new_template.py`` with all tests.
+You can draw some inspiration from :mod:`existing tests <tests/templates/test_embeddings/test_qaoa_emb>`.

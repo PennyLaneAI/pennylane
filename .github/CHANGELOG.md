@@ -669,11 +669,6 @@
 * Adds an informative error message for removal of the `analytic` keyword in devices. Users are directed to use `shots=None` instead.
   [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
 
-* A deprecation warning is now raised when loading content from the `qnn` module. In release 
-  `0.16.0`, the `qnn` module will no-longer be automatically loaded due to its dependency on
-  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
-  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
-
 * Devices do not have an `analytic` argument or attribute anymore. 
   Instead, `shots` is the source of truth for whether a simulator 
   estimates return values from a finite number of shots, or whether 
@@ -780,6 +775,10 @@
   [(#1223)](https://github.com/PennyLaneAI/pennylane/pull/1223)
 
 <h3>Documentation</h3>
+
+- Updated the diagram used in the Architectural overview page of the
+  Development guide such that it doesn't mention Variables.
+  [(#1235)](https://github.com/PennyLaneAI/pennylane/pull/1235)
 
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
