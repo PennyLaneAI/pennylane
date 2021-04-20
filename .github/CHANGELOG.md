@@ -680,11 +680,6 @@ fully differentiable.
   - All tape fixtures have been deleted,
   - Tests specifically for non-tape mode have been deleted.
 
-* A deprecation warning is now raised when loading content from the `qnn` module. In release 
-  `0.16.0`, the `qnn` module will no longer be automatically loaded due to its dependency on
-  TensorFlow and Torch. Instead, users will need to do `from pennylane import qnn`.
-  [(#1170)](https://github.com/PennyLaneAI/pennylane/pull/1170)
-
 * The device test suite no longer accepts the `analytic` keyword.
   [(#1216)](https://github.com/PennyLaneAI/pennylane/pull/1216)
 
