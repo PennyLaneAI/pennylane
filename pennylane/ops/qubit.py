@@ -1721,6 +1721,7 @@ class SingleExcitation(Operation):
     \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
 
     .. code-block::
+
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
@@ -1728,6 +1729,9 @@ class SingleExcitation(Operation):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
             return qml.state()
+
+        circuit(0.1)
+        
     """
 
     num_params = 1
@@ -2221,6 +2225,7 @@ class DoubleExcitation(Operation):
     \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
+
         dev = qml.device('default.qubit', wires=4)
 
         @qml.qnode(dev)
