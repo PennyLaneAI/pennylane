@@ -90,6 +90,8 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
 
     where :math:`E` are the edges of the graph, :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)` and :math:`c_{ij}` is the corresponding edge weight.
+    Our objective is to maximimize :math:`P`, subject to selecting the :math:`x_{ij}` so that
+    our subset of edges composes a cycle.
 
     The product of weights is maximized by equivalently considering
 
