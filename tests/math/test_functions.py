@@ -454,7 +454,7 @@ class TestDot:
         [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
         [jnp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
         [onp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
-        [np.array([[1, 2], [3, 4]]), jnp.array([6, 7])]
+        [np.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
     ]
 
     @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
