@@ -81,8 +81,6 @@ print(a_input,"+",b_input, "=",result_string)
 
 This release contains contributions from (in alphabetical order):
 
-Diego Guala
-
 Thomas Bromley, Diego Guala
 
 # Release 0.15.0 (current release)
