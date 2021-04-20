@@ -23,7 +23,6 @@ from networkx import Graph
 from pennylane.wires import Wires
 from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, edge_weight
 
-
 #####################################################
 
 graph = Graph()
@@ -702,16 +701,44 @@ class TestCycles:
         g = nx.lollipop_graph(4, 1).to_directed()
         r = edges_to_wires(g)
 
-        assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 0): 3, (1, 2): 4, (1, 3): 5, (2, 0): 6,
-                     (2, 1): 7, (2, 3): 8, (3, 0): 9, (3, 1): 10, (3, 2): 11, (3, 4): 12, (4, 3): 13}
+        assert r == {
+            (0, 1): 0,
+            (0, 2): 1,
+            (0, 3): 2,
+            (1, 0): 3,
+            (1, 2): 4,
+            (1, 3): 5,
+            (2, 0): 6,
+            (2, 1): 7,
+            (2, 3): 8,
+            (3, 0): 9,
+            (3, 1): 10,
+            (3, 2): 11,
+            (3, 4): 12,
+            (4, 3): 13,
+        }
 
     def test_wires_to_edges_directed(self):
         """Test that wires_to_edges returns the correct mapping on a directed graph"""
         g = nx.lollipop_graph(4, 1).to_directed()
         r = wires_to_edges(g)
 
-        assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 0), 4: (1, 2), 5: (1, 3), 6: (2, 0),
-                     7: (2, 1), 8: (2, 3), 9: (3, 0), 10: (3, 1), 11: (3, 2), 12: (3, 4), 13: (4, 3)}
+        assert r == {
+            0: (0, 1),
+            1: (0, 2),
+            2: (0, 3),
+            3: (1, 0),
+            4: (1, 2),
+            5: (1, 3),
+            6: (2, 0),
+            7: (2, 1),
+            8: (2, 3),
+            9: (3, 0),
+            10: (3, 1),
+            11: (3, 2),
+            12: (3, 4),
+            13: (4, 3),
+        }
         
         
     def test_edge_weight_complete(self):

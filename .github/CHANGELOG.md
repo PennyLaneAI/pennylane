@@ -4,6 +4,9 @@
 
 <h3>Improvements</h3>
 
+* PennyLane's test suite is now code-formatted using `black -l 100`.
+  [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -13,6 +16,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from:
+
+Thomas Bromley 
 
 # Release 0.15.0 (current release)
 

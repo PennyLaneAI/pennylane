@@ -55,7 +55,7 @@ def mock_qubit_device(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_extract_stats(monkeypatch):
-    """ A function to create a mock device that mocks the methods related to
+    """A function to create a mock device that mocks the methods related to
     statistics (expval, var, sample, probability)"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, "__abstractmethods__", frozenset())
@@ -68,9 +68,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "state", 0)
         m.setattr(QubitDevice, "density_matrix", lambda self, wires=None: 0)
-        m.setattr(
-            QubitDevice, "probability", lambda self, wires=None, *args, **kwargs: 0
-        )
+        m.setattr(QubitDevice, "probability", lambda self, wires=None, *args, **kwargs: 0)
         m.setattr(QubitDevice, "apply", lambda self, x: x)
 
         def get_qubit_device(wires=1):
@@ -81,7 +79,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_with_original_statistics(monkeypatch):
-    """ A function to create a mock device that mocks only basis methods and uses the original
+    """A function to create a mock device that mocks only basis methods and uses the original
     statistics related methods"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, "__abstractmethods__", frozenset())
@@ -159,7 +157,7 @@ class TestOperations:
         self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
-           op_queue raises no error"""
+        op_queue raises no error"""
 
         with qml.tape.QuantumTape() as tape:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
@@ -168,8 +166,11 @@ class TestOperations:
         call_history = []
 
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply",
-                      lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
+            m.setattr(
+                QubitDevice,
+                "apply",
+                lambda self, x, **kwargs: call_history.extend(x + kwargs.get("rotations", [])),
+            )
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -197,26 +198,21 @@ class TestOperations:
             dev.execute(tape)
 
     numeric_queues = [
-        [
-            qml.RX(0.3, wires=[0])
-        ],
+        [qml.RX(0.3, wires=[0])],
         [
             qml.RX(0.3, wires=[0]),
             qml.RX(0.4, wires=[1]),
             qml.RX(0.5, wires=[2]),
-        ]
+        ],
     ]
 
-    observables = [
-        [qml.PauliZ(0)],
-        [qml.PauliX(0)],
-        [qml.PauliY(0)]
-    ]
+    observables = [[qml.PauliZ(0)], [qml.PauliX(0)], [qml.PauliY(0)]]
 
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues)
-    def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods,
-                                                  monkeypatch, queue, observables):
+    def test_passing_keyword_arguments_to_execute(
+        self, mock_qubit_device_with_paulis_rotations_and_methods, monkeypatch, queue, observables
+    ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
         with qml.tape.QuantumTape() as tape:
@@ -243,8 +239,8 @@ class TestObservables:
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-                ValueError,
-                match="Cannot access the observable value queue outside of the execution context!",
+            ValueError,
+            match="Cannot access the observable value queue outside of the execution context!",
         ):
             dev = mock_qubit_device()
             dev.obs_queue
@@ -265,18 +261,20 @@ class TestObservables:
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(
-            self, mock_qubit_device_with_paulis_and_methods, monkeypatch
+        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measure.MeasurementProcess(return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0))
+            qml.measure.MeasurementProcess(
+                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
+            )
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                    qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
                 dev.execute(tape)
@@ -289,8 +287,8 @@ class TestParameters:
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
         with pytest.raises(
-                ValueError,
-                match="Cannot access the free parameter mapping outside of the execution context!",
+            ValueError,
+            match="Cannot access the free parameter mapping outside of the execution context!",
         ):
             dev = mock_qubit_device()
             dev.parameters
@@ -323,7 +321,9 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
-            with pytest.raises(qml.QuantumFunctionError, match="The state is not available in the current"):
+            with pytest.raises(
+                qml.QuantumFunctionError, match="The state is not available in the current"
+            ):
                 dev.statistics([state()])
 
     @pytest.mark.parametrize("returntype", [None])
@@ -413,7 +413,9 @@ class TestSampleBasisStates:
         dev.shots = None
         state_probs = [0.1, 0.2, 0.3, 0.4]
 
-        with pytest.warns(DeprecationWarning, match="The number of shots has to be explicitly set on the device"):
+        with pytest.warns(
+            DeprecationWarning, match="The number of shots has to be explicitly set on the device"
+        ):
             dev.sample_basis_states(number_of_states, state_probs)
 
 
@@ -550,7 +552,7 @@ class TestSample:
     """Test the sample method"""
 
     def test_only_ones_minus_ones(
-            self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
         """Test that pauli_eigvals_as_samples method only produces -1 and 1 samples"""
         obs = qml.PauliX(0)
@@ -563,7 +565,7 @@ class TestSample:
         assert np.allclose(res ** 2, 1, atol=tol, rtol=0)
 
     def test_correct_custom_eigenvalues(
-            self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
         """Test that pauli_eigvals_as_samples method only produces samples of eigenvalues"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
@@ -579,11 +581,12 @@ class TestSample:
 class TestEstimateProb:
     """Test the estimate_probability method"""
 
-    @pytest.mark.parametrize("wires, expected", [([0], [0.5, 0.5]),
-                                                 (None, [0.5, 0, 0, 0.5]),
-                                                 ([0, 1], [0.5, 0, 0, 0.5])
-                                                 ])
-    def test_estimate_probability(self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch):
+    @pytest.mark.parametrize(
+        "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
+    )
+    def test_estimate_probability(
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
         """Tests probability method when the analytic attribute is True."""
         dev = mock_qubit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 0], [1, 1], [1, 1], [0, 0]])
@@ -627,7 +630,7 @@ class TestMarginalProb:
         dev = mock_qubit_device_with_original_statistics(wires=3)
         res = dev.marginal_prob(probs, wires=wires)
         array_call = spy.call_args[0][0]
-        axis_call = spy.call_args[1]['axis']
+        axis_call = spy.call_args[1]["axis"]
 
         assert np.allclose(array_call.flatten(), probs, atol=tol, rtol=0)
         assert axis_call == tuple(inactive_wires)
@@ -655,7 +658,7 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned(
-            self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
+        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method"""
         num_wires = int(np.log2(len(probs)))
@@ -665,7 +668,7 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
-            self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
+        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that passing wires=None simply returns the original probability."""
         num_wires = int(np.log2(len(probs)))
@@ -680,11 +683,7 @@ class TestActiveWires:
     """Test that the active_wires static method works as required."""
 
     def test_active_wires_from_queue(self, mock_qubit_device):
-        queue = [
-            qml.CNOT(wires=[0, 2]),
-            qml.RX(0.2, wires=0),
-            qml.expval(qml.PauliX(wires=5))
-        ]
+        queue = [qml.CNOT(wires=[0, 2]), qml.RX(0.2, wires=0), qml.expval(qml.PauliX(wires=5))]
 
         dev = mock_qubit_device(wires=6)
         res = dev.active_wires(queue)
@@ -694,15 +693,16 @@ class TestActiveWires:
 
 class TestCapabilities:
     """Test that a default qubit device defines capabilities that all devices inheriting
-     from it will automatically have."""
+    from it will automatically have."""
 
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
-        capabilities = {"model": "qubit",
-                        "supports_finite_shots": True,
-                        "supports_tensor_observables": True,
-                        "returns_probs": True,
-                        }
+        capabilities = {
+            "model": "qubit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+        }
         assert capabilities == QubitDevice.capabilities()
 
 
@@ -726,7 +726,7 @@ class TestExecution:
 
         for _ in range(num_evals_1):
             node_1(0.432, 0.12)
-        assert dev_1.num_executions ==  num_evals_1
+        assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
         dev_2 = qml.device("default.qubit", wires=2)
@@ -741,7 +741,7 @@ class TestExecution:
 
         for _ in range(num_evals_2):
             node_2(0.432, 0.12)
-        assert dev_2.num_executions ==  num_evals_2
+        assert dev_2.num_executions == num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
@@ -823,7 +823,12 @@ class TestShotList:
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4,), 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)], (11,), 27],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11,),
+            27,
+        ],
         [[10, 10, 10], [(10, 3)], (3,), 30],
         [[(10, 3)], [(10, 3)], (3,), 30],
     ]
@@ -847,7 +852,12 @@ class TestShotList:
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2), 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)], (11, 2), 27],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 2),
+            27,
+        ],
         [[10, 10, 10], [(10, 3)], (3, 2), 30],
         [[(10, 3)], [(10, 3)], (3, 2), 30],
     ]
@@ -876,7 +886,12 @@ class TestShotList:
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 4), 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)], (11, 4), 27],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 4),
+            27,
+        ],
         [[10, 10, 10], [(10, 3)], (3, 4), 30],
         [[(10, 3)], [(10, 3)], (3, 4), 30],
     ]
@@ -904,7 +919,12 @@ class TestShotList:
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2, 2), 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)], (11, 2, 2), 27],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 2, 2),
+            27,
+        ],
         [[10, 10, 10], [(10, 3)], (3, 2, 2), 30],
         [[(10, 3)], [(10, 3)], (3, 2, 2), 30],
     ]
@@ -932,10 +952,14 @@ class TestShotList:
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-                [(), (2,), (2,),(2,),(10,), (), (), (5,), (), (), ()], 27],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            [(), (2,), (2,), (2,), (10,), (), (), (5,), (), (), ()],
+            27,
+        ],
         [[10, 10, 10], [(10, 3)], [(10,), (10,), (10,)], 30],
-        [[(10, 3)], [(10, 3)], [(10,),(10,),(10,)], 30],
+        [[(10, 3)], [(10, 3)], [(10,), (10,), (10,)], 30],
     ]
 
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
@@ -959,11 +983,15 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
     shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(2,), (2,2), (3,2), (10,2)], 16],
-        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-                [(2,), (2,2), (2,2),(2,2),(10,2), (2,), (2,), (5,2), (2,), (2,), (2,)], 27],
-        [[10, 10, 10], [(10,3)], [(10,2), (10,2), (10,2)], 30],
-        [[(10, 3)], [(10, 3)], [(10,2),(10,2),(10,2)], 30],
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(2,), (2, 2), (3, 2), (10, 2)], 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            [(2,), (2, 2), (2, 2), (2, 2), (10, 2), (2,), (2,), (5, 2), (2,), (2,), (2,)],
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], [(10, 2), (10, 2), (10, 2)], 30],
+        [[(10, 3)], [(10, 3)], [(10, 2), (10, 2), (10, 2)], 30],
     ]
 
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
