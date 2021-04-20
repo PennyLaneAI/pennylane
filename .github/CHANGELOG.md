@@ -44,9 +44,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Diego Guala
-
-Thomas Bromley 
+Thomas Bromley, Diego Guala 
 
 # Release 0.15.0 (current release)
 
