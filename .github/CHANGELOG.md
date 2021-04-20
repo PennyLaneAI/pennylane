@@ -773,6 +773,10 @@
 
 <h3>Documentation</h3>
 
+- Updated the diagram used in the Architectural overview page of the
+  Development guide such that it doesn't mention Variables.
+  [(#1235)](https://github.com/PennyLaneAI/pennylane/pull/1235)
+
 - Typos addressed in templates documentation.
   [(#1094)](https://github.com/PennyLaneAI/pennylane/pull/1094)
 
