@@ -215,8 +215,7 @@ def _inner_net_flow_constraint_hamiltonian(
         node: a fixed node
 
     Returns:
-        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
-        observables of the inner part of the net-flow constraint Hamiltonian.
+        qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
     """
     edges_to_qubits = edges_to_wires(graph)
 
