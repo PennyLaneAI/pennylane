@@ -930,6 +930,62 @@ class TestShotList:
         # test gradient works
         res = qml.jacobian(circuit)(0.5, 0.1)
 
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],
+        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+                [(), (2,), (2,),(2,),(10,), (), (), (5,), (), (), ()], 27],
+        [[10, 10, 10], [(10, 3)], [(10,), (10,), (10,)], 30],
+        [[(10, 3)], [(10, 3)], [(10,),(10,),(10,)], 30],
+    ]
+
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
+    def test_sample(self, shot_list, shot_vector, expected_shapes, total_shots):
+        """Test sample returns"""
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(wires=0))
+
+        res = circuit(0.5, 0.1)
+
+        for r, shape in zip(res, expected_shapes):
+            assert r.shape == shape
+
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(2,), (2,2), (3,2), (10,2)], 16],
+        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+                [(2,), (2,2), (2,2),(2,2),(10,2), (2,), (2,), (5,2), (2,), (2,), (2,)], 27],
+        [[10, 10, 10], [(10,3)], [(10,2), (10,2), (10,2)], 30],
+        [[(10, 3)], [(10, 3)], [(10,2),(10,2),(10,2)], 30],
+    ]
+
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
+    def test_multiple_sample(self, shot_list, shot_vector, expected_shapes, total_shots):
+        """Test sample returns"""
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(wires=0)), qml.sample(qml.PauliZ(wires=1))
+
+        res = circuit(0.5, 0.1)
+
+        for r, shape in zip(res, expected_shapes):
+            assert r.shape == shape
+
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
     def test_invalid_shot_list(self):
         """Test exception raised if the shot list is the wrong type"""
         with pytest.raises(qml.DeviceError, match="Shots must be"):

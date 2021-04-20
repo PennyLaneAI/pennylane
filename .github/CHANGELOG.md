@@ -483,6 +483,9 @@
   transforms.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
+* Sampling works correctly with batches of shots specified as a list.
+  [(#1232)](https://github.com/PennyLaneAI/pennylane/pull/1232)
+
 * Adds a new transform `qml.invisible`.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
