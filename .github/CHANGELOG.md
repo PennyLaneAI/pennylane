@@ -66,10 +66,6 @@ print(a_input,"+",b_input, "=",result_string)
   (0, 1)
   ```
 
-* Computing second derivatives and Hessians of QNodes is now supported when
-  using the Autograd interface.
-  [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
-
 <h3>Improvements</h3>
 
 * PennyLane's test suite is now code-formatted using `black -l 100`.
@@ -83,7 +79,9 @@ print(a_input,"+",b_input, "=",result_string)
 
 <h3>Contributors</h3>
 
-This release contains contributions from:
+This release contains contributions from (in alphabetical order):
+
+Diego Guala
 
 Thomas Bromley, Diego Guala
 
