@@ -53,7 +53,8 @@ class Hamiltonian:
     >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    (0.2) [X0 Z1] + (-0.543) [Z0 H2]
+      (-0.543) [Z0 H2]
+    + (0.2) [X0 Z1]
 
     The user can also provide custom observables:
 
@@ -141,7 +142,8 @@ class Hamiltonian:
         >>> H = qml.Hamiltonian([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
-        (1.0) [Y2] + (-1.0) [X0]
+          (-1) [X0]
+        + (1) [Y2]
         """
 
         coeffs = []
@@ -206,7 +208,7 @@ class Hamiltonian:
 
         **Example**
 
-        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Paulix(1), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
         >>> print(H._obs_data())
         {(1, frozenset({('PauliZ', <Wires = [1]>, ())})),
         (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}

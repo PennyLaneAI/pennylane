@@ -27,10 +27,12 @@ to generate the electronic Hamiltonian in a single call. For example,
 .. code-block:: python
 
     from pennylane import qchem
+    import numpy as np
 
+    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     h, qubits = qchem.molecular_hamiltonian(
-        name='h2',
-        geo_file='h2.xyz',
+        symbols,
+        coordinates,
         charge=0,
         mult=1,
         basis='sto-3g',
@@ -69,9 +71,9 @@ The atomic structure of a molecule can be imported from an external file using t
 
 .. code-block:: python
 
-    >>> geometry = qchem.read_structure('h2o.SDF')
-    >>> print(geometry)
-    [['H', (-0.0211, -0.002, 0.0)], ['O', (0.8345, 0.4519, 0.0)], ['H', (1.4769, -0.273, 0.0)]]
+    >>> symbols, coordinates = qchem.read_structure('h2.xyz')
+    >>> print(symbols, coordinates)
+    ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
 
 The geometry of the molecule is returned as a list containing the symbol and the Cartesian
 coordinates of each atomic species.
@@ -99,17 +101,18 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
 
 .. code-block:: python
 
-    geometry = qchem.read_structure('h2o.SDF')
+    symbols, coordinates = qchem.read_structure('h2o.xyz')
     hf_file = qchem.meanfield(
-        'water',
-        geometry,
+        symbols,
+        coordinates,
+        name='water',
         charge=-1,
         mult=2,
         basis='6-31g',
         package='pyscf'
     )
 
-The output ``hf_file`` is the absolute path to the file ``'water.hd5'`` containing
+The output ``hf_file`` is the absolute path to the file containing
 the Hartree-Fock electronic structure of the water molecule.
 
 Mapping the Hamiltonian to the Pauli basis

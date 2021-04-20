@@ -15,15 +15,7 @@
 This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments
-from warnings import warn
-
 import pennylane as qml
-
-WARNING_STRING = (
-    "SquaredErrorLoss will no longer be directly imported in PennyLane from "
-    "release 0.16.0. It will be accessible by importing the qnn module. Consider adding "
-    "'from pennylane import qnn' to your existing code now."
-)
 
 
 class SquaredErrorLoss:
@@ -66,7 +58,9 @@ class SquaredErrorLoss:
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=3)
+        num_qubits = 3
+
+        dev = qml.device('default.qubit', wires=num_qubits)
 
         def ansatz(phis, **kwargs):
             for w, phi in enumerate(phis):
@@ -84,7 +78,7 @@ class SquaredErrorLoss:
 
     Next, we can define the loss function:
 
-    >>> loss = qml.qnn.SquaredErrorLoss(ansatz, observables, dev, interface="torch")
+    >>> loss = qml.qnn.cost.SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
     tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
@@ -103,7 +97,6 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        warn(WARNING_STRING, DeprecationWarning, stacklevel=2)
         self.qnodes = qml.map(
             ansatz,
             observables,

@@ -50,8 +50,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.15"
-    version = "0.15.0"
+    pennylane_requires = "0.16"
+    version = "0.16.0"
     author = "Xanadu Inc."
 
     operations = {

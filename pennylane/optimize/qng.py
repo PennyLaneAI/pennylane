@@ -116,7 +116,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     optimizer's ``step`` function:
 
     >>> eta = 0.01
-    >>> init_params = [0.011, 0.012]
+    >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(cost_fn, init_params)
     >>> print(theta_new)
@@ -128,7 +128,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> qnodes = qml.map(circuit, obs, dev, 'expval')
     >>> cost_fn = qml.dot(coeffs, qnodes)
     >>> eta = 0.01
-    >>> init_params = [0.011, 0.012]
+    >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
     >>> print(theta_new)
