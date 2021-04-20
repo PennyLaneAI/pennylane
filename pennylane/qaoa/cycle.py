@@ -99,7 +99,8 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
 
     assuming :math:`c_{ij} > 0`.
 
-    This can be restated as a minimization over the following qubit Hamiltonian:
+    This can be restated as a minimization of the expectation value of the following qubit
+    Hamiltonian:
 
     .. math::
 
