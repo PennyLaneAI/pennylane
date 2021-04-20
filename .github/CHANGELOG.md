@@ -52,6 +52,7 @@
          [ 0., -1.,  0., -0.],
          [ 0.,  0.,  1.,  0.],
          [ 0., -0.,  0., -1.]])
+  ```
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
