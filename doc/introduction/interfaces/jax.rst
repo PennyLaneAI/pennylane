@@ -10,6 +10,7 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
 ``QNode`` can be translated into a quantum node that interfaces with JAX by using the
 ``interface='jax'`` flag in the QNode decorator.
 
+
 .. note::
 
     When using ``diff_method="parameter-shift"`` with the JAX interface, only QNodes that

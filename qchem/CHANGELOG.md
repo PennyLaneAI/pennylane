@@ -1,20 +1,18 @@
-# Release 0.14.0-dev
+# Release 0.15.0
 
-<h3>New features since last release</h3>
-
-<h3>Improvements</h3>
+<h3>Breaking changes</h3>
 
 * The molecular geometry is now stored by a list containing the atomic symbols and
   a 1D array with the position of the atoms in atomic units.
 
-  - The ``read_structure`` function returns a list with the symbols of the atoms and
+  - The `read_structure` function returns a list with the symbols of the atoms and
     the array with the atomic positions. 
 
-  - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
+  - The `meanfield` and `molecular_hamiltonian` functions take separately the
     list of atomic symbols and the array with the atomic coordinates.
 
-  - Labelling the molecule is now optional as we have made ``name`` a keyword argument
-    in the ``meanfield`` and ``molecular_hamiltonian`` functions.
+  - Labelling the molecule is now optional as we have made `name` a keyword argument
+    in the `meanfield` and `molecular_hamiltonian` functions.
 
     For example:
 
@@ -26,17 +24,11 @@
   This allows users to more easily build parametrized electronic Hamiltonians
   [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
 
-<h3>Breaking changes</h3>
-
-<h3>Documentation</h3>
-
-<h3>Bug fixes</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
 
 
 # Release 0.13.1
