@@ -33,15 +33,8 @@ class OperationRecorder(QuantumTape):
     >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
     >>>
     >>> with OperationRecorder() as rec:
-    >>>    qml.templates.layers.StronglyEntanglingLayers(*weights, wires=[0, 1])
-    >>>
-    >>> print(rec)
-    Operations
-    ==========
-    Rot(-0.10832656163640327, 0.14429091013664083, -0.010835826725765343, wires=[0])
-    Rot(-0.11254523669444501, 0.0947222564914006, -0.09139600968423377, wires=[1])
-    CNOT(wires=[0, 1])
-    CNOT(wires=[1, 0])
+    >>>    qml.templates.layers.StronglyEntanglingLayers(weights, wires=[0, 1])
+
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
     to directly access the applied :class:`~.Operation` and :class:`~.Observable`

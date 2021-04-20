@@ -83,7 +83,7 @@ def metric_tensor_tape(tape, diag_approx=False, wrt=None):
      0: ──H──╭┤ Probs
      1: ──H──├┤ Probs
      2: ─────╰┤ Probs
-    >>> print(mt_tapes[0].draw())
+    >>> print(mt_tapes[1].draw())
      0: ──RX(0.1)──╭C──────╭┤ Probs
      1: ──RX(0.2)──╰X──╭C──├┤ Probs
      2: ───────────────╰X──╰┤ Probs
