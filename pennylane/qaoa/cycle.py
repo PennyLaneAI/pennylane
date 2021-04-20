@@ -93,7 +93,7 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     Our objective is to maximimize :math:`P`, subject to selecting the :math:`x_{ij}` so that
     our subset of edges composes a cycle.
 
-    The product of weights is maximized by equivalently considering
+    The product of edge weights is maximized by equivalently considering
 
     .. math:: \sum_{(i, j) \in E} x_{ij}\log c_{ij},
 
