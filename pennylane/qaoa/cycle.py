@@ -86,7 +86,7 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
     weights, as outlined `here <https://1qbit.com/whitepaper/arbitrage/>`__. The product of weights
     of a subset of edges in a graph is given by
 
-    .. math:: \prod_{(i, j) \in E} x_{ij} c_{ij}
+    .. math:: P = \prod_{(i, j) \in E} x_{ij} c_{ij}
 
     where :math:`E` are the edges of the graph, :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)` and :math:`c_{ij}` is the corresponding edge weight.
