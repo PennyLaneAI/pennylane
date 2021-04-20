@@ -77,7 +77,7 @@ def test_show_all_wires_error():
     """Test that show_all_wires will raise an error if the provided wire
     order does not contain all wires on the device"""
 
-    dev = qml.device('default.qubit', wires=[-1, "a", "q2", 0])
+    dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
     @qml.qnode(dev)
     def circuit():
@@ -93,7 +93,7 @@ def test_missing_wire():
     """Test that wires not specifically mentioned in the wire
     reordering are appended at the bottom of the circuit drawing"""
 
-    dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+    dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
     @qml.qnode(dev)
     def circuit():
@@ -107,7 +107,7 @@ def test_missing_wire():
     expected = [
         " q2: ──╭X───────────┤ ⟨X⟩ ",
         "  a: ──╰C──RX(0.2)──┤     ",
-        " -1: ───H───────────┤     \n"
+        " -1: ───H───────────┤     \n",
     ]
 
     assert res == "\n".join(expected)
@@ -117,7 +117,7 @@ def test_missing_wire():
     expected = [
         " q2: ─────╭X───────────┤ ⟨X⟩ ",
         " -1: ──H──│────────────┤     ",
-        "  a: ─────╰C──RX(0.2)──┤     \n"
+        "  a: ─────╰C──RX(0.2)──┤     \n",
     ]
 
     assert res == "\n".join(expected)
@@ -127,7 +127,7 @@ def test_missing_wire():
     expected = [
         " q2: ─────╭X───────────┤ ⟨X⟩ ",
         " -1: ──H──│────────────┤     ",
-        "  a: ─────╰C──RX(0.2)──┤     \n"
+        "  a: ─────╰C──RX(0.2)──┤     \n",
     ]
 
     assert res == "\n".join(expected)
@@ -136,7 +136,7 @@ def test_missing_wire():
 def test_invalid_wires():
     """Test that an exception is raised if a wire in the wire
     ordering does not exist on the device"""
-    dev = qml.device('default.qubit', wires=["a", -1, "q2"])
+    dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
     @qml.qnode(dev)
     def circuit():

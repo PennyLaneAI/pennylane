@@ -73,6 +73,7 @@ class JacobianTape(QuantumTape):
 
     The Jacobian is computed using finite difference:
 
+    >>> dev = qml.device('default.qubit', wires=[0, 'a'])
     >>> tape.jacobian(dev)
     [[-0.35846484 -0.46923704  0.        ]]
     >>> tape.jacobian(dev, params=[0.1, 0.1, 0.1])
@@ -82,7 +83,7 @@ class JacobianTape(QuantumTape):
     avoiding unnecessary calculations:
 
     >>> tape.trainable_params = {0} # set only the first parameter as free
-    >>> tape.set_parameters(0.56)
+    >>> tape.set_parameters([0.56])
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
