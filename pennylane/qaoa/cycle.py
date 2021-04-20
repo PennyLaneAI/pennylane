@@ -79,7 +79,7 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
     return {i: edge for i, edge in enumerate(graph.edges)}
 
 
-def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
+def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
     r"""Calculates the product of edge weights Hamiltonian.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
