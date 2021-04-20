@@ -124,7 +124,7 @@ def edge_weight(graph: nx.DiGraph) -> qml.Hamiltonian:
         qml.Hamiltonian: the product of edge weights Hamiltonian
 
     Raises:
-        ValueError: if the graph contains parallel edges or self-loops
+        ValueError: if the graph contains self-loops
         KeyError: if one or more edges do not contain weight data
     """
     edges_to_qubits = edges_to_wires(graph)
