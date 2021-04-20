@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, edge_weight
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, loss_hamiltonian
 
 #####################################################
 
@@ -740,14 +740,14 @@ class TestCycles:
             13: (4, 3),
         }
 
-    def test_edge_weight_complete(self):
-        """Test if the edge_weight function returns the expected result on a
+    def test_loss_hamiltonian_complete(self):
+        """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
         g = nx.complete_graph(3).to_directed()
         edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
         for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
-        h = edge_weight(g)
+        h = loss_hamiltonian(g)
 
         expected_ops = [
             qml.PauliZ(0),
@@ -763,14 +763,14 @@ class TestCycles:
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
-    def test_edge_weight_incomplete(self):
-        """Test if the edge_weight function returns the expected result on a
+    def test_loss_hamiltonian_incomplete(self):
+        """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 4-node incomplete digraph"""
         g = nx.lollipop_graph(4, 1).to_directed()
         edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
         for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
-        h = edge_weight(g)
+        h = loss_hamiltonian(g)
 
         expected_ops = [
             qml.PauliZ(0),
@@ -819,11 +819,11 @@ class TestCycles:
         g.add_edge(1, 1)  # add self loop
 
         with pytest.raises(ValueError, match="Graph contains self-loops"):
-            edge_weight(g)
+            loss_hamiltonian(g)
 
     def test_missing_edge_weight_data_raises_error(self):
         """Test graphs with no edge weight data raises `KeyError`"""
         g = nx.complete_graph(3).to_directed()
 
         with pytest.raises(KeyError, match="does not contain weight data"):
-            edge_weight(g)
+            loss_hamiltonian(g)
