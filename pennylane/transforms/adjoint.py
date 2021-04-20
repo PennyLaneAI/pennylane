@@ -44,7 +44,6 @@ def adjoint(fn):
 
     >>> print(tape.operations)
     [RX(0.123, wires=[0]), RY(0.456, wires=[0])]
-
     >>> print(tape_adj.operatioins)
     [RY(-0.456, wires=[0]), RX(-0.123, wires=[0])]
 
