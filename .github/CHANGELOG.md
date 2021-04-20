@@ -461,6 +461,9 @@ fully differentiable.
 
 <h3>Improvements</h3>
 
+* The ``MottonenStatePreparation`` template has improved performance on states with only real
+  amplitudes by reducing the number of redundant CNOT gates at the end of a circuit.
+
   ```python
   dev = qml.device("default.qubit", wires=2)
   
