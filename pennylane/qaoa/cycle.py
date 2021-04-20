@@ -145,7 +145,6 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
             raise KeyError(f"Edge {edge} does not contain weight data") from e
 
         coeffs.append(np.log(weight))
-        wires = (edges_to_qubits[edge],)
-        ops.append(qml.PauliZ(wires=wires))
+        ops.append(qml.PauliZ(wires=edges_to_qubits[edge]))
 
     return qml.Hamiltonian(coeffs, ops)
