@@ -2216,19 +2216,16 @@ class TestArithmetic:
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
         with qml.tape.QuantumTape() as tape:
-            qml.QubitSum(wires=wires)
-
-        if expand:
-            tape = tape.expand()
-
-        with qml.tape.QuantumTape() as tape2:
             qml.QubitStateVector(input_state, wires=[0, 1, 2])
+
+            if expand:
+                qml.QubitSum(wires=wires).expand()
+            else:
+                qml.QubitSum(wires=wires)
+
             qml.state()
 
-        for i in tape.operations:
-            tape2._ops.append(i)
-
-        result = dev.execute(tape2)
+        result = dev.execute(tape)
         assert np.allclose(result, output_state)
 
         # checks that decomposition is only used when intended
