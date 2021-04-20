@@ -1731,7 +1731,6 @@ class SingleExcitation(Operation):
             return qml.state()
 
         circuit(0.1)
-
     """
 
     num_params = 1
@@ -2236,7 +2235,6 @@ class DoubleExcitation(Operation):
             return qml.state()
 
         circuit(0.1)
-        
     """
 
     num_params = 1
