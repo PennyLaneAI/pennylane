@@ -784,5 +784,5 @@ class TestCycles:
         """Test graphs with no edge weight data raises `ValueError`"""
         g = nx.complete_graph(3).to_directed()
 
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError, match="does not contain weight data"):
             h = edge_weight(g)
