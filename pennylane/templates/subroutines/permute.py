@@ -62,17 +62,15 @@ class Permute(Operation):
 
             @qml.qnode(dev)
             def apply_perm():
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=2)
                 qml.templates.Permute([3, 2, 0, 1], dev.wires)
                 return qml.expval(qml.PauliZ(0))
 
         >>> apply_perm()
-        >>> print(apply_perm.draw())
-        0: ──H─────────╭SWAP─────────┤ ⟨Z⟩
-        1: ─────╭SWAP──│─────────────┤
-        2: ──H──╰SWAP──│──────╭SWAP──┤
-        3: ────────────╰SWAP──╰SWAP──┤
+        >>> print(apply_perm.draw(wire_order=[0,1,2,3]))
+        0: ─────────╭SWAP─────────┤ ⟨Z⟩
+        1: ──╭SWAP──│─────────────┤
+        2: ──╰SWAP──│──────╭SWAP──┤
+        3: ─────────╰SWAP──╰SWAP──┤
 
         ``Permute`` can also be used with quantum tapes. For example, suppose we
         have a tape with 5 wires ``[0, 1, 2, 3, 4]``, and we'd like to reorder them
@@ -82,21 +80,17 @@ class Permute(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import Permute
 
             with qml.tape.QuantumTape() as tape:
-                # RZs added to ensure numerical ordering in drawing
-                for wire in range(5):
-                    qml.RZ(0, wires=wire)
-                Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+                qml.templates.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
 
-
-        >>> print(tape.draw())
-        0: ──RZ(0)─────────╭SWAP────────────────┤
-        1: ──RZ(0)──╭SWAP──│────────────────────┤
-        2: ──RZ(0)──╰SWAP──│──────╭SWAP─────────┤
-        3: ──RZ(0)─────────│──────│──────╭SWAP──┤
-        4: ──RZ(0)─────────╰SWAP──╰SWAP──╰SWAP──┤
+        >>> tape_expanded = qml.tape.tape.expand_tape(tape)
+        >>> print(tape_expanded.draw(wire_order=qml.wires.Wires([0,1,2,3,4])))
+        0: ─────────╭SWAP────────────────┤
+        1: ──╭SWAP──│────────────────────┤
+        2: ──╰SWAP──│──────╭SWAP─────────┤
+        3: ─────────│──────│──────╭SWAP──┤
+        4: ─────────╰SWAP──╰SWAP──╰SWAP──┤
 
         ``Permute`` can also be applied to wires with arbitrary labels, like so:
 
@@ -104,44 +98,45 @@ class Permute(Operation):
 
             wire_labels = [3, 2, "a", 0, "c"]
 
-            with qml.tape.QuantumTape() as tape:
-                # RZs added to ensure numerical ordering in drawing
-                for wire in range(5):
-                    qml.RZ(0, wires=wire)
-                Permute(["c", 3, "a", 2, 0], wires=wire_labels)
+            dev = qml.device('default.qubit', wires=wire_labels)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.templates.Permute(["c", 3,"a",2,0], wires=wire_labels)
+                return qml.expval(qml.PauliZ("c"))
 
         The permuted circuit is:
 
-        >>> print(tape.draw())
-        3: ──RZ(0)──╭SWAP────────────────┤
-        2: ──RZ(0)──│──────╭SWAP─────────┤
-        a: ──RZ(0)──│──────│─────────────┤
-        0: ──RZ(0)──│──────│──────╭SWAP──┤
-        c: ──RZ(0)──╰SWAP──╰SWAP──╰SWAP──┤
+        >>> circuit()
+        >>> print(circuit.draw(wire_order=wire_labels))
+        3: ──╭SWAP────────────────┤
+        2: ──│──────╭SWAP─────────┤
+        0: ──│──────│──────╭SWAP──┤
+        c: ──╰SWAP──╰SWAP──╰SWAP──┤
 
         It is also possible to permute a subset of wires by
         specifying a subset of labels. For example,
 
         .. code-block:: python
 
-           wire_labels = [3, 2, "a", 0, "c"]
+            wire_labels = [3, 2, "a", 0, "c"]
 
-            with qml.tape.QuantumTape() as tape:
-                # Create 5 wires
-                for wire in range(num_wires):
-                    qml.RZ(0, wires=wire)
+            dev = qml.device('default.qubit', wires=wire_labels)
 
+            @qml.qnode(dev)
+            def circuit()
                 # Only permute the order of 3 of them
-                Permute(["c", 2, 0], wires=[2, 0, "c"])
+                qml.templates.Permute(["c", 2, 0], wires=[2, 0, "c"])
+                return qml.expval(qml.PauliZ("c"))
 
         will permute only the second, third, and fifth wires as follows:
 
-        >>> print(tape.draw())
-        3: ──RZ(0)────────────────┤
-        2: ──RZ(0)──╭SWAP─────────┤
-        a: ──RZ(0)──│─────────────┤
-        0: ──RZ(0)──│──────╭SWAP──┤
-        c: ──RZ(0)──╰SWAP──╰SWAP──┤
+        >>> circuit()
+        >>> print(circuit.draw(wire_order=wire_labels))
+        3: ──╭SWAP────────────────┤
+        2: ──│──────╭SWAP─────────┤
+        0: ──│──────│──────╭SWAP──┤
+        c: ──╰SWAP──╰SWAP──╰SWAP──┤ ⟨Z⟩
 
     """
 

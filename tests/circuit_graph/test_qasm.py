@@ -232,9 +232,7 @@ class TestToQasmUnitTests:
         with qml.tape.QuantumTape() as circuit:
             qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])
 
-        with pytest.raises(
-            ValueError, match="QubitUnitary not supported by the QASM serializer"
-        ):
+        with pytest.raises(ValueError, match="QubitUnitary not supported by the QASM serializer"):
             res = circuit.to_openqasm()
 
     def test_rotations(self):
@@ -591,9 +589,7 @@ class TestQNodeQasmIntegrationTests:
 
         qnode()
 
-        with pytest.raises(
-            ValueError, match="QubitUnitary not supported by the QASM serializer"
-        ):
+        with pytest.raises(ValueError, match="QubitUnitary not supported by the QASM serializer"):
             qnode.qtape.to_openqasm()
 
     def test_rotations(self):
@@ -672,7 +668,6 @@ class TestQASMConformanceTests:
     serialized QASM conforms to the QASM standard as implemented
     by Qiskit. Note that this test class requires Qiskit and
     PennyLane-Qiskit as a dependency."""
-
 
     @pytest.fixture
     def check_dependencies(self):

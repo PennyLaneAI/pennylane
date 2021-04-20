@@ -39,6 +39,8 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
 
     .. code-block:: python3
 
+        dev = qml.device('default.qubit', wires=2)
+
         @qml.qnode(dev)
         def circuit(a, w):
             qml.Hadamard(0)
@@ -50,7 +52,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
     We can draw the it like such:
 
     >>> drawer = qml.draw(circuit)
-    >>> drawer(a=2.3, w=[1.2, 3.2, 0.7])
+    >>> print(drawer(a=2.3, w=[1.2, 3.2, 0.7]))
     0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
     1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
 
@@ -70,7 +72,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
     When printed, the wire order matches the order defined on the device:
 
     >>> drawer = qml.draw(circuit)
-    >>> drawer()
+    >>> print(drawer())
       a: ─────╭C──RX(0.2)──┤
      -1: ──H──│────────────┤
      q2: ─────╰X───────────┤ ⟨X⟩
@@ -78,7 +80,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
     We can use the ``wire_order`` argument to change the wire order:
 
     >>> drawer = qml.draw(circuit, wire_order=["q2", "a", -1])
-    >>> drawer()
+    >>> print(drawer())
      q2: ──╭X───────────┤ ⟨X⟩
       a: ──╰C──RX(0.2)──┤
      -1: ───H───────────┤
@@ -103,7 +105,5 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
         return qnode.qtape.draw(
             charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires
         )
-
-        return qnode.qtape.draw(charset, wire_order=_wire_order, show_all_wires=show_all_wires)
 
     return wrapper
