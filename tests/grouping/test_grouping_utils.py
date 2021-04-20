@@ -300,7 +300,6 @@ class TestGroupingUtils:
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
 
-
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_string",
         [
@@ -451,4 +450,3 @@ class TestGroupingUtils:
     def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
         with pytest.raises(TypeError):
             is_commuting(pauli_word_1, pauli_word_2)
-
