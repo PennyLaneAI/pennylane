@@ -22,7 +22,14 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, _inner_net_flow_constraint_hamiltonian, net_flow_constraint
+from pennylane.qaoa.cycle import (
+    edges_to_wires,
+    wires_to_edges,
+    _square_hamiltonian_terms,
+    _collect_duplicates,
+    _inner_net_flow_constraint_hamiltonian,
+    net_flow_constraint,
+)
 
 
 #####################################################
@@ -699,7 +706,6 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-
     def test_square_hamiltonian_terms(self):
         """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
         example"""
@@ -707,52 +713,112 @@ class TestCycles:
         ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
 
         expected_coeffs = [
-            1, -1, -1, 1,
-            -1, 1, 1, -1,
-            -1, 1, 1, -1,
-            1, -1, -1, 1,
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
         ]
         expected_ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
         ]
 
         squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
 
         assert squared_coeffs == expected_coeffs
-        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, squared_ops)])
-
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, squared_ops)
+            ]
+        )
 
     def test_collect_duplicates(self):
         """Test if the _collect_duplicates function returns the expected result on a fixed
         example"""
         coeffs = [
-            1, -1, -1, 1,
-            -1, 1, 1, -1,
-            -1, 1, 1, -1,
-            1, -1, -1, 1,
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
         ]
         ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
         ]
 
         reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
 
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
         expected_ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
             qml.PauliZ(1) @ qml.PauliZ(3),
         ]
 
         assert expected_coeffs == reduced_coeffs
-        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, reduced_ops)])
-
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, reduced_ops)
+            ]
+        )
 
     def test_duplicates_remove_zeros(self):
         """Test if the _collect_duplicates function removes terms with a zero coefficient"""
@@ -765,7 +831,6 @@ class TestCycles:
         assert len(reduced_ops) == 1
         assert reduced_ops[0].name == "PauliZ"
         assert reduced_ops[0].wires.tolist() == [1]
-
 
     def test_inner_net_flow_constraint_hamiltonian(self):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
@@ -788,7 +853,6 @@ class TestCycles:
         assert [h.ops[i] == expected_op for i, expected_op in enumerate(expected_ops)]
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
-
     def test_inner_net_flow_constraint_hamiltonian_non_complete(self):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
@@ -810,7 +874,6 @@ class TestCycles:
         assert expected_coeffs == h.coeffs
         assert [h.ops[i] == expected_op for i, expected_op in enumerate(expected_ops)]
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-
 
     def test_net_flow_constraint(self):
         """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
@@ -859,10 +922,9 @@ class TestCycles:
             else:
                 assert energy > min(energies_states)[0]
 
-
     def test_net_flow_constraint_undirected_raises_error(self):
         """Test `net_flow_constraint` raises ValueError if input graph is not directed """
-        g = nx.complete_graph(3) # undirected graph
+        g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
             h = net_flow_constraint(g)
