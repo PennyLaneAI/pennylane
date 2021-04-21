@@ -16,11 +16,12 @@ Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
 import numpy as np
+import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-
+from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges
 
 #####################################################
 
@@ -676,3 +677,65 @@ class TestIntegration:
         expected = -1.8260274380964299
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestCycles:
+    """Tests that ``cycle`` module functions are behaving correctly"""
+
+    def test_edges_to_wires(self):
+        """Test that edges_to_wires returns the correct mapping"""
+        g = nx.lollipop_graph(4, 1)
+        r = edges_to_wires(g)
+
+        assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
+
+    def test_wires_to_edges(self):
+        """Test that wires_to_edges returns the correct mapping"""
+        g = nx.lollipop_graph(4, 1)
+        r = wires_to_edges(g)
+
+        assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
+
+    def test_edges_to_wires_directed(self):
+        """Test that edges_to_wires returns the correct mapping on a directed graph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        r = edges_to_wires(g)
+
+        assert r == {
+            (0, 1): 0,
+            (0, 2): 1,
+            (0, 3): 2,
+            (1, 0): 3,
+            (1, 2): 4,
+            (1, 3): 5,
+            (2, 0): 6,
+            (2, 1): 7,
+            (2, 3): 8,
+            (3, 0): 9,
+            (3, 1): 10,
+            (3, 2): 11,
+            (3, 4): 12,
+            (4, 3): 13,
+        }
+
+    def test_wires_to_edges_directed(self):
+        """Test that wires_to_edges returns the correct mapping on a directed graph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        r = wires_to_edges(g)
+
+        assert r == {
+            0: (0, 1),
+            1: (0, 2),
+            2: (0, 3),
+            3: (1, 0),
+            4: (1, 2),
+            5: (1, 3),
+            6: (2, 0),
+            7: (2, 1),
+            8: (2, 3),
+            9: (3, 0),
+            10: (3, 1),
+            11: (3, 2),
+            12: (3, 4),
+            13: (4, 3),
+        }

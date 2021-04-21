@@ -92,3 +92,11 @@ QAOA Layers
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+
+Cycle Optimization
+------------------
+
+.. automodapi:: pennylane.qaoa.cycle
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
