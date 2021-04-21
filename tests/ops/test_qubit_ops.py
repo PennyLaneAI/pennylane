@@ -391,6 +391,7 @@ class TestOperations:
             qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
             qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+            qml.QubitSum(wires=[0, 1, 2]),
         ],
     )
     def test_adjoint_unitaries(self, op, tol):
@@ -401,7 +402,13 @@ class TestOperations:
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
 
-    @pytest.mark.parametrize("op_builder", [lambda: qml.QFT(wires=[1, 2, 3])])
+    @pytest.mark.parametrize(
+        "op_builder",
+        [
+            lambda: qml.QFT(wires=[1, 2, 3]),
+            lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
+        ],
+    )
     def test_adjoint_with_decomposition(self, op_builder):
         op = op_builder()
         decomposed_ops = op.decomposition(wires=op.wires)
@@ -2089,3 +2096,152 @@ class TestMultiControlledX:
         pauli_x_state = circuit_pauli_x()
 
         assert np.allclose(mpmct_state, pauli_x_state)
+
+
+class TestArithmetic:
+    """Tests the arithmetic operations."""
+
+    @pytest.mark.parametrize(
+        "wires,input_string,output_string,expand",
+        [
+            ([0, 1, 2, 3], "0000", "0000", True),
+            ([0, 1, 2, 3], "0001", "0001", True),
+            ([0, 1, 2, 3], "0010", "0010", True),
+            ([0, 1, 2, 3], "0011", "0011", True),
+            ([0, 1, 2, 3], "0100", "0110", True),
+            ([0, 1, 2, 3], "0101", "0111", True),
+            ([0, 1, 2, 3], "0110", "0101", True),
+            ([0, 1, 2, 3], "0111", "0100", True),
+            ([0, 1, 2, 3], "1000", "1000", True),
+            ([0, 1, 2, 3], "1001", "1001", True),
+            ([0, 1, 2, 3], "1010", "1011", True),
+            ([0, 1, 2, 3], "1011", "1010", True),
+            ([0, 1, 2, 3], "1100", "1111", True),
+            ([0, 1, 2, 3], "1101", "1110", True),
+            ([0, 1, 2, 3], "1110", "1101", True),
+            ([0, 1, 2, 3], "1111", "1100", True),
+            ([3, 1, 2, 0], "0110", "1100", True),
+            ([3, 2, 0, 1], "1010", "0110", True),
+            ([0, 1, 2, 3], "0000", "0000", False),
+            ([0, 1, 2, 3], "0001", "0001", False),
+            ([0, 1, 2, 3], "0010", "0010", False),
+            ([0, 1, 2, 3], "0011", "0011", False),
+            ([0, 1, 2, 3], "0100", "0110", False),
+            ([0, 1, 2, 3], "0101", "0111", False),
+            ([0, 1, 2, 3], "0110", "0101", False),
+            ([0, 1, 2, 3], "0111", "0100", False),
+            ([0, 1, 2, 3], "1000", "1000", False),
+            ([0, 1, 2, 3], "1001", "1001", False),
+            ([0, 1, 2, 3], "1010", "1011", False),
+            ([0, 1, 2, 3], "1011", "1010", False),
+            ([0, 1, 2, 3], "1100", "1111", False),
+            ([0, 1, 2, 3], "1101", "1110", False),
+            ([0, 1, 2, 3], "1110", "1101", False),
+            ([0, 1, 2, 3], "1111", "1100", False),
+            ([3, 1, 2, 0], "0110", "1100", False),
+            ([3, 2, 0, 1], "1010", "0110", False),
+        ],
+    )
+    def test_QubitCarry(self, wires, input_string, output_string, expand, mocker):
+        """Test if ``QubitCarry`` produces the right output and is expandable."""
+        dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitCarry, "decomposition")
+
+        with qml.tape.QuantumTape() as tape:
+            for i in range(len(input_string)):
+                if input_string[i] == "1":
+                    qml.PauliX(i)
+            qml.QubitCarry(wires=wires)
+            qml.probs(wires=[0, 1, 2, 3])
+
+        if expand:
+            tape = tape.expand()
+        result = dev.execute(tape)
+        result = np.argmax(result)
+        result = format(result, "04b")
+        assert result == output_string
+
+        # checks that decomposition is only used when intended
+        assert expand is (len(spy.call_args_list) != 0)
+
+    def test_QubitCarry_superposition(self):
+        """Test if ``QubitCarry`` works for superposition input states."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.Hadamard(wires=2)
+            qml.QubitCarry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=3)
+
+        result = circuit()
+        assert np.allclose(result, 0.5)
+
+    # fmt: off
+    @pytest.mark.parametrize(
+        "wires,input_state,output_state,expand",
+        [
+            ([0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], True),
+            ([0, 1, 2], [0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], True),
+            ([0, 1, 2], [0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], True),
+            ([0, 1, 2], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0], True),
+            ([0, 1, 2], [0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0], True),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0], True),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0], True),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 1], True),
+            ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], True),
+            ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], True),
+            ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], True),
+            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
+            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], True),
+            ([0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], False),
+            ([0, 1, 2], [0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
+            ([0, 1, 2], [0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
+            ([0, 1, 2], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0], False),
+            ([0, 1, 2], [0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0], False),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0], False),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0], False),
+            ([0, 1, 2], [0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 1], False),
+            ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
+            ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
+            ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], False),
+            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
+            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], False),
+        ],
+    )
+    # fmt: on
+    def test_QubitSum(self, wires, input_state, output_state, expand, mocker):
+        """Test if ``QubitSum`` produces the correct output"""
+        dev = qml.device("default.qubit", wires=3)
+        spy = mocker.spy(qml.QubitSum, "decomposition")
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(input_state, wires=[0, 1, 2])
+
+            if expand:
+                qml.QubitSum(wires=wires).expand()
+            else:
+                qml.QubitSum(wires=wires)
+
+            qml.state()
+
+        result = dev.execute(tape)
+        assert np.allclose(result, output_state)
+
+        # checks that decomposition is only used when intended
+        assert expand is (len(spy.call_args_list) != 0)
+
+    def test_qubit_sum_adjoint(self):
+        """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
+        if it is equal to qml.QubitSum.matrix (recall that the operation is self-adjoint)"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f(state):
+            qml.QubitStateVector(state, wires=range(3))
+            qml.adjoint(qml.QubitSum)(wires=range(3))
+            return qml.probs(wires=range(3))
+
+        u = np.array([f(state) for state in np.eye(2 ** 3)]).T
+        assert np.allclose(u, qml.QubitSum._matrix())
