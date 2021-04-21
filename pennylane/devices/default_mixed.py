@@ -98,6 +98,8 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitation",
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):

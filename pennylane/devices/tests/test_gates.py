@@ -74,6 +74,8 @@ ops = {
     "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
+    "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
+    "QubitSum:": qml.QubitSum(wires=[0, 1, 2]),
 }
 
 all_ops = ops.keys()
