@@ -117,6 +117,15 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
         a cycle. This constraint can be enforced using a penalty term or by selecting a QAOA
         mixer Hamiltonian that only transitions between states that correspond to cycles.
 
+    **Example**
+
+    >>> import networkx as nx
+    >>> g = nx.complete_graph(3).to_directed()
+    >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+    >>> for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+    >>>> h = loss_hamiltonian(g)
+
     Args:
         graph (nx.Graph): the graph specifying possible edges
 
