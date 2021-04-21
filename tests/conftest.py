@@ -178,3 +178,143 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+########################### Analytic Circuits ###########################
+# The following fixtures return quantum functions and their analytic forms
+# Returns:
+#    * A quantum function
+#    * function computing expected result
+#    * function computing expected gradient/ jacobian (None if not applicable)
+#    * function computing expected hessian (None if not applicable)
+
+class CircuitFixture():
+
+    def __init__(self):
+        self.circuit_func = None
+        self.res = None
+        self.jac = None
+        self.hess = None
+        
+        self.input_shape = None
+        self.output_shape = None
+
+        self.input = None
+
+    
+
+@pytest.fixture(scope="function")
+def circuit_basic():
+    """ A basic circuit with a single number input and single number output """
+
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def expected_res(x):
+        return np.cos(x)
+
+    def expected_grad(x):
+        return -np.sin(x)
+
+    def expected_hess(x):
+        return -np.cos(x)
+
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = tuple()
+
+    circuit_data.input = 1.0
+
+    return circuit_data
+
+@pytest.fixture(scope="function")
+def circuit_prob_output():
+    """ A circuit taking a single number input and returning the probability """
+
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.probs(wires=[0])
+
+    def expected_res(x):
+        return np.array([np.cos(x/2.0)**2, np.sin(x/2.0)**2])
+
+    def expected_jacobian(x):
+        return np.array([-np.sin(x)/2.0, np.sin(x)/2.0])
+
+    def expected_hess(x):
+        return np.array([-np.cos(x)/2.0, np.cos(x)/2.0])
+
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = (2, )
+
+    circuit_data.input = 1.0
+
+    return circuit_data
+
+@pytest.fixture(scope="function")
+def circuit_state_output():
+    """A circuit taking a single number input and returning the state """
+
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.state()
+
+    def expected_res(x):
+        return np.array([np.cos(x/2.0), -1j * np.sin(x/2.0)])
+
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+
+    circuit_data.input_shape = tuple()
+    circuit_data.output_shape = (2, )
+
+    circuit_data.input = 1.0
+
+    return circuit_data
+
+@pytest.fixture(scope="function")
+def circuit_vec_input():
+    """ A circuit taking an array of length two as input and returning one number"""
+
+    def circuit(x):
+        qml.RY(x[0], wires=0)
+        qml.RX(x[1], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def expected_res(x):
+        return np.cos(x[0]) * np.cos(x[1])
+
+    def expected_grad(x):
+        return np.array([-np.sin(x[0]) * np.cos(x[1]), -np.cos(x[0]) * np.sin(x[1])])
+
+    def expected_hess(x):
+        return np.array([[-np.cos(x[0]) * np.cos(x[1]),  np.sin(x[0]) * np.sin(x[1])],
+                         [ np.sin(x[0]) * np.sin(x[1]), -np.cos(x[0]) * np.cos(x[1])]])
+
+    circuit_data = CircuitFixture()
+    circuit_data.circuit_func = circuit
+    circuit_data.res = expected_res
+    circuit_data.jac = expected_grad
+    circuit_data.hess = expected_hess
+
+    circuit_data.input_shape = (2,)
+    circuit_data.output_shape = tuple()
+
+    circuit_data.input = [1.0, 2.0]
+
+    return circuit_data
+
+
+    
