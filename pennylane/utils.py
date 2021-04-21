@@ -340,7 +340,7 @@ def inv(operation_list):
             if o.inverse:
                 o.inv()
 
-    tape.inv()
+    qml.transforms.invisible(tape.inv)()
     return tape
 
 
