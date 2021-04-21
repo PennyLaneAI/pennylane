@@ -657,11 +657,20 @@ class QuantumTape(AnnotatedQueue):
         self._ops = list(reversed(self._ops))
 
     def adjoint(self):
+        """Create a tape that is the adjoint of this one.
+
+        Adjointed tapes are the conjugated and transposed version of the
+        original tapes. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            ~.QuantumTape: the adjointed tape
+        """
         new_tape = self.copy(copy_operations=True)
         qml.transforms.invisible(new_tape.inv)()
 
         # the current implementation of the adjoint
-        # method requires that the returned inverted object
+        # transform requires that the returned inverted object
         # is automatically queued.
         QuantumTape._lock.acquire()
         try:
