@@ -4,6 +4,7 @@
 
 * TBD: Add `qml.qaoa.cycle` (when structure is finalised)
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
+  [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
