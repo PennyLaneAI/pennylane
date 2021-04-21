@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* TBD: Add `qml.qaoa.cycle` (when structure is finalised)
+  [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
+
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
@@ -46,7 +49,8 @@
 
 This release contains contributions from:
 
-Thomas Bromley, Diego Guala 
+Thomas Bromley, Diego Guala, Anthony Hayes
+
 
 # Release 0.15.0 (current release)
 
@@ -127,7 +131,7 @@ Thomas Bromley, Diego Guala
 
 - The number of shots can now be specified on a per-call basis when evaluating a QNode.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075).
-  
+
   For this, the qnode should be called with an additional `shots` keyword argument:
 
   ```pycon
@@ -152,7 +156,7 @@ which contains *differentiable quantum transforms*. These are functions that act
 on QNodes, quantum functions, devices, and tapes, transforming them while remaining
 fully differentiable.
 
-* A new adjoint transform has been added. 
+* A new adjoint transform has been added.
   [(#1111)](https://github.com/PennyLaneAI/pennylane/pull/1111)
   [(#1135)](https://github.com/PennyLaneAI/pennylane/pull/1135)
 
@@ -250,15 +254,15 @@ fully differentiable.
 
 <h4>More operations and templates</h4>
 
-* Added the `SingleExcitation` two-qubit operation, which is useful for quantum 
+* Added the `SingleExcitation` two-qubit operation, which is useful for quantum
   chemistry applications.
   [(#1121)](https://github.com/PennyLaneAI/pennylane/pull/1121)
-  
-  It can be used to perform an SO(2) rotation in the subspace 
-  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`. 
+
+  It can be used to perform an SO(2) rotation in the subspace
+  spanned by the states :math:`|01\rangle` and :math:`|10\rangle`.
   For example, the following circuit performs the transformation
   :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:    
-  
+
   ```python
   dev = qml.device('default.qubit', wires=2)
 
@@ -267,17 +271,17 @@ fully differentiable.
       qml.PauliX(wires=0)
       qml.SingleExcitation(phi, wires=[0, 1])
   ```
-  
+
   The `SingleExcitation` operation supports analytic gradients on hardware
   using only four expectation value calculations, following results from
-  [Kottmann et al.](https://arxiv.org/abs/2011.05938) 
-  
+  [Kottmann et al.](https://arxiv.org/abs/2011.05938)
+
 * Added the `DoubleExcitation` four-qubit operation, which is useful for quantum
   chemistry applications.
   [(#1123)](https://github.com/PennyLaneAI/pennylane/pull/1123)
 
-  It can be used to perform an SO(2) rotation in the subspace 
-  spanned by the states :math:`|1100\rangle` and :math:`|0011\rangle`. 
+  It can be used to perform an SO(2) rotation in the subspace
+  spanned by the states :math:`|1100\rangle` and :math:`|0011\rangle`.
   For example, the following circuit performs the transformation
   :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:   
 
@@ -290,7 +294,7 @@ fully differentiable.
       qml.PauliX(wires=1)
       qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
   ```
-  
+
   The `DoubleExcitation` operation supports analytic gradients on hardware using only
   four expectation value calculations, following results from
   [Kottmann et al.](https://arxiv.org/abs/2011.05938).
@@ -301,7 +305,7 @@ fully differentiable.
 
   The following example shows how the expectation value of sine squared over a standard normal
   distribution can be approximated:
-  
+
   ```python
   from scipy.stats import norm
 
@@ -339,18 +343,18 @@ fully differentiable.
 * Added the `QuantumPhaseEstimation` template for performing quantum phase estimation for an input
   unitary matrix.
   [(#1095)](https://github.com/PennyLaneAI/pennylane/pull/1095)
-  
+
   Consider the matrix corresponding to a rotation from an `RX` gate:
-  
+
   ```pycon
   >>> phase = 5
   >>> target_wires = [0]
   >>> unitary = qml.RX(phase, wires=0).matrix
   ```
-  
+
   The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
   phase-estimation qubits:
-  
+
   ```python
   n_estimation_wires = 5
   estimation_wires = range(1, n_estimation_wires + 1)
@@ -395,7 +399,7 @@ fully differentiable.
   mixed-polarity multi-controlled operation).
   [(#1069)](https://github.com/PennyLaneAI/pennylane/pull/1069)
   [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
-  
+
   For example, we can  create a multi-controlled T gate using:
 
   ```python
@@ -414,13 +418,13 @@ fully differentiable.
   control qubits.
   [(#1104)](https://github.com/PennyLaneAI/pennylane/pull/1104)
 
-<h4>Support for higher-order derivatives on hardware</h4> 
+<h4>Support for higher-order derivatives on hardware</h4>
 
 * Computing second derivatives and Hessians of QNodes is now supported with
   the parameter-shift differentiation method, on all machine learning interfaces.
   [(#1130)](https://github.com/PennyLaneAI/pennylane/pull/1130)
   [(#1129)](https://github.com/PennyLaneAI/pennylane/pull/1129)
-  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110) 
+  [(#1110)](https://github.com/PennyLaneAI/pennylane/pull/1110)
 
   Hessians are computed using the parameter-shift rule, and can be
   evaluated on both hardware and simulator devices.
@@ -495,9 +499,9 @@ fully differentiable.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
-  
+
   inputstate = [np.sqrt(0.2), np.sqrt(0.3), np.sqrt(0.4), np.sqrt(0.1)]
-  
+
   @qml.qnode(dev)
   def circuit():
       mottonen.MottonenStatePreparation(inputstate,wires=[0, 1])
@@ -508,7 +512,7 @@ fully differentiable.
 
   ```pycon
   >>> print(qml.draw(circuit)())
-  0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩ 
+  0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──╰X──╰X──┤   
   ```
 
@@ -516,22 +520,22 @@ fully differentiable.
 
   ```pycon
   >>> print(qml.draw(circuit)())
-  0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩ 
+  0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤   
   ```
 
 - The templates are now classes inheriting
-  from `Operation`, and define the ansatz in their `expand()` method. This 
-  change does not affect the user interface. 
+  from `Operation`, and define the ansatz in their `expand()` method. This
+  change does not affect the user interface.
   [(#1138)](https://github.com/PennyLaneAI/pennylane/pull/1138)
   [(#1156)](https://github.com/PennyLaneAI/pennylane/pull/1156)
   [(#1163)](https://github.com/PennyLaneAI/pennylane/pull/1163)
   [(#1192)](https://github.com/PennyLaneAI/pennylane/pull/1192)
 
   For convenience, some templates have a new method that returns the expected
-  shape of the trainable parameter tensor, which can be used to create 
+  shape of the trainable parameter tensor, which can be used to create
   random tensors.
-  
+
   ```python
   shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
   weights = np.random.random(shape)
@@ -606,7 +610,7 @@ fully differentiable.
 
 * When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
-  
+
 * Adds `qml.math.conj` to the PennyLane math module.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
@@ -631,34 +635,34 @@ fully differentiable.
 
 <h3>Breaking changes</h3>
 
-* Devices do not have an `analytic` argument or attribute anymore. 
-  Instead, `shots` is the source of truth for whether a simulator 
-  estimates return values from a finite number of shots, or whether 
+* Devices do not have an `analytic` argument or attribute anymore.
+  Instead, `shots` is the source of truth for whether a simulator
+  estimates return values from a finite number of shots, or whether
   it returns analytic results (`shots=None`).
   [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079)
   [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
-  
+
   ```python  
   dev_analytic = qml.device('default.qubit', wires=1, shots=None)
   dev_finite_shots = qml.device('default.qubit', wires=1, shots=1000)
-  
+
   def circuit():
       qml.Hadamard(wires=0)
       return qml.expval(qml.PauliZ(wires=0))
-  
+
   circuit_analytic = qml.QNode(circuit, dev_analytic)
   circuit_finite_shots = qml.QNode(circuit, dev_finite_shots)
   ```
-  
+
   Devices with `shots=None` return deterministic, exact results:
-  
+
   ```pycon
   >>> circuit_analytic()
   0.0
   >>> circuit_analytic()
   0.0
   ```
-  Devices with `shots > 0` return stochastic results estimated from 
+  Devices with `shots > 0` return stochastic results estimated from
   samples in each run:
 
   ```pycon
@@ -667,9 +671,9 @@ fully differentiable.
   >>> circuit_finite_shots()
   0.034
   ```
-  
-  The `qml.sample()` measurement can only be used on devices on which the number 
-  of shots is set explicitly. 
+
+  The `qml.sample()` measurement can only be used on devices on which the number
+  of shots is set explicitly.
 
 * If creating a QNode from a quantum function with an argument named `shots`,
   a `DeprecationWarning` is raised, warning the user that this is a reserved
@@ -743,8 +747,8 @@ fully differentiable.
   being updated.
   [(#1126)](https://github.com/PennyLaneAI/pennylane/pull/1126)
 
-* Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones 
-  or all zeros. 
+* Fixes a bug where `BasisEmbedding` would not accept inputs whose bits are all ones
+  or all zeros.
   [(#1114)](https://github.com/PennyLaneAI/pennylane/pull/1114)
 
 * The `ExpvalCost` class raises an error if instantiated
