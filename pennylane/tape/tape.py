@@ -653,6 +653,23 @@ class QuantumTape(AnnotatedQueue):
 
         self._ops = list(reversed(self._ops))
 
+    def adjoint(self):
+        new_tape = self.copy(copy_operations=True)
+        new_tape.inv()
+
+        # the current implementation of the adjoint
+        # method requires that the returned inverted object
+        # is automatically queued.
+        QuantumTape._lock.acquire()
+        try:
+            QueuingContext.append(new_tape)
+        except Exception as _:
+            QuantumTape._lock.release()
+            raise
+        QuantumTape._lock.release()
+
+        return new_tape
+
     # ========================================================
     # Parameter handling
     # ========================================================

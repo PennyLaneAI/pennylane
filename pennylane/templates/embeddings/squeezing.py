@@ -83,4 +83,7 @@ class SqueezingEmbedding(Operation):
             for i in range(len(self.wires)):
                 qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
+        if self.inverse:
+            tape.inv()
+
         return tape

@@ -192,6 +192,10 @@ class ParticleConservingU2(Operation):
 
                 for i, wires_ in enumerate(nm_wires):
                     u2_ex_gate(self.parameters[0][l, len(self.wires) + i], wires=wires_)
+
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod

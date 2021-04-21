@@ -102,9 +102,10 @@ def adjoint(fn):
             try:
                 op.adjoint()
             except NotImplementedError:
-                # Decompose the operation and adjoint the result.
+                # Expand the operation and adjoint the result.
                 # We do not do anything with the output since
-                # decomposition will automatically queue the new operations.
-                adjoint(op.decomposition)(wires=op.wires)
+                # calling adjoint on the expansion will automatically
+                # queue the new operations.
+                adjoint(op.expand)()
 
     return wrapper

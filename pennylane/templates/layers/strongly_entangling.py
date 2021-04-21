@@ -116,6 +116,9 @@ class StronglyEntanglingLayers(Operation):
                         act_on = self.wires.subset([i, i + self.ranges[l]], periodic_boundary=True)
                         self.imprimitive(wires=act_on)
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod

@@ -115,6 +115,9 @@ class ArbitraryUnitary(Operation):
             for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
                 PauliRot(weights[i], pauli_word, wires=self.wires)
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod

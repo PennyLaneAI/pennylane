@@ -155,6 +155,9 @@ class SimplifiedTwoDesign(Operation):
                         self.parameters[1][layer, len(self.wires) // 2 + i, 1], wires=wire_pair[1]
                     )
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod

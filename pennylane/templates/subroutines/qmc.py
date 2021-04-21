@@ -367,4 +367,7 @@ class QuantumMonteCarlo(Operation):
                 Q, target_wires=self.target_wires, estimation_wires=self.estimation_wires
             )
 
+        if self.inverse:
+            tape.inv()
+
         return tape

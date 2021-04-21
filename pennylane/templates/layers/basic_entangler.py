@@ -161,6 +161,9 @@ class BasicEntanglerLayers(Operation):
                         w = self.wires.subset([i, i + 1], periodic_boundary=True)
                         qml.CNOT(wires=w)
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod

@@ -205,4 +205,7 @@ class IQPEmbedding(Operation):
                     # apply product of two features as entangler
                     qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair)
 
+        if self.inverse:
+            tape.inv()
+
         return tape

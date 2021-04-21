@@ -291,4 +291,7 @@ class MottonenStatePreparation(Operation):
                     if len(alpha_z_k) > 0:
                         _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
 
+        if self.inverse:
+            tape.inv()
+
         return tape
