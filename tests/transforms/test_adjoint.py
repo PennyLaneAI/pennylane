@@ -211,3 +211,53 @@ class TestTemplateIntegration:
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "template",
+        [
+            qml.templates.BasicEntanglerLayers,
+            qml.templates.StronglyEntanglingLayers,
+            qml.templates.RandomLayers,
+        ],
+    )
+    def test_layers(self, fn, template):
+        """Test that the adjoint correctly inverts layers"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weights=weights, wires=[0, 1, 2])
+            fn(template, weights=weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = np.random.random(template.shape(2, 3))
+        res = circuit(weights)
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "template",
+        [
+            qml.templates.ParticleConservingU1,
+            qml.templates.ParticleConservingU2,
+        ],
+    )
+    def test_particle_conserving(self, fn, template):
+        """Test that the adjoint correctly inverts particle conserving layers"""
+        dev = qml.device("default.qubit", wires=3)
+        init_state = np.array([0, 1, 1])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weights=weights, init_state=init_state, wires=[0, 1, 2])
+            fn(template, weights=weights, init_state=init_state, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = np.random.random(template.shape(2, 3))
+        res = circuit(weights)
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)

@@ -183,7 +183,7 @@ class ParticleConservingU2(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.BasisState(self.init_state, wires=self.wires)
+            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
 
             for l in range(self.n_layers):
 
