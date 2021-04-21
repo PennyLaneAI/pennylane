@@ -77,4 +77,8 @@ class BasisStatePreparation(Operation):
             for wire, state in zip(self.wires, self.parameters[0]):
                 if state == 1:
                     qml.PauliX(wire)
+
+        if self.inverse:
+            tape.inv()
+
         return tape
