@@ -125,6 +125,13 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
     >>> for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
     >>> h = loss_hamiltonian(g)
+    >>> print(h)
+      (-0.6931471805599453) [Z0]
+    + (0.0) [Z1]
+    + (0.4054651081081644) [Z2]
+    + (0.6931471805599453) [Z3]
+    + (0.9162907318741551) [Z4]
+    + (1.0986122886681098) [Z5]
 
     Args:
         graph (nx.Graph): the graph specifying possible edges
