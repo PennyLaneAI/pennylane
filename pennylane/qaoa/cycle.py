@@ -106,7 +106,7 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
 
         H = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}.
 
-    where :math:`Z_{ij}` is a qubit Pauli-Z matrix acting upon the wire specified by the pair
+    where :math:`Z_{ij}` is a qubit Pauli-Z matrix acting upon the wire specified by the edge
     :math:`(i, j)`. Mapping from edges to wires can be achieved using :func:`~.edges_to_wires`.
 
     .. note::

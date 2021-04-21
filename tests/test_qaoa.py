@@ -810,7 +810,7 @@ class TestCycles:
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
     def test_self_loop_raises_error(self):
-        """Test graphs with self loop raises `ValueError`"""
+        """Test graphs with self loop raises ValueError"""
         g = nx.complete_graph(3).to_directed()
         edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
         for k, v in edge_weight_data.items():
