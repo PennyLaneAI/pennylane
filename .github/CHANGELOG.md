@@ -43,13 +43,17 @@
 
 <h3>Bug fixes</h3>
 
+* A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
+  templates has been fixed.
+  [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from:
 
-Thomas Bromley, Diego Guala, Anthony Hayes
+Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac
 
 
 # Release 0.15.0 (current release)
