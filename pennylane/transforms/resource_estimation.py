@@ -15,12 +15,12 @@
 
 
 def resource_estimation(qnode, expand_depth=1):
-    """ Create a function that provides resource estimation for given parameter
+    """Create a function that provides resource estimation for given parameter
     values.
 
     Args:
         qnode (qml.QNode): a PL Qnode
-    
+
     Returns:
         function: a function of the same parameters as the qnode
 
@@ -63,23 +63,18 @@ def resource_estimation(qnode, expand_depth=1):
         tape = qnode.qtape
         tape.expand(depth=expand_depth)
 
-        info['dev_short_name'] = qnode.device.short_name
-        info['num_wires'] = qnode.device.num_wires
+        info["dev_short_name"] = qnode.device.short_name
+        info["num_wires"] = qnode.device.num_wires
 
         num_gates = 0
         op_by_size = dict()
         for op in tape.operations:
-            op_by_size[op.num_wires]=op_by_size.get(op.num_wires, 0)+1
-            num_gates +=1
+            op_by_size[op.num_wires] = op_by_size.get(op.num_wires, 0) + 1
+            num_gates += 1
 
-        info['num_gates'] = num_gates
-        info['num_ops_by_size'] = op_by_size
-        
-
-
+        info["num_gates"] = num_gates
+        info["num_ops_by_size"] = op_by_size
 
         return info
-
-        
 
     return estimate
