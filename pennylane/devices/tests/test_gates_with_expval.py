@@ -205,7 +205,7 @@ class TestGatesQubitExpval:
     def test_supported_gate_two_wires_with_parameters(
         self, device, tol, name, par, expected_output
     ):
-        """Tests supported gates that act on two wires wires that are parameterized"""
+        """Tests supported parametrized gates that act on two wires"""
 
         n_wires = 2
         dev = device(n_wires)
@@ -230,7 +230,7 @@ class TestGatesQubitExpval:
         ],
     )
     def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
-        """Tests supported gates that act on a single wire that are not parameterized"""
+        """Tests supported non-parametrized gates that act on a single wire"""
         n_wires = 1
         dev = device(n_wires)
 
@@ -253,7 +253,7 @@ class TestGatesQubitExpval:
         ],
     )
     def test_supported_gate_two_wires_no_parameters(self, device, tol, name, expected_output):
-        """Tests supported gates that act on two wires that are not parameterized"""
+        """Tests supported parametrized gates that act on two wires"""
         n_wires = 2
         dev = device(n_wires)
 
@@ -274,7 +274,7 @@ class TestGatesQubitExpval:
         ],
     )
     def test_supported_gate_three_wires_no_parameters(self, device, tol, name, expected_output):
-        """Tests supported gates that act on three wires that are not parameterized"""
+        """Tests supported non-parametrized gates that act on three wires"""
         n_wires = 3
         dev = device(n_wires)
 
@@ -303,7 +303,8 @@ class TestGateInverseExpval:
         ],
     )
     def test_inverse_circuit(self, device, tol, name, expected_output, skip_if):
-        """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
+        """Tests the inverse of supported non-parametrized gates that act on a
+        single wire"""
 
         n_wires = 1
         dev = device(n_wires)
@@ -350,7 +351,7 @@ class TestGateInverseExpval:
         "expected_output,param", [(1, multiplier * 0.5432) for multiplier in range(8)]
     )
     def test_inverse_circuit_with_parameters(self, device, tol, expected_output, param, skip_if):
-        """Tests the inverse of supported gates that act on a single wire and are parameterized"""
+        """Tests the inverse of supported parametrized gates that act on a single wire"""
         n_wires = 1
         dev = device(n_wires)
         skip_if(dev, {"supports_inverse_operations": False})
