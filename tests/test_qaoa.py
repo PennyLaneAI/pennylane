@@ -707,7 +707,6 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-
     def test_cycle_mixer_on_edge(self):
         """Test if the _cycle_mixer_on_edge function returns the expected Hamiltonian for a fixed
         example"""
