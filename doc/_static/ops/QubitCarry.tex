@@ -1,0 +1,17 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.9em {
+&&\\
+&&\lstick{ \ket{a}}& \qw & \qw & \ctrl{2}& \rstick{\ket{a}} \qw &&&&\\
+&&\lstick{\ket{b}}]& \ctrl{1} & \ctrl{1} & \qw & \rstick{\ket{b}} \qw &&&&\\
+&&\lstick{ \ket{c}}& \ctrl{1} & \targ & \ctrl{1} & \rstick{\ket{b\oplus c}} \qw &&&&\\
+&&\lstick{\ket{d}}&\targ & \qw & \targ & \rstick{\ket{bc \oplus d\oplus (b\oplus c)a}}\qw &&&&&&&&&\\
+&&
+}
+
+\end{document}

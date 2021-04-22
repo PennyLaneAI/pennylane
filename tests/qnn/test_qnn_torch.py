@@ -337,8 +337,8 @@ class TestTorchLayer:
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    @pytest.mark.parametrize("batch_size", [2,4,6])
-    @pytest.mark.parametrize("middle_dim", [2,5,8])
+    @pytest.mark.parametrize("batch_size", [2, 4, 6])
+    @pytest.mark.parametrize("middle_dim", [2, 5, 8])
     def test_forward_broadcasting(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
@@ -410,7 +410,7 @@ class TestTorchLayer:
 
                 qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
 
-                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device('cuda'))
+                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
                 loss = torch.sum(qlayer(x)).squeeze()
                 loss.backward()
             except Exception:
@@ -449,7 +449,6 @@ class TestTorchLayerIntegration:
         x = torch.zeros((batch_size, n_qubits)).type(dtype)
         y = torch.zeros((batch_size, output_dim)).type(dtype)
 
-
         params_before = [w.detach().clone() for w in module.parameters()]
 
         module_out = module(x)
@@ -460,9 +459,7 @@ class TestTorchLayerIntegration:
 
         params_after = [w.detach().clone() for w in module.parameters()]
 
-        params_similar = [
-            torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)
-        ]
+        params_similar = [torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
