@@ -1766,7 +1766,7 @@ class TestApplyOperationUnit:
         test_state = np.array([1,0])
         wires = [0, 1, 2]
 
-        # Recreate the Toffoli gate, so that it's an example for a gate with
+        # Redefine the Toffoli gate so that it is an example for a gate with
         # more than two wires
         class TestToffoli(qml.operation.Operation):
             num_params = 0
