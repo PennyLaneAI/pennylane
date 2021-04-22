@@ -338,12 +338,13 @@ class DefaultQubit(QubitDevice):
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
     def _apply_toffoli(self, state, axes, **kwargs):
-        """Applies a Toffoli gate by slicing along the first axis specified in ``axes`` and then
-        applying an X transformation along the second axis.
+        """Applies a Toffoli gate by slicing along the first axis specified in ``axes``, slicing
+        each of the resulting sub-arrays along the same axis, and then applying an X transformation
+        along the second axis of the fourth sub-sub-array.
 
-        By slicing along the first axis, we are able to select all of the amplitudes with a
-        corresponding :math:`|1\rangle` for the control qubit. This means we then just need to apply
-        a :class:`~.PauliX` (NOT) gate to the result.
+        By slicing along the first axis twice, we are able to select all of the amplitudes with a
+        corresponding :math:`|11\rangle` for the two control qubits. This means we then just need
+        to apply a :class:`~.PauliX` (NOT) gate to the result.
 
         Args:
             state (array[complex]): input state
@@ -355,6 +356,8 @@ class DefaultQubit(QubitDevice):
         sl_a0 = _get_slice(0, axes[0], self.num_wires)
         sl_a1 = _get_slice(1, axes[0], self.num_wires)
 
+        # If axes[2] is larger than axes[0], then we need to shift the target axis down by
+        # two, otherwise we can leave as-is.
         if axes[2] > axes[0]:
             sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
             sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
@@ -364,6 +367,7 @@ class DefaultQubit(QubitDevice):
             sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
             target_axes = [axes[2]]
 
+        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
         state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
         state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x])
         return state_out.reshape((2, 2, 2))
