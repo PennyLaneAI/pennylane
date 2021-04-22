@@ -150,7 +150,7 @@ class TestGatesQubitExpval:
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
-    # This test is ran against the state 1/2|00>+sqrt(3)/2|11> with two Z expvals
+    # This test uses initial state 1/2|00>+sqrt(3)/2|11> and checks two Z expvals
     @pytest.mark.parametrize(
         "name,par,expected_output",
         [
