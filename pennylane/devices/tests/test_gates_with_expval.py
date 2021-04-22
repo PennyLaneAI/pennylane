@@ -137,7 +137,7 @@ class TestGatesQubitExpval:
     def test_supported_gate_single_wire_with_parameters(
         self, device, tol, name, par, expected_output
     ):
-        """Tests supported gates that act on a single wire that are parameterized"""
+        """Tests supported parametrized gates that act on a single wire"""
 
         n_wires = 1
         dev = device(n_wires)
