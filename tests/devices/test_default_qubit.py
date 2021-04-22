@@ -2364,6 +2364,9 @@ class TestApplyOps:
         (qml.SWAP, dev._apply_swap),
         (qml.CZ, dev._apply_cz),
     ]
+    three_qubit_ops = [
+        (qml.Toffoli, dev._apply_toffoli),
+    ]
 
     @pytest.mark.parametrize("op, method", single_qubit_ops)
     def test_apply_single_qubit_op(self, op, method, inverse):
@@ -2377,7 +2380,11 @@ class TestApplyOps:
     @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op(self, op, method, inverse):
         """Test if the application of two qubit operations is correct."""
-        state_out = method(self.state, axes=[0, 1])
+        print()
+        print("------------------")
+        print("initial state")
+        print(self.state)
+        state_out = method(self.state, axes=[2, 0])
         op = op(wires=[0, 1])
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2, 2, 2))
@@ -2393,6 +2400,16 @@ class TestApplyOps:
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op(self, op, method, inverse):
+        """Test if the application of three qubit operations is correct."""
+        state_out = method(self.state, axes=[0, 1, 2])
+        op = op(wires=[0, 1, 2])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,cdk->abk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
 

@@ -323,6 +323,11 @@ class DefaultQubit(QubitDevice):
         sl_0 = _get_slice(0, axes[0], self.num_wires)
         sl_1 = _get_slice(1, axes[0], self.num_wires)
 
+        print("sl_0")
+        print(state[sl_0])
+        print("sl_1")
+        print(state[sl_1])
+
         # We will be slicing into the state according to state[sl_1], giving us all of the
         # amplitudes with a |1> for the control qubit. The resulting array has lost an axis
         # relative to state and we need to be careful about the axis we apply the PauliX rotation
@@ -334,22 +339,36 @@ class DefaultQubit(QubitDevice):
         else:
             target_axes = [axes[1]]
 
+        print()
+        print("target axes = " + str(target_axes))
+        print()
+
         state_x = self._apply_x(state[sl_1], axes=target_axes)
+
+        print("final state x")
+        print(state_x)
+        print("output")
+        print(self._stack([state[sl_0], state_x], axis=axes[0]))
+        print("------------------")
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
     def _apply_toffoli(self, state, axes, **kwargs):
 
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
-        sl_2 = _get_slice(2, axes[0], self.num_wires)
+        sl_a0 = _get_slice(0, axes[0], self.num_wires)
+        sl_a1 = _get_slice(1, axes[0], self.num_wires)
 
         if axes[2] > axes[0]:
-            target_axes = [axes[2] - 2]
+            sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
+            target_axes = [axes[2]-2]
         else:
+            sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
+            sl_b1 = _get_slice(0, axes[0], self.num_wires - 1)
             target_axes = [axes[2]]
 
-        state_x = self._apply_x(state[sl_2], axes=target_axes)
-        return self._stack([state[sl_0], state[sl_1], state_x], axis=axes[0])
+        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
+        return self._stack([state[sl_a0], state[sl_a1][sl_b0], state_x], axis=axes[0])
+
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
