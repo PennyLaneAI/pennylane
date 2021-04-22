@@ -58,7 +58,7 @@ def _get_slice(index, axis, num_axes):
     >>> a[sl]
     array([[ 6,  7,  8],
            [15, 16, 17],
-           [24, 25, 26_get
+           [24, 25, 26]])
     """
     idx = [slice(None)] * num_axes
     idx[axis] = index
