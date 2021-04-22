@@ -368,12 +368,15 @@ class DefaultQubit(QubitDevice):
         print()
         print("Final State X")
         print(state_x)
+
+        state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x], axis=axes[0])
+
         print()
         print("Output")
-        print(self._stack([state[sl_a0], state[sl_a1][sl_b0], state_x], axis=axes[0]))
+        print(state_out.reshape((2, 2, 2)))
         print("------------------")
 
-        return self._stack([state[sl_a0], state[sl_a1][sl_b0], state_x], axis=axes[0])
+        return state_out.reshape((2, 2, 2))
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
