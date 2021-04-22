@@ -1717,8 +1717,8 @@ class TestApplyOperationUnit:
         test_state = np.array([1,0])
         wires = 0
 
-        # Recreate the S gate, so that it's an example for a one-qubit gate
-        # that doesn't inherit from DiagonalOperation
+        # Recreate the S gate, so that it is an example for a one-qubit gate
+        # that does not inherit from DiagonalOperation
         class TestSGate(qml.operation.Operation):
             matrix = np.array([[0, 1], [1, 0]])
             num_params = 0
