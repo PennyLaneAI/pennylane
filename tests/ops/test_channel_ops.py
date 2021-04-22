@@ -34,6 +34,7 @@ ch_list = [
     channel.DepolarizingChannel,
 ]
 
+
 class TestChannels:
     """Tests for the quantum channels"""
 
@@ -49,6 +50,7 @@ class TestChannels:
         K_arr = np.array(K_list)
         Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         assert np.allclose(Kraus_sum, np.eye(2), atol=tol, rtol=0)
+
 
 class TestAmplitudeDamping:
     """Tests for the quantum channel AmplitudeDamping"""
@@ -139,8 +141,8 @@ class TestBitFlip:
             return qml.expval(qml.PauliZ(0))
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
-        assert gradient == circuit(1)-circuit(0)
-        assert np.allclose(gradient, (-2*np.cos(angle)))
+        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, (-2 * np.cos(angle)))
 
 
 class TestPhaseFlip:
@@ -208,7 +210,7 @@ class TestDepolarizingChannel:
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
-        assert np.allclose(gradient, -(4/3) * np.cos(angle))
+        assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
 
 class TestQubitChannel:

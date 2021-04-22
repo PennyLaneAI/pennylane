@@ -845,7 +845,7 @@ class TestExpand:
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
         expansion happens."""
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
 
         # Remove support for an op to enforce decomposition & tape expansion
         mock_ops = copy.copy(dev.operations)
@@ -867,6 +867,7 @@ class TestExpand:
             assert "T" not in qnode._original_device.operations
 
             assert qnode.qtape.is_sampled
+
 
 class TestExecution:
     """Tests for tape execution"""

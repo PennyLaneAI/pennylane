@@ -98,7 +98,7 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=1)
 
         with QubitParamShiftTape() as tape:
-            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -126,7 +126,7 @@ class TestParameterShiftRule:
         params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with QubitParamShiftTape() as tape:
-            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -158,7 +158,7 @@ class TestParameterShiftRule:
         b = 0.123
 
         with QubitParamShiftTape() as tape:
-            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             G(b, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -184,7 +184,7 @@ class TestParameterShiftRule:
         a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with QubitParamShiftTape() as tape:
-            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -195,11 +195,15 @@ class TestParameterShiftRule:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         grad = tape.jacobian(dev, method="analytic")
-        expected = np.array([[
-            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-            0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
-            0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-        ]])
+        expected = np.array(
+            [
+                [
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                    0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                ]
+            ]
+        )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
         # compare to finite differences
@@ -273,6 +277,7 @@ class TestParameterShiftRule:
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+
 
 class TestJacobianIntegration:
     """Tests for general Jacobian integration"""
@@ -388,7 +393,6 @@ class TestJacobianIntegration:
         spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
         spy_execute = mocker.spy(dev, "execute")
-
 
         with QubitParamShiftTape() as tape:
             qml.RX(a, wires=0)
@@ -542,6 +546,7 @@ class TestJacobianIntegration:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
+
 class TestHessian:
     """Tests for parameter Hessian method"""
 
@@ -554,7 +559,7 @@ class TestHessian:
         dev = qml.device("default.qubit", wires=2)
 
         with QubitParamShiftTape() as tape:
-            qml.QubitStateVector(np.array([1., -1., 1., -1.]) / np.sqrt(4), wires=[0, 1])
+            qml.QubitStateVector(np.array([1.0, -1.0, 1.0, -1.0]) / np.sqrt(4), wires=[0, 1])
             G(theta[0], wires=[0])
             G(theta[1], wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -582,7 +587,7 @@ class TestHessian:
     def test_vector_output(self, tol):
         """Tests that a vector valued output tape has a hessian with the proper result. """
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         x = np.array([1.0, 2.0])
 
@@ -593,16 +598,18 @@ class TestHessian:
 
         hess = tape.hessian(dev)
 
-        expected_hess = expected_hess = np.array([
+        expected_hess = expected_hess = np.array(
             [
-                [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])],
-                [ 0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])]
-            ],
-            [
-                [0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])],
-                [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])]
+                [
+                    [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])],
+                    [0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])],
+                ],
+                [
+                    [0.5 * np.sin(x[0]) * np.sin(x[1]), -0.5 * np.sin(x[0]) * np.sin(x[1])],
+                    [-0.5 * np.cos(x[0]) * np.cos(x[1]), 0.5 * np.cos(x[0]) * np.cos(x[1])],
+                ],
             ]
-        ])
+        )
 
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
