@@ -348,7 +348,7 @@ class DefaultQubit(QubitDevice):
             target_axes = [axes[2]-2]
         else:
             sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
-            sl_b1 = _get_slice(0, axes[0], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
             target_axes = [axes[2]]
 
         print()
@@ -369,7 +369,7 @@ class DefaultQubit(QubitDevice):
         print("Final State X")
         print(state_x)
 
-        state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x], axis=axes[0])
+        state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x])
 
         print()
         print("Output")
