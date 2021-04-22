@@ -1666,23 +1666,28 @@ class TestInverseDecomposition:
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
-    def test_internal_apply_ops_case(self, inverse):
+    def test_internal_apply_ops_case(self, inverse, monkeypatch):
         """Tests that if we provide an operation that has an internal
-        implementation, then we use that specific implementation."""
+        implementation, then we use that specific implementation.
+
+        This test provides a new internal function that `default.qubit` uses to
+        apply `PauliX` (rather than redefining the gate itself).
+        """
         dev = qml.device('default.qubit', wires=1)
 
         # Create a dummy operation
         expected_test_output = np.ones(1)
-        paulix = lambda *args, **kwargs: expected_test_output
+        supported_gate_application = lambda *args, **kwargs: expected_test_output
 
-        # Set the internal ops implementations dict
-        dev._apply_ops = {"PauliX": paulix}
+        with monkeypatch.context() as m:
+            # Set the internal ops implementations dict
+            m.setattr(dev, "_apply_ops", {"PauliX": supported_gate_application})
 
-        test_state = np.array([1,0])
-        op = qml.PauliX(0) if not inverse else qml.PauliX(0).inv()
+            test_state = np.array([1,0])
+            op = qml.PauliX(0) if not inverse else qml.PauliX(0).inv()
 
-        res = dev._apply_operation(test_state, op)
-        assert np.allclose(res, expected_test_output)
+            res = dev._apply_operation(test_state, op)
+            assert np.allclose(res, expected_test_output)
 
     def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
         """Tests the case when the operation to be applied is a
