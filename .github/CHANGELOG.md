@@ -37,6 +37,10 @@
 
 <h3>Improvements</h3>
 
+* The device test suite now provides test cases for checking gates by comparing
+  expectation values.
+  [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
+
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
@@ -50,8 +54,7 @@
 
 This release contains contributions from:
 
-Thomas Bromley, Diego Guala, Anthony Hayes
-
+Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
 
 # Release 0.15.0 (current release)
 
@@ -494,9 +497,6 @@ fully differentiable.
   are not currently allowed.
 
 <h3>Improvements</h3>
-
-* The ``MottonenStatePreparation`` template has improved performance on states with only real
-  amplitudes by reducing the number of redundant CNOT gates at the end of a circuit.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
