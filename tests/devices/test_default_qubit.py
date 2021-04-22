@@ -2380,10 +2380,6 @@ class TestApplyOps:
     @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op(self, op, method, inverse):
         """Test if the application of two qubit operations is correct."""
-        print()
-        print("------------------")
-        print("initial state")
-        print(self.state)
         state_out = method(self.state, axes=[2, 0])
         op = op(wires=[0, 1])
         matrix = op.inv().matrix if inverse else op.matrix
@@ -2405,6 +2401,10 @@ class TestApplyOps:
     @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op(self, op, method, inverse):
         """Test if the application of three qubit operations is correct."""
+        print()
+        print("------------------")
+        print("Initial State")
+        print(self.state)
         state_out = method(self.state, axes=[0, 1, 2])
         op = op(wires=[0, 1, 2])
         matrix = op.inv().matrix if inverse else op.matrix
