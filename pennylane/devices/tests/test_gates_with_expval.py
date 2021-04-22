@@ -39,7 +39,7 @@ class TestGatesQubitExpval:
     """Test some expectation values obtained from qubit-based devices after
     application of gates."""
 
-    # This test is ran with two Z expvals
+    # This test checks two Z expvals
     @pytest.mark.parametrize(
         "par,wires,expected_output",
         [([1, 1], [0, 1], [-1, -1]), ([1], [0], [-1, 1]), ([1], [1], [1, -1])],
@@ -56,7 +56,7 @@ class TestGatesQubitExpval:
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
-    # This test is run with three expvals
+    # This test checks three Z expvals
     @pytest.mark.parametrize(
         "par,wires,expected_output",
         [
@@ -88,7 +88,7 @@ class TestGatesQubitExpval:
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
-    # This test is ran on the state |0> with one Z expvals
+    # This test uses initial state |0> and checks one Z expval
     @pytest.mark.parametrize(
         "name,par,expected_output",
         [
@@ -219,7 +219,7 @@ class TestGatesQubitExpval:
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
-    # This test is ran against the state |0> with one Z expval
+    # This test uses initial state |0> and checks one Z expval
     @pytest.mark.parametrize(
         "name,expected_output",
         [
@@ -243,7 +243,7 @@ class TestGatesQubitExpval:
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
-    # This test is ran against the state |Phi+> with two Z expvals
+    # This test uses initial state |Phi+> and checks two Z expvals
     @pytest.mark.parametrize(
         "name,expected_output",
         [
