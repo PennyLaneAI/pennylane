@@ -1716,7 +1716,8 @@ class TestApplyOperationUnit:
             assert np.allclose(res_wires, wires)
 
     def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
-        """Tests applying a diagonal operation."""
+        """Tests the case when np.einsum is used to apply an operation in
+        default.qubit."""
         dev = qml.device('default.qubit', wires=1)
 
         test_state = np.array([1,0])
@@ -1758,7 +1759,8 @@ class TestApplyOperationUnit:
             assert np.allclose(res_wires, wires)
 
     def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
-        """Tests applying a diagonal operation."""
+        """Tests the case when np.tensordot is used to apply an operation in
+        default.qubit."""
         dev = qml.device('default.qubit', wires=3)
 
         test_state = np.array([1,0])
