@@ -338,7 +338,20 @@ class DefaultQubit(QubitDevice):
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
     def _apply_toffoli(self, state, axes, **kwargs):
+        """Applies a Toffoli gate by slicing along the first axis specified in ``axes`` and then
+        applying an X transformation along the second axis.
 
+        By slicing along the first axis, we are able to select all of the amplitudes with a
+        corresponding :math:`|1\rangle` for the control qubit. This means we then just need to apply
+        a :class:`~.PauliX` (NOT) gate to the result.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
         sl_a0 = _get_slice(0, axes[0], self.num_wires)
         sl_a1 = _get_slice(1, axes[0], self.num_wires)
 
@@ -351,31 +364,8 @@ class DefaultQubit(QubitDevice):
             sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
             target_axes = [axes[2]]
 
-        print()
-        print("sl_00")
-        print(state[sl_a0][sl_b0])
-        print("sl_01")
-        print(state[sl_a0][sl_b1])
-        print("sl_10")
-        print(state[sl_a1][sl_b0])
-        print("sl_11")
-        print(state[sl_a1][sl_b1])
-        print()
-        print("target axes = " + str(target_axes))
-
         state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-
-        print()
-        print("Final State X")
-        print(state_x)
-
         state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x])
-
-        print()
-        print("Output")
-        print(state_out.reshape((2, 2, 2)))
-        print("------------------")
-
         return state_out.reshape((2, 2, 2))
 
     def _apply_swap(self, state, axes, **kwargs):
