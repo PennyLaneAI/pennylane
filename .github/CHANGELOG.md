@@ -2,6 +2,7 @@
 
 <h3>New features since last release</h3>
 
+* TBD: Add custom gate application for Toffoli in `default.qubit` [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249) [(#1215)](https://github.com/PennyLaneAI/pennylane/issues/1215)
 * TBD: Add `qml.qaoa.cycle` (when structure is finalised)
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
