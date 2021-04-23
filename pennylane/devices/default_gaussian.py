@@ -432,7 +432,7 @@ def thermal_state(nbar, hbar=2.0):
     return state
 
 
-def gaussian_state(mu, cov, hbar=2.0):
+def gaussian_state(cov, mu, hbar=2.0):
     r"""Returns a Gaussian state.
 
     This is simply a bare wrapper function,
@@ -444,18 +444,18 @@ def gaussian_state(mu, cov, hbar=2.0):
     ordering.
 
     Args:
-        mu (array): vector means. Must be length-:math:`2N`,
-            where N is the number of modes
         cov (array): covariance matrix. Must be dimension :math:`2N\times 2N`,
+            where N is the number of modes
+        mu (array): vector means. Must be length-:math:`2N`,
             where N is the number of modes
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: the mean and covariance matrix of the Gaussian state
+        tuple: the covariance matrix and the mean of the Gaussian state
     """
     # pylint: disable=unused-argument
-    return mu, cov
+    return cov, mu
 
 
 def set_state(state, wire, mu, cov):
