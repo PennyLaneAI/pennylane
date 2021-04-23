@@ -289,11 +289,34 @@ class Hamiltonian:
             coeffs2 = H.coeffs
             terms2 = H.ops
 
-            coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
-            term_list = itertools.product(terms1, terms2)
-            terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+            if (coeffs1, terms1) == (coeffs2, terms2):
 
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
+                squared_coeffs, squared_ops = [], []
+                pairs = [(coeff, term) for coeff, term in zip(coeffs1, terms1)]
+                products = itertools.product(pairs, repeat=2)
+
+                for (coeff1, op1), (coeff2, op2) in products:
+                    squared_coeffs.append(coeff1 * coeff2)
+
+                    if isinstance(op1, qml.Identity):
+                        squared_ops.append(op2)
+                    elif isinstance(op2, qml.Identity):
+                        squared_ops.append(op1)
+                    elif op1.wires == op2.wires and type(op1) == type(op2):
+                        squared_ops.append(qml.Identity(0))
+                    elif op2.wires[0] < op1.wires[0]:
+                        squared_ops.append(op2 @ op1)
+                    else:
+                        squared_ops.append(op1 @ op2)
+
+                return qml.Hamiltonian(squared_coeffs, squared_ops, simplify=True)
+
+            elif (coeffs1, terms1) != (coeffs2, terms2):
+                coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
+                term_list = itertools.product(terms1, terms2)
+                terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+
+                return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = coeffs1
