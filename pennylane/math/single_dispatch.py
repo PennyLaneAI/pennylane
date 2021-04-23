@@ -53,7 +53,13 @@ ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 # -------------------------------- Autograd --------------------------------- #
 
 
+# When autoray inspects PennyLane NumPy tensors, they will be associated with
+# the 'pennylane' module, and not autograd. Set an alias so it understands this is
+# simply autograd.
 ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
+
+# When dispatching to autograd, ensure that autoray will instead call
+# qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 
