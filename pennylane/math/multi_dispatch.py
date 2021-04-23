@@ -253,7 +253,7 @@ def ones_like(tensor, dtype=None):
 
     Args:
         tensor (tensor_like): input tensor
-        dtype (str, np.dtype): The desired output datatype of the array. If not provided, the dtype of
+        dtype (str, np.dtype, None): The desired output datatype of the array. If not provided, the dtype of
 
             ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
             a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
