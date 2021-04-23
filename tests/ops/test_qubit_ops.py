@@ -421,7 +421,6 @@ class TestOperations:
         "op",
         [
             qml.BasisState(np.array([0, 1]), wires=0),
-            qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
         ],
     )
     def test_adjoint_error_exception(self, op, tol):
