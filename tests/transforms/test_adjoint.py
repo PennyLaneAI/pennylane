@@ -261,3 +261,116 @@ class TestTemplateIntegration:
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
+
+    def test_simplified_two_design(self, fn):
+        """Test that the adjoint correctly inverts the simplified two design"""
+        dev = qml.device("default.qubit", wires=3)
+        template = qml.templates.SimplifiedTwoDesign
+
+        @qml.qnode(dev)
+        def circuit(data, weights):
+            template(initial_layer_weights=data, weights=weights, wires=[0, 1, 2])
+            fn(template, initial_layer_weights=data, weights=weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = [np.random.random(s) for s in template.shape(2, 3)]
+        res = circuit(weights[0], *weights[1:])
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
+    def test_approx_time_evolution(self, fn):
+        """Test that the adjoint correctly inverts the approx time evolution"""
+        dev = qml.device("default.qubit", wires=3)
+        template = qml.templates.ApproxTimeEvolution
+
+        coeffs = [1, 1]
+        obs = [qml.PauliX(0), qml.PauliX(1)]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        @qml.qnode(dev)
+        def circuit(t):
+            template(H, t, 1)
+            fn(template, H, t, 1)
+            return qml.probs(wires=[0, 1, 2])
+
+        res = circuit(0.5)
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+        assert np.allclose(res, expected)
+
+    def test_arbitrary_unitary(self, fn):
+        """Test that the adjoint correctly inverts the arbitrary unitary"""
+        dev = qml.device("default.qubit", wires=3)
+        template = qml.templates.ArbitraryUnitary
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weights=weights, wires=[0, 1, 2])
+            fn(template, weights=weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        weights = np.random.random(template.shape(3))
+        res = circuit(weights)
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
+    def test_single_excitation(self, fn):
+        """Test that the adjoint correctly inverts the single excitation unitary"""
+        dev = qml.device("default.qubit", wires=3)
+        template = qml.templates.SingleExcitationUnitary
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weight=weights, wires=[0, 1, 2])
+            fn(template, weight=weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        res = circuit(0.6)
+        expected = np.zeros([2 ** 3])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
+    def test_double_excitation(self, fn):
+        """Test that the adjoint correctly inverts the double excitation unitary"""
+        dev = qml.device("default.qubit", wires=4)
+        template = qml.templates.DoubleExcitationUnitary
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weight=weights, wires1=[0, 1], wires2=[2, 3])
+            fn(template, weight=weights, wires1=[0, 1], wires2=[2, 3])
+            return qml.probs(wires=[0, 1, 2, 3])
+
+        res = circuit(0.6)
+        expected = np.zeros([2 ** 4])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
+    def test_interferometer(self, fn):
+        """Test that the adjoint correctly inverts squeezing embedding"""
+        dev = qml.device("default.gaussian", wires=3)
+        template = qml.templates.Interferometer
+        r = 1.5
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.Squeezing(r, 0, wires=0)
+            qml.Squeezing(r, 0, wires=1)
+            qml.Squeezing(r, 0, wires=2)
+            template(*weights, wires=[0, 1, 2])
+            fn(template, *weights, wires=[0, 1, 2])
+            return qml.expval(qml.NumberOperator(0))
+
+        weights = [
+            np.random.random([3 * (3 - 1) // 2]),
+            np.random.random([3 * (3 - 1) // 2]),
+            np.random.random([3]),
+        ]
+        res = circuit(weights)
+        assert np.allclose(res, np.sinh(r) ** 2)
