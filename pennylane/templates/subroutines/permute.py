@@ -186,5 +186,4 @@ class Permute(Operation):
                         working_order[idx_there],
                         working_order[idx_here],
                     )
-
         return tape
