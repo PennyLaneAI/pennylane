@@ -2465,7 +2465,7 @@ class QubitStateVector(Operation):
         return MottonenStatePreparation(state, wires)
 
     def adjoint(self):
-        raise AdjointError("No adjoint exists for QubitStateVector operations.")
+        return qml.adjoint(MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
 
 # =============================================================================

@@ -70,7 +70,4 @@ class BasisEmbedding(Operation):
                 if bit == 1:
                     qml.PauliX(wire)
 
-        if self.inverse:
-            tape.inv()
-
         return tape

@@ -525,7 +525,4 @@ class DoubleExcitationUnitary(Operation):
             _layer7(weight, s, r, q, p, set_cnot_wires)
             _layer8(weight, s, r, q, p, set_cnot_wires)
 
-        if self.inverse:
-            tape.inv()
-
         return tape

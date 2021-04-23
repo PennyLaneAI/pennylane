@@ -77,7 +77,4 @@ class AngleEmbedding(Operation):
             for i in range(len(self.wires)):
                 self.rotation(features[i], wires=self.wires[i])
 
-        if self.inverse:
-            tape.inv()
-
         return tape

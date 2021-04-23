@@ -196,7 +196,4 @@ class UCCSD(Operation):
             for j, s_wires_ in enumerate(self.s_wires):
                 qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)
 
-        if self.inverse:
-            tape.inv()
-
         return tape

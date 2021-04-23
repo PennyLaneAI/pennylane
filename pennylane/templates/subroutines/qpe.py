@@ -137,7 +137,4 @@ class QuantumPhaseEstimation(Operation):
 
             QFT(wires=self.estimation_wires).inv()
 
-        if self.inverse:
-            tape.inv()
-
         return tape

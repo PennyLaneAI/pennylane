@@ -99,9 +99,6 @@ class ArbitraryStatePreparation(Operation):
             for i, pauli_word in enumerate(_state_preparation_pauli_words(len(self.wires))):
                 qml.PauliRot(self.parameters[0][i], pauli_word, wires=self.wires)
 
-        if self.inverse:
-            tape.inv()
-
         return tape
 
     @staticmethod

@@ -229,9 +229,6 @@ class RandomLayers(Operation):
                             rnd_wires = self.wires.select_random(2)
                             self.imprimitive(wires=rnd_wires)
 
-        if self.inverse:
-            tape.inv()
-
         return tape
 
     @staticmethod

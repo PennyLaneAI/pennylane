@@ -234,9 +234,6 @@ class QAOAEmbedding(Operation):
             # repeat the feature encoding once more at the end
             qaoa_feature_encoding_hamiltonian(features, self.wires)
 
-        if self.inverse:
-            tape.inv()
-
         return tape
 
     @staticmethod

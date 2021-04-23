@@ -187,7 +187,4 @@ class Permute(Operation):
                         working_order[idx_here],
                     )
 
-        if self.inverse:
-            tape.inv()
-
         return tape

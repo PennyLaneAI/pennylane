@@ -183,7 +183,4 @@ class SingleExcitationUnitary(Operation):
             Hadamard(wires=r)
             RX(np.pi / 2, wires=p)
 
-        if self.inverse:
-            tape.inv()
-
         return tape

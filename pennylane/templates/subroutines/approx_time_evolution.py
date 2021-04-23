@@ -156,7 +156,4 @@ class ApproxTimeEvolution(Operation):
                 for j, term in enumerate(pauli_words):
                     PauliRot(theta[j], term, wires=wires[j])
 
-        if self.inverse:
-            tape.inv()
-
         return tape
