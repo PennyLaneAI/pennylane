@@ -337,4 +337,4 @@ def where(condition, x, y):
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
     """
-    return np.where(condition, x, y, like=_multi_dispatch([x, y]))
+    return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
