@@ -311,7 +311,7 @@ ar.register_function(
     lambda x, indices, axis=None: _i("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
 )
 ar.register_function("jax", "coerce", lambda x: x)
-ar.register_function("jax", "to_numpy", lambda x: onp.array(x))
+ar.register_function("jax", "to_numpy", lambda x: np.array(x))
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
