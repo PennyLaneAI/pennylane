@@ -100,3 +100,4 @@ Cycle Optimization
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+    :skip: kron
