@@ -43,7 +43,7 @@ def adjoint(fn):
     We can create a QNode that applies this quantum function,
     followed by the adjoint of this function:
 
-    .. code-black:: python3
+    .. code-block:: python3
 
         dev = qml.device('default.qubit', wires=1)
 
