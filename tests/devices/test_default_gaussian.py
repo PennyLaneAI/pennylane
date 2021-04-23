@@ -411,7 +411,7 @@ class TestDefaultGaussianDevice:
             if op.par_domain == "A":
                 # the parameter is an array
                 if gate_name == "GaussianState":
-                    p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234] * 4)]
+                    p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
                     w = list(range(2))
                     expected_out = p
                 elif gate_name == "Interferometer":
@@ -801,7 +801,7 @@ class TestDefaultGaussianIntegration:
             return (S @ np.array([a.real, a.imag, 0, 0]) * np.sqrt(2 * hbar))[0]
 
         if g == "GaussianState":
-            p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234] * 4)]
+            p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
         elif g == "Interferometer":
             p = [U]
         else:
