@@ -452,10 +452,12 @@ def gaussian_state(cov, mu, hbar=2.0):
             relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: the covariance matrix and the mean of the Gaussian state
+        tuple: the mean and the covariance matrix of the Gaussian state
     """
     # pylint: disable=unused-argument
-    return cov, mu
+
+    # Note: the internal order of mu and cov is different to the one used in Strawberry Fields
+    return  mu, cov
 
 
 def set_state(state, wire, mu, cov):
