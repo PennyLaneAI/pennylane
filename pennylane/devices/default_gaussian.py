@@ -457,7 +457,7 @@ def gaussian_state(cov, mu, hbar=2.0):
     # pylint: disable=unused-argument
 
     # Note: the internal order of mu and cov is different to the one used in Strawberry Fields
-    return  mu, cov
+    return mu, cov
 
 
 def set_state(state, wire, mu, cov):
