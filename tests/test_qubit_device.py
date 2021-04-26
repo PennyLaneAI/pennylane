@@ -35,7 +35,7 @@ mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 @pytest.fixture(scope="function")
 def mock_qubit_device(monkeypatch):
-    """ A function to create a mock device that mocks most of the methods except for e.g. probability()"""
+    """A function to create a mock device that mocks most of the methods except for e.g. probability()"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, "__abstractmethods__", frozenset())
         m.setattr(QubitDevice, "_capabilities", mock_qubit_device_capabilities)
