@@ -361,7 +361,7 @@ class DefaultQubit(QubitDevice):
         if axes[2] > axes[0]:
             sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
             sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-            target_axes = [axes[2]-2]
+            target_axes = [axes[2] - 2]
         else:
             sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
             sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
@@ -369,8 +369,8 @@ class DefaultQubit(QubitDevice):
 
         # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
         state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_out = self._stack([state[sl_a0][sl_b0], state[sl_a0][sl_b1], state[sl_a1][sl_b0], state_x])
-        return state_out.reshape((2, 2, 2))
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x])
+        return self._stack([state[sl_a0], state_stacked_a1])
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
