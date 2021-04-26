@@ -56,7 +56,7 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from:
+This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
 
