@@ -76,28 +76,28 @@ def pauli_group(n_qubits, wire_map=None):
 
     **Example**
 
-    The ``pauli_group`` generator can be used to loop over the Pauli group as follows:
+    The ``pauli_group`` generator can be used to loop over the Pauli group as follows.
+    (Note: in the example below, we display only the first 5 elements for brevity.)
 
     >>> from pennylane.grouping import pauli_group
     >>> n_qubits = 3
     >>> for p in pauli_group(n_qubits):
     ...     print(p)
+    ...
     Identity(wires=[0])
     PauliZ(wires=[2])
     PauliZ(wires=[1])
     PauliZ(wires=[1]) @ PauliZ(wires=[2])
     PauliZ(wires=[0])
-    PauliZ(wires=[0]) @ PauliZ(wires=[2])
-    PauliZ(wires=[0]) @ PauliZ(wires=[1])
-    ...
 
     The full Pauli group can then be obtained like so:
 
     >>> full_pg = list(pauli_group(n_qubits))
 
-    The group can also be created using a custom wire map (if no map is
+    The group can also be created using a custom wire map; if no map is
     specified, a default map of label :math:`i` to wire ``i`` as in the example
-    above will be created).
+    above will be created. (Note: in the example below, we display only the first
+    5 elements for brevity.)
 
     >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
     >>> for p in pauli_group(n_qubits, wire_map=wire_map):
@@ -108,9 +108,6 @@ def pauli_group(n_qubits, wire_map=None):
     PauliZ(wires=['b'])
     PauliZ(wires=['b']) @ PauliZ(wires=['c'])
     PauliZ(wires=['a'])
-    PauliZ(wires=['a']) @ PauliZ(wires=['c'])
-    PauliZ(wires=['a']) @ PauliZ(wires=['b'])
-    ...
 
     """
     if not isinstance(n_qubits, int):
@@ -183,8 +180,8 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
 
     Two Pauli operations can be multiplied together by taking the additive
     OR of their binary symplectic representations. The phase is computed by
-    looking at the number of times we have the products  XY, YZ, or ZX (adds a
-    phase of :math:`i`), or YX, ZY, XZ (adds a phase of :math:`-i`).
+    looking at the number of times we have the products  :math:`XY, YZ`, or :math:`ZX` (adds a
+    phase of :math:`i`), or :math:`YX, ZY, XZ` (adds a phase of :math:`-i`).
 
     Args:
         pauli_1 (.Operation): A Pauli word.
@@ -201,8 +198,8 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     **Example**
 
     This function works the same as :func:`~.pauli_mult` but also returns the global
-    phase accumulated as a result of the Pauli product rules
-    :math:`\sigma_i \sigma_j = i \sigma_k`.
+    phase accumulated as a result of the ordering of Paulis in the product (e.g., :math:`XY = iZ`,
+    and :math:`YX = -iZ`).
 
     >>> from pennylane.grouping import pauli_mult_with_phase
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
@@ -228,21 +225,22 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     pauli_1_names = [pauli_1.name] if isinstance(pauli_1.name, str) else pauli_1.name
     pauli_2_names = [pauli_2.name] if isinstance(pauli_2.name, str) else pauli_2.name
 
-    pauli_1_placeholder = 0
-    pauli_2_placeholder = 0
+    pauli_1_idx = 0
+    pauli_2_idx = 0
 
+    pos_phases = (("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX"))
     phase = 1
 
     for wire in wire_map.keys():
         if wire in pauli_1.wires:
-            pauli_1_op_name = pauli_1_names[pauli_1_placeholder]
-            pauli_1_placeholder += 1
+            pauli_1_op_name = pauli_1_names[pauli_1_idx]
+            pauli_1_idx += 1
         else:
             pauli_1_op_name = "Identity"
 
         if wire in pauli_2.wires:
-            pauli_2_op_name = pauli_2_names[pauli_2_placeholder]
-            pauli_2_placeholder += 1
+            pauli_2_op_name = pauli_2_names[pauli_2_idx]
+            pauli_2_idx += 1
         else:
             pauli_2_op_name = "Identity"
 
@@ -257,7 +255,6 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
         # Use Pauli commutation rules to determine the phase
         pauli_ordering = (pauli_1_op_name, pauli_2_op_name)
 
-        pos_phases = [("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX")]
         if pauli_ordering in pos_phases:
             phase *= 1j
         else:
