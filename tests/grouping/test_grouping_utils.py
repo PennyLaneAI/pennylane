@@ -311,6 +311,7 @@ class TestGroupingUtils:
             (PauliX(1), {1: 0, 0: 1}, "XI"),
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
+            (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
         ],
     )
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
@@ -332,6 +333,7 @@ class TestGroupingUtils:
             ("II", {0: 0, 1: 1}, Identity(0)),
             ("ZYIZ", {"a": 0, "b": 1, "c": 2, "d": 3}, PauliZ("a") @ PauliY("b") @ PauliZ("d")),
             ("ZYZ", None, PauliZ(0) @ PauliY(1) @ PauliZ(2)),
+            ("ZIYX", {"d": 0, "c": 1, "b": 2, "a": 3}, PauliZ("d") @ PauliY("b") @ PauliX("a")),
         ],
     )
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):

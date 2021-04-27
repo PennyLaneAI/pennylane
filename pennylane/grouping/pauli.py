@@ -22,6 +22,7 @@ from pennylane import Identity
 from pennylane.grouping.utils import (
     binary_to_pauli,
     pauli_to_binary,
+    pauli_word_to_string,
     are_identical_pauli_words,
     _wire_map_from_pauli_pair,
 )
@@ -220,40 +221,24 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
 
     # Get the names of the operations; in cases where only one single-qubit Pauli
     # is present, the operation name is stored as a string rather than a list, so convert it
-    pauli_1_names = [pauli_1.name] if isinstance(pauli_1.name, str) else pauli_1.name
-    pauli_2_names = [pauli_2.name] if isinstance(pauli_2.name, str) else pauli_2.name
+    pauli_1_string = pauli_word_to_string(pauli_1, wire_map=wire_map)
+    pauli_2_string = pauli_word_to_string(pauli_2, wire_map=wire_map)
 
-    pauli_1_idx = 0
-    pauli_2_idx = 0
+    pos_phases = (("X", "Y"), ("Y", "Z"), ("Z", "X"))
 
-    pos_phases = (("PauliX", "PauliY"), ("PauliY", "PauliZ"), ("PauliZ", "PauliX"))
     phase = 1
 
-    for wire in wire_map.keys():
-        if wire in pauli_1.wires:
-            pauli_1_op_name = pauli_1_names[pauli_1_idx]
-            pauli_1_idx += 1
-        else:
-            pauli_1_op_name = "Identity"
-
-        if wire in pauli_2.wires:
-            pauli_2_op_name = pauli_2_names[pauli_2_idx]
-            pauli_2_idx += 1
-        else:
-            pauli_2_op_name = "Identity"
-
+    for qubit_1_char, qubit_2_char in zip(pauli_1_string, pauli_2_string):
         # If we have identities anywhere we don't pick up a phase
-        if pauli_1_op_name == "Identity" or pauli_2_op_name == "Identity":
+        if qubit_1_char == "I" or qubit_2_char == "I":
             continue
 
         # Likewise, no additional phase if the Paulis are the same
-        if pauli_1_op_name == pauli_2_op_name:
+        if qubit_1_char == qubit_2_char:
             continue
 
         # Use Pauli commutation rules to determine the phase
-        pauli_ordering = (pauli_1_op_name, pauli_2_op_name)
-
-        if pauli_ordering in pos_phases:
+        if (qubit_1_char, qubit_2_char) in pos_phases:
             phase *= 1j
         else:
             phase *= -1j
