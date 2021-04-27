@@ -218,7 +218,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     # Get the product; use our earlier function
     pauli_product = pauli_mult(pauli_1, pauli_2, wire_map)
 
-    # Get the names of the operations; in cases where only a single non-identity Pauli
+    # Get the names of the operations; in cases where only one single-qubit Pauli
     # is present, the operation name is stored as a string rather than a list, so convert it
     pauli_1_names = [pauli_1.name] if isinstance(pauli_1.name, str) else pauli_1.name
     pauli_2_names = [pauli_2.name] if isinstance(pauli_2.name, str) else pauli_2.name
