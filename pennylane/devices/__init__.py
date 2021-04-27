@@ -26,6 +26,7 @@ to verify and test quantum gradient computations.
     default_qubit_jax
     default_qubit_tf
     default_qubit_autograd
+    default_qubit_sparse
     default_gaussian
     default_mixed
     tf_ops
