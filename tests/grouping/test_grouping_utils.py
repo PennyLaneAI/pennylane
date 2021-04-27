@@ -320,6 +320,7 @@ class TestGroupingUtils:
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_pauli_word_to_string_invalid_input(self, non_pauli_word):
+        """Ensure invalid inputs are handled properly when converting Pauli words to strings."""
         with pytest.raises(TypeError):
             pauli_word_to_string(non_pauli_word)
 
@@ -334,7 +335,7 @@ class TestGroupingUtils:
         ],
     )
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
-        """Test that Pauli words are correctly converted into strings."""
+        """Test that valid strings are correctly converted into Pauli words."""
         obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
         assert obtained_pauli.compare(expected_pauli)
 
@@ -342,6 +343,7 @@ class TestGroupingUtils:
         "non_pauli_string,error_type", [(Identity("a"), TypeError), ("XAYZ", ValueError)]
     )
     def test_string_to_pauli_word_invalid_input(self, non_pauli_string, error_type):
+        """Ensure invalid inputs are handled properly when converting strings to Pauli words."""
         with pytest.raises(error_type):
             string_to_pauli_word(non_pauli_string)
 
@@ -408,12 +410,13 @@ class TestGroupingUtils:
         ],
     )
     def test_pauli_word_to_matrix(self, pauli_word, wire_map, expected_matrix):
-        """Test that Pauli words are correctly converted into strings."""
+        """Test that Pauli words are correctly converted into matrices."""
         obtained_matrix = pauli_word_to_matrix(pauli_word, wire_map)
         assert np.allclose(obtained_matrix, expected_matrix)
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_pauli_word_to_matrix_invalid_input(self, non_pauli_word):
+        """Ensure invalid inputs are handled properly when converting Pauli words to matrices."""
         with pytest.raises(TypeError):
             pauli_word_to_matrix(non_pauli_word)
 
@@ -439,7 +442,7 @@ class TestGroupingUtils:
         ],
     )
     def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
-        """Test that Pauli words are correctly converted into strings."""
+        """Test that (non)-commuting Pauli words are correctly identified."""
         do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert do_they_commute == commute_status
 
@@ -448,5 +451,6 @@ class TestGroupingUtils:
         [(non_pauli_words[0], PauliX(0) @ PauliY(2)), (PauliX(0) @ PauliY(2), non_pauli_words[0])],
     )
     def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
+        """Ensure invalid inputs are handled properly when determining commutativity."""
         with pytest.raises(TypeError):
             is_commuting(pauli_word_1, pauli_word_2)
