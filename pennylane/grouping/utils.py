@@ -349,8 +349,8 @@ def pauli_word_to_string(pauli_word, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        str: The string representation of the observable in terms of ``I``, ``X``, ``Y``,
-        and/or ``Z``.
+        str: The string representation of the observable in terms of ``'I'``, ``'X'``, ``'Y'``,
+        and/or ``'Z'``.
 
     Raises:
         TypeError: if the input observable is not a proper Pauli word.
@@ -364,7 +364,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     """
 
     if not is_pauli_word(pauli_word):
-        raise TypeError("Expected Pauli word observables, instead got {}".format(pauli_word))
+        raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
 
     character_map = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
@@ -487,7 +487,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
            [0.+1.j, 0.+0.j, 0.+0.j, 0.+0.j]])
     """
     if not is_pauli_word(pauli_word):
-        raise TypeError("Expected Pauli word observables, instead got {}".format(pauli_word))
+        raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
@@ -527,7 +527,7 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
     and :math:`p_2 = [x_2, z_2],` the symplectic inner product is defined as
     :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
-    product is 0 they commute, while if it is 1, they don't commute.
+    product is :math:`0` they commute, while if it is :math:`1`, they don't commute.
 
     Args:
         pauli_word_1 (Observable): first Pauli word in commutator
@@ -552,9 +552,7 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
 
     if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
         raise TypeError(
-            "Expected Pauli word observables, instead got {} and {}".format(
-                pauli_word_1, pauli_word_2
-            )
+            f"Expected Pauli word observables, instead got {pauli_word_1} and {pauli_word_2}"
         )
 
     # If no wire map is specified, generate one from the union of wires
