@@ -91,6 +91,8 @@ Qubit gates
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
+    ~pennylane.QubitCarry
+    ~pennylane.QubitSum
 
 
 :html:`</div>`

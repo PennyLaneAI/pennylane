@@ -15,7 +15,7 @@
 Contains the control transform.
 """
 from functools import wraps
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
@@ -90,11 +90,12 @@ class ControlledOperation(Operation):
             tape = expand_with_control(tape, wire)
         return tape
 
-    def adjoint(self, do_queue=False):
-        with QuantumTape(do_queue=False) as new_tape:
+    def adjoint(self):
+        """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
+        with get_active_tape().stop_recording(), QuantumTape() as new_tape:
             # Execute all ops adjointed.
             adjoint(requeue_ops_in_tape)(self.subtape)
-        return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
+        return ControlledOperation(new_tape, self.control_wires)
 
     def _controlled(self, wires):
         ControlledOperation(tape=self.subtape, control_wires=Wires(wires) + self.control_wires)
@@ -115,9 +116,11 @@ def ctrl(fn, control):
 
     .. code-block:: python3
 
+        dev = qml.device('default.qubit', wires=4)
+
         def ops(params):
             qml.RX(params[0], wires=0)
-            qml.RZ(params[1] wires=3)
+            qml.RZ(params[1], wires=3)
 
         ops1 = qml.ctrl(ops, control=1)
         ops2 = qml.ctrl(ops, control=2)
@@ -135,14 +138,14 @@ def ctrl(fn, control):
     .. code-block:: python3
 
         @qml.qnode(dev)
-        def my_circuit(params):
+        def my_circuit2():
             # ops1(params=[0.123, 0.456])
             qml.CRX(0.123, wires=[1, 0])
             qml.CRZ(0.456, wires=[1, 3])
 
             # ops1(params=[0.789, 1.234])
             qml.CRX(0.789, wires=[1, 0])
-            qml.CRZ(1.234, (wires=[1, 3])
+            qml.CRZ(1.234, wires=[1, 3])
 
             # ops2(params=[2.987, 3.654])
             qml.CRX(2.987, wires=[2, 0])

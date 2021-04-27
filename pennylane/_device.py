@@ -118,9 +118,14 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000):
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
 
         self.shots = shots
+
+        if analytic is not None:
+            msg = "The analytic argument has been replaced by shots=None. "
+            msg += "Please use shots=None instead of analytic=True."
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -290,6 +295,16 @@ class Device(abc.ABC):
         integer is repeated.
         """
         return self._shot_vector
+
+    def _has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.

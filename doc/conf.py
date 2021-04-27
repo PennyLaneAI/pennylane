@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'doc'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.6'
+needs_sphinx = '3.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -42,11 +42,10 @@ extensions = [
     'sphinxcontrib.bibtex',
     'edit_on_github',
     'sphinx.ext.graphviz',
-    # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     'sphinx_copybutton',
-    "m2r"
+    "m2r2"
 ]
 
 source_suffix = ['.rst', '.md']
@@ -56,32 +55,12 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {"https://pennylane.ai/qml/": None}
 mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
-
-from glob import glob
-import shutil
-import os
-import warnings
-
-# sphinx_gallery_conf = {
-#     # path to your example scripts
-#     'examples_dirs': '../examples',
-#     # path where to save gallery generated examples
-#     'gallery_dirs': 'tutorials',
-#     # build files that start 'pennylane_run'
-#     'filename_pattern': r'pennylane_run',
-#     # first notebook cell in generated Jupyter notebooks
-#     'first_notebook_cell': "%matplotlib inline",
-#     # thumbnail size
-#     'thumbnail_size': (400, 400),
-# }
-
-# Remove warnings that occur when generating the the tutorials
-warnings.filterwarnings("ignore", category=UserWarning, message=r"Matplotlib is currently using agg")
-warnings.filterwarnings("ignore", category=FutureWarning, message=r"Passing \(type, 1\) or '1type' as a synonym of type is deprecated.+")
-warnings.filterwarnings("ignore", category=UserWarning, message=r".+?Compilation using quilc will not be available\.")
+ignore_warnings = [('code/api/qml_transforms*', 'no module named pennylane.transforms')]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates', 'xanadu_theme']

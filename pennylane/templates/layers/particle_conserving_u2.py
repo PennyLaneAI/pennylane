@@ -12,59 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the hardware efficient ``ParticleConservingU2`` template.
+Contains the hardware-efficient ParticleConservingU2 template.
 """
-import pennylane as qml
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
-from pennylane.ops import CNOT, CRX, RZ
-from pennylane.wires import Wires
-
-
-def _preprocess(weights, wires, init_state):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the weights tensor has the correct shape.
-    * Extract a wire list for the subroutines of this template.
-    * Cast initial state to a numpy array.
-
-    Args:
-        weights (tensor_like): trainable parameters of the template
-        wires (Wires): wires that template acts on
-        init_state (tensor_like): shape ``(len(wires),)`` tensor
-
-    Returns:
-        int, list[Wires], array: number of times that the ansatz is repeated, wires pattern,
-            and preprocessed initial state
-    """
-
-    if len(wires) < 2:
-        raise ValueError(
-            "This template requires the number of qubits to be greater than one;"
-            "got a wire sequence with {} elements".format(len(wires))
-        )
-
-    shape = qml.math.shape(weights)
-
-    if len(shape) != 2:
-        raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-    if shape[1] != 2 * len(wires) - 1:
-        raise ValueError(
-            f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
-        )
-
-    repeat = shape[0]
-
-    nm_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]
-    nm_wires += [wires.subset([l, l + 1]) for l in range(1, len(wires) - 1, 2)]
-
-    # we can extract the numpy representation here
-    # since init_state can never be differentiable
-    init_state = qml.math.toarray(init_state)
-
-    return repeat, nm_wires, init_state
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
 def u2_ex_gate(phi, wires=None):
@@ -88,13 +40,12 @@ def u2_ex_gate(phi, wires=None):
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
     """
 
-    CNOT(wires=wires)
-    CRX(2 * phi, wires=wires[::-1])
-    CNOT(wires=wires)
+    qml.CNOT(wires=wires)
+    qml.CRX(2 * phi, wires=wires[::-1])
+    qml.CNOT(wires=wires)
 
 
-@template
-def ParticleConservingU2(weights, wires, init_state=None):
+class ParticleConservingU2(Operation):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
     particle-conserving entangler :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
@@ -142,13 +93,9 @@ def ParticleConservingU2(weights, wires, init_state=None):
         weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
             layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
-            or strings, or a Wires object.
-        init_state (tensor_like): shape ``(len(wires),)`` tensor representing the Hartree-Fock state
+        wires (Iterable): wires that the template acts on
+        init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
             used to initialize the wires.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
@@ -187,17 +134,80 @@ def ParticleConservingU2(weights, wires, init_state=None):
             layers = 1
             params = qml.init.particle_conserving_u2_normal(layers, qubits)
             print(cost_fn(params))
+
+        **Parameter shape**
+
+        The shape of the weights argument can be computed by the static method
+        :meth:`~.ParticleConservingU2.shape` and used when creating randomly
+        initialised weight tensors:
+
+        .. code-block:: python
+
+            shape = ParticleConservingU2.shape(n_layers=2, n_wires=2)
+            weights = np.random.random(size=shape)
     """
 
-    wires = Wires(wires)
-    repeat, nm_wires, init_state = _preprocess(weights, wires, init_state)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    qml.BasisState(init_state, wires=wires)
+    def __init__(self, weights, wires, init_state=None, do_queue=True):
 
-    for l in range(repeat):
+        if len(wires) < 2:
+            raise ValueError(
+                "This template requires the number of qubits to be greater than one;"
+                "got a wire sequence with {} elements".format(len(wires))
+            )
 
-        for j, _ in enumerate(wires):
-            RZ(weights[l, j], wires=wires[j])
+        shape = qml.math.shape(weights)
 
-        for i, wires_ in enumerate(nm_wires):
-            u2_ex_gate(weights[l, len(wires) + i], wires=wires_)
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+
+        if shape[1] != 2 * len(wires) - 1:
+            raise ValueError(
+                f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
+            )
+
+        self.n_layers = shape[0]
+        # we can extract the numpy representation here
+        # since init_state can never be differentiable
+        self.init_state = qml.math.toarray(init_state)
+
+        super().__init__(weights, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
+        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
+
+        with qml.tape.QuantumTape() as tape:
+
+            qml.BasisState(self.init_state, wires=self.wires)
+
+            for l in range(self.n_layers):
+
+                for j, _ in enumerate(self.wires):
+                    qml.RZ(self.parameters[0][l, j], wires=self.wires[j])
+
+                for i, wires_ in enumerate(nm_wires):
+                    u2_ex_gate(self.parameters[0][l, len(self.wires) + i], wires=wires_)
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        if n_wires < 2:
+            raise ValueError(
+                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            )
+        return n_layers, 2 * n_wires - 1

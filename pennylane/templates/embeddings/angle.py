@@ -16,40 +16,14 @@ Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
+from pennylane.ops import RX, RY, RZ
+from pennylane.operation import Operation, AnyWires
 
 
-def _preprocess(features, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check that the features tensor is one-dimensional.
-    * Check that the first dimension of the features tensor
-      has length :math:`n` or less, where :math:`n` is the number of qubits.
-
-    Args:
-        features (tensor_like): input features to pre-process
-        wires (Wires): wires that template acts on
-
-    Returns:
-        int: number of features
-    """
-    shape = qml.math.shape(features)
-
-    if len(shape) != 1:
-        raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-    n_features = shape[0]
-    if n_features > len(wires):
-        raise ValueError(
-            f"Features must be of length {len(wires)} or less; got length {n_features}."
-        )
-    return n_features
+ROT = {"X": RX, "Y": RY, "Z": RZ}
 
 
-@template
-def AngleEmbedding(features, wires, rotation="X"):
+class AngleEmbedding(Operation):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
@@ -66,26 +40,41 @@ def AngleEmbedding(features, wires, rotation="X"):
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     Args:
-        features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
+        features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
-
     """
 
-    wires = Wires(wires)
-    n_features = _preprocess(features, wires)
-    wires = wires[:n_features]
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    if rotation == "X":
-        broadcast(unitary=qml.RX, pattern="single", wires=wires, parameters=features)
+    def __init__(self, features, wires, rotation="X", do_queue=True):
 
-    elif rotation == "Y":
-        broadcast(unitary=qml.RY, pattern="single", wires=wires, parameters=features)
+        if rotation not in ROT:
+            raise ValueError(f"Rotation option {rotation} not recognized.")
+        self.rotation = ROT[rotation]
 
-    elif rotation == "Z":
-        broadcast(unitary=qml.RZ, pattern="single", wires=wires, parameters=features)
+        shape = qml.math.shape(features)
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        n_features = shape[0]
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
 
-    else:
-        raise ValueError(f"Rotation option {rotation} not recognized.")
+        wires = wires[:n_features]
+        super().__init__(features, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        features = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for i in range(len(self.wires)):
+                self.rotation(features[i], wires=self.wires[i])
+
+        return tape
