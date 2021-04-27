@@ -24,28 +24,31 @@ class TestPauliGroup:
     """Testing for Pauli group construction and manipulation functions."""
 
     def test_pauli_group_size(self):
-        """Test that the Pauli group is constructed correctly given the wire map."""
-
+        """Test that the size of the returned Pauli group is correct."""
         for n_qubits in range(1, 5):
             pg = list(pauli_group(n_qubits))
             assert len(pg) == 4 ** n_qubits
 
     def test_pauli_group_invalid_input(self):
-        """Test that the Pauli group is constructed correctly given the wire map."""
+        """Test that invalid inputs to the Pauli group are handled correctly."""
         with pytest.raises(TypeError, match="Must specify an integer number"):
             pauli_group("3")
 
         with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
             pauli_group(-1)
 
-    def test_one_qubit_pauli_group(self):
-        """Test that the single-qubit Pauli group is constructed correctly."""
-        # With no wire map; ordering is based on construction from binary representation
+    def test_one_qubit_pauli_group_integer_wire_map(self):
+        """Test that the single-qubit Pauli group is constructed correctly with a wire
+        labeled by an integer."""
+
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
         assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
 
-        # With an arbitrary wire map
+    def test_one_qubit_pauli_group_string_wire_map(self):
+        """Test that the single-qubit Pauli group is constructed correctly with a wire
+        labeled by a string."""
+
         wire_map = {"qubit": 0}
         expected_pg_1_wires = [
             Identity("qubit"),
