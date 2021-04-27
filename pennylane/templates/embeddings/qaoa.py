@@ -152,9 +152,9 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            o = GradientDescentOptimizer()
+            opt = qml.GradientDescentOptimizer()
             for i in range(10):
-                weights = o.step(lambda w : circuit(w, f=features), weights)
+                weights = opt.step(lambda w : circuit(w, f=features), weights)
                 print("Step ", i, " weights = ", weights)
 
 
@@ -167,21 +167,18 @@ class QAOAEmbedding(Operation):
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit2(pars):
-                weights = pars[0]
-                features = pars[1]
+            def circuit2(weights, features):
                 QAOAEmbedding(features=features, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
 
             features = [1., 2.]
             weights = [[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]]
-            pars = [weights, features]
 
-            o = GradientDescentOptimizer()
+            opt = qml.GradientDescentOptimizer()
             for i in range(10):
-                pars = o.step(circuit2, pars)
-                print("Step ", i, " weights = ", pars[0], " features = ", pars[1])
+                weights, features = opt.step(circuit2, weights, features)
+                print("Step ", i, "\n weights = ", weights, "\n features = ", features,"\n")
 
         **Local Fields**
 

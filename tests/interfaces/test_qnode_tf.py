@@ -24,15 +24,39 @@ from pennylane.tape import JacobianTape
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [
+    "dev_name,diff_method",
+    [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
         ["default.qubit", "backprop"],
-        ["default.qubit", "adjoint"]
+        ["default.qubit", "adjoint"],
     ],
 )
 class TestQNode:
     """Tests the tensorflow interface used with a QNode."""
+
+    def test_import_error(self, dev_name, diff_method, mocker):
+        """Test that an exception is caught on import error"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
+        mock.side_effect = ImportError()
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device(dev_name, wires=2)
+        qn = QNode(func, dev, interface="tf", diff_method=diff_method)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
+        ):
+            qn(0.1, 0.1)
 
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface, and that trainable parameters
@@ -137,6 +161,33 @@ class TestQNode:
         grad2 = tape.gradient(res2, a)
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
+
+    def test_drawing(self, dev_name, diff_method):
+        """Test circuit drawing when using the TF interface"""
+
+        x = tf.Variable(0.1, dtype=tf.float64)
+        y = tf.Variable([0.2, 0.3], dtype=tf.float64)
+        z = tf.Variable(0.4, dtype=tf.float64)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(p1, p2=y, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        circuit(p1=x, p3=z)
+
+        result = circuit.draw()
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
+ 1: ──RY(0.06)───────────╰X──╰┤ State 
+"""
+
+        assert result == expected
 
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
@@ -371,6 +422,7 @@ class TestQNode:
     def test_differentiable_expand(self, dev_name, diff_method, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+
         class U3(qml.U3):
             def expand(self):
                 theta, phi, lam = self.data
@@ -562,7 +614,10 @@ class TestQNode:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-        expected_g2 = [-tf.cos(a) * tf.cos(b) + tf.sin(a) * tf.sin(b), tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)]
+        expected_g2 = [
+            -tf.cos(a) * tf.cos(b) + tf.sin(a) * tf.sin(b),
+            tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b),
+        ]
         assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mocker, tol):
@@ -603,7 +658,7 @@ class TestQNode:
 
         expected_hess = [
             [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)],
-            [tf.sin(a) * tf.sin(b), -tf.cos(a) * tf.cos(b)]
+            [tf.sin(a) * tf.sin(b), -tf.cos(a) * tf.cos(b)],
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
@@ -638,27 +693,24 @@ class TestQNode:
 
         a, b = x * 1.0
 
-        expected_res = [
-            0.5 + 0.5 * tf.cos(a) * tf.cos(b),
-            0.5 - 0.5 * tf.cos(a) * tf.cos(b)
-        ]
+        expected_res = [0.5 + 0.5 * tf.cos(a) * tf.cos(b), 0.5 - 0.5 * tf.cos(a) * tf.cos(b)]
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [
             [-0.5 * tf.sin(a) * tf.cos(b), -0.5 * tf.cos(a) * tf.sin(b)],
-            [0.5 * tf.sin(a) * tf.cos(b), 0.5 * tf.cos(a) * tf.sin(b)]
+            [0.5 * tf.sin(a) * tf.cos(b), 0.5 * tf.cos(a) * tf.sin(b)],
         ]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
         expected_hess = [
             [
                 [-0.5 * tf.cos(a) * tf.cos(b), 0.5 * tf.sin(a) * tf.sin(b)],
-                [0.5 * tf.sin(a) * tf.sin(b), -0.5 * tf.cos(a) * tf.cos(b)]
+                [0.5 * tf.sin(a) * tf.sin(b), -0.5 * tf.cos(a) * tf.cos(b)],
             ],
             [
                 [0.5 * tf.cos(a) * tf.cos(b), -0.5 * tf.sin(a) * tf.sin(b)],
-                [-0.5 * tf.sin(a) * tf.sin(b), 0.5 * tf.cos(a) * tf.cos(b)]
-            ]
+                [-0.5 * tf.sin(a) * tf.sin(b), 0.5 * tf.cos(a) * tf.cos(b)],
+            ],
         ]
 
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
@@ -700,30 +752,30 @@ class TestQNode:
         expected_res = [
             tf.cos(a) * tf.cos(b),
             0.5 + 0.5 * tf.cos(a) * tf.cos(b),
-            0.5 - 0.5 * tf.cos(a) * tf.cos(b)
+            0.5 - 0.5 * tf.cos(a) * tf.cos(b),
         ]
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [
             [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)],
             [-0.5 * tf.sin(a) * tf.cos(b), -0.5 * tf.cos(a) * tf.sin(b)],
-            [0.5 * tf.sin(a) * tf.cos(b), 0.5 * tf.cos(a) * tf.sin(b)]
+            [0.5 * tf.sin(a) * tf.cos(b), 0.5 * tf.cos(a) * tf.sin(b)],
         ]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
         expected_hess = [
             [
                 [-tf.cos(a) * tf.cos(b), tf.sin(a) * tf.sin(b)],
-                [tf.sin(a) * tf.sin(b), -tf.cos(a) * tf.cos(b)]
+                [tf.sin(a) * tf.sin(b), -tf.cos(a) * tf.cos(b)],
             ],
             [
                 [-0.5 * tf.cos(a) * tf.cos(b), 0.5 * tf.sin(a) * tf.sin(b)],
-                [0.5 * tf.sin(a) * tf.sin(b), -0.5 * tf.cos(a) * tf.cos(b)]
+                [0.5 * tf.sin(a) * tf.sin(b), -0.5 * tf.cos(a) * tf.cos(b)],
             ],
             [
                 [0.5 * tf.cos(a) * tf.cos(b), -0.5 * tf.sin(a) * tf.sin(b)],
-                [-0.5 * tf.sin(a) * tf.sin(b), 0.5 * tf.cos(a) * tf.cos(b)]
-            ]
+                [-0.5 * tf.sin(a) * tf.sin(b), 0.5 * tf.cos(a) * tf.cos(b)],
+            ],
         ]
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
