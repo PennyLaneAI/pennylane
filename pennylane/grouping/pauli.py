@@ -20,7 +20,12 @@ import numpy as np
 
 from pennylane.wires import Wires
 from pennylane import Identity
-from pennylane.grouping.utils import binary_to_pauli, pauli_to_binary, are_identical_pauli_words
+from pennylane.grouping.utils import (
+    binary_to_pauli,
+    pauli_to_binary,
+    are_identical_pauli_words,
+    _wire_map_from_pauli_pair,
+)
 
 
 def _pauli_group_generator(n_qubits, wire_map=None):
@@ -150,11 +155,8 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     PauliZ(wires=[0])
     """
 
-    # If no wire map is specified, generate one from the union of wires
-    # in both Paulis.
     if wire_map is None:
-        wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
-        wire_map = {label: i for i, label in enumerate(wire_labels)}
+        wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)
 
     # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
     if are_identical_pauli_words(pauli_1, pauli_2):
@@ -211,11 +213,8 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     1j
     """
 
-    # If no wire map is specified, generate one from the union of wires
-    # in both Paulis.
     if wire_map is None:
-        wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
-        wire_map = {label: i for i, label in enumerate(wire_labels)}
+        wire_map = _wire_map_from_pauli_pair(pauli_1, pauli_2)
 
     # Get the product; use our earlier function
     pauli_product = pauli_mult(pauli_1, pauli_2, wire_map)

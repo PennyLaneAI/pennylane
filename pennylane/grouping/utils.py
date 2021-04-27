@@ -28,6 +28,25 @@ from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 import numpy as np
 
+# To make this quicker later on
+ID_MAT = np.eye(2)
+
+
+def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
+    """Generate a wire map from the union of wires of two Paulis.
+
+    Args:
+        pauli_word_1 (.Operation): A Pauli word.
+        pauli_word_2 (.Operation): A second Pauli word.
+
+    Returns:
+        dict[Union[str, int], int]): dictionary containing all wire labels used
+        in the Pauli word as keys, and unique integer labels as their values.
+    """
+    wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
+    wire_map = {label: i for i, label in enumerate(wire_labels)}
+    return wire_map
+
 
 def is_pauli_word(observable):
     """
@@ -509,7 +528,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # If there is more than one qubit, we must go through the wire map wire
     # by wire and pick out the relevant matrices
-    pauli_mats = [np.eye(2) for x in range(n_qubits)]
+    pauli_mats = [ID_MAT for x in range(n_qubits)]
 
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
@@ -555,11 +574,8 @@ def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
             f"Expected Pauli word observables, instead got {pauli_word_1} and {pauli_word_2}"
         )
 
-    # If no wire map is specified, generate one from the union of wires
-    # in both Paulis.
     if wire_map is None:
-        wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
-        wire_map = {label: i for i, label in enumerate(wire_labels)}
+        wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
 
     n_qubits = len(wire_map)
 
