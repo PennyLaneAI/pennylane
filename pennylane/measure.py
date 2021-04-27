@@ -192,7 +192,7 @@ class MeasurementProcess:
         if self.obs is not None:
             try:
                 qml.QueuingContext.update_info(self.obs, owner=self)
-            except ValueError:
+            except qml.queuing.QueuingError:
                 self.obs.queue()
                 qml.QueuingContext.update_info(self.obs, owner=self)
 

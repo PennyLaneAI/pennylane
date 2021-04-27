@@ -14,7 +14,7 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, get_active_tape
 
 
 def adjoint(fn):
@@ -36,8 +36,16 @@ def adjoint(fn):
             qml.RX(0.123, wires=0)
             qml.RY(0.456, wires=0)
 
-        adj_my_ops = qml.adjoint(my_ops)
-        adj_my_ops() # This will queue ops [qml.RY(-0.456), qml.RX(-0.123)]
+        with qml.tape.QuantumTape() as tape:
+            my_ops()
+
+        with qml.tape.QuantumTape() as tape_adj:
+            qml.adjoint(my_ops)()
+
+    >>> print(tape.operations)
+    [RX(0.123, wires=[0]), RY(0.456, wires=[0])]
+    >>> print(tape_adj.operatioins)
+    [RY(-0.456, wires=[0]), RX(-0.123, wires=[0])]
 
     .. UsageDetails::
 
@@ -62,7 +70,8 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
 
         **Single operation**
@@ -80,15 +89,22 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with QuantumTape(do_queue=False) as tape:
+        with get_active_tape().stop_recording(), QuantumTape() as tape:
             fn(*args, **kwargs)
         for op in reversed(tape.queue):
-            op.adjoint(do_queue=True)
+            try:
+                op.adjoint()
+            except NotImplementedError:
+                # Decompose the operation and adjoint the result.
+                # We do not do anything with the output since
+                # decomposition will automatically queue the new operations.
+                adjoint(op.decomposition)(wires=op.wires)
 
     return wrapper

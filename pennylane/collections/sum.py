@@ -42,9 +42,9 @@ def sum(x):
     This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> x = qml.init.strong_ent_layers_normal(3, 2, seed=42)
     >>> cost(x)
-    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
+    tensor(0.9177, dtype=torch.float64)
     """
     if hasattr(x, "interface") and x.interface is not None:
         if x.interface == "tf":

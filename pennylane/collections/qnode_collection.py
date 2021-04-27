@@ -89,7 +89,7 @@ class QNodeCollection(Sequence):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+            return qml.var(qml.PauliZ(1))
 
     Creating a QNodeCollection,
 
@@ -98,7 +98,7 @@ class QNodeCollection(Sequence):
     We can evaluate this QNode collection directly:
 
     >>> qnodes(0.5643, -0.45)
-    [ 7.60844651e-01 -5.55111512e-17  1.00000000e+00]
+    array([0.76084465, 1.        ])
 
     where the results from each QNode have been flattened and concatenated
     into a single one-dimensional list.
@@ -239,7 +239,7 @@ class QNodeCollection(Sequence):
         to the object required by each interface for auto-differentiation.
 
         Internally, this method makes use of ``tf.stack``, ``torch.stack``,
-        and ``np.vstack``.
+        and ``np.stack``.
 
         Args:
             results (list): list containing the results from

@@ -34,6 +34,44 @@ def measurement_grouping(tape, obs_list, coeffs_list):
         tape results to compute the Hamiltonian expectation value.
 
     **Example**
+
+    Given the following quantum tape,
+
+    >>> with qml.tape.QuantumTape() as tape:
+    ...     qml.RX(0.1, wires=0)
+    ...     qml.RX(0.2, wires=1)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     qml.CNOT(wires=[1, 2])
+
+    and list of observables with coefficients,
+
+    >>> obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
+    >>> coeffs = [2.0, -0.54, 0.1]
+
+    We can generate generate measurement optimized tapes corresponding
+    to a qubit-wise commuting grouping of the provided observables:
+
+    >>> tapes, fn = qml.transforms.measurement_grouping(tape, obs, coeffs)
+    >>> print(tapes)
+    [<QuantumTape: wires=[0, 1, 2], params=2>,
+     <QuantumTape: wires=[0, 1, 2], params=2>]
+    >>> print(fn)
+    <function measurement_grouping.<locals>.processing_fn at 0x7f1af81287a0>
+
+    The output are the optimized tapes, and a processing function to apply to the
+    results of the evaluated tapes to construct the expectation value of the
+    Hamiltonian.
+
+    Note that only two tapes have been returned, rather than three (one for each
+    observable); this is because ``qml.PauliZ(0)`` and ``qml.PauliX(2)`` are
+    qubit-wise commuting, and can be extracted from a single tape evaluation.
+
+    We can now evaluate these tapes, and apply the processing function:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> res = fn(dev.batch_execute(tapes))
+    >>> print(res)
+    2.0007186031172046
     """
     obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs_list, coeffs_list)
     tapes = []
