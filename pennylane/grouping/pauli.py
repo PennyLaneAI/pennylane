@@ -18,7 +18,6 @@ group operation (multiplication).
 
 import numpy as np
 
-from pennylane.wires import Wires
 from pennylane import Identity
 from pennylane.grouping.utils import (
     binary_to_pauli,

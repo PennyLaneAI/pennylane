@@ -43,7 +43,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
         dict[Union[str, int], int]): dictionary containing all wire labels used
         in the Pauli word as keys, and unique integer labels as their values.
     """
-    wire_labels = Wires.all_wires([pauli_1.wires, pauli_2.wires]).labels
+    wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
     wire_map = {label: i for i, label in enumerate(wire_labels)}
     return wire_map
 
