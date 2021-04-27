@@ -47,18 +47,15 @@ def largest_first(binary_observables, adj):
 
     **Example**
 
-    >>> binary_observables
-    array([[1., 1., 0.],
-           [1., 0., 0.],
-           [0., 0., 1.],
-           [1., 0., 1.]])
-    >>> adj
-    array([[0., 0., 1.],
-           [0., 0., 1.],
-           [1., 1., 0.]])
+    >>> binary_observables = np.array([[1., 1., 0.],
+    ... [1., 0., 0.],
+    ... [0., 0., 1.],
+    ... [1., 0., 1.]])
+    >>> adj = np.array([[0., 0., 1.],
+    ... [0., 0., 1.],
+    ... [1., 1., 0.]])
     >>> largest_first(binary_observables, adj)
-    {1: [array([0., 0., 1., 1.])],
-     2: [array([1., 0., 0., 0.]), array([1., 1., 0., 1.])]}
+    {1: [array([0., 0., 1.])], 2: [array([1., 0., 0.]), array([1., 1., 0.])]}
     """
 
     n_terms = np.shape(adj)[0]
@@ -99,17 +96,15 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
 
     **Example**
 
-    >>> binary_observables
-    array([[1., 1., 0.],
-           [1., 0., 0.],
-           [0., 0., 1.],
-           [1., 0., 1.]])
-    >>> adj
-    array([[0., 0., 1.],
-           [0., 0., 1.],
-           [1., 1., 0.]])
+    >>> binary_observables = np.array([[1., 1., 0.],
+    ... [1., 0., 0.],
+    ... [0., 0., 1.],
+    ... [1., 0., 1.]])
+    >>> adj = np.array([[0., 0., 1.],
+    ... [0., 0., 1.],
+    ... [1., 1., 0.]])
     >>> recursive_largest_first(binary_observables, adj)
-    {1: [array([0., 0., 1., 1.])], 2: [array([1., 1., 0., 1.]), array([1., 0., 0., 0.])]}
+    {1: [array([0., 0., 1.])], 2: [array([1., 1., 0.]), array([1., 0., 0.])]}
     """
 
     def n_0(m_array, coloured):

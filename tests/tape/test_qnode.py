@@ -58,7 +58,9 @@ class TestValidation:
             QNode._validate_device_method(dev, None)
 
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        tape_class, interface, device, diff_options = QNode._validate_device_method(dev, "interface")
+        tape_class, interface, device, diff_options = QNode._validate_device_method(
+            dev, "interface"
+        )
         method = diff_options["method"]
 
         assert tape_class is JacobianTape
@@ -92,7 +94,9 @@ class TestValidation:
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(
+            dev, test_interface
+        )
         method = diff_options["method"]
 
         assert tape_class is JacobianTape
@@ -110,7 +114,9 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
-        tape_class, interface, device, diff_options = QNode._validate_backprop_method(dev, test_interface)
+        tape_class, interface, device, diff_options = QNode._validate_backprop_method(
+            dev, test_interface
+        )
         method = diff_options["method"]
 
         assert tape_class is JacobianTape
@@ -128,7 +134,9 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
-        with pytest.raises(qml.QuantumFunctionError, match=r"when using the \['something'\] interface"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"when using the \['something'\] interface"
+        ):
             QNode._validate_backprop_method(dev, "another_interface")
 
     def test_parameter_shift_tape_qubit_device(self):
@@ -428,7 +436,6 @@ class TestTapeConstruction:
         assert qn.qtape.operations == [op1, op2, op3]
         assert qn.qtape.measurements == [m1, m2]
 
-
     def test_draw_transform(self):
         """Test circuit drawing"""
         from pennylane import numpy as anp
@@ -615,112 +622,6 @@ class TestTapeConstruction:
         assert np.allclose(res, res_2)
 
 
-class TestTFInterface:
-    """Unittests for applying the tensorflow interface"""
-
-    def test_import_error(self, mocker):
-        """Test that an exception is caught on import error"""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
-        mock = mocker.patch("pennylane.interfaces.tf.TFInterface.apply")
-        mock.side_effect = ImportError()
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="tf", diff_method="parameter-shift")
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
-        ):
-            qn(0.1, 0.1)
-
-    def test_drawing(self):
-        """Test circuit drawing when using the TF interface"""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
-
-        x = tf.Variable(0.1, dtype=tf.float64)
-        y = tf.Variable([0.2, 0.3], dtype=tf.float64)
-        z = tf.Variable(0.4, dtype=tf.float64)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="tf")
-        def circuit(p1, p2=y, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        circuit(p1=x, p3=z)
-
-        result = circuit.draw()
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
- 1: ──RY(0.06)───────────╰X──╰┤ State 
-"""
-
-        assert result == expected
-
-
-class TestTorchInterface:
-    """Unittests for applying the torch interface"""
-
-    def test_import_error(self, mocker):
-        """Test that an exception is caught on import error"""
-        torch = pytest.importorskip("torch", minversion="1.3")
-        mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
-        mock.side_effect = ImportError()
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="torch")
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="PyTorch not found. Please install the latest version of PyTorch to enable the 'torch' interface",
-        ):
-            qn(0.1, 0.1)
-
-    def test_drawing(self):
-        """Test circuit drawing when using the torch interface"""
-        torch = pytest.importorskip("torch", minversion="1.3")
-
-        x = torch.tensor(0.1, requires_grad=True)
-        y = torch.tensor([0.2, 0.3], requires_grad=True)
-        z = torch.tensor(0.4, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="torch")
-        def circuit(p1, p2=y, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
-
-        circuit(p1=x, p3=z)
-
-        result = circuit.draw()
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
- 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
-"""
-
-        assert result == expected
-
-
 class TestDecorator:
     """Unittests for the decorator"""
 
@@ -769,7 +670,6 @@ class TestQNodeCollection:
         n_batches = 5
         dev = qml.device("default.qubit", wires=n_qubits)
 
-
         def circuit(inputs, weights):
             for index, input in enumerate(inputs):
                 qml.RY(input, wires=index)
@@ -799,6 +699,7 @@ class TestIntegration:
 
     def test_correct_number_of_executions_autograd(self):
         """Test that number of executions are tracked in the autograd interface."""
+
         def func():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
@@ -959,7 +860,7 @@ class TestShots:
 
     def test_specify_shots_per_call(self):
         """Tests that shots can be set per call."""
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
         def circuit(a):
@@ -975,13 +876,15 @@ class TestShots:
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
 
-        dev = qml.device('default.qubit', wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2, shots=10)
 
         def circuit(a, shots=0):
             qml.RX(a, wires=shots)
             return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+        with pytest.warns(
+            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+        ):
             circuit = qml.QNode(circuit, dev)
 
         assert len(circuit(0.8)) == 10
@@ -998,20 +901,22 @@ class TestShots:
         if user has a shots argument, but a warning is raised."""
 
         # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
-        dev = qml.device('default.qubit', wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+        dev = qml.device("default.qubit", wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
 
         def circuit(a, shots):
             qml.RX(a, wires=shots)
             return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
 
         # assert that warning is still raised
-        with pytest.warns(DeprecationWarning, match="The 'shots' argument name is reserved for overriding"):
+        with pytest.warns(
+            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+        ):
             circuit = qml.QNode(circuit, dev)
 
         assert len(circuit(0.8, 1)) == 10
         assert circuit.qtape.operations[0].wires.labels == (1,)
 
-        dev = qml.device('default.qubit', wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2, shots=10)
 
         @qml.qnode(dev)
         def circuit(a, shots):
@@ -1025,7 +930,7 @@ class TestShots:
     def test_shots_setting_does_not_mutate_device(self, diff_method):
         """Tests that per-call shots setting does not change the number of shots in the device."""
 
-        dev = qml.device('default.qubit', wires=1, shots=3)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         @qml.qnode(dev)
         def circuit(a):

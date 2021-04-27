@@ -12,51 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``MottonenStatePreparation`` template.
+Contains the MottonenStatePreparation template.
 """
 import numpy as np
-
 import pennylane as qml
-
-from pennylane.templates.decorator import template
-from pennylane.wires import Wires
-
-
-def _preprocess(state_vector, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the state vector.
-    * Check that the state vector is normalized.
-    * Extract polar coordinates of the state vector.
-
-    Args:
-        state_vector (tensor_like): amplitude state vector to prepare
-        wires (Wires): wires that template acts on
-
-    Returns:
-        tensor_like, tensor_like, Wires: amplitudes a, phases omega and preprocessed wires
-    """
-    shape = qml.math.shape(state_vector)
-
-    if len(shape) != 1:
-        raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
-
-    n_amplitudes = shape[0]
-    if n_amplitudes != 2 ** len(wires):
-        raise ValueError(
-            f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
-        )
-
-    norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
-    if not qml.math.allclose(norm, 1.0, atol=1e-3):
-        raise ValueError("State vector has to be of length 1.0, got {}".format(norm))
-    a = qml.math.abs(state_vector)
-    omega = qml.math.angle(state_vector)
-
-    # change ordering of wires, since original code was written for IBM machines
-    wires_reverse = wires[::-1]
-
-    return a, omega, wires_reverse
+from pennylane.operation import Operation, AnyWires
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
@@ -248,17 +208,18 @@ def _get_alpha_y(a, n, k):
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
-@template
-def MottonenStatePreparation(state_vector, wires):
+class MottonenStatePreparation(Operation):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
     by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
 
     The state is prepared via a sequence
-    of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
-    composed from all possible controlled rotations on said qubit and can be used to address individual
-    elements of the state vector. In the work of Möttönen et al., the inverse of their state preparation
-    is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations
+    of uniformly controlled rotations. A uniformly controlled rotation on a target qubit is
+    composed from all possible controlled rotations on the qubit and can be used to address individual
+    elements of the state vector.
+
+    In the work of Möttönen et al., inverse state preparation
+    is executed by first equalizing the phases of the state vector via uniformly controlled Z rotations,
     and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via
     uniformly controlled Y rotations.
 
@@ -268,36 +229,66 @@ def MottonenStatePreparation(state_vector, wires):
 
         The final state is only equal to the input state vector up to a global phase.
 
-    Args:
-        state_vector (tensor_like): Input array of shape ``(2^N,)``, where N is the number of wires
-            the state preparation acts on. The input array must be normalized, and ``N`` must be smaller
-            or equal to the total number of wires.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+    .. warning::
 
-    Raises:
-        ValueError: if inputs do not have the correct format
+        Due to non-trivial classical processing of the state vector,
+        this template is not always fully differentiable.
+
+    Args:
+        state_vector (tensor_like): Input array of shape ``(2^n,)``, where ``n`` is the number of wires
+            the state preparation acts on. The input array must be normalized.
+        wires (Iterable): wires that the template acts on
+
     """
 
-    ###############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
+    def __init__(self, state_vector, wires, do_queue=True):
 
-    a, omega, wires_reverse = _preprocess(state_vector, wires)
+        shape = qml.math.shape(state_vector)
 
-    # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
-    for k in range(len(wires_reverse), 0, -1):
-        alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
-        control = wires_reverse[k:]
-        target = wires_reverse[k - 1]
-        _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
+        if len(shape) != 1:
+            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
 
-    # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-    if not qml.math.allclose(omega, 0):
-        for k in range(len(wires_reverse), 0, -1):
-            alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
-            control = wires_reverse[k:]
-            target = wires_reverse[k - 1]
-            if len(alpha_z_k) > 0:
-                _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
+        n_amplitudes = shape[0]
+        if n_amplitudes != 2 ** len(wires):
+            raise ValueError(
+                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
+            )
+
+        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+        if not qml.math.allclose(norm, 1.0, atol=1e-3):
+            raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
+
+        super().__init__(state_vector, wires=wires, do_queue=do_queue)
+
+    def expand(self):
+
+        a = qml.math.abs(self.parameters[0])
+        omega = qml.math.angle(self.parameters[0])
+
+        # change ordering of wires, since original code
+        # was written for IBM machines
+        wires_reverse = self.wires[::-1]
+
+        with qml.tape.QuantumTape() as tape:
+
+            # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+            for k in range(len(wires_reverse), 0, -1):
+                alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
+                control = wires_reverse[k:]
+                target = wires_reverse[k - 1]
+                _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
+
+            # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
+            if not qml.math.allclose(omega, 0):
+                for k in range(len(wires_reverse), 0, -1):
+                    alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
+                    control = wires_reverse[k:]
+                    target = wires_reverse[k - 1]
+                    if len(alpha_z_k) > 0:
+                        _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
+
+        return tape

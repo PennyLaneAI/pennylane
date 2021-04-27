@@ -573,7 +573,9 @@ class QNode:
             if hasattr(self._original_device, "_state"):
                 self._original_device._state = self.device._state
 
-        if isinstance(self.qfunc_output, Sequence):
+        if isinstance(self.qfunc_output, Sequence) or (
+            self.qtape.is_sampled and self.device._has_partitioned_shots()
+        ):
             return res
 
         return qml.math.squeeze(res)

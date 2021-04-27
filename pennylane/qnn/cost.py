@@ -58,7 +58,9 @@ class SquaredErrorLoss:
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=3)
+        num_qubits = 3
+
+        dev = qml.device('default.qubit', wires=num_qubits)
 
         def ansatz(phis, **kwargs):
             for w, phi in enumerate(phis):
@@ -76,7 +78,7 @@ class SquaredErrorLoss:
 
     Next, we can define the loss function:
 
-    >>> loss = qml.qnn.SquaredErrorLoss(ansatz, observables, dev, interface="torch")
+    >>> loss = qml.qnn.cost.SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
     tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
