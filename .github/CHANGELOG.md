@@ -10,7 +10,9 @@
 
   ```pycon
   >>> from pennylane.grouping import pauli_group
-  >>> pauli_group_3_qubits = list(pauli_group(3))
+  >>> pauli_group_1_qubit = list(pauli_group(1))
+  >>> pauli_group_1_qubit
+  [Identity(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0])]
   ```
 
   We can multiply together its members at the level of Pauli words
