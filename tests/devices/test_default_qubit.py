@@ -2348,8 +2348,8 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    state = np.arange(2 ** 3).reshape((2, 2, 2))
-    dev = qml.device("default.qubit", wires=3)
+    state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
+    dev = qml.device("default.qubit", wires=4)
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
         (qml.PauliY, dev._apply_y),
@@ -2374,7 +2374,17 @@ class TestApplyOps:
         state_out = method(self.state, axes=[1], inverse=inverse)
         op = op(wires=[1])
         matrix = op.inv().matrix if inverse else op.matrix
-        state_out_einsum = np.einsum("ab,ibk->iak", matrix, self.state)
+        print()
+        print("self.state " + str(self.state.shape))
+        print(self.state)
+        print("matrix " + str(matrix.shape))
+        print(matrix)
+        print("state_out " + str(state_out.shape))
+        print(state_out)
+        state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
+        print("state_out_einsum " + str(state_out.shape))
+        print(state_out_einsum)
+        print()
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
@@ -2384,7 +2394,17 @@ class TestApplyOps:
         op = op(wires=[0, 1])
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2, 2, 2))
-        state_out_einsum = np.einsum("abcd,cdk->abk", matrix, self.state)
+        print()
+        print("self.state " + str(self.state.shape))
+        print(self.state)
+        print("matrix " + str(matrix.shape))
+        print(matrix)
+        print("state_out " + str(state_out.shape))
+        print(state_out)
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        print("state_out_einsum " + str(state_out.shape))
+        print(state_out_einsum)
+        print()
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
@@ -2401,10 +2421,10 @@ class TestApplyOps:
     @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op(self, op, method, inverse):
         """Test if the application of three qubit operations is correct."""
-        state_out = method(self.state, axes=[0, 1, 2])
+        state_out = method(self.state_4q, axes=[0, 1, 2])
         op = op(wires=[0, 1, 2])
         matrix = op.inv().matrix if inverse else op.matrix
-        matrix = matrix.reshape((2, 2, 2, 2, 2, 2))
+        matrix = matrix.reshape((2, 2)*3)
         state_out_einsum = np.einsum("abcdef,def->abc", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
