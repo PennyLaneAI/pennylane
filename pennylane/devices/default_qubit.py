@@ -338,7 +338,7 @@ class DefaultQubit(QubitDevice):
         result = self._stack([state[sl_0], state_x], axis=axes[0])
 
         # state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
-        # axes = [0, 1]
+        # axes = [2, 1]
         # num_wires = 4
         # sl_0 = _get_slice(0, axes[0], num_wires)
         # sl_1 = _get_slice(1, axes[0], num_wires)
@@ -385,78 +385,82 @@ class DefaultQubit(QubitDevice):
         """
         sl_a0 = _get_slice(0, axes[0], self.num_wires)
         sl_a1 = _get_slice(1, axes[0], self.num_wires)
-
         # If axes[2] is larger than axes[0], then we need to shift the target axis down by
         # two, otherwise we can leave as-is.
-        if axes[2] > axes[0]:
-            sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
-            sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-            target_axes = [axes[2] - 2]
-        else:
+        # if axes[2] > axes[0]:
+        #     sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
+        #     sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
+        #     target_axes = [axes[2] - 2]
+        # else:
+        #     sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
+        #     sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
+        #     target_axes = [axes[2]]
+
+        # # NEW COMPREHENSIVE
+        if axes[0] > axes[1] > axes[2]:  # 2 1 0 stacked_a1 on axes[1] = 1
             sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
             sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
             target_axes = [axes[2]]
+        elif axes[1] > axes[0] > axes[2]:  # 1 2 0
+            sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
+            target_axes = [axes[2]]
+        elif axes[2] > axes[1] > axes[0]:  # 0 1 2 stacked_a1 on axes[0] = 0
+            sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
+            target_axes = [axes[2] - 2]
+        elif axes[2] > axes[0] > axes[1]:  # 1 0 2
+            sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
+            target_axes = [axes[2] - 2]
+        elif axes[1] > axes[2] > axes[0]:  # 0 2 1
+            sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
+            target_axes = [axes[2] - 1]
+        else:  # axes[0] > axes[2] > axes[1]  2 0 1
+            sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
+            sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
+            target_axes = [axes[2] - 1]
 
-        # # NEW COMPREHENSIVE
-        # if axes[0] > axes[1] > axes[2]:  # 2 1 0
-        #     sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
-        #     target_axes = [axes[2]]
-        # if axes[1] > axes[0] > axes[2]:  # 1 2 0
-        #     sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-        #     target_axes = [axes[2]]
-        # if axes[2] > axes[1] > axes[0]:  # 0 1 2
-        #     sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-        #     target_axes = [axes[2] - 2]
-        # if axes[2] > axes[0] > axes[1]:  # 1 0 2
-        #     sl_b0 = _get_slice(0, axes[1], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[1], self.num_wires - 1)
-        #     target_axes = [axes[2] - 2]
-        # if axes[1] > axes[2] > axes[0]:  # 0 2 1
-        #     sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-        #     target_axes = [axes[2] - 1]
-        # if axes[0] > axes[2] > axes[1]:  # 2 0 1
-        #     sl_b0 = _get_slice(0, axes[0], self.num_wires - 1)
-        #     sl_b1 = _get_slice(1, axes[0], self.num_wires - 1)
-        #     target_axes = [axes[2] - 1]
-
-        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
-        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x])
-        result = self._stack([state[sl_a0], state_stacked_a1])
-
-        state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
-        axes = [1, 2, 3]
-        num_wires = 4
-        sl_a0 = _get_slice(0, axes[0], num_wires)
-        sl_a1 = _get_slice(1, axes[0], num_wires)
-        sl_b0 = _get_slice(0, axes[0], num_wires - 1)
-        sl_b1 = _get_slice(1, axes[0], num_wires - 1)
-        target_axes = [axes[2] - 2]
-        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[0])
-        result_test = self._stack([state[sl_a0], state_stacked_a1], axis=axes[0])
-        print()
-        print("state")
-        print(state)
-        print()
-        print("axes = " + str(axes))
-        print("target axes = " + str(target_axes))
         print()
         print("state[sl_a1][sl_b1]")
         print(state[sl_a1][sl_b1])
-        print()
+        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
+        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
         print("state_x")
         print(state_x)
-        print()
-        print("result_test")
-        print(result_test)
-        print()
-
-        return result
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[1])
+        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[0])
+        #
+        # state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
+        # axes = [0, 1, 2]
+        # num_wires = 4
+        # sl_a0 = _get_slice(0, axes[0], num_wires)
+        # sl_a1 = _get_slice(1, axes[0], num_wires)
+        # sl_b0 = _get_slice(0, axes[0], num_wires - 1)
+        # sl_b1 = _get_slice(1, axes[0], num_wires - 1)
+        # target_axes = [axes[2] - 2]
+        # state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
+        # state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[0])
+        # result_test = self._stack([state[sl_a0], state_stacked_a1], axis=axes[0])
+        # print()
+        # print("state")
+        # print(state)
+        # print()
+        # print("axes = " + str(axes))
+        # print("target axes = " + str(target_axes))
+        # print()
+        # print("state[sl_a1][sl_b1]")
+        # print(state[sl_a1][sl_b1])
+        # print()
+        # print("state_x")
+        # print(state_x)
+        # print()
+        # print("result_test")
+        # print(result_test)
+        # print()
+        #
+        # return result_test
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
