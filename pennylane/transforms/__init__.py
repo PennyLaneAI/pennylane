@@ -29,6 +29,8 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
+    ~transforms.natural_jacobian
+    ~transforms.quantum_jacobian
 
 Quantum function transforms
 ---------------------------

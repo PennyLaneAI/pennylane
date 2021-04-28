@@ -28,12 +28,12 @@ def quantum_jacobian(qnode):
     to quantum gate arguments to be extracted.
 
     Args:
-        qnode (.QNode): QNode to compute the (classical) Jacobian of
+        qnode (.QNode): QNode to compute the (quantum) Jacobian of
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
         When called, this function will return the Jacobian of the QNode output
-         with respect to the gate arguments (*not* the QNode arugments).
+        with respect to the gate arguments (*not* the QNode arugments).
 
     **Example**
 
