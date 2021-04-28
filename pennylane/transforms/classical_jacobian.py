@@ -84,6 +84,9 @@ def classical_jacobian(qnode):
         import torch
 
         def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
+            if len(args) == 1:
+                args = args[0]
+
             return torch.autograd.functional.jacobian(classical_preprocessing, args)
 
         return _jacobian
