@@ -62,3 +62,4 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .quantum_jacobian import quantum_jacobian

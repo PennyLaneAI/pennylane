@@ -68,6 +68,8 @@ def classical_jacobian(qnode):
     - The second column consisting of all zeros indicates that the generated quantum circuit does
       not depend on the first element of ``weights``.
     """
+    if qnode.__class__.__name__ == "ExpvalCost":
+        qnode = qnode.qnodes.qnodes[0]
 
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for
