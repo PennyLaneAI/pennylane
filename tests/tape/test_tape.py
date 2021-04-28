@@ -634,7 +634,7 @@ class TestInverse:
         tape.inv()
         assert tape.trainable_params == {1, 2}
         assert tape.get_parameters() == [p[0], p[1]]
-        assert [o.name for o in tape._ops] == [o.name.replace(".inv", "") for o in ops]
+        assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
 
 class TestExpand:

@@ -183,7 +183,7 @@ class TestTemplateIntegration:
         def circuit(features, weights):
             template(features=features, weights=weights, wires=[0, 1, 2])
             fn(template, features=features, weights=weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         features = np.array([1.0, 2.0, 3.0])
         weights = np.random.random(template.shape(2, 3))
@@ -203,7 +203,7 @@ class TestTemplateIntegration:
         def circuit(features):
             template(features=features, wires=[0, 1, 2])
             fn(template, features=features, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         features = np.array([1.0, 2.0, 3.0])
         res = circuit(features)
@@ -228,7 +228,7 @@ class TestTemplateIntegration:
         def circuit(weights):
             template(weights=weights, wires=[0, 1, 2])
             fn(template, weights=weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
@@ -253,7 +253,7 @@ class TestTemplateIntegration:
         def circuit(weights):
             template(weights=weights, init_state=init_state, wires=[0, 1, 2])
             fn(template, weights=weights, init_state=init_state, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
@@ -271,7 +271,7 @@ class TestTemplateIntegration:
         def circuit(data, weights):
             template(initial_layer_weights=data, weights=weights, wires=[0, 1, 2])
             fn(template, initial_layer_weights=data, weights=weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         weights = [np.random.random(s) for s in template.shape(2, 3)]
         res = circuit(weights[0], *weights[1:])
@@ -293,7 +293,7 @@ class TestTemplateIntegration:
         def circuit(t):
             template(H, t, 1)
             fn(template, H, t, 1)
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         res = circuit(0.5)
         expected = np.zeros([2 ** 3])
@@ -309,7 +309,7 @@ class TestTemplateIntegration:
         def circuit(weights):
             template(weights=weights, wires=[0, 1, 2])
             fn(template, weights=weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         weights = np.random.random(template.shape(3))
         res = circuit(weights)
@@ -327,7 +327,7 @@ class TestTemplateIntegration:
         def circuit(weights):
             template(weight=weights, wires=[0, 1, 2])
             fn(template, weight=weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            return qml.state()
 
         res = circuit(0.6)
         expected = np.zeros([2 ** 3])
@@ -344,7 +344,7 @@ class TestTemplateIntegration:
         def circuit(weights):
             template(weight=weights, wires1=[0, 1], wires2=[2, 3])
             fn(template, weight=weights, wires1=[0, 1], wires2=[2, 3])
-            return qml.probs(wires=[0, 1, 2, 3])
+            return qml.state()
 
         res = circuit(0.6)
         expected = np.zeros([2 ** 4])
