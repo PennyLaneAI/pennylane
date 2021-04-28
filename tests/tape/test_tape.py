@@ -604,9 +604,7 @@ class TestInverse:
         tape.inv()
 
         # check that operation order is reversed
-        assert [o.name for o in tape.operations] == [
-            o.name.replace(".inv", "") for o in [prep] + ops[::-1]
-        ]
+        assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
 
         # check that operations are inverted
         assert np.allclose(tape.operations[2].parameters, -np.array(p[-1:0:-1]))
