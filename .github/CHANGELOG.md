@@ -50,9 +50,13 @@
 
 <h3>Documentation</h3>
 
+* Updated the order of the parameters to the `GaussianState` operation to match
+  the way that the PennyLane-SF plugin uses them.
+  [(#1255)](https://github.com/PennyLaneAI/pennylane/pull/1255)
+
 <h3>Contributors</h3>
 
-This release contains contributions from:
+This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
 

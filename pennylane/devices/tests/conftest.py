@@ -67,7 +67,7 @@ def skip_if():
     """Fixture to skip tests."""
 
     def _skip_if(dev, capabilities):
-        """ Skip test if device has any of the given capabilities. """
+        """Skip test if device has any of the given capabilities."""
 
         dev_capabilities = dev.capabilities()
         for capability, value in capabilities.items():
