@@ -48,13 +48,23 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes two bugs in the parameter-shift Hessian.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
+  - Fixes a bug where having an unused parameter in the Autograd interface
+    would result in an indexing error during backpropagation.
+
+  - The parameter-shift Hessian only supports the two-term parameter-shift
+    rule currently, so raises an error if asked to differentiate
+    any unsupported gates (such as the controlled rotation gates).
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from:
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
+Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
 
 # Release 0.15.0 (current release)
 
