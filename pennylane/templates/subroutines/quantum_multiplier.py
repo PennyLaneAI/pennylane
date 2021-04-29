@@ -25,12 +25,14 @@ class QuantumMultiplier(Operation):
     This performs the transformation:
 
     .. math::
-        |a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus (n+1)}\rightarrow |a_0,...,a_n\rangle |(a+b)_1,...,(a+b)_{n+1}\rangle |(a+b)_0\rangle |0\rangle ^{n}
+        |a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus n} 0\rangle ^{\oplus 2n+1)}\rightarrow |a_0,...,a_n\rangle |b_0,...,b_n\rangle |(ab)_n,...,(ab)_{2n-1}\rangle |(ab)_0,...,(ab)_{n-1}\rangle |0\rangle^{\otimes n+1}
     
     .. figure:: ../../_static/templates/subroutines/quantum_multiplier.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
+
+    See `here <https://academicworks.cuny.edu/cgi/viewcontent.cgi?article=1245&context=gc_cs_tr>`__ for more information.
     """
     num_params = 0
     num_wires = AnyWires
