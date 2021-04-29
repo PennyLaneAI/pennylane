@@ -266,13 +266,14 @@ class ParticleConservingU1(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.BasisState(self.init_state, wires=self.wires)
+            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
 
             for l in range(self.n_layers):
                 for i, wires_ in enumerate(nm_wires):
                     u1_ex_gate(
                         self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], wires=wires_
                     )
+
         return tape
 
     @staticmethod
