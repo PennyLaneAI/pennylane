@@ -1,0 +1,18 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.9em {
+&&\\
+&&&&&&&\lstick{ \ket{a}} & \multigate{3}{Mult} \qw \cw & \rstick{\ket{a}} \qw \cw &&&&&\\
+&&&&&&&\lstick{\ket{b}}& \ghost{Mult} \qw \cw & \rstick{\ket{b}} \qw \cw &&&&&&&&&&&&&\\
+&&&&&&&\lstick{ \ket{accumulator}}& \ghost{Mult} \qw \cw & \rstick{\ket{(ab)_n,...,(ab)_{2n-1}}} \qw \cw &&&&&&&&\\
+&&&&&&&\lstick{ \ket{0}^{\otimes 2n}\ket{w}}& \ghost{Mult} \qw \cw & \rstick{\ket{(ab)_0,...,(ab)_{n-1}}\ket{0}^{\otimes n}\ket{w}} \qw \cw &&&&&&&&&&&&&\\
+&&
+}
+
+
+\end{document}
