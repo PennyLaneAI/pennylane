@@ -162,7 +162,7 @@ class TestReset:
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestAnalyticProb:
-    """Unit tests for the method `analytic_probability()` """
+    """Unit tests for the method `analytic_probability()`"""
 
     def test_prob_init_state(self, nr_wires, tol):
         """Tests that we obtain the correct probabilities for the state |0...0><0...0|"""
@@ -731,13 +731,12 @@ class TestInit:
             qml.device("default.mixed", wires=24)
 
     def test_analytic_deprecation(self):
-        """Tests if the kwarg `analytic` is used and displays error message.
-        """
+        """Tests if the kwarg `analytic` is used and displays error message."""
         msg = "The analytic argument has been replaced by shots=None. "
         msg += "Please use shots=None instead of analytic=True."
 
         with pytest.raises(
-                    DeviceError,
-                    match=msg,
-            ):
-              qml.device("default.mixed", wires=1, shots=1, analytic=True)
+            DeviceError,
+            match=msg,
+        ):
+            qml.device("default.mixed", wires=1, shots=1, analytic=True)
