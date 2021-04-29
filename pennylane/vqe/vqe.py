@@ -23,6 +23,7 @@ import warnings
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
+from pennylane.queuing import QueuingError
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -43,6 +44,20 @@ class Hamiltonian:
                          (like-terms are combined). The default value is `False`.
 
     .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
+
+    .. Warning::
+
+        Hamiltonians can be constructed using Pythonic arithmetic operations. For example:
+
+        >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+
+        is equivalent to the following Hamiltonian:
+
+        >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        When Hamiltonians are defined using arithmetic operations **inside of QNodes**, constituent observables
+        may be queued as operations. Thus, Hamiltonians must be defined either outside of QNodes,
+        or inside of QNodes using the conventional method.
 
     **Example:**
 
@@ -154,30 +169,29 @@ class Hamiltonian:
           (-1) [X0]
         + (1) [Y2]
         """
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            coeffs = []
-            ops = []
+        coeffs = []
+        ops = []
 
-            for c, op in zip(self.coeffs, self.ops):
-                op = op if isinstance(op, Tensor) else Tensor(op)
+        for c, op in zip(self.coeffs, self.ops):
+            op = op if isinstance(op, Tensor) else Tensor(op)
 
-                ind = None
-                for i, other in enumerate(ops):
-                    if op.compare(other):
-                        ind = i
-                        break
+            ind = None
+            for i, other in enumerate(ops):
+                if op.compare(other):
+                    ind = i
+                    break
 
-                if ind is not None:
-                    coeffs[ind] += c
-                    if np.allclose([coeffs[ind]], [0]):
-                        del coeffs[ind]
-                        del ops[ind]
-                else:
-                    ops.append(op.prune())
-                    coeffs.append(c)
+            if ind is not None:
+                coeffs[ind] += c
+                if np.allclose([coeffs[ind]], [0]):
+                    del coeffs[ind]
+                    del ops[ind]
+            else:
+                ops.append(op.prune())
+                coeffs.append(c)
 
-            self._coeffs = coeffs
-            self._ops = ops
+        self._coeffs = coeffs
+        self._ops = ops
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -296,53 +310,52 @@ class Hamiltonian:
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            coeffs1 = self.coeffs.copy()
-            terms1 = self.ops.copy()
+            with tape_tmp.stop_recording():
+                coeffs1 = self.coeffs.copy()
+                terms1 = self.ops.copy()
 
-            if isinstance(H, Hamiltonian):
-                coeffs2 = H.coeffs
-                terms2 = H.ops
+                if isinstance(H, Hamiltonian):
+                    coeffs2 = H.coeffs
+                    terms2 = H.ops
 
-                coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
-                term_list = itertools.product(terms1, terms2)
-                terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+                    coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
+                    term_list = itertools.product(terms1, terms2)
+                    terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
 
-                return qml.Hamiltonian(coeffs, terms, simplify=True)
+                    return qml.Hamiltonian(coeffs, terms, simplify=True)
 
-            if isinstance(H, (Tensor, Observable)):
-                coeffs = coeffs1
-                terms = [term @ H for term in terms1]
+                if isinstance(H, (Tensor, Observable)):
+                    coeffs = coeffs1
+                    terms = [term @ H for term in terms1]
 
-                return qml.Hamiltonian(coeffs, terms, simplify=True)
+                    return qml.Hamiltonian(coeffs, terms, simplify=True)
 
-            raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+                raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            coeffs = self.coeffs.copy()
-            ops = self.ops.copy()
+        coeffs = self.coeffs.copy()
+        ops = self.ops.copy()
 
-            if isinstance(H, Hamiltonian):
-                coeffs.extend(H.coeffs.copy())
-                ops.extend(H.ops.copy())
-                return qml.Hamiltonian(coeffs, ops, simplify=True)
+        if isinstance(H, Hamiltonian):
+            coeffs.extend(H.coeffs.copy())
+            ops.extend(H.ops.copy())
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-            if isinstance(H, (Tensor, Observable)):
-                coeffs.append(1)
-                ops.append(H)
-                return qml.Hamiltonian(coeffs, ops, simplify=True)
+        if isinstance(H, (Tensor, Observable)):
+            coeffs.append(1)
+            ops.append(H)
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-            raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            if isinstance(a, (int, float)):
-                coeffs = [a * c for c in self.coeffs.copy()]
-                return qml.Hamiltonian(coeffs, self.ops.copy())
+        if isinstance(a, (int, float)):
+            coeffs = [a * c for c in self.coeffs.copy()]
+            return qml.Hamiltonian(coeffs, self.ops.copy())
 
-            raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
 
     __rmul__ = __mul__
 
@@ -354,20 +367,19 @@ class Hamiltonian:
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        with qml.tape.QuantumTape(do_queue=False) as tape_tmp:
-            if isinstance(H, Hamiltonian):
-                self._coeffs.extend(H.coeffs.copy())
-                self._ops.extend(H.ops.copy())
-                self.simplify()
-                return self
+        if isinstance(H, Hamiltonian):
+            self._coeffs.extend(H.coeffs.copy())
+            self._ops.extend(H.ops.copy())
+            self.simplify()
+            return self
 
-            if isinstance(H, (Tensor, Observable)):
-                self._coeffs.append(1)
-                self._ops.append(H)
-                self.simplify()
-                return self
+        if isinstance(H, (Tensor, Observable)):
+            self._coeffs.append(1)
+            self._ops.append(H)
+            self.simplify()
+            return self
 
-            raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -389,7 +401,7 @@ class Hamiltonian:
         for o in self.ops:
             try:
                 qml.QueuingContext.update_info(o, owner=self)
-            except ValueError:
+            except QueuingError:
                 o.queue()
                 qml.QueuingContext.update_info(o, owner=self)
             except NotImplementedError:
