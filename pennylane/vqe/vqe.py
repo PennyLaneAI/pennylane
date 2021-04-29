@@ -57,7 +57,8 @@ class Hamiltonian:
 
         When Hamiltonians are defined using arithmetic operations **inside of QNodes**, constituent observables
         may be queued as operations. Thus, Hamiltonians must be defined either outside of QNodes,
-        or inside of QNodes using the conventional method.
+        or inside of QNodes using the conventional method. Note that this issue also arises when calling the
+        `simplify()` method.
 
     **Example:**
 

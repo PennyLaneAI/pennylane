@@ -768,45 +768,37 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
 
-    '''
-    @pytest.mark.parametrize(("H1", "H2", "queue"), add_queue)
-    def test_arithmetic_queue_addition(self, H1, H2, queue):
-        """Tests that addition between Hamiltonians and
-        Hamiltonians/Observables/Tensors is queued correctly"""
+    def test_hamiltonian_queue(self):
+        """Tests that Hamiltonian are queued correctly"""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        # Outside of tape
+
+        H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
         with qml.tape.QuantumTape() as tape:
-            H1.queue()
-            H2.queue()
-            Hamiltonian = H1 + H2
-            Hamiltonian.queue()
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+            qml.expval(H)
 
-        print(tape.queue)
-        print(queue)
-        assert np.all([ob1.compare(ob2) for ob1, ob2 in zip(tape.queue, queue)])
-    '''
+        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        results = dev.batch_execute(tapes)
 
-    '''
-    @pytest.mark.parametrize(("H", "a", "queue"), mul_queue)
-    def test_arithemtic_queue_multiplication(self, H, a, queue):
-        """Tests that scalar multiplication between Hamiltonians and
-        Hamiltonians/Observables/Tensors is queued correctly"""
+        assert np.isclose(fn(results), -2.0)
+
+        # Inside of tape
 
         with qml.tape.QuantumTape() as tape:
-            Hamiltonian = a * H
+            H = qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)])
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+            qml.expval(H)
 
-        assert tape.queue == queue
+        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        results = dev.batch_execute(tapes)
 
-    @pytest.mark.parametrize(("H1", "H2", "queue"), ten_queue)
-    def test_arithmetic_queue_tensor(self, H1, H2, queue):
-        """Tests that the tensor product between Hamiltonians and
-        Hamiltonians/Observables/Tensors is queued correctly"""
-
-        with qml.tape.QuantumTape() as tape:
-            Hamiltonian = H1 @ H2
-
-        assert tape.queue == queue
-    '''
-
+        assert np.isclose(fn(results), -2.0)
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
