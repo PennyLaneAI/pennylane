@@ -54,6 +54,9 @@
 
 <h3>Documentation</h3>
 
+* Removes more occurrences of ``analytic``.
+  [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
+
 * Updated the order of the parameters to the `GaussianState` operation to match
   the way that the PennyLane-SF plugin uses them.
   [(#1255)](https://github.com/PennyLaneAI/pennylane/pull/1255)
