@@ -48,6 +48,10 @@
 
 <h3>Bug fixes</h3>
 
+* A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
+  templates has been fixed.
+  [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
+
 <h3>Documentation</h3>
 
 * Updated the order of the parameters to the `GaussianState` operation to match
@@ -58,7 +62,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
+Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
 
 # Release 0.15.0 (current release)
 
