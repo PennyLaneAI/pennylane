@@ -1846,7 +1846,7 @@ class TestWiresIntegration:
         assert np.allclose(circuit1(), circuit2(), tol)
 
     def test_wires_not_found_exception(self):
-        """Tests that an exception is raised when wires not present on the device are adressed. """
+        """Tests that an exception is raised when wires not present on the device are adressed."""
         dev = qml.device("default.qubit", wires=["a", "b"])
 
         with qml.tape.QuantumTape() as tape:
@@ -2054,7 +2054,7 @@ class TestInverseDecomposition:
         test_s_inverse()
         operations = test_s_inverse.qtape.operations
         assert "S.inv" not in [i.name for i in operations]
-        assert "PhaseShift.inv" in [i.name for i in operations]
+        assert "PhaseShift" in [i.name for i in operations]
 
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)

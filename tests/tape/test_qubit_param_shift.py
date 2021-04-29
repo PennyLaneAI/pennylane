@@ -585,7 +585,7 @@ class TestHessian:
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
     def test_vector_output(self, tol):
-        """Tests that a vector valued output tape has a hessian with the proper result. """
+        """Tests that a vector valued output tape has a hessian with the proper result."""
 
         dev = qml.device("default.qubit", wires=1)
 

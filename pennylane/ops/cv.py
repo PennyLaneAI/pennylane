@@ -710,7 +710,7 @@ class ThermalState(CVOperation):
 
 
 class GaussianState(CVOperation):
-    r"""pennylane.GaussianState(r, V, wires)
+    r"""pennylane.GaussianState(V, r, wires)
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -720,9 +720,9 @@ class GaussianState(CVOperation):
     * Gradient recipe: None
 
     Args:
+        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
-        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
     num_wires = AnyWires
     num_params = 2
