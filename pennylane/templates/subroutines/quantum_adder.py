@@ -25,7 +25,7 @@ class QuantumAdder(Operation):
     This performs the transformation:
 
     .. math::
-        |a_0...a_n\rangle |b_0...b_n\rangle |0\rangle ^{\oplus (n+1)}\rightarrow |a_0...a_n\rangle |a_1+b_1...a_n+b_n\rangle |a_0+b_0\rangle |0\rangle ^{n}
+        |a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus (n+1)}\rightarrow |a_0,...,a_n\rangle |(a+b)_1,...,(a+b)_{n+1}\rangle |(a+b)_0\rangle |0\rangle ^{n}
 
     .. figure:: ../../_static/templates/subroutines/quantum_adder.svg
         :align: center
@@ -163,6 +163,16 @@ class QuantumAdder(Operation):
 class ControlledQuantumAdder(Operation):
     r"""
     Controlled version of `QuantumAdder`
+
+    This performs the transformation:
+
+    .. math::
+        |c\rangle|a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus (n+1)}|w\rangle\rightarrow |c\rangle|a_0,...,a_n\rangle |(ca+b)_1,...,(ca+b)_{n+1}\rangle |(ca+b)_0\rangle |0\rangle ^{n}\w\rangle
+
+    .. figure:: ../../_static/templates/subroutines/controlled_quantum_adder.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     Args:
         a_wires (Sequence[int]): wires containing the first value to be added
