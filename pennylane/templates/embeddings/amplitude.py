@@ -143,6 +143,11 @@ class AmplitudeEmbedding(Operation):
         features = self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue)
 
+    def adjoint(self):  # pylint: disable=arguments-differ
+        return qml.adjoint(qml.templates.MottonenStatePreparation)(
+            self.parameters[0], wires=self.wires
+        )
+
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:

@@ -2,7 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* TBD: Added custom gate application for Toffoli in `default.qubit` [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249) [(#1215)](https://github.com/PennyLaneAI/pennylane/issues/1215)
 * TBD: Add `qml.qaoa.cycle` (when structure is finalised)
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
@@ -38,6 +37,9 @@
 
 <h3>Improvements</h3>
 
+* Added custom gate application for Toffoli in `default.qubit`.
+  [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
+
 * The device test suite now provides test cases for checking gates by comparing
   expectation values.
   [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
@@ -49,6 +51,10 @@
 
 <h3>Bug fixes</h3>
 
+* A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
+  templates has been fixed.
+  [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
+
 <h3>Documentation</h3>
 
 * Updated the order of the parameters to the `GaussianState` operation to match
@@ -59,8 +65,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva, Ryan Hill
-
+Thomas Bromley, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Antal Száva
 
 # Release 0.15.0 (current release)
 
