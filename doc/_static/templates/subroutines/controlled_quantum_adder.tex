@@ -1,0 +1,18 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.9em {
+&&\\
+&&&&&&&\lstick{\ket{c}} & \ctrl{1} \qw & \rstick{\ket{c}} \qw &&&&&\\
+&&&&&&&\lstick{ \ket{a_0,...,a_n}} & \multigate{2}{Adder} \qw \cw & \rstick{\ket{a_0,...,a_n}} \qw \cw &&&&&\\
+&&&&&&&\lstick{\ket{b_0,...,b_n}}]& \ghost{Adder} \qw \cw & \rstick{\ket{(ca+b)_1,...,(ca+b)_{n+1}}} \qw \cw &&&&&&&&&&&&\\
+&&&&&&&\lstick{ \ket{0}^{\otimes (n+1)}\ket{w}}& \ghost{Adder} \qw \cw & \rstick{\ket{(ca+b)_0}\ket{0}^{\otimes n}\ket{w}} \qw \cw &&&&&&&&\\
+&&
+}
+
+
+\end{document}
