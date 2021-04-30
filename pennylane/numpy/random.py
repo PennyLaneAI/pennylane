@@ -15,7 +15,40 @@
 This package provides a wrapped version of autograd.numpy.random, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
+from packaging.version import parse as parse_version
+
 from autograd.numpy import random as _random
-from .wrapper import wrap_arrays
+from .wrapper import wrap_arrays, tensor_wrapper
+
+from numpy import __version__ as np_version
+from numpy.random import MT19937, PCG64, Philox, SFC64
+from numpy.random import default_rng as _default_rng
+
 
 wrap_arrays(_random.__dict__, globals())
+
+if parse_version(np_version) > parse_version("1.17.0"):
+
+    class Generator(_random.Generator):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+            for name in dir(_random.Generator):
+                if name[0] != "_":
+                    self.__dict__[name] = tensor_wrapper(getattr(super(), name))
+
+    def default_rng(seed=None):
+        # Mostly copied from NumPy, but uses our Generator instead
+
+        if hasattr(seed, "capsule"): # I changed this line
+            # We were passed a BitGenerator, so just wrap it up.
+            return Generator(seed)
+        elif isinstance(seed, Generator):
+            # Pass through a Generator.
+            return seed
+        # Otherwise we need to instantiate a new BitGenerator and Generator as
+        # normal.
+        return Generator(PCG64(seed))
+
+    default_rng.__doc__ = "PennyLane duplicated generator constructor\n" + _default_rng.__doc__
