@@ -83,6 +83,16 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes two bugs in the parameter-shift Hessian.
+  [(#1260)](https://github.com/PennyLaneAI/pennylane/pull/1260)
+
+  - Fixes a bug where having an unused parameter in the Autograd interface
+    would result in an indexing error during backpropagation.
+
+  - The parameter-shift Hessian only supports the two-term parameter-shift
+    rule currently, so raises an error if asked to differentiate
+    any unsupported gates (such as the controlled rotation gates).
+
 * A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
@@ -727,7 +737,7 @@ fully differentiable.
   of shots is set explicitly.
 
 * If creating a QNode from a quantum function with an argument named `shots`,
-  a `DeprecationWarning` is raised, warning the user that this is a reserved
+  a `UserWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
