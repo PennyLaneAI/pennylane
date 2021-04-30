@@ -476,7 +476,6 @@ class QubitDevice(Device):
                 "when using sample-based measurements. Since no shots are specified, "
                 "a default of 1000 shots is used.",
                 UserWarning,
-                stacklevel=2,
             )
 
         shots = self.shots or 1000
