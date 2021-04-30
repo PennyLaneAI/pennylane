@@ -83,8 +83,8 @@ jobs:
     strategy:
       matrix:
         config:
-          # - {device: "default.qubit", shots: None}
-          # - {device: "default.qubit", shots: 1000}
+          - {device: "default.qubit", shots: None}
+          - {device: "default.qubit", shots: 10000}
           # - {device: "default.qubit.tf", shots: None}
           - {device: "default.qubit.autograd", shots: None}
           - {device: "default.mixed", shots: None}

@@ -38,18 +38,21 @@ Toffoli = np.diag([1 for i in range(8)])
 Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 w = np.exp(2 * np.pi * 1j / 8)
-QFT = np.array(
-    [
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, w, w ** 2, w ** 3, w ** 4, w ** 5, w ** 6, w ** 7],
-        [1, w ** 2, w ** 4, w ** 6, 1, w ** 2, w ** 4, w ** 6],
-        [1, w ** 3, w ** 6, w, w ** 4, w ** 7, w ** 2, w ** 5],
-        [1, w ** 4, 1, w ** 4, 1, w ** 4, 1, w ** 4],
-        [1, w ** 5, w ** 2, w ** 7, w ** 4, w, w ** 6, w ** 3],
-        [1, w ** 6, w ** 4, w ** 2, 1, w ** 6, w ** 4, w ** 2],
-        [1, w ** 7, w ** 6, w ** 5, w ** 4, w ** 3, w ** 2, w],
-    ]
-) / np.sqrt(8)
+QFT = (
+    np.array(
+        [
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, w, w ** 2, w ** 3, w ** 4, w ** 5, w ** 6, w ** 7],
+            [1, w ** 2, w ** 4, w ** 6, 1, w ** 2, w ** 4, w ** 6],
+            [1, w ** 3, w ** 6, w, w ** 4, w ** 7, w ** 2, w ** 5],
+            [1, w ** 4, 1, w ** 4, 1, w ** 4, 1, w ** 4],
+            [1, w ** 5, w ** 2, w ** 7, w ** 4, w, w ** 6, w ** 3],
+            [1, w ** 6, w ** 4, w ** 2, 1, w ** 6, w ** 4, w ** 2],
+            [1, w ** 7, w ** 6, w ** 5, w ** 4, w ** 3, w ** 2, w],
+        ]
+    )
+    / np.sqrt(8)
+)
 
 # ========================================================
 #  parametrized gates
@@ -192,6 +195,7 @@ def CRot3(a, b, c):
         ]
     )
 
+
 def MultiRZ1(theta):
     r"""Arbitrary multi Z rotation on one wire.
 
@@ -233,8 +237,8 @@ def ControlledPhaseShift(phi):
         array: the two-wire controlled-phase matrix
     """
     return np.diag([1, 1, 1, np.exp(1j * phi)])
-  
-  
+
+
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
@@ -245,13 +249,19 @@ def SingleExcitation(phi):
         array: the two-qubit Givens rotation describing the single excitation operation
     """
 
-    return np.array([[1, 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
-                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, 1]])
+    return np.array(
+        [
+            [1, 0, 0, 0],
+            [0, np.cos(phi / 2), -np.sin(phi / 2), 0],
+            [0, np.sin(phi / 2), np.cos(phi / 2), 0],
+            [0, 0, 0, 1],
+        ]
+    )
 
 
 def SingleExcitationPlus(phi):
     r"""Single excitation rotation with positive phase shift.
-        
+
     Args:
     phi (float): rotation angle
 
@@ -259,8 +269,14 @@ def SingleExcitationPlus(phi):
         array: the two-qubit Givens rotation describing the single excitation operation
     """
 
-    return np.array([[np.exp(1j*phi/2), 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
-                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, np.exp(1j*phi/2)]])
+    return np.array(
+        [
+            [np.exp(1j * phi / 2), 0, 0, 0],
+            [0, np.cos(phi / 2), -np.sin(phi / 2), 0],
+            [0, np.sin(phi / 2), np.cos(phi / 2), 0],
+            [0, 0, 0, np.exp(1j * phi / 2)],
+        ]
+    )
 
 
 def SingleExcitationMinus(phi):
@@ -273,13 +289,19 @@ def SingleExcitationMinus(phi):
         array: the two-qubit matrix describing the operation
     """
 
-    return np.array([[np.exp(-1j*phi/2), 0, 0, 0], [0, np.cos(phi/2), -np.sin(phi/2), 0],
-                     [0, np.sin(phi/2), np.cos(phi/2), 0], [0, 0, 0, np.exp(-1j*phi/2)]])
+    return np.array(
+        [
+            [np.exp(-1j * phi / 2), 0, 0, 0],
+            [0, np.cos(phi / 2), -np.sin(phi / 2), 0],
+            [0, np.sin(phi / 2), np.cos(phi / 2), 0],
+            [0, 0, 0, np.exp(-1j * phi / 2)],
+        ]
+    )
 
 
 def DoubleExcitation(phi):
     r"""Double excitation rotation.
-    
+
     Args:
         phi (float): rotation angle
     Returns:
@@ -323,7 +345,7 @@ def DoubleExcitationPlus(phi):
 
 def DoubleExcitationMinus(phi):
     r"""Double excitation rotation with negative phase shift.
-    
+
     Args:
         phi (float): rotation angle
     Returns:

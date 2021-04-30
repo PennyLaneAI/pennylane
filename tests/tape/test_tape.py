@@ -604,12 +604,10 @@ class TestInverse:
         tape.inv()
 
         # check that operation order is reversed
-        assert tape.operations == [prep] + ops[::-1]
+        assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
 
         # check that operations are inverted
-        assert ops[0].inverse
-        assert not ops[1].inverse
-        assert ops[2].inverse
+        assert np.allclose(tape.operations[2].parameters, -np.array(p[-1:0:-1]))
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
@@ -636,7 +634,7 @@ class TestInverse:
         tape.inv()
         assert tape.trainable_params == {1, 2}
         assert tape.get_parameters() == [p[0], p[1]]
-        assert tape._ops == ops
+        assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
 
 class TestExpand:
@@ -845,7 +843,7 @@ class TestExpand:
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
         expansion happens."""
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
 
         # Remove support for an op to enforce decomposition & tape expansion
         mock_ops = copy.copy(dev.operations)
@@ -867,6 +865,7 @@ class TestExpand:
             assert "T" not in qnode._original_device.operations
 
             assert qnode.qtape.is_sampled
+
 
 class TestExecution:
     """Tests for tape execution"""
