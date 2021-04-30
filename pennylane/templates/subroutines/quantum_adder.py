@@ -25,19 +25,19 @@ class QuantumAdder(Operation):
     This performs the transformation:
 
     .. math::
-        |a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus (n+1)}\rightarrow |a_0,...,a_n\rangle |(a+b)_1,...,(a+b)_{n+1}\rangle |(a+b)_0\rangle |0\rangle ^{n}
+        |a_0,...,a_{m-1}\rangle |b_0,...,b_{n-1}\rangle |0\rangle ^{\otimes (n+1)}\rightarrow |a_0,...,a_{m-1}\rangle |(a+b)_1,...,(a+b)_{n}\rangle |(a+b)_0\rangle |0\rangle ^{\otimes n}
 
     .. figure:: ../../_static/templates/subroutines/quantum_adder.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+    See `here <https://arxiv.org/pdf/quant-ph/9511018.pdf>`__ for more information.
 
     Args:
         a_wires (Sequence[int]): wires containing the first value to be added
         b_wires (Sequence[int]): wires containing the second value to be added
-        carry_wires (Sequence[int]): wires containing ancilla carry wires, must have one more carry wire than a or b wires
+        carry_wires (Sequence[int]): wires containing ancilla carry wires, must have one more carry wire than b wires
 
     Raises:
         ValueError: if `a_wires`, `b_wires`, and `carry_wires` share wires, `b_wires` contains less wires than `a_wires`, or
@@ -45,7 +45,7 @@ class QuantumAdder(Operation):
 
     .. UsageDetails::
 
-        Consider the addition of :math:`a = 2 = 10_2` and :math:`b = 7 = 111_2`. We can do this using the ``QuantumAdder`` template as follows:
+        Consider the addition of :math:`a = 2` and :math:`b = 7`. We can perform this addition in binary by using the ``QuantumAdder`` template as follows:
 
         .. code-block:: python
 
@@ -95,8 +95,8 @@ class QuantumAdder(Operation):
         if len(self.a_wires) > len(self.b_wires):
             raise ValueError("The longer bit string must be in b_wires")
 
-        if len(self.carry_wires) != (max(len(self.a_wires), len(self.b_wires)) + 1):
-            raise ValueError("The carry wires must have one more wire than the a and b wires")
+        if len(self.carry_wires) != len(self.b_wires)+ 1:
+            raise ValueError("The carry wires must have 1 more wire than the b wires")
 
         super().__init__(wires=wires, do_queue=do_queue)
 
@@ -167,7 +167,7 @@ class ControlledQuantumAdder(Operation):
     This performs the transformation:
 
     .. math::
-        |c\rangle|a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus (n+1)}|w\rangle\rightarrow |c\rangle|a_0,...,a_n\rangle |(ca+b)_1,...,(ca+b)_{n+1}\rangle |(ca+b)_0\rangle |0\rangle ^{n}\w\rangle
+        |c\rangle|a_0,...,a_{m-1}\rangle |b_0,...,b_{n-1}\rangle |0\rangle ^{\otimes (n+1)}|w\rangle\rightarrow |c\rangle|a_0,...,a_{m-1}rangle |(ca+b)_1,...,(ca+b)_{n}\rangle |(ca+b)_0\rangle |0\rangle ^{\otimes n}|w\rangle
 
     .. figure:: ../../_static/templates/subroutines/controlled_quantum_adder.svg
         :align: center
@@ -177,9 +177,9 @@ class ControlledQuantumAdder(Operation):
     Args:
         a_wires (Sequence[int]): wires containing the first value to be added
         b_wires (Sequence[int]): wires containing the second value to be added
-        carry_wires (Sequence[int]): wires containing ancilla carry wires, must have one more carry wire than a or b wires
-        control_wire (int): control wire determines whether the sum occurs
-        work_wire (int): an extra wire required to make controlled versions of Toffoli gates
+        carry_wires (Sequence[int]): wires containing ancilla carry wires, must have one more carry wire than b wires
+        control_wire (int): the wire that determines if the sum is applied
+        work_wire (int): ancilla wire required to make controlled versions of Toffoli gates
 
     Raises:
         ValueError: if `a_wires`, `b_wires`, and `carry_wires` share wires, `b_wires` contains less wires than `a_wires`, or
@@ -187,7 +187,7 @@ class ControlledQuantumAdder(Operation):
 
     .. UsageDetails::
 
-        Consider the addition of :math:`a = 2 = 10_2` and :math:`b = 7 = 111_2`. We can do this using the ``ControlledQuantumAdder`` template as follows:
+        Consider the conditional addition of :math:`a = 2` and :math:`b = 7`. We can perform this operation in binary using the ``ControlledQuantumAdder`` template as follows:
 
         .. code-block:: python
 
@@ -222,10 +222,15 @@ class ControlledQuantumAdder(Operation):
             result1 = format(result, '011b')
             sum_result1 = result1[carry_wires[0]] + result1[b_wires[0]] + result1[b_wires[1]] + result1[b_wires[2]]
 
+        When the control is 0, the result is:
+
         >>> sum_result0
         '0111'
         >>> int(sum_result0,2)
         7
+
+        When the control is 1, the result is:
+
         >>> sum_result1
         '1001'
         >>> int(sum_result1,2)
@@ -253,7 +258,7 @@ class ControlledQuantumAdder(Operation):
             raise ValueError("The longer bit string must be in b_wires")
 
         if len(self.carry_wires) != (max(len(self.a_wires), len(self.b_wires)) + 1):
-            raise ValueError("The carry wires must have one more wire than the a and b wires")
+            raise ValueError("The carry wires must have 1 more wire than the b wires")
 
         super().__init__(wires=wires, do_queue=do_queue)
 
