@@ -261,7 +261,8 @@ class AutogradInterface(AnnotatedQueue):
                     if dy.size > 1:
                         vhp = dy @ ddy @ hessian @ dy.T
                     else:
-                        vhp = np.squeeze(ddy @ hessian)
+                        vhp = ddy @ hessian
+                        vhp = vhp.flatten()
 
                     return vhp
 

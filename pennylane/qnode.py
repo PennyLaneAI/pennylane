@@ -157,7 +157,7 @@ class QNode:
                 "Detected 'shots' as an argument to the given quantum function. "
                 "The 'shots' argument name is reserved for overriding the number of shots "
                 "taken by the device. Its use outside of this context should be avoided.",
-                DeprecationWarning,
+                UserWarning,
             )
             self._qfunc_uses_shots_arg = True
         else:
