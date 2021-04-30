@@ -54,7 +54,7 @@
 
 <h3>Documentation</h3>
 
-* Removes more occurrences of ``analytic``.
+* Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
 * Updated the order of the parameters to the `GaussianState` operation to match
