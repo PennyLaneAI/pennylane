@@ -701,8 +701,8 @@ class JacobianTape(QuantumTape):
             "U3",
             "SingleExcitationMinus",
             "SingleExcitationPlus",
-            "DoubleExcitationPlus",
             "DoubleExcitationMinus",
+            "DoubleExcitationPlus",
         )
 
         for idx, info in self._par_info.items():

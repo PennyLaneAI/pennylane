@@ -669,3 +669,23 @@ class TestHessian:
         grad = qml.grad(qml.grad(circuit))(b)
         expected = np.cos(b / 2) / 4
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_non_differentiable_controlled_rotation(self, tol):
+        """Tests that a non-differentiable controlled operation does not affect
+        the Hessian computation."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        x = 0.6
+
+        with QubitParamShiftTape() as tape:
+            qml.RY(x, wires=0)
+            qml.CRY(np.pi / 2, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {0}
+        hess = tape.hessian(dev)
+
+        expected_hess = np.array([-np.sin(x) / np.sqrt(2)])
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
