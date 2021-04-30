@@ -248,7 +248,7 @@ class DefaultQubitJax(DefaultQubit):
                 "when using sample-based measurements. Since no shots are specified, "
                 "a default of 1000 shots is used.\n"
                 "This warning will replaced with an error in a future release.",
-                DeprecationWarning,
+                UserWarning,
             )
 
         shots = self.shots or 1000
