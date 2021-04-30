@@ -2054,7 +2054,7 @@ class TestInverseDecomposition:
         test_s_inverse()
         operations = test_s_inverse.qtape.operations
         assert "S.inv" not in [i.name for i in operations]
-        assert "PhaseShift.inv" in [i.name for i in operations]
+        assert "PhaseShift" in [i.name for i in operations]
 
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)

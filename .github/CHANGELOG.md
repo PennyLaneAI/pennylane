@@ -48,7 +48,14 @@
 
 <h3>Bug fixes</h3>
 
+* A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
+  templates has been fixed.
+  [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
+
 <h3>Documentation</h3>
+
+* Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
+  [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
 * Updated the order of the parameters to the `GaussianState` operation to match
   the way that the PennyLane-SF plugin uses them.
@@ -58,7 +65,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Antal Száva
+Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
 
 # Release 0.15.0 (current release)
 
