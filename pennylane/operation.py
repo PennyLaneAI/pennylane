@@ -882,6 +882,50 @@ class Channel(Operation, abc.ABC):
         return self._kraus_matrices(*self.parameters)
 
 
+class Projection(Operation):
+    """Base class for projection operations.
+
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all projections:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    To define a projection, the following attribute of :class:`~.Projection`
+    can be used to list the corresponding projectors.
+
+    * :attr:`~.Projection._projectors`
+
+    Args:
+        params (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Iterable[Number, str], Number, str, Wires): Subsystems the projection acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`BaseQNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a BaseQNode context.
+    """
+
+    @property
+    def projectors(self):
+        """Projectors of an instantiated projector,
+        in the computational basis.
+
+        **Example**
+
+        >>> M = qml.Measure(wires=0)
+        >>> M.projectors
+        >>> [array([[1, 0], [0, 0]]), array([[0, 0], [0, 1]])]
+
+        Returns:
+            list(array): list of projectors
+        """
+        return self._projectors(*self.parameters, self.wires)
+
+
 # =============================================================================
 # Base Observable class
 # =============================================================================

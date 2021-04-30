@@ -520,6 +520,26 @@ fully differentiable.
   Multiple expectations/variances, as well as probability and state returns,
   are not currently allowed.
 
+* Adds `Projection` and `Measurement` classes to PennyLane.
+  [(#1052)](https://github.com/PennyLaneAI/pennylane/pull/1052)
+  
+  Here is an example demonstrating the use of `Measurement`:
+    
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+ 
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.Measure(wires=[0, 1])
+
+      return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+  ```
+  
+  Note that the `Measurement` operation must be **applied** to the wire, which 
+  projects it onto a computational basis state.
+
 <h3>Improvements</h3>
 
   ```python
@@ -854,8 +874,6 @@ Daniel Polatajko, Chase Roberts, Sankalp Sanand, Pritish Sehzpaul, Maria Schuld,
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Josh Izaac, Antal Száva.
-
-
 
 # Release 0.14.0
 
