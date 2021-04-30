@@ -17,6 +17,7 @@ import numpy as np
 import pennylane as qml
 import pennylane.tape
 from pennylane.interfaces.autograd import AutogradInterface
+#import tensorflow as tf
 from pennylane.interfaces.tf import TFInterface
 
 """Defines the device used for all tests"""
@@ -27,7 +28,7 @@ dev = qml.device("default.qubit", wires=4)
 
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
-    H1 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1)
+    H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
 
 with pennylane.tape.QuantumTape() as tape2:
@@ -36,26 +37,17 @@ with pennylane.tape.QuantumTape() as tape2:
     qml.PauliZ(1)
     qml.PauliX(2)
 
-    H2 = qml.PauliX(0) @ qml.PauliZ(2) + 3 * qml.PauliZ(2) - 2 * qml.PauliX(0) + qml.PauliX(2) + qml.PauliZ(0) @ qml.PauliX(1)
+    H2 = qml.Hamiltonian([1, 3, -2, 1, 1], [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliZ(2), qml.PauliX(0), qml.PauliX(2), qml.PauliZ(0) @ qml.PauliX(1)])
     qml.expval(H2)
 
-with pennylane.tape.QuantumTape() as tape3:
-    qml.Hadamard(0)
-    qml.Hadamard(1)
-    qml.PauliZ(1)
-    qml.PauliX(2)
+H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 
-    H3 = qml.Hamiltonian([1, 3, -2, 1, 1], [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliZ(2), qml.PauliX(0), qml.PauliX(2), qml.PauliZ(0) @ qml.PauliX(1)])
+with qml.tape.QuantumTape() as tape3:
+    qml.PauliX(0)
     qml.expval(H3)
 
-H4 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
-
-with qml.tape.QuantumTape() as tape4:
-    qml.PauliX(0)
-    qml.expval(H4)
-
 TAPES = [tape1, tape2, tape3]
-OUTPUTS = [-1.5, -6, -6, -1.5]
+OUTPUTS = [-1.5, -6, -1.5]
 
 """Defines the data to be used for differentiation tests"""
 
@@ -66,12 +58,14 @@ H = [
 GRAD_VAR = [
     np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
 ]
-TF_VAR = []
-TORCH_VAR = []
+'''
+TF_VAR = [
+    tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
+]
+'''
 
 GRAD_OUT = [0.42294409781940356]
-TF_OUT = []
-TORCH_OUT = []
+TF_OUT = [0.42294409781940356]
 
 class TestHamiltonianExpval:
     """Tests for the hamiltonian_expand transform"""
@@ -93,15 +87,6 @@ class TestHamiltonianExpval:
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
-
-    @pytest.mark.parametrize(("tape", "hamiltonian", "output"), zip(TAPES, [H1, H2, H3, H4], OUTPUTS))
-    def test_hamiltonian_in_qnode(self, tape, hamiltonian, output):
-        @qml.qnode(dev)
-        def circuit():
-            [operation.queue() for operation in tape.operations]
-            return qml.expval(hamiltonian)
-
-        assert np.isclose(float(circuit()), output)
 
     @pytest.mark.parametrize(("H", "var", "output"), zip(H, GRAD_VAR, GRAD_OUT))
     def test_hamiltonian_dif_autograd(self, H, var, output):
@@ -128,12 +113,8 @@ class TestHamiltonianExpval:
 
         assert np.isclose(cost(var) == output)
 
+    '''
     @pytest.mark.parametrize(("H", "var", "output"), zip(H, TF_VAR, TF_OUT))
     def test_hamiltonian_dif_tensor(self, H, var, output):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
-        pass
-
-    @pytest.mark.parametrize(("H", "var", "output"), zip(H, TORCH_VAR, TORCH_OUT))
-    def test_hamiltonian_def_torch(self, H, var, output):
-        """Tests that the hamiltonian_expand tape transform is differentiable with the PyTorch interface"""
-        pass
+    '''
