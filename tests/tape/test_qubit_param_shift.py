@@ -627,3 +627,65 @@ class TestHessian:
         hessian = tape.hessian(dev)
 
         assert hessian.shape == (0, 0)
+
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_error(self, G, tol):
+        """Test that attempting to perform the parameter-shift rule on the controlled rotation gates
+        results in an error."""
+        dev = qml.device("default.qubit", wires=2)
+        b = 0.123
+
+        with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            G(b, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {1}
+
+        res = tape.execute(dev)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
+
+        with pytest.raises(ValueError, match="not supported for the parameter-shift Hessian"):
+            tape.hessian(dev, method="analytic")
+
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_second_derivative(self, G, tol):
+        """Test that the controlled rotation gates return the correct
+        second derivative if first decomposed."""
+        dev = qml.device("default.qubit", wires=2)
+        init_state = qml.numpy.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev)
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            G(b, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        b = 0.123
+
+        res = circuit(b)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
+
+        grad = qml.grad(qml.grad(circuit))(b)
+        expected = np.cos(b / 2) / 4
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_non_differentiable_controlled_rotation(self, tol):
+        """Tests that a non-differentiable controlled operation does not affect
+        the Hessian computation."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        x = 0.6
+
+        with QubitParamShiftTape() as tape:
+            qml.RY(x, wires=0)
+            qml.CRY(np.pi / 2, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {0}
+        hess = tape.hessian(dev)
+
+        expected_hess = np.array([-np.sin(x) / np.sqrt(2)])
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
