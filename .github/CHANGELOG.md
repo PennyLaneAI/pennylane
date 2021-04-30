@@ -35,6 +35,16 @@
   (0, 1)
   ```
 
+* PennyLane NumPy now includes the [random module's](https://numpy.org/doc/stable/reference/random/index.html?highlight=random#module-numpy.random) Generator objects, the recommended way of random number generation.  Now you should generate random numbers using the following syntax to avoid setting a global seed.
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
 <h3>Improvements</h3>
 
 * The device test suite now provides test cases for checking gates by comparing
@@ -62,7 +72,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Christina Lee, Antal Száva
 
 # Release 0.15.0 (current release)
 
