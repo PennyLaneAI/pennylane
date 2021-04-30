@@ -1966,7 +1966,7 @@ class TestApplyOps:
         state_out = method(self.state, axes=[0, 2, 3])
         op = op(wires=[0, 2, 3])
         matrix = op.inv().matrix if inverse else op.matrix
-        matrix = matrix.reshape((2, 2)*3)
+        matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,dkef->akbc", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
@@ -1977,18 +1977,18 @@ class TestApplyOps:
         state_out = method(self.state, axes=[2, 1, 0])
         op = op(wires=[1, 2, 0])
         matrix = op.inv().matrix if inverse else op.matrix
-        matrix = matrix.reshape((2, 2)*3)
+        matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
         """Test if the application of three qubit operations is correct when one control wire is smaller
-         and one control wire is greater than the target wire."""
+        and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
         op = op(wires=[3, 1, 2])
         matrix = op.inv().matrix if inverse else op.matrix
-        matrix = matrix.reshape((2, 2)*3)
+        matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
