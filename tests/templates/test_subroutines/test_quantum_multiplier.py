@@ -36,7 +36,7 @@ class TestQuantumMultiplier:
     ],
     )
     def test_correct_product(self, a, b):
-        """Tests whether qml.QuantumAdder() produces the correct sums"""
+        """Tests whether QuantumMultiplier produces the correct sums"""
         a_input = np.array([int(item) for item in list(a)])
         b_input = np.array([int(item) for item in list(b)])
         multiplicand_wires=list(range(len(a_input)))
@@ -65,4 +65,8 @@ class TestQuantumMultiplier:
             result_string=result_string+state_binary[i]
 
         assert int(result_string,2) == int(a,2) * int(b,2)
+    
+    # def test_superposition(self,a,b)
+    #     """Tests whether QuantumMultiplier produces correct products of superposition states"""
+
 
