@@ -183,7 +183,7 @@ class TestQNodeIntegration:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.warns(
-            UserWarning, match="The number of shots has to be explicitly set on the device"
+            UserWarning, match="The number of shots has to be explicitly set on the jax device"
         ):
             res = circuit()
 
