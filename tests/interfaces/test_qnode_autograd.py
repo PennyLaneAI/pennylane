@@ -837,21 +837,20 @@ class TestQNode:
         @qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(x):
             qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array([1.0, 2.0, 3.0], requires_grad=True)
+        x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
 
-        a, b, _ = x
+        a, b = x
 
-        expected_res = np.cos(a) * np.cos(b)
+        expected_res = np.cos(a)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = qml.grad(circuit)
         g = grad_fn(x)
 
-        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b), 0]
+        expected_g = [-np.sin(a), 0]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
         spy = mocker.spy(JacobianTape, "hessian")
@@ -863,9 +862,8 @@ class TestQNode:
             spy.assert_called_once()
 
         expected_hess = [
-            [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b), 0],
-            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b), 0],
-            [0, 0, 0],
+            [-np.cos(a), 0],
+            [0, 0],
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
