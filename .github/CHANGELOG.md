@@ -54,6 +54,9 @@
 
 <h3>Documentation</h3>
 
+* Updated the docstring of `qml.PolyXP` to reference the new location of internal
+  usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
+
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
@@ -65,7 +68,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
 
 # Release 0.15.0 (current release)
 
