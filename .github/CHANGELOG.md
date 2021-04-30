@@ -48,6 +48,16 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes two bugs in the parameter-shift Hessian.
+  [(#1260)](https://github.com/PennyLaneAI/pennylane/pull/1260)
+
+  - Fixes a bug where having an unused parameter in the Autograd interface
+    would result in an indexing error during backpropagation.
+
+  - The parameter-shift Hessian only supports the two-term parameter-shift
+    rule currently, so raises an error if asked to differentiate
+    any unsupported gates (such as the controlled rotation gates).
+
 * A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
