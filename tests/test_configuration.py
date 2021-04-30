@@ -40,7 +40,6 @@ hbar = 2
 
 [strawberryfields.global]
 hbar = 1
-shots = None
 
     [strawberryfields.fock]
     cutoff_dim = 10
