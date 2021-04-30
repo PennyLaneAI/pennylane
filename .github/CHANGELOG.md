@@ -701,7 +701,7 @@ fully differentiable.
   of shots is set explicitly.
 
 * If creating a QNode from a quantum function with an argument named `shots`,
-  a `DeprecationWarning` is raised, warning the user that this is a reserved
+  a `UserWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 
