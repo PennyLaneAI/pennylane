@@ -17,7 +17,7 @@ import numpy as np
 import pennylane as qml
 import pennylane.tape
 from pennylane.interfaces.autograd import AutogradInterface
-#import tensorflow as tf
+import tensorflow as tf
 from pennylane.interfaces.tf import TFInterface
 
 """Defines the device used for all tests"""
@@ -58,14 +58,15 @@ H = [
 GRAD_VAR = [
     np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
 ]
-'''
 TF_VAR = [
     tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
 ]
-'''
 
 GRAD_OUT = [0.42294409781940356]
 TF_OUT = [0.42294409781940356]
+
+GRAD_OUT_2 = [[ 9.68883500e-02, -2.90832724e-01, -1.04448033e-01, -1.94289029e-09, 3.50307411e-01, -3.41123470e-01]]
+TF_OUT_2 = [[ 9.68883500e-02, -2.90832724e-01, -1.04448033e-01, -1.94289029e-09, 3.50307411e-01, -3.41123470e-01]]
 
 class TestHamiltonianExpval:
     """Tests for the hamiltonian_expand transform"""
@@ -88,8 +89,8 @@ class TestHamiltonianExpval:
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
-    @pytest.mark.parametrize(("H", "var", "output"), zip(H, GRAD_VAR, GRAD_OUT))
-    def test_hamiltonian_dif_autograd(self, H, var, output):
+    @pytest.mark.parametrize(("H", "var", "output", "output2"), zip(H, GRAD_VAR, GRAD_OUT, GRAD_OUT_2))
+    def test_hamiltonian_dif_autograd(self, H, var, output, output2):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
 
         with qml.tape.JacobianTape() as tape:
@@ -106,15 +107,34 @@ class TestHamiltonianExpval:
         AutogradInterface.apply(tape)
 
         def cost(x):
-            tape.set_parameters(x)
+            tape.set_parameters(x, trainable_only=False)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
             res = [t.execute(dev) for t in tapes]
             return fn(res)
 
-        assert np.isclose(cost(var) == output)
+        assert np.isclose(cost(var), output)
+        assert np.allclose(qml.grad(cost)(var), output2)
 
-    '''
-    @pytest.mark.parametrize(("H", "var", "output"), zip(H, TF_VAR, TF_OUT))
-    def test_hamiltonian_dif_tensor(self, H, var, output):
+    @pytest.mark.parametrize(("H", "var", "output", "output2"), zip(H, TF_VAR, TF_OUT, TF_OUT_2))
+    def test_hamiltonian_dif_tensor(self, H, var, output, output2):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
-    '''
+
+        with tf.GradientTape() as gtape:
+            with qml.tape.JacobianTape() as tape:
+                for i in range(2):
+                    qml.RX(var[i, 0], wires=0)
+                    qml.RX(var[i, 1], wires=1)
+                    qml.RX(var[i, 2], wires=2)
+                    qml.CNOT(wires=[0, 1])
+                    qml.CNOT(wires=[1, 2])
+                    qml.CNOT(wires=[2, 0])
+                qml.expval(H)
+
+            TFInterface.apply(tape)
+            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            res = fn([t.execute(dev) for t in tapes])
+
+            assert np.isclose(res, output)
+
+            g = gtape.gradient(res, var)
+            assert np.allclose(list(g[0])+list(g[1]), output2)

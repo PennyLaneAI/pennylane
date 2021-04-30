@@ -771,34 +771,46 @@ class TestHamiltonian:
     def test_hamiltonian_queue(self):
         """Tests that Hamiltonian are queued correctly"""
 
-        dev = qml.device('default.qubit', wires=3)
-
         # Outside of tape
+
+        queue = [
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliX(1),
+            qml.PauliZ(1),
+            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+        ]
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
-            qml.expval(H)
+            H.queue()
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
-        results = dev.batch_execute(tapes)
-
-        assert np.isclose(fn(results), -2.0)
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
         # Inside of tape
+
+        queue = [
+            qml.PauliX(1),
+            qml.PauliZ(0),
+            qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(1),
+            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0)
+        ]
 
         with qml.tape.QuantumTape() as tape:
             H = qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)])
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
-            qml.expval(H)
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
-        results = dev.batch_execute(tapes)
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
-        assert np.isclose(fn(results), -2.0)
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
