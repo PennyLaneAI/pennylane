@@ -1975,7 +1975,7 @@ class TestApplyOps:
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
-        op = op(wires=[1, 2, 0])
+        op = op(wires=[2, 1, 0])
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
