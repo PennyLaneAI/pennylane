@@ -69,6 +69,7 @@ class Test_default_rng:
 
         rng = random.default_rng(bitgen)
 
+        assert isinstance(rng, random.Generator)
         assert isinstance(rng.bit_generator, bitgen_cls)
 
         output = rng.random((3,))
@@ -82,6 +83,9 @@ class Test_default_rng:
 
         rng1 = random.default_rng(seed)
         rng2 = random.default_rng(seed)
+
+        assert isinstance(rng1, random.Generator)
+        assert isinstance(rng2, random.Generator)
 
         mat1 = rng1.random(size=size)
         mat2 = rng2.random(size=size)
