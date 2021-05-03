@@ -35,7 +35,7 @@ mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 @pytest.fixture(scope="function")
 def mock_qubit_device(monkeypatch):
-    """ A function to create a mock device that mocks most of the methods except for e.g. probability()"""
+    """A function to create a mock device that mocks most of the methods except for e.g. probability()"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, "__abstractmethods__", frozenset())
         m.setattr(QubitDevice, "_capabilities", mock_qubit_device_capabilities)
@@ -413,7 +413,9 @@ class TestSampleBasisStates:
         dev.shots = None
         state_probs = [0.1, 0.2, 0.3, 0.4]
 
-        with pytest.warns(DeprecationWarning, match="The number of shots has to be explicitly set on the device"):
+        with pytest.warns(
+            UserWarning, match="The number of shots has to be explicitly set on the device"
+        ):
             dev.sample_basis_states(number_of_states, state_probs)
 
 

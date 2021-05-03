@@ -179,13 +179,15 @@ class TestQNodeIntegration:
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.deprecated_call():
+        with pytest.warns(
+            UserWarning, match="The number of shots has to be explicitly set on the jax device"
+        ):
             res = circuit()
 
         assert len(res) == 1000
 
     def test_gates_dont_crash(self):
-        """Test for gates that weren't covered by other tests. """
+        """Test for gates that weren't covered by other tests."""
         dev = qml.device("default.qubit.jax", wires=2, shots=1000)
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():

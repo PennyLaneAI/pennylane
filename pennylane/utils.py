@@ -305,8 +305,9 @@ def inv(operation_list):
             "Please use inv on the function including its arguments, as in inv(template(args))."
         )
     elif isinstance(operation_list, qml.tape.QuantumTape):
-        operation_list.inv()
-        return operation_list
+        new_tape = operation_list.adjoint()
+        return new_tape
+
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The provided operation_list is not iterable.")
 
@@ -334,13 +335,13 @@ def inv(operation_list):
             # exist on the queuing context
             pass
 
-    with qml.tape.QuantumTape() as tape:
+    def qfunc():
         for o in operation_list:
             o.queue()
-            if o.inverse:
-                o.inv()
 
-    tape.inv()
+    with qml.tape.QuantumTape() as tape:
+        qml.adjoint(qfunc)()
+
     return tape
 
 

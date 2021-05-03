@@ -162,7 +162,7 @@ class TestReset:
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestAnalyticProb:
-    """Unit tests for the method `analytic_probability()` """
+    """Unit tests for the method `analytic_probability()`"""
 
     def test_prob_init_state(self, nr_wires, tol):
         """Tests that we obtain the correct probabilities for the state |0...0><0...0|"""
