@@ -827,6 +827,46 @@ class TestQNode:
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
+    def test_hessian_unused_parameter(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x
+
+        expected_res = np.cos(a)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        g = grad_fn(x)
+
+        expected_g = [-np.sin(a), 0]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(grad_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [-np.cos(a), 0],
+            [0, 0],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
     def test_hessian_vector_valued(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a vector valued QNode"""
         if diff_method not in {"parameter-shift", "backprop"}:
