@@ -532,6 +532,35 @@ class SWAP(Operation):
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
 
+class ISWAP(Operation):
+    num_params = 0
+    num_wire = 2
+    par_domain = None
+    matrxi = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 0, 1j, 0],
+            [0, 1j, 0, 0],
+            [0, 0, 0, 1]
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1j, -1j])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [S(wires=wires[0]), S(wires=wires[1]), Hadamard(wires=wires[0]), CNOT(wires=wires[1, 0]), CNOT(wires=wires[0, 1]), Hadamard(wires=wires[1])]
+        return decomp_ops
+
+    def adjoint(self):
+        return ISWAP(wires=self.wires).inv()
+
 
 class CSWAP(Operation):
     r"""CSWAP(wires)
