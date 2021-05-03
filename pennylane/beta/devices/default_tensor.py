@@ -100,7 +100,7 @@ class DefaultTensor(Device):
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
     pennylane_requires = "0.15"
-    version = "0.15.0"
+    version = "0.15.1"
     author = "Xanadu Inc."
 
     _operation_map = {

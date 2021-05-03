@@ -1,50 +1,4 @@
-# Release 0.16.0-dev (development release)
-
-<h3>New features since last release</h3>
-
-* TBD: Add `qml.qaoa.cycle` (when structure is finalised)
-  [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
-  [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
-
-* Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
-  [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
-
-  The following example adds two 1-bit numbers, returning a 2-bit answer:
-
-  ```python
-  dev = qml.device('default.qubit', wires = 4)
-  a = 0
-  b = 1
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.BasisState(np.array([a, b]), wires=[1, 2])
-      qml.QubitCarry(wires=[0, 1, 2, 3])
-      qml.CNOT(wires=[1, 2])
-      qml.QubitSum(wires=[0, 1, 2])
-      return qml.probs(wires=[3, 2])
-
-  probs = circuit()
-  bitstrings = tuple(itertools.product([0, 1], repeat = 2))
-  indx = np.argwhere(probs == 1).flatten()[0]
-  output = bitstrings[indx]
-  ```
-
-  ```pycon
-  >>> print(output)
-  (0, 1)
-  ```
-
-<h3>Improvements</h3>
-
-* The device test suite now provides test cases for checking gates by comparing
-  expectation values.
-  [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
-
-* PennyLane's test suite is now code-formatted using `black -l 100`.
-  [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
-
-<h3>Breaking changes</h3>
+# Release 0.15.1 (current release)
 
 <h3>Bug fixes</h3>
 
@@ -62,6 +16,11 @@
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
 
+* Deprecation warnings instances in PennyLane have been changed to `UserWarning`,
+  to account for recent changes to how Python warnings are filtered in
+  [PEP565](https://www.python.org/dev/peps/pep-0565/).
+  [(#1211)](https://github.com/PennyLaneAI/pennylane/pull/1211)
+
 <h3>Documentation</h3>
 
 * Updated the order of the parameters to the `GaussianState` operation to match
@@ -72,7 +31,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Josh Izaac, Maria Schuld, Antal Száva.
 
 # Release 0.15.0 (current release)
 
