@@ -1030,7 +1030,8 @@ class PolyXP(CVObservable):
     For second-order observables the representation is a real symmetric
     matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
 
-    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV expectation values.
+    Used for evaluating arbitrary order-2 CV expectation values of
+    :class:`~.pennylane.tape.CVParamShiftTape`.
 
     **Details:**
 
@@ -1041,6 +1042,7 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
+
     """
     num_wires = AnyWires
     num_params = 1

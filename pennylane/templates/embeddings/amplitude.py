@@ -131,7 +131,7 @@ class AmplitudeEmbedding(Operation):
         if pad is not None:
             warnings.warn(
                 "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
-                PendingDeprecationWarning,
+                UserWarning,
             )
             if pad_with is None:
                 pad_with = pad
