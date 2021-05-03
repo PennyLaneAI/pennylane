@@ -385,7 +385,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
 
-    character_map = {"Identity" : "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
+    character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
     # If there is no wire map, we must infer from the structure of Paulis
     if wire_map is None:
@@ -430,7 +430,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     >>> string_to_pauli_word('XIY', wire_map=wire_map)
     PauliX(wires=['a']) @ PauliY(wires=['c'])
     """
-    character_map = {"I" : Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
+    character_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     if not isinstance(pauli_string, str):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
