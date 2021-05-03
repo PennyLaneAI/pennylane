@@ -95,7 +95,7 @@ class QuantumAdder(Operation):
         if len(self.a_wires) > len(self.b_wires):
             raise ValueError("The longer bit string must be in b_wires")
 
-        if len(self.carry_wires) != len(self.b_wires)+ 1:
+        if len(self.carry_wires) != len(self.b_wires) + 1:
             raise ValueError("The carry wires must have 1 more wire than the b wires")
 
         super().__init__(wires=wires, do_queue=do_queue)
