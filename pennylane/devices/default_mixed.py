@@ -50,8 +50,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.15"
-    version = "0.15.1"
+    pennylane_requires = "0.16"
+    version = "0.16.0"
     author = "Xanadu Inc."
 
     operations = {
@@ -98,6 +98,8 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitation",
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):

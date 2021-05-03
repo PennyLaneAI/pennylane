@@ -44,9 +44,7 @@ class TestEdgeHermitian:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
         assert np.allclose(res, expected, atol=0.01, rtol=0)
 
-    def test_hermitian_two_wires_identity_expectation_with_tensor(
-        self, shots, theta, phi, varphi
-    ):
+    def test_hermitian_two_wires_identity_expectation_with_tensor(self, shots, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
