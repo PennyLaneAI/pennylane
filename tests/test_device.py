@@ -478,6 +478,22 @@ class TestInternalFunctions:
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
 
+    wires_to_try = [
+                (1, Wires([0]), Wires([0])),
+                (4, Wires([1,3]), Wires([1,3])),
+                (["a", 2], Wires([2]), Wires([1])),
+                (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+                ]
+
+    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+        dev = mock_device(dev_wires)
+        assert dev._cached_wires == {}
+
+        dev.map_wires(wires_to_map)
+        assert dev._cached_wires == {wires_to_map : res}
+
+
 
 class TestClassmethods:
     """Test the classmethods of Device"""
