@@ -83,7 +83,26 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
 def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the cycle-mixer Hamiltonian.
 
-    The cycle-mixer Hamiltonian preserves the set of valid cycles. This function returns:
+    Following methods outlined `here <https://arxiv.org/pdf/1709.03489.pdf>`__, the
+    cycle-mixer Hamiltonian preserves the set of valid cycles. This is achieved through "shrinking"
+    and "growing" operations which transition between valid cycles by removing and adding graph
+    edges. Considering a fixed edge :math:`(i, j)`, the Hamiltonian corresponding to the growth
+    operation is given by:
+
+    .. math::
+
+        \frac{1}{8}\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}X_{ij}X_{ik}X_{kj}
+        (\mathbb{I} - Z_{ij})(\mathbb{I} + Z_{ik})(\mathbb{I} + Z_{kj})
+
+    Similarly the shrink operation is given by:
+
+    .. math::
+
+        \frac{1}{8}\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}X_{ij}X_{ik}X_{kj}
+        (\mathbb{I} + Z_{ij})(\mathbb{I} - Z_{ik})(\mathbb{I} - Z_{kj})
+
+
+    Combining these operations and considering transitions over all edges, this function returns:
 
     .. math::
 
@@ -91,6 +110,40 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
         \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
         \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
         \right)
+
+    **Example**
+
+    >>> import networkx as nx
+    >>> g = nx.complete_graph(3).to_directed()
+    >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+    >>> for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+    >>> h_m = cycle_mixer(g)
+    >>> print(h_m)
+      (-0.25) [X0 Y1 Y5]
+    + (-0.25) [X1 Y0 Y3]
+    + (-0.25) [X2 Y3 Y4]
+    + (-0.25) [X3 Y2 Y1]
+    + (-0.25) [X4 Y5 Y2]
+    + (-0.25) [X5 Y4 Y0]
+    + (0.25) [X0 X1 X5]
+    + (0.25) [Y0 Y1 X5]
+    + (0.25) [Y0 X1 Y5]
+    + (0.25) [X1 X0 X3]
+    + (0.25) [Y1 Y0 X3]
+    + (0.25) [Y1 X0 Y3]
+    + (0.25) [X2 X3 X4]
+    + (0.25) [Y2 Y3 X4]
+    + (0.25) [Y2 X3 Y4]
+    + (0.25) [X3 X2 X1]
+    + (0.25) [Y3 Y2 X1]
+    + (0.25) [Y3 X2 Y1]
+    + (0.25) [X4 X5 X2]
+    + (0.25) [Y4 Y5 X2]
+    + (0.25) [Y4 X5 Y2]
+    + (0.25) [X5 X4 X0]
+    + (0.25) [Y5 Y4 X0]
+    + (0.25) [Y5 X4 Y0]
 
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
