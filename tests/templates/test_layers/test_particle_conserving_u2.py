@@ -50,7 +50,7 @@ class TestDecomposition:
         assert len(queue) == n_gates
 
         # initialization
-        assert isinstance(queue[0], qml.BasisState)
+        assert isinstance(queue[0], qml.templates.BasisEmbedding)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):

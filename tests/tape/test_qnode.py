@@ -883,7 +883,7 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.warns(
-            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
             circuit = qml.QNode(circuit, dev)
 
@@ -909,7 +909,7 @@ class TestShots:
 
         # assert that warning is still raised
         with pytest.warns(
-            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
             circuit = qml.QNode(circuit, dev)
 

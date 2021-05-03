@@ -113,7 +113,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),
@@ -252,7 +252,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),

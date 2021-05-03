@@ -84,7 +84,7 @@ class TestDecomposition:
         assert gate_count == len(queue)
 
         # check initialization of the qubit register
-        assert isinstance(queue[0], qml.BasisState)
+        assert isinstance(queue[0], qml.templates.BasisEmbedding)
 
         # check all quantum operations
         idx_CRot = 8
