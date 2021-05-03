@@ -102,14 +102,13 @@ class QuantumAdder(Operation):
 
     # support different size input summands
     def expand(self):
-        # if they're equal, run normally
-        # if one is larger, use carry_0 as replacement for smaller one in later instances
         temp = len(self.b_wires) - len(self.a_wires)
         with qml.tape.QuantumTape() as tape:
-            # Initial carry operations
+            # Initial QubitCarry cascade
             for i in range(len(self.b_wires) - 1, -1, -1):
                 if i < temp:
-                    # different length bit strings means we don't need to use full qubitcarry
+                    # When i < temp, the relevant a_wire would take the value 0,
+                    # We can account for this and without using an a_wire by using only one Toffoli gate of the QubitCarry operation
                     qml.Toffoli(
                         wires=[self.carry_wires[i + 1], self.b_wires[i], self.carry_wires[i]]
                     )
@@ -123,28 +122,28 @@ class QuantumAdder(Operation):
                         ]
                     )
 
-            # CNOT and Sum in the middle
-            # CNOT is between b and 0 value carry if len(b)!=len(a)
+            # CNOT and QubitSum at center of circuit
             if temp > 0:
-                # don't need the CNOT, it will never activate
-                # sum becomes a single CNOT
+                # When len(b) > len(a) middle CNOT is not necessary and
+                # Middle QubitSum operation becomes a single CNOT
                 qml.CNOT(wires=[self.carry_wires[1], self.b_wires[0]])
             else:
-                # CNOT is between a and b if they are the same length bit strings
+                # Normal CNOT and QubitSum operations
                 qml.CNOT(wires=[self.a_wires[0], self.b_wires[0]])
                 qml.QubitSum(wires=[self.carry_wires[1], self.a_wires[0], self.b_wires[0]])
 
-            # Final carry and sum cascade
+            # Final QubitSum cascade and inverse QubitCarry cascade
             for i in range(1, len(self.b_wires)):
                 if i < temp:
-                    # here summing most significant bits, a doesn't contribute
-                    # carry becomes a toffoli
-                    # Sum becomes CNOT
+                    # When i < temp, the a qubit is always 0
+                    # Inverse QubitCarry becomes a single Toffoli and
+                    # QubitSum becomes CNOT
                     qml.Toffoli(
                         wires=[self.carry_wires[i + 1], self.b_wires[i], self.carry_wires[i]]
                     )
                     qml.CNOT(wires=[self.carry_wires[i + 1], self.b_wires[i]])
                 else:
+                    # Inverse QubitCarry
                     qml.QubitCarry(
                         wires=[
                             self.carry_wires[i + 1],
@@ -153,6 +152,7 @@ class QuantumAdder(Operation):
                             self.carry_wires[i],
                         ]
                     ).inv()
+                    # Inverse
                     qml.QubitSum(
                         wires=[self.carry_wires[i + 1], self.a_wires[i - temp], self.b_wires[i]]
                     )
@@ -257,86 +257,73 @@ class ControlledQuantumAdder(Operation):
         if len(self.a_wires) > len(self.b_wires):
             raise ValueError("The longer bit string must be in b_wires")
 
-        if len(self.carry_wires) != (max(len(self.a_wires), len(self.b_wires)) + 1):
+        if len(self.carry_wires) != len(self.b_wires) + 1:
             raise ValueError("The carry wires must have 1 more wire than the b wires")
 
         super().__init__(wires=wires, do_queue=do_queue)
 
     def expand(self):
-        # if they're equal, run normally
-        # if one is larger, use carry_0 as replacement for smaller one in later instances
-        if len(self.a_wires) > len(self.b_wires):
-            raise ValueError("a_wires should be less or equal to b_wires")
-        if len(self.b_wires) > len(self.carry_wires) + 1:
-            raise ValueError("carry_wires needs to have 1 more wire than b_wires")
         temp = len(self.b_wires) - len(self.a_wires)
         with qml.tape.QuantumTape() as tape:
-            # Initial carry operations
+            # Initial QubitCarry operations
             for i in range(len(self.b_wires) - 1, -1, -1):
                 if i < temp:
-                    # different length bit strings means we don't need to use full qubitcarry
-                    # made toffoli into controlled toffoli
+                    # Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
                 else:
-                    # qubit carry
-                    # Toffoli made controlled
+                    # A controlled QubitCarry
+                    #   Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.a_wires[i - temp], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.a_wires[i - temp], self.control_wire, self.work_wire])
-                    # CNOT turned to toffoli
+                    #   CNOT becomes Toffoli
                     qml.Toffoli(wires=[self.control_wire, self.a_wires[i - temp], self.b_wires[i]])
 
-                    # Toffoli made controlled
+                    #   Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
 
-            # CNOT and Sum in the middle
-            # CNOT is between b and 0 value carry if len(b)!=len(a)
+            # CNOT and QubitSum in the middle
             if temp > 0:
-                # don't need the CNOT, it will never activate
-                # sum becomes a single CNOT
-                # turn CNOT into Toffoli
+                # CNOT becomes Toffoli
                 qml.Toffoli(wires=[self.control_wire, self.carry_wires[1], self.b_wires[0]])
             else:
-                # CNOT is between a and b if they are the same length bit strings
-                # turn CNOT into toffoli
+                # CNOT becomes Toffoli
                 qml.Toffoli(wires=[self.control_wire, self.a_wires[0], self.b_wires[0]])
-                # qubitsum
-                # turn CNOT into toffoli
+                # A controlled QubitSum
+                #   CNOT becomes Toffoli
                 qml.Toffoli(wires=[self.control_wire, self.a_wires[0], self.b_wires[0]])
                 qml.Toffoli(wires=[self.control_wire, self.carry_wires[1], self.b_wires[0]])
 
-            # Final carry and sum cascade
+            # Final QubitSum cascade and inverse QubitCarry cascade
             for i in range(1, len(self.b_wires)):
                 if i < temp:
-                    # here summing most significant bits, a doesn't contribute
-                    # carry becomes a toffoli
-                    # Sum becomes CNOT
-                    # turn toffoli into controlled toffoli
+
+                    # Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
-                    # turn CNOT into Toffoli
+                    # CNOT becomes Toffoli
                     qml.Toffoli(wires=[self.control_wire, self.carry_wires[i + 1], self.b_wires[i]])
                 else:
-                    # qubit carry inverse (just reverse the order)
-                    # turn toffoli into controlled toffoli
+                    # Inverse QubitCarry (reversed operation order)
+                    #   Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.carry_wires[i + 1], self.control_wire, self.work_wire])
-                    # turn CNOT into toffoli
+                    #   CNOT becomes Toffoli
                     qml.Toffoli(wires=[self.control_wire, self.a_wires[i - temp], self.b_wires[i]])
-                    # turn toffoli into controlled toffoli
+                    #   Use two extra Toffoli gates and the work_wire to turn Toffoli into controlled Toffoli
                     qml.Toffoli(wires=[self.a_wires[i - temp], self.control_wire, self.work_wire])
                     qml.Toffoli(wires=[self.work_wire, self.b_wires[i], self.carry_wires[i]])
                     qml.Toffoli(wires=[self.a_wires[i - temp], self.control_wire, self.work_wire])
-                    # qubit sum
-                    # turn CNOT into toffoli
+                    # A QubitSum operation
+                    #   CNOT becomes Toffoli
                     qml.Toffoli(wires=[self.control_wire, self.a_wires[i - temp], self.b_wires[i]])
-                    # turn CNOT into toffoli
+                    #   CNOT becomes Toffoli
                     qml.Toffoli(wires=[self.control_wire, self.carry_wires[i + 1], self.b_wires[i]])
 
         return tape
