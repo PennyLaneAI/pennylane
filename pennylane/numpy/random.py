@@ -18,21 +18,21 @@ it works with the PennyLane :class:`~.tensor` class.
 from packaging.version import parse as parse_version
 
 from autograd.numpy import random as _random
-from .wrapper import wrap_arrays, tensor_wrapper
-
 from numpy import __version__ as np_version
-from numpy.random import MT19937, PCG64, Philox, SFC64
-from numpy.random import default_rng as _default_rng
+from numpy.random import MT19937, PCG64, Philox, SFC64  # pylint: disable=unused-import
 
+from .wrapper import wrap_arrays, tensor_wrapper
 
 wrap_arrays(_random.__dict__, globals())
 
 if parse_version(np_version) > parse_version("1.17.0"):
 
+    # pylint: disable=too-few-public-methods
     class Generator(_random.Generator):
-
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
+
+            self.__doc__ = "PennyLane wrapped NumPy Generator object\n" + super().__doc__
 
             for name in dir(_random.Generator):
                 if name[0] != "_":
@@ -41,14 +41,16 @@ if parse_version(np_version) > parse_version("1.17.0"):
     def default_rng(seed=None):
         # Mostly copied from NumPy, but uses our Generator instead
 
-        if hasattr(seed, "capsule"): # I changed this line
+        if hasattr(seed, "capsule"):  # I changed this line
             # We were passed a BitGenerator, so just wrap it up.
             return Generator(seed)
-        elif isinstance(seed, Generator):
+        if isinstance(seed, Generator):
             # Pass through a Generator.
             return seed
         # Otherwise we need to instantiate a new BitGenerator and Generator as
         # normal.
         return Generator(PCG64(seed))
 
-    default_rng.__doc__ = "PennyLane duplicated generator constructor\n" + _default_rng.__doc__
+    default_rng.__doc__ = (
+        "PennyLane duplicated generator constructor\n" + _random.default_rng.__doc__
+    )
