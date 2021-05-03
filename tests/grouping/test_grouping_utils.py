@@ -330,6 +330,7 @@ class TestGroupingUtils:
         [
             ("I", {"a": 0}, Identity("a")),
             ("X", {0: 0}, PauliX(0)),
+            ("XI", {1: 0, 0: 1}, PauliX(1)),
             ("II", {0: 0, 1: 1}, Identity(0)),
             ("ZYIZ", {"a": 0, "b": 1, "c": 2, "d": 3}, PauliZ("a") @ PauliY("b") @ PauliZ("d")),
             ("ZYZ", None, PauliZ(0) @ PauliY(1) @ PauliZ(2)),
@@ -358,6 +359,16 @@ class TestGroupingUtils:
                 PauliZ(0) @ PauliY(1),
                 {0: 0, 1: 1},
                 np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
+            ),
+            (
+                PauliY(1) @ PauliZ(0),
+                {0: 0, 1: 1},
+                np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
+            ),
+            (
+                PauliY(1) @ PauliZ(0),
+                {1: 0, 0: 1},
+                np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
             (Identity(0), {0: 0, 1: 1}, np.eye(4)),
             (PauliX(2), None, PauliX.matrix),
