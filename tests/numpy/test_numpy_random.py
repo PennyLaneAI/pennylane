@@ -86,6 +86,14 @@ class Test_default_rng:
         output = rng.random((3,))
         assert isinstance(output, np.tensor)
 
+    def test_generator_input(self):
+        """Tests that ``np.random.default_rng`` passes through a Generator when its passed as input."""
+
+        rng1 = random.default_rng()
+        rng2 = random.default_rng(rng1)
+
+        assert rng1 == rng2
+
     def test_seed_reproducible(self):
         """Tests that setting a seed to ``default_rng`` gives reproducible results."""
 
