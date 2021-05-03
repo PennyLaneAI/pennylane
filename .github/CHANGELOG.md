@@ -16,7 +16,7 @@
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
 
-* Deprecation warnings instances in PennyLane have been changed to `UserWarning`,
+* Deprecation warning instances in PennyLane have been changed to `UserWarning`,
   to account for recent changes to how Python warnings are filtered in
   [PEP565](https://www.python.org/dev/peps/pep-0565/).
   [(#1211)](https://github.com/PennyLaneAI/pennylane/pull/1211)
