@@ -134,11 +134,11 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
+        self._cached_wires = {}
         self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
-        self._cached_wires = {}
 
     def __repr__(self):
         """String representation."""
