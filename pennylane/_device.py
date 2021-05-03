@@ -138,6 +138,7 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+        self._cached_wires = {}
 
     def __repr__(self):
         """String representation."""
@@ -340,6 +341,9 @@ class Device(abc.ABC):
         Returns:
             Wires: wires with new labels
         """
+        if wires in self._cached_wires:
+            return self._cached_wires[wires]
+
         try:
             mapped_wires = wires.map(self.wire_map)
         except WireError as e:
@@ -349,6 +353,7 @@ class Device(abc.ABC):
                 )
             ) from e
 
+        self._cached_wires[wires] = mapped_wires
         return mapped_wires
 
     @classmethod
