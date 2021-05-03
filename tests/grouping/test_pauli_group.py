@@ -152,6 +152,12 @@ class TestPauliGroup:
                 {0: 0, 2: 1, 4: 2, 1: 3, 3: 4},
                 PauliZ(2) @ PauliY(1) @ PauliZ(4) @ PauliX(3),
             ),
+            (
+                PauliZ(0) @ PauliY(3) @ PauliZ(1),
+                PauliX(1) @ PauliX(2) @ PauliY(0),
+                None,
+                PauliX(0) @ PauliY(3) @ PauliY(1) @ PauliX(2)
+            )
         ],
     )
     def test_pauli_mult(self, pauli_word_1, pauli_word_2, wire_map, expected_product):
@@ -182,6 +188,7 @@ class TestPauliGroup:
                 1j,
             ),
             (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, -1),
+            (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {1: 0, 0: 1}, -1),
             (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), None, 1),
         ],
     )

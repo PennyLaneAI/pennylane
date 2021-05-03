@@ -166,7 +166,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
 
     # Check if pauli_1 and pauli_2 are the same; if so, the result is the Identity
     if are_identical_pauli_words(pauli_1, pauli_2):
-        first_wire = list(wire_map.keys())[0]
+        first_wire = list(pauli_1.wires)[0]
         return Identity(first_wire)
 
     # Compute binary symplectic representations
