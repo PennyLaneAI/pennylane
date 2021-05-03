@@ -354,15 +354,16 @@ class DefaultQubit(QubitDevice):
             array[complex]: output state
         """
         cntrl_max = np.argmax(axes[:2])
+        cntrl_min = cntrl_max ^ 1
         sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
         sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
-        sl_b0 = _get_slice(0, axes[cntrl_max ^ 1], self.num_wires - 1)
-        sl_b1 = _get_slice(1, axes[cntrl_max ^ 1], self.num_wires - 1)
+        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
 
         # If both controls are smaller than the target, shift the target axis down by two. If one
         # control is greater and one control is smaller than the target, shift the target axis
         # down by one. If both controls are greater than the target, leave the target axis as-is.
-        if axes[cntrl_max ^ 1] > axes[2]:
+        if axes[cntrl_min] > axes[2]:
             target_axes = [axes[2]]
         elif axes[cntrl_max] > axes[2]:
             target_axes = [axes[2] - 1]
@@ -371,7 +372,7 @@ class DefaultQubit(QubitDevice):
 
         # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
         state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_max ^ 1])
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
         return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
 
     def _apply_swap(self, state, axes, **kwargs):
