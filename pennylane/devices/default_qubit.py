@@ -151,6 +151,7 @@ class DefaultQubit(QubitDevice):
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
+            "Toffoli": self._apply_toffoli,
         }
 
     def map_wires(self, wires):
@@ -335,6 +336,44 @@ class DefaultQubit(QubitDevice):
 
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
+
+    def _apply_toffoli(self, state, axes, **kwargs):
+        """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
+        each of the resulting sub-arrays along the axis of the smaller control qubit, and then applying
+        an X transformation along the axis of the target qubit of the fourth sub-sub-array.
+
+        By performing two consecutive slices in this way, we are able to select all of the amplitudes with
+        a corresponding :math:`|11\rangle` for the two control qubits. This means we then just need to apply
+        a :class:`~.PauliX` (NOT) gate to the result.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        cntrl_max = np.argmax(axes[:2])
+        cntrl_min = cntrl_max ^ 1
+        sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
+        sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
+        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
+
+        # If both controls are smaller than the target, shift the target axis down by two. If one
+        # control is greater and one control is smaller than the target, shift the target axis
+        # down by one. If both controls are greater than the target, leave the target axis as-is.
+        if axes[cntrl_min] > axes[2]:
+            target_axes = [axes[2]]
+        elif axes[cntrl_max] > axes[2]:
+            target_axes = [axes[2] - 1]
+        else:
+            target_axes = [axes[2] - 2]
+
+        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
+        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
+        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
