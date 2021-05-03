@@ -22,22 +22,33 @@ from pennylane import numpy as np
 from pennylane.numpy import random
 
 # distributions that require no extra parameters
-distributions_no_extra_input = ['exponential', 'gumbel', 'laplace', 
-'logistic', 'lognormal', 'normal', 'poisson', 'rayleigh', 'standard_cauchy', 
-'standard_exponential', 'standard_normal', 'uniform']
+distributions_no_extra_input = [
+    "exponential",
+    "gumbel",
+    "laplace",
+    "logistic",
+    "lognormal",
+    "normal",
+    "poisson",
+    "rayleigh",
+    "standard_cauchy",
+    "standard_exponential",
+    "standard_normal",
+    "uniform",
+]
 
 bit_generator_classes = [random.MT19937, random.PCG64, random.Philox, random.SFC64]
 
 general_gen = random.default_rng()
 
-class TestGeneratorDistributions:
 
+class TestGeneratorDistributions:
     @pytest.mark.parametrize("distribution", distributions_no_extra_input)
     def test_generator_distributions(self, distribution):
         """Tests the distributions from a generator object that don't require
         additional distribution-specific parameters to make sure they have a
         ``requires_grad`` attribute."""
-        size = (3, )
+        size = (3,)
         output = getattr(general_gen, distribution)(size=size)
 
         assert isinstance(output, np.tensor)
@@ -48,10 +59,10 @@ class TestGeneratorDistributions:
         output.requires_grad = False
         assert output.requires_grad == False
 
-class Test_default_rng:
 
+class Test_default_rng:
     def test_no_input(self):
-        """Tests that np.random.default_rng() returns a generator object when 
+        """Tests that np.random.default_rng() returns a generator object when
         no input is passed."""
         rng = random.default_rng()
 
@@ -79,7 +90,7 @@ class Test_default_rng:
         """Tests that setting a seed to ``default_rng`` gives reproducible results."""
 
         seed = 42
-        size = (3,2)
+        size = (3, 2)
 
         rng1 = random.default_rng(seed)
         rng2 = random.default_rng(seed)
