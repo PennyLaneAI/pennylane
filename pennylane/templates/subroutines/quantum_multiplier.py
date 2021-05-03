@@ -26,7 +26,7 @@ class QuantumMultiplier(Operation):
 
     .. math::
         |a_0,...,a_n\rangle |b_0,...,b_n\rangle |0\rangle ^{\oplus n} 0\rangle ^{\oplus 2n+1)}\rightarrow |a_0,...,a_n\rangle |b_0,...,b_n\rangle |(ab)_n,...,(ab)_{2n-1}\rangle |(ab)_0,...,(ab)_{n-1}\rangle |0\rangle^{\otimes n+1}
-    
+
     .. figure:: ../../_static/templates/subroutines/quantum_multiplier.svg
         :align: center
         :width: 60%
