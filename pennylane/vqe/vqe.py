@@ -291,7 +291,7 @@ class Hamiltonian:
             if (coeffs1, str(terms1)) == (coeffs2, str(terms2)):
 
                 squared_coeffs, squared_ops = [], []
-                pairs = [(coeff, term) for coeff, term in zip(coeffs1, terms1)]
+                pairs = list(zip(coeffs1, terms1))
                 products = itertools.product(pairs, repeat=2)
 
                 for (coeff1, op1), (coeff2, op2) in products:
