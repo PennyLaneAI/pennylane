@@ -84,40 +84,22 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/pdf/1709.03489.pdf>`__, the
-    cycle-mixer Hamiltonian preserves the set of valid cycles. This is achieved through "shrinking"
-    and "growing" operations which transition between valid cycles by removing and adding graph
-    edges. Considering a fixed edge :math:`(i, j)`, the Hamiltonian corresponding to the growth
-    operation is given by:
+    cycle-mixer Hamiltonian preserves the set of valid cycles:
 
     .. math::
-
-        \frac{1}{8}\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}X_{ij}X_{ik}X_{kj}
-        (\mathbb{I} - Z_{ij})(\mathbb{I} + Z_{ik})(\mathbb{I} + Z_{kj})
-
-    Similarly the shrink operation is given by:
-
-    .. math::
-
-        \frac{1}{8}\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}X_{ij}X_{ik}X_{kj}
-        (\mathbb{I} + Z_{ij})(\mathbb{I} - Z_{ik})(\mathbb{I} - Z_{kj})
-
-
-    Combining these operations and considering transitions over all edges, this function returns:
-
-    .. math::
-
         \frac{1}{4}\sum_{(i, j)\in E}
         \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
         \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
         \right)
 
+    where :math:`E` are the edges of the directed graph. A valid cycle is defined as a subset of
+    edges in :math:`E` such that all of the graph's nodes :math:`V` have zero net flow (see the
+    :func:`~.net_flow_constraint` function).
+
     **Example**
 
     >>> import networkx as nx
     >>> g = nx.complete_graph(3).to_directed()
-    >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
-    >>> for k, v in edge_weight_data.items():
-            g[k[0]][k[1]]["weight"] = v
     >>> h_m = cycle_mixer(g)
     >>> print(h_m)
       (-0.25) [X0 Y1 Y5]
@@ -146,7 +128,7 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     + (0.25) [Y5 X4 Y0]
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.DiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the cycle-mixer Hamiltonian
@@ -170,8 +152,8 @@ def _cycle_mixer_on_edge(graph: nx.DiGraph, edge: Tuple[int]) -> qml.Hamiltonian
         X_{ij}X_{ik}X_{kj} + Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
-        edge (Tuple[Int]): a fixed edge
+        graph (nx.DiGraph): the directed graph specifying possible edges
+        edge (tuple): a fixed edge
 
     Returns:
         qml.Hamiltonian: the partial cycle-mixer Hamiltonian
