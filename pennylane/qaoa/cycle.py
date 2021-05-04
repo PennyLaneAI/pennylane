@@ -136,12 +136,12 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     hamiltonian = qml.Hamiltonian([], [])
 
     for edge in graph.edges:
-        hamiltonian += _cycle_mixer_on_edge(graph, edge)
+        hamiltonian += _partial_cycle_mixer(graph, edge)
 
     return hamiltonian
 
 
-def _cycle_mixer_on_edge(graph: nx.DiGraph, edge: Tuple[int]) -> qml.Hamiltonian:
+def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> qml.Hamiltonian:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:

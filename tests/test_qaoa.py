@@ -27,7 +27,7 @@ from pennylane.qaoa.cycle import (
     wires_to_edges,
     loss_hamiltonian,
     cycle_mixer,
-    _cycle_mixer_on_edge,
+    _partial_cycle_mixer,
     matrix,
 )
 from scipy.linalg import expm
@@ -707,13 +707,13 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-    def test_cycle_mixer_on_edge(self):
-        """Test if the _cycle_mixer_on_edge function returns the expected Hamiltonian for a fixed
+    def test_partial_cycle_mixer(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
         g = nx.complete_graph(4).to_directed()
         edge = (0, 1)
 
-        h = _cycle_mixer_on_edge(g, edge)
+        h = _partial_cycle_mixer(g, edge)
 
         ops_expected = [
             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(7),
