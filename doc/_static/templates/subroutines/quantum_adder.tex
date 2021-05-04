@@ -1,0 +1,16 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.9em {
+&&\\
+&&&&&&&\lstick{ \ket{a_0,...,a_{m-1}}} & \multigate{2}{Adder} \qw \cw & \rstick{\ket{a_0,...,a_{m-1}}} \qw \cw &&&&&\\
+&&&&&&&\lstick{\ket{b_0,...,b_{n-1}}}]& \ghost{Adder} \qw \cw & \rstick{\ket{(a+b)_1,...,(a+b)_{n}}} \qw \cw &&&&&&&&&&\\
+&&&&&&&\lstick{ \ket{0}^{\otimes (n+1)}}& \ghost{Adder} \qw \cw & \rstick{\ket{(a+b)_0}\ket{0}^{\otimes n}} \qw \cw &&&&&&&\\
+&&
+}
+
+\end{document}

@@ -203,6 +203,11 @@ of other templates.
   :description: QuantumMonteCarlo
   :figure: ../_static/templates/subroutines/qmc.svg
 
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.QuantumAdder.html
+  :description: QuantumAdder
+  :figure: ../_static/templates/subroutines/quantum_adder.svg
+
 .. raw:: html
 
         <div style='clear:both'></div>
