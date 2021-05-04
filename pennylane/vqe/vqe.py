@@ -289,8 +289,10 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             shared_wires = Wires.shared_wires([self.wires, H.wires])
             if len(shared_wires) > 0:
-                raise ValueError("Hamiltonians can only be multiplied together if they act on "
-                                 "different sets of wires")
+                raise ValueError(
+                    "Hamiltonians can only be multiplied together if they act on "
+                    "different sets of wires"
+                )
 
             coeffs2 = H.coeffs
             terms2 = H.ops
