@@ -290,7 +290,7 @@ class Hamiltonian:
             shared_wires = Wires.shared_wires([self.wires, H.wires])
             if len(shared_wires) > 0:
                 raise ValueError("Hamiltonians can only be multiplied together if they act on "
-                                 "complementary sets of wires")
+                                 "different sets of wires")
 
             coeffs2 = H.coeffs
             terms2 = H.ops
