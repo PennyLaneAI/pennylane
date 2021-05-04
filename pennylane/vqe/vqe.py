@@ -288,8 +288,7 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             coeffs2 = H.coeffs
             terms2 = H.ops
-
-            if (coeffs1, terms1) == (coeffs2, terms2):
+            if (coeffs1, str(terms1)) == (coeffs2, str(terms2)):
 
                 squared_coeffs, squared_ops = [], []
                 pairs = [(coeff, term) for coeff, term in zip(coeffs1, terms1)]

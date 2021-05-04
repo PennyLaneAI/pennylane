@@ -438,6 +438,36 @@ matmul_hamiltonians = [
             ),
         ),
     ),
+    # case where H1 = H2 to test square Hamiltonians simplify as expected
+    (
+        qml.Hamiltonian(
+            (0, -1, -1, 1),
+            (
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+            ),
+        ),
+        qml.Hamiltonian(
+            (0, -1, -1, 1),
+            (
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+            ),
+        ),
+        qml.Hamiltonian(
+            [3, 2, -2, -2],
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            ],
+        ),
+    ),
 ]
 
 big_hamiltonian_coeffs = np.array(
