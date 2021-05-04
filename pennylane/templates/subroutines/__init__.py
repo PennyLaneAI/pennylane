@@ -27,3 +27,4 @@ from .qpe import QuantumPhaseEstimation
 from .qmc import QuantumMonteCarlo
 from .quantum_adder import QuantumAdder
 from .quantum_adder import ControlledQuantumAdder
+from .quantum_multiplier import QuantumMultiplier
