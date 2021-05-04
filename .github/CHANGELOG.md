@@ -51,6 +51,9 @@
 
 <h3>Bug fixes</h3>
 
+* Prevent Hamiltonians that share wires from being multiplied together.
+  [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
+
 <h3>Documentation</h3>
 
 * Updated the docstring of `qml.PolyXP` to reference the new location of internal
