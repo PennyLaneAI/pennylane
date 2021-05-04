@@ -12,6 +12,19 @@
 
 This release contains contributions from (in alphabetical order):
 
+# Release 0.15.1
+
+<h3>Bug fixes</h3>
+
+* The version requirement for PySCF has been modified to allow for `pyscf>=1.7.2`.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva.
+
 # Release 0.15.0
 
 <h3>Breaking changes</h3>
