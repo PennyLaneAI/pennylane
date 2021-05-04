@@ -357,6 +357,7 @@ class TestWires:
         assert (1, 5, 3) != Wires([1, 2, 3])
 
     def test_hash_cached(self):
+        """Test that the hash of a Wires object is being cached."""
         wires = Wires([0, 1])
         assert wires._hash is None
         h = hash(wires)

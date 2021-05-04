@@ -487,6 +487,8 @@ class TestInternalFunctions:
 
     @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
     def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+        """Test that mapped wires are stored internally after being mapped for
+        a device."""
         dev = mock_device(dev_wires)
         assert dev._cached_wires == {}
 
