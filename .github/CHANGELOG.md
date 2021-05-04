@@ -47,6 +47,9 @@
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
+* Added expansion of quadratic terms to Hamiltonian
+  [(#1253)](https://github.com/PennyLaneAI/pennylane/pull/1253)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
