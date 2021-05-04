@@ -301,11 +301,11 @@ class TestControlledQuantumAdder:
     def test_wrong_order(self):
         """Test if a ValueError is raised when a_wires has more wires than b_wires"""
         with pytest.raises(ValueError, match="The longer bit string must be in b_wires"):
-            qml.templates.QuantumAdder([0, 1], [2], [3, 4, 5])
+            qml.templates.ControlledQuantumAdder(a_wires=[0, 1], b_wires=[2], carry_wires=[3, 4, 5], control_wire=6, work_wire=7)
 
     def test_few_carry_wires(self):
         """Test if a ValueError is raised when there are not enough carry wires"""
         with pytest.raises(
             ValueError, match="The carry wires must have 1 more wire than the b wires"
         ):
-            qml.templates.QuantumAdder([0, 1], [2, 3], [4, 5])
+            qml.templates.ControlledQuantumAdder(a_wires=[0, 1], b_wires=[2, 3], carry_wires=[4, 5], control_wire=6, work_wire=7)
