@@ -343,12 +343,19 @@ class TestGroupingUtils:
         assert obtained_pauli.compare(expected_pauli)
 
     @pytest.mark.parametrize(
-        "non_pauli_string,error_type", [(Identity("a"), TypeError), ("XAYZ", ValueError)]
+        "non_pauli_string,wire_map,error_type,error_message",
+        [
+            (Identity("a"), None, TypeError, "must be string"),
+            ("XAYZ", None, ValueError, "Invalid characters encountered"),
+            ("XYYZ", {0: 0, 1: 1, 2: 2}, ValueError, "must have the same length"),
+        ],
     )
-    def test_string_to_pauli_word_invalid_input(self, non_pauli_string, error_type):
+    def test_string_to_pauli_word_invalid_input(
+        self, non_pauli_string, wire_map, error_type, error_message
+    ):
         """Ensure invalid inputs are handled properly when converting strings to Pauli words."""
-        with pytest.raises(error_type):
-            string_to_pauli_word(non_pauli_string)
+        with pytest.raises(error_type, match=error_message):
+            string_to_pauli_word(non_pauli_string, wire_map)
 
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",
