@@ -296,7 +296,6 @@ class Hamiltonian:
 
                 for (coeff1, op1), (coeff2, op2) in products:
                     squared_coeffs.append(coeff1 * coeff2)
-                    import pdb; pdb.set_trace()
                     if isinstance(op1, qml.Identity):
                         squared_ops.append(op2)
                     elif isinstance(op2, qml.Identity):
