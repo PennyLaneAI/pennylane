@@ -91,6 +91,9 @@
 
 <h3>Improvements</h3>
 
+* Added custom gate application for Toffoli in `default.qubit`.
+  [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
+
 * The device test suite now provides test cases for checking gates by comparing
   expectation values.
   [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
@@ -149,6 +152,7 @@ Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal 
 
 This release contains contributions from (in alphabetical order):
 
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ryan Hill,
 Josh Izaac, Maria Schuld, Antal Száva.
 
 # Release 0.15.0
