@@ -724,7 +724,6 @@ class TestIntegration:
 
 
 class TestCycles:
-
     """Tests that ``cycle`` module functions are behaving correctly"""
 
     def test_edges_to_wires(self):
