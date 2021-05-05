@@ -29,6 +29,8 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
+    ~transforms.natural_jacobian
+    ~transforms.quantum_jacobian
 
 Quantum function transforms
 ---------------------------
@@ -62,3 +64,5 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .natural_jacobian import natural_jacobian
+from .quantum_jacobian import quantum_jacobian
