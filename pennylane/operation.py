@@ -425,17 +425,13 @@ class Operator(abc.ABC):
         ):
             raise ValueError(
                 "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(
-                    self.name, len(self._wires), self.num_wires
-                )
+                "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
         if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(
-                    self.name, len(params), self.num_params
-                )
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
@@ -714,9 +710,7 @@ class Operation(Operator):
                     len(self.grad_recipe) == self.num_params
                 ), "Gradient recipe must have one entry for each parameter!"
         else:
-            assert (
-                self.grad_recipe is None
-            ), "Gradient recipe is only used by the A method!"
+            assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
@@ -1123,9 +1117,7 @@ class Tensor(Observable):
             elif isinstance(o, Observable):
                 self.obs.append(o)
             else:
-                raise ValueError(
-                    "Can only perform tensor products between observables."
-                )
+                raise ValueError("Can only perform tensor products between observables.")
 
             try:
                 qml.QueuingContext.update_info(o, owner=self)
@@ -1283,21 +1275,15 @@ class Tensor(Observable):
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals_cache = np.array([1])
-            for k, g in itertools.groupby(
-                obs_sorted, lambda x: x.name in standard_observables
-            ):
+            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals_cache = np.kron(
-                        self._eigvals_cache, pauli_eigs(len(list(g)))
-                    )
+                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(
-                            self._eigvals_cache, ns_ob.eigvals
-                        )
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals)
 
         return self._eigvals_cache
 
@@ -1447,9 +1433,7 @@ class CV:
             raise ValueError("Only order-1 and order-2 arrays supported.")
 
         if U_dim != 1 + 2 * nw:
-            raise ValueError(
-                "{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim)
-            )
+            raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
         if len(wires) == 0 or len(self.wires) == len(wires):
             # no expansion necessary (U is a full-system matrix in the correct order)
@@ -1496,9 +1480,7 @@ class CV:
                 W[0, d1] = U[0, s1]
 
                 for k2, w2 in enumerate(wire_indices):
-                    W[d1, loc(w2)] = U[
-                        s1, loc(k2)
-                    ]  # block k1, k2 in U goes to w1, w2 in W.
+                    W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         return W
 
     @staticmethod
