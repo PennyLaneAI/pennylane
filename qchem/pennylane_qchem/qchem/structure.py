@@ -98,7 +98,7 @@ def _process_wires(wires, n_wires=None):
 
     elif isinstance(wires, dict):
 
-        if all([isinstance(w, int) for w in wires.keys()]):
+        if all(isinstance(w, int) for w in wires.keys()):
             # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
             n_wires = max(wires) + 1
             labels = list(range(n_wires))  # used for completing potential partial mapping.
