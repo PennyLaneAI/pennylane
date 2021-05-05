@@ -121,7 +121,7 @@ import functools
 from enum import Enum, IntEnum
 
 import numpy as np
-from numpy.linalg import multi_dot, matrix_power
+from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -1708,6 +1708,6 @@ def operation_derivative(operation, order=1) -> np.ndarray:
         generator = generator.conj().T
 
     prefactor = (1j * prefactor) ** order
-    generator = matrix_power(generator, order)
+    generator = np.linalg.matrix_power(generator, order)
 
     return prefactor * generator @ operation.matrix
