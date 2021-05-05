@@ -322,7 +322,7 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
-def test_exception_qubit_operator_to_terms():
+def test_exception_convert_observable():
     r"""Test that an error is raised if the QubitOperator contains complex coefficients.
     Currently the vqe.Hamiltonian class does not support complex coefficients.
     """
@@ -333,7 +333,7 @@ def test_exception_qubit_operator_to_terms():
     )
 
     with pytest.raises(TypeError, match="All coefficients entering the QubitOperator must be real"):
-        qchem._qubit_operator_to_terms(qubit_op)
+        qchem.convert_observable(qubit_op)
 
 
 def test_identities_terms_to_qubit_operator():

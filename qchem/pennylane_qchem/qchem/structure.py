@@ -578,12 +578,6 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
         ]
     )
 
-    if any(np.iscomplex(coeffs)):
-        raise TypeError(
-            "All coefficients entering the QubitOperator must be real;"
-            " got complex coefficients in the operator {}".format(qubit_operator)
-        )
-
     return np.real(np.array(coeffs)), list(ops)
 
 
@@ -712,6 +706,12 @@ def convert_observable(qubit_observable, wires=None):
       0.04475014 -0.04475014 -0.04475014  0.04475014  0.12293305  0.16768319
       0.16768319  0.12293305  0.17627641]
     """
+
+    if any(np.iscomplex(np.array([qubit_observable.terms[key] for key in qubit_observable.terms]))):
+        raise TypeError(
+            "All coefficients entering the QubitOperator must be real;"
+            " got complex coefficients in the operator {}".format(qubit_observable)
+        )
 
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
 
