@@ -180,51 +180,52 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
-        # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        if self._execution_mode:
+            # apply all circuit operations
+            self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
-        # generate computational basis samples
-        if self.shots is not None or circuit.is_sampled:
-            self._samples = self.generate_samples()
+            # generate computational basis samples
+            if self.shots is not None or circuit.is_sampled:
+                self._samples = self.generate_samples()
 
-        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+            multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
 
-        # compute the required statistics
-        if not self.analytic and self._shot_vector is not None:
+            # compute the required statistics
+            if not self.analytic and self._shot_vector is not None:
 
-            results = []
-            s1 = 0
+                results = []
+                s1 = 0
 
-            for shot_tuple in self._shot_vector:
-                s2 = s1 + np.prod(shot_tuple)
-                r = self.statistics(
-                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
-                )
-                r = qml.math.squeeze(r)
+                for shot_tuple in self._shot_vector:
+                    s2 = s1 + np.prod(shot_tuple)
+                    r = self.statistics(
+                        circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                    )
+                    r = qml.math.squeeze(r)
 
-                if shot_tuple.copies > 1:
-                    results.extend(r.T)
-                else:
-                    results.append(r.T)
+                    if shot_tuple.copies > 1:
+                        results.extend(r.T)
+                    else:
+                        results.append(r.T)
 
-                s1 = s2
+                    s1 = s2
 
-            if not multiple_sampled_jobs:
-                # Can only stack single element outputs
-                results = qml.math.stack(results)
+                if not multiple_sampled_jobs:
+                    # Can only stack single element outputs
+                    results = qml.math.stack(results)
 
-        else:
-            results = self.statistics(circuit.observables)
+            else:
+                results = self.statistics(circuit.observables)
 
-        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = self._asarray(results)
-        else:
-            results = tuple(self._asarray(r) for r in results)
+            if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
+                results = self._asarray(results)
+            else:
+                results = tuple(self._asarray(r) for r in results)
 
-        if self._cache and circuit_hash not in self._cache_execute:
-            self._cache_execute[circuit_hash] = results
-            if len(self._cache_execute) > self._cache:
-                self._cache_execute.popitem(last=False)
+            if self._cache and circuit_hash not in self._cache_execute:
+                self._cache_execute[circuit_hash] = results
+                if len(self._cache_execute) > self._cache:
+                    self._cache_execute.popitem(last=False)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1

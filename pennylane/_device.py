@@ -139,6 +139,9 @@ class Device(abc.ABC):
         self._obs_queue = None
         self._parameters = None
 
+        ### IDEA FOR RESOURCE TRACKING
+        self.execution_mode = True
+
     def __repr__(self):
         """String representation."""
         return "<{} device (wires={}, shots={}) at {}>".format(
