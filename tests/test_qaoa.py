@@ -741,7 +741,7 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-    def test_partial_cycle_mixer(self):
+    def test_partial_cycle_mixer_complete(self):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
         g = nx.complete_graph(4).to_directed()
@@ -764,6 +764,28 @@ class TestCycles:
         assert h.coeffs == coeffs_expected
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_partial_cycle_mixer_incomplete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        g.remove_edge(2, 1) # remove an egde to make graph incomplete
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(9),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(9),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
 
     def test_cycle_mixer(self):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
