@@ -333,6 +333,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     :math:`i`, and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
     upon the qubit specified by the pair :math:`(i, j)`. Mapping from edges to wires can be achieved
     using :func:`~.edges_to_wires`.
+
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
 
@@ -354,7 +355,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
 
 
 def _inner_out_flow_constraint_hamiltonian(
-    graph: nx.DiGraph, node: int
+    graph: nx.DiGraph, node
 ) -> Tuple[List[float], List[qml.operation.Observable]]:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
 
@@ -368,7 +369,7 @@ def _inner_out_flow_constraint_hamiltonian(
 
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
-        node (int): a fixed node
+        node: a fixed node
 
     Returns:
         Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
