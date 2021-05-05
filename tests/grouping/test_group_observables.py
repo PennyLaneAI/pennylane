@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -291,7 +291,7 @@ class TestGroupObservables:
 
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
-         wire map correctly."""
+        wire map correctly."""
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")

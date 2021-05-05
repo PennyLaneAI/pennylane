@@ -29,6 +29,12 @@ Before submitting a pull request, please make sure the following is done:
 
       black -l 100 pennylane/path/to/modified/file.py
 
+  You should also apply Black to any tests you add:
+
+  .. code-block:: bash
+
+      black -l 100 tests/path/to/modified/test.py
+
   We check all of our code against `Pylint <https://www.pylint.org/>`_ for errors.
   To lint modified files, simply ``pip install pylint``, and then from the source code
   directory, run

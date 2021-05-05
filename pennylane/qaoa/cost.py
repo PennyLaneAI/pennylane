@@ -50,7 +50,9 @@ def bit_driver(wires, b):
     >>> wires = range(3)
     >>> hamiltonian = qaoa.bit_driver(wires, 1)
     >>> print(hamiltonian)
-    (1.0) [Z0] + (1.0) [Z1] + (1.0) [Z2]
+      (1) [Z0]
+    + (1) [Z1]
+    + (1) [Z2]
     """
     if b == 0:
         coeffs = [-1 for _ in wires]
@@ -87,10 +89,16 @@ def edge_driver(graph, reward):
 
     **Example**
 
+    >>> import networkx as nx
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
-    (0.25) [Z0 Z1] + (0.25) [Z0] + (0.5) [Z1] + (0.25) [Z1 Z2] + (0.25) [Z2]
+      (0.25) [Z0]
+    + (0.25) [Z1]
+    + (0.25) [Z1]
+    + (0.25) [Z2]
+    + (0.25) [Z0 Z1]
+    + (0.25) [Z1 Z2]
 
     In the above example, ``"11"``, ``"10"``, and ``"01"`` are assigned a lower
     energy than ``"00"``. For example, a quick calculation of expectation values gives us:
@@ -143,7 +151,7 @@ def edge_driver(graph, reward):
 
     allowed = ["00", "01", "10", "11"]
 
-    if not all([e in allowed for e in reward]):
+    if not all(e in allowed for e in reward):
         raise ValueError("Encountered invalid entry in 'reward', expected 2-bit bitstrings.")
 
     if "01" in reward and "10" not in reward or "10" in reward and "01" not in reward:
@@ -229,12 +237,17 @@ def maxcut(graph):
 
     **Example**
 
+    >>> import networkx as nx
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
-    (0.5) [Z0 Z1] + (0.5) [Z1 Z2] + (-1.0) [I0]
+      (-1.0) [I0]
+    + (0.5) [Z0 Z1]
+    + (0.5) [Z1 Z2]
     >>> print(mixer_h)
-    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+      (1) [X0]
+    + (1) [X1]
+    + (1) [X2]
     """
 
     if not isinstance(graph, nx.Graph):
