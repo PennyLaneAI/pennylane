@@ -707,7 +707,7 @@ def convert_observable(qubit_observable, wires=None):
       0.16768319  0.12293305  0.17627641]
     """
 
-    if any(np.iscomplex(np.array([qubit_observable.terms[key] for key in qubit_observable.terms]))):
+    if any(np.iscomplex(np.array(coef)) for coef in qubit_observable.terms.values()):
         raise TypeError(
             "All coefficients entering the QubitOperator must be real;"
             " got complex coefficients in the operator {}".format(qubit_observable)
