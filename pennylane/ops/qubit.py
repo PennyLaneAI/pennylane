@@ -1203,10 +1203,10 @@ class PauliRot(Operation):
 
 
 # Four term gradient recipe for controlled rotations
-c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
-c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
 a = np.pi / 2
-b = 3 * np.pi / 4
+b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
@@ -1230,8 +1230,18 @@ class CRX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
+    * Gradient recipe: The controlled-RX operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_x(\phi)) = c_+ \left[f(CR_x(\phi+a)) - f(CR_x(\phi-a))\right] - c_- \left[f(CR_x(\phi+b)) - f(CR_x(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1289,8 +1299,18 @@ class CRY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
+    * Gradient recipe: The controlled-RY operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_y(\phi)) = c_+ \left[f(CR_y(\phi+a)) - f(CR_y(\phi-a))\right] - c_- \left[f(CR_y(\phi+b)) - f(CR_y(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1349,8 +1369,18 @@ class CRZ(DiagonalOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
+    * Gradient recipe: The controlled-RZ operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_z(\phi)) = c_+ \left[f(CR_z(\phi+a)) - f(CR_z(\phi-a))\right] - c_- \left[f(CR_z(\phi+b)) - f(CR_z(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1419,9 +1449,19 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR(\phi, \theta, \omega)) = \frac{1}{2}\left[f(CR(\phi+\pi/2, \theta, \omega)) - f(CR(\phi-\pi/2, \theta, \omega))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR(\phi, \theta, \omega)`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+    * Gradient recipe: The controlled-Rot operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] - c_- \left[f(CR(\mathbf{x}_i+b)) - f(CR(\mathbf{x}_i-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR(\mathbf{x}_i)`, and
+
+      - :math:`\mathbf{x} = (\phi, \theta, \omega)` and `i` is an index to :math:`\mathbf{x}`
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1682,10 +1722,15 @@ class SingleExcitation(Operation):
 
     .. code-block::
 
+        dev = qml.device('default.qubit', wires=2)
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
+            return qml.state()
+
+        circuit(0.1)
     """
 
     num_params = 1
@@ -1986,7 +2031,7 @@ class MultiControlledX(ControlledQubitUnitary):
     ``ControlledQubitUnitary``, but there is no need to specify a matrix
     argument:
 
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
     num_params = 1
@@ -2079,12 +2124,15 @@ class QFT(Operation):
 
         wires = 3
 
+        dev = qml.device('default.qubit',wires=wires)
+
         @qml.qnode(dev)
         def circuit_qft(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
             qml.QFT(wires=range(wires))
             return qml.state()
 
+        circuit_qft([1.0, 0.0, 0.0])
     """
     num_params = 0
     num_wires = AnyWires
@@ -2177,11 +2225,16 @@ class DoubleExcitation(Operation):
 
     .. code-block::
 
+        dev = qml.device('default.qubit', wires=4)
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+            return qml.state()
+
+        circuit(0.1)
     """
 
     num_params = 1
@@ -2507,6 +2560,200 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
+# =============================================================================
+# Arithmetic
+# =============================================================================
+
+
+class QubitCarry(Operation):
+    r"""QubitCarry(wires)
+    Apply the ``QubitCarry`` operation to four input wires.
+
+    This operation performs the transformation:
+
+    .. math::
+        |a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle
+
+    .. figure:: ../../_static/ops/QubitCarry.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+
+    .. note::
+        The first wire should be used to input a carry bit from previous operations. The final wire
+        holds the carry bit of this operation and the input state on this wire should be
+        :math:`|0\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
+    the last qubit denotes the carry value:
+
+    .. code-block::
+
+        input_bitstring = (0, 1, 1, 0)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.BasisState(basis_state, wires=[0, 1, 2, 3])
+            qml.QubitCarry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=[0, 1, 2, 3])
+
+        probs =  circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=4))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 0, 1)
+
+    The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
+    in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
+    a carry, so we have:
+
+    >>> bc_sum = output_bitstring[2]
+    >>> bc_sum
+    0
+    >>> carry = output_bitstring[3]
+    >>> carry
+    1
+    """
+    num_params = 0
+    num_wires = 4
+    par_domain = None
+    _mat = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return QubitCarry._mat
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            qml.Toffoli(wires=wires[1:]),
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
+        ]
+        return decomp_ops
+
+
+class QubitSum(Operation):
+    r"""QubitSum(wires)
+    Apply a ``QubitSum`` operation on three input wires.
+
+    This operation performs the transformation:
+
+    .. math::
+        |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
+
+
+    .. figure:: ../../_static/ops/QubitSum.svg
+        :align: center
+        :width: 40%
+        :target: javascript:void(0);
+
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
+    final wire holding the modulo-two sum of the first two wires:
+
+    .. code-block::
+
+        input_bitstring = (0, 1, 0)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.BasisState(basis_state, wires = [0, 1, 2])
+            qml.QubitSum(wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        probs = circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=3))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 1)
+
+    The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
+    output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
+
+    >>> abc_sum = output_bitstring[2]
+    >>> abc_sum
+    1
+    """
+    num_params = 0
+    num_wires = 3
+    par_domain = None
+    _mat = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return QubitSum._mat
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
+        return decomp_ops
+
+    def adjoint(self):
+        return QubitSum(wires=self.wires)
+
+
 ops = {
     "Hadamard",
     "PauliX",
@@ -2549,6 +2796,8 @@ ops = {
     "DoubleExcitation",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
+    "QubitCarry",
+    "QubitSum",
 }
 
 

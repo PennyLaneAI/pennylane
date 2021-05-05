@@ -46,18 +46,20 @@ class TestExceptions:
         dev = qml.device("default.qubit", wires=1, shots=100)
         expval_cost = qml.ExpvalCost(lambda x, **kwargs: qml.RX(x, wires=0), H, dev)
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
 
         # lipschitz constant is given by sum(|coeffs|)
         lipschitz = np.sum(np.abs(coeffs))
 
         assert opt._stepsize > 2 / lipschitz
 
-        with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / lipschitz}"):
+        with pytest.raises(
+            ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
+        ):
             opt.step(expval_cost, 0.5)
 
         # for a single QNode, the lipschitz constant is simply 1
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
         with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / 1}"):
             opt.step(expval_cost.qnodes[0], 0.5)
 
@@ -76,7 +78,9 @@ class TestExceptions:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
         # test expval cost
-        with pytest.raises(ValueError, match="The objective function must either be encoded as a single QNode"):
+        with pytest.raises(
+            ValueError, match="The objective function must either be encoded as a single QNode"
+        ):
             opt.step(cost, 0.5)
 
         # defining the device attribute allows it to proceed
@@ -132,8 +136,12 @@ class TestSingleShotGradientIntegration:
 
         # monkeypatch the optimizer to use the same single shot gradients
         # as previously
-        monkeypatch.setattr(opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads)
-        monkeypatch.setattr(opt, "_single_shot_expval_gradients", lambda *args, **kwargs: single_shot_grads)
+        monkeypatch.setattr(
+            opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads
+        )
+        monkeypatch.setattr(
+            opt, "_single_shot_expval_gradients", lambda *args, **kwargs: single_shot_grads
+        )
 
         # reset the shot budget
         opt.s = [np.array(10)]
@@ -174,7 +182,7 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        x_init = np.array([[1., 2., 3.], [4., 5., 6.]])
+        x_init = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
         new_x = opt.step(cost_fn, x_init)
 
         assert isinstance(new_x, np.ndarray)
@@ -195,8 +203,12 @@ class TestSingleShotGradientIntegration:
 
         # monkeypatch the optimizer to use the same single shot gradients
         # as previously
-        monkeypatch.setattr(opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads)
-        monkeypatch.setattr(opt, "_single_shot_expval_gradients", lambda *args, **kwargs: single_shot_grads)
+        monkeypatch.setattr(
+            opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads
+        )
+        monkeypatch.setattr(
+            opt, "_single_shot_expval_gradients", lambda *args, **kwargs: single_shot_grads
+        )
 
         # reset the shot budget
         opt.s = [10 * np.ones([2, 3], dtype=np.int64)]
@@ -214,7 +226,7 @@ class TestSingleShotGradientIntegration:
         # check that the gradient and variance are computed correctly
         # with a different shot budget
         opt.s[0] = opt.s[0] // 2  # all array elements have a shot budget of 5
-        opt.s[0][0, 0] = 8    # set the shot budget of the zeroth element to 8
+        opt.s[0][0, 0] = 8  # set the shot budget of the zeroth element to 8
 
         grad, grad_variance = opt.compute_grad(cost_fn, [x_init], {})
         assert len(grad) == 1
@@ -259,7 +271,9 @@ class TestSingleShotGradientIntegration:
 
         # monkeypatch the optimizer to use the same single shot gradients
         # as previously
-        monkeypatch.setattr(opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads)
+        monkeypatch.setattr(
+            opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads
+        )
 
         # reset the shot budget
         opt.s = [np.array(10), np.array(10)]
@@ -304,7 +318,7 @@ class TestSingleShotGradientIntegration:
         spy_single_shot = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        args = [np.array([[1., 2., 3.], [4., 5., 6.]]), np.array([1., 2., 3.])]
+        args = [np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), np.array([1.0, 2.0, 3.0])]
         new_x = opt.step(circuit, *args)
 
         assert isinstance(new_x, list)
@@ -321,7 +335,9 @@ class TestSingleShotGradientIntegration:
 
         # monkeypatch the optimizer to use the same single shot gradients
         # as previously
-        monkeypatch.setattr(opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads)
+        monkeypatch.setattr(
+            opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads
+        )
 
         # reset the shot budget
         opt.s = [10 * np.ones([2, 3], dtype=np.int64), 10 * np.ones([3], dtype=np.int64)]
@@ -344,10 +360,10 @@ class TestSingleShotGradientIntegration:
         # check that the gradient and variance are computed correctly
         # with a different shot budget
         opt.s[0] = opt.s[0] // 2  # all array elements have a shot budget of 5
-        opt.s[0][0, 0] = 8    # set the shot budget of the zeroth element to 8
+        opt.s[0][0, 0] = 8  # set the shot budget of the zeroth element to 8
 
         opt.s[1] = opt.s[1] // 5  # all array elements have a shot budget of 2
-        opt.s[1][0] = 7    # set the shot budget of the zeroth element to 7
+        opt.s[1][0] = 7  # set the shot budget of the zeroth element to 7
 
         grad, grad_variance = opt.compute_grad(circuit, args, {})
         assert len(grad) == 2
@@ -435,7 +451,9 @@ class TestWeightedRandomSampling:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(qml, "jacobian")
-        mocker.patch("scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]]))
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
+        )
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
 
         assert len(spy.call_args_list) == 2
@@ -456,7 +474,9 @@ class TestWeightedRandomSampling:
 
         spy = mocker.spy(qml, "jacobian")
         spy_dims = mocker.spy(np, "expand_dims")
-        mocker.patch("scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]]))
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
+        )
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
 
         spy_dims.assert_called_once()

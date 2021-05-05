@@ -27,6 +27,7 @@ np.random.seed(42)
 @pytest.fixture
 def init_state(scope="session"):
     """Fixture that creates an initial state"""
+
     def _init_state(n):
         """An initial state over n wires"""
         state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
@@ -47,7 +48,7 @@ def test_full_prob(init_state, tol):
         return qml.probs(wires=range(4))
 
     res = circuit()
-    expected = np.abs(state)**2
+    expected = np.abs(state) ** 2
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
@@ -62,9 +63,10 @@ def test_marginal_prob(init_state, tol):
         return qml.probs(wires=[1, 3])
 
     res = circuit()
-    expected = np.reshape(np.abs(state)**2, [2]*4)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
     expected = np.einsum("ijkl->jl", expected).flatten()
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 def test_marginal_prob_more_wires(init_state, mocker, tol):
     """Test that the correct marginal probability is returned, when the
@@ -77,15 +79,16 @@ def test_marginal_prob_more_wires(init_state, mocker, tol):
     @qml.qnode(dev)
     def circuit():
         qml.QubitStateVector(state, wires=list(range(4)))
-        return qml.probs(wires=[1, 0, 3])    # <--- more than 2 wires: states_to_binary used
+        return qml.probs(wires=[1, 0, 3])  # <--- more than 2 wires: states_to_binary used
 
     res = circuit()
 
-    expected = np.reshape(np.abs(state)**2, [2]*4)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
     expected = np.einsum("ijkl->jil", expected).flatten()
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
     spy.assert_called_once()
+
 
 def test_integration(tol):
     """Test the probability is correct for a known state preparation."""
@@ -104,10 +107,11 @@ def test_integration(tol):
     expected = np.array([0.5, 0.5, 0, 0])
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 def test_integration_analytic_false(tol):
     """Test the probability is correct for a known state preparation when the
     analytic attribute is set to False."""
-    dev = qml.device('default.qubit', wires=3, shots=1000)
+    dev = qml.device("default.qubit", wires=3, shots=1000)
 
     @qml.qnode(dev)
     def circuit():
@@ -117,6 +121,7 @@ def test_integration_analytic_false(tol):
     res = circuit()
     expected = np.array([0, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule
@@ -137,7 +142,6 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
         return qml.probs(wires=[1, 3])
 
-
     params = [0.543, -0.765, -0.3]
 
     circuit_F = qml.QNode(circuit, dev, diff_method="finite-diff")
@@ -146,8 +150,8 @@ def test_numerical_analytic_diff_agree(init_state, tol):
     res_A = qml.jacobian(circuit_A)(*params)
 
     # Both jacobians should be of shape (2**prob.wires, num_params)
-    assert res_F.shape == (2**2, 3)
-    assert res_F.shape == (2**2, 3)
+    assert res_F.shape == (2 ** 2, 3)
+    assert res_F.shape == (2 ** 2, 3)
 
     # Check that they agree up to numeric tolerance
     assert np.allclose(res_F, res_A, atol=tol, rtol=0)
