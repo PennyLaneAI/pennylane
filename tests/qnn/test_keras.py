@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+
 KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
