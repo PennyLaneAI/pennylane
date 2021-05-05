@@ -516,23 +516,6 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
-        # pylint: disable=protected-access
-        obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
-        ops_not_supported = any(
-            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
-            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
-            for op in self.qtape.operations
-        )
-
-        # expand out the tape, if nested tapes are present, any operations are not supported on the
-        # device, or multiple observables are measured on the same wire
-        if ops_not_supported or obs_on_same_wire:
-            self.qtape = self.qtape.expand(
-                depth=self.max_expansion,
-                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-                and self.device.supports_operation(obj.name),
-            )
-
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
