@@ -2,6 +2,60 @@
 
 <h3>New features since last release</h3>
 
+* Added functionality for constructing and manipulating the Pauli group
+  [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
+  The function `pennylane.grouping.pauli_group` provides a generator to
+  easily loop over the group, or construct and store it in its entirety.
+  For example, we can construct the 3-qubit Pauli group like so:
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group
+  >>> pauli_group_1_qubit = list(pauli_group(1))
+  >>> pauli_group_1_qubit
+  [Identity(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0])]
+  ```
+
+  We can multiply together its members at the level of Pauli words
+  using the `pauli_mult` and `pauli_multi_with_phase` functions.
+  This can be done on arbitrarily-labeled wires as well, by defining a wire map.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group, pauli_mult
+  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  >>> pg = list(pauli_group(3, wire_map=wire_map))
+  >>> pg[3]
+  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pg[55]
+  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  ```
+
+  Functions for conversion of Pauli observables to strings (and back),
+  are included.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
+  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
+  'YYZ'
+  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
+  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+  ```
+
+  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
+  also supported.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_matrix
+  >>> wire_map = {'a' : 0, 'b' : 1}
+  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+  array([[ 1.,  0.,  0.,  0.],
+         [ 0., -1.,  0., -0.],
+         [ 0.,  0.,  1.,  0.],
+         [ 0., -0.,  0., -1.]])
+  ```
+
 * TBD: Add `qml.qaoa.cycle` (when structure is finalised)
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
