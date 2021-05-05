@@ -35,7 +35,10 @@
   (0, 1)
   ```
 
-* PennyLane NumPy now includes the [random module's](https://numpy.org/doc/stable/reference/random/index.html?highlight=random#module-numpy.random) Generator objects, the recommended way of random number generation.  Now you should generate random numbers using the following syntax to avoid setting a global seed.
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
 
 ```python
 from pennylane import numpy as np
