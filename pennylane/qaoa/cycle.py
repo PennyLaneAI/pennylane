@@ -308,49 +308,6 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def _collect_duplicates(
-    coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
-) -> Tuple[List[float], List[qml.operation.Observable]]:
-    """Collects duplicate observables together into one observable.
-
-    Args:
-        coeffs (Iterable[float]): coeffients of the input Hamiltonian
-        ops (Iterable[qml.operation.Observable]): observables of the input Hamiltonian
-
-    Returns:
-        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
-            observables without any duplicates
-    """
-    # Create a new list of coefficients and operations to add to without duplicates present
-    reduced_coeffs, reduced_ops = [], []
-
-    for coeff, op in zip(coeffs, ops):
-
-        # We now loop through coefficients and operations from the input lists. The following checks
-        # if an operation is already present in reduced_ops. If so, it just adds to the
-        # corresponding coefficient
-        included = False
-        for i, op_red in enumerate(reduced_ops):
-            if type(op) == type(op_red) and op.wires == op_red.wires:
-                reduced_coeffs[i] += coeff
-                included = True
-
-        # If the operation is not already present in reduced_ops, we add to the reduces lists
-        if not included:
-            reduced_coeffs.append(coeff)
-            reduced_ops.append(op)
-
-    reduced_coeffs_no_zeros = []
-    reduced_ops_no_zeros = []
-
-    for coeff, op in zip(reduced_coeffs, reduced_ops):
-        if coeff != 0:
-            reduced_coeffs_no_zeros.append(coeff)
-            reduced_ops_no_zeros.append(op)
-
-    return reduced_coeffs_no_zeros, reduced_ops_no_zeros
-
-
 def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
@@ -435,6 +392,7 @@ def _inner_net_flow_constraint_hamiltonian(
         ops.append(qml.PauliZ(wires))
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
-    coeffs, ops = _collect_duplicates(coeffs, ops)
+    H = qml.Hamiltonian(coeffs, ops)
+    H.simplify()
 
-    return qml.Hamiltonian(coeffs, ops)
+    return H
