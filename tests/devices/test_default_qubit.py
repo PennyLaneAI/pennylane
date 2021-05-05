@@ -1882,6 +1882,7 @@ class TestWiresIntegration:
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
 
+
 class TestGetSlice:
     """Tests for the _get_slice function."""
 
