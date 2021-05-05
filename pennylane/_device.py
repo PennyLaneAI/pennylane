@@ -20,6 +20,7 @@ from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 
 import numpy as np
+from functools import lru_cache
 
 import pennylane as qml
 from pennylane.operation import (
@@ -134,7 +135,6 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
-        self._cached_wires = {}
         self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
@@ -332,6 +332,7 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
+    @lru_cache
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 
@@ -341,9 +342,6 @@ class Device(abc.ABC):
         Returns:
             Wires: wires with new labels
         """
-        if wires in self._cached_wires:
-            return self._cached_wires[wires]
-
         try:
             mapped_wires = wires.map(self.wire_map)
         except WireError as e:
@@ -353,7 +351,6 @@ class Device(abc.ABC):
                 )
             ) from e
 
-        self._cached_wires[wires] = mapped_wires
         return mapped_wires
 
     @classmethod

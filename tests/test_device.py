@@ -487,13 +487,22 @@ class TestInternalFunctions:
 
     @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
     def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
-        """Test that mapped wires are stored internally after being mapped for
-        a device."""
+        """Test that multiple calls to map_wires will use caching."""
         dev = mock_device(dev_wires)
-        assert dev._cached_wires == {}
+        original_hits = dev.map_wires.cache_info().hits
+        original_misses = dev.map_wires.cache_info().misses
 
+        # The first call is computed: it's a miss as it didn't come from the cache
         dev.map_wires(wires_to_map)
-        assert dev._cached_wires == {wires_to_map: res}
+
+        # The number of misses increased
+        assert dev.map_wires.cache_info().misses > original_misses
+
+        # The second call comes from the cache: it's a hit
+        dev.map_wires(wires_to_map)
+
+        # The number of hits increased
+        assert dev.map_wires.cache_info().hits > original_hits
 
 
 class TestClassmethods:
