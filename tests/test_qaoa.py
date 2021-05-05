@@ -15,13 +15,23 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
+import itertools
 import numpy as np
 import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, loss_hamiltonian
+from pennylane.qaoa.cycle import (
+    edges_to_wires,
+    wires_to_edges,
+    loss_hamiltonian,
+    cycle_mixer,
+    _partial_cycle_mixer,
+)
+from scipy.linalg import expm
+from scipy.sparse import csc_matrix, kron
+
 
 #####################################################
 
@@ -39,6 +49,40 @@ def decompose_hamiltonian(hamiltonian):
     wires = [i.wires for i in hamiltonian.ops]
 
     return [coeffs, ops, wires]
+
+
+def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
+    r"""Calculates the matrix representation of an input Hamiltonian in the standard basis.
+
+    Args:
+        hamiltonian (qml.Hamiltonian): the input Hamiltonian
+        n_wires (int): the total number of wires
+
+    Returns:
+        csc_matrix: a sparse matrix representation
+    """
+    ops_matrices = []
+
+    for op in hamiltonian.ops:
+        op_wires = np.array(op.wires.tolist())
+        op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
+        op_matrices = []
+
+        for wire in range(n_wires):
+            loc = np.argwhere(op_wires == wire).flatten()
+            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix
+            mat = csc_matrix(mat)
+            op_matrices.append(mat)
+
+        op_matrix = op_matrices.pop(0)
+
+        for mat in op_matrices:
+            op_matrix = kron(op_matrix, mat)
+
+        ops_matrices.append(op_matrix)
+
+    mat = sum(coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices))
+    return csc_matrix(mat)
 
 
 class TestMixerHamiltonians:
@@ -695,6 +739,142 @@ class TestCycles:
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
+
+    def test_partial_cycle_mixer_complete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(10),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(10),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25, 0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_partial_cycle_mixer_incomplete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        g.remove_edge(2, 1)  # remove an egde to make graph incomplete
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(9),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(9),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_cycle_mixer(self):
+        """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
+        n_nodes = 3
+        g = nx.complete_graph(n_nodes).to_directed()
+        m = wires_to_edges(g)
+        n_wires = len(g.edges)
+
+        # Find Hamiltonian and its matrix representation
+        h = cycle_mixer(g)
+        h_matrix = np.real_if_close(matrix(h, n_wires).toarray())
+
+        # Decide which bitstrings are valid and which are invalid
+        valid_bitstrings_indx = []
+        invalid_bitstrings_indx = []
+
+        for indx, bitstring in enumerate(itertools.product([0, 1], repeat=n_wires)):
+            wires = [i for i, bit in enumerate(bitstring) if bit == 1]
+            edges = [m[wire] for wire in wires]
+
+            flows = [0 for i in range(n_nodes)]
+
+            for start, end in edges:
+                flows[start] += 1
+                flows[end] -= 1
+
+            # A bitstring is valid if the net flow is zero and we aren't the empty set or the set of all
+            # edges. Note that the max out-flow constraint is not imposed, which means we can pass
+            # through nodes more than once
+            if sum(np.abs(flows)) == 0 and 0 < len(edges) < n_wires:
+                valid_bitstrings_indx.append(indx)
+            else:
+                invalid_bitstrings_indx.append(indx)
+
+        # Check that valid bitstrings map to a subset of the valid bitstrings
+        for indx in valid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(valid_bitstrings_indx)
+
+        # Check that invalid bitstrings map to a subset of the invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+        # Now consider a unitary generated by the Hamiltonian
+        h_matrix_e = expm(1j * h_matrix)
+
+        # We expect non-zero transitions among the set of valid bitstrings, and no transitions outside
+        for indx in valid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = np.argwhere(column != 0).flatten().tolist()
+            assert destination_indxs == valid_bitstrings_indx
+
+        # Check that invalid bitstrings transition within the set of invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten().tolist())
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+    def test_matrix(self):
+        """Test that the matrix function works as expected on a fixed example"""
+        g = nx.lollipop_graph(3, 1)
+        h = qml.qaoa.bit_flip_mixer(g, 0)
+
+        mat = matrix(h, 4)
+        mat_expected = np.array(
+            [
+                [0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        assert np.allclose(mat.toarray(), mat_expected)
 
     def test_edges_to_wires_directed(self):
         """Test that edges_to_wires returns the correct mapping on a directed graph"""

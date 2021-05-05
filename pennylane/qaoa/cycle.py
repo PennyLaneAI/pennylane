@@ -79,6 +79,114 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
     return {i: edge for i, edge in enumerate(graph.edges)}
 
 
+def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
+    r"""Calculates the cycle-mixer Hamiltonian.
+
+    Following methods outlined `here <https://arxiv.org/pdf/1709.03489.pdf>`__, the
+    cycle-mixer Hamiltonian preserves the set of valid cycles:
+
+    .. math::
+        \frac{1}{4}\sum_{(i, j)\in E}
+        \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
+        \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
+        \right)
+
+    where :math:`E` are the edges of the directed graph. A valid cycle is defined as a subset of
+    edges in :math:`E` such that all of the graph's nodes :math:`V` have zero net flow (see the
+    :func:`~.net_flow_constraint` function).
+
+    **Example**
+
+    >>> import networkx as nx
+    >>> g = nx.complete_graph(3).to_directed()
+    >>> h_m = cycle_mixer(g)
+    >>> print(h_m)
+      (-0.25) [X0 Y1 Y5]
+    + (-0.25) [X1 Y0 Y3]
+    + (-0.25) [X2 Y3 Y4]
+    + (-0.25) [X3 Y2 Y1]
+    + (-0.25) [X4 Y5 Y2]
+    + (-0.25) [X5 Y4 Y0]
+    + (0.25) [X0 X1 X5]
+    + (0.25) [Y0 Y1 X5]
+    + (0.25) [Y0 X1 Y5]
+    + (0.25) [X1 X0 X3]
+    + (0.25) [Y1 Y0 X3]
+    + (0.25) [Y1 X0 Y3]
+    + (0.25) [X2 X3 X4]
+    + (0.25) [Y2 Y3 X4]
+    + (0.25) [Y2 X3 Y4]
+    + (0.25) [X3 X2 X1]
+    + (0.25) [Y3 Y2 X1]
+    + (0.25) [Y3 X2 Y1]
+    + (0.25) [X4 X5 X2]
+    + (0.25) [Y4 Y5 X2]
+    + (0.25) [Y4 X5 Y2]
+    + (0.25) [X5 X4 X0]
+    + (0.25) [Y5 Y4 X0]
+    + (0.25) [Y5 X4 Y0]
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+
+    Returns:
+        qml.Hamiltonian: the cycle-mixer Hamiltonian
+    """
+    hamiltonian = qml.Hamiltonian([], [])
+
+    for edge in graph.edges:
+        hamiltonian += _partial_cycle_mixer(graph, edge)
+
+    return hamiltonian
+
+
+def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> qml.Hamiltonian:
+    r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
+
+    For an edge :math:`(i, j)`, this function returns:
+
+    .. math::
+
+        \sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}\left[
+        X_{ij}X_{ik}X_{kj} + Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+        edge (tuple): a fixed edge
+
+    Returns:
+        qml.Hamiltonian: the partial cycle-mixer Hamiltonian
+    """
+    coeffs = []
+    ops = []
+
+    edges_to_qubits = edges_to_wires(graph)
+
+    for node in graph.nodes:
+        out_edge = (edge[0], node)
+        in_edge = (node, edge[1])
+        if node not in edge and out_edge in graph.edges and in_edge in graph.edges:
+            wire = edges_to_qubits[edge]
+            out_wire = edges_to_qubits[out_edge]
+            in_wire = edges_to_qubits[in_edge]
+
+            t = qml.PauliX(wires=wire) @ qml.PauliX(wires=out_wire) @ qml.PauliX(wires=in_wire)
+            ops.append(t)
+
+            t = qml.PauliY(wires=wire) @ qml.PauliY(wires=out_wire) @ qml.PauliX(wires=in_wire)
+            ops.append(t)
+
+            t = qml.PauliY(wires=wire) @ qml.PauliX(wires=out_wire) @ qml.PauliY(wires=in_wire)
+            ops.append(t)
+
+            t = qml.PauliX(wires=wire) @ qml.PauliY(wires=out_wire) @ qml.PauliY(wires=in_wire)
+            ops.append(t)
+
+            coeffs.extend([0.25, 0.25, 0.25, -0.25])
+
+    return qml.Hamiltonian(coeffs, ops)
+
+
 def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
