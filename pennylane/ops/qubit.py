@@ -1798,6 +1798,21 @@ class SingleExcitationMinus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
@@ -1840,6 +1855,21 @@ class SingleExcitationPlus(Operation):
         e = cmath.exp(1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(theta / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(theta / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
 
     def adjoint(self):
         (phi,) = self.parameters
