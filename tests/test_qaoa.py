@@ -769,7 +769,7 @@ class TestCycles:
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
         g = nx.complete_graph(4).to_directed()
-        g.remove_edge(2, 1) # remove an egde to make graph incomplete
+        g.remove_edge(2, 1)  # remove an egde to make graph incomplete
         edge = (0, 1)
 
         h = _partial_cycle_mixer(g, edge)
@@ -785,7 +785,6 @@ class TestCycles:
         assert h.coeffs == coeffs_expected
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
-
 
     def test_cycle_mixer(self):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
