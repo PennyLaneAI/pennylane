@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ Unit tests for the :mod:`grouping` utility functions in ``grouping/utils.py``.
 """
 import pytest
 import numpy as np
+import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
@@ -24,6 +25,10 @@ from pennylane.grouping.utils import (
     are_identical_pauli_words,
     pauli_to_binary,
     binary_to_pauli,
+    pauli_word_to_string,
+    string_to_pauli_word,
+    pauli_word_to_matrix,
+    is_commuting,
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
@@ -294,3 +299,178 @@ class TestGroupingUtils:
 
         with pytest.raises(ValueError, match="Expected a binary array, instead got"):
             qwc_complement_adj_matrix(not_binary_observables)
+
+    @pytest.mark.parametrize(
+        "pauli_word,wire_map,expected_string",
+        [
+            (PauliX(0), {0: 0}, "X"),
+            (Identity(0), {0: 0}, "I"),
+            (PauliZ(0) @ PauliY(1), {0: 0, 1: 1}, "ZY"),
+            (PauliX(1), {0: 0, 1: 1}, "IX"),
+            (PauliX(1), None, "X"),
+            (PauliX(1), {1: 0, 0: 1}, "XI"),
+            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
+            (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
+            (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+        ],
+    )
+    def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
+        """Test that Pauli words are correctly converted into strings."""
+        obtained_string = pauli_word_to_string(pauli_word, wire_map)
+        assert obtained_string == expected_string
+
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_pauli_word_to_string_invalid_input(self, non_pauli_word):
+        """Ensure invalid inputs are handled properly when converting Pauli words to strings."""
+        with pytest.raises(TypeError):
+            pauli_word_to_string(non_pauli_word)
+
+    @pytest.mark.parametrize(
+        "pauli_string,wire_map,expected_pauli",
+        [
+            ("I", {"a": 0}, Identity("a")),
+            ("X", {0: 0}, PauliX(0)),
+            ("XI", {1: 0, 0: 1}, PauliX(1)),
+            ("II", {0: 0, 1: 1}, Identity(0)),
+            ("ZYIZ", {"a": 0, "b": 1, "c": 2, "d": 3}, PauliZ("a") @ PauliY("b") @ PauliZ("d")),
+            ("ZYZ", None, PauliZ(0) @ PauliY(1) @ PauliZ(2)),
+            ("ZIYX", {"d": 0, "c": 1, "b": 2, "a": 3}, PauliZ("d") @ PauliY("b") @ PauliX("a")),
+        ],
+    )
+    def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
+        """Test that valid strings are correctly converted into Pauli words."""
+        obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
+        assert obtained_pauli.compare(expected_pauli)
+
+    @pytest.mark.parametrize(
+        "non_pauli_string,wire_map,error_type,error_message",
+        [
+            (Identity("a"), None, TypeError, "must be string"),
+            ("XAYZ", None, ValueError, "Invalid characters encountered"),
+            ("XYYZ", {0: 0, 1: 1, 2: 2}, ValueError, "must have the same length"),
+        ],
+    )
+    def test_string_to_pauli_word_invalid_input(
+        self, non_pauli_string, wire_map, error_type, error_message
+    ):
+        """Ensure invalid inputs are handled properly when converting strings to Pauli words."""
+        with pytest.raises(error_type, match=error_message):
+            string_to_pauli_word(non_pauli_string, wire_map)
+
+    @pytest.mark.parametrize(
+        "pauli_word,wire_map,expected_matrix",
+        [
+            (PauliX(0), {0: 0}, PauliX.matrix),
+            (Identity(0), {0: 0}, np.eye(2)),
+            (
+                PauliZ(0) @ PauliY(1),
+                {0: 0, 1: 1},
+                np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
+            ),
+            (
+                PauliY(1) @ PauliZ(0),
+                {0: 0, 1: 1},
+                np.array([[0, -1j, 0, 0], [1j, 0, 0, 0], [0, 0, 0, 1j], [0, 0, -1j, 0]]),
+            ),
+            (
+                PauliY(1) @ PauliZ(0),
+                {1: 0, 0: 1},
+                np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
+            ),
+            (Identity(0), {0: 0, 1: 1}, np.eye(4)),
+            (PauliX(2), None, PauliX.matrix),
+            (
+                PauliX(2),
+                {0: 0, 1: 1, 2: 2},
+                np.array(
+                    [
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 1],
+                        [0, 0, 0, 0, 0, 0, 1, 0],
+                    ]
+                ),
+            ),
+            (
+                PauliZ("a") @ PauliX(2),
+                {"a": 0, 1: 1, 2: 2},
+                np.array(
+                    [
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, -1, 0, 0],
+                        [0, 0, 0, 0, -1, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, -1],
+                        [0, 0, 0, 0, 0, 0, -1, 0],
+                    ]
+                ),
+            ),
+            (
+                PauliX(2) @ PauliZ("a"),
+                {"a": 0, 1: 1, 2: 2},
+                np.array(
+                    [
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, -1, 0, 0],
+                        [0, 0, 0, 0, -1, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, -1],
+                        [0, 0, 0, 0, 0, 0, -1, 0],
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_pauli_word_to_matrix(self, pauli_word, wire_map, expected_matrix):
+        """Test that Pauli words are correctly converted into matrices."""
+        obtained_matrix = pauli_word_to_matrix(pauli_word, wire_map)
+        assert np.allclose(obtained_matrix, expected_matrix)
+
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_pauli_word_to_matrix_invalid_input(self, non_pauli_word):
+        """Ensure invalid inputs are handled properly when converting Pauli words to matrices."""
+        with pytest.raises(TypeError):
+            pauli_word_to_matrix(non_pauli_word)
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2,wire_map,commute_status",
+        [
+            (Identity(0), PauliZ(0), {0: 0}, True),
+            (PauliY(0), PauliZ(0), {0: 0}, False),
+            (PauliX(0), PauliX(1), {0: 0, 1: 1}, True),
+            (PauliY("x"), PauliX("y"), None, True),
+            (
+                PauliZ("a") @ PauliY("b") @ PauliZ("d"),
+                PauliX("a") @ PauliZ("c") @ PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                True,
+            ),
+            (
+                PauliX("a") @ PauliY("b") @ PauliZ("d"),
+                PauliX("a") @ PauliZ("c") @ PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                False,
+            ),
+        ],
+    )
+    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+        """Test that (non)-commuting Pauli words are correctly identified."""
+        do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        assert do_they_commute == commute_status
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2",
+        [(non_pauli_words[0], PauliX(0) @ PauliY(2)), (PauliX(0) @ PauliY(2), non_pauli_words[0])],
+    )
+    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
+        """Ensure invalid inputs are handled properly when determining commutativity."""
+        with pytest.raises(TypeError):
+            is_commuting(pauli_word_1, pauli_word_2)

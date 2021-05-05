@@ -21,17 +21,28 @@ with Keras and PyTorch.
     :doc:`Torch <demos/tutorial_qnn_module_torch>` tutorials for further details.
 
 
+.. rubric:: Classes
+
+.. autosummary::
+    :toctree: api
+    :nosignatures:
+    :template: autosummary/class_no_inherited.rst
+
+    ~KerasLayer
+    ~TorchLayer
+
+
+.. rubric:: Modules
+
 .. autosummary::
     :toctree: api
     :nosignatures:
 
-    ~KerasLayer
-    ~TorchLayer
     ~cost
 """
 import importlib
 
-import pennylane.qnn.cost
+from . import cost
 
 class_map = {"KerasLayer": "keras", "TorchLayer": "torch"}
 mods = ("keras", "torch")
