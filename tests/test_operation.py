@@ -1383,7 +1383,7 @@ class TestOperationDerivative:
         assert np.allclose(derivative, expected_derivative)
 
     def test_second_derivative(self):
-        """ Test if ``operation_derivative`` correctly returns second derivative of RX."""
+        """Test if ``operation_derivative`` correctly returns second derivative of RX."""
 
         p = 0.3
         op = qml.RX(p, wires=0)
