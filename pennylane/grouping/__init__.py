@@ -30,7 +30,12 @@ from .utils import (
     are_identical_pauli_words,
     pauli_to_binary,
     binary_to_pauli,
+    pauli_word_to_string,
+    string_to_pauli_word,
+    pauli_word_to_matrix,
+    is_commuting,
     is_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
+from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase
