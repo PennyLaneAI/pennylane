@@ -94,6 +94,7 @@
   [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
   `Generator` objects, the recommended way of random number generation. This allows for
   random number generation using a local, rather than global seed.
+  [(#1267)](https://github.com/PennyLaneAI/pennylane/pull/1267)
 
 ```python
 from pennylane import numpy as np
@@ -102,6 +103,9 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
+
+* The `qml.operation.operation_derivative` function will compute the derivative of a gate to an arbitrary provided order.
+
 
 <h3>Improvements</h3>
 
