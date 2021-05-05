@@ -1167,7 +1167,6 @@ class TestCycles:
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
         expected_ops = []
-
         expected_coeffs = []
 
         assert expected_coeffs == h.coeffs

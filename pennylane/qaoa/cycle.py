@@ -352,31 +352,30 @@ def _collect_duplicates(
 
 
 def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
-    r"""Calculates the Hamiltonian which imposes the constraint that each node has
-    an outflow of at most one.
+    r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
+    Hamiltonian for the maximum-weighted cycle problem.
 
-    The out flow constraint is, for all :math:`i`:
+    Given a subset of edges in a directed graph, the out-flow constraint imposes that at most one
+    edge can leave any given node, i.e., for all :math:`i`:
 
     .. math:: \sum_{j,(i,j)\in E}x_{ij} \leq 1,
 
     where :math:`E` are the edges of the graph and :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)`.
 
-    The corresponding qubit Hamiltonian is:
+    A set of edges satisfies the out-flow constraint whenever the following Hamiltonian is minimized:
 
     .. math::
 
-        \frac{1}{4}\sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
         - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
         \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right)
 
 
-    where :math:`V` are the graph vertices and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
-    upon the qubit specified by the pair :math:`(i, j)`. Note that this function omits the
-    :math:`1/4` constant factor.
-
-    This Hamiltonian is minimized by selecting edges such that each node has an outflow of at most one.
-
+    where :math:`V` are the graph vertices, :math:`d_{i}^{\rm out}` is the outdegree of node
+    :math:`i`, and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
+    upon the qubit specified by the pair :math:`(i, j)`. Mapping from edges to wires can be achieved
+    using :func:`~.edges_to_wires`.
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
 
@@ -400,7 +399,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
 def _inner_out_flow_constraint_hamiltonian(
     graph: nx.DiGraph, node: int
 ) -> Tuple[List[float], List[qml.operation.Observable]]:
-    r"""Calculates the expanded inner portion of the Hamiltonian in :func:`out_flow_constraint`.
+    r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
 
     For a given :math:`i`, this function returns:
 
