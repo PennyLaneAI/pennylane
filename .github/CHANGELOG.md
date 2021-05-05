@@ -107,6 +107,9 @@
 
 <h3>Documentation</h3>
 
+* Remove unsupported `None` option from the `qml.QNode` docstrings.
+  [(#1271)](https://github.com/PennyLaneAI/pennylane/pull/1271)
+
 * Updated the docstring of `qml.PolyXP` to reference the new location of internal
   usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
 
