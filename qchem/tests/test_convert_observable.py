@@ -332,7 +332,7 @@ def test_exception_convert_observable():
         + QubitOperator("Y0 X1", 2)
     )
 
-    with pytest.raises(TypeError, match="All coefficients entering the QubitOperator must be real"):
+    with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
         qchem.convert_observable(qubit_op)
 
 
