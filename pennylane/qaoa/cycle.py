@@ -18,7 +18,6 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 from typing import Dict, Tuple
 import networkx as nx
 import numpy as np
-from scipy.sparse import csc_matrix, kron
 import pennylane as qml
 
 
@@ -186,40 +185,6 @@ def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> qml.Hamiltonian:
             coeffs.extend([0.25, 0.25, 0.25, -0.25])
 
     return qml.Hamiltonian(coeffs, ops)
-
-
-def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
-    r"""Calculates the matrix representation of an input Hamiltonian in the standard basis.
-
-    Args:
-        hamiltonian (qml.Hamiltonian): the input Hamiltonian
-        n_wires (int): the total number of wires
-
-    Returns:
-        csc_matrix: a sparse matrix representation
-    """
-    ops_matrices = []
-
-    for op in hamiltonian.ops:
-        op_wires = np.array(op.wires.tolist())
-        op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
-        op_matrices = []
-
-        for wire in range(n_wires):
-            loc = np.argwhere(op_wires == wire).flatten()
-            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix
-            mat = csc_matrix(mat)
-            op_matrices.append(mat)
-
-        op_matrix = op_matrices.pop(0)
-
-        for mat in op_matrices:
-            op_matrix = kron(op_matrix, mat)
-
-        ops_matrices.append(op_matrix)
-
-    mat = sum(coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices))
-    return csc_matrix(mat)
 
 
 def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
