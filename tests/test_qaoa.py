@@ -27,7 +27,6 @@ from pennylane.qaoa.cycle import (
     wires_to_edges,
     loss_hamiltonian,
     _square_hamiltonian_terms,
-    _collect_duplicates,
     cycle_mixer,
     _partial_cycle_mixer,
     out_flow_constraint,
@@ -1065,80 +1064,6 @@ class TestCycles:
             ]
         )
 
-    def test_collect_duplicates(self):
-        """Test if the _collect_duplicates function returns the expected result on a fixed
-        example"""
-        coeffs = [
-            1,
-            -1,
-            -1,
-            1,
-            -1,
-            1,
-            1,
-            -1,
-            -1,
-            1,
-            1,
-            -1,
-            1,
-            -1,
-            -1,
-            1,
-        ]
-        ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0),
-            qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(0),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.Identity(0),
-        ]
-
-        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
-
-        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
-        expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-        ]
-
-        assert expected_coeffs == reduced_coeffs
-        assert all(
-            [
-                op1.name == op2.name and op1.wires == op2.wires
-                for op1, op2 in zip(expected_ops, reduced_ops)
-            ]
-        )
-
-    def test_duplicates_remove_zeros(self):
-        """Test if the _collect_duplicates function removes terms with a zero coefficient"""
-        coeffs = [1, -1, 1]
-        ops = [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(1)]
-
-        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
-
-        assert reduced_coeffs == [1]
-        assert len(reduced_ops) == 1
-        assert reduced_ops[0].name == "PauliZ"
-        assert reduced_ops[0].wires.tolist() == [1]
-
-
     def test_inner_out_flow_constraint_hamiltonian(self):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result on a
         manually-calculated example of a 3-node complete digraph relative to the 0 node"""
@@ -1147,17 +1072,16 @@ class TestCycles:
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
         expected_ops = [
-        qml.Identity(0),
-        qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.PauliZ(0),
-        qml.PauliZ(1)
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
         ]
 
         expected_coeffs = [2, 2, -2, -2]
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-
 
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
@@ -1166,12 +1090,11 @@ class TestCycles:
         g.remove_edge(0, 1)
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
-        expected_ops = []
-        expected_coeffs = []
+        expected_ops = [qml.PauliZ(wires=[0])]
+        expected_coeffs = [0]
 
         assert expected_coeffs == h.coeffs
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-
 
     def test_out_flow_constraint(self):
         """Test the out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
@@ -1203,7 +1126,7 @@ class TestCycles:
             edges = tuple(m[w] for w in wires_)
 
             # find the number of edges leaving each node
-            num_edges_leaving_node = {node:0 for node in g.nodes }
+            num_edges_leaving_node = {node: 0 for node in g.nodes}
             for e in edges:
                 num_edges_leaving_node[e[0]] += 1
 
@@ -1213,10 +1136,9 @@ class TestCycles:
             elif max(num_edges_leaving_node.values()) <= 1:
                 assert energy == min(energies_bitstrings)[0]
 
-
     def test_out_flow_constraint_undirected_raises_error(self):
         """Test `out_flow_constraint` raises ValueError if input graph is not directed """
-        g = nx.complete_graph(3) # undirected graph
+        g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
             h = out_flow_constraint(g)
