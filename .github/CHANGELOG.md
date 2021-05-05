@@ -105,7 +105,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
 
 * The `qml.operation.operation_derivative` function will compute the derivative of a gate to an arbitrary provided order.
-
+[(#1279)](https://github.com/PennyLaneAI/pennylane/pull/1279/files)
 
 <h3>Improvements</h3>
 
