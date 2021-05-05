@@ -90,6 +90,19 @@
   (0, 1)
   ```
 
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
 <h3>Improvements</h3>
 
 * Added custom gate application for Toffoli in `default.qubit`.
@@ -157,7 +170,7 @@ Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal 
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ryan Hill,
-Josh Izaac, Maria Schuld, Antal Száva.
+Josh Izaac, Christina Lee, Maria Schuld, Antal Száva.
 
 # Release 0.15.0
 
