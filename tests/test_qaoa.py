@@ -22,7 +22,19 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, _square_hamiltonian_terms, _collect_duplicates, out_flow_constraint, _inner_out_flow_constraint_hamiltonian
+from pennylane.qaoa.cycle import (
+    edges_to_wires,
+    wires_to_edges,
+    loss_hamiltonian,
+    _square_hamiltonian_terms,
+    _collect_duplicates,
+    cycle_mixer,
+    _partial_cycle_mixer,
+    out_flow_constraint,
+    _inner_out_flow_constraint_hamiltonian,
+)
+from scipy.linalg import expm
+from scipy.sparse import csc_matrix, kron
 
 
 #####################################################
@@ -41,6 +53,40 @@ def decompose_hamiltonian(hamiltonian):
     wires = [i.wires for i in hamiltonian.ops]
 
     return [coeffs, ops, wires]
+
+
+def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
+    r"""Calculates the matrix representation of an input Hamiltonian in the standard basis.
+
+    Args:
+        hamiltonian (qml.Hamiltonian): the input Hamiltonian
+        n_wires (int): the total number of wires
+
+    Returns:
+        csc_matrix: a sparse matrix representation
+    """
+    ops_matrices = []
+
+    for op in hamiltonian.ops:
+        op_wires = np.array(op.wires.tolist())
+        op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
+        op_matrices = []
+
+        for wire in range(n_wires):
+            loc = np.argwhere(op_wires == wire).flatten()
+            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix
+            mat = csc_matrix(mat)
+            op_matrices.append(mat)
+
+        op_matrix = op_matrices.pop(0)
+
+        for mat in op_matrices:
+            op_matrix = kron(op_matrix, mat)
+
+        ops_matrices.append(op_matrix)
+
+    mat = sum(coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices))
+    return csc_matrix(mat)
 
 
 class TestMixerHamiltonians:
@@ -682,23 +728,289 @@ class TestIntegration:
 
 
 class TestCycles:
-
-    """Test `cycles` functions are behaving correctly"""
+    """Tests that ``cycle`` module functions are behaving correctly"""
 
     def test_edges_to_wires(self):
-        """Test that map_edges_to_wires returns the correct mapping"""
+        """Test that edges_to_wires returns the correct mapping"""
         g = nx.lollipop_graph(4, 1)
         r = edges_to_wires(g)
 
         assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
 
     def test_wires_to_edges(self):
-        """Test that map_wires_to_edges returns the correct mapping"""
+        """Test that wires_to_edges returns the correct mapping"""
         g = nx.lollipop_graph(4, 1)
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
+    def test_partial_cycle_mixer_complete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(10),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(10),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25, 0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_partial_cycle_mixer_incomplete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        g.remove_edge(2, 1)  # remove an egde to make graph incomplete
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(9),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(9),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_cycle_mixer(self):
+        """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
+        n_nodes = 3
+        g = nx.complete_graph(n_nodes).to_directed()
+        m = wires_to_edges(g)
+        n_wires = len(g.edges)
+
+        # Find Hamiltonian and its matrix representation
+        h = cycle_mixer(g)
+        h_matrix = np.real_if_close(matrix(h, n_wires).toarray())
+
+        # Decide which bitstrings are valid and which are invalid
+        valid_bitstrings_indx = []
+        invalid_bitstrings_indx = []
+
+        for indx, bitstring in enumerate(itertools.product([0, 1], repeat=n_wires)):
+            wires = [i for i, bit in enumerate(bitstring) if bit == 1]
+            edges = [m[wire] for wire in wires]
+
+            flows = [0 for i in range(n_nodes)]
+
+            for start, end in edges:
+                flows[start] += 1
+                flows[end] -= 1
+
+            # A bitstring is valid if the net flow is zero and we aren't the empty set or the set of all
+            # edges. Note that the max out-flow constraint is not imposed, which means we can pass
+            # through nodes more than once
+            if sum(np.abs(flows)) == 0 and 0 < len(edges) < n_wires:
+                valid_bitstrings_indx.append(indx)
+            else:
+                invalid_bitstrings_indx.append(indx)
+
+        # Check that valid bitstrings map to a subset of the valid bitstrings
+        for indx in valid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(valid_bitstrings_indx)
+
+        # Check that invalid bitstrings map to a subset of the invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+        # Now consider a unitary generated by the Hamiltonian
+        h_matrix_e = expm(1j * h_matrix)
+
+        # We expect non-zero transitions among the set of valid bitstrings, and no transitions outside
+        for indx in valid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = np.argwhere(column != 0).flatten().tolist()
+            assert destination_indxs == valid_bitstrings_indx
+
+        # Check that invalid bitstrings transition within the set of invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten().tolist())
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+    def test_matrix(self):
+        """Test that the matrix function works as expected on a fixed example"""
+        g = nx.lollipop_graph(3, 1)
+        h = qml.qaoa.bit_flip_mixer(g, 0)
+
+        mat = matrix(h, 4)
+        mat_expected = np.array(
+            [
+                [0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        assert np.allclose(mat.toarray(), mat_expected)
+
+    def test_edges_to_wires_directed(self):
+        """Test that edges_to_wires returns the correct mapping on a directed graph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        r = edges_to_wires(g)
+
+        assert r == {
+            (0, 1): 0,
+            (0, 2): 1,
+            (0, 3): 2,
+            (1, 0): 3,
+            (1, 2): 4,
+            (1, 3): 5,
+            (2, 0): 6,
+            (2, 1): 7,
+            (2, 3): 8,
+            (3, 0): 9,
+            (3, 1): 10,
+            (3, 2): 11,
+            (3, 4): 12,
+            (4, 3): 13,
+        }
+
+    def test_wires_to_edges_directed(self):
+        """Test that wires_to_edges returns the correct mapping on a directed graph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        r = wires_to_edges(g)
+
+        assert r == {
+            0: (0, 1),
+            1: (0, 2),
+            2: (0, 3),
+            3: (1, 0),
+            4: (1, 2),
+            5: (1, 3),
+            6: (2, 0),
+            7: (2, 1),
+            8: (2, 3),
+            9: (3, 0),
+            10: (3, 1),
+            11: (3, 2),
+            12: (3, 4),
+            13: (4, 3),
+        }
+
+    def test_loss_hamiltonian_complete(self):
+        """Test if the loss_hamiltonian function returns the expected result on a
+        manually-calculated example of a 3-node complete digraph"""
+        g = nx.complete_graph(3).to_directed()
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+        h = loss_hamiltonian(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+        ]
+        expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
+
+    def test_loss_hamiltonian_incomplete(self):
+        """Test if the loss_hamiltonian function returns the expected result on a
+        manually-calculated example of a 4-node incomplete digraph"""
+        g = nx.lollipop_graph(4, 1).to_directed()
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+        h = loss_hamiltonian(g)
+
+        expected_ops = [
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(2),
+            qml.PauliZ(3),
+            qml.PauliZ(4),
+            qml.PauliZ(5),
+            qml.PauliZ(6),
+            qml.PauliZ(7),
+            qml.PauliZ(8),
+            qml.PauliZ(9),
+            qml.PauliZ(10),
+            qml.PauliZ(11),
+            qml.PauliZ(12),
+            qml.PauliZ(13),
+        ]
+        expected_coeffs = [
+            np.log(0.5),
+            np.log(1),
+            np.log(1.5),
+            np.log(2),
+            np.log(2.5),
+            np.log(3),
+            np.log(3.5),
+            np.log(4),
+            np.log(4.5),
+            np.log(5),
+            np.log(5.5),
+            np.log(6),
+            np.log(6.5),
+            np.log(7),
+        ]
+
+        assert expected_coeffs == h.coeffs
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
+
+    def test_self_loop_raises_error(self):
+        """Test graphs with self loop raises ValueError"""
+        g = nx.complete_graph(3).to_directed()
+        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+        for k, v in edge_weight_data.items():
+            g[k[0]][k[1]]["weight"] = v
+
+        g.add_edge(1, 1)  # add self loop
+
+        with pytest.raises(ValueError, match="Graph contains self-loops"):
+            loss_hamiltonian(g)
+
+    def test_missing_edge_weight_data_raises_error(self):
+        """Test graphs with no edge weight data raises `KeyError`"""
+        g = nx.complete_graph(3).to_directed()
+
+        with pytest.raises(KeyError, match="does not contain weight data"):
+            loss_hamiltonian(g)
 
     def test_square_hamiltonian_terms(self):
         """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
@@ -707,52 +1019,112 @@ class TestCycles:
         ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
 
         expected_coeffs = [
-            1, -1, -1, 1,
-            -1, 1, 1, -1,
-            -1, 1, 1, -1,
-            1, -1, -1, 1,
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
         ]
         expected_ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
         ]
 
         squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
 
         assert squared_coeffs == expected_coeffs
-        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, squared_ops)])
-
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, squared_ops)
+            ]
+        )
 
     def test_collect_duplicates(self):
         """Test if the _collect_duplicates function returns the expected result on a fixed
         example"""
         coeffs = [
-            1, -1, -1, 1,
-            -1, 1, 1, -1,
-            -1, 1, 1, -1,
-            1, -1, -1, 1,
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
         ]
         ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0), qml.Identity(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(0), qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3), qml.PauliZ(0) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(3), qml.Identity(0),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
         ]
 
         reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
 
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
         expected_ops = [
-            qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
             qml.PauliZ(1) @ qml.PauliZ(3),
         ]
 
         assert expected_coeffs == reduced_coeffs
-        assert all([op1.name == op2.name and op1.wires == op2.wires for op1, op2 in zip(expected_ops, reduced_ops)])
-
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, reduced_ops)
+            ]
+        )
 
     def test_duplicates_remove_zeros(self):
         """Test if the _collect_duplicates function removes terms with a zero coefficient"""

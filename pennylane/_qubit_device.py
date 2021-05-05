@@ -187,6 +187,8 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
+        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
 
@@ -203,16 +205,18 @@ class QubitDevice(Device):
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
-                    results.append(r)
+                    results.append(r.T)
 
                 s1 = s2
 
-            results = qml.math.stack(results)
+            if not multiple_sampled_jobs:
+                # Can only stack single element outputs
+                results = qml.math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
 
-        if circuit.all_sampled or not circuit.is_sampled:
+        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
@@ -471,7 +475,7 @@ class QubitDevice(Device):
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements. Since no shots are specified, "
                 "a default of 1000 shots is used.",
-                DeprecationWarning,
+                UserWarning,
             )
 
         shots = self.shots or 1000

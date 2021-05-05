@@ -73,6 +73,7 @@ class JacobianTape(QuantumTape):
 
     The Jacobian is computed using finite difference:
 
+    >>> dev = qml.device('default.qubit', wires=[0, 'a'])
     >>> tape.jacobian(dev)
     [[-0.35846484 -0.46923704  0.        ]]
     >>> tape.jacobian(dev, params=[0.1, 0.1, 0.1])
@@ -82,7 +83,7 @@ class JacobianTape(QuantumTape):
     avoiding unnecessary calculations:
 
     >>> tape.trainable_params = {0} # set only the first parameter as free
-    >>> tape.set_parameters(0.56)
+    >>> tape.set_parameters([0.56])
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
@@ -683,6 +684,36 @@ class JacobianTape(QuantumTape):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Hessian.
             return np.zeros((len(params), len(params)), dtype=float)
+
+        # The parameter-shift Hessian implementation currently only supports
+        # the two-term parameter-shift rule. Raise an error for unsupported operations.
+        supported_ops = (
+            "RX",
+            "RY",
+            "RZ",
+            "Rot",
+            "PhaseShift",
+            "ControlledPhaseShift",
+            "MultiRZ",
+            "PauliRot",
+            "U1",
+            "U2",
+            "U3",
+            "SingleExcitationMinus",
+            "SingleExcitationPlus",
+            "DoubleExcitationMinus",
+            "DoubleExcitationPlus",
+        )
+
+        for idx, info in self._par_info.items():
+            op = info["op"]
+
+            if idx in self.trainable_params and op.name not in supported_ops:
+                raise ValueError(
+                    f"The operation {op.name} is currently not supported for the "
+                    f"parameter-shift Hessian.\nPlease decompose the operation in your "
+                    f"QNode by replacing it with '{op.__str__().replace('(', '.decomposition(')}'"
+                )
 
         # some gradient methods need the device or the device wires
         options["device"] = device
