@@ -331,7 +331,7 @@ def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     the outdegree and indegree, respectively, of node :math:`i` and :math:`Z_{ij}` is a qubit
     Pauli-Z matrix acting upon the wire specified by the pair :math:`(i, j)`. Mapping from edges to
     wires can be achieved using :func:`~.edges_to_wires`.
-    
+
     Args:
         graph (nx.DiGraph): the graph specifying possible edges
 
