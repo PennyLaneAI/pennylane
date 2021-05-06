@@ -1667,7 +1667,7 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wires)
 
 
-def operation_derivative(operation) -> np.ndarray:
+def operation_derivative(operation, order=1) -> np.ndarray:
     r"""Calculate the derivative of an operation.
 
     For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
@@ -1679,6 +1679,7 @@ def operation_derivative(operation) -> np.ndarray:
 
     Args:
         operation (.Operation): The operation to be differentiated.
+        order (Int): The number of times to differentiate the operation
 
     Returns:
         array: the derivative of the operation as a matrix in the standard basis
@@ -1706,4 +1707,7 @@ def operation_derivative(operation) -> np.ndarray:
         prefactor *= -1
         generator = generator.conj().T
 
-    return 1j * prefactor * generator @ operation.matrix
+    prefactor = (1j * prefactor) ** order
+    generator = np.linalg.matrix_power(generator, order)
+
+    return prefactor * generator @ operation.matrix

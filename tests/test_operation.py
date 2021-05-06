@@ -299,7 +299,8 @@ class TestOperationConstruction:
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with pytest.raises(
-            AssertionError, match="Gradient recipe must have one entry for each parameter"
+            AssertionError,
+            match="Gradient recipe must have one entry for each parameter",
         ):
             DummyOp(0.5, wires=[0, 1])
 
@@ -815,7 +816,10 @@ class TestTensor:
     herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
     tensor_obs = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
+        (
+            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+            [qml.PauliZ(0), qml.PauliZ(2)],
+        ),
         (
             qml.Identity(0)
             @ qml.PauliX(1)
@@ -845,7 +849,10 @@ class TestTensor:
             assert obs.wires == expected[idx].wires
 
     tensor_obs_pruning = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
+        (
+            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+        ),
         (
             qml.Identity(0)
             @ qml.PauliX(1)
@@ -879,7 +886,11 @@ class TestTensor:
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
-    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
+    (
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2),
+        True,
+    ),
     (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
@@ -893,7 +904,11 @@ equal_obs = [
 ]
 
 add_obs = [
-    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
+    (
+        qml.PauliZ(0) @ qml.Identity(1),
+        qml.PauliZ(0),
+        qml.Hamiltonian([2], [qml.PauliZ(0)]),
+    ),
     (
         qml.PauliZ(0),
         qml.PauliZ(0) @ qml.PauliX(1),
@@ -919,7 +934,11 @@ add_obs = [
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+    (
+        qml.PauliZ(0) @ qml.PauliX(1),
+        4.5,
+        qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
     (
         qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
         3,
@@ -1256,7 +1275,9 @@ class TestDecomposition:
 
         # We have to patch MottonenStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit,
+            "MottonenStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.QubitStateVector.decomposition(state, wires=wires)
 
@@ -1319,7 +1340,10 @@ class TestOperationDerivative:
         derivative = operation_derivative(op)
 
         expected_derivative = 0.5 * np.array(
-            [[-np.sin(p / 2), -1j * np.cos(p / 2)], [-1j * np.cos(p / 2), -np.sin(p / 2)]]
+            [
+                [-np.sin(p / 2), -1j * np.cos(p / 2)],
+                [-1j * np.cos(p / 2), -np.sin(p / 2)],
+            ]
         )
 
         assert np.allclose(derivative, expected_derivative)
@@ -1357,3 +1381,24 @@ class TestOperationDerivative:
             ]
         )
         assert np.allclose(derivative, expected_derivative)
+
+    def test_second_derivative(self):
+        """Test if ``operation_derivative`` correctly returns second derivative of RX."""
+
+        p = 0.3
+        op = qml.RX(p, wires=0)
+
+        second_derivative = operation_derivative(op, order=2)
+
+        p_2 = p / 2
+        term1 = -np.cos(p_2)
+        term2 = 1j * np.sin(p_2)
+
+        expected_second_derivative = 0.25 * np.array([[term1, term2], [term2, term1]])
+
+        assert np.allclose(second_derivative, expected_second_derivative)
+
+        op.inv()
+        second_derivative_inv = operation_derivative(op, order=2)
+
+        assert np.allclose(second_derivative_inv, np.conj(expected_second_derivative))
