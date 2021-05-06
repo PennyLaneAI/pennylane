@@ -89,6 +89,9 @@ def measurement_grouping(tape, obs_list, coeffs_list):
         tapes.append(new_tape)
 
     def processing_fn(res):
-        return qml.math.sum([qml.math.dot(c, r) for c, r in zip(coeffs_groupings, res)])
+        dot_products = [
+            qml.math.dot(qml.math.convert_like(c, r), r) for c, r in zip(coeffs_groupings, res)
+        ]
+        return qml.math.sum(qml.math.stack(dot_products))
 
     return tapes, processing_fn

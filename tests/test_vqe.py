@@ -585,6 +585,41 @@ def mock_device(monkeypatch):
 
         yield get_device
 
+#####################################################
+# Queues
+
+QUEUE_HAMILTONIANS_1 = [
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+]
+
+QUEUE_HAMILTONIANS_2 = [
+    qml.Hamiltonian([1], [qml.PauliX(0)]),
+    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)])
+]
+
+QUEUES = [
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)])
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)])
+    ]
+]
+
+add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 
 #####################################################
 # Tests
@@ -740,6 +775,49 @@ class TestHamiltonian:
             H *= A
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
+
+    def test_hamiltonian_queue(self):
+        """Tests that Hamiltonian are queued correctly"""
+
+        # Outside of tape
+
+        queue = [
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliX(1),
+            qml.PauliZ(1),
+            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+        ]
+
+        H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+            H.queue()
+
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+
+        # Inside of tape
+
+        queue = [
+            qml.PauliX(1),
+            qml.PauliZ(0),
+            qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(1),
+            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0)
+        ]
+
+        with qml.tape.QuantumTape() as tape:
+            H = qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)])
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
 
 class TestVQE:

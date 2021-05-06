@@ -228,7 +228,7 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, (Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with expval".format(op.name)
         )

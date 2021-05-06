@@ -23,6 +23,7 @@ import warnings
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
+from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -44,6 +45,21 @@ class Hamiltonian:
                          (like-terms are combined). The default value is `False`.
 
     .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
+
+    .. Warning::
+
+        Hamiltonians can be constructed using Pythonic arithmetic operations. For example:
+
+        >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+
+        is equivalent to the following Hamiltonian:
+
+        >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        When Hamiltonians are defined using arithmetic operations **inside of QNodes**, constituent observables
+        may be queued as operations. Thus, Hamiltonians must be defined either outside of QNodes,
+        or inside of QNodes using the conventional method. Note that this issue also arises when calling the
+        `simplify()` method.
 
     **Example:**
 
@@ -95,8 +111,13 @@ class Hamiltonian:
         self._coeffs = list(coeffs)
         self._ops = list(observables)
 
+        self.data = []
+        self.return_type = None
+
         if simplify:
             self.simplify()
+
+        self.queue()
 
     @property
     def coeffs(self):
@@ -134,6 +155,10 @@ class Hamiltonian:
         """
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
+    @property
+    def name(self):
+        return "Hamiltonian"
+
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
@@ -146,7 +171,6 @@ class Hamiltonian:
           (-1) [X0]
         + (1) [Y2]
         """
-
         coeffs = []
         ops = []
 
@@ -194,6 +218,10 @@ class Hamiltonian:
 
         return "  " + "\n+ ".join(terms_ls)
 
+    def __repr__(self):
+        # Constructor-call-like representation
+        return f"<Hamiltonian: terms={len(self.coeffs)}, wires={self.wires.tolist()}>"
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
@@ -221,7 +249,7 @@ class Hamiltonian:
             tensor = []
             for ob in obs:
                 parameters = tuple(
-                    param.tostring() for param in ob.parameters
+                    param.tobytes() for param in ob.parameters
                 )  # Converts params into immutable type
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
@@ -374,6 +402,20 @@ class Hamiltonian:
             self.__iadd__(H.__mul__(-1))
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+
+    def queue(self):
+        """Queues a qml.Hamiltonian instance"""
+        for o in self.ops:
+            try:
+                qml.QueuingContext.update_info(o, owner=self)
+            except QueuingError:
+                o.queue()
+                qml.QueuingContext.update_info(o, owner=self)
+            except NotImplementedError:
+                pass
+
+        qml.QueuingContext.append(self, owns=tuple(self.ops))
+        return self
 
 
 class ExpvalCost:
