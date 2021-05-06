@@ -1136,7 +1136,7 @@ class TestCycles:
             for e in edges:
                 num_edges_leaving_node[e[0]] += 1
 
-            # check that if the max number of edges is <=1 it corresponds to a state that minimized
+            # check that if the max number of edges is <=1 it corresponds to a state that minimizes
             # the out_flow_constraint Hamiltonian
             if max(num_edges_leaving_node.values()) > 1:
                 assert energy > min(energies_bitstrings)[0]
