@@ -73,7 +73,6 @@ class StronglyEntanglingLayers(Operation):
         new_op.n_layers = self.n_layers
         new_op.imprimitive = self.imprimitive
         new_op.ranges = self.ranges
-        print(self.n_layers, self.ranges)
         return new_op
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True):
