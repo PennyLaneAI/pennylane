@@ -18,7 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn.keras import KerasLayer
+
+KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
@@ -609,3 +610,9 @@ class TestKerasLayerIntegrationDM:
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
+
+
+def test_no_attribute():
+    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
+    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
+        qml.qnn.random
