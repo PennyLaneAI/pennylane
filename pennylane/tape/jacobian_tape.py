@@ -510,7 +510,7 @@ class JacobianTape(QuantumTape):
 
         if method == "device":
             # Using device mode; simply query the device for the Jacobian
-            return self.device_pd(device, params=params, **options)
+            return device_pd(device, params=params, **options)
 
         # perform gradient method validation
         diff_methods = self._grad_method_validation(method)
@@ -533,6 +533,25 @@ class JacobianTape(QuantumTape):
         options["device"] = device
         options["dev_wires"] = device.wires
 
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(self._obs_sharing_wires) > 0
+        ops_not_supported = any(
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not device.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in self.operations
+        )
+
+        # expand out the tape, if nested tapes are present, any operations are not supported on the
+        # device, or multiple observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
+            self = self.expand(
+                depth=10,
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and device.supports_operation(obj.name),
+            )
+
+        self._update_par_info()
+
         # collect all circuits (tapes) and postprocessing functions required
         # to compute the jacobian
 
@@ -547,13 +566,10 @@ class JacobianTape(QuantumTape):
 
             nonzero_grad_idx.append(trainable_idx)
 
-            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
-                # numeric method
-                tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
-
-            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
+            if (method == "best" and param_method[0] == "A") or (method == "analytic"):
+                pass
                 # analytic method
-                tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
+            tapes, processing_fn = self.analytic_pd(trainable_idx, params=params, **options)
 
             processing_fns.append(processing_fn)
 
