@@ -1064,6 +1064,7 @@ class TestCycles:
             ]
         )
 
+
     def test_inner_net_flow_constraint_hamiltonian(self):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node"""
