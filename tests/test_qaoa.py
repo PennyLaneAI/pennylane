@@ -1083,7 +1083,7 @@ class TestCycles:
 
         assert expected_coeffs == h.coeffs
         for i, expected_op in enumerate(expected_ops):
-            print(str(h.ops[i]) == str(expected_op))
+            assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self):
@@ -1099,7 +1099,7 @@ class TestCycles:
 
         assert expected_coeffs == h.coeffs
         for i, expected_op in enumerate(expected_ops):
-            print(str(h.ops[i]) == str(expected_op))
+            assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
     def test_out_flow_constraint(self):

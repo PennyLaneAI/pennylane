@@ -335,7 +335,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     using :func:`~.edges_to_wires`.
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.DiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the out flow constraint Hamiltonian
@@ -356,7 +356,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
 
 def _inner_out_flow_constraint_hamiltonian(
     graph: nx.DiGraph, node
-) -> Tuple[List[float], List[qml.operation.Observable]]:
+) -> qml.Hamiltonian:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
 
     For a given :math:`i`, this function returns:
@@ -368,12 +368,11 @@ def _inner_out_flow_constraint_hamiltonian(
         ( \sum_{j,(i,j)\in E}\hat{Z}_{ij}) )^{2}
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.DiGraph): the directed graph specifying possible edges
         node: a fixed node
 
     Returns:
-        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of
-        observables of the inner part of the node-constraint Hamiltonian.
+        qml.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
     """
     coeffs = []
     ops = []
