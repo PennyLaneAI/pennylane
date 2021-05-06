@@ -354,9 +354,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     return hamiltonian
 
 
-def _inner_out_flow_constraint_hamiltonian(
-    graph: nx.DiGraph, node
-) -> qml.Hamiltonian:
+def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> qml.Hamiltonian:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
 
     For a given :math:`i`, this function returns:
