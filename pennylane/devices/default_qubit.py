@@ -103,6 +103,7 @@ class DefaultQubit(QubitDevice):
         "S",
         "T",
         "SX",
+        "SSX",
         "CNOT",
         "SWAP",
         "CSWAP",

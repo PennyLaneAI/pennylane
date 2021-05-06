@@ -376,6 +376,63 @@ class SX(Operation):
         return SX(wires=self.wires).inv()
 
 
+class SSX(Operation):
+    r"""SSX(wires)
+    The single-qubit fourth-root of X operator.
+
+    .. math:: SSX = X^{\frac{1}{4}} = \begin{bmatrix}
+            a + bi &   c - bi \\
+            c - bi &   a + bi \\
+        \end{bmatrix}.
+
+    where :math:`a = \frac{1}{2} + \frac{sqrt{2}}{4}`, :math:`b = \frac{1}{2\sqrt{2}}`, and
+    :math:`c = \frac{1}{2} - \frac{sqrt{2}}{4}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 0
+    num_wires = 1
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return np.array(
+            [
+                [
+                    (2 + 1 / INV_SQRT2) / 4 + 1j * INV_SQRT2 / 2,
+                    (2 - 1 / INV_SQRT2) / 4 - 1j * INV_SQRT2 / 2,
+                ],
+                [
+                    (2 - 1 / INV_SQRT2) / 4 - 1j * INV_SQRT2 / 2,
+                    (2 + 1 / INV_SQRT2) / 4 + 1j * INV_SQRT2 / 2,
+                ],
+            ]
+        )
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1, INV_SQRT2 * (1 + 1j)])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            RZ(np.pi / 2, wires=wires),
+            RY(np.pi / 4, wires=wires),
+            RZ(13 * np.pi / 4, wires=wires),
+            PhaseShift(-7 * np.pi / 4, wires=wires),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        return SSX(wires=self.wires).inv()
+
+
 class CNOT(Operation):
     r"""CNOT(wires)
     The controlled-NOT operator
@@ -2764,6 +2821,7 @@ ops = {
     "S",
     "T",
     "SX",
+    "SSX",
     "CNOT",
     "CZ",
     "CY",

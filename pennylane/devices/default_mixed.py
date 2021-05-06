@@ -69,6 +69,7 @@ class DefaultMixed(QubitDevice):
         "S",
         "T",
         "SX",
+        "SSX",
         "CNOT",
         "SWAP",
         "CSWAP",
