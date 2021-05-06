@@ -921,13 +921,15 @@ class TestOperations:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
-            elif i.wires.tolist() == [1,0] and isinstance(i, qml.CRY):
-                new_mat = np.array([
-                    [1, 0, 0, 0],
-                    [0, np.cos(phi/2), 0, -np.sin(phi/2)],
-                    [0, 0, 1, 0],
-                    [0, np.sin(phi/2), 0, np.cos(phi/2)]
-                ])
+            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                new_mat = np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                        [0, 0, 1, 0],
+                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                    ]
+                )
 
                 mats.append(new_mat)
             else:
@@ -954,13 +956,15 @@ class TestOperations:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
-            elif i.wires.tolist() == [1,0] and isinstance(i, qml.CRY):
-                new_mat = np.array([
-                    [1, 0, 0, 0],
-                    [0, np.cos(phi/2), 0, -np.sin(phi/2)],
-                    [0, 0, 1, 0],
-                    [0, np.sin(phi/2), 0, np.cos(phi/2)]
-                ])
+            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                new_mat = np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                        [0, 0, 1, 0],
+                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                    ]
+                )
 
                 mats.append(new_mat)
             else:
