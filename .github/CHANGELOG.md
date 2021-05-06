@@ -60,7 +60,10 @@
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
   [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
-
+  [(#1213)](https://github.com/PennyLaneAI/pennylane/pull/1213)
+  [(#1220)](https://github.com/PennyLaneAI/pennylane/pull/1220)
+  [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
+  
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
@@ -105,6 +108,12 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `Device` class now uses caching when mapping wires.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* The `Wires` class now uses caching for computing its `hash`.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
 * Added custom gate application for Toffoli in `default.qubit`.
   [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
 
@@ -117,7 +126,13 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Breaking changes</h3>
 
+* Removes support for Python 3.6 and begin testing for Python 3.9.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
+
 <h3>Bug fixes</h3>
+
+* Prevent Hamiltonians that share wires from being multiplied together.
+  [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
 <h3>Documentation</h3>
 
