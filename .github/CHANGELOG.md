@@ -60,6 +60,7 @@
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
   [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
+  [(#1213)](https://github.com/PennyLaneAI/pennylane/pull/1213)
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
@@ -127,6 +128,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
+
+* Prevent Hamiltonians that share wires from being multiplied together.
+  [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
 <h3>Documentation</h3>
 

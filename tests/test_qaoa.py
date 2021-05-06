@@ -26,6 +26,7 @@ from pennylane.qaoa.cycle import (
     edges_to_wires,
     wires_to_edges,
     loss_hamiltonian,
+    _square_hamiltonian_terms,
     cycle_mixer,
     _partial_cycle_mixer,
 )
@@ -1007,3 +1008,56 @@ class TestCycles:
 
         with pytest.raises(KeyError, match="does not contain weight data"):
             loss_hamiltonian(g)
+
+    def test_square_hamiltonian_terms(self):
+        """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
+        example"""
+        coeffs = [1, -1, -1, 1]
+        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
+
+        expected_coeffs = [
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
+        ]
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
+        ]
+
+        squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
+
+        assert squared_coeffs == expected_coeffs
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, squared_ops)
+            ]
+        )
