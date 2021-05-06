@@ -1966,6 +1966,7 @@ class ControlledQubitUnitary(QubitUnitary):
             control_values = "1" * len(control_wires)
 
         control_int = self._parse_control_values(control_wires, control_values)
+        self.control_values = control_values
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
