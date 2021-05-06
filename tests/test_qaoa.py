@@ -27,7 +27,6 @@ from pennylane.qaoa.cycle import (
     wires_to_edges,
     loss_hamiltonian,
     _square_hamiltonian_terms,
-    _collect_duplicates,
     cycle_mixer,
     _partial_cycle_mixer,
 )
@@ -1062,76 +1061,3 @@ class TestCycles:
                 for op1, op2 in zip(expected_ops, squared_ops)
             ]
         )
-
-    def test_collect_duplicates(self):
-        """Test if the _collect_duplicates function returns the expected result on a fixed
-        example"""
-        coeffs = [
-            1,
-            -1,
-            -1,
-            1,
-            -1,
-            1,
-            1,
-            -1,
-            -1,
-            1,
-            1,
-            -1,
-            1,
-            -1,
-            -1,
-            1,
-        ]
-        ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0),
-            qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(0),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.Identity(0),
-        ]
-
-        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
-
-        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
-        expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-        ]
-
-        assert expected_coeffs == reduced_coeffs
-        assert all(
-            [
-                op1.name == op2.name and op1.wires == op2.wires
-                for op1, op2 in zip(expected_ops, reduced_ops)
-            ]
-        )
-
-    def test_duplicates_remove_zeros(self):
-        """Test if the _collect_duplicates function removes terms with a zero coefficient"""
-        coeffs = [1, -1, 1]
-        ops = [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(1)]
-
-        reduced_coeffs, reduced_ops = _collect_duplicates(coeffs, ops)
-
-        assert reduced_coeffs == [1]
-        assert len(reduced_ops) == 1
-        assert reduced_ops[0].name == "PauliZ"
-        assert reduced_ops[0].wires.tolist() == [1]
