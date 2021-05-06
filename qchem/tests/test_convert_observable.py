@@ -322,6 +322,20 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_exception_convert_observable():
+    r"""Test that an error is raised if the QubitOperator contains complex coefficients.
+    Currently the vqe.Hamiltonian class does not support complex coefficients.
+    """
+    qubit_op = (
+        QubitOperator("Y0 Y1", 1 + 0j)
+        + QubitOperator("Z0 X1", 4.5 + 1.5j)
+        + QubitOperator("Y0 X1", 2)
+    )
+
+    with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
+        qchem.convert_observable(qubit_op)
+
+
 def test_identities_terms_to_qubit_operator():
     """Test that tensor products that contain Identity instances are handled
     correctly by the _terms_to_qubit_operator function.
@@ -333,14 +347,16 @@ def test_identities_terms_to_qubit_operator():
      [0 0 0 4]]
     """
     coeffs = [2.5, -0.5, -1.0]
-    obs_list = [qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
-            qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])]
+    obs_list = [
+        qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
+        qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
+    ]
 
     op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
 
     # Remove new line characters
-    op_str = op_str.replace('\n','')
+    op_str = op_str.replace("\n", "")
     assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
 
 
@@ -348,14 +364,16 @@ def test_terms_to_qubit_operator_no_decomp():
     """Test the _terms_to_qubit_operator function with custom wires."""
     coeffs = np.array([0.1, 0.2])
     ops = [
-        qml.operation.Tensor(qml.PauliX(wires=['w0'])),
-        qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2']))
+        qml.operation.Tensor(qml.PauliX(wires=["w0"])),
+        qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
-    op_str = str(qchem._terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(['w0', 'w1', 'w2'])))
+    op_str = str(
+        qchem._terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"]))
+    )
 
     # Remove new line characters
-    op_str = op_str.replace('\n','')
-    expected = '0.1 [X0] +0.2 [Y0 Z2]'
+    op_str = op_str.replace("\n", "")
+    expected = "0.1 [X0] +0.2 [Y0 Z2]"
     assert op_str == expected
 
 
@@ -438,7 +456,12 @@ def test_integration_mol_file_to_vqe_cost(
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
-    qubit_hamiltonian = qchem.decompose(hf_file, mapping=mapping, core=core, active=active,)
+    qubit_hamiltonian = qchem.decompose(
+        hf_file,
+        mapping=mapping,
+        core=core,
+        active=active,
+    )
 
     vqe_hamiltonian = qchem.convert_observable(qubit_hamiltonian, custom_wires)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
