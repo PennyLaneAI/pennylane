@@ -18,9 +18,9 @@ This module contains the :class:`Device` abstract base class.
 import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from functools import lru_cache
 
 import numpy as np
-from functools import lru_cache
 
 import pennylane as qml
 from pennylane.operation import (
