@@ -471,3 +471,46 @@ def max_clique(graph, constrained=True):
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
+
+
+def max_weight_cycle(graph: nx.DiGraph, constrained=True) -> Tuple[qml.Hamiltonian, qml.Hamiltonian, dict]:
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the maximum weighted cycle
+    problem, for a given graph.
+
+    Args:
+        graph (nx.Graph): the graph on which the Hamiltonians are defined
+        constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
+
+    Returns:
+        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
+
+    .. UsageDetails::
+
+        There are two variations of QAOA for this problem, constrained and unconstrained:
+
+        **Constrained**
+
+        The maximum weighted cycle cost Hamiltonian for constrained QAOA is defined as:
+
+        .. math:: H_C \ = H_loss + H_netflow + H_outflow
+
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
+
+        **Unconstrained**
+
+        The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is defined as:
+
+        .. math:: H_C = H_loss
+
+        The returned mixer Hamiltonian is :func:`~qaoa.cycle.cycle_mixer` applied to the given graph
+
+    """
+
+    if not isinstance(graph, nx.Graph):
+        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+
+    if constrained:
+        return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph))
+
+    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3*(net_flow_constraint(graph) + out_flow_constraint(graph))
+    mixer = qaoa.x_mixer(graph.nodes)
