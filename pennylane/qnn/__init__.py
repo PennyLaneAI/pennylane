@@ -30,15 +30,6 @@ with Keras and PyTorch.
 
     ~KerasLayer
     ~TorchLayer
-
-
-.. rubric:: Modules
-
-.. autosummary::
-    :toctree: api
-    :nosignatures:
-
-    ~cost
 """
 import importlib
 
