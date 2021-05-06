@@ -2,9 +2,64 @@
 
 <h3>New features since last release</h3>
 
+* Added functionality for constructing and manipulating the Pauli group
+  [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
+  The function `pennylane.grouping.pauli_group` provides a generator to
+  easily loop over the group, or construct and store it in its entirety.
+  For example, we can construct the 3-qubit Pauli group like so:
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group
+  >>> pauli_group_1_qubit = list(pauli_group(1))
+  >>> pauli_group_1_qubit
+  [Identity(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0])]
+  ```
+
+  We can multiply together its members at the level of Pauli words
+  using the `pauli_mult` and `pauli_multi_with_phase` functions.
+  This can be done on arbitrarily-labeled wires as well, by defining a wire map.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group, pauli_mult
+  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  >>> pg = list(pauli_group(3, wire_map=wire_map))
+  >>> pg[3]
+  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pg[55]
+  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  ```
+
+  Functions for conversion of Pauli observables to strings (and back),
+  are included.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
+  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
+  'YYZ'
+  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
+  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+  ```
+
+  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
+  also supported.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_matrix
+  >>> wire_map = {'a' : 0, 'b' : 1}
+  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+  array([[ 1.,  0.,  0.,  0.],
+         [ 0., -1.,  0., -0.],
+         [ 0.,  0.,  1.,  0.],
+         [ 0., -0.,  0., -1.]])
+  ```
+
 * TBD: Add `qml.qaoa.cycle` (when structure is finalised)
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
+  [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
@@ -35,7 +90,29 @@
   (0, 1)
   ```
 
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
 <h3>Improvements</h3>
+
+* The `Device` class now uses caching when mapping wires.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* The `Wires` class now uses caching for computing its `hash`.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* Added custom gate application for Toffoli in `default.qubit`.
+  [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
 
 * The device test suite now provides test cases for checking gates by comparing
   expectation values.
@@ -45,6 +122,30 @@
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
 <h3>Breaking changes</h3>
+
+* Removes support for Python 3.6 and begin testing for Python 3.9.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+* Remove unsupported `None` option from the `qml.QNode` docstrings.
+  [(#1271)](https://github.com/PennyLaneAI/pennylane/pull/1271)
+
+* Updated the docstring of `qml.PolyXP` to reference the new location of internal
+  usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
+
+* Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
+  [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+
+# Release 0.15.1 (current release)
 
 <h3>Bug fixes</h3>
 
@@ -62,13 +163,12 @@
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
 
+* Deprecation warning instances in PennyLane have been changed to `UserWarning`,
+  to account for recent changes to how Python warnings are filtered in
+  [PEP565](https://www.python.org/dev/peps/pep-0565/).
+  [(#1211)](https://github.com/PennyLaneAI/pennylane/pull/1211)
+
 <h3>Documentation</h3>
-
-* Updated the docstring of `qml.PolyXP` to reference the new location of internal
-  usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
-
-* Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
-  [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
 * Updated the order of the parameters to the `GaussianState` operation to match
   the way that the PennyLane-SF plugin uses them.
@@ -78,9 +178,10 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ryan Hill,
+Josh Izaac, Christina Lee, Maria Schuld, Antal Száva.
 
-# Release 0.15.0 (current release)
+# Release 0.15.0
 
 <h3>New features since last release</h3>
 
@@ -701,7 +802,7 @@ fully differentiable.
   of shots is set explicitly.
 
 * If creating a QNode from a quantum function with an argument named `shots`,
-  a `DeprecationWarning` is raised, warning the user that this is a reserved
+  a `UserWarning` is raised, warning the user that this is a reserved
   argument to change the number of shots on a per-call basis.
   [(#1075)](https://github.com/PennyLaneAI/pennylane/pull/1075)
 

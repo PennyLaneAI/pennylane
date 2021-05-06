@@ -1216,13 +1216,13 @@ class TestMultipleInterfaceIntegration:
 
 
 def test_vqe_cost():
-    """Tests that VQECost raises a DeprecationWarning but otherwise behaves as ExpvalCost"""
+    """Tests that VQECost raises a UserWarning but otherwise behaves as ExpvalCost"""
 
     h = qml.Hamiltonian([1], [qml.PauliZ(0)])
     dev = qml.device("default.qubit", wires=1)
     ansatz = qml.templates.StronglyEntanglingLayers
 
-    with pytest.warns(DeprecationWarning, match="Use of VQECost is deprecated"):
+    with pytest.warns(UserWarning, match="Use of VQECost is deprecated"):
         cost = qml.VQECost(ansatz, h, dev)
 
     assert isinstance(cost, qml.ExpvalCost)
