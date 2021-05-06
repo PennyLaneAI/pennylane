@@ -943,6 +943,7 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, exp)
 
+
 class TestSingleExcitation:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_matrix(self, phi):
