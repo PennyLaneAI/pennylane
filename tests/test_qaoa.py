@@ -1067,7 +1067,6 @@ class TestCycles:
             ]
         )
 
-
     def test_inner_out_flow_constraint_hamiltonian(self):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
@@ -1121,7 +1120,7 @@ class TestCycles:
 
         expected_ops = [qml.PauliZ(wires=[0])]
         expected_coeffs = [0]
-       
+
         assert expected_coeffs == h.coeffs
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
@@ -1191,13 +1190,12 @@ class TestCycles:
             elif max(num_edges_leaving_node.values()) <= 1:
                 assert energy == min(energies_bitstrings)[0]
 
-
     def test_out_flow_constraint_undirected_raises_error(self):
         """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
         g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
-            h = out_flow_constraint(g)                
+            h = out_flow_constraint(g)
 
     def test_net_flow_constraint(self):
         """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a

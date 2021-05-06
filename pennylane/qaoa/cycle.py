@@ -352,7 +352,7 @@ def out_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
         hamiltonian += _inner_out_flow_constraint_hamiltonian(graph, node)
 
     return hamiltonian
-  
+
 
 def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
