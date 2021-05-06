@@ -905,6 +905,43 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, exp)
 
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_single_excitation_plus_decomp(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct decomposition"""
+        decomp = qml.SingleExcitationPlus.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = SingleExcitationPlus(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_single_excitation_minus_decomp(self, phi):
+        """Tests that the SingleExcitationMinus operation calculates the correct decomposition"""
+        decomp = qml.SingleExcitationMinus.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = SingleExcitationMinus(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
 
 class TestSingleExcitation:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
