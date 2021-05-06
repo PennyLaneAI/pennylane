@@ -204,19 +204,19 @@ class AutogradInterface(AnnotatedQueue):
 
                 def classical_gate_processing(x):
                     self.set_parameters(x)
-                    self.new_tape = self.expand(depth=10, stop_at=supports_obj)
-                    return qml.math.stack(self.new_tape.get_parameters())
+                    self._expanded_tape = self.expand(depth=10, stop_at=supports_obj)
+                    return qml.math.stack(self._expanded_tape.get_parameters())
 
                 params = autograd.numpy.array(params)
                 classical_jac = autograd.jacobian(classical_gate_processing, argnum=0)(params)
-                print(classical_jac)
 
-                self.new_tape._all_params_unwrapped = [
-                    p.numpy() if isinstance(p, np.tensor) else p for p in self.new_tape._all_parameter_values
+                tape = self._expanded_tape
+                tape._all_params_unwrapped = [
+                    p.numpy() if isinstance(p, np.tensor) else p for p in tape._all_parameter_values
                 ]
 
                 def gradient_product(dy):
-                    quantum_vjp = self.vjp(ans, self.new_tape, self.new_tape.get_parameters(), device)(dy)
+                    quantum_vjp = self.vjp(ans, tape, tape.get_parameters(), device)(dy)
                     return np.tensordot(quantum_vjp, classical_jac, axes=[[0], [0]])
 
                 return gradient_product

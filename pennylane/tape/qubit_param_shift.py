@@ -80,8 +80,11 @@ class QubitParamShiftTape(JacobianTape):
 
     allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
+
     def supports(self):
-        trainable_ops = [info["op"] for i, info in self._par_info.items() if i in self.trainable_params]
+        trainable_ops = [
+            info["op"] for i, info in self._par_info.items() if i in self.trainable_params
+        ]
 
         def _supports_obj(obj):
             if obj not in trainable_ops:
