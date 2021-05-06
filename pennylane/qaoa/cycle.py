@@ -285,7 +285,7 @@ def _square_hamiltonian_terms(
 
     Returns:
         Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of observables
-            of the squared Hamiltonian.
+        of the squared Hamiltonian.
     """
     squared_coeffs, squared_ops = [], []
     pairs = [(coeff, op) for coeff, op in zip(coeffs, ops)]
