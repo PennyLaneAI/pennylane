@@ -32,7 +32,8 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """Converts a :func:`~.QNode` to a Keras
+    """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
+    Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -49,7 +50,7 @@ class KerasLayer(Layer):
             specifications for weights used in the QNode, such as the method of parameter
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
-            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__.
+            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 

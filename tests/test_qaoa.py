@@ -15,13 +15,28 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
+import itertools
 import numpy as np
 import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.wires import Wires
-from pennylane.qaoa.cycle import edges_to_wires, wires_to_edges, loss_hamiltonian
+from pennylane.qaoa.cycle import (
+    edges_to_wires,
+    wires_to_edges,
+    _inner_net_flow_constraint_hamiltonian,
+    net_flow_constraint,
+    loss_hamiltonian,
+    _square_hamiltonian_terms,
+    cycle_mixer,
+    _partial_cycle_mixer,
+    out_flow_constraint,
+    _inner_out_flow_constraint_hamiltonian,
+)
+from scipy.linalg import expm
+from scipy.sparse import csc_matrix, kron
+
 
 #####################################################
 
@@ -39,6 +54,40 @@ def decompose_hamiltonian(hamiltonian):
     wires = [i.wires for i in hamiltonian.ops]
 
     return [coeffs, ops, wires]
+
+
+def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
+    r"""Calculates the matrix representation of an input Hamiltonian in the standard basis.
+
+    Args:
+        hamiltonian (qml.Hamiltonian): the input Hamiltonian
+        n_wires (int): the total number of wires
+
+    Returns:
+        csc_matrix: a sparse matrix representation
+    """
+    ops_matrices = []
+
+    for op in hamiltonian.ops:
+        op_wires = np.array(op.wires.tolist())
+        op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
+        op_matrices = []
+
+        for wire in range(n_wires):
+            loc = np.argwhere(op_wires == wire).flatten()
+            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix
+            mat = csc_matrix(mat)
+            op_matrices.append(mat)
+
+        op_matrix = op_matrices.pop(0)
+
+        for mat in op_matrices:
+            op_matrix = kron(op_matrix, mat)
+
+        ops_matrices.append(op_matrix)
+
+    mat = sum(coeff * op_mat for coeff, op_mat in zip(hamiltonian.coeffs, ops_matrices))
+    return csc_matrix(mat)
 
 
 class TestMixerHamiltonians:
@@ -696,6 +745,143 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
+    def test_partial_cycle_mixer_complete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(7),
+            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(7),
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(10),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(10),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(10),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25, 0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_partial_cycle_mixer_incomplete(self):
+        """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
+        example"""
+        g = nx.complete_graph(4).to_directed()
+        g.remove_edge(2, 1)  # remove an egde to make graph incomplete
+        edge = (0, 1)
+
+        h = _partial_cycle_mixer(g, edge)
+
+        ops_expected = [
+            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(9),
+            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(9),
+            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(9),
+        ]
+        coeffs_expected = [0.25, 0.25, 0.25, -0.25]
+
+        assert h.coeffs == coeffs_expected
+        assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
+        assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
+
+    def test_cycle_mixer(self):
+        """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
+        n_nodes = 3
+        g = nx.complete_graph(n_nodes).to_directed()
+        m = wires_to_edges(g)
+        n_wires = len(g.edges)
+
+        # Find Hamiltonian and its matrix representation
+        h = cycle_mixer(g)
+        h_matrix = np.real_if_close(matrix(h, n_wires).toarray())
+
+        # Decide which bitstrings are valid and which are invalid
+        valid_bitstrings_indx = []
+        invalid_bitstrings_indx = []
+
+        for indx, bitstring in enumerate(itertools.product([0, 1], repeat=n_wires)):
+            wires = [i for i, bit in enumerate(bitstring) if bit == 1]
+            edges = [m[wire] for wire in wires]
+
+            flows = [0 for i in range(n_nodes)]
+
+            for start, end in edges:
+                flows[start] += 1
+                flows[end] -= 1
+
+            # A bitstring is valid if the net flow is zero and we aren't the empty set or the set
+            # of all edges. Note that the max out-flow constraint is not imposed, which means we can
+            # pass through nodes more than once
+            if sum(np.abs(flows)) == 0 and 0 < len(edges) < n_wires:
+                valid_bitstrings_indx.append(indx)
+            else:
+                invalid_bitstrings_indx.append(indx)
+
+        # Check that valid bitstrings map to a subset of the valid bitstrings
+        for indx in valid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(valid_bitstrings_indx)
+
+        # Check that invalid bitstrings map to a subset of the invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten())
+
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+        # Now consider a unitary generated by the Hamiltonian
+        h_matrix_e = expm(1j * h_matrix)
+
+        # We expect non-zero transitions among the set of valid bitstrings, and no transitions
+        # outside
+        for indx in valid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = np.argwhere(column != 0).flatten().tolist()
+            assert destination_indxs == valid_bitstrings_indx
+
+        # Check that invalid bitstrings transition within the set of invalid bitstrings
+        for indx in invalid_bitstrings_indx:
+            column = h_matrix_e[:, indx]
+            destination_indxs = set(np.argwhere(column != 0).flatten().tolist())
+            assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+    def test_matrix(self):
+        """Test that the matrix function works as expected on a fixed example"""
+        g = nx.lollipop_graph(3, 1)
+        h = qml.qaoa.bit_flip_mixer(g, 0)
+
+        mat = matrix(h, 4)
+        mat_expected = np.array(
+            [
+                [0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        assert np.allclose(mat.toarray(), mat_expected)
+
     def test_edges_to_wires_directed(self):
         """Test that edges_to_wires returns the correct mapping on a directed graph"""
         g = nx.lollipop_graph(4, 1).to_directed()
@@ -827,3 +1013,240 @@ class TestCycles:
 
         with pytest.raises(KeyError, match="does not contain weight data"):
             loss_hamiltonian(g)
+
+    def test_square_hamiltonian_terms(self):
+        """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
+        example"""
+        coeffs = [1, -1, -1, 1]
+        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
+
+        expected_coeffs = [
+            1,
+            -1,
+            -1,
+            1,
+            -1,
+            1,
+            1,
+            -1,
+            -1,
+            1,
+            1,
+            -1,
+            1,
+            -1,
+            -1,
+            1,
+        ]
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0),
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.Identity(0),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+            qml.Identity(0),
+        ]
+
+        squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
+
+        assert squared_coeffs == expected_coeffs
+        assert all(
+            [
+                op1.name == op2.name and op1.wires == op2.wires
+                for op1, op2 in zip(expected_ops, squared_ops)
+            ]
+        )
+
+    def test_inner_out_flow_constraint_hamiltonian(self):
+        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
+        on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
+
+        g = nx.complete_graph(3).to_directed()
+        h = _inner_out_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+        ]
+
+        expected_coeffs = [2, 2, -2, -2]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_inner_net_flow_constraint_hamiltonian(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node"""
+        g = nx.complete_graph(3).to_directed()
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(4),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(4),
+            qml.PauliZ(2) @ qml.PauliZ(4),
+        ]
+        expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_inner_out_flow_constraint_hamiltonian_non_complete(self):
+        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
+        on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
+        the (0, 1) edge removed"""
+        g = nx.complete_graph(3).to_directed()
+        g.remove_edge(0, 1)
+        h = _inner_out_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [qml.PauliZ(wires=[0])]
+        expected_coeffs = [0]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_inner_net_flow_constraint_hamiltonian_non_complete(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
+        g = nx.complete_graph(3).to_directed()
+        g.remove_edge(1, 0)
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+        ]
+        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_out_flow_constraint(self):
+        """Test the out-flow constraint Hamiltonian is minimised by states that correspond to
+        subgraphs that only ever have 0 or 1 edge leaving each node
+        """
+        g = nx.complete_graph(3).to_directed()
+        h = out_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # We use PL to find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def states(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        bitstrings = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+
+        for energy, bs in energies_bitstrings:
+
+            # convert binary string to wires then wires to edges
+            wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            # find the number of edges leaving each node
+            num_edges_leaving_node = {node: 0 for node in g.nodes}
+            for e in edges:
+                num_edges_leaving_node[e[0]] += 1
+
+            # check that if the max number of edges is <=1 it corresponds to a state that minimizes
+            # the out_flow_constraint Hamiltonian
+            if max(num_edges_leaving_node.values()) > 1:
+                assert energy > min(energies_bitstrings)[0]
+            elif max(num_edges_leaving_node.values()) <= 1:
+                assert energy == min(energies_bitstrings)[0]
+
+    def test_out_flow_constraint_undirected_raises_error(self):
+        """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
+        g = nx.complete_graph(3)  # undirected graph
+
+        with pytest.raises(ValueError):
+            h = out_flow_constraint(g)
+
+    def test_net_flow_constraint(self):
+        """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
+        collection of edges with zero flow"""
+        g = nx.complete_graph(3).to_directed()
+        h = net_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # We use PL to find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def energy(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(energy, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        states = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_states = ((cost(state).numpy(), state) for state in states)
+
+        # We now have the energies of each bitstring/state. We also want to calculate the net flow of
+        # the corresponding edges
+        for energy, state in energies_states:
+
+            # This part converts from a binary string of wires selected to graph edges
+            wires_ = tuple(i for i, s in enumerate(state) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            # Calculates the number of edges entering and leaving a given node
+            in_flows = np.zeros(len(g.nodes))
+            out_flows = np.zeros(len(g.nodes))
+
+            for e in edges:
+                in_flows[e[0]] += 1
+                out_flows[e[1]] += 1
+
+            net_flow = np.sum(np.abs(in_flows - out_flows))
+
+            # The test requires that a set of edges with zero net flow must have a corresponding
+            # bitstring that minimized the energy of the Hamiltonian
+            if net_flow == 0:
+                assert energy == min(energies_states)[0]
+            else:
+                assert energy > min(energies_states)[0]
+
+    def test_net_flow_constraint_undirected_raises_error(self):
+        """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
+        g = nx.complete_graph(3)  # undirected graph
+
+        with pytest.raises(ValueError):
+            h = net_flow_constraint(g)
