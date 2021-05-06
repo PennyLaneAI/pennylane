@@ -128,6 +128,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Prevent Hamiltonians that share wires from being multiplied together.
+  [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
+
 <h3>Documentation</h3>
 
 * Remove unsupported `None` option from the `qml.QNode` docstrings.
