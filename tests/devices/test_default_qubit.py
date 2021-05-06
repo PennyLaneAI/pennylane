@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import WireError
+from pennylane.wires import Wires, WireError
 
 U = np.array(
     [
@@ -1854,6 +1854,33 @@ class TestWiresIntegration:
 
         with pytest.raises(WireError, match="Did not find some of the wires"):
             dev.execute(tape)
+
+    wires_to_try = [
+        (1, Wires([0]), Wires([0])),
+        (4, Wires([1, 3]), Wires([1, 3])),
+        (["a", 2], Wires([2]), Wires([1])),
+        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+    ]
+
+    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+        """Test that multiple calls to map_wires will use caching."""
+        dev = qml.device("default.qubit", wires=dev_wires)
+
+        original_hits = dev.map_wires.cache_info().hits
+        original_misses = dev.map_wires.cache_info().misses
+
+        # The first call is computed: it's a miss as it didn't come from the cache
+        dev.map_wires(wires_to_map)
+
+        # The number of misses increased
+        assert dev.map_wires.cache_info().misses > original_misses
+
+        # The second call comes from the cache: it's a hit
+        dev.map_wires(wires_to_map)
+
+        # The number of hits increased
+        assert dev.map_wires.cache_info().hits > original_hits
 
 
 class TestGetSlice:
