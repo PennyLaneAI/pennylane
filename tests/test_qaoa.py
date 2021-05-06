@@ -25,6 +25,8 @@ from pennylane.wires import Wires
 from pennylane.qaoa.cycle import (
     edges_to_wires,
     wires_to_edges,
+    _inner_net_flow_constraint_hamiltonian,
+    net_flow_constraint,
     loss_hamiltonian,
     _square_hamiltonian_terms,
     cycle_mixer,
@@ -1061,3 +1063,102 @@ class TestCycles:
                 for op1, op2 in zip(expected_ops, squared_ops)
             ]
         )
+
+    def test_inner_net_flow_constraint_hamiltonian(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node"""
+        g = nx.complete_graph(3).to_directed()
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(4),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(4),
+            qml.PauliZ(2) @ qml.PauliZ(4),
+        ]
+        expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_inner_net_flow_constraint_hamiltonian_non_complete(self):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
+        example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
+        g = nx.complete_graph(3).to_directed()
+        g.remove_edge(1, 0)
+        h = _inner_net_flow_constraint_hamiltonian(g, 0)
+
+        expected_ops = [
+            qml.Identity(0),
+            qml.PauliZ(0),
+            qml.PauliZ(1),
+            qml.PauliZ(3),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(3),
+        ]
+        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
+
+        assert expected_coeffs == h.coeffs
+        for i, expected_op in enumerate(expected_ops):
+            assert str(h.ops[i]) == str(expected_op)
+        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    def test_net_flow_constraint(self):
+        """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
+        collection of edges with zero flow"""
+        g = nx.complete_graph(3).to_directed()
+        h = net_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # We use PL to find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def energy(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(energy, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        states = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_states = ((cost(state).numpy(), state) for state in states)
+
+        # We now have the energies of each bitstring/state. We also want to calculate the net flow of
+        # the corresponding edges
+        for energy, state in energies_states:
+
+            # This part converts from a binary string of wires selected to graph edges
+            wires_ = tuple(i for i, s in enumerate(state) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            # Calculates the number of edges entering and leaving a given node
+            in_flows = np.zeros(len(g.nodes))
+            out_flows = np.zeros(len(g.nodes))
+
+            for e in edges:
+                in_flows[e[0]] += 1
+                out_flows[e[1]] += 1
+
+            net_flow = np.sum(np.abs(in_flows - out_flows))
+
+            # The test requires that a set of edges with zero net flow must have a corresponding
+            # bitstring that minimized the energy of the Hamiltonian
+            if net_flow == 0:
+                assert energy == min(energies_states)[0]
+            else:
+                assert energy > min(energies_states)[0]
+
+    def test_net_flow_constraint_undirected_raises_error(self):
+        """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
+        g = nx.complete_graph(3)  # undirected graph
+
+        with pytest.raises(ValueError):
+            h = net_flow_constraint(g)

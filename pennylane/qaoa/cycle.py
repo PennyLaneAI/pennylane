@@ -306,3 +306,92 @@ def _square_hamiltonian_terms(
             squared_ops.append(op1 @ op2)
 
     return squared_coeffs, squared_ops
+
+
+def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
+    r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
+    Hamiltonian for the maximum-weighted cycle problem.
+
+    Given a subset of edges in a directed graph, the net-flow constraint imposes that the number of
+    edges leaving any given node is equal to the number of edges entering the node, i.e.,
+
+    .. math:: \sum_{j, (i, j) \in E} x_{ij} = \sum_{j, (j, i) \in E} x_{ji},
+
+    for all nodes :math:`i`, where :math:`E` are the edges of the graph and :math:`x_{ij}` is a
+    binary number that selects whether to include the edge :math:`(i, j)`.
+
+    A set of edges has zero net flow whenever the following Hamiltonian is minimized:
+
+    .. math::
+
+        \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
+
+    where :math:`V` are the graph vertices, :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
+    the outdegree and indegree, respectively, of node :math:`i` and :math:`Z_{ij}` is a qubit
+    Pauli-Z matrix acting upon the wire specified by the pair :math:`(i, j)`. Mapping from edges to
+    wires can be achieved using :func:`~.edges_to_wires`.
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+
+    Returns:
+        qml.Hamiltonian: the net-flow constraint Hamiltonian
+
+    Raises:
+        ValueError: if the input graph is not directed
+    """
+    if not hasattr(graph, "in_edges") or not hasattr(graph, "out_edges"):
+        raise ValueError("Input graph must be directed")
+
+    hamiltonian = qml.Hamiltonian([], [])
+
+    for node in graph.nodes:
+        hamiltonian += _inner_net_flow_constraint_hamiltonian(graph, node)
+
+    return hamiltonian
+
+
+def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> qml.Hamiltonian:
+    r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
+
+    For a given :math:`i`, this function returns:
+
+    .. math::
+
+        \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2}.
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+        node: a fixed node
+
+    Returns:
+        qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
+    """
+    edges_to_qubits = edges_to_wires(graph)
+
+    coeffs = []
+    ops = []
+
+    out_edges = graph.out_edges(node)
+    in_edges = graph.in_edges(node)
+
+    coeffs.append(len(out_edges) - len(in_edges))
+    ops.append(qml.Identity(0))
+
+    for edge in out_edges:
+        wires = (edges_to_qubits[edge],)
+        coeffs.append(-1)
+        ops.append(qml.PauliZ(wires))
+
+    for edge in in_edges:
+        wires = (edges_to_qubits[edge],)
+        coeffs.append(1)
+        ops.append(qml.PauliZ(wires))
+
+    coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
+    H = qml.Hamiltonian(coeffs, ops)
+    H.simplify()
+
+    return H
