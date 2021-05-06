@@ -307,7 +307,7 @@ def _square_hamiltonian_terms(
 
     return squared_coeffs, squared_ops
 
-  
+
 def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
