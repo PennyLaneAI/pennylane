@@ -68,13 +68,6 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __copy__(self):
-        new_op = super().__copy__()
-        new_op.n_layers = self.n_layers
-        new_op.imprimitive = self.imprimitive
-        new_op.ranges = self.ranges
-        return new_op
-
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True):
 
         shape = qml.math.shape(weights)

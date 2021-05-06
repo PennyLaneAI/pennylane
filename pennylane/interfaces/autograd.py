@@ -194,6 +194,20 @@ class AutogradInterface(AnnotatedQueue):
             function: this function accepts the backpropagation
             gradient output vector, and computes the vector-Jacobian product
         """
+        # Expand the tape here
+        if hasattr(self, "supports"):
+            supports_obj = self.supports()
+            ops_not_supported = not all(supports_obj(op) for op in self.operations)
+
+            if ops_not_supported:
+                def new_tape_execution(x):
+                    self.set_parameters(x)
+                    new_tape = self.expand(depth=10, stop_at=supports_obj)
+                    return new_tape.execute(device=device)
+
+                params = autograd.numpy.array(params)
+                jac = autograd.jacobian(new_tape_execution)(params)
+                return lambda dy: autograd.numpy.tensordot(dy.flatten(), jac, axes=[[0], [0]])
 
         # The following dictionary caches the Jacobian and Hessian matrices,
         # so that they can be re-used for different vjp/vhp computations
