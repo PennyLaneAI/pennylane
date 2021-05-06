@@ -154,6 +154,7 @@ class DefaultQubit(QubitDevice):
             "Toffoli": self._apply_toffoli,
         }
 
+    @functools.lru_cache()
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
