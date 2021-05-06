@@ -90,7 +90,26 @@
   (0, 1)
   ```
 
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
 <h3>Improvements</h3>
+
+* The `Device` class now uses caching when mapping wires.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* The `Wires` class now uses caching for computing its `hash`.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
 
 * Added custom gate application for Toffoli in `default.qubit`.
   [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
@@ -103,6 +122,9 @@
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
 <h3>Breaking changes</h3>
+
+* Removes support for Python 3.6 and begin testing for Python 3.9.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
 
@@ -157,7 +179,7 @@ Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal 
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ryan Hill,
-Josh Izaac, Maria Schuld, Antal Száva.
+Josh Izaac, Christina Lee, Maria Schuld, Antal Száva.
 
 # Release 0.15.0
 
