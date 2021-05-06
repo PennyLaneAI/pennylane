@@ -907,7 +907,12 @@ class TestOperations:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_plus_decomp(self, phi):
-        """Tests that the SingleExcitationPlus operation calculates the correct decomposition"""
+        """Tests that the SingleExcitationPlus operation calculates the correct decomposition.
+
+        Need to consider the matrix of CRY separately, as the control is wire 1
+        and the target is wire 0 in the decomposition. (Not applicable for
+        ControlledPhase as it has the same matrix representation regardless of the
+        control and target wires.)"""
         decomp = qml.SingleExcitationPlus.decomposition(phi, wires=[0, 1])
 
         mats = []
@@ -916,6 +921,15 @@ class TestOperations:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires.tolist() == [1,0] and isinstance(i, qml.CRY):
+                new_mat = np.array([
+                    [1, 0, 0, 0],
+                    [0, np.cos(phi/2), 0, -np.sin(phi/2)],
+                    [0, 0, 1, 0],
+                    [0, np.sin(phi/2), 0, np.cos(phi/2)]
+                ])
+
+                mats.append(new_mat)
             else:
                 mats.append(i.matrix)
 
@@ -926,7 +940,12 @@ class TestOperations:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_minus_decomp(self, phi):
-        """Tests that the SingleExcitationMinus operation calculates the correct decomposition"""
+        """Tests that the SingleExcitationMinus operation calculates the correct decomposition.
+
+        Need to consider the matrix of CRY separately, as the control is wire 1
+        and the target is wire 0 in the decomposition. (Not applicable for
+        ControlledPhase as it has the same matrix representation regardless of the
+        control and target wires.)"""
         decomp = qml.SingleExcitationMinus.decomposition(phi, wires=[0, 1])
 
         mats = []
@@ -935,6 +954,15 @@ class TestOperations:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires.tolist() == [1,0] and isinstance(i, qml.CRY):
+                new_mat = np.array([
+                    [1, 0, 0, 0],
+                    [0, np.cos(phi/2), 0, -np.sin(phi/2)],
+                    [0, 0, 1, 0],
+                    [0, np.sin(phi/2), 0, np.cos(phi/2)]
+                ])
+
+                mats.append(new_mat)
             else:
                 mats.append(i.matrix)
 
