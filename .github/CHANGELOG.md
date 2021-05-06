@@ -61,6 +61,7 @@
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
   [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
   [(#1213)](https://github.com/PennyLaneAI/pennylane/pull/1213)
+  [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)

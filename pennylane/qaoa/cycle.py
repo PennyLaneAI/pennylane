@@ -352,9 +352,7 @@ def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     return hamiltonian
 
 
-def _inner_net_flow_constraint_hamiltonian(
-    graph: nx.DiGraph, node
-) -> qml.Hamiltonian:
+def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> qml.Hamiltonian:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
     For a given :math:`i`, this function returns:
