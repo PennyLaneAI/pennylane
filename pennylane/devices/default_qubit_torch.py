@@ -60,9 +60,9 @@ class DefaultQubitTorch(DefaultQubit):
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
 
-    def __init__(self, wires, *, shots=1000, analytic=True, torch_device=torch.device('cpu')):
+    def __init__(self, wires, *, shots=1000, torch_device=torch.device('cpu')):
         self._torch_device = torch_device
-        super().__init__(wires, shots=shots, analytic=analytic, cache=0)
+        super().__init__(wires, shots=shots, cache=0)
         
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state = self._state.to(self._torch_device)
