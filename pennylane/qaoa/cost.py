@@ -513,4 +513,6 @@ def max_weight_cycle(graph: nx.DiGraph, constrained=True) -> Tuple[qml.Hamiltoni
         return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph))
 
     cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3*(net_flow_constraint(graph) + out_flow_constraint(graph))
-    mixer = qaoa.x_mixer(graph.nodes)
+    mixer_h = qaoa.x_mixer(graph.nodes)
+
+    return (cost_h, mixer_h)
