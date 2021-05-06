@@ -1883,7 +1883,7 @@ class QubitUnitary(Operation):
         return U
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.data[0])), wires=self.wires)
+        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -1975,15 +1975,19 @@ class ControlledQubitUnitary(QubitUnitary):
         # etc. The positioning of the block is controlled by padding the block diagonal
         # to the left and right with the correct amount of identity blocks.
 
-        padding_left = control_int * len(U)
-        padding_right = 2 ** len(wires) - len(U) - padding_left
-
-        CU = block_diag(np.eye(padding_left), U, np.eye(padding_right))
-
-        params = list(params)
-        params[0] = CU
+        self._padding_left = control_int * len(U)
+        self._padding_right = 2 ** len(wires) - len(U) - self._padding_left
+        self._CU = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    def _matrix(self, *params):
+        if self._CU is None:
+            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+
+        params = list(params)
+        params[0] = self._CU
+        return super()._matrix(*params)
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):
