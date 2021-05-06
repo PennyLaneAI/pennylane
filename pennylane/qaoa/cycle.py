@@ -333,7 +333,7 @@ def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
     wires can be achieved using :func:`~.edges_to_wires`.
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.DiGraph): the directed graph specifying possible edges
 
     Returns:
         qml.Hamiltonian: the net-flow constraint Hamiltonian
@@ -354,7 +354,7 @@ def net_flow_constraint(graph: nx.DiGraph) -> qml.Hamiltonian:
 
 def _inner_net_flow_constraint_hamiltonian(
     graph: nx.DiGraph, node
-) -> Tuple[List[float], List[qml.operation.Observable]]:
+) -> qml.Hamiltonian:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
     For a given :math:`i`, this function returns:
@@ -365,7 +365,7 @@ def _inner_net_flow_constraint_hamiltonian(
         \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2}.
 
     Args:
-        graph (nx.DiGraph): the graph specifying possible edges
+        graph (nx.DiGraph): the directed graph specifying possible edges
         node: a fixed node
 
     Returns:
