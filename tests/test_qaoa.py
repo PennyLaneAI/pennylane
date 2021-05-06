@@ -1141,7 +1141,7 @@ class TestCycles:
                 assert energy == min(energies_bitstrings)[0]
 
     def test_out_flow_constraint_undirected_raises_error(self):
-        """Test `out_flow_constraint` raises ValueError if input graph is not directed """
+        """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
         g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
