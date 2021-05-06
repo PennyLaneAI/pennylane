@@ -16,8 +16,6 @@ values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
-from openfermion.ops import FermionOperator
-from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
 from . import structure
 
@@ -192,6 +190,8 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     + (0.125) [Xw0 Yw1 Xw2 Yw3]
     """
 
+    from openfermion.ops import FermionOperator
+
     if electrons <= 0:
         raise ValueError(
             "'electrons' must be greater than 0; got for 'electrons' {}".format(electrons)
@@ -295,6 +295,9 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (-0.075) [Z0 Z2]
     """
 
+    from openfermion.ops import FermionOperator
+    from openfermion.transforms import bravyi_kitaev, jordan_wigner
+
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
@@ -360,6 +363,8 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     + (0.25) [Z3]
     """
 
+    from openfermion.ops import FermionOperator
+
     if orbitals <= 0:
         raise ValueError(
             "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
@@ -423,6 +428,8 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     + (-0.5) [Zw2]
     + (-0.5) [Zw3]
     """
+
+    from openfermion.ops import FermionOperator
 
     if orbitals <= 0:
         raise ValueError(
@@ -496,6 +503,8 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [2^ 2] +
     -0.44829969610163756 [3^ 3]
     """
+
+    from openfermion.ops import FermionOperator
 
     orbitals = matrix_elements.shape[0]
 
@@ -667,6 +676,8 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     + 0.08950028803070323 [3^ 3^ 1 1]
     + 0.352552816086392 [3^ 3^ 3 3]
     """
+
+    from openfermion.ops import FermionOperator
 
     orbitals = matrix_elements.shape[0]
 

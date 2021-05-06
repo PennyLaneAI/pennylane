@@ -18,10 +18,6 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-from openfermion import MolecularData, QubitOperator
-from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
-from openfermionpsi4 import run_psi4
-from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane import Hamiltonian
@@ -293,6 +289,8 @@ def meanfield(
     >>> meanfield(symbols, coordinates, name="h2")
     ./pyscf/sto-3g/h2
     """
+    
+    from openfermion import MolecularData
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
@@ -328,9 +326,11 @@ def meanfield(
     molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "psi4":
+        from openfermionpsi4 import run_psi4
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
+        from openfermionpyscf import run_pyscf
         run_pyscf(molecule, run_scf=1, verbose=0)
 
     return path_to_file
@@ -500,6 +500,9 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z2]
     """
 
+    from openfermion import MolecularData
+    from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
+
     # loading HF data from the hdf5 file
     molecule = MolecularData(filename=hf_file.strip())
 
@@ -613,6 +616,8 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     0.1 [X0] +
     0.2 [Y0 Z2]
     """
+    from openfermion import QubitOperator
+
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
@@ -820,7 +825,8 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
-
+    from openfermion import MolecularData
+    
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
     molecule = MolecularData(filename=hf_file)
