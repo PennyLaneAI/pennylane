@@ -117,6 +117,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Breaking changes</h3>
 
+* Removes support for Python 3.6 and begin testing for Python 3.9.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
+
 <h3>Bug fixes</h3>
 
 <h3>Documentation</h3>
