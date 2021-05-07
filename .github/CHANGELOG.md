@@ -108,6 +108,34 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `MultiControlledX` gate now has a decomposition defined. For control on three or more wires,
+  at least one ancilla register of worker wires to support the decomposition.
+  [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
+  
+  ```python
+  ctrl_wires = [f"c{i}" for i in range(5)]
+  work_wires = ["w1"]
+  target_wires = ["t1"]
+  all_wires = ctrl_wires + work_wires + target_wires
+
+  dev = qml.device("default.qubit", wires=all_wires)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.MultiControlledX(control_wires=ctrl_wires, wires=target_wires, work_wires=work_wires)
+  ```
+  
+  ```pycon
+  >>> tape = tape.expand(depth=2)
+  >>> print(tape.draw(wire_order=Wires(all_wires)))
+   c0: ──────────╭C──────────────╭C──────────────────╭C──────────────╭C──────────┤  
+   c1: ──────────├C──────────────├C──────────────────├C──────────────├C──────────┤  
+   c2: ──────╭C──│───╭C──────╭C──│───╭C──────────╭C──│───╭C──────╭C──│───╭C──────┤  
+   c3: ──╭C──│───│───│───╭C──│───│───│───────╭C──│───│───│───╭C──│───│───│───────┤  
+   c4: ──│───├C──╰X──├C──│───├C──╰X──├C──╭C──│───├C──╰X──├C──│───├C──╰X──├C──╭C──┤  
+   w1: ──├C──╰X──────╰X──├C──╰X──────╰X──├C──├C──╰X──────╰X──├C──╰X──────╰X──├C──┤  
+   t1: ──╰X──────────────╰X──────────────╰X──╰X──────────────╰X──────────────╰X──┤  
+  ```
+  
 * The `Device` class now uses caching when mapping wires.
   [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
 
