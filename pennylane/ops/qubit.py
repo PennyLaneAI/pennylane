@@ -2125,6 +2125,8 @@ class MultiControlledX(ControlledQubitUnitary):
         num_work_wires_needed = len(control_wires) - 2
         if len(work_wires) > num_work_wires_needed:
             work_wires = work_wires[:num_work_wires_needed]
+        else:
+            raise ValueError(f"At least {num_work_wires_needed} worker wires are needed")
 
         work_wires_reversed = list(reversed(work_wires))
         control_wires_reversed = list(reversed(control_wires))
@@ -2164,7 +2166,7 @@ class MultiControlledX(ControlledQubitUnitary):
     @staticmethod
     def _decomposition_with_one_worker(control_wires, target_wire, work_wire):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a suitably single work wire"""
+        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a single work wire"""
         tot_wires = len(control_wires) + 2
         partition = int(np.ceil(tot_wires / 2))
 
