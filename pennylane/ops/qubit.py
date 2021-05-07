@@ -2123,10 +2123,7 @@ class MultiControlledX(ControlledQubitUnitary):
         https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a suitably large register of
         work wires"""
         num_work_wires_needed = len(control_wires) - 2
-        if len(work_wires) >= num_work_wires_needed:
-            work_wires = work_wires[:num_work_wires_needed]
-        else:
-            raise ValueError(f"At least {num_work_wires_needed} worker wires are needed")
+        work_wires = work_wires[:num_work_wires_needed]
 
         work_wires_reversed = list(reversed(work_wires))
         control_wires_reversed = list(reversed(control_wires))
