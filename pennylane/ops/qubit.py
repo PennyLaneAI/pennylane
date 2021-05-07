@@ -20,10 +20,11 @@ import functools
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
-import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane import numpy as np
+
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
@@ -277,10 +278,11 @@ class S(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    matrix = np.array([[1, 0], [0, 1j]])
 
     @classmethod
     def _matrix(cls, *params):
-        return np.array([[1, 0], [0, 1j]])
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -315,10 +317,11 @@ class T(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    matrix = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
 
     @classmethod
     def _matrix(cls, *params):
-        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -353,10 +356,11 @@ class SX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
     def _matrix(cls, *params):
-        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -404,7 +408,7 @@ class CNOT(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return CNOT.matrix
+        return cls.matrix
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -660,9 +664,9 @@ class RX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        js = 1j * math.sin(-theta / 2)
+        theta_2 = params[0] /2
+        c = np.cos(theta_2)
+        js = 1j * np.sin(-theta_2)
 
         return np.array([[c, js], [js, c]])
 
@@ -701,9 +705,9 @@ class RY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        theta_2 = params[0] / 2
+        c = np.cos(theta_2)
+        s = np.sin(theta_2)
 
         return np.array([[c, -s], [s, c]])
 
@@ -743,7 +747,7 @@ class RZ(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        p = cmath.exp(-0.5j * theta)
+        p = np.exp(-0.5j * theta)
 
         return np.array([[p, 0], [0, p.conjugate()]])
 
@@ -790,7 +794,7 @@ class PhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+        return np.array([[1, 0], [0, np.exp(1j * phi)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -842,7 +846,7 @@ class ControlledPhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, np.exp(1j * phi)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -902,13 +906,13 @@ class Rot(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
 
         return np.array(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [np.exp(-0.5j * (phi + omega)) * c, -np.exp(0.5j * (phi - omega)) * s],
+                [np.exp(-0.5j * (phi - omega)) * s, np.exp(0.5j * (phi + omega)) * c],
             ]
         )
 
@@ -1257,9 +1261,9 @@ class CRX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        js = 1j * math.sin(-theta / 2)
+        theta_2 = params[0] / 2
+        c = np.cos(theta_2)
+        js = 1j * np.sin(-theta_2)
 
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
 
@@ -1326,9 +1330,9 @@ class CRY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        theta_2 = params[0]/2
+        c = np.cos(theta_2)
+        s = np.sin(theta_2)
 
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
 
@@ -1396,13 +1400,13 @@ class CRZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
+        term = np.exp(1j * params[0]/2)
         return np.array(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * theta), 0],
-                [0, 0, 0, cmath.exp(0.5j * theta)],
+                [0, 0, 1/term, 0],
+                [0, 0, 0, term],
             ]
         )
 
@@ -1478,15 +1482,15 @@ class CRot(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        c = np.cos(theta/2)
+        s = np.sin(theta/2)
 
         return np.array(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [0, 0, np.exp(-0.5j * (phi + omega)) * c, -np.exp(0.5j * (phi - omega)) * s],
+                [0, 0, np.exp(-0.5j * (phi - omega)) * s, np.exp(0.5j * (phi + omega)) * c],
             ]
         )
 
@@ -1541,7 +1545,7 @@ class U1(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+        return np.array([[1, 0], [0, np.exp(1j * phi)]])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1593,9 +1597,10 @@ class U2(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, lam = params
-        return INV_SQRT2 * np.array(
-            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
-        )
+
+        lam_exp = np.exp(1j * lam)
+        phi_exp = np.exp(1j * phi)
+        return INV_SQRT2 * np.array([[1, -lam_exp], [phi_exp, lam_exp*phi_exp]])
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -1659,10 +1664,13 @@ class U3(Operation):
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
+        lam_exp = np.exp(1j * lam)
+        phi_exp = np.exp(1j * phi)
+
         return np.array(
             [
-                [c, -s * cmath.exp(1j * lam)],
-                [s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
+                [c, -s * lam_exp],
+                [s * phi_exp, c * lam_exp * phi_exp],
             ]
         )
 
@@ -1742,8 +1750,8 @@ class SingleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
 
         return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
 
@@ -1792,9 +1800,9 @@ class SingleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+        e = np.exp(-1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
@@ -1835,9 +1843,9 @@ class SingleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+        e = np.exp(1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
@@ -2250,8 +2258,8 @@ class DoubleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
 
         U = np.eye(16)
         U[3, 3] = c  # 3 (dec) = 0011 (bin)
@@ -2317,9 +2325,9 @@ class DoubleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+        e = np.exp(1j * theta / 2)
 
         U = e * np.eye(16, dtype=np.complex64)
         U[3, 3] = c  # 3 (dec) = 0011 (bin)
@@ -2377,9 +2385,9 @@ class DoubleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+        e = np.exp(-1j * theta / 2)
 
         U = e * np.eye(16, dtype=np.complex64)
         U[3, 3] = c  # 3 (dec) = 0011 (bin)

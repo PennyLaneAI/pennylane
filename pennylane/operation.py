@@ -1707,3 +1707,31 @@ def operation_derivative(operation) -> np.ndarray:
         generator = generator.conj().T
 
     return 1j * prefactor * generator @ operation.matrix
+
+def operation_derivative2(operation, argnum=None) -> np.ndarray:
+    r""" Calculate the derivative of an operation:
+
+    The formula for the matrix, `operation._matrix` must be calculated using autograd compatible 
+    numpy operations.
+
+    For gates with non-differentiable parameters like `PauliRot`, provide `argnum` to select just the 
+    trainable parmeters.
+
+    Args:
+        operation (.Operation): The operation to be differentiated.
+        argnum (int or Sequence[int]): Which argument to take the gradient
+            with respect to. If a sequence is given, the martrix
+            corresponding to all input elements and all output elements is returned.
+
+    Returns:
+        array: the derivative of the operation as a matrix in the standard basis.
+    """
+    if op.num_params == 0:
+        return tuple()
+    
+    def wrapper(*args):
+        mat = op._matrix(*args)
+        return np.stack([np.real(mat), np.imag(mat)])
+    d_mat = qml.jacobian(wrapper, argnum)(*op.parameters)
+    
+    return d_mat[0]+1j*d_mat[1]
