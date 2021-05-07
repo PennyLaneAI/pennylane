@@ -2209,6 +2209,30 @@ class TestMultiControlledX:
         spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
+    def test_worker_state_unperturbed(self, mocker):
+        """Test that the state of the worker wires is unperturbed after the decomposition has used
+        them. To do this, a random state over all the qubits (control, target and workers) is
+        loaded and U^dagger U(decomposed) is applied. If the workers are uncomputed, the output
+        state will be the same as the input."""
+        control_wires = range(4)
+        target_wire = 4
+        worker_wires = [5, 6]
+        n_all_wires = 7
+
+        rnd_state = unitary_group.rvs(2 ** n_all_wires, random_state=1)[0]
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
+        dev = qml.device("default.qubit", wires=n_all_wires)
+
+        @qml.qnode(dev)
+        def f():
+            qml.QubitStateVector(rnd_state, wires=range(n_all_wires))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=worker_wires, do_queue=False).decomposition()
+            return qml.state()
+
+        assert np.allclose(f(), rnd_state)
+        spy.assert_called()
+
 
 class TestArithmetic:
     """Tests the arithmetic operations."""
