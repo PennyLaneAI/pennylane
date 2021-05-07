@@ -2162,7 +2162,7 @@ class TestMultiControlledX:
 
     @pytest.mark.parametrize("control_val", ["0", "1"])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
-    def test_decomposition_with_flips(self, n_ctrl_wires, control_val):
+    def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
@@ -2171,6 +2171,7 @@ class TestMultiControlledX:
         target_wire = n_ctrl_wires
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
         @qml.qnode(dev)
@@ -2181,6 +2182,31 @@ class TestMultiControlledX:
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        spy.assert_called()
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    def test_decomposition_with_custom_wire_labels(self, mocker):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on using custom wire labels."""
+        n_ctrl_wires = 4
+        control_wires = [-1, "alice", 42, 3.14]
+        target_wire = ["bob"]
+        work_wires = ["charlie"]
+        all_wires = control_wires + target_wire + work_wires
+
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
+        dev = qml.device("default.qubit", wires=all_wires)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=control_wires + target_wire)
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires, do_queue=False).decomposition()
+            return qml.probs(wires=control_wires + target_wire)
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
 
