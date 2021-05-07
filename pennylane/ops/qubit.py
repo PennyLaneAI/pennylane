@@ -2174,11 +2174,15 @@ class MultiControlledX(ControlledQubitUnitary):
         second_part = control_wires[partition:]
 
         gates = [
-            MultiControlledX(control_wires=first_part, wires=work_wire, work_wires=second_part),
+            MultiControlledX(
+                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+            ),
             MultiControlledX(
                 control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
             ),
-            MultiControlledX(control_wires=first_part, wires=work_wire, work_wires=second_part),
+            MultiControlledX(
+                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+            ),
             MultiControlledX(
                 control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
             ),
