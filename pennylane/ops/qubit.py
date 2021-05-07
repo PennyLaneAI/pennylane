@@ -2044,9 +2044,19 @@ class MultiControlledX(ControlledQubitUnitary):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, control_wires=None, wires=None, control_values=None, do_queue=True):
-        if len(Wires(wires)) != 1:
+    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True):
+        wires = Wires(wires)
+        control_wires = Wires(control_wires)
+        work_wires = Wires(work_wires)
+
+        if len(wires) != 1:
             raise ValueError("MultiControlledX accepts a single target wire.")
+
+        if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires([control_wires, work_wires]):
+            raise ValueError("The work wires must be different from the control and target wires")
+
+        self._target_wire = wires[0]
+        self._work_wires = work_wires
 
         super().__init__(
             np.array([[0, 1], [1, 0]]),
@@ -2055,6 +2065,89 @@ class MultiControlledX(ControlledQubitUnitary):
             control_values=control_values,
             do_queue=do_queue,
         )
+
+    def decomposition(self, *args, **kwargs):
+
+        if len(self.control_wires) > 2 and len(self._work_wires) == 0:
+            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
+
+        flips1 = [qml.PauliX(self.control_wires[i]) for i, val in enumerate(self.control_values) if val == "0"]
+
+        if len(self.control_wires) == 1:
+            decomp = [qml.CNOT(wires=[self.control_wires[0], self._target_wire])]
+        elif len(self.control_wires) == 2:
+            decomp = [qml.Toffoli(wires=[*self.control_wires, self._target_wire])]
+        else:
+            tot_wires = len(self._work_wires + Wires(self._target_wire) + self.control_wires)
+
+            num_work_wires_needed = len(self.control_wires) - 2
+
+            if len(self._work_wires) >= num_work_wires_needed:
+                work_wires = self._work_wires[:num_work_wires_needed]
+                decomp = self._decomposition_with_many_workers(self.control_wires, self._target_wire, work_wires)
+            else:
+                work_wire = self._work_wires[0]
+                decomp = self._decomposition_with_one_worker(self.control_wires, self._target_wire, work_wire)
+
+        flips2 = [qml.PauliX(self.control_wires[i]) for i, val in enumerate(self.control_values) if val == "0"]
+
+        return flips1 + decomp + flips2
+
+    @staticmethod
+    def _decomposition_with_many_workers(control_wires, target_wire, work_wires):
+        """7.2 of https://arxiv.org/pdf/quant-ph/9503016.pdf"""
+        work_wires_reversed = list(reversed(work_wires))
+        control_wires_reversed = list(reversed(control_wires))
+
+        gates = []
+
+        for i in range(len(work_wires)):
+            c1 = control_wires_reversed[i]
+            c2 = work_wires_reversed[i]
+            t = target_wire if i == 0 else work_wires_reversed[i - 1]
+            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+
+        gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+        for i in reversed(range(len(work_wires))):
+            c1 = control_wires_reversed[i]
+            c2 = work_wires_reversed[i]
+            t = target_wire if i == 0 else work_wires_reversed[i - 1]
+            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+
+        for i in range(len(work_wires) - 1):
+            c1 = control_wires_reversed[i + 1]
+            c2 = work_wires_reversed[i + 1]
+            t = work_wires_reversed[i]
+            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+
+        gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
+
+        for i in reversed(range(len(work_wires) - 1)):
+            c1 = control_wires_reversed[i + 1]
+            c2 = work_wires_reversed[i + 1]
+            t = work_wires_reversed[i]
+            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+
+        return gates
+
+    @staticmethod
+    def _decomposition_with_one_worker(control_wires, target_wire, work_wire):
+        """7.3 of https://arxiv.org/pdf/quant-ph/9503016.pdf"""
+        tot_wires = len(control_wires) + 2
+        partition = int(np.ceil(tot_wires / 2))
+
+        first_part = control_wires[:partition]
+        second_part = control_wires[partition:] + work_wire
+
+        gates = []
+
+        gates.append(MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part))
+        gates.append(MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part))
+        gates.append(MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part))
+        gates.append(MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part))
+
+        return gates
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
