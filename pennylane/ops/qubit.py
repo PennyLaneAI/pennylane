@@ -2044,6 +2044,7 @@ class MultiControlledX(ControlledQubitUnitary):
     par_domain = "A"
     grad_method = None
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True
     ):
@@ -2119,32 +2120,32 @@ class MultiControlledX(ControlledQubitUnitary):
         gates = []
 
         for i in range(len(work_wires)):
-            c1 = control_wires_reversed[i]
-            c2 = work_wires_reversed[i]
+            ctrl1 = control_wires_reversed[i]
+            ctrl2 = work_wires_reversed[i]
             t = target_wire if i == 0 else work_wires_reversed[i - 1]
-            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
 
         gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
 
         for i in reversed(range(len(work_wires))):
-            c1 = control_wires_reversed[i]
-            c2 = work_wires_reversed[i]
+            ctrl1 = control_wires_reversed[i]
+            ctrl2 = work_wires_reversed[i]
             t = target_wire if i == 0 else work_wires_reversed[i - 1]
-            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
 
         for i in range(len(work_wires) - 1):
-            c1 = control_wires_reversed[i + 1]
-            c2 = work_wires_reversed[i + 1]
+            ctrl1 = control_wires_reversed[i + 1]
+            ctrl2 = work_wires_reversed[i + 1]
             t = work_wires_reversed[i]
-            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
 
         gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
 
         for i in reversed(range(len(work_wires) - 1)):
-            c1 = control_wires_reversed[i + 1]
-            c2 = work_wires_reversed[i + 1]
+            ctrl1 = control_wires_reversed[i + 1]
+            ctrl2 = work_wires_reversed[i + 1]
             t = work_wires_reversed[i]
-            gates.append(qml.Toffoli(wires=[c1, c2, t]))
+            gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
 
         return gates
 
