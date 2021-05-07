@@ -2156,21 +2156,21 @@ class MultiControlledX(ControlledQubitUnitary):
         partition = int(np.ceil(tot_wires / 2))
 
         first_part = control_wires[:partition]
-        second_part = control_wires[partition:] + work_wire
+        second_part = control_wires[partition:]
 
         gates = []
 
         gates.append(
-            MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part)
+            MultiControlledX(control_wires=first_part, wires=work_wire, work_wires=second_part)
         )
         gates.append(
-            MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part)
+            MultiControlledX(control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part)
         )
         gates.append(
-            MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part)
+            MultiControlledX(control_wires=first_part, wires=work_wire, work_wires=second_part)
         )
         gates.append(
-            MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part)
+            MultiControlledX(control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part)
         )
 
         return gates
