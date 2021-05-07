@@ -15,6 +15,7 @@
 Unit tests for the available built-in discrete-variable quantum operations.
 """
 import itertools
+import re
 import pytest
 import functools
 import numpy as np
@@ -2140,6 +2141,24 @@ class TestMultiControlledX:
         u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
+    def test_not_enough_workers(self):
+        """Test that a ValueError is raised when more than 2 control wires are to be decomposed with
+        no work wires supplied"""
+        control_wires = range(3)
+        target_wire = 4
+        op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire)
+
+        match = f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
+        with pytest.raises(ValueError, match=match):
+            op.decomposition()
+
+    def test_not_unique_wires(self):
+        """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
+        control_wires = range(3)
+        target_wire = 4
+        work_wires = range(2)
+        with pytest.raises(ValueError, match="The work wires must be different from the control"):
+            op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires)
 
 
 class TestArithmetic:

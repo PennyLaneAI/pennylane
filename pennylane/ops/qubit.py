@@ -2049,7 +2049,7 @@ class MultiControlledX(ControlledQubitUnitary):
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
-        work_wires = Wires(work_wires)
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
         if len(wires) != 1:
             raise ValueError("MultiControlledX accepts a single target wire.")
