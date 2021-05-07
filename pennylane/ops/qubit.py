@@ -2033,7 +2033,7 @@ class MultiControlledX(ControlledQubitUnitary):
 
         If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
         ``MultiControlledX`` into Toffoli gates using the methods described in Lemma 7.2 and 7.3 of
-        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__. For control on 3 or more wires,
+        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ For control on 3 or more wires,
         at least one work wire will be required.
 
     **Example**
