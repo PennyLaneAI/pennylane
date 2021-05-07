@@ -2158,7 +2158,30 @@ class TestMultiControlledX:
         target_wire = 4
         work_wires = range(2)
         with pytest.raises(ValueError, match="The work wires must be different from the control"):
-            op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires)
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires)
+
+    @pytest.mark.parametrize("control_val", ["0", "1"])
+    @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
+    def test_decomposition_with_flips(self, n_ctrl_wires, control_val):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on varying the control values."""
+        control_values = control_val * n_ctrl_wires
+        control_wires = range(n_ctrl_wires)
+        target_wire = n_ctrl_wires
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
+
+        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, control_values=control_values).inv()
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires, do_queue=False, control_values=control_values).decomposition()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
 
 class TestArithmetic:
