@@ -2026,6 +2026,15 @@ class MultiControlledX(ControlledQubitUnitary):
         wires (Union[Wires or int]): a single target wire the operation acts on
         control_values (str): a string of bits representing the state of the control
             qubits to control on (default is the all 1s state)
+        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
+            the operation into a series of Toffoli gates
+
+    .. note::
+
+        If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
+        ``MultiControlledX`` into Toffoli gates using the methods described in Lemma 7.2 and 7.3 of
+        `Barenco et al.<https://arxiv.org/abs/quant-ph/9503016>`__. For control on 3 or more wires,
+        at least one work wire will be required.
 
     **Example**
 
