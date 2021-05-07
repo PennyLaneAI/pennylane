@@ -2119,7 +2119,7 @@ class TestMultiControlledX:
         u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    @pytest.mark.parametrize("n_ctrl_wires", range(4, 6))
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
     def test_decomposition_with_one_worker(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
@@ -2138,7 +2138,7 @@ class TestMultiControlledX:
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
         u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
-        # assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
 
 
