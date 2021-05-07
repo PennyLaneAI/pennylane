@@ -2111,8 +2111,9 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX._decomposition_with_many_workers(control_wires, target_wire,
-                                                              work_wires)
+            qml.MultiControlledX._decomposition_with_many_workers(
+                control_wires, target_wire, work_wires
+            )
         assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -2138,10 +2139,13 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX._decomposition_with_one_worker(control_wires, target_wire,
-                                                                work_wires)
+            qml.MultiControlledX._decomposition_with_one_worker(
+                control_wires, target_wire, work_wires
+            )
         tape = tape.expand(depth=1)
-        assert all(isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations)
+        assert all(
+            isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations
+        )
 
         @qml.qnode(dev)
         def f(bitstring):
@@ -2161,7 +2165,9 @@ class TestMultiControlledX:
         target_wire = 4
         op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire)
 
-        match = f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
+        match = (
+            f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
+        )
         with pytest.raises(ValueError, match=match):
             op.decomposition()
 
@@ -2171,7 +2177,9 @@ class TestMultiControlledX:
         target_wire = 4
         work_wires = range(2)
         with pytest.raises(ValueError, match="The work wires must be different from the control"):
-            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires)
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=work_wires
+            )
 
     @pytest.mark.parametrize("control_val", ["0", "1"])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
@@ -2188,14 +2196,21 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires, control_values=control_values)
+            qml.MultiControlledX(
+                control_wires=control_wires,
+                wires=target_wire,
+                work_wires=work_wires,
+                control_values=control_values,
+            )
         tape = tape.expand(depth=2)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, control_values=control_values).inv()
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, control_values=control_values
+            ).inv()
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -2218,7 +2233,9 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=all_wires)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX(control_wires=control_wires, wires=target_wire, work_wires=work_wires)
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=work_wires
+            )
         tape = tape.expand(depth=2)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -2249,8 +2266,9 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=n_all_wires)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX(control_wires=control_wires, wires=target_wire,
-                                 work_wires=worker_wires)
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=worker_wires
+            )
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
