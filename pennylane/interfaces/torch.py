@@ -253,8 +253,6 @@ class TorchInterface(AnnotatedQueue):
 
     def _execute(self, params, **kwargs):
         kwargs["tape"] = self
-        print(kwargs)
-        print(*params)
         res = _TorchInterface.apply(kwargs, *params)
         return res
 
