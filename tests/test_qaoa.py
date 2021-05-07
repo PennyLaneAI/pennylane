@@ -673,6 +673,12 @@ class TestCostHamiltonians:
 
     """Tests the cost Hamiltonians"""
 
+    def test_max_weight_cycle_errors(self):
+        """Tests that the max weight cycle Hamiltonian throws the correct errors"""
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph"):
+            qaoa.max_weight_cycle([(0, 1), (1, 2)])
+
     def test_cost_graph_error(self):
         """Tests that the cost Hamiltonians throw the correct error"""
 
