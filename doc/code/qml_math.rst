@@ -5,5 +5,5 @@ qml.math
 
 .. automodapi:: pennylane.math
     :no-heading:
-    :include-all-objects:
     :no-inheritance-diagram:
+    :no-inherited-members:
