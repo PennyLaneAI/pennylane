@@ -512,7 +512,9 @@ def max_weight_cycle(graph, constrained=True):
     if constrained:
         return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph))
 
-    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3*(qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph))
+    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3 * (
+        qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph)
+    )
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)
