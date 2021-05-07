@@ -124,6 +124,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -1667,7 +1668,7 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wires)
 
 
-def operation_derivative(operation) -> np.ndarray:
+def operation_derivative_old(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.
 
     For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
@@ -1708,7 +1709,7 @@ def operation_derivative(operation) -> np.ndarray:
 
     return 1j * prefactor * generator @ operation.matrix
 
-def operation_derivative2(operation, argnum=None) -> np.ndarray:
+def operation_derivative(operation, argnum=None) -> np.ndarray:
     r""" Calculate the derivative of an operation:
 
     The formula for the matrix, `operation._matrix` must be calculated using autograd compatible 
@@ -1726,12 +1727,13 @@ def operation_derivative2(operation, argnum=None) -> np.ndarray:
     Returns:
         array: the derivative of the operation as a matrix in the standard basis.
     """
-    if op.num_params == 0:
+    if operation.num_params == 0:
         return tuple()
     
     def wrapper(*args):
-        mat = op._matrix(*args)
-        return np.stack([np.real(mat), np.imag(mat)])
-    d_mat = qml.jacobian(wrapper, argnum)(*op.parameters)
-    
+        mat = operation._matrix(*args)
+        if operation.inverse:
+            mat = pnp.transpose(pnp.conj(mat))
+        return pnp.stack([pnp.real(mat), pnp.imag(mat)])
+    d_mat = qml.jacobian(wrapper, argnum)(*operation.parameters)
     return d_mat[0]+1j*d_mat[1]

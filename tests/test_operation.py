@@ -1292,25 +1292,6 @@ class TestChannel:
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
-    def test_no_generator_raise(self):
-        """Tests if the function raises a ValueError if the input operation has no generator"""
-        op = qml.Rot(0.1, 0.2, 0.3, wires=0)
-
-        with pytest.raises(ValueError, match="Operation Rot does not have a generator"):
-            operation_derivative(op)
-
-    def test_multiparam_raise(self):
-        """Test if the function raises a ValueError if the input operation is composed of multiple
-        parameters"""
-
-        class RotWithGen(qml.Rot):
-            generator = [np.zeros((2, 2)), 1]
-
-        op = RotWithGen(0.1, 0.2, 0.3, wires=0)
-
-        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
-            operation_derivative(op)
-
     def test_rx(self):
         """Test if the function correctly returns the derivative of RX"""
         p = 0.3

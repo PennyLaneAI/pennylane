@@ -278,11 +278,10 @@ class S(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    matrix = np.array([[1, 0], [0, 1j]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return np.array([[1, 0], [0, 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -317,11 +316,10 @@ class T(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    matrix = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -356,11 +354,10 @@ class SX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -749,7 +746,7 @@ class RZ(DiagonalOperation):
         theta = params[0]
         p = np.exp(-0.5j * theta)
 
-        return np.array([[p, 0], [0, p.conjugate()]])
+        return np.array([[p, 0], [0, np.conjugate(p)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -1880,7 +1877,7 @@ class QubitUnitary(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        U = np.asarray(params[0])
+        U = np.asarray(params[0], requires_grad=False)
 
         if U.ndim != 2 or U.shape[0] != U.shape[1]:
             raise ValueError("Operator must be a square matrix.")
@@ -2513,7 +2510,7 @@ class Hermitian(Observable):
 
     @classmethod
     def _matrix(cls, *params):
-        A = np.asarray(params[0])
+        A = np.asarray(params[0], requires_grad=False)
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
