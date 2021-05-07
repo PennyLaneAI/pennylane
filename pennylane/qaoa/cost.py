@@ -473,7 +473,7 @@ def max_clique(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def max_weight_cycle(graph: nx.DiGraph, constrained=True) -> Tuple[qml.Hamiltonian, qml.Hamiltonian, dict]:
+def max_weight_cycle(graph, constrained=True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the maximum weighted cycle
     problem, for a given graph.
 
@@ -512,7 +512,7 @@ def max_weight_cycle(graph: nx.DiGraph, constrained=True) -> Tuple[qml.Hamiltoni
     if constrained:
         return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph))
 
-    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3*(net_flow_constraint(graph) + out_flow_constraint(graph))
+    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3*(qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph))
     mixer_h = qaoa.x_mixer(graph.nodes)
 
     return (cost_h, mixer_h)

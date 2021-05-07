@@ -46,6 +46,11 @@ graph.add_edges_from([(0, 1), (1, 2)])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
+digraph_complete = nx.complete_graph(3).to_directed()
+complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
+for k, v in complete_edge_weight_data.items():
+    digraph_complete[k[0]][k[1]]["weight"] = v
+
 
 def decompose_hamiltonian(hamiltonian):
 
@@ -471,6 +476,148 @@ HAMILTONIANS = [
 
 EDGE_DRIVER = zip(GRAPHS, REWARDS, HAMILTONIANS)
 
+"""GENERATES THE CASES TO TEST THE MAXIMUM WEIGHTED CYCLE PROBLEM"""
+
+DIGRAPHS = [digraph_complete]
+
+MWS_CONSTRAINED = [True, False]
+
+COST_COEFFS = [
+    [
+        -0.6931471805599453,
+        0.0,
+        0.4054651081081644,
+        0.6931471805599453,
+        0.9162907318741551,
+        1.0986122886681098,
+    ],
+    [
+        -6.693147180559945,
+        -6.0,
+        -5.594534891891835,
+        -5.306852819440055,
+        -5.083709268125845,
+        -4.90138771133189,
+        54,
+        12,
+        -12,
+        -6,
+        -6,
+        -12,
+        6,
+        12,
+        -6,
+        -6,
+        -12,
+        6,
+        12,
+        -6,
+        -6,
+        6,
+    ],
+]
+
+COST_TERMS = [
+    [
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[5]),
+    ],
+    [
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[5]),
+        qml.Identity(wires=[0]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+    ],
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(2)]
+
+MIXER_COEFFS = [
+    [
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+    ],
+    [1, 1, 1],
+]
+
+MIXER_TERMS = [
+    [
+        qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[5]),
+        qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[5]),
+        qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[1]),
+        qml.PauliY(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[1]),
+        qml.PauliY(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
+        qml.PauliX(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[1]),
+        qml.PauliX(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliX(wires=[2]),
+        qml.PauliY(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliX(wires=[2]),
+        qml.PauliY(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliY(wires=[2]),
+        qml.PauliX(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliY(wires=[2]),
+        qml.PauliX(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliX(wires=[0]),
+        qml.PauliY(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliX(wires=[0]),
+        qml.PauliY(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliY(wires=[0]),
+        qml.PauliX(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliY(wires=[0]),
+    ],
+    [qml.PauliX(wires=[0]), qml.PauliX(wires=[1]), qml.PauliX(wires=[2])],
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(2)]
+
+MWC = list(zip(DIGRAPHS, MWS_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+
 
 def decompose_hamiltonian(hamiltonian):
 
@@ -574,6 +721,15 @@ class TestCostHamiltonians:
         """Tests that the output of the Maximum Clique method is correct"""
 
         cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MWC)
+    def test_max_weight_cycle_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the maximum weighted cycle method is correct"""
+
+        cost_h, mixer_h = qaoa.max_weight_cycle(graph, constrained=constrained)
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
