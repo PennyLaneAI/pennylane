@@ -2100,9 +2100,8 @@ class MultiControlledX(ControlledQubitUnitary):
             num_work_wires_needed = len(self.control_wires) - 2
 
             if len(self._work_wires) >= num_work_wires_needed:
-                work_wires = self._work_wires[:num_work_wires_needed]
                 decomp = self._decomposition_with_many_workers(
-                    self.control_wires, self._target_wire, work_wires
+                    self.control_wires, self._target_wire, self._work_wires
                 )
             else:
                 work_wire = self._work_wires[0]
@@ -2123,7 +2122,10 @@ class MultiControlledX(ControlledQubitUnitary):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
         https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a suitably large register of
         work wires"""
-        assert len(work_wires) == len(control_wires) - 2
+        num_work_wires_needed = len(control_wires) - 2
+        if len(work_wires) > num_work_wires_needed:
+            work_wires = work_wires[:num_work_wires_needed]
+
         work_wires_reversed = list(reversed(work_wires))
         control_wires_reversed = list(reversed(control_wires))
 
