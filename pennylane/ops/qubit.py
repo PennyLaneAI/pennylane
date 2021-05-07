@@ -2044,7 +2044,9 @@ class MultiControlledX(ControlledQubitUnitary):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True):
+    def __init__(
+        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True
+    ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
         work_wires = Wires(work_wires)
@@ -2052,7 +2054,9 @@ class MultiControlledX(ControlledQubitUnitary):
         if len(wires) != 1:
             raise ValueError("MultiControlledX accepts a single target wire.")
 
-        if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires([control_wires, work_wires]):
+        if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
+            [control_wires, work_wires]
+        ):
             raise ValueError("The work wires must be different from the control and target wires")
 
         self._target_wire = wires[0]
@@ -2066,30 +2070,41 @@ class MultiControlledX(ControlledQubitUnitary):
             do_queue=do_queue,
         )
 
+    # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
 
         if len(self.control_wires) > 2 and len(self._work_wires) == 0:
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
-        flips1 = [qml.PauliX(self.control_wires[i]) for i, val in enumerate(self.control_values) if val == "0"]
+        flips1 = [
+            qml.PauliX(self.control_wires[i])
+            for i, val in enumerate(self.control_values)
+            if val == "0"
+        ]
 
         if len(self.control_wires) == 1:
             decomp = [qml.CNOT(wires=[self.control_wires[0], self._target_wire])]
         elif len(self.control_wires) == 2:
             decomp = [qml.Toffoli(wires=[*self.control_wires, self._target_wire])]
         else:
-            tot_wires = len(self._work_wires + Wires(self._target_wire) + self.control_wires)
-
             num_work_wires_needed = len(self.control_wires) - 2
 
             if len(self._work_wires) >= num_work_wires_needed:
                 work_wires = self._work_wires[:num_work_wires_needed]
-                decomp = self._decomposition_with_many_workers(self.control_wires, self._target_wire, work_wires)
+                decomp = self._decomposition_with_many_workers(
+                    self.control_wires, self._target_wire, work_wires
+                )
             else:
                 work_wire = self._work_wires[0]
-                decomp = self._decomposition_with_one_worker(self.control_wires, self._target_wire, work_wire)
+                decomp = self._decomposition_with_one_worker(
+                    self.control_wires, self._target_wire, work_wire
+                )
 
-        flips2 = [qml.PauliX(self.control_wires[i]) for i, val in enumerate(self.control_values) if val == "0"]
+        flips2 = [
+            qml.PauliX(self.control_wires[i])
+            for i, val in enumerate(self.control_values)
+            if val == "0"
+        ]
 
         return flips1 + decomp + flips2
 
@@ -2142,10 +2157,18 @@ class MultiControlledX(ControlledQubitUnitary):
 
         gates = []
 
-        gates.append(MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part))
-        gates.append(MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part))
-        gates.append(MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part))
-        gates.append(MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part))
+        gates.append(
+            MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part)
+        )
+        gates.append(
+            MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part)
+        )
+        gates.append(
+            MultiControlledX(control_wires=first_part, wires=target_wire, work_wires=second_part)
+        )
+        gates.append(
+            MultiControlledX(control_wires=second_part, wires=target_wire, work_wires=first_part)
+        )
 
         return gates
 
