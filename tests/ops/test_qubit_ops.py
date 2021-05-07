@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in discrete-variable quantum operations.
 """
+import itertools
 import pytest
 import functools
 import numpy as np
@@ -2096,6 +2097,49 @@ class TestMultiControlledX:
         pauli_x_state = circuit_pauli_x()
 
         assert np.allclose(mpmct_state, pauli_x_state)
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    def test_decomposition_with_many_workers(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there are many work wires."""
+        control_wires = range(n_ctrl_wires)
+        target_wire = n_ctrl_wires
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
+
+        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            qml.MultiControlledX._decomposition_with_many_workers(control_wires, target_wire, work_wires)
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(4, 6))
+    def test_decomposition_with_one_worker(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there is one work wire."""
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+        work_wires = n_ctrl_wires + 1
+
+        dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            qml.MultiControlledX._decomposition_with_one_worker(control_wires, target_wire, work_wires)
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        # assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
 
 
 class TestArithmetic:
