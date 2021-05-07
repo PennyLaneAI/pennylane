@@ -1956,6 +1956,7 @@ class ControlledQubitUnitary(QubitUnitary):
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
         # Saving for the circuit drawer
+        self._target_wires = wires
         self.control_wires = control_wires
         self.U = U
 
@@ -2008,7 +2009,8 @@ class ControlledQubitUnitary(QubitUnitary):
         return control_int
 
     def _controlled(self, wire):
-        ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        ctrl_wires = sorted(self.control_wires + wire)
+        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
 class MultiControlledX(ControlledQubitUnitary):
