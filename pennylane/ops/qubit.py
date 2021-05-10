@@ -1615,7 +1615,7 @@ class U2(Operation):
 class U3(Operation):
     r"""U3(theta, phi, lambda, wires)
     Arbitrary single qubit unitary.
-   
+
     .. math::
 
         U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
@@ -1721,7 +1721,7 @@ class IsingXX(Operation):
             ]
         )
 
-    @staticmethod    
+    @staticmethod
     def decomposition(phi, wires):
         decomp_ops = [
             CNOT(wires=wires),
