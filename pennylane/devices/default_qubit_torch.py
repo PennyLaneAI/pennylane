@@ -76,7 +76,16 @@ class DefaultQubitTorch(DefaultQubit):
         return self._apply_unitary(state, mat, wires)
 
     def _asarray(self, a, dtype=None):
-        return torch.as_tensor(a, dtype=dtype, device=self._torch_device)
+        try:
+            res = torch.as_tensor(a, dtype=dtype, device=self._torch_device)
+        except ValueError:
+            res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
+
+            if dtype is not None:
+                res = torch.as_tensor(a, dtype=dtype, device=self._torch_device)
+
+        return res
+        
 
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
