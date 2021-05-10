@@ -22,6 +22,7 @@ import pytest
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_tf import DefaultQubitTF
 from gate_data import (
@@ -74,7 +75,14 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 # Define standard qubit operations
 #####################################################
 
-single_qubit = [(qml.S, S), (qml.T, T), (qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
+single_qubit = [
+    (qml.S, S),
+    (qml.T, T),
+    (qml.PauliX, X),
+    (qml.PauliY, Y),
+    (qml.PauliZ, Z),
+    (qml.Hadamard, H),
+]
 single_qubit_param = [
     (qml.PhaseShift, Rphi),
     (qml.RX, Rotx),
@@ -109,6 +117,23 @@ def init_state(scope="session"):
         return state
 
     return _init_state
+
+
+#####################################################
+# Initialization test
+#####################################################
+
+
+def test_analytic_deprecation():
+    """Tests if the kwarg `analytic` is used and displays error message."""
+    msg = "The analytic argument has been replaced by shots=None. "
+    msg += "Please use shots=None instead of analytic=True."
+
+    with pytest.raises(
+        DeviceError,
+        match=msg,
+    ):
+        qml.device("default.qubit.tf", wires=1, shots=1, analytic=True)
 
 
 #####################################################
@@ -167,9 +192,9 @@ class TestApply:
 
     def test_full_subsystem_statevector(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
-        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.
-        state_wires = qml.wires.Wires(['a', 'b', 'c'])
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
+        state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
@@ -179,9 +204,9 @@ class TestApply:
 
     def test_partial_subsystem_statevector(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
-        dev = DefaultQubitTF(wires=['a', 'b', 'c'])
-        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.)
-        state_wires = qml.wires.Wires(['a', 'c'])
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
@@ -472,7 +497,6 @@ class TestExpval:
 
         dev = DefaultQubitTF(wires=2)
 
-
         with qml.tape.QuantumTape() as tape:
             queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
@@ -504,9 +528,9 @@ class TestExpval:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
@@ -528,14 +552,14 @@ class TestExpval:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
 
-        expected = np.cos(varphi)*np.cos(phi)
+        expected = np.cos(varphi) * np.cos(phi)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -551,9 +575,9 @@ class TestExpval:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
@@ -584,9 +608,9 @@ class TestExpval:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
@@ -604,8 +628,7 @@ class TestExpval:
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qubit.tf", wires=3)
 
-        A1 = np.array([[1, 2],
-                       [2, 4]])
+        A1 = np.array([[1, 2], [2, 4]])
 
         A2 = np.array(
             [
@@ -624,9 +647,9 @@ class TestExpval:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
@@ -636,7 +659,8 @@ class TestExpval:
             + 4 * np.cos(phi) * np.sin(theta)
             + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
             - 3 * np.sin(phi)
-            - 2 * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
+            - 2
+            * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
             * np.sin(varphi)
             + np.cos(theta)
             * (
@@ -653,17 +677,15 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit.tf", wires=2)
 
-        A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+        A = np.array(
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+        )
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
 
         dev.apply(
-            [
-                qml.RY(theta, wires=[0]),
-                qml.RY(phi, wires=[1]),
-                qml.CNOT(wires=[0, 1])
-            ],
-            obs.diagonalizing_gates()
+            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
+            obs.diagonalizing_gates(),
         )
 
         res = dev.expval(obs)
@@ -679,18 +701,16 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit.tf", wires=3, shots=None)
 
-        A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-        Identity = np.array([[1, 0],[0, 1]])
-        H = np.kron(np.kron(Identity,Identity), A)
+        A = np.array(
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+        )
+        Identity = np.array([[1, 0], [0, 1]])
+        H = np.kron(np.kron(Identity, Identity), A)
         obs = qml.Hermitian(H, wires=[2, 1, 0])
 
         dev.apply(
-            [
-                qml.RY(theta, wires=[0]),
-                qml.RY(phi, wires=[1]),
-                qml.CNOT(wires=[0, 1])
-            ],
-            obs.diagonalizing_gates()
+            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
+            obs.diagonalizing_gates(),
         )
         res = dev.expval(obs)
 
@@ -752,9 +772,9 @@ class TestVar:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.var(obs)
@@ -782,9 +802,9 @@ class TestVar:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.var(obs)
@@ -819,9 +839,9 @@ class TestVar:
                 qml.RX(phi, wires=[1]),
                 qml.RX(varphi, wires=[2]),
                 qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[1, 2]),
             ],
-            obs.diagonalizing_gates()
+            obs.diagonalizing_gates(),
         )
 
         res = dev.var(obs)
@@ -883,7 +903,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
-            "passthru_interface": 'tf',
+            "passthru_interface": "tf",
             "passthru_devices": {
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
@@ -949,7 +969,7 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.tf", wires=1)
         state = init_state(1)
 
-        @qml.qnode(dev, interface='tf')
+        @qml.qnode(dev, interface="tf")
         def circuit(params):
             qml.QubitStateVector(state, wires=[0])
             op(params[0], wires=[0])
@@ -970,9 +990,9 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.tf", wires=2)
         state = init_state(2)
 
-        @qml.qnode(dev, interface='tf')
+        @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0,1])
+            qml.QubitStateVector(state, wires=[0, 1])
             op(params[0], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -992,18 +1012,19 @@ class TestQNodeIntegration:
         c = -0.654
         state = init_state(2)
 
-        @qml.qnode(dev, interface='tf')
+        @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0,1])
-            qml.CRot(params[0], params[1], params[2], wires=[0,1])
+            qml.QubitStateVector(state, wires=[0, 1])
+            qml.CRot(params[0], params[1], params[2], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         # Pass a TF Variable to the qfunc
-        params = tf.Variable(np.array([a,b,c]))
+        params = tf.Variable(np.array([a, b, c]))
         circuit(params)
         res = dev.state
         expected = CRot3(a, b, c) @ state
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1248,7 +1269,7 @@ class TestPassthruIntegration:
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop
         mode"""
-        dev = qml.device('default.qubit.tf', wires=1)
+        dev = qml.device("default.qubit.tf", wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(param):

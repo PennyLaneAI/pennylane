@@ -12,43 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``DoubleExcitationUnitary`` template.
+Contains the DoubleExcitationUnitary template.
 """
-import numpy as np
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
-from pennylane.ops import CNOT, RX, RZ, Hadamard
-from pennylane.templates.decorator import template
-from pennylane.wires import Wires
-
-
-def _preprocess(weight, wires1, wires2):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the weights tensor.
-    * Check that both wire sets have at least 2 wires.
-
-    Args:
-        weight (tensor_like): trainable parameters of the template
-        wires1 (Wires): first set of wires
-        wires2 (Wires): second set of wires
-    """
-
-    if len(wires1) < 2:
-        raise ValueError(
-            "expected at least two wires representing the occupied orbitals; "
-            "got {}".format(len(wires1))
-        )
-    if len(wires2) < 2:
-        raise ValueError(
-            "expected at least two wires representing the unoccupied orbitals; "
-            "got {}".format(len(wires2))
-        )
-
-    shape = qml.math.shape(weight)
-    if shape != ():
-        raise ValueError(f"Weight must be a scalar; got shape {shape}.")
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import RZ, RX, CNOT, Hadamard
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -395,8 +365,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@template
-def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
+class DoubleExcitationUnitary(Operation):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -446,19 +415,15 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     Usage Details section for more details.
 
     Args:
-        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires1 (Iterable or Wires): Wires of the qubits representing the subset of occupied orbitals
-            in the interval ``[s, r]``. Accepts an iterable of numbers or strings, or a Wires object,
-            with minimum length 2. The first wire is interpreted as ``s`` and the last wire as ``r``.
+        weight (float or tensor_like): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        wires1 (Iterable): Wires of the qubits representing the subset of occupied orbitals
+            in the interval ``[s, r]``. The first wire is interpreted as ``s``
+            and the last wire as ``r``.
             Wires in between are acted on with CNOT gates to compute the parity of the set of qubits.
-        wires2 (Iterable or Wires): Wires of the qubits representing the subset of unoccupied
-            orbitals in the interval ``[q, p]``. Accepts an iterable of numbers or strings, or a
-            Wires object. Must be of minimum length 2. The first wire is interpreted as ``q`` and
+        wires2 (Iterable): Wires of the qubits representing the subset of unoccupied
+            orbitals in the interval ``[q, p]``. The first wire is interpreted as ``q`` and
             the last wire is interpreted as ``p``. Wires in between are acted on with CNOT gates
             to compute the parity of the set of qubits.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
@@ -508,45 +473,56 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
 
     """
 
-    ##############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires1 = Wires(wires1)
-    wires2 = Wires(wires2)
+    def __init__(self, weight, wires1=None, wires2=None, do_queue=True):
 
-    _preprocess(weight, wires1, wires2)
+        if len(wires1) < 2:
+            raise ValueError(
+                "expected at least two wires representing the occupied orbitals; "
+                "got {}".format(len(wires1))
+            )
+        if len(wires2) < 2:
+            raise ValueError(
+                "expected at least two wires representing the unoccupied orbitals; "
+                "got {}".format(len(wires2))
+            )
 
-    s = wires1[0]
-    r = wires1[-1]
-    q = wires2[0]
-    p = wires2[-1]
+        shape = qml.math.shape(weight)
+        if shape != ():
+            raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-    # Sequence of the wires entering the CNOTs
-    cnots_occ = [wires1.subset([l, l + 1]) for l in range(len(wires1) - 1)]
-    cnots_unocc = [wires2.subset([l, l + 1]) for l in range(len(wires2) - 1)]
+        self.wires1 = list(wires1)
+        self.wires2 = list(wires2)
+        wires = wires1 + wires2
 
-    set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
+        super().__init__(weight, wires=wires, do_queue=do_queue)
 
-    # Apply the first layer
-    _layer1(weight, s, r, q, p, set_cnot_wires)
+    def expand(self):
 
-    # Apply the second layer
-    _layer2(weight, s, r, q, p, set_cnot_wires)
+        weight = self.parameters[0]
+        s = self.wires1[0]
+        r = self.wires1[-1]
+        q = self.wires2[0]
+        p = self.wires2[-1]
 
-    # Apply the third layer
-    _layer3(weight, s, r, q, p, set_cnot_wires)
+        # Sequence of the wires entering the CNOTs
+        cnots_occ = [self.wires1[l : l + 2] for l in range(len(self.wires1) - 1)]
+        cnots_unocc = [self.wires2[l : l + 2] for l in range(len(self.wires2) - 1)]
 
-    # Apply the fourth layer
-    _layer4(weight, s, r, q, p, set_cnot_wires)
+        set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
 
-    # Apply the fifth layer
-    _layer5(weight, s, r, q, p, set_cnot_wires)
+        with qml.tape.QuantumTape() as tape:
 
-    # Apply the sixth layer
-    _layer6(weight, s, r, q, p, set_cnot_wires)
+            _layer1(weight, s, r, q, p, set_cnot_wires)
+            _layer2(weight, s, r, q, p, set_cnot_wires)
+            _layer3(weight, s, r, q, p, set_cnot_wires)
+            _layer4(weight, s, r, q, p, set_cnot_wires)
+            _layer5(weight, s, r, q, p, set_cnot_wires)
+            _layer6(weight, s, r, q, p, set_cnot_wires)
+            _layer7(weight, s, r, q, p, set_cnot_wires)
+            _layer8(weight, s, r, q, p, set_cnot_wires)
 
-    # Apply the seventh layer
-    _layer7(weight, s, r, q, p, set_cnot_wires)
-
-    # Apply the eighth layer
-    _layer8(weight, s, r, q, p, set_cnot_wires)
+        return tape

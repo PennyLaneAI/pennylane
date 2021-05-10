@@ -671,7 +671,8 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        new_tape = tape.expand()
+        # since expansion calls `BasisStatePreparation` we have to expand twice
+        new_tape = tape.expand(depth=2)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -728,7 +729,7 @@ class TestExpand:
             qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 4
 
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
@@ -758,7 +759,7 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
     def test_stopping_criterion_with_depth(self):
@@ -794,7 +795,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 6
+        assert len(new_tape.operations) == 5
 
         expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
@@ -844,7 +845,7 @@ class TestExpand:
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
         expansion happens."""
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
 
         # Remove support for an op to enforce decomposition & tape expansion
         mock_ops = copy.copy(dev.operations)
@@ -866,6 +867,7 @@ class TestExpand:
             assert "T" not in qnode._original_device.operations
 
             assert qnode.qtape.is_sampled
+
 
 class TestExecution:
     """Tests for tape execution"""

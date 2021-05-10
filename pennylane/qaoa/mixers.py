@@ -48,7 +48,9 @@ def x_mixer(wires):
     >>> wires = range(3)
     >>> mixer_h = qaoa.x_mixer(wires)
     >>> print(mixer_h)
-    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+      (1) [X0]
+    + (1) [X1]
+    + (1) [X2]
     """
 
     wires = Wires(wires)
@@ -88,7 +90,10 @@ def xy_mixer(graph):
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.xy_mixer(graph)
     >>> print(mixer_h)
-    (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
+      (0.5) [X0 X1]
+    + (0.5) [Y0 Y1]
+    + (0.5) [X1 X2]
+    + (0.5) [Y1 Y2]
     """
 
     if not isinstance(graph, nx.Graph):
@@ -143,14 +148,14 @@ def bit_flip_mixer(graph, b):
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
     >>> print(mixer_h)
-    (0.5) [X0]
-    + (0.5) [X0 Z1]
-    + (0.25) [X1]
+      (0.25) [X1]
+    + (0.5) [X0]
+    + (0.5) [X2]
     + (0.25) [X1 Z2]
     + (0.25) [X1 Z0]
-    + (0.25) [X1 Z0 Z2]
-    + (0.5) [X2]
+    + (0.5) [X0 Z1]
     + (0.5) [X2 Z1]
+    + (0.25) [X1 Z0 Z2]
     """
 
     if not isinstance(graph, nx.Graph):
