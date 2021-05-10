@@ -1412,3 +1412,61 @@ class TestCycles:
 
         with pytest.raises(ValueError):
             h = net_flow_constraint(g)
+
+    def test_net_flow_and_out_flow_constraint(self):
+        """Test the combined net-flow and out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
+        that qualify as simple_cycles
+        """
+        g = nx.complete_graph(3).to_directed()
+        h = net_flow_constraint(g) + out_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # Find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def states(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        bitstrings = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+
+        def find_simple_cycle(list_of_edges):
+            """Returns True if list_of_edges contains a permutation corresponding to a simple cycle"""
+            permutations = list(itertools.permutations(list_of_edges))
+
+            for edges in permutations:
+                if edges[0][0] != edges[-1][-1]:  # check first node is equal to last node
+                    continue
+                all_nodes = []
+                for edge in edges:
+                    for n in edge:
+                        all_nodes.append(n)
+                inner_nodes = all_nodes[
+                    1:-1
+                ]  # find all nodes in all edges excluding the first and last nodes
+                nodes_out = [
+                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 == 0
+                ]  # find the nodes each edge is leaving
+                node_in = [
+                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 != 0
+                ]  # find the nodes each edge is entering
+                if nodes_out == node_in and (
+                    len([all_nodes[0]] + nodes_out) == len(set([all_nodes[0]] + nodes_out))
+                ):  # check that each edge connect to the next via a common node and that no node is crossed more than once
+                    return True
+
+        for energy, bs in energies_bitstrings:
+            # convert binary string to wires then wires to edges
+            wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            if len(edges) and find_simple_cycle(edges):
+                assert energy == min(energies_bitstrings)[0]
+            elif len(edges) and not find_simple_cycle(edges):
+                assert energy > min(energies_bitstrings)[0]
