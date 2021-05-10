@@ -503,7 +503,7 @@ def max_weight_cycle(graph, constrained=True):
 
         The maximum weighted cycle cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = H_{loss} + H_{netflow} + H_{outflow}
+        .. math:: H_C \ = H_{loss} + 3 H_{netflow} + 3 H_{outflow}
 
         where the loss Hamiltonian :func:`~.loss_hamiltonian` is given by
 
