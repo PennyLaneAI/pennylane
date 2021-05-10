@@ -46,6 +46,11 @@ graph.add_edges_from([(0, 1), (1, 2)])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
+digraph_complete = nx.complete_graph(3).to_directed()
+complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
+for k, v in complete_edge_weight_data.items():
+    digraph_complete[k[0]][k[1]]["weight"] = v
+
 
 def decompose_hamiltonian(hamiltonian):
 
@@ -360,7 +365,7 @@ MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in 
 
 MIS = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
-"""GENERATES THE CASES TO TEST THE MIn VERTEX COVER PROBLEM"""
+"""GENERATES THE CASES TO TEST THE MIN VERTEX COVER PROBLEM"""
 
 COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25]]
 
@@ -471,6 +476,150 @@ HAMILTONIANS = [
 
 EDGE_DRIVER = zip(GRAPHS, REWARDS, HAMILTONIANS)
 
+"""GENERATES THE CASES TO TEST THE MAXIMUM WEIGHTED CYCLE PROBLEM"""
+
+DIGRAPHS = [digraph_complete] * 2
+
+MWC_CONSTRAINED = [True, False]
+
+COST_COEFFS = [
+    [
+        -0.6931471805599453,
+        0.0,
+        0.4054651081081644,
+        0.6931471805599453,
+        0.9162907318741551,
+        1.0986122886681098,
+    ],
+    [
+        -6.693147180559945,
+        -6.0,
+        -5.594534891891835,
+        -5.306852819440055,
+        -5.083709268125845,
+        -4.90138771133189,
+        54,
+        12,
+        -12,
+        -6,
+        -6,
+        -12,
+        6,
+        12,
+        -6,
+        -6,
+        -12,
+        6,
+        12,
+        -6,
+        -6,
+        6,
+    ],
+]
+
+COST_TERMS = [
+    [
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[5]),
+    ],
+    [
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[5]),
+        qml.Identity(wires=[0]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+        qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[5]),
+        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+    ],
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(2)]
+
+MIXER_COEFFS = [
+    [
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+        0.25,
+        0.25,
+        0.25,
+        -0.25,
+    ],
+    [1] * 6,
+]
+
+MIXER_TERMS = [
+    [
+        qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[5]),
+        qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[5]),
+        qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[1]),
+        qml.PauliY(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[1]),
+        qml.PauliY(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
+        qml.PauliX(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[1]),
+        qml.PauliX(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliX(wires=[2]),
+        qml.PauliY(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliX(wires=[2]),
+        qml.PauliY(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliY(wires=[2]),
+        qml.PauliX(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliY(wires=[2]),
+        qml.PauliX(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliX(wires=[0]),
+        qml.PauliY(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliX(wires=[0]),
+        qml.PauliY(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliY(wires=[0]),
+        qml.PauliX(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliY(wires=[0]),
+    ],
+    [qml.PauliX(wires=i) for i in range(6)],
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(2)]
+
+MAPPINGS = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
+
+MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS, MAPPINGS))
+
 
 def decompose_hamiltonian(hamiltonian):
 
@@ -526,6 +675,12 @@ class TestCostHamiltonians:
 
     """Tests the cost Hamiltonians"""
 
+    def test_max_weight_cycle_errors(self):
+        """Tests that the max weight cycle Hamiltonian throws the correct errors"""
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph"):
+            qaoa.max_weight_cycle([(0, 1), (1, 2)])
+
     def test_cost_graph_error(self):
         """Tests that the cost Hamiltonians throw the correct error"""
 
@@ -575,6 +730,20 @@ class TestCostHamiltonians:
 
         cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
 
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(
+        ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
+    )
+    def test_max_weight_cycle_output(
+        self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping
+    ):
+        """Tests that the output of the maximum weighted cycle method is correct"""
+
+        cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
+
+        assert mapping == m
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
@@ -1250,3 +1419,61 @@ class TestCycles:
 
         with pytest.raises(ValueError):
             h = net_flow_constraint(g)
+
+    def test_net_flow_and_out_flow_constraint(self):
+        """Test the combined net-flow and out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
+        that qualify as simple_cycles
+        """
+        g = nx.complete_graph(3).to_directed()
+        h = net_flow_constraint(g) + out_flow_constraint(g)
+        m = wires_to_edges(g)
+        wires = len(g.edges)
+
+        # Find the energies corresponding to each possible bitstring
+        dev = qml.device("default.qubit", wires=wires)
+
+        def states(basis_state, **kwargs):
+            qml.BasisState(basis_state, wires=range(wires))
+
+        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+
+        # Calculate the set of all bitstrings
+        bitstrings = itertools.product([0, 1], repeat=wires)
+
+        # Calculate the corresponding energies
+        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+
+        def find_simple_cycle(list_of_edges):
+            """Returns True if list_of_edges contains a permutation corresponding to a simple cycle"""
+            permutations = list(itertools.permutations(list_of_edges))
+
+            for edges in permutations:
+                if edges[0][0] != edges[-1][-1]:  # check first node is equal to last node
+                    continue
+                all_nodes = []
+                for edge in edges:
+                    for n in edge:
+                        all_nodes.append(n)
+                inner_nodes = all_nodes[
+                    1:-1
+                ]  # find all nodes in all edges excluding the first and last nodes
+                nodes_out = [
+                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 == 0
+                ]  # find the nodes each edge is leaving
+                node_in = [
+                    inner_nodes[i] for i in range(len(inner_nodes)) if i % 2 != 0
+                ]  # find the nodes each edge is entering
+                if nodes_out == node_in and (
+                    len([all_nodes[0]] + nodes_out) == len(set([all_nodes[0]] + nodes_out))
+                ):  # check that each edge connect to the next via a common node and that no node is crossed more than once
+                    return True
+
+        for energy, bs in energies_bitstrings:
+            # convert binary string to wires then wires to edges
+            wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
+            edges = tuple(m[w] for w in wires_)
+
+            if len(edges) and find_simple_cycle(edges):
+                assert energy == min(energies_bitstrings)[0]
+            elif len(edges) and not find_simple_cycle(edges):
+                assert energy > min(energies_bitstrings)[0]
