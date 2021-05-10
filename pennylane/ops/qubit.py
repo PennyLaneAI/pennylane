@@ -2050,7 +2050,7 @@ class MultiControlledX(ControlledQubitUnitary):
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
 
-        Note that the work wires state of the work wires is not altered during the decomposition.
+        Note that the state of the work wires is not altered during the decomposition.
 
     **Example**
 
