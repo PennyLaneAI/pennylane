@@ -474,10 +474,10 @@ def max_clique(graph, constrained=True):
 
 
 def max_weight_cycle(graph, constrained=True):
-    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the maximum
-    weighted cycle problem, for a given graph.
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
+    maximum-weighted cycle problem, for a given graph.
 
-    The maximum-weighted cycle is defined in the following way (see
+    The maximum-weighted cycle problem is defined in the following way (see
     `here <https://1qbit.com/whitepaper/arbitrage/>`__ for more details).
     The product of weights of a subset of edges in a graph is given by
 
@@ -486,10 +486,10 @@ def max_weight_cycle(graph, constrained=True):
     where :math:`E` are the edges of the graph, :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)` and :math:`c_{ij}` is the corresponding edge weight.
     Our objective is to maximimize :math:`P`, subject to selecting the :math:`x_{ij}` so that
-    our subset of edges composes a cycle.
+    our subset of edges composes a `cycle <https://en.wikipedia.org/wiki/Cycle_(graph_theory)>`__.
 
     Args:
-        graph (nx.Graph): the graph on which the Hamiltonians are defined
+        graph (nx.Graph): the directed graph on which the Hamiltonians are defined
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
