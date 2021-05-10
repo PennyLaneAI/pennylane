@@ -733,8 +733,12 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC)
-    def test_max_weight_cycle_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping):
+    @pytest.mark.parametrize(
+        ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
+    )
+    def test_max_weight_cycle_output(
+        self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping
+    ):
         """Tests that the output of the maximum weighted cycle method is correct"""
 
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
