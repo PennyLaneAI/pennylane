@@ -581,7 +581,7 @@ MIXER_COEFFS = [
         0.25,
         -0.25,
     ],
-    [1, 1, 1],
+    [1] * 6,
 ]
 
 MIXER_TERMS = [
@@ -611,7 +611,7 @@ MIXER_TERMS = [
         qml.PauliY(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliY(wires=[0]),
         qml.PauliX(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliY(wires=[0]),
     ],
-    [qml.PauliX(wires=[0]), qml.PauliX(wires=[1]), qml.PauliX(wires=[2])],
+    [qml.PauliX(wires=i) for i in range(6)],
 ]
 
 MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(2)]
