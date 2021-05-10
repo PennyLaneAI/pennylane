@@ -501,28 +501,58 @@ def max_weight_cycle(graph, constrained=True):
 
         **Constrained**
 
+        The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is
+
+        .. math:: H_C = H_{loss}.
+
+        Here, :math:`H_{loss}` is a loss Hamiltonian:
+
+        .. math:: H_{C} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
+
+        where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix
+        acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.loss_hamiltonian`
+        for more details).
+
+        The returned mixer Hamiltonian is :func:`~.cycle_mixer` given by
+
+        .. math:: H_M = \frac{1}{4}\sum_{(i, j)\in E}
+                \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
+                \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
+                \right).
+
+        This mixer provides transitions between collections of cycles, i.e., any subset of edges
+        in :math:`E` such that all the graph's nodes :math:`V` have zero net flow
+        (see the :func:`~.net_flow_constraint` function).
+
+        .. note::
+
+            **Recommended initialization circuit:**
+                Your circuit must prepare a state (or a superposition of states) that corresponds
+                to a cycle. Follow the example code below to see how this is done.
+
+        **Unconstrained**
+
         The maximum weighted cycle cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = H_{loss} + 3 H_{netflow} + 3 H_{outflow}
+        .. math:: H_C \ = H_{loss} + 3 H_{netflow} + 3 H_{outflow}.
 
-        where the loss Hamiltonian :func:`~.loss_hamiltonian` is given by
-
-        .. math:: H_{loss} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
-
-        where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
-        upon the wire specified by the edge :math:`(i, j)`. The netflow constraint Hamiltonian
-        :func:`~.net_flow_constraint` is given by
+        The netflow constraint Hamiltonian :func:`~.net_flow_constraint` is given by
 
         .. math:: H_{netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
                 \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
 
-        where :math:`V` are the graph vertices and :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
-        the outdegree and indegree, respectively, of node :math:`i`. The outflow constraint
-        Hamiltonian :func:`~.out_flow_constraint` is given by
+        where :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
+        the outdegree and indegree, respectively, of node :math:`i`. It is minimized whenever a
+        subset of edges in :math:`E` results in zero net flow from each node in :math:`V`.
+
+        The outflow constraint Hamiltonian :func:`~.out_flow_constraint` is given by
 
         .. math:: H_{outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
                 - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
-                \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right)
+                \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right).
+
+        It is minimized whenever a subset of edges in :math:`E` results in an outflow of at most one
+        from each node in :math:`V`.
 
         The returned mixer Hamiltonian is :func:`~.x_mixer` applied to all wires.
 
@@ -530,30 +560,6 @@ def max_weight_cycle(graph, constrained=True):
 
             **Recommended initialization circuit:**
                 Even superposition over all basis states.
-
-        **Unconstrained**
-
-        The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is the loss Hamiltonian
-        :func:`~.loss_hamiltonian`, as defined above. Note that the netflow and outflow
-        constraints are not included in this cost Hamiltonian
-
-        .. math:: H_C = H_{loss}
-
-        The returned mixer Hamiltonian is :func:`~.cycle_mixer` given by
-
-        .. math:: H_M = \frac{1}{4}\sum_{(i, j)\in E}
-                \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
-                \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
-                \right)
-
-        where a valid cycle is defined as a subset of edges in :math:`E` such that all of the
-        graph's nodes :math:`V` have zero net flow (see the :func:`~.net_flow_constraint` function).
-
-        .. note::
-
-            **Recommended initialization circuit:**
-                Your circuit must prepare a state (or a superposition of states) that corresponds
-                to a cycle. Follow the example code below to see how this is done.
     """
 
     if not isinstance(graph, nx.Graph):
