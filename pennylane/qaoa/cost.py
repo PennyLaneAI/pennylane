@@ -502,6 +502,11 @@ def max_weight_cycle(graph, constrained=True):
 
         **Constrained**
 
+        .. note::
+
+            This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel,
+            Venturelli, and Biswas in `arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__.
+
         The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is
 
         .. math:: H_C = H_{loss}.
