@@ -2034,9 +2034,23 @@ class MultiControlledX(ControlledQubitUnitary):
     .. note::
 
         If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
-        ``MultiControlledX`` into Toffoli gates using the methods described in Lemmas 7.2 and 7.3 of
-        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ For control on 3 or more wires,
-        at least one work wire will be required.
+        the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
+        three or more wires, the Toffoli-based decomposition described in Lemmas 7.2 and 7.3 of
+        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. This method
+        requires at least one work wire.
+
+        The number of work wires determines the decomposition method used and the resulting number
+        of Toffoli gates required.
+
+        #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
+           applied using the first :math:`n - 2` work wires.
+        #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
+           will be applied using only the first work wire.
+
+        These methods present a tradeoff between qubit number and depth. The method in point 1
+        requires fewer Toffoli gates but a greater number of qubits.
+
+        Note that the work wires state of the work wires is not altered during the decomposition.
 
     **Example**
 
