@@ -526,6 +526,11 @@ def max_weight_cycle(graph, constrained=True):
 
         The returned mixer Hamiltonian is :func:`~.x_mixer` applied to all wires.
 
+        .. note::
+
+            **Recommended initialization circuit:**
+                Even superposition over all basis states.
+
         **Unconstrained**
 
         The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is the loss Hamiltonian
@@ -543,6 +548,12 @@ def max_weight_cycle(graph, constrained=True):
 
         where a valid cycle is defined as a subset of edges in :math:`E` such that all of the
         graph's nodes :math:`V` have zero net flow (see the :func:`~.net_flow_constraint` function).
+
+        .. note::
+
+            **Recommended initialization circuit:**
+                Your circuit must prepare a state (or a superposition of states) that corresponds
+                to a cycle. Follow the example code below to see how this is done.
     """
 
     if not isinstance(graph, nx.Graph):
