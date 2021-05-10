@@ -1671,8 +1671,8 @@ class IsingXX(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params
-        c = math.cos(phi)
-        s = math.sin(phi)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
         return np.array(
             [

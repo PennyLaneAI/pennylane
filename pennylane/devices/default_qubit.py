@@ -120,6 +120,7 @@ class DefaultQubit(QubitDevice):
         "CRZ",
         "CRot",
         "QFT",
+        "IsingXX",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
