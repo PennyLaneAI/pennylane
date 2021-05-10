@@ -561,6 +561,47 @@ def max_weight_cycle(graph, constrained=True):
 
             **Recommended initialization circuit:**
                 Even superposition over all basis states.
+
+        **Example**
+
+        First set up a simple example:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+            import networkx as nx
+
+            a = np.random.random((4, 4))
+            np.fill_diagonal(a, 0)
+            g = nx.DiGraph(a)
+
+        The cost and mixer Hamiltonian as well as the mapping from wires to edges can be loaded
+        using:
+
+        >>> cost, mixer, mapping = qml.qaoa.max_weight_cycle(g, constrained=True)
+
+        Since we are using ``constrained=True``, we must ensure that the input state to the QAOA
+        algorithm corresponds to a cycle. Consider the mapping:
+
+        >>> mapping
+        {0: (0, 1),
+         1: (0, 2),
+         2: (0, 3),
+         3: (1, 0),
+         4: (1, 2),
+         5: (1, 3),
+         6: (2, 0),
+         7: (2, 1),
+         8: (2, 3),
+         9: (3, 0),
+         10: (3, 1),
+         11: (3, 2)}
+
+        A simple cycle is given by the edges ``(0, 1)`` and ``(1, 0)`` and corresponding wires
+        ``0`` and ``3``. Hence, the state :math:`|100100000000\rangle` corresponds to a cycle and
+        can be prepared using :class:`~.BasisState` or simple :class:`~.PauliX` rotations on the
+        ``0`` and ``3`` wires.
     """
     if not isinstance(graph, nx.Graph):
         raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
