@@ -2040,7 +2040,7 @@ class MultiControlledX(ControlledQubitUnitary):
         requires at least one work wire.
 
         The number of work wires determines the decomposition method used and the resulting number
-        of Toffoli gates required.
+        of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n` wires:
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
