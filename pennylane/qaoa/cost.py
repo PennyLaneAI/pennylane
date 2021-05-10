@@ -562,16 +562,17 @@ def max_weight_cycle(graph, constrained=True):
             **Recommended initialization circuit:**
                 Even superposition over all basis states.
     """
-
     if not isinstance(graph, nx.Graph):
         raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
+    mapping = qaoa.cycle.wires_to_edges(graph)
+
     if constrained:
-        return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph))
+        return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph), mapping)
 
     cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3 * (
         qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph)
     )
     mixer_h = qaoa.x_mixer(graph.nodes)
 
-    return (cost_h, mixer_h, qaoa.cycle.wires_to_edges(graph))
+    return (cost_h, mixer_h, mapping)

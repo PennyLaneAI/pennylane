@@ -616,7 +616,9 @@ MIXER_TERMS = [
 
 MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(2)]
 
-MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
+MAPPINGS = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
+
+MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS, MAPPINGS))
 
 
 def decompose_hamiltonian(hamiltonian):
@@ -731,12 +733,13 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MWC)
-    def test_max_weight_cycle_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC)
+    def test_max_weight_cycle_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping):
         """Tests that the output of the maximum weighted cycle method is correct"""
 
-        cost_h, mixer_h = qaoa.max_weight_cycle(graph, constrained=constrained)
+        cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
 
+        assert mapping == m
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
