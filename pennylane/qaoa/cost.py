@@ -493,7 +493,8 @@ def max_weight_cycle(graph, constrained=True):
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
-        (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
+        (.Hamiltonian, .Hamiltonian, dict): The cost and mixer Hamiltonians, as well as a dictionary
+        mapping from wires to the graph's edges
 
     .. UsageDetails::
 
@@ -573,4 +574,4 @@ def max_weight_cycle(graph, constrained=True):
     )
     mixer_h = qaoa.x_mixer(graph.nodes)
 
-    return (cost_h, mixer_h)
+    return (cost_h, mixer_h, qaoa.cycle.wires_to_edges(graph))
