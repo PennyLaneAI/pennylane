@@ -56,7 +56,7 @@ clean-docs:
 	make -C doc clean
 
 test:
-	#$(PYTHON) $(TESTRUNNER)
+	$(PYTHON) $(TESTRUNNER)
 	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd
 
 coverage:
