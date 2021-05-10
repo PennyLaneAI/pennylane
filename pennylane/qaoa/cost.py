@@ -509,11 +509,11 @@ def max_weight_cycle(graph, constrained=True):
 
         The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is
 
-        .. math:: H_C = H_{loss}.
+        .. math:: H_C = H_{\rm loss}.
 
-        Here, :math:`H_{loss}` is a loss Hamiltonian:
+        Here, :math:`H_{\rm loss}` is a loss Hamiltonian:
 
-        .. math:: H_{C} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
+        .. math:: H_{\rm loss} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
 
         where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix
         acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.loss_hamiltonian`
@@ -533,18 +533,18 @@ def max_weight_cycle(graph, constrained=True):
         .. note::
 
             **Recommended initialization circuit:**
-                Your circuit must prepare a state (or a superposition of states) that corresponds
-                to a cycle. Follow the example code below to see how this is done.
+                Your circuit must prepare a state that corresponds to a cycle (or a superposition
+                of cycles). Follow the example code below to see how this is done.
 
         **Unconstrained**
 
         The maximum weighted cycle cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = H_{loss} + 3 H_{netflow} + 3 H_{outflow}.
+        .. math:: H_C \ = H_{\rm loss} + 3 H_{\rm netflow} + 3 H_{\rm outflow}.
 
         The netflow constraint Hamiltonian :func:`~.net_flow_constraint` is given by
 
-        .. math:: H_{netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        .. math:: H_{\rm netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
                 \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
 
         where :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
@@ -553,7 +553,7 @@ def max_weight_cycle(graph, constrained=True):
 
         The outflow constraint Hamiltonian :func:`~.out_flow_constraint` is given by
 
-        .. math:: H_{outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        .. math:: H_{\rm outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
                 - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
                 \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right).
 
@@ -569,7 +569,7 @@ def max_weight_cycle(graph, constrained=True):
 
         **Example**
 
-        First set up a simple example:
+        First set up a simple graph:
 
         .. code-block:: python
 
