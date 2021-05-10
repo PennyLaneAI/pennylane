@@ -492,18 +492,46 @@ def max_weight_cycle(graph, constrained=True):
 
         The maximum weighted cycle cost Hamiltonian for constrained QAOA is defined as:
 
-        .. math:: H_C \ = H_loss + H_netflow + H_outflow
+        .. math:: H_C \ = H_{loss} + H_{netflow} + H_{outflow}
+
+        where the loss Hamiltonian :func:`~qaoa.cycle.loss_hamiltonian` is given by
+
+        .. math:: H_{loss} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
+
+        where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
+        upon the wire specified by the edge :math:`(i, j)`. The netflow constraint Hamiltonian
+        :func:`~qaoa.cycle.net_flow_constraint` is given by
+
+        .. math:: H_{netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+                \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
+
+        where :math:`V` are the graph vertices and :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
+        the outdegree and indegree, respectively, of node :math:`i`. The outflow constraint
+        Hamiltonian :func:`~qaoa.cycle.out_flow_constraint` is given by
+
+        .. math:: H_{outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+                - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
+                \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right)
 
         The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         **Unconstrained**
 
-        The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is defined as:
+        The maximum weighted cycle cost Hamiltonian for unconstrained QAOA is the loss Hamiltonian
+        :func:`~qaoa.cycle.loss_hamiltonian`, as defined above. Note that the netflow and outflow
+        constraints are not included in this cost Hamiltonian
 
-        .. math:: H_C = H_loss
+        .. math:: H_C = H_{loss}
 
-        The returned mixer Hamiltonian is :func:`~qaoa.cycle.cycle_mixer` applied to the given graph
+        The returned mixer Hamiltonian is :func:`~qaoa.cycle.cycle_mixer` given by
 
+        .. math:: H_M = \frac{1}{4}\sum_{(i, j)\in E}
+                \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
+                \left[X_{ij}X_{ik}X_{kj} +Y_{ij}Y_{ik}X_{kj} + Y_{ij}X_{ik}Y_{kj} - X_{ij}Y_{ik}Y_{kj}\right]
+                \right)
+
+        where a valid cycle is defined as a subset of edges in :math:`E` such that all of the
+        graph's nodes :math:`V` have zero net flow (see the :func:`~.net_flow_constraint` function).
     """
 
     if not isinstance(graph, nx.Graph):
