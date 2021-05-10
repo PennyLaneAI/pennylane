@@ -179,7 +179,6 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "
@@ -195,7 +194,6 @@ class DefaultQubit(QubitDevice):
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
-
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
@@ -215,6 +213,7 @@ class DefaultQubit(QubitDevice):
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+
 
         matrix = self._get_unitary_matrix(operation)
 
@@ -652,9 +651,10 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
+        
         if self._state is None:
             return None
-
+        
         prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
+
         return prob

@@ -26,6 +26,7 @@ except ImportError as e:
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
+import numpy as np
 
 class DefaultQubitTorch(DefaultQubit):
     # TODO docstring
@@ -49,7 +50,8 @@ class DefaultQubitTorch(DefaultQubit):
 
     # TODO test numpy -> torch interface mappings for all kwargs
     _abs = staticmethod(torch.abs)
-    _dot = staticmethod(torch.dot)
+    #_dot = staticmethod(torch.dot)
+    _dot = staticmethod(lambda x, y: torch.tensordot(x, y, dims=1))
     _einsum = staticmethod(torch.einsum)
     _flatten = staticmethod(torch.flatten)
     _reduce_sum = staticmethod(torch.sum)
@@ -60,17 +62,18 @@ class DefaultQubitTorch(DefaultQubit):
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
 
-    def __init__(self, wires, *, shots=1000, torch_device=torch.device('cpu')):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=torch.device('cpu')):
         self._torch_device = torch_device
-        super().__init__(wires, shots=shots, cache=0)
-        
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
+        self._state.requires_grad = True
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
     # TODO remove once torch.einsum fully supports compex valued tensors
-    def _apply_unitary_einsum(self, mat, wires):
-        self._apply_unitary(mat, wires)
+    def _apply_unitary_einsum(self, state, mat, wires):
+        return self._apply_unitary(state, mat, wires)
 
     def _asarray(self, a, dtype=None):
         return torch.as_tensor(a, dtype=dtype, device=self._torch_device)
@@ -147,3 +150,22 @@ class DefaultQubitTorch(DefaultQubit):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
 
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
+
+
+    def _apply_unitary(self, state, mat, wires):
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        
+        axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
+        tdot = self._tensordot(mat, state, axes=axes)
+
+        # tensordot causes the axes given in `wires` to end up in the first positions
+        # of the resulting tensor. This corresponds to a (partial) transpose of
+        # the correct output state
+        # We'll need to invert this permutation to put the indices in the correct place
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
+        perm = list(device_wires) + unused_idxs
+        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
+        return self._transpose(tdot, inv_perm)
