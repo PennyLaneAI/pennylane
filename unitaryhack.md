@@ -24,7 +24,7 @@ with the ``unitaryhack`` tag.
 ### Which issues are available?
 
 Issues for all skill and experience levels are available, from updating documentation to adding new simulators. 
-Look for ``[unitaryhack]`` in the issue's title, or [filter by the ``unitaryhack`` label](https://github.com/PennyLaneAI/pennylane/issues?q=is%3Aissue+is%3Aopen+label%3Aunitaryhack).
+Look for ``[unitaryhack]`` in the issue's title, or [filter by the ``unitaryhack`` label](https://github.com/pennylaneai/pennylane/labels/unitaryhack).
 
 If you're interested in claiming a cash prize, the following issue has a $100 bounty up for grabs:
 
@@ -34,3 +34,4 @@ You can still claim swag prizes by contributing to these other unitaryHACK issue
 
 [Add search bar for navigating tutorials](https://github.com/PennyLaneAI/pennylane/issues/1296)
 
+Consider also contributing to our sister libraries [Strawberry Fields](https://github.com/XanaduAI/strawberryfields/labels/unitaryhack) and [The Walrus](https://github.com/XanaduAI/thewalrus/labels/unitaryhack).
