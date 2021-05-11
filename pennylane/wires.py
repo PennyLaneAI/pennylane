@@ -99,6 +99,8 @@ class Wires(Sequence):
         else:
             self._labels = _process(wires)
 
+        self._hash = None
+
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
         if isinstance(idx, slice):
@@ -131,7 +133,9 @@ class Wires(Sequence):
 
     def __hash__(self):
         """Implements the hash function."""
-        return hash(self._labels)
+        if self._hash is None:
+            self._hash = hash(self._labels)
+        return self._hash
 
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
