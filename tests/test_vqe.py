@@ -98,7 +98,7 @@ valid_hamiltonians_repr = [
     "<Hamiltonian: terms=1, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[1]>",
-    "<Hamiltonian: terms=2, wires=[\'a\', \'b\']>",
+    "<Hamiltonian: terms=2, wires=['a', 'b']>",
     "<Hamiltonian: terms=3, wires=[0, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 2]>",
