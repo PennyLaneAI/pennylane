@@ -2228,8 +2228,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -2251,7 +2251,7 @@ class DoubleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
-    \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
+    \phi/2)|1100\rangle +\sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
 
@@ -2314,9 +2314,9 @@ class DoubleExcitationPlus(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
-        &|x\rangle \rightarrow e^{i\phi} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi/2} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
@@ -2374,9 +2374,9 @@ class DoubleExcitationMinus(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
-        &|x\rangle \rightarrow e^{-i\phi} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
