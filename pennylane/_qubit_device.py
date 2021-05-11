@@ -126,7 +126,6 @@ class QubitDevice(Device):
         """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
         device."""
 
-        print("setting _execution_mode to True")
         self._execution_mode = True
 
     @classmethod
@@ -183,9 +182,7 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
-        print(self._execution_mode)
         if self._execution_mode:
-            print("executing", self._execution_mode)
             # apply all circuit operations
             self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
@@ -232,6 +229,8 @@ class QubitDevice(Device):
                 if len(self._cache_execute) > self._cache:
                     self._cache_execute.popitem(last=False)
         else:
+            # what to return if no results calculated?
+            # if we determine the shape, we can just return zeros.
             results = circuit.observables
         # increment counter for number of executions of qubit device
         self._num_executions += 1
