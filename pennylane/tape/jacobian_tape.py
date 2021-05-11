@@ -224,11 +224,14 @@ class JacobianTape(QuantumTape):
     @staticmethod
     def _flatten_processing_result(g):
         """Flattens the output from processing_fn in parameter shift methods."""
-        if g.dtype is np.dtype("object"):
+        if hasattr(g, 'dtype') and g.dtype is np.dtype("object"):
             # object arrays cannot be flattened; must hstack them
             g = np.hstack(g)
 
-        return g.flatten()
+        if hasattr(g, 'flatten'):
+            return g.flatten()
+        return g
+
 
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
@@ -528,7 +531,7 @@ class JacobianTape(QuantumTape):
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
-
+               
         # some gradient methods need the device or the device wires
         options["device"] = device
         options["dev_wires"] = device.wires
@@ -580,9 +583,13 @@ class JacobianTape(QuantumTape):
 
             if jac is None:
                 # update the tape's output dimension
-                self._output_dim = len(g)
+                try:
+                    self._output_dim = len(g)
+                except TypeError:
+                    self._output_dim = 1
                 # create the Jacobian matrix
-                jac = np.zeros((len(g), len(params)), dtype=float)
+                dtype = float if isinstance(g, float) else np.object
+                jac = np.zeros((self._output_dim, len(params)), dtype=dtype)
 
             jac[:, i] = g
 
