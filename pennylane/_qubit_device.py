@@ -231,7 +231,7 @@ class QubitDevice(Device):
         else:
             # what to return if no results calculated?
             # if we determine the shape, we can just return zeros.
-            results = circuit.observables
+            results = np.array([0.0])
         # increment counter for number of executions of qubit device
         self._num_executions += 1
 

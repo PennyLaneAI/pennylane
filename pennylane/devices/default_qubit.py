@@ -242,7 +242,6 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        print("apply x")
         return self._roll(state, 1, axes[0])
 
     def _apply_y(self, state, axes, **kwargs):
