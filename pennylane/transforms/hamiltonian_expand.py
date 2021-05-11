@@ -14,10 +14,7 @@
 """
 Contains the hamiltonian expand tape transform
 """
-import itertools
-import numpy as np
 import pennylane as qml
-
 
 def hamiltonian_expand(tape):
     r"""
