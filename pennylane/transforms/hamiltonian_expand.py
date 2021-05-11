@@ -35,12 +35,18 @@ def hamiltonian_expand(tape):
 
     .. Warning::
 
-        Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors. See `~.Hamiltonian` for
+        Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors. See `~pennylane.Hamiltonian` for
         more information.
 
     **Example**
 
-    Given a tape of the form,
+    Given a Hamiltonian,
+
+    .. code-block:: python3
+
+        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+
+    and a tape of the form,
 
     .. code-block:: python3
 
@@ -49,7 +55,6 @@ def hamiltonian_expand(tape):
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
 
-            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
             qml.expval(H)
 
     We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
