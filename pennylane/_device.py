@@ -18,6 +18,7 @@ This module contains the :class:`Device` abstract base class.
 import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from functools import lru_cache
 
 import numpy as np
 
@@ -331,6 +332,7 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
+    @lru_cache()
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 
