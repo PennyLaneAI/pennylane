@@ -125,6 +125,33 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
+* `qml.Hamiltonian` objects can now be recorded inside quantum tapes. 
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+
+* Adds a `hamiltonian_expand` tape transform, which takes a tape ending in 
+  `qml.expval(H)`, where `H` is a Hamiltonian and maps it to a collection 
+  of tapes which can be executed, and passed into a post-processing function yielding 
+  the expectation value.
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+   
+  Example use:
+    
+  ```python
+  H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
+  
+  with qml.tape.QuantumTape() as tape:  
+      qml.Hadamard(wires=1)
+      return qml.expval(H)
+  
+  tapes, fn = qml.transforms.hamiltonian_expand(tape)
+  dev = qml.device("default.qubit", wires=3)
+  res = dev.batch_execute(tapes)
+  ```
+  ```pycon
+  >>> fn(res)
+  4.0
+  ```
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.6 and begin testing for Python 3.9.
@@ -150,7 +177,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Jack Ceroni, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
 
 # Release 0.15.1 (current release)
 
@@ -719,26 +746,6 @@ fully differentiable.
   by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
   
-* `qml.Hamiltonian` objects can now be recorded inside quantum tapes. As a result, 
-  expectation values of `qml.Hamiltonian` objects can now be calculated inside QNodes. 
-  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
-   
-  Example use:
-    
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-  
-  @qml.qnode(dev)
-  def circuit(): 
-      qml.Hadamard(wires=1)
-      H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
-      return qml.expval(H)
-  ```
-  ```pycon
-  >>> circuit()
-  4.0
-  ```
-
 * Two new utility methods are provided for working with quantum tapes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
