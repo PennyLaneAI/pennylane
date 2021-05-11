@@ -10,8 +10,8 @@
 
 ### What is it?
 
-unitaryHack is a open-souce hackathon running May 14-30th, 2021. Contribute to open-source projects 
-in the quantum computing space, learn new skills, and unlock swag and bounties!
+unitaryHACK is a open-souce hackathon running May 14-30th, 2021. Contribute to open-source projects 
+in the quantum computing space, learn new skills, and earn some sweet swag and bounties!
 
 ### How can I take part?
 
@@ -19,9 +19,18 @@ A number of quantum open-source projects are participating in unitaryHACK. You c
 list at the [unitaryHACK website](https://unitaryfund.github.io/unitaryhack/participating-projects.html). 
 
 If you'd like to contribute to PennyLane during unitaryHACK, we have marked a number of existing issues 
-with the unitaryHACK tag.
+with the ``unitaryhack`` tag.
 
 ### Which issues are available?
 
 Issues for all skill and experience levels are available, from updating documentation to adding new simulators. 
+Look for ``[unitaryhack]`` in the issue's title, or [filter by the ``unitaryhack`` label](https://github.com/PennyLaneAI/pennylane/issues?q=is%3Aissue+is%3Aopen+label%3Aunitaryhack).
+
+If you're interested in claiming a cash prize, the following issue has a $100 bounty up for grabs:
+
+[Create a quantum simulator in PyTorch](https://github.com/PennyLaneAI/pennylane/issues/1225)
+
+You can still claim swag prizes by contributing to these other unitaryHACK issues:
+
+[Add search bar for navigating tutorials](https://github.com/PennyLaneAI/pennylane/issues/1296)
 
