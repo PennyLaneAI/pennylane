@@ -54,6 +54,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
+    ~transforms.hamiltonian_expand
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
