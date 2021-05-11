@@ -585,17 +585,18 @@ def mock_device(monkeypatch):
 
         yield get_device
 
+
 #####################################################
 # Queues
 
 QUEUE_HAMILTONIANS_1 = [
     qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
 ]
 
 QUEUE_HAMILTONIANS_2 = [
     qml.Hamiltonian([1], [qml.PauliX(0)]),
-    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)])
+    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)]),
 ]
 
 QUEUES = [
@@ -605,7 +606,7 @@ QUEUES = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.PauliX(0),
         qml.Hamiltonian([1], [qml.PauliX(0)]),
-        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)])
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)]),
     ],
     [
         qml.PauliX(0),
@@ -615,8 +616,8 @@ QUEUES = [
         qml.PauliZ(1),
         qml.PauliX(0) @ qml.PauliZ(1),
         qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliZ(1)]),
-        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)])
-    ]
+        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)]),
+    ],
 ]
 
 add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
@@ -787,7 +788,9 @@ class TestHamiltonian:
             qml.PauliZ(0) @ qml.PauliZ(2),
             qml.PauliX(1),
             qml.PauliZ(1),
-            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+            qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            ),
         ]
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
@@ -807,13 +810,17 @@ class TestHamiltonian:
             qml.PauliZ(2),
             qml.PauliZ(0) @ qml.PauliZ(2),
             qml.PauliZ(1),
-            qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]),
+            qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            ),
             qml.Hadamard(wires=1),
-            qml.PauliX(wires=0)
+            qml.PauliX(wires=0),
         ]
 
         with qml.tape.QuantumTape() as tape:
-            H = qml.Hamiltonian([1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)])
+            H = qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            )
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
 

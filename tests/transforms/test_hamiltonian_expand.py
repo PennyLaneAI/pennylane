@@ -35,7 +35,16 @@ with pennylane.tape.QuantumTape() as tape2:
     qml.PauliZ(1)
     qml.PauliX(2)
 
-    H2 = qml.Hamiltonian([1, 3, -2, 1, 1], [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliZ(2), qml.PauliX(0), qml.PauliX(2), qml.PauliZ(0) @ qml.PauliX(1)])
+    H2 = qml.Hamiltonian(
+        [1, 3, -2, 1, 1],
+        [
+            qml.PauliX(0) @ qml.PauliZ(2),
+            qml.PauliZ(2),
+            qml.PauliX(0),
+            qml.PauliX(2),
+            qml.PauliZ(0) @ qml.PauliX(1),
+        ],
+    )
     qml.expval(H2)
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
@@ -46,6 +55,7 @@ with qml.tape.QuantumTape() as tape3:
 
 TAPES = [tape1, tape2, tape3]
 OUTPUTS = [-1.5, -6, -1.5]
+
 
 class TestHamiltonianExpval:
     """Tests for the hamiltonian_expand transform"""
@@ -71,10 +81,19 @@ class TestHamiltonianExpval:
     def test_hamiltonian_dif_autograd(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
 
-        H = qml.Hamiltonian([-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)])
+        H = qml.Hamiltonian(
+            [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
+        )
         var = np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
         output = 0.42294409781940356
-        output2 = [9.68883500e-02, -2.90832724e-01, -1.04448033e-01, -1.94289029e-09, 3.50307411e-01, -3.41123470e-01]
+        output2 = [
+            9.68883500e-02,
+            -2.90832724e-01,
+            -1.04448033e-01,
+            -1.94289029e-09,
+            3.50307411e-01,
+            -3.41123470e-01,
+        ]
 
         with qml.tape.JacobianTape() as tape:
             for i in range(2):
@@ -104,10 +123,19 @@ class TestHamiltonianExpval:
         tf = pytest.importorskip("tensorflow")
         from pennylane.interfaces.tf import TFInterface
 
-        H = qml.Hamiltonian([-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)])
+        H = qml.Hamiltonian(
+            [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
+        )
         var = tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
         output = 0.42294409781940356
-        output2 = [9.68883500e-02, -2.90832724e-01, -1.04448033e-01, -1.94289029e-09, 3.50307411e-01, -3.41123470e-01]
+        output2 = [
+            9.68883500e-02,
+            -2.90832724e-01,
+            -1.04448033e-01,
+            -1.94289029e-09,
+            3.50307411e-01,
+            -3.41123470e-01,
+        ]
 
         with tf.GradientTape() as gtape:
             with qml.tape.JacobianTape() as tape:
@@ -127,4 +155,4 @@ class TestHamiltonianExpval:
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
-            assert np.allclose(list(g[0])+list(g[1]), output2)
+            assert np.allclose(list(g[0]) + list(g[1]), output2)
