@@ -17,7 +17,6 @@ import numpy as np
 import pennylane as qml
 import pennylane.tape
 from pennylane.interfaces.autograd import AutogradInterface
-import tensorflow as tf
 from pennylane.interfaces.tf import TFInterface
 
 """Defines the device used for all tests"""
@@ -118,6 +117,8 @@ class TestHamiltonianExpval:
     @pytest.mark.parametrize(("H", "var", "output", "output2"), zip(H, TF_VAR, TF_OUT, TF_OUT_2))
     def test_hamiltonian_dif_tensor(self, H, var, output, output2):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
+
+        tf = pytest.importorskip("tensorflow")
 
         with tf.GradientTape() as gtape:
             with qml.tape.JacobianTape() as tape:
