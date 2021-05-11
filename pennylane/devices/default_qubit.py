@@ -211,6 +211,7 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
+        print("_apply_operation")
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
@@ -242,6 +243,7 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
+        print("apply x")
         return self._roll(state, 1, axes[0])
 
     def _apply_y(self, state, axes, **kwargs):

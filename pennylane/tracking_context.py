@@ -15,12 +15,11 @@
 
 class ResourceTracker:
 
-    def __init__(self, dev):
-        self.dev = dev
+    def __init__(self, qnode):
+        self.qnode = qnode
 
     def __enter__(self):
-        self.dev.execution_mode = False
+        self.qnode.device._execution_mode = False
 
-    def __exit__(self):
-        self.dev.execution_mode = True
-        
+    def __exit__(self, exc_type, exc_value, tb):
+        self.qnode.device._execution_mode = True

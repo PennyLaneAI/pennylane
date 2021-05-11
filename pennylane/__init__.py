@@ -40,6 +40,7 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
+from pennylane.tracking_context import ResourceTracker
 from pennylane.transforms import (
     adjoint,
     draw,
