@@ -48,7 +48,7 @@ def _multi_dispatch(values):
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
-    interfaces = [get_interface(v) for v in values]
+    interfaces = {get_interface(v) for v in values}
 
     if len(set(interfaces) - {"numpy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
