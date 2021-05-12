@@ -19,7 +19,6 @@ This subpackage defines functions that relate to quantum kernel methods.
     :toctree: api
 """
 from .cost_functions import (
-    matrix_inner_product,
     kernel_polarization,
     kernel_target_alignment,
     kernel_matrix,
