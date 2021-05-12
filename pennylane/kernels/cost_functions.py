@@ -19,7 +19,7 @@ from pennylane import numpy as np
 
 
 def matrix_inner_product(A, B, normalize=False):
-    """Frobenius/Hilbert-Schmidt inner product between two matrices
+    r"""Frobenius/Hilbert-Schmidt inner product between two matrices
 
     Args:
         A (array[float]): First matrix, assumed to be a square array.
@@ -28,6 +28,11 @@ def matrix_inner_product(A, B, normalize=False):
 
     Returns:
         float: Inner product of A and B
+
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
     """
     inner_product = np.sum(A * B)
     if normalize:

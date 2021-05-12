@@ -18,7 +18,7 @@ import numpy as np
 
 
 def threshold_matrix(K):
-    """Remove negative eigenvalues from the given kernel matrix.
+    r"""Remove negative eigenvalues from the given kernel matrix.
 
     This method yields the closest positive semidefinite matrix in
     any unitarily invariant norm, e.g. the Frobenius norm.
@@ -41,7 +41,7 @@ def threshold_matrix(K):
 
 
 def displace_matrix(K):
-    """Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
+    r"""Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
 
     This method has the advantage that it keeps the eigenvectors intact.
 
@@ -60,7 +60,7 @@ def displace_matrix(K):
 
 
 def flip_matrix(K):
-    """Remove negative eigenvalues from the given kernel matrix by taking the absolute value.
+    r"""Remove negative eigenvalues from the given kernel matrix by taking the absolute value.
 
     This method has the advantage that it keeps the eigenvectors intact.
 
@@ -70,8 +70,7 @@ def flip_matrix(K):
     Returns:
         array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
 
-    Comments:
-        This method is introduced in https://arxiv.org/abs/2103.16774
+    Reference: This method is introduced in https://arxiv.org/abs/2103.16774
     """
     w, v = np.linalg.eigh(K)
 
@@ -85,10 +84,10 @@ def flip_matrix(K):
 
 
 def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
-    """Return the closest positive semidefinite matrix to the given kernel matrix.
+    r"""Return the closest positive semidefinite matrix to the given kernel matrix.
 
     This method has the advantage that it achieves the correct diagonal entries
-    (fix_diagonal=True) or keeps the eigenvectors intact (fix_diagonal=False).
+    (``fix_diagonal=True``) or keeps the eigenvectors intact (``fix_diagonal=False``).
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.
@@ -101,8 +100,8 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
 
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed.
-        fix_diagonal=False typically leads to problems in the SDP/solving it.
-            Use `threshold_matrix()` instead, as it analytically is equivalent.
+        ``fix_diagonal=False`` typically leads to problems in the SDP/solving it.
+            Use ``threshold_matrix()`` instead, as it analytically is equivalent.
     """
     if not fix_diagonal:
         return threshold_matrix(K)
@@ -131,7 +130,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
 
 
 def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
-    """Estimate depolarizing noise rate(s) using on the diagonal entries of a kernel
+    r"""Estimate depolarizing noise rate(s) using on the diagonal entries of a kernel
     matrix and mitigate the noise, assuming a global depolarizing noise model.
 
     Args:
