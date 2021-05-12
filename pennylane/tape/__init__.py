@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
-from .tape import QuantumTape
+from .tape import QuantumTape, get_active_tape
 from .jacobian_tape import JacobianTape
 from .cv_param_shift import CVParamShiftTape
 from .qubit_param_shift import QubitParamShiftTape

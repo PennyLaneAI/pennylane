@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,8 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """Converts a :func:`~.QNode` to a Keras
+    """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
+    Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -49,7 +50,7 @@ class KerasLayer(Layer):
             specifications for weights used in the QNode, such as the method of parameter
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
-            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__.
+            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
@@ -311,7 +312,7 @@ class KerasLayer(Layer):
         Returns:
             tf.TensorShape: shape of output data
         """
-        return tf.TensorShape(input_shape[0]).concatenate(self.output_dim)
+        return tf.TensorShape([input_shape[0]]).concatenate(self.output_dim)
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -623,7 +623,7 @@ class Operation(Operator):
             operations decomposition, or if not implemented, simply
             the operation itself.
         """
-        tape = qml.tape.QuantumTape()
+        tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
             self.decomposition(*self.data, wires=self.wires)
@@ -1121,7 +1121,7 @@ class Tensor(Observable):
 
             try:
                 qml.QueuingContext.update_info(o, owner=self)
-            except ValueError:
+            except qml.queuing.QueuingError:
                 o.queue()
                 qml.QueuingContext.update_info(o, owner=self)
             except NotImplementedError:

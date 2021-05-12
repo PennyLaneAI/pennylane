@@ -98,7 +98,7 @@ def _process_wires(wires, n_wires=None):
 
     elif isinstance(wires, dict):
 
-        if all([isinstance(w, int) for w in wires.keys()]):
+        if all(isinstance(w, int) for w in wires.keys()):
             # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
             n_wires = max(wires) + 1
             labels = list(range(n_wires))  # used for completing potential partial mapping.
@@ -616,7 +616,9 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
-        qubit_indexed_wires = _process_wires(wires,)
+        qubit_indexed_wires = _process_wires(
+            wires,
+        )
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
@@ -704,6 +706,12 @@ def convert_observable(qubit_observable, wires=None):
       0.04475014 -0.04475014 -0.04475014  0.04475014  0.12293305  0.16768319
       0.16768319  0.12293305  0.17627641]
     """
+
+    if any(np.iscomplex(np.array(coef)) for coef in qubit_observable.terms.values()):
+        raise TypeError(
+            "The coefficients entering the QubitOperator must be real;"
+            " got complex coefficients in the operator {}".format(qubit_observable)
+        )
 
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
 

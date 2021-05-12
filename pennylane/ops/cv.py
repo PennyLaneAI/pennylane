@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -710,7 +710,7 @@ class ThermalState(CVOperation):
 
 
 class GaussianState(CVOperation):
-    r"""pennylane.GaussianState(r, V, wires)
+    r"""pennylane.GaussianState(V, r, wires)
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -720,9 +720,9 @@ class GaussianState(CVOperation):
     * Gradient recipe: None
 
     Args:
+        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
-        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
     num_wires = AnyWires
     num_params = 2
@@ -1030,7 +1030,8 @@ class PolyXP(CVObservable):
     For second-order observables the representation is a real symmetric
     matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
 
-    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV expectation values.
+    Used for evaluating arbitrary order-2 CV expectation values of
+    :class:`~.pennylane.tape.CVParamShiftTape`.
 
     **Details:**
 
@@ -1041,6 +1042,7 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
+
     """
     num_wires = AnyWires
     num_params = 1

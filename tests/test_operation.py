@@ -459,7 +459,7 @@ class TestObservableConstruction:
 
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operator class"""
+    """Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -486,7 +486,7 @@ class TestOperatorIntegration:
 
 
 class TestOperationIntegration:
-    """ Integration tests for the Operation class"""
+    """Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
         """Test the inverse of an operation"""

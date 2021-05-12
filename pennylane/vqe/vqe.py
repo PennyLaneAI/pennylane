@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import warnings
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
+from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -53,7 +54,8 @@ class Hamiltonian:
     >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    (0.2) [X0 Z1] + (-0.543) [Z0 H2]
+      (-0.543) [Z0 H2]
+    + (0.2) [X0 Z1]
 
     The user can also provide custom observables:
 
@@ -141,7 +143,8 @@ class Hamiltonian:
         >>> H = qml.Hamiltonian([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
-        (1.0) [Y2] + (-1.0) [X0]
+          (-1) [X0]
+        + (1) [Y2]
         """
 
         coeffs = []
@@ -172,9 +175,12 @@ class Hamiltonian:
         # Lambda function that formats the wires
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
+        paired_coeff_obs = list(zip(self.coeffs, self.ops))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
+
         terms_ls = []
 
-        for i, obs in enumerate(self.ops):
+        for coeff, obs in paired_coeff_obs:
 
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
@@ -182,11 +188,11 @@ class Hamiltonian:
             elif isinstance(obs, Observable):
                 ob_str = f"{OBS_MAP.get(obs.name, obs.name)}{wires_print(obs)}"
 
-            term_str = f"({self.coeffs[i]}) [{ob_str}]"
+            term_str = f"({coeff}) [{ob_str}]"
 
             terms_ls.append(term_str)
 
-        return "\n+ ".join(terms_ls)
+        return "  " + "\n+ ".join(terms_ls)
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
@@ -203,7 +209,7 @@ class Hamiltonian:
 
         **Example**
 
-        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Paulix(1), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
         >>> print(H._obs_data())
         {(1, frozenset({('PauliZ', <Wires = [1]>, ())})),
         (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}
@@ -281,6 +287,13 @@ class Hamiltonian:
         terms1 = self.ops.copy()
 
         if isinstance(H, Hamiltonian):
+            shared_wires = Wires.shared_wires([self.wires, H.wires])
+            if len(shared_wires) > 0:
+                raise ValueError(
+                    "Hamiltonians can only be multiplied together if they act on "
+                    "different sets of wires"
+                )
+
             coeffs2 = H.coeffs
             terms2 = H.ops
 
@@ -542,7 +555,7 @@ class VQECost(ExpvalCost):
     def __init__(self, *args, **kwargs):
         warnings.warn(
             "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            DeprecationWarning,
+            UserWarning,
             2,
         )
         super().__init__(*args, **kwargs)
