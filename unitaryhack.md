@@ -40,8 +40,6 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 
 [Two operations named Interferometer](https://github.com/PennyLaneAI/pennylane/issues/1256)
 
-[Add a custom gate application for Toffoli in default.qubit](https://github.com/PennyLaneAI/pennylane/issues/1215)
-
 [Remove qml.inv and replace it with qml.adjoint](https://github.com/PennyLaneAI/pennylane/issues/1195)
 
 [update docstring for permute template](https://github.com/PennyLaneAI/pennylane/issues/1193)
