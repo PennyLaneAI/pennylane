@@ -115,13 +115,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
             solver = cp.CVXOPT
     except ImportError:
         # TODO: Make these proper warnings
-        print("CVXPY is required for this post-processing method.", end="")
-        if fix_diagonal:
-            print(" As you want to fix the diagonal, task is impossible. Returning input...")
-            return K
-        else:
-            print(" As you don't want to fix the diagonal, using threshold_matrix instead...")
-            return threshold_matrix(K)
+        raise ImportError("CVXPY is required for this post-processing method.")
 
     X = cp.Variable(K.shape, PSD=True)
     constraint = [cp.diag(X) == 1.0] if fix_diagonal else []
