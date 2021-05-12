@@ -56,7 +56,8 @@
          [ 0., -0.,  0., -1.]])
   ```
 
-* TBD: Add `qml.qaoa.cycle` (when structure is finalised)
+* Functionality to support solving the maximum-weighted cycle problem has been added to the `qaoa`
+  module.
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
   [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
@@ -64,6 +65,52 @@
   [(#1220)](https://github.com/PennyLaneAI/pennylane/pull/1220)
   [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
   [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
+  [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
+  
+  The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
+  
+  ```pycon
+  >>> a = np.random.random((3, 3))
+  >>> np.fill_diagonal(a, 0)
+  >>> g = nx.DiGraph(a)  # create a random directed graph
+  >>> cost, mixer, mapping = qml.qaoa.max_weight_cycle(g)
+  >>> print(cost)
+    (-0.9775906842165344) [Z2]
+  + (-0.9027248603361988) [Z3]
+  + (-0.8722207409852838) [Z0]
+  + (-0.6426184210832898) [Z5]
+  + (-0.2832594164291379) [Z1]
+  + (-0.0778133996933755) [Z4]
+  >>> print(mixer)
+    (-0.25) [X0 Y1 Y5]
+  + (-0.25) [X1 Y0 Y3]
+  + (-0.25) [X2 Y3 Y4]
+  + (-0.25) [X3 Y2 Y1]
+  + (-0.25) [X4 Y5 Y2]
+  + (-0.25) [X5 Y4 Y0]
+  + (0.25) [X0 X1 X5]
+  + (0.25) [Y0 Y1 X5]
+  + (0.25) [Y0 X1 Y5]
+  + (0.25) [X1 X0 X3]
+  + (0.25) [Y1 Y0 X3]
+  + (0.25) [Y1 X0 Y3]
+  + (0.25) [X2 X3 X4]
+  + (0.25) [Y2 Y3 X4]
+  + (0.25) [Y2 X3 Y4]
+  + (0.25) [X3 X2 X1]
+  + (0.25) [Y3 Y2 X1]
+  + (0.25) [Y3 X2 Y1]
+  + (0.25) [X4 X5 X2]
+  + (0.25) [Y4 Y5 X2]
+  + (0.25) [Y4 X5 Y2]
+  + (0.25) [X5 X4 X0]
+  + (0.25) [Y5 Y4 X0]
+  + (0.25) [Y5 X4 Y0]
+  >>> mapping
+  {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
+  ```
+  
+  Additional functionality can be found in the `qml.qaoa.cycle` module.
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
