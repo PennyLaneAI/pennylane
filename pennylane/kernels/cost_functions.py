@@ -35,8 +35,10 @@ def matrix_inner_product(A, B, normalize=False):
 
     """
     inner_product = np.sum(A * B)
+
     if normalize:
         inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
+
     return inner_product
 
 
@@ -53,8 +55,8 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
         array[float]: The square matrix of kernel values.
     """
     N = len(X)
-
     matrix = [0] * N ** 2
+
     for i in range(N):
         for j in range(i, N):
             if assume_normalized_kernel and i == j:
