@@ -14,7 +14,7 @@
 """
 This file contains functionalities for postprocessing of kernel matrices.
 """
-import numpy as np
+from pennylane import numpy as np
 
 
 def threshold_matrix(K):
@@ -68,9 +68,10 @@ def flip_matrix(K):
         K (array[float]): Kernel matrix assumed to be symmetric
 
     Returns:
-        array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
+        array[float]: Kernel matrix with negative eigenvalues offset by flipping negative eigenvalues.
 
-    Reference: This method is introduced in https://arxiv.org/abs/2103.16774
+    Reference:
+        This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`.
     """
     w, v = np.linalg.eigh(K)
 
@@ -88,6 +89,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     This method has the advantage that it achieves the correct diagonal entries
     (``fix_diagonal=True``) or keeps the eigenvectors intact (``fix_diagonal=False``).
+    For ``fix_diagonal=True``, this method is exactly the same as the ``threshold_matrix`` method.
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.
@@ -100,6 +102,9 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed if ``fix_diagonal=True``.
+
+    Reference:
+        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`.
     """
     if not fix_diagonal:
         return threshold_matrix(K)
@@ -141,11 +146,16 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
             'split_channel': Estimate individual noise rates per embedding.
         use_entries=None (array[int]): Diagonal entries to use if method in ['single', 'average'].
             If None, defaults to [0] ('single') or range(len(K)) ('average').
+
     Returns:
         K_bar (array[float]): Mitigated kernel matrix.
+
     Comments:
         If method=='average', diagonal entries use_entries have to be measured on the QC.
-        If method=='split_channel', all diagonal entries are required.
+        If method=='split_channel', all diagonal entries have to be measured on the QC.
+
+    Reference:
+        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`.
     """
     dim = 2 ** num_wires
 

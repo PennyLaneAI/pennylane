@@ -20,7 +20,7 @@ from ..utils import frobenius_inner_product
 
 
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
-    """Kernel polarization of a given kernel function.
+    """Computes the square matrix of pairwise kernel values for a given dataset.
 
     Args:
         X (list[datapoint]): List of datapoints
@@ -85,7 +85,7 @@ def kernel_polarization(
             that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
         rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
             care of unbalanced datasets. Defaults to True.
-        normalize (bool): If True, rescale the polarization to the kernel_target_alignment.
+        normalize (bool): If True, rescale the polarization to the kernel_target_alignment. Defaults to False.
 
     Returns:
         float: The kernel polarization.
