@@ -414,25 +414,38 @@ class TestRegularization:
         assert np.allclose(kern.flip_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
-        "input, expected_output",
+        "input,fix_diagonal,expected_output",
         [
-            (np.diag([1, -1]), np.diag([1, 1])),
-            (np.array([[1, 1], [1, -1]]), np.array([[1.0, 1.0], [1.0, 1.0]])),
-            (np.array([[0, 1], [1, 0]]), np.array([[1, 1], [1, 1]])),
+            (np.diag([1, -1]), False, np.diag([1, 0])),
+            (
+                np.array([[1, 1], [1, -1]]),
+                False,
+                np.array([[math.sqrt(2) + 1, 1], [1, math.sqrt(2) - 1]]) / 2,
+            ),
+            (np.array([[0, 1], [1, 0]]), False, np.array([[1, 1], [1, 1]]) / 2),
+            (np.diag([1, -1]), True, np.diag([1, 1])),
+            (np.array([[1, 1], [1, -1]]), True, np.array([[1.0, 1.0], [1.0, 1.0]])),
+            # the small perturbation ensures that the solver does not get stuck
+            (np.array([[0, 1.000001], [1, 0]]), True, np.array([[1, 1], [1, 1]])),
         ],
     )
-    def test_closest_psd_matrix(self, input, expected_output):
+    def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
         try:
             import cvxpy as cp
-            output = kern.closest_psd_matrix(input, feastol=1e-10)
+
+            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
         except ModuleNotFoundError:
-            pytest.skip("cvxpy seems to not be installed on the system."
-                    "It is required for qml.kernels.closest_psd_matrix"
-                    " and can be installed via `pip install cvxpy`.")
+            pytest.skip(
+                "cvxpy seems to not be installed on the system."
+                "It is required for qml.kernels.closest_psd_matrix"
+                " and can be installed via `pip install cvxpy`."
+            )
         except cp.error.SolverError:
-            pytest.skip("The cvxopt solver seems to not be installed on the system."
-                    "It is the default solver for qml.kernels.closest_psd_matrix"
-                    " and can be installed via `pip install cvxopt`.")
+            pytest.skip(
+                "The cvxopt solver seems to not be installed on the system."
+                "It is the default solver for qml.kernels.closest_psd_matrix"
+                " and can be installed via `pip install cvxopt`."
+            )
 
         assert np.allclose(output, expected_output, atol=1e-5)
 
