@@ -183,6 +183,8 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         if self._execution_mode:
+
+            print("Executing on device")
             # apply all circuit operations
             self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 

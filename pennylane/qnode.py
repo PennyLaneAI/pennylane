@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
 import inspect
+import contextlib
 
 import numpy as np
 
@@ -29,7 +30,6 @@ from pennylane.operation import State
 
 from pennylane.interfaces.autograd import AutogradInterface, np as anp
 from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
-
 
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
@@ -827,6 +827,11 @@ class QNode:
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
 
+    @contextlib.contextmanager
+    def execution_halted(self):
+        self.device._execution_mode = False
+        yield
+        self.device._execution_mode = True
 
 def qnode(
     device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
