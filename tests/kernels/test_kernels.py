@@ -28,87 +28,87 @@ def _simple_ansatz(x, params):
     qml.RX(params[1], wires=[0])
 
 
-class TestEmbeddingKernel:
-    def test_construction(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
+# class TestEmbeddingKernel:
+#     def test_construction(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
 
-        assert k.probs_qnode is not None
+#         assert k.probs_qnode is not None
 
-    @pytest.mark.parametrize("x1", np.linspace(0, 2 * np.pi, 5))
-    @pytest.mark.parametrize("x2", np.linspace(0, 2 * np.pi, 5))
-    def test_value_range(self, x1, x2):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     @pytest.mark.parametrize("x1", np.linspace(0, 2 * np.pi, 5))
+#     @pytest.mark.parametrize("x2", np.linspace(0, 2 * np.pi, 5))
+#     def test_value_range(self, x1, x2):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        val = k(x1, x2, params)
+#         val = k(x1, x2, params)
 
-        assert 0 <= val
-        assert val <= 1
+#         assert 0 <= val
+#         assert val <= 1
 
-    def test_known_values(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     def test_known_values(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        val = k(0.1, 0.1, params)
+#         val = k(0.1, 0.1, params)
 
-        assert val == pytest.approx(1.0)
+#         assert val == pytest.approx(1.0)
 
-    def test_square_kernel_matrix(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     def test_square_kernel_matrix(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        K = k.square_kernel_matrix([0.1, 0.2, 0.4], params)
+#         K = k.square_kernel_matrix([0.1, 0.2, 0.4], params)
 
-        # TODO: Add value tests
+#         # TODO: Add value tests
 
-        assert K.shape == (3, 3)
-        assert np.allclose(K, np.transpose(K))
-        assert np.allclose(np.diag(K), np.array([1, 1, 1]))
+#         assert K.shape == (3, 3)
+#         assert np.allclose(K, np.transpose(K))
+#         assert np.allclose(np.diag(K), np.array([1, 1, 1]))
 
-    def test_kernel_matrix(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     def test_kernel_matrix(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        X1 = [0.1, 0.2, 0.4]
-        X2 = [1.0, 2.1]
+#         X1 = [0.1, 0.2, 0.4]
+#         X2 = [1.0, 2.1]
 
-        K = k.kernel_matrix(X1, X2, params)
+#         K = k.kernel_matrix(X1, X2, params)
 
-        # TODO: Add value tests
+#         # TODO: Add value tests
 
-        assert K.shape == (3, 2)
+#         assert K.shape == (3, 2)
 
-        for i in range(3):
-            for j in range(2):
-                assert K[i, j] == k(X1[i], X2[j], params)
+#         for i in range(3):
+#             for j in range(2):
+#                 assert K[i, j] == k(X1[i], X2[j], params)
 
-    def test_kernel_target_alignment(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     def test_kernel_target_alignment(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        alignment = k.target_alignment([0.1, 0.2, 0.4], [1, -1, 1], params)
+#         alignment = k.target_alignment([0.1, 0.2, 0.4], [1, -1, 1], params)
 
-        # TODO: Add value tests
+#         # TODO: Add value tests
 
-        assert 0 <= alignment
-        assert alignment <= 1
+#         assert 0 <= alignment
+#         assert alignment <= 1
 
-    def test_kernel_polarization(self):
-        dev = qml.device("default.qubit", wires=1)
-        k = kern.EmbeddingKernel(_simple_ansatz, dev)
-        params = np.array([0.5, 0.9])
+#     def test_kernel_polarization(self):
+#         dev = qml.device("default.qubit", wires=1)
+#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
+#         params = np.array([0.5, 0.9])
 
-        polarization = k.polarization([0.1, 0.2, 0.4], [1, -1, 1], params)
+#         polarization = k.polarization([0.1, 0.2, 0.4], [1, -1, 1], params)
 
-        # TODO: Add value tests
+#         # TODO: Add value tests
 
-        assert 0 <= polarization
+#         assert 0 <= polarization
 
 
 def _mock_kernel(x1, x2, history):
