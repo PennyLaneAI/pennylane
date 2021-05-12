@@ -80,4 +80,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 
+extras_require = {
+    'kernels': ['cvxpy==1.1.11']
+}
+
 setup(classifiers=classifiers, **(info))
