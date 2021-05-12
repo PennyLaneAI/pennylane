@@ -121,20 +121,20 @@ wires = range(num_wires)
 dev = qml.device('default.qubit', wires=num_wires)
 
 @qml.qnode(dev)
-def _kernel(x1, x2):
+def kernel_circuit(x1, x2):
     qml.templates.AngleEmbedding(x1, wires=wires)
-    qml.adjoint(qml.templates.AngleEmbedding(x1, wires=wires))
+    qml.adjoint(qml.templates.AngleEmbedding(x2, wires=wires))
     return qml.probs(wires)
 
-kernel = lambda x1, x2: _kernel(x1, x2)[0]
+kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
 
-X = np.random.random((10, 6))
-K = np.zeros((10, 10))
-for i, x1 in enumerate(X):
-    for j, x2 in enumerate(X[:i+1]):
-        K[i,j] = kernel(x1, x2)
-        K[j,i] = K[i,j]
-K += np.random.randn(10, 10)
+# "Training feature vectors"
+X_train = np.random.random((10, 6))
+# Create symmetric square kernel matrix (for training)
+K = qml.kernels.square_kernel_matrix(X_train, kernel)
+# Add some (symmetric) Gaussian noise to the kernel matrix.
+N = np.random.randn(10, 10)
+K += (N + N.T) / 2
         
 K1 = qml.kernels.displace_matrix(K)
 K2 = qml.kernels.closest_psd_matrix(K)
@@ -142,6 +142,11 @@ K3 = qml.kernels.threshold_matrix(K)
 K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
 K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
 K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+
+# "Testing feature vectors"
+X_test = np.random.random((5, 6))
+# Compute kernel between test and training data.
+K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
 
   A demo on the module is work in progress.
