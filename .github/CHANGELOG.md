@@ -69,6 +69,7 @@
   
   The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
   
+  ```pycon
   >>> a = np.random.random((3, 3))
   >>> np.fill_diagonal(a, 0)
   >>> g = nx.DiGraph(a)  # create a random directed graph
@@ -107,7 +108,8 @@
   + (0.25) [Y5 X4 Y0]
   >>> mapping
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
-
+  ```
+  
   Additional functionality can be found in the `qml.qaoa.cycle` module.
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
