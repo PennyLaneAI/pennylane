@@ -114,7 +114,6 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
         if solver is None:
             solver = cp.CVXOPT
     except ImportError:
-        # TODO: Make these proper warnings
         print("CVXPY is required for this post-processing method.", end="")
         if fix_diagonal:
             print(" As you want to fix the diagonal, task is impossible. Returning input...")
@@ -130,8 +129,11 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
 
     try:
         problem.solve(solver=solver, **kwargs)
-    except Exception as e:
-        problem.solve(verbose=True, solver=solver, **kwargs)
+    except:
+        try:
+            problem.solve(solver=solver, verbose=True, **kwargs)
+        except Exception as e:
+            raise RuntimeError(f"CVXPY solver did not converge.") from e
 
     return X.value
 

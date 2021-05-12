@@ -24,12 +24,12 @@ def matrix_inner_product(A, B, normalize=False):
     Args:
         A (array[float]): First matrix, assumed to be a square array.
         B (array[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A&B
+        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B
 
     Returns:
         float: Inner product of A and B
     """
-    inner_product = np.trace(np.dot(np.transpose(A), B))
+    inner_product = np.sum(A * B)
     if normalize:
         inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
     return inner_product
@@ -120,6 +120,20 @@ def kernel_polarization(
     return matrix_inner_product(K, T, normalize=normalize)
 
 
-kernel_target_alignment = lambda *args, **kwargs: kernel_polarization(
-    *args, normalize=True, **kwargs
-)
+def kernel_target_alignment(*args, **kwargs):
+    """Kernel target alignment of a given kernel function.
+
+    Args:
+        X (list[datapoint]): List of datapoints
+        Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
+            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+        rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
+            care of unbalanced datasets. Defaults to True.
+        normalize (bool): If True, rescale the polarization to the kernel_target_alignment.
+
+    Returns:
+        float: The kernel polarization.
+    """
+    return kernel_polarization(*args, normalize=True, **kwargs)
