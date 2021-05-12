@@ -696,6 +696,14 @@ class TestHamiltonian:
         """Tests that Hamiltonians are tensored correctly"""
         assert H.compare(H1 @ H2)
 
+    def test_hamiltonian_same_wires(self):
+        """Test if a ValueError is raised when multiplication between Hamiltonians acting on the
+        same wires is attempted"""
+        h1 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+
+        with pytest.raises(ValueError, match="Hamiltonians can only be multiplied together if"):
+            h1 @ h1
+
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_iadd(self, H1, H2, H):
         """Tests that Hamiltonians are added inline correctly"""
@@ -1216,13 +1224,13 @@ class TestMultipleInterfaceIntegration:
 
 
 def test_vqe_cost():
-    """Tests that VQECost raises a DeprecationWarning but otherwise behaves as ExpvalCost"""
+    """Tests that VQECost raises a UserWarning but otherwise behaves as ExpvalCost"""
 
     h = qml.Hamiltonian([1], [qml.PauliZ(0)])
     dev = qml.device("default.qubit", wires=1)
     ansatz = qml.templates.StronglyEntanglingLayers
 
-    with pytest.warns(DeprecationWarning, match="Use of VQECost is deprecated"):
+    with pytest.warns(UserWarning, match="Use of VQECost is deprecated"):
         cost = qml.VQECost(ansatz, h, dev)
 
     assert isinstance(cost, qml.ExpvalCost)
