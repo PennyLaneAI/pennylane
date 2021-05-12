@@ -21,11 +21,12 @@ from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [
+    "dev_name,diff_method",
+    [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
         ["default.qubit", "backprop"],
-        ["default.qubit", "adjoint"]
+        ["default.qubit", "adjoint"],
     ],
 )
 class TestQNode:
@@ -50,6 +51,7 @@ class TestQNode:
         y = np.array([0.5], requires_grad=True)
 
         param_data = []
+
         def mock_apply(*args, **kwargs):
             for op in args[0]:
                 param_data.extend(op.data.copy())
@@ -62,7 +64,23 @@ class TestQNode:
         # test the jacobian works correctly
         param_data = []
         qml.grad(circuit)(x, y)
-        assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5 + np.pi/2, 0.1, 0.2, 0.3, 0.4, 0.5 - np.pi/2]
+        assert param_data == [
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5 + np.pi / 2,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5 - np.pi / 2,
+        ]
         assert not any(isinstance(p, np.tensor) for p in param_data)
 
     def test_execution_no_interface(self, dev_name, diff_method):
@@ -280,7 +298,7 @@ class TestQNode:
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant
-        a = 0.54 # the QNode will treat a scalar as differentiable
+        a = 0.54  # the QNode will treat a scalar as differentiable
         b = np.array(0.8, requires_grad=False)
 
         spy.call_args_list = []
@@ -687,22 +705,34 @@ class TestQNode:
         # Output should have shape [dcost/db, dcost/dc, dcost/dw],
         # where b,c are scalars, and w is a vector of length 2.
         assert len(res) == 3
-        assert res[0].shape == tuple() # scalar
-        assert res[1].shape == tuple() # scalar
-        assert res[2].shape == (2,)    # vector
+        assert res[0].shape == tuple()  # scalar
+        assert res[1].shape == tuple()  # scalar
+        assert res[2].shape == (2,)  # vector
 
-        cacbsc = np.cos(a)*np.cos(b)*np.sin(c)
+        cacbsc = np.cos(a) * np.cos(b) * np.sin(c)
 
-        expected = np.array([
-            # analytic expression for dcost/db
-            -np.cos(a)*np.sin(b)*np.sin(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dc
-            np.cos(a)*np.cos(b)*np.cos(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dw[0]
-            np.sin(cacbsc)*np.cos(weights[0])*np.sin(np.cos(a)),
-            # analytic expression for dcost/dw[1]
-            0
-        ])
+        expected = np.array(
+            [
+                # analytic expression for dcost/db
+                -np.cos(a)
+                * np.sin(b)
+                * np.sin(c)
+                * np.cos(cacbsc)
+                * np.sin(weights[0])
+                * np.sin(np.cos(a)),
+                # analytic expression for dcost/dc
+                np.cos(a)
+                * np.cos(b)
+                * np.cos(c)
+                * np.cos(cacbsc)
+                * np.sin(weights[0])
+                * np.sin(np.cos(a)),
+                # analytic expression for dcost/dw[0]
+                np.sin(cacbsc) * np.cos(weights[0]) * np.sin(np.cos(a)),
+                # analytic expression for dcost/dw[1]
+                0,
+            ]
+        )
 
         # np.hstack 'flattens' the ragged gradient array allowing it
         # to be compared with the expected result
@@ -716,6 +746,332 @@ class TestQNode:
             # Check that the parameter-shift rule was not applied
             # to the first parameter of circuit1.
             assert circuit1.qtape.trainable_params == {1, 2}
+
+    def test_second_derivative(self, dev_name, diff_method, mocker, tol):
+        """Test second derivative calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+        g = qml.grad(circuit)(x)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        g2 = qml.grad(lambda x: np.sum(qml.grad(circuit)(x)))(x)
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_g2 = [
+            -np.cos(a) * np.cos(b) + np.sin(a) * np.sin(b),
+            np.sin(a) * np.sin(b) - np.cos(a) * np.cos(b),
+        ]
+        assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
+
+    def test_hessian(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        g = grad_fn(x)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(grad_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_unused_parameter(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a scalar valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x
+
+        expected_res = np.cos(a)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        g = grad_fn(x)
+
+        expected_g = [-np.sin(a), 0]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(grad_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [-np.cos(a), 0],
+            [0, 0],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_vector_valued(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.probs(wires=0)
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x
+
+        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(circuit)
+        g = jac_fn(x)
+
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(jac_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_vector_valued_separate_args(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode that has separate input arguments"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.probs(wires=0)
+
+        a = np.array(1.0, requires_grad=True)
+        b = np.array(2.0, requires_grad=True)
+        res = circuit(a, b)
+
+        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(circuit)
+        g = jac_fn(a, b)
+
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(jac_fn)(a, b)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            # Hessian will have been called 4 times, for every permutation of a, b
+            # since autograd will treat them as separate arguments.
+            assert spy.call_count == 4
+
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+            ],
+            [
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_hessian_ragged(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a ragged QNode"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=1)
+            qml.RX(x[1], wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=1)
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x
+
+        expected_res = [
+            np.cos(a) * np.cos(b),
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
+        ]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(circuit)
+        g = jac_fn(x)
+
+        expected_g = [
+            [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)],
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(jac_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [
+                [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+                [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+            ],
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_grad_matrix_caching(self, mocker, dev_name, diff_method):
+        """Test the gradient matrix caching"""
+        if diff_method not in {"parameter-shift"}:
+            pytest.skip("Test only supports parameter-shift")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.probs(0)
+
+        x = np.array([1.0, 2.0], requires_grad=True)
+
+        jac_fn = qml.jacobian(circuit)
+        hessian_fn = qml.jacobian(qml.jacobian(circuit))
+
+        j_spy = mocker.spy(JacobianTape, "jacobian")
+        h_spy = mocker.spy(JacobianTape, "hessian")
+
+        jac_fn(x)
+        assert j_spy.call_count == 1
+
+        # calling the same Jacobian function repeatedly,
+        # even with the same parameters, will re-evaluate
+        # the jacobian.
+        jac_fn(x)
+        assert j_spy.call_count == 2
+
+        # calling the hessian will result in new evaluations
+        hessian_fn(x)
+        assert j_spy.call_count == 3
+        assert h_spy.call_count == 1
+
+        # New parameter values
+        jac_fn(2 * x)
+        assert j_spy.call_count == 4
+
+        # new jacobian function
+        jac_fn2 = qml.jacobian(circuit)
+        jac_fn(x)
+        assert j_spy.call_count == 5
 
 
 def qtransform(qnode, a, framework=np):

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -92,8 +92,8 @@ class Hadamard(Observable, Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return Hadamard(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return Hadamard(wires=self.wires)
 
 
 class PauliX(Observable, Operation):
@@ -147,8 +147,11 @@ class PauliX(Observable, Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return PauliX(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return PauliX(wires=self.wires)
+
+    def _controlled(self, wire):
+        CNOT(wires=Wires(wire) + self.wires)
 
 
 class PauliY(Observable, Operation):
@@ -204,8 +207,11 @@ class PauliY(Observable, Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return PauliY(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return PauliY(wires=self.wires)
+
+    def _controlled(self, wire):
+        CY(wires=Wires(wire) + self.wires)
 
 
 class PauliZ(Observable, DiagonalOperation):
@@ -244,8 +250,11 @@ class PauliZ(Observable, DiagonalOperation):
         decomp_ops = [PhaseShift(np.pi, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return PauliZ(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return PauliZ(wires=self.wires)
+
+    def _controlled(self, wire):
+        CZ(wires=Wires(wire) + self.wires)
 
 
 class S(DiagonalOperation):
@@ -282,8 +291,8 @@ class S(DiagonalOperation):
         decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return S(wires=self.wires, do_queue=do_queue).inv()
+    def adjoint(self):
+        return S(wires=self.wires).inv()
 
 
 class T(DiagonalOperation):
@@ -320,8 +329,8 @@ class T(DiagonalOperation):
         decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return T(wires=self.wires, do_queue=do_queue).inv()
+    def adjoint(self):
+        return T(wires=self.wires).inv()
 
 
 class SX(Operation):
@@ -363,8 +372,8 @@ class SX(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return SX(wires=self.wires, do_queue=do_queue).inv()
+    def adjoint(self):
+        return SX(wires=self.wires).inv()
 
 
 class CNOT(Operation):
@@ -397,8 +406,11 @@ class CNOT(Operation):
     def _matrix(cls, *params):
         return CNOT.matrix
 
-    def adjoint(self, do_queue=False):
-        return CNOT(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CNOT(wires=self.wires)
+
+    def _controlled(self, wire):
+        Toffoli(wires=Wires(wire) + self.wires)
 
 
 class CZ(DiagonalOperation):
@@ -436,8 +448,8 @@ class CZ(DiagonalOperation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def adjoint(self, do_queue=False):
-        return CZ(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CZ(wires=self.wires)
 
 
 class CY(Operation):
@@ -482,8 +494,8 @@ class CY(Operation):
         decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return CY(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CY(wires=self.wires)
 
 
 class SWAP(Operation):
@@ -514,8 +526,11 @@ class SWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
-    def adjoint(self, do_queue=False):
-        return SWAP(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return SWAP(wires=self.wires)
+
+    def _controlled(self, wire):
+        CSWAP(wires=wire + self.wires)
 
 
 class CSWAP(Operation):
@@ -563,8 +578,8 @@ class CSWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
-    def adjoint(self, do_queue=False):
-        return CSWAP(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CSWAP(wires=self.wires)
 
 
 class Toffoli(Operation):
@@ -613,8 +628,8 @@ class Toffoli(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
-    def adjoint(self, do_queue=False):
-        return Toffoli(wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return Toffoli(wires=self.wires)
 
 
 class RX(Operation):
@@ -651,8 +666,11 @@ class RX(Operation):
 
         return np.array([[c, js], [js, c]])
 
-    def adjoint(self, do_queue=False):
-        return RX(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return RX(-self.data[0], wires=self.wires)
+
+    def _controlled(self, wire):
+        CRX(*self.parameters, wires=wire + self.wires)
 
 
 class RY(Operation):
@@ -689,8 +707,11 @@ class RY(Operation):
 
         return np.array([[c, -s], [s, c]])
 
-    def adjoint(self, do_queue=False):
-        return RY(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return RY(-self.data[0], wires=self.wires)
+
+    def _controlled(self, wire):
+        CRY(*self.parameters, wires=wire + self.wires)
 
 
 class RZ(DiagonalOperation):
@@ -733,8 +754,11 @@ class RZ(DiagonalOperation):
 
         return np.array([p, p.conjugate()])
 
-    def adjoint(self, do_queue=False):
-        return RZ(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return RZ(-self.data[0], wires=self.wires)
+
+    def _controlled(self, wire):
+        CRZ(*self.parameters, wires=wire + self.wires)
 
 
 class PhaseShift(DiagonalOperation):
@@ -778,8 +802,11 @@ class PhaseShift(DiagonalOperation):
         decomp_ops = [RZ(phi, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return PhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return PhaseShift(-self.data[0], wires=self.wires)
+
+    def _controlled(self, wire):
+        ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -833,8 +860,8 @@ class ControlledPhaseShift(DiagonalOperation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return ControlledPhaseShift(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
 
 class Rot(Operation):
@@ -890,9 +917,12 @@ class Rot(Operation):
         decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         phi, theta, omega = self.parameters
-        return Rot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
+        return Rot(-omega, -theta, -phi, wires=self.wires)
+
+    def _controlled(self, wire):
+        CRot(*self.parameters, wires=wire + self.wires)
 
 
 class MultiRZ(DiagonalOperation):
@@ -982,7 +1012,7 @@ class MultiRZ(DiagonalOperation):
         for i in range(len(wires) - 1):
             CNOT(wires=[wires[i + 1], wires[i]])
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
 
@@ -1168,17 +1198,15 @@ class PauliRot(Operation):
             elif gate == "Y":
                 RX(-np.pi / 2, wires=[wire])
 
-    def adjoint(self, do_queue=False):
-        return PauliRot(
-            -self.parameters[0], self.parameters[1], wires=self.wires, do_queue=do_queue
-        )
+    def adjoint(self):
+        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
 
 # Four term gradient recipe for controlled rotations
-c1 = (np.sqrt(2) - 4 * np.cos(np.pi / 8)) / (4 - 8 * np.cos(np.pi / 8))
-c2 = (np.sqrt(2) - 1) / (4 * np.cos(np.pi / 8) - 2)
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
 a = np.pi / 2
-b = 3 * np.pi / 4
+b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
@@ -1189,7 +1217,7 @@ class CRX(Operation):
     .. math::
 
         \begin{align}
-            CR_x(\phi) &= 
+            CR_x(\phi) &=
             \begin{bmatrix}
             & 1 & 0 & 0 & 0 \\
             & 0 & 1 & 0 & 0\\
@@ -1202,8 +1230,18 @@ class CRX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
+    * Gradient recipe: The controlled-RX operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_x(\phi)) = c_+ \left[f(CR_x(\phi+a)) - f(CR_x(\phi-a))\right] - c_- \left[f(CR_x(\phi+b)) - f(CR_x(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1237,8 +1275,8 @@ class CRX(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return CRX(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CRX(-self.data[0], wires=self.wires)
 
 
 class CRY(Operation):
@@ -1248,7 +1286,7 @@ class CRY(Operation):
     .. math::
 
         \begin{align}
-            CR_y(\phi) &= 
+            CR_y(\phi) &=
             \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0\\
@@ -1261,8 +1299,18 @@ class CRY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
+    * Gradient recipe: The controlled-RY operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_y(\phi)) = c_+ \left[f(CR_y(\phi+a)) - f(CR_y(\phi-a))\right] - c_- \left[f(CR_y(\phi+b)) - f(CR_y(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1294,8 +1342,8 @@ class CRY(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return CRY(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CRY(-self.data[0], wires=self.wires)
 
 
 class CRZ(DiagonalOperation):
@@ -1305,7 +1353,7 @@ class CRZ(DiagonalOperation):
     .. math::
 
         \begin{align}
-             CR_z(\phi) &= 
+             CR_z(\phi) &=
              \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0\\
@@ -1321,8 +1369,18 @@ class CRZ(DiagonalOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
+    * Gradient recipe: The controlled-RZ operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\phi}f(CR_z(\phi)) = c_+ \left[f(CR_z(\phi+a)) - f(CR_z(\phi-a))\right] - c_- \left[f(CR_z(\phi+b)) - f(CR_z(\phi-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`, and
+
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1370,8 +1428,8 @@ class CRZ(DiagonalOperation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return CRZ(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CRZ(-self.data[0], wires=self.wires)
 
 
 class CRot(Operation):
@@ -1391,9 +1449,19 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR(\phi, \theta, \omega)) = \frac{1}{2}\left[f(CR(\phi+\pi/2, \theta, \omega)) - f(CR(\phi-\pi/2, \theta, \omega))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR(\phi, \theta, \omega)`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+    * Gradient recipe: The controlled-Rot operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
+
+      .. math::
+
+          \frac{d}{d\mathbf{x}_i}f(CR(\mathbf{x}_i)) = c_+ \left[f(CR(\mathbf{x}_i+a)) - f(CR(\mathbf{x}_i-a))\right] - c_- \left[f(CR(\mathbf{x}_i+b)) - f(CR(\mathbf{x}_i-b))\right]
+
+      where :math:`f` is an expectation value depending on :math:`CR(\mathbf{x}_i)`, and
+
+      - :math:`\mathbf{x} = (\phi, \theta, \omega)` and `i` is an index to :math:`\mathbf{x}`
+      - :math:`a = \pi/2`
+      - :math:`b = 3\pi/2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4\sqrt{2}}`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1435,9 +1503,9 @@ class CRot(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         phi, theta, omega = self.parameters
-        return CRot(-omega, -theta, -phi, wires=self.wires, do_queue=do_queue)
+        return CRot(-omega, -theta, -phi, wires=self.wires)
 
 
 class U1(Operation):
@@ -1479,8 +1547,8 @@ class U1(Operation):
     def decomposition(phi, wires):
         return [PhaseShift(phi, wires=wires)]
 
-    def adjoint(self, do_queue=False):
-        return U1(-self.data[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return U1(-self.data[0], wires=self.wires)
 
 
 class U2(Operation):
@@ -1538,9 +1606,11 @@ class U2(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
-        return U2(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+    def adjoint(self):
+        phi, lam = self.parameters
+        new_lam = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - lam) % (2 * np.pi)
+        return U2(new_phi, new_lam, wires=self.wires)
 
 
 class U3(Operation):
@@ -1605,9 +1675,11 @@ class U3(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        # TODO(chase): Replace the `inv()` by instead modifying the parameters.
-        return U3(*self.parameters, wires=self.wires, do_queue=do_queue).inv()
+    def adjoint(self):
+        theta, phi, lam = self.parameters
+        new_lam = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - lam) % (2 * np.pi)
+        return U3(theta, new_phi, new_lam, wires=self.wires)
 
 
 # =============================================================================
@@ -1650,10 +1722,15 @@ class SingleExcitation(Operation):
 
     .. code-block::
 
+        dev = qml.device('default.qubit', wires=2)
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.SingleExcitation(phi, wires=[0, 1])
+            return qml.state()
+
+        circuit(0.1)
     """
 
     num_params = 1
@@ -1677,6 +1754,10 @@ class SingleExcitation(Operation):
             SingleExcitationMinus(theta / 2, wires=wires),
         ]
         return decomp_ops
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return SingleExcitation(-phi, wires=self.wires)
 
 
 class SingleExcitationMinus(Operation):
@@ -1717,6 +1798,10 @@ class SingleExcitationMinus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
+    def adjoint(self):
+        (phi,) = self.parameters
+        return SingleExcitationMinus(-phi, wires=self.wires)
+
 
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
@@ -1756,6 +1841,10 @@ class SingleExcitationPlus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
+    def adjoint(self):
+        (phi,) = self.parameters
+        return SingleExcitationPlus(-phi, wires=self.wires)
+
 
 # =============================================================================
 # Arbitrary operations
@@ -1793,15 +1882,22 @@ class QubitUnitary(Operation):
 
         return U
 
-    def adjoint(self, do_queue=False):
-        return QubitUnitary(
-            qml.math.T(qml.math.conj(self.data[0])), wires=self.wires, do_queue=do_queue
-        )
+    def adjoint(self):
+        return QubitUnitary(qml.math.T(qml.math.conj(self.data[0])), wires=self.wires)
+
+    def _controlled(self, wire):
+        ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
 
 class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+
+    In addition to default ``Operation`` instance attributes, the following are
+    available for ``ControlledQubitUnitary``:
+
+    * ``control_wires``: wires that act as control for the operation
+    * ``U``: unitary applied to the target wires
 
     **Details:**
 
@@ -1858,6 +1954,11 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        # Saving for the circuit drawer
+        self.control_wires = control_wires
+        self.U = U
+
         wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
@@ -1892,7 +1993,7 @@ class ControlledQubitUnitary(QubitUnitary):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any([x not in ["0", "1"] for x in control_values]):
+            if any(x not in ["0", "1"] for x in control_values):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
@@ -1900,6 +2001,9 @@ class ControlledQubitUnitary(QubitUnitary):
             raise ValueError("Alternative control values must be passed as a binary string.")
 
         return control_int
+
+    def _controlled(self, wire):
+        ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
 
 class MultiControlledX(ControlledQubitUnitary):
@@ -1927,7 +2031,7 @@ class MultiControlledX(ControlledQubitUnitary):
     ``ControlledQubitUnitary``, but there is no need to specify a matrix
     argument:
 
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110'])
+    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
     num_params = 1
@@ -1980,8 +2084,14 @@ class DiagonalQubitUnitary(DiagonalOperation):
     def decomposition(D, wires):
         return [QubitUnitary(np.diag(D), wires=wires)]
 
-    def adjoint(self, do_queue=False):
-        return DiagonalQubitUnitary(self.parameters[0].conj(), wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
+
+    def _controlled(self, control):
+        DiagonalQubitUnitary(
+            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            wires=Wires(control) + self.wires,
+        )
 
 
 class QFT(Operation):
@@ -2014,13 +2124,15 @@ class QFT(Operation):
 
         wires = 3
 
+        dev = qml.device('default.qubit',wires=wires)
+
         @qml.qnode(dev)
         def circuit_qft(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
             qml.QFT(wires=range(wires))
             return qml.state()
 
-    The inverse quantum Fourier transform is accessed using ``qml.QFT(wires).inv()``.
+        circuit_qft([1.0, 0.0, 0.0])
     """
     num_params = 0
     num_wires = AnyWires
@@ -2071,9 +2183,6 @@ class QFT(Operation):
 
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
-        return QFT(wires=self.wires, do_queue=do_queue).inv()
-
 
 # =============================================================================
 # Quantum chemistry
@@ -2116,11 +2225,16 @@ class DoubleExcitation(Operation):
 
     .. code-block::
 
+        dev = qml.device('default.qubit', wires=4)
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+            return qml.state()
+
+        circuit(0.1)
     """
 
     num_params = 1
@@ -2154,6 +2268,10 @@ class DoubleExcitation(Operation):
             DoubleExcitationMinus(theta / 2, wires=wires),
         ]
         return decomp_ops
+
+    def adjoint(self):
+        (theta,) = self.parameters
+        return DoubleExcitation(-theta, wires=self.wires)
 
 
 class DoubleExcitationPlus(Operation):
@@ -2211,6 +2329,10 @@ class DoubleExcitationPlus(Operation):
 
         return U
 
+    def adjoint(self):
+        (theta,) = self.parameters
+        return DoubleExcitationPlus(-theta, wires=self.wires)
+
 
 class DoubleExcitationMinus(Operation):
     r"""DoubleExcitationMinus(phi, wires)
@@ -2267,6 +2389,10 @@ class DoubleExcitationMinus(Operation):
 
         return U
 
+    def adjoint(self):
+        (theta,) = self.parameters
+        return DoubleExcitationMinus(-theta, wires=self.wires)
+
 
 # =============================================================================
 # State preparation
@@ -2304,7 +2430,7 @@ class BasisState(Operation):
     def decomposition(n, wires):
         return BasisStatePreparation(n, wires)
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         raise AdjointError("No adjoint exists for BasisState operations.")
 
 
@@ -2338,7 +2464,7 @@ class QubitStateVector(Operation):
     def decomposition(state, wires):
         return MottonenStatePreparation(state, wires)
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         raise AdjointError("No adjoint exists for QubitStateVector operations.")
 
 
@@ -2434,6 +2560,200 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
+# =============================================================================
+# Arithmetic
+# =============================================================================
+
+
+class QubitCarry(Operation):
+    r"""QubitCarry(wires)
+    Apply the ``QubitCarry`` operation to four input wires.
+
+    This operation performs the transformation:
+
+    .. math::
+        |a\rangle |b\rangle |c\rangle |d\rangle \rightarrow |a\rangle |b\rangle |b\oplus c\rangle |bc \oplus d\oplus (b\oplus c)a\rangle
+
+    .. figure:: ../../_static/ops/QubitCarry.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+
+    .. note::
+        The first wire should be used to input a carry bit from previous operations. The final wire
+        holds the carry bit of this operation and the input state on this wire should be
+        :math:`|0\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The ``QubitCarry`` operation maps the state :math:`|0110\rangle` to :math:`|0101\rangle`, where
+    the last qubit denotes the carry value:
+
+    .. code-block::
+
+        input_bitstring = (0, 1, 1, 0)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.BasisState(basis_state, wires=[0, 1, 2, 3])
+            qml.QubitCarry(wires=[0, 1, 2, 3])
+            return qml.probs(wires=[0, 1, 2, 3])
+
+        probs =  circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=4))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 0, 1)
+
+    The action of ``QubitCarry`` is to add wires ``1`` and ``2``. The modulo-two result is output
+    in wire ``2`` with a carry value output in wire ``3``. In this case, :math:`1 \oplus 1 = 0` with
+    a carry, so we have:
+
+    >>> bc_sum = output_bitstring[2]
+    >>> bc_sum
+    0
+    >>> carry = output_bitstring[3]
+    >>> carry
+    1
+    """
+    num_params = 0
+    num_wires = 4
+    par_domain = None
+    _mat = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return QubitCarry._mat
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            qml.Toffoli(wires=wires[1:]),
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
+        ]
+        return decomp_ops
+
+
+class QubitSum(Operation):
+    r"""QubitSum(wires)
+    Apply a ``QubitSum`` operation on three input wires.
+
+    This operation performs the transformation:
+
+    .. math::
+        |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
+
+
+    .. figure:: ../../_static/ops/QubitSum.svg
+        :align: center
+        :width: 40%
+        :target: javascript:void(0);
+
+    See `here <https://arxiv.org/abs/quant-ph/0008033v1>`__ for more information.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The ``QubitSum`` operation maps the state :math:`|010\rangle` to :math:`|011\rangle`, with the
+    final wire holding the modulo-two sum of the first two wires:
+
+    .. code-block::
+
+        input_bitstring = (0, 1, 0)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.BasisState(basis_state, wires = [0, 1, 2])
+            qml.QubitSum(wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1, 2])
+
+        probs = circuit(input_bitstring)
+        probs_indx = np.argwhere(probs == 1).flatten()[0]
+        bitstrings = list(itertools.product(range(2), repeat=3))
+        output_bitstring = bitstrings[probs_indx]
+
+    The output bitstring is
+
+    >>> output_bitstring
+    (0, 1, 1)
+
+    The action of ``QubitSum`` is to add wires ``0``, ``1``, and ``2``. The modulo-two result is
+    output in wire ``2``. In this case, :math:`0 \oplus 1 \oplus 0 = 1`, so we have:
+
+    >>> abc_sum = output_bitstring[2]
+    >>> abc_sum
+    1
+    """
+    num_params = 0
+    num_wires = 3
+    par_domain = None
+    _mat = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return QubitSum._mat
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
+        return decomp_ops
+
+    def adjoint(self):
+        return QubitSum(wires=self.wires)
+
+
 ops = {
     "Hadamard",
     "PauliX",
@@ -2476,6 +2796,8 @@ ops = {
     "DoubleExcitation",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
+    "QubitCarry",
+    "QubitSum",
 }
 
 

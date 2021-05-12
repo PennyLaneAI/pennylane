@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ def skip_if():
     """Fixture to skip tests."""
 
     def _skip_if(dev, capabilities):
-        """ Skip test if device has any of the given capabilities. """
+        """Skip test if device has any of the given capabilities."""
 
         dev_capabilities = dev.capabilities()
         for capability, value in capabilities.items():
@@ -222,6 +222,9 @@ def pytest_generate_tests(metafunc):
         if opt.shots is not None:
             # translate command line string to None if necessary
             device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
+
+        # store user defined device kwargs
+        device_kwargs.update(opt.device_kwargs)
 
         list_of_device_kwargs.append(device_kwargs)
 

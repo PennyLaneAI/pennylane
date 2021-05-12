@@ -18,7 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn.keras import KerasLayer
+
+KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
@@ -62,7 +63,7 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
             # Adding a lambda layer to take only the real values from density matrix
             tf.keras.layers.Lambda(lambda x: tf.abs(x)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(output_dim[0] * output_dim[1])
+            tf.keras.layers.Dense(output_dim[0] * output_dim[1]),
         ]
     )
 
@@ -485,6 +486,18 @@ class TestKerasLayer:
         assert grad is not None
         spy.assert_not_called()
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_compute_output_shape(self, get_circuit, output_dim):
+        """Test that the compute_output_shape method returns the expected shape"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        inputs = tf.keras.Input(shape=(2,))
+        inputs_shape = inputs.shape
+
+        output_shape = layer.compute_output_shape(inputs_shape)
+        assert output_shape.as_list() == [None, 1]
+
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
@@ -597,3 +610,9 @@ class TestKerasLayerIntegrationDM:
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
+
+
+def test_no_attribute():
+    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
+    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
+        qml.qnn.random

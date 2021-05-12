@@ -14,18 +14,17 @@
 r"""
 Contains the QAOAEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.wires import Wires
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
-        features (tensor_like): array of features to encode
-        wires (Wires): wires that the template acts on
+        features (tensor_like): tensor of features to encode
+        wires (Iterable): wires that the template acts on
     """
     n_features = qml.math.shape(features)[0]
 
@@ -39,8 +38,8 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """Implements the Ising-like Hamiltonian of the QAOA embedding.
 
     Args:
-        weights (tensor_like): array of weights for one layer
-        wires (Wires): qubit indices that the template acts on
+        weights (tensor_like): tensor of weights for one layer
+        wires (Iterable): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
     """
 
@@ -103,10 +102,9 @@ class QAOAEmbedding(Operation):
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
-        features (tensor_like): array of features to encode
-        weights (tensor_like): array of weights
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features to encode
+        weights (tensor_like): tensor of weights
+        wires (Iterable): wires that the template acts on
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
 
     Raises:
@@ -154,9 +152,9 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            o = GradientDescentOptimizer()
+            opt = qml.GradientDescentOptimizer()
             for i in range(10):
-                weights = o.step(lambda w : circuit(w, f=features), weights)
+                weights = opt.step(lambda w : circuit(w, f=features), weights)
                 print("Step ", i, " weights = ", weights)
 
 
@@ -169,21 +167,18 @@ class QAOAEmbedding(Operation):
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit2(pars):
-                weights = pars[0]
-                features = pars[1]
+            def circuit2(weights, features):
                 QAOAEmbedding(features=features, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
 
             features = [1., 2.]
             weights = [[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]]
-            pars = [weights, features]
 
-            o = GradientDescentOptimizer()
+            opt = qml.GradientDescentOptimizer()
             for i in range(10):
-                pars = o.step(circuit2, pars)
-                print("Step ", i, " weights = ", pars[0], " features = ", pars[1])
+                weights, features = opt.step(circuit2, weights, features)
+                print("Step ", i, "\n weights = ", weights, "\n features = ", features,"\n")
 
         **Local Fields**
 
@@ -217,7 +212,6 @@ class QAOAEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize local field {local_field}")
 
-        wires = Wires(wires)
         self._preprocess(features, weights, wires)
         super().__init__(features, weights, wires=wires, do_queue=do_queue)
 
@@ -252,8 +246,8 @@ class QAOAEmbedding(Operation):
         * Check that the shape of the weights tensor is correct for the number of qubits.
 
         Args:
-            features (tensor-like): feature tensor
-            weights (tensor-like): weight tensor
+            features (tensor_like): feature tensor
+            weights (tensor_like): weight tensor
         """
 
         shape = qml.math.shape(features)
