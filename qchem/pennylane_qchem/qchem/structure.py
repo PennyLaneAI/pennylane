@@ -338,10 +338,12 @@ def meanfield(
     )
 
     if package == "psi4":
+        # pylint: disable=import-outside-toplevel
         from openfermionpsi4 import run_psi4
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
+        # pylint: disable=import-outside-toplevel
         from openfermionpyscf import run_pyscf
         run_pyscf(molecule, run_scf=1, verbose=0)
 
