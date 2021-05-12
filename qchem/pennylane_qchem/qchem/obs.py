@@ -17,8 +17,7 @@ values can be used to simulate molecular properties.
 # pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
 
-from . import openfermion
-from . import structure
+from . import openfermion, structure
 
 
 def _spin2_matrix_elements(sz):
@@ -193,7 +192,9 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
 
     if electrons <= 0:
         raise ValueError(
-            "'electrons' must be greater than 0; got for 'electrons' {}".format(electrons)
+            "'electrons' must be greater than 0; got for 'electrons' {}".format(
+                electrons
+            )
         )
 
     if orbitals <= 0:
@@ -297,7 +298,9 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
+            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(
+                mapping
+            )
         )
 
     # Initialize the FermionOperator
@@ -313,9 +316,13 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return structure.convert_observable(openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires)
+        return structure.convert_observable(
+            openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
+        )
 
-    return structure.convert_observable(openfermion.transforms.jordan_wigner(mb_obs), wires=wires)
+    return structure.convert_observable(
+        openfermion.transforms.jordan_wigner(mb_obs), wires=wires
+    )
 
 
 def spin_z(orbitals, mapping="jordan_wigner", wires=None):
@@ -738,7 +745,9 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
                 v_op += openfermion.ops.FermionOperator(((a, 1), (b, 0)), element)
 
                 # down-down term
-                v_op += openfermion.ops.FermionOperator(((a + 1, 1), (b + 1, 0)), element)
+                v_op += openfermion.ops.FermionOperator(
+                    ((a + 1, 1), (b + 1, 0)), element
+                )
 
     # add two-particle operators
     for quad in quads:
@@ -750,24 +759,32 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         b = 2 * active.index(beta)
         g = 2 * active.index(gamma)
         d = 2 * active.index(delta)
-        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(
+            ((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element
+        )
 
         # up-down-down-up term
         b = 2 * active.index(beta) + 1
         g = 2 * active.index(gamma) + 1
-        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(
+            ((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element
+        )
 
         # down-up-up-down term
         a = 2 * active.index(alpha) + 1
         b = 2 * active.index(beta)
         g = 2 * active.index(gamma)
         d = 2 * active.index(delta) + 1
-        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(
+            ((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element
+        )
 
         # down-down-down-down term
         b = 2 * active.index(beta) + 1
         g = 2 * active.index(gamma) + 1
-        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(
+            ((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element
+        )
 
     return v_op
 
