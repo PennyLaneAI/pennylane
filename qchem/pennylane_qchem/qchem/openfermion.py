@@ -16,5 +16,9 @@ import importlib
 
 
 def __getattr__(name):
-    """TODO"""
-    return importlib.import_module("openfermion." + name)
+    """Allow for lazy importing of openfermion"""
+    try:
+        return importlib.import_module("openfermion." + name)
+    except ModuleNotFoundError:
+        mod = importlib.import_module("openfermion")
+        return getattr(mod, name)
