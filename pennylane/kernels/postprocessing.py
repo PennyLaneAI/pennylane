@@ -105,9 +105,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
             Use `threshold_matrix()` instead, as it analytically is equivalent.
     """
     if not fix_diagonal:
-        wmin = np.min(np.linalg.eigvalsh(K))
-        if wmin >= 0:
-            return K
+        return threshold_matrix(K)
     try:
         import cvxpy as cp
 
