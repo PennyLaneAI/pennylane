@@ -151,7 +151,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
   A demo on the module is work in progress.
 
-  The post-processing methods are discussed in [Hubregtsen *et al.*](https://arxiv.org/abs/2105.02276) and [Wang *et al.*](https://arxiv.org/abs/2103.16774)
+  The post-processing methods are discussed in   [Hubregtsen *et al.*](https://arxiv.org/abs/2105.02276) 
+  and [Wang *et al.*](https://arxiv.org/abs/2103.16774)
 
 <h3>Improvements</h3>
 
@@ -203,7 +204,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Johannes Jakob Meyer,
+Antal Száva, David Wierichs
 
 # Release 0.15.1 (current release)
 
