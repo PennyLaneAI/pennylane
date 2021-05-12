@@ -54,7 +54,7 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 
 [Add the CPhase operation](https://github.com/PennyLaneAI/pennylane/issues/1147)
 
-[Add the ISWAP operation(https://github.com/PennyLaneAI/pennylane/issues/1146)
+[Add the ISWAP operation](https://github.com/PennyLaneAI/pennylane/issues/1146)
 
 [Allow representing arbitrary operators with the Operator class](https://github.com/PennyLaneAI/pennylane/issues/1120)
 
