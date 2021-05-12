@@ -476,14 +476,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @classmethod
     def _matrix(cls, *params):
@@ -532,6 +525,7 @@ class SWAP(Operation):
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
 
+
 class ISWAP(Operation):
     r"""ISWAP(wires)
     The i-swap operator
@@ -557,8 +551,7 @@ class ISWAP(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return np.array([[1, 0, 0, 0],[0, 0, 1j, 0],[0, 1j, 0, 0],[0, 0, 0, 1]]
-    )
+        return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -567,11 +560,12 @@ class ISWAP(Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            S(wires=wires[0]), S(wires=wires[1]),
+            S(wires=wires[0]),
+            S(wires=wires[1]),
             Hadamard(wires=wires[0]),
             CNOT(wires=[wires[0], wires[1]]),
             CNOT(wires=[wires[1], wires[0]]),
-            Hadamard(wires=wires[1])
+            Hadamard(wires=wires[1]),
         ]
         return decomp_ops
 
@@ -1159,8 +1153,7 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
@@ -1455,14 +1448,7 @@ class CRZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
-            ]
-        )
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(lam, wires):
