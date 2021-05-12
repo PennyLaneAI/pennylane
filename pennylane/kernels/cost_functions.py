@@ -13,31 +13,10 @@
 # limitations under the License.
 """
 This file contains functionalities for kernel related costs.
-See 10.1007/s10462-012-9369-4 for a review.
+See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 """
 from pennylane import numpy as np
-
-
-def matrix_inner_product(A, B, normalize=False):
-    r"""Frobenius/Hilbert-Schmidt inner product between two matrices
-
-    Args:
-        A (array[float]): First matrix, assumed to be a square array.
-        B (array[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B
-
-    Returns:
-        float: Inner product of A and B
-
-    .. math::
-
-        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
-
-    """
-    inner_product = np.sum(A * B)
-    if normalize:
-        inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
-    return inner_product
+from ..utils import frobenius_inner_product
 
 
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
@@ -53,8 +32,8 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
         array[float]: The square matrix of kernel values.
     """
     N = len(X)
-
     matrix = [0] * N ** 2
+
     for i in range(N):
         for j in range(i, N):
             if assume_normalized_kernel and i == j:
@@ -122,7 +101,7 @@ def kernel_polarization(
 
     T = np.outer(_Y, _Y)
 
-    return matrix_inner_product(K, T, normalize=normalize)
+    return frobenius_inner_product(K, T, normalize=normalize)
 
 
 def kernel_target_alignment(*args, **kwargs):

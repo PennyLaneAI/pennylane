@@ -124,33 +124,6 @@ def _laplace_kernel(x1, x2):
     return np.exp(-math.fabs(x1 - x2))
 
 
-class TestHelperFunctions:
-    @pytest.mark.parametrize(
-        "A,B,normalize,expected",
-        [
-            (np.eye(2), np.eye(2), False, 2.0),
-            (np.eye(2), np.zeros((2, 2)), False, 0.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                False,
-                -21.75,
-            ),
-            (np.eye(2), np.eye(2), True, 1.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                True,
-                -0.7381450594,
-            ),
-        ],
-    )
-    def test_matrix_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(
-            kern.cost_functions.matrix_inner_product(A, B, normalize=normalize)
-        )
-
-
 class TestKernelMatrix:
     def test_simple_kernel(self):
         X = [0.1, 0.4]
