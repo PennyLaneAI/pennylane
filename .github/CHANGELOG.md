@@ -109,6 +109,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` operations now
+  have decompositions over elementary gates.
+  [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
+
 * The `Device` class now uses caching when mapping wires.
   [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
 
@@ -136,6 +140,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
 <h3>Documentation</h3>
+
+* Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
+  [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
 
 * Remove unsupported `None` option from the `qml.QNode` docstrings.
   [(#1271)](https://github.com/PennyLaneAI/pennylane/pull/1271)
