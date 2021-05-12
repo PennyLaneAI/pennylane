@@ -27,6 +27,10 @@ requirements = [
     "semantic_version==2.6",
 ]
 
+extras_require = {
+    'kernels': ['cvxpy==1.1.11']
+}
+
 info = {
     'name': 'PennyLane',
     'version': version,
@@ -79,9 +83,5 @@ classifiers = [
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Scientific/Engineering :: Physics"
 ]
-
-extras_require = {
-    'kernels': ['cvxpy==1.1.11']
-}
 
 setup(classifiers=classifiers, **(info))
