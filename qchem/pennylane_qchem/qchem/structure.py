@@ -18,8 +18,6 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-from openfermionpsi4 import run_psi4
-from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane import Hamiltonian
@@ -340,9 +338,11 @@ def meanfield(
     )
 
     if package == "psi4":
+        from openfermionpsi4 import run_psi4
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
+        from openfermionpyscf import run_pyscf
         run_pyscf(molecule, run_scf=1, verbose=0)
 
     return path_to_file
