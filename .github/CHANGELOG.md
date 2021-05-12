@@ -107,6 +107,47 @@ random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
 
+* PennyLane now has a ``kernels`` module.
+  It provides basic functionalities for computing quantum embedding kernels as well as 
+  post-processing methods to mitigate sampling errors and device noise:
+
+```python
+import pennylane as qml
+from pennylane import numpy as np
+
+num_wires = 6
+wires = range(num_wires)
+
+dev = qml.device('default.qubit', wires=num_wires)
+
+@qml.qnode(dev)
+def _kernel(x1, x2):
+    qml.templates.AngleEmbedding(x1, wires=wires)
+    qml.adjoint(qml.templates.AngleEmbedding(x1, wires=wires))
+    return qml.probs(wires)
+
+kernel = lambda x1, x2: _kernel(x1, x2)[0]
+
+X = np.random.random((10, 6))
+K = np.zeros((10, 10))
+for i, x1 in enumerate(X):
+    for j, x2 in enumerate(X[:i+1]):
+        K[i,j] = kernel(x1, x2)
+        K[j,i] = K[i,j]
+K += np.random.randn(10, 10)
+        
+K1 = qml.kernels.displace_matrix(K)
+K2 = qml.kernels.closest_psd_matrix(K)
+K3 = qml.kernels.threshold_matrix(K)
+K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
+K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
+K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+```
+
+  A demo on the module is work in progress.
+
+  The post-processing methods are discussed in [Hubregtsen *et al.*](https://arxiv.org/abs/2105.02276) and [Wang *et al.*](https://arxiv.org/abs/2103.16774)
+
 <h3>Improvements</h3>
 
 * The `Device` class now uses caching when mapping wires.
