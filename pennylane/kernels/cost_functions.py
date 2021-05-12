@@ -104,7 +104,13 @@ def kernel_polarization(
     return frobenius_inner_product(K, T, normalize=normalize)
 
 
-def kernel_target_alignment(*args, **kwargs):
+def kernel_target_alignment(
+    X,
+    Y,
+    kernel,
+    assume_normalized_kernel=False,
+    rescale_class_labels=True,
+):
     """Kernel target alignment of a given kernel function.
 
     Args:
@@ -115,9 +121,15 @@ def kernel_target_alignment(*args, **kwargs):
             that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
         rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
             care of unbalanced datasets. Defaults to True.
-        normalize (bool): If True, rescale the polarization to the kernel_target_alignment.
 
     Returns:
-        float: The kernel polarization.
+        float: The kernel-target alignment.
     """
-    return kernel_polarization(*args, normalize=True, **kwargs)
+    return kernel_polarization(
+        X,
+        Y,
+        kernel,
+        assume_normalized_kernel=assume_normalized_kernel,
+        rescale_class_labels=rescale_class_labels,
+        normalize=True,
+    )
