@@ -83,7 +83,7 @@ def flip_matrix(K):
     return K
 
 
-def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
+def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
     r"""Return the closest positive semidefinite matrix to the given kernel matrix.
 
     This method has the advantage that it achieves the correct diagonal entries
@@ -91,7 +91,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.
-        fix_diagonal (bool): Whether to fix the diagonal to 1.
+        fix_diagonal (bool): Whether to fix the diagonal to 1. Defaults to False.
         solver (str, optional): Solver to be used by cvxpy. Defaults to CVXOPT.
         kwargs (kwarg dict): Passed to cvxpy.Problem.solve()
 
@@ -99,9 +99,7 @@ def closest_psd_matrix(K, fix_diagonal=True, solver=None, **kwargs):
         array[float]: closest positive semidefinite matrix in Frobenius norm.
 
     Comments:
-        Requires cvxpy and the used solver (default CVXOPT) to be installed.
-        ``fix_diagonal=False`` typically leads to problems in the SDP/solving it.
-            Use ``threshold_matrix()`` instead, as it analytically is equivalent.
+        Requires cvxpy and the used solver (default CVXOPT) to be installed if ``fix_diagonal=True``.
     """
     if not fix_diagonal:
         return threshold_matrix(K)

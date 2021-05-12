@@ -18,7 +18,6 @@ This subpackage defines functions that relate to quantum kernel methods.
 .. autosummary::
     :toctree: api
 """
-from .embedding_kernel import EmbeddingKernel
 from .cost_functions import (
     matrix_inner_product,
     kernel_polarization,
