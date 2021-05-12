@@ -2293,10 +2293,48 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def decomposition(theta, wires):
-        decomp_ops = [
-            DoubleExcitationPlus(theta / 2, wires=wires),
-            DoubleExcitationMinus(theta / 2, wires=wires),
+        # This decomposition is from https://arxiv.org/abs/2005.14475
+
+        # First make some variables to hold common sequences of gates.
+        ry_cnot_mry = [
+            qml.RY(theta / 8, wires=wires[0]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.RY(-theta / 8, wires=wires[0]),
         ]
+
+        ry_cnot_mry_cnot_02 = ry_cnot_mry + [qml.CNOT(wires=[wires[0], wires[2]])]
+        ry_cnot_mry_cnot_03 = ry_cnot_mry + [qml.CNOT(wires=[wires[0], wires[3]])]
+
+        decomp_ops = [
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[3]]),
+            qml.PauliX(wires=wires[1]),
+            qml.PauliX(wires=wires[3]),
+            qml.CNOT(wires=[wires[0], wires[2]]),
+            qml.Hadamard(wires=wires[1]),
+            qml.Hadamard(wires=wires[2]),
+            qml.Hadamard(wires=wires[3]),
+        ]
+
+        decomp_ops.extend(ry_cnot_mry_cnot_03)
+        decomp_ops.extend(ry_cnot_mry_cnot_02)
+        decomp_ops.extend(ry_cnot_mry_cnot_03)
+        decomp_ops.append(qml.RZ(-np.pi / 2, wires=wires[2]))
+        decomp_ops.extend(ry_cnot_mry_cnot_02)
+
+        decomp_ops.extend(
+            [
+                qml.RZ(np.pi / 2, wires=wires[0]),
+                qml.Hadamard(wires=wires[1]),
+                qml.RZ(-np.pi / 2, wires=wires[2]),
+                qml.RY(-np.pi / 2, wires=wires[2]),
+                qml.PauliX(wires=wires[1]),
+                qml.PauliX(wires=wires[3]),
+                qml.CNOT(wires=[wires[0], wires[1]]),
+                qml.CNOT(wires=[wires[2], wires[3]]),
+            ]
+        )
+
         return decomp_ops
 
     def adjoint(self):
