@@ -105,7 +105,7 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
         \vert \bm{\gamma}, \bm{\delta} \rangle ~
         \hat{c}_\bm{\alpha}^\dagger \hat{c}_\bm{\beta}^\dagger
         \hat{c}_\bm{\gamma} \hat{c}_\bm{\delta},
-    
+
     where the two-particle matrix elements are computed as,
 
     .. math::
@@ -515,7 +515,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if not core:
         t_core = 0
     else:
-        if any([i > orbitals - 1 or i < 0 for i in core]):
+        if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
                 "Indices of core orbitals must be between 0 and {}; got core = {}".format(
                     orbitals - 1, core
@@ -531,7 +531,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         else:
             active = [i for i in range(orbitals) if i not in core]
 
-    if any([i > orbitals - 1 or i < 0 for i in active]):
+    if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
             "Indices of active orbitals must be between 0 and {}; got active = {}".format(
                 orbitals - 1, active
@@ -686,7 +686,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if not core:
         v_core = 0
     else:
-        if any([i > orbitals - 1 or i < 0 for i in core]):
+        if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
                 "Indices of core orbitals must be between 0 and {}; got core = {}".format(
                     orbitals - 1, core
@@ -709,7 +709,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         else:
             active = [i for i in range(orbitals) if i not in core]
 
-    if any([i > orbitals - 1 or i < 0 for i in active]):
+    if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
             "Indices of active orbitals must be between 0 and {}; got active = {}".format(
                 orbitals - 1, active
