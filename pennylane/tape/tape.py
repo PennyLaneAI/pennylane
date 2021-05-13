@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, deque
+import contextlib
 import copy
-from collections import Counter
 from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
 
 # CV ops still need to support state preparation operations prior to any
@@ -80,6 +81,24 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
+def get_active_tape():
+    """Returns the currently recording tape.
+    If no tape is currently recording, ``None`` is returned.
+
+    **Example**
+
+    >>> with qml.tape.QuantumTape():
+    ...     qml.RX(0.2, wires="a")
+    ...     tape = qml.tape.get_active_tape()
+    ...     qml.RY(0.1, wires="b")
+    >>> print(tape)
+    <QuantumTape: wires=['a', 'b'], params=2>
+    >>> print(qml.tape.get_active_tape())
+    None
+    """
+    return QueuingContext.active_context()
+
+
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
@@ -118,13 +137,12 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     Calling ``expand_tape`` will return a tape with all nested tapes
     expanded, resulting in a single tape of quantum operations:
 
-    >>> new_tape = expand_tape(tape)
+    >>> new_tape = qml.tape.tape.expand_tape(tape)
     >>> new_tape.operations
-    [PauliX(wires=[0]),
-     PauliX(wires=['a']),
-     Rot(0.543, 0.1, 0.4, wires=[0]),
-     CNOT(wires=[0, 'a']),
-     RY(0.2, wires=['a'])]
+    [BasisStatePreparation([1, 1], wires=[0, 'a']),
+    Rot(0.543, 0.1, 0.4, wires=[0]),
+    CNOT(wires=[0, 'a']),
+    RY(0.2, wires=['a'])]
     """
     if depth == 0:
         return tape
@@ -134,6 +152,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -250,14 +269,14 @@ class QuantumTape(AnnotatedQueue):
     the parameters modified in-place:
 
     >>> tape.trainable_params = {0} # set only the first parameter as free
-    >>> tape.set_parameters(0.56)
+    >>> tape.set_parameters([0.56])
     >>> tape.get_parameters()
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queueded in a parent tape context.
+    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
 
     .. code-block:: python
 
@@ -338,6 +357,31 @@ class QuantumTape(AnnotatedQueue):
     def interface(self):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
+
+    @contextlib.contextmanager
+    def stop_recording(self):
+        """Context manager to temporarily stop recording operations
+        onto the tape. This is useful is scratch space is needed.
+
+        **Example**
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(0, wires=0)
+        ...     with tape.stop_recording():
+        ...         qml.RY(1.0, wires=1)
+        ...     qml.RZ(2, wires=1)
+        >>> tape.operations
+        [RX(0, wires=[0]), RZ(2, wires=[1])]
+        """
+        if QueuingContext.active_context() is not self:
+            raise QueuingError(
+                "Cannot stop recording requested tape " "as it is not currently recording."
+            )
+
+        active_contexts = QueuingContext._active_contexts
+        QueuingContext._active_contexts = deque()
+        yield
+        QueuingContext._active_contexts = active_contexts
 
     # ========================================================
     # construction methods
@@ -501,13 +545,15 @@ class QuantumTape(AnnotatedQueue):
         Calling ``.expand`` will return a tape with all nested tapes
         expanded, resulting in a single tape of quantum operations:
 
-        >>> new_tape = tape.expand()
+        >>> new_tape = tape.expand(depth=2)
         >>> new_tape.operations
         [PauliX(wires=[0]),
-         PauliX(wires=['a']),
-         Rot(0.543, 0.1, 0.4, wires=[0]),
-         CNOT(wires=[0, 'a']),
-         RY(0.2, wires=['a'])]
+        PauliX(wires=['a']),
+        RZ(0.543, wires=[0]),
+        RY(0.1, wires=[0]),
+        RZ(0.4, wires=[0]),
+        CNOT(wires=[0, 'a']),
+        RY(0.2, wires=['a'])]
         """
         new_tape = expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
@@ -602,10 +648,39 @@ class QuantumTape(AnnotatedQueue):
         self.trainable_params = {parameter_mapping[i] for i in self.trainable_params}
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
-        for op in self._ops:
-            op.inverse = not op.inverse
+        for idx, op in enumerate(self._ops):
+            try:
+                self._ops[idx] = op.adjoint()
+            except NotImplementedError:
+                op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))
+
+    def adjoint(self):
+        """Create a tape that is the adjoint of this one.
+
+        Adjointed tapes are the conjugated and transposed version of the
+        original tapes. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            ~.QuantumTape: the adjointed tape
+        """
+        new_tape = self.copy(copy_operations=True)
+        qml.transforms.invisible(new_tape.inv)()
+
+        # the current implementation of the adjoint
+        # transform requires that the returned inverted object
+        # is automatically queued.
+        QuantumTape._lock.acquire()
+        try:
+            QueuingContext.append(new_tape)
+        except Exception as _:
+            QuantumTape._lock.release()
+            raise
+        QuantumTape._lock.release()
+
+        return new_tape
 
     # ========================================================
     # Parameter handling
@@ -854,7 +929,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
-        [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
+        [expval(PauliZ(wires=[0]))]
         """
         return self._measurements
 
@@ -1059,7 +1134,7 @@ class QuantumTape(AnnotatedQueue):
                     op.inv()
 
         # decompose the queue
-        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
+        operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations
         for op in operations:

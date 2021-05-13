@@ -18,7 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn.keras import KerasLayer
+
+KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
@@ -62,7 +63,7 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
             # Adding a lambda layer to take only the real values from density matrix
             tf.keras.layers.Lambda(lambda x: tf.abs(x)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(output_dim[0] * output_dim[1])
+            tf.keras.layers.Dense(output_dim[0] * output_dim[1]),
         ]
     )
 
@@ -609,3 +610,9 @@ class TestKerasLayerIntegrationDM:
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
+
+
+def test_no_attribute():
+    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
+    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
+        qml.qnn.random

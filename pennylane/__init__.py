@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +40,14 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
-from pennylane.transforms import draw, measurement_grouping, metric_tensor
-from pennylane.transforms.adjoint import adjoint
-from pennylane.transforms.control import ctrl, ControlledOperation
+from pennylane.transforms import (
+    adjoint,
+    draw,
+    ControlledOperation,
+    ctrl,
+    measurement_grouping,
+    metric_tensor,
+)
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 

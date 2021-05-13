@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext, QueuingError
 from pennylane.tape import OperationRecorder
 
 
@@ -279,7 +279,7 @@ class TestAnnotatedQueue:
 
         B = qml.PauliY(1)
 
-        with pytest.raises(ValueError, match="not in the queue"):
+        with pytest.raises(QueuingError, match="not in the queue"):
             q._get_info(B)
 
     def test_get_info_none(self):
@@ -313,7 +313,7 @@ class TestAnnotatedQueue:
 
         B = qml.PauliY(1)
 
-        with pytest.raises(ValueError, match="not in the queue"):
+        with pytest.raises(QueuingError, match="not in the queue"):
             q._update_info(B, inv=True)
 
     def test_append_annotating_object(self):

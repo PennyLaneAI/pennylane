@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,10 +76,9 @@ class CVParamShiftTape(QubitParamShiftTape):
               qml.Kerr(0.654, wires=1)
 
               # differentiable Gaussian operations
-              qml.Displacement(0.6, wires=0)
               qml.Displacement(0.6, 0.5, wires=0)
               qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
-              expval(qml.NumberOperator(0))
+              qml.expval(qml.NumberOperator(0))
 
           tape.trainable_params = {2, 3, 4}
 
@@ -89,10 +88,10 @@ class CVParamShiftTape(QubitParamShiftTape):
       .. code-block:: python
 
           with CVParamShiftTape() as tape:
-              qml.Displacement(0.6, wires=0)
+              qml.Displacement(0.6, 0.5, wires=0)
               qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
               qml.Kerr(0.654, wires=1)  # there is no measurement on wire 1
-              expval(qml.NumberOperator(0))
+              qml.expval(qml.NumberOperator(0))
 
           tape.trainable_params = {0, 1, 2}
 
@@ -370,9 +369,9 @@ class CVParamShiftTape(QubitParamShiftTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            res = results[0]
+            res = np.array(results)[0]
             grad = np.zeros_like(res)
-            grad[transformed_obs_idx] = res
+            grad[transformed_obs_idx] = res[transformed_obs_idx]
             return grad
 
         return tapes, processing_fn
