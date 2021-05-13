@@ -29,8 +29,21 @@ def get_merged_op(gate_first, gate_second):
     first_wires = gate_first.wires
     second_wires = gate_second.wires
     num_wires = len(first_wires)
-    new_mat = gate_first.matrix.reshape([2] * num_wires * 2)
-    mat = gate_second.matrix.reshape([2] * len(second_wires) * 2)
+
+    first_matrix = gate_first.matrix
+    second_matrix = gate_second.matrix
+
+    print(len(first_wires) == 2, first_wires[0]>first_wires[1])
+    if len(first_wires) == 2 and first_wires[0]>first_wires[1]:
+        print(first_matrix)
+        first_matrix = get_flipped_control_target_mx(first_matrix)
+        print(first_matrix)
+
+    if len(second_wires) == 2 and second_wires[0]>second_wires[1]:
+        second_matrix = get_flipped_control_target_mx(second_matrix)
+
+    new_mat = first_matrix.reshape([2] * num_wires * 2)
+    mat = second_matrix.reshape([2] * len(second_wires) * 2)
     all_first_axes = np.arange(2 * len(first_wires)) # len(second_wires) is the qubit number, we have twice as many axes
     first_axes_used = all_first_axes[-len(second_wires):] # select the last len(first_wires) many axes
 
