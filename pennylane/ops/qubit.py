@@ -526,6 +526,15 @@ class SWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            CNOT(wires=wires),
+            CNOT(wires=list(reversed(wires))), # simpler option than [H, CNOT, H], but later matrix dot breaks up
+            CNOT(wires=wires),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         return SWAP(wires=self.wires)
 

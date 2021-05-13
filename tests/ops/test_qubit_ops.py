@@ -625,6 +625,22 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_SWAP_decomposition(self, tol):
+        """Tests that the dedomposition of the SWAP gate is correct"""
+        op = qml.SWAP(wires=[0,1])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].name == "CNOT"
+        assert res[0].wires == Wires([0,1])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([1,0])
+
+        assert res[2].name == "CNOT"
+        assert res[2].wires == Wires([0,1])
+
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
     def test_CRot_decomposition(self, tol, phi, theta, omega, monkeypatch):
         """Tests that the decomposition of the CRot gate is correct"""
