@@ -131,7 +131,7 @@ class AmplitudeEmbedding(Operation):
         if pad is not None:
             warnings.warn(
                 "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
-                PendingDeprecationWarning,
+                UserWarning,
             )
             if pad_with is None:
                 pad_with = pad
@@ -142,6 +142,11 @@ class AmplitudeEmbedding(Operation):
 
         features = self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue)
+
+    def adjoint(self):  # pylint: disable=arguments-differ
+        return qml.adjoint(qml.templates.MottonenStatePreparation)(
+            self.parameters[0], wires=self.wires
+        )
 
     def expand(self):
 

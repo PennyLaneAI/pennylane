@@ -1848,6 +1848,21 @@ class SingleExcitationMinus(Operation):
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
@@ -1890,6 +1905,21 @@ class SingleExcitationPlus(Operation):
         e = cmath.exp(1j * theta / 2)
 
         return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(theta / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(theta / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
 
     def adjoint(self):
         (phi,) = self.parameters
@@ -2248,8 +2278,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -2271,7 +2301,7 @@ class DoubleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
-    \phi/2)|1100\rangle -\sin(\phi/2)|0011\rangle)`:
+    \phi/2)|1100\rangle +\sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
 
@@ -2334,9 +2364,9 @@ class DoubleExcitationPlus(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
-        &|x\rangle \rightarrow e^{i\phi} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi/2} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
@@ -2394,9 +2424,9 @@ class DoubleExcitationMinus(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi) |0011\rangle - \sin(\phi) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi) |1100\rangle + \sin(\phi) |0011\rangle\\
-        &|x\rangle \rightarrow e^{-i\phi} |x\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
 
     for all other basis states :math:`|x\rangle`.
 
