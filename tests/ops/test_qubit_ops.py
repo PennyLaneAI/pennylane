@@ -985,7 +985,7 @@ class TestSingleExcitation:
         exp = SingleExcitation(phi)
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
         """Tests that the SingleExcitation operation calculates the correct decomposition.
 
