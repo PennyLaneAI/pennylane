@@ -1004,10 +1004,8 @@ class TestSingleExcitation:
                         [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
                     ]
                 )
-                print(new_mat)
                 mats.append(new_mat)
             else:
-                print(i.matrix)
                 mats.append(i.matrix)
 
         decomposed_matrix = np.linalg.multi_dot(mats)
@@ -1282,7 +1280,6 @@ class TestDoubleExcitation:
         # Handy projection operators
         P0 = np.array([[1, 0], [0, 0]])
         P1 = np.array([[0, 0], [0, 1]])
-        X = np.array([[0, 1], [1, 0]])
 
         # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
         # CU  = |0><0| \otimes I + |1><1| \otimes U

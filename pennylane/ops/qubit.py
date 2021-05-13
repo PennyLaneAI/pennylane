@@ -1707,7 +1707,7 @@ class SingleExcitation(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: The SingleExcitation operator satisfies a four-term parameter-shift rule
+    * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://arxiv.org/abs/2104.05695)
 
     Args:
@@ -2242,7 +2242,7 @@ class DoubleExcitation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The DoubleExcitation operator satisfies a four-term parameter-shift rule
+    * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://arxiv.org/abs/2104.05695):
 
     Args:
