@@ -562,7 +562,7 @@ class ISWAP(Operation):
 
     @classmethod
     def _eigvals(cls, *params):
-        return np.array([1j, -1j])
+        return np.array([1j, -1j, 1, 1])
 
     @staticmethod
     def decomposition(wires):

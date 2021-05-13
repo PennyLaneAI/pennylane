@@ -668,9 +668,9 @@ class TestOperations:
 
         mats = []
         for i in reversed(res):
-            if len(i.wires) == 1 and i.wires == Wires([1]):
+            if i.wires == Wires([1]):
                 mats.append(np.kron(np.eye(2), i.matrix))
-            elif len(i.wires) == 1 and i.wires == Wires([0]):
+            elif i.wires == Wires([0]):
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires == Wires([1, 0]) and i.name == "CNOT":
                 mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
@@ -911,6 +911,13 @@ class TestOperations:
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitUnitary(U, wires=0).matrix
+
+    def test_iswap_eigenval(self):
+        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix """
+        op = qml.ISWAP(wires=[0,1])
+        exp = np.linalg.eigvals(op.matrix)
+        res = op.eigvals
+        assert np.allclose(res, np.sort_complex(exp))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
