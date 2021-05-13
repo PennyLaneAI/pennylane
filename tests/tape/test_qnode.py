@@ -260,6 +260,22 @@ class TestValidation:
             QNode._validate_adjoint_method(dev, "tf")
 
 
+class TestResults:
+
+    @pytest.mark.parametrize("circ_obj", (pytest.lazy_fixture('circuit_basic'),
+        pytest.lazy_fixture('circuit_prob_output'),
+        pytest.lazy_fixture('circuit_state_output'),
+        pytest.lazy_fixture('circuit_vec_input') ))
+    def test_some_name(self, circ_obj, tol):
+        dev = qml.device("default.qubit", wires=circ_obj.num_wires)
+
+        qn = QNode(circ_obj.circuit_func, dev)
+
+        res = qn(circ_obj.input)
+        expected = circ_obj.res(circ_obj.input)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
