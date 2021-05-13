@@ -64,4 +64,10 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 
 [Add Parity as an observable](https://github.com/PennyLaneAI/pennylane/issues/193)
 
+[Define decomposition for qml.SWAP](https://github.com/PennyLaneAI/pennylane/issues/1304)
+
+[Define decomposition for qml.Toffoli](https://github.com/PennyLaneAI/pennylane/issues/1305)
+
+[Define decomposition for qml.CSWAP](https://github.com/PennyLaneAI/pennylane/issues/1306)
+
 Consider also contributing to our sister libraries [Strawberry Fields](https://github.com/XanaduAI/strawberryfields/labels/unitaryhack) and [The Walrus](https://github.com/XanaduAI/thewalrus/labels/unitaryhack).
