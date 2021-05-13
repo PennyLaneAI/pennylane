@@ -1750,8 +1750,9 @@ class SingleExcitation(Operation):
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-            SingleExcitationPlus(theta / 2, wires=wires),
-            SingleExcitationMinus(theta / 2, wires=wires),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
 
