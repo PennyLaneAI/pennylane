@@ -68,7 +68,7 @@ ops = {
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.QFT(wires=[0, 1, 2]),
-    "IsingXX": qml.IsingXX(0, wires=[0,1]),
+    "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
@@ -148,10 +148,10 @@ crot = lambda phi, theta, omega: np.array(
 )
 IsingXX = lambda phi: np.array(
     [
-                [cos(phi / 2) ,0 ,0 , -1j*sin(phi / 2)],
-                [0, cos(phi / 2), -1j*sin(phi / 2), 0],
-                [0 ,-1j*sin(phi / 2) , cos(phi / 2), 0],
-                [-1j*sin(phi / 2), 0, 0, cos(phi / 2)]
+        [cos(phi / 2), 0, 0, -1j * sin(phi / 2)],
+        [0, cos(phi / 2), -1j * sin(phi / 2), 0],
+        [0, -1j * sin(phi / 2), cos(phi / 2), 0],
+        [-1j * sin(phi / 2), 0, 0, cos(phi / 2)],
     ]
 )
 

@@ -32,6 +32,7 @@ from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
+
 class AdjointError(Exception):
     """Exception for non-adjointable operations."""
 
@@ -1680,6 +1681,7 @@ class U3(Operation):
         new_phi = (np.pi - lam) % (2 * np.pi)
         return U3(theta, new_phi, new_lam, wires=self.wires)
 
+
 class IsingXX(Operation):
     r"""IsingXX(phi, wires)
     Ising XX coupling gate
@@ -1708,17 +1710,12 @@ class IsingXX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = params
+        phi = params[0]
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
         return np.array(
-            [
-                [c ,0 ,0 , -1j*s],
-                [0, c, -1j*s, 0],
-                [0 ,-1j*s , c, 0],
-                [-1j*s, 0, 0, c]
-            ]
+            [[c, 0, 0, -1j * s], [0, c, -1j * s, 0], [0, -1j * s, c, 0], [-1j * s, 0, 0, c]]
         )
 
     @staticmethod
@@ -1733,7 +1730,6 @@ class IsingXX(Operation):
     def adjoint(self, do_queue=False):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires, do_queue=do_queue)
-
 
 
 # =============================================================================
