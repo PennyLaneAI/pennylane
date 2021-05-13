@@ -98,9 +98,7 @@ def _process_wires(wires, n_wires=None):
         if all(isinstance(w, int) for w in wires.keys()):
             # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
             n_wires = max(wires) + 1
-            labels = list(
-                range(n_wires)
-            )  # used for completing potential partial mapping.
+            labels = list(range(n_wires))  # used for completing potential partial mapping.
             for k, v in wires.items():
                 if k < n_wires:
                     labels[k] = v
@@ -111,23 +109,17 @@ def _process_wires(wires, n_wires=None):
             wires = {v: k for k, v in wires.items()}  # flip for easy indexing
             wires = Wires([wires[i] for i in range(n_wires)])
         else:
-            raise ValueError(
-                "Expected only int-keyed or consecutive int-valued dict for `wires`"
-            )
+            raise ValueError("Expected only int-keyed or consecutive int-valued dict for `wires`")
 
     else:
         raise ValueError(
-            "Expected type Wires, list, tuple, or dict for `wires`, got {}".format(
-                type(wires)
-            )
+            "Expected type Wires, list, tuple, or dict for `wires`, got {}".format(type(wires))
         )
 
     if len(wires) != n_wires:
         # check length consistency when all checking and cleaning are done.
         raise ValueError(
-            "Length of `wires` ({}) does not match `n_wires` ({})".format(
-                len(wires), n_wires
-            )
+            "Length of `wires` ({}) does not match `n_wires` ({})".format(len(wires), n_wires)
         )
 
     return wires
@@ -147,9 +139,7 @@ def _exec_exists(prog):
         path_to_prog = os.path.join(dir_in_path, prog)
         if os.path.exists(path_to_prog):
             try:
-                subprocess.call(
-                    [path_to_prog], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
+                subprocess.call([path_to_prog], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             except OSError:
                 return False
             return True
@@ -333,26 +323,24 @@ def meanfield(
         for i, symbol in enumerate(symbols)
     ]
 
-    molecule = openfermion.MolecularData(
-        geometry, basis, mult, charge, filename=path_to_file
-    )
+    molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "psi4":
         # pylint: disable=import-outside-toplevel
         from openfermionpsi4 import run_psi4
+
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
         # pylint: disable=import-outside-toplevel
         from openfermionpyscf import run_pyscf
+
         run_pyscf(molecule, run_scf=1, verbose=0)
 
     return path_to_file
 
 
-def active_space(
-    electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None
-):
+def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None):
     r"""Builds the active space for a given number of active electrons and active orbitals.
 
     Post-Hartree-Fock (HF) electron correlation methods expand the many-body wave function
@@ -525,18 +513,14 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     )
 
     # generating the fermionic Hamiltonian
-    fermionic_hamiltonian = openfermion.transforms.get_fermion_operator(
-        terms_molecular_hamiltonian
-    )
+    fermionic_hamiltonian = openfermion.transforms.get_fermion_operator(terms_molecular_hamiltonian)
 
     mapping = mapping.strip().lower()
 
     if mapping not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(
-                mapping
-            )
+            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
         )
 
     # fermionic-to-qubit transformation of the Hamiltonian
@@ -580,9 +564,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     )
     wires = _process_wires(wires, n_wires=n_wires)
 
-    if (
-        not qubit_operator.terms
-    ):  # added since can't unpack empty zip to (coeffs, ops) below
+    if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
@@ -591,9 +573,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
         *[
             (
                 coef,
-                qml.operation.Tensor(
-                    *[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term]
-                )
+                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term])
                 if term
                 else qml.operation.Tensor(qml.Identity(wires[0]))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
@@ -644,9 +624,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             wires,
         )
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
-            raise ValueError(
-                "Supplied `wires` does not cover all wires defined in `ops`."
-            )
+            raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
         qubit_indexed_wires = all_wires
 
@@ -681,9 +659,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     return q_op
 
 
-def _qubit_operators_equivalent(
-    openfermion_qubit_operator, pennylane_qubit_operator, wires=None
-):
+def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
@@ -705,9 +681,7 @@ def _qubit_operators_equivalent(
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms
-    return openfermion_qubit_operator == _terms_to_qubit_operator(
-        coeffs, ops, wires=wires
-    )
+    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
 
 
 def convert_observable(qubit_observable, wires=None):
@@ -851,9 +825,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    hf_file = meanfield(
-        symbols, coordinates, name, charge, mult, basis, package, outpath
-    )
+    hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
     molecule = openfermion.MolecularData(filename=hf_file)
 
@@ -938,9 +910,7 @@ def excitations(electrons, orbitals, delta_sz=0):
 
     if delta_sz not in (0, 1, -1, 2, -2):
         raise ValueError(
-            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(
-                delta_sz
-            )
+            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(delta_sz)
         )
 
     # define the spin projection 'sz' of the single-particle states
@@ -1089,9 +1059,7 @@ def excitations_to_wires(singles, doubles, wires=None):
     if wires is None:
         wires = range(max_idx + 1)
     elif len(wires) != max_idx + 1:
-        raise ValueError(
-            "Expected number of wires is {}; got {}".format(max_idx + 1, len(wires))
-        )
+        raise ValueError("Expected number of wires is {}; got {}".format(max_idx + 1, len(wires)))
 
     singles_wires = []
     for r, p in singles:
