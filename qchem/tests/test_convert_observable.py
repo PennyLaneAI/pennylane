@@ -328,8 +328,8 @@ def test_exception_convert_observable():
     """
     qubit_op = (
         QubitOperator("Y0 Y1", 1 + 0j)
-        + QubitOperator("Z0 X1", 4.5 + 1.5j)
         + QubitOperator("Y0 X1", 2)
+        + QubitOperator("Z0 Y1", 2.5e-07j)
     )
 
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
