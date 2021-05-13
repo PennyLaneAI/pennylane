@@ -215,7 +215,9 @@ class TestApply:
         ),
     ]
 
-    @pytest.mark.parametrize("operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters)
+    @pytest.mark.parametrize(
+        "operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters
+    )
     def test_apply_operation_two_wires_no_parameters(
         self, qubit_device_2_wires, tol, operation, input, expected_output, inverse_expected_output
     ):
@@ -229,7 +231,9 @@ class TestApply:
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize("operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters)
+    @pytest.mark.parametrize(
+        "operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters
+    )
     def test_apply_operation_two_wires_no_parameters_inverse(
         self, qubit_device_2_wires, tol, operation, input, expected_output, inverse_expected_output
     ):
@@ -240,7 +244,10 @@ class TestApply:
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(inverse_expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.flatten(),
+            np.array(inverse_expected_output),
+            atol=tol,
+            rtol=0,
         )
 
     test_data_three_wires_no_parameters = [

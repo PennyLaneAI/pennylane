@@ -913,8 +913,8 @@ class TestOperations:
             qml.QubitUnitary(U, wires=0).matrix
 
     def test_iswap_eigenval(self):
-        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix """
-        op = qml.ISWAP(wires=[0,1])
+        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
+        op = qml.ISWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
         assert np.allclose(res, np.sort_complex(exp))
