@@ -1279,7 +1279,7 @@ class TestDoubleExcitation:
 
         from functools import reduce
 
-        # Uaws
+        # Handy projection operators
         P0 = np.array([[1, 0], [0, 0]])
         P1 = np.array([[0, 0], [0, 1]])
         X = np.array([[0, 1], [1, 0]])
