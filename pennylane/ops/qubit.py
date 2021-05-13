@@ -1708,11 +1708,11 @@ class SingleExcitation(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The SingleExcitation operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://arxiv.org/abs/2104.05695)
+
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-
 
     **Example**
 
