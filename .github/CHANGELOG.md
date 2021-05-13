@@ -177,7 +177,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
 * PennyLane's `qchem` package is now code-formatted using `black -l 100`.
-  [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
+  [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
 
 <h3>Breaking changes</h3>
 
