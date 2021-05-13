@@ -1707,9 +1707,8 @@ class SingleExcitation(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: Obtained from its decomposition in terms of the
-      :class:`~.SingleExcitationPlus` and :class:`~.SingleExcitationMinus` operations
-
+    * Gradient recipe: The SingleExcitation operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
@@ -1737,6 +1736,7 @@ class SingleExcitation(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
     generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
 
     @classmethod
@@ -2241,8 +2241,8 @@ class DoubleExcitation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: Obtained from its decomposition in terms of the
-      :class:`~.DoubleExcitationPlus` and :class:`~.DoubleExcitationMinus` operations
+    * Gradient recipe: The DoubleExcitation operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -2271,6 +2271,7 @@ class DoubleExcitation(Operation):
     num_wires = 4
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
 
     G = np.zeros((16, 16), dtype=np.complex64)
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
