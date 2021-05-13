@@ -1284,7 +1284,7 @@ class TestDoubleExcitation:
         P1 = np.array([[0, 0], [0, 1]])
         X = np.array([[0, 1], [1, 0]])
 
-        # To compute the matrix for CX  arbitrary qubits, use the fact that
+        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
         # CU  = |0><0| \otimes I + |1><1| \otimes U
         def cnot_four_qubits(wires):
             proj_0_term = [P0 if idx == wires[0] else np.eye(2) for idx in range(4)]
@@ -1316,8 +1316,6 @@ class TestDoubleExcitation:
 
         decomposed_matrix = np.linalg.multi_dot(mats)
         exp = DoubleExcitation(phi)
-
-        print(decomposed_matrix)
 
         assert np.allclose(decomposed_matrix, exp)
 
