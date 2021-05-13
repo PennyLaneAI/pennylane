@@ -30,6 +30,8 @@ from gate_data import (
     Y,
     Z,
     H,
+    StateZeroProjector,
+    StateOneProjector,
     CNOT,
     SWAP,
     CZ,
@@ -1277,17 +1279,13 @@ class TestDoubleExcitation:
 
         from functools import reduce
 
-        # Handy projection operators
-        P0 = np.array([[1, 0], [0, 0]])
-        P1 = np.array([[0, 0], [0, 1]])
-
         # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
         # CU  = |0><0| \otimes I + |1><1| \otimes U
         def cnot_four_qubits(wires):
-            proj_0_term = [P0 if idx == wires[0] else np.eye(2) for idx in range(4)]
+            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
 
             proj_1_term = [np.eye(2) for idx in range(4)]
-            proj_1_term[wires[0]] = P1
+            proj_1_term[wires[0]] = StateOneProjector
             proj_1_term[wires[1]] = X
 
             proj_0_kron = reduce(np.kron, proj_0_term)
