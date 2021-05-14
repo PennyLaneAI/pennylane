@@ -209,7 +209,7 @@ def read_structure(filepath, outpath="."):
             raise TypeError(obabel_error_message)
         try:
             subprocess.run(
-                ["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out], check=True,
+                ["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out], check=True
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
@@ -829,7 +829,7 @@ def molecular_hamiltonian(
     molecule = openfermion.MolecularData(filename=hf_file)
 
     core, active = active_space(
-        molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals,
+        molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
     )
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
