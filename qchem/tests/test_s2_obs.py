@@ -8,7 +8,11 @@ from pennylane import qchem
 from openfermion import QubitOperator
 
 
-me_1 = np.array([[0.0, 0.0, 0.0, 0.0, 0.25],])
+me_1 = np.array(
+    [
+        [0.0, 0.0, 0.0, 0.0, 0.25],
+    ]
+)
 
 me_3 = np.array(
     [
@@ -87,11 +91,12 @@ me_6 = np.array(
 
 
 @pytest.mark.parametrize(
-    ("n_spin_orbs", "s2_me_expected"), [(1, me_1), (3, me_3), (6, me_6)],
+    ("n_spin_orbs", "s2_me_expected"),
+    [(1, me_1), (3, me_3), (6, me_6)],
 )
 def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
     r"""Test the calculation of the matrix elements of the two-particle spin operator
-    :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'` """
+    :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'`"""
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
@@ -174,7 +179,10 @@ terms_bk = {
 
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "mapping", "terms_exp"),
-    [(2, 4, "JORDAN_wigner", terms_jw), (3, 6, "bravyi_KITAEV", terms_bk),],
+    [
+        (2, 4, "JORDAN_wigner", terms_jw),
+        (3, 6, "bravyi_KITAEV", terms_bk),
+    ],
 )
 def test_spin2(electrons, orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
