@@ -1273,7 +1273,7 @@ class TestDoubleExcitation:
 
         The decomposition has already been expressed in terms of single-qubit rotations
         and CNOTs. For each term in the decomposition we need to construct the appropriate
-        four-qubit tensor product matrix and then sum them together.
+        four-qubit tensor product matrix and then multiply them together.
         """
         decomp = qml.DoubleExcitation.decomposition(phi, wires=[0, 1, 2, 3])
 
