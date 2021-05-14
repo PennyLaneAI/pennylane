@@ -86,40 +86,74 @@ def test_apply_controlled_v(n_wires):
     assert np.allclose(u, u_ideal)
 
 
-@pytest.mark.parametrize("n_wires", range(2, 5))
-def test_apply_controlled_Q(n_wires):
-    """Test if the apply_controlled_Q performs the correct transformation by reconstructing the
-    unitary and comparing against the one provided in make_Q. Random unitaries are chosen for
-    a_mat and r_mat."""
-    n_all_wires = n_wires + 1
+class TestApplyControlledQ:
+    """Tests for the apply_controlled_Q function"""
 
-    wires = range(n_wires)
-    target_wire = n_wires - 1
-    control_wire = n_wires
+    @pytest.mark.parametrize("n_wires", range(2, 5))
+    def test_apply(self, n_wires):
+        """Test if the apply_controlled_Q performs the correct transformation by reconstructing the
+        unitary and comparing against the one provided in make_Q. Random unitaries are chosen for
+        a_mat and r_mat."""
+        n_all_wires = n_wires + 1
 
-    a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
-    r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
-    q_mat = make_Q(a_mat, r_mat)
+        wires = range(n_wires)
+        target_wire = n_wires - 1
+        control_wire = n_wires
 
-    def fn():
-        qml.QubitUnitary(a_mat, wires=wires[:-1])
-        qml.QubitUnitary(r_mat, wires=wires)
+        a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
+        r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
+        q_mat = make_Q(a_mat, r_mat)
 
-    circ = apply_controlled_Q(
-        fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=None
-    )
+        def fn():
+            qml.QubitUnitary(a_mat, wires=wires[:-1])
+            qml.QubitUnitary(r_mat, wires=wires)
 
-    u = get_unitary(circ, n_all_wires)
-
-    circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=wires, control_wires=control_wire)
-    u_ideal = get_unitary(circ, n_all_wires)
-
-    assert np.allclose(u_ideal, u)
-
-
-def test_apply_controlled_Q_raises():
-    """Tests if a ValueError is raised when the target wire is not contained within wires"""
-    with pytest.raises(ValueError, match="The target wire must be contained within wires"):
-        apply_controlled_Q(
-            lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
+        circ = apply_controlled_Q(
+            fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=None
         )
+
+        u = get_unitary(circ, n_all_wires)
+
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=wires, control_wires=control_wire)
+        u_ideal = get_unitary(circ, n_all_wires)
+
+        assert np.allclose(u_ideal, u)
+
+    def test_raises(self):
+        """Tests if a ValueError is raised when the target wire is not contained within wires"""
+        with pytest.raises(ValueError, match="The target wire must be contained within wires"):
+            apply_controlled_Q(
+                lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
+            )
+
+    def test_decomposition(self):
+        n_wires = 5
+        wires = range(n_wires)
+        target_wire = n_wires - 1
+        control_wire = n_wires
+        work_wires = n_wires + 1
+
+        rnd_weights = np.random.random((4, n_wires, 3))
+
+        def fn():
+            """We just need an arbitrary decomposable circuit"""
+            qml.templates.StronglyEntanglingLayers(rnd_weights, wires=wires)
+
+        circ = apply_controlled_Q(
+            fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=work_wires
+        )
+
+        with qml.tape.QuantumTape() as tape:
+            circ()
+
+        tape = tape.expand(depth=2)
+        assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
+
+        dev = qml.device("default.qubit", wires=n_wires + 2)
+
+        @qml.qnode(dev)
+        def f():
+
+        u = get_unitary(circ, n_wires + 2)
+
+        print(u)
