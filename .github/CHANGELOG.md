@@ -156,6 +156,11 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `qml.SingleExcitation` and `qml.DoubleExcitation` operations now
+  have decompositions over elementary gates, and their gradient recipes
+  have been updated to use the four-term parameter-shift rules.
+  [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
+
 * The `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` operations now
   have decompositions over elementary gates.
   [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
