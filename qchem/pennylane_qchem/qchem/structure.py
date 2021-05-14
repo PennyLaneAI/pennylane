@@ -683,7 +683,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
 
 
-def convert_observable(qubit_observable, wires=None):
+def convert_observable(qubit_observable, wires=None, tol=1e08):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
     Args:
@@ -694,6 +694,9 @@ def convert_observable(qubit_observable, wires=None):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
+        tol (float): Tolerance in machine epsilons for the imaginary part of the
+            coefficients in ``qubit_observable``. Coefficients with imaginary part
+            less than 2.22e-16*tol are considered to be real.
 
     Returns:
         (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
@@ -709,8 +712,9 @@ def convert_observable(qubit_observable, wires=None):
       0.04475014 -0.04475014 -0.04475014  0.04475014  0.12293305  0.16768319
       0.16768319  0.12293305  0.17627641]
     """
-
-    if any(np.iscomplex(np.array(coef)) for coef in qubit_observable.terms.values()):
+    if any(
+        np.iscomplex(np.real_if_close(coef, tol=tol)) for coef in qubit_observable.terms.values()
+    ):
         raise TypeError(
             "The coefficients entering the QubitOperator must be real;"
             " got complex coefficients in the operator {}".format(qubit_observable)

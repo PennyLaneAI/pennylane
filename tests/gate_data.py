@@ -14,6 +14,11 @@ Y = np.array([[0, -1j], [1j, 0]])  #: Pauli-Y matrix
 Z = np.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
 
 H = np.array([[1, 1], [1, -1]]) / math.sqrt(2)  #: Hadamard gate
+
+# Single-qubit projectors
+StateZeroProjector = np.array([[1, 0], [0, 0]])
+StateOneProjector = np.array([[0, 0], [0, 1]])
+
 # Two qubit gates
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate
