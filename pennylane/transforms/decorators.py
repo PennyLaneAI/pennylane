@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains utility functions and decorators for constructing valid transforms."""
+# pylint: disable=too-few-public-methods
 import functools
 import pennylane as qml
 
