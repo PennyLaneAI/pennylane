@@ -153,7 +153,7 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
-* New ISWAP operation added to default_qubit device.
+* New ISWAP operation added to default_qubit device. [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
 <h3>Improvements</h3>
 
