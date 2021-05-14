@@ -125,35 +125,3 @@ class TestApplyControlledQ:
             apply_controlled_Q(
                 lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
             )
-
-    def test_decomposition(self):
-        n_wires = 5
-        wires = range(n_wires)
-        target_wire = n_wires - 1
-        control_wire = n_wires
-        work_wires = n_wires + 1
-
-        rnd_weights = np.random.random((4, n_wires, 3))
-
-        def fn():
-            """We just need an arbitrary decomposable circuit"""
-            qml.templates.StronglyEntanglingLayers(rnd_weights, wires=wires)
-
-        circ = apply_controlled_Q(
-            fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=work_wires
-        )
-
-        with qml.tape.QuantumTape() as tape:
-            circ()
-
-        tape = tape.expand(depth=2)
-        assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
-
-        dev = qml.device("default.qubit", wires=n_wires + 2)
-
-        @qml.qnode(dev)
-        def f():
-
-        u = get_unitary(circ, n_wires + 2)
-
-        print(u)
