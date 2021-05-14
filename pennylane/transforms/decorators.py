@@ -309,7 +309,7 @@ def qnode_transform(tape_transform):
                     op.queue()
 
     lets build a QNode transform that applies this transform twice with different
-    transform parameters to create two tapes, and then summing the results:
+    transform parameters to create two tapes, and then sum the results:
 
     .. code-block:: python
 
