@@ -1707,13 +1707,12 @@ class SingleExcitation(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: Obtained from its decomposition in terms of the
-      :class:`~.SingleExcitationPlus` and :class:`~.SingleExcitationMinus` operations
+    * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695)
 
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-
 
     **Example**
 
@@ -1737,6 +1736,7 @@ class SingleExcitation(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
     generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
 
     @classmethod
@@ -1750,8 +1750,9 @@ class SingleExcitation(Operation):
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-            SingleExcitationPlus(theta / 2, wires=wires),
-            SingleExcitationMinus(theta / 2, wires=wires),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
 
@@ -2241,8 +2242,8 @@ class DoubleExcitation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: Obtained from its decomposition in terms of the
-      :class:`~.DoubleExcitationPlus` and :class:`~.DoubleExcitationMinus` operations
+    * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -2271,6 +2272,7 @@ class DoubleExcitation(Operation):
     num_wires = 4
     par_domain = "R"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
 
     G = np.zeros((16, 16), dtype=np.complex64)
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
@@ -2293,10 +2295,38 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def decomposition(theta, wires):
+        # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
-            DoubleExcitationPlus(theta / 2, wires=wires),
-            DoubleExcitationMinus(theta / 2, wires=wires),
+            qml.CNOT(wires=[wires[2], wires[3]]),
+            qml.CNOT(wires=[wires[0], wires[2]]),
+            qml.Hadamard(wires=wires[3]),
+            qml.Hadamard(wires=wires[0]),
+            qml.CNOT(wires=[wires[2], wires[3]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.RY(theta / 8, wires=wires[1]),
+            qml.RY(-theta / 8, wires=wires[0]),
+            qml.CNOT(wires=[wires[0], wires[3]]),
+            qml.Hadamard(wires=wires[3]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.RY(theta / 8, wires=wires[1]),
+            qml.RY(-theta / 8, wires=wires[0]),
+            qml.CNOT(wires=[wires[2], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.RY(-theta / 8, wires=wires[1]),
+            qml.RY(theta / 8, wires=wires[0]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.Hadamard(wires=wires[3]),
+            qml.CNOT(wires=[wires[0], wires[3]]),
+            qml.RY(-theta / 8, wires=wires[1]),
+            qml.RY(theta / 8, wires=wires[0]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.Hadamard(wires=wires[0]),
+            qml.Hadamard(wires=wires[3]),
+            qml.CNOT(wires=[wires[0], wires[2]]),
+            qml.CNOT(wires=[wires[2], wires[3]]),
         ]
+
         return decomp_ops
 
     def adjoint(self):
