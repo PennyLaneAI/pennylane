@@ -917,7 +917,7 @@ class TestOperations:
         op = qml.ISWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
-        assert np.allclose(res, np.sort_complex(exp))
+        assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):

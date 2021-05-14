@@ -181,45 +181,54 @@ class TestApply:
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     test_data_two_wires_no_parameters = [
-        (qml.CNOT, [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.CNOT, [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 1]),
+        (qml.CNOT, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.CNOT, [0, 0, 1, 0], [0, 0, 0, 1]),
         (
             qml.CNOT,
             [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
             [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
         ),
-        (qml.SWAP, [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.SWAP, [0, 0, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0]),
+        (qml.SWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.SWAP, [0, 0, 1, 0], [0, 1, 0, 0]),
         (
             qml.SWAP,
             [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
             [1 / math.sqrt(2), -1 / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), -1 / math.sqrt(2), 0, 0],
         ),
-        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.ISWAP, [0, 0, 1, 0], [0, 1j, 0, 0], [0, -1j, 0, 0]),
-        (
-            qml.ISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -1j / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
-        ),
-        (qml.CZ, [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.CZ, [0, 0, 0, 1], [0, 0, 0, -1], [0, 0, 0, -1]),
+        (qml.CZ, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.CZ, [0, 0, 0, 1], [0, 0, 0, -1]),
         (
             qml.CZ,
             [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
             [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
         ),
     ]
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters
-    )
+    test_data_iswap = [
+        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.ISWAP, [0, 0, 1, 0], [0, 1j, 0, 0]),
+        (
+            qml.ISWAP,
+            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), -1j / math.sqrt(2), 0, 0],
+        ),
+    ]
+
+    test_data_iswap_inv = [
+        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.ISWAP, [0, 0, 1, 0], [0, -1j, 0, 0]),
+        (
+            qml.ISWAP,
+            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
+        ),
+    ]
+
+    all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_iswap
+
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
     def test_apply_operation_two_wires_no_parameters(
-        self, qubit_device_2_wires, tol, operation, input, expected_output, inverse_expected_output
+        self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
@@ -231,11 +240,11 @@ class TestApply:
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output,inverse_expected_output", test_data_two_wires_no_parameters
-    )
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv
+
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
     def test_apply_operation_two_wires_no_parameters_inverse(
-        self, qubit_device_2_wires, tol, operation, input, expected_output, inverse_expected_output
+        self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
@@ -245,7 +254,7 @@ class TestApply:
 
         assert np.allclose(
             qubit_device_2_wires._state.flatten(),
-            np.array(inverse_expected_output),
+            np.array(expected_output),
             atol=tol,
             rtol=0,
         )
