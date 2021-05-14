@@ -376,6 +376,11 @@ class RepresentationResolver:
                 op, "U", self.unitary_matrix_cache
             )
 
+        elif base_name == "MultiControlledX":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+            representation = "X"
+
         elif base_name == "Hermitian":
             representation = RepresentationResolver._format_matrix_operation(
                 op, "H", self.hermitian_matrix_cache
