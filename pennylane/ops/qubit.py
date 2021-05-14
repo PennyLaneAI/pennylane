@@ -533,6 +533,53 @@ class SWAP(Operation):
         CSWAP(wires=wire + self.wires)
 
 
+class ISWAP(Operation):
+    r"""ISWAP(wires)
+    The i-swap operator
+
+    .. math:: ISWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 0 & i & 0\\
+            0 & i & 0 & 0\\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 2
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1j, -1j, 1, 1])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            S(wires=wires[0]),
+            S(wires=wires[1]),
+            Hadamard(wires=wires[0]),
+            CNOT(wires=[wires[0], wires[1]]),
+            CNOT(wires=[wires[1], wires[0]]),
+            Hadamard(wires=wires[1]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        return ISWAP(wires=self.wires).inv()
+
+
 class CSWAP(Operation):
     r"""CSWAP(wires)
     The controlled-swap operator
@@ -2982,6 +3029,7 @@ ops = {
     "CZ",
     "CY",
     "SWAP",
+    "ISWAP",
     "CSWAP",
     "Toffoli",
     "RX",
