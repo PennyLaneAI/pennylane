@@ -22,7 +22,7 @@ from pennylane.transforms import adjoint
 
 def _apply_controlled_z(wires, control_wire, work_wires):
     r"""Provides the circuit to apply a controlled version of the :math:`Z` gate defined in
-    `this <https://arxiv.org/pdf/1805.00109.pdf>`__ paper.
+    `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
 
     The multi-qubit gate :math:`Z = I - 2|0\rangle \langle 0|` can be performed using the
     conventional multi-controlled-Z gate with an additional bit flip on each qubit before and after.
@@ -57,7 +57,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
 
 def _apply_controlled_v(target_wire, control_wire):
     """Provides the circuit to apply a controlled version of the :math:`V` gate defined in
-    `this <https://arxiv.org/pdf/1805.00109.pdf>`__ paper.
+    `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
 
     The :math:`V` gate is simply a Pauli-Z gate applied to the ``target_wire``, i.e., the ancilla
     wire in which the expectation value is encoded.
@@ -72,7 +72,34 @@ def _apply_controlled_v(target_wire, control_wire):
 
 
 def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
+    r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
+    defined in `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
 
+    Given a callable ``fn`` input corresponding to the :math:`\mathcal{F}` unitary in the above
+    paper, this function transforms the circuit into a controlled-version of the :math:`\mathcal{Q}`
+    unitary which forms part of the quantum Monte Carlo algorithm. In this algorithm, one of the
+    wires acted upon by :math:`\mathcal{F}`, specified by ``target_wire``, is used to embed a
+    Monte Carlo estimation problem. The :math:`\mathcal{Q}` is then designed to contain the target
+    expectation value as a phase in one of its eigenvalues. This function transforms to a controlled
+    version of :math:`\mathcal{Q}` that is compatible with quantum phase estimation
+    (see :class:`~.QuantumPhaseEstimation` for more details).
+
+    Args:
+        fn (Callable): a quantum function that applies quantum operations according to the
+            :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
+        wires (Union[Wires, Sequence[int], or int]): the wires acted upon by the ``fn`` circuit
+        target_wire (int): The wire in which the expectation value is encoded. Must be contained
+            within ``wires``.
+        control_wire (int): the control wire from the register of phase estimation qubits
+        work_wires (Union[Wires, Sequence[int], or int]): additional work wires used when
+            decomposing :math:`\mathcal{Q}`
+
+    Returns:
+        function: The input function transformed to the :math:`\mathcal{Q}` unitary
+
+    Raises:
+        ValueError: if ``target_wire`` is now in ``wires``
+    """
     fn_inv = adjoint(fn)
 
     if target_wire not in wires:
