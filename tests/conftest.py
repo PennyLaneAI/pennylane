@@ -200,6 +200,8 @@ class CircuitFixture():
 
         self.input = None
 
+        self.num_wires = 1
+
     
 
 @pytest.fixture(scope="function")
@@ -252,7 +254,7 @@ def circuit_prob_output():
     circuit_data = CircuitFixture()
     circuit_data.circuit_func = circuit
     circuit_data.res = expected_res
-    circuit_data.jac = expected_grad
+    circuit_data.jac = expected_jacobian
     circuit_data.hess = expected_hess
 
     circuit_data.input_shape = tuple()
