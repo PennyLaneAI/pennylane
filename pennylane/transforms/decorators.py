@@ -57,6 +57,7 @@ def make_tape(fn):
     >>> active_tape.operations
     [RY(1.0, wires=[0])]
     """
+
     def wrapper(*args, **kwargs):
         active_tape = qml.tape.get_active_tape()
 
@@ -67,12 +68,14 @@ def make_tape(fn):
             with qml.tape.QuantumTape() as tape:
                 fn(*args, **kwargs)
         return tape
+
     return wrapper
 
 
 class NonQueuingTape(qml.queuing.AnnotatedQueue):
     """Mixin class that creates a tape that does not queue
     itself to the current queuing context."""
+
     def _process_queue(self):
         super()._process_queue()
 
@@ -138,6 +141,7 @@ class single_tape_transform:
      0: ──H───────────────╭Z──┤
      1: ──RX(0.5)──RY(1)──╰C──┤
     """
+
     def __init__(self, transform_fn):
         self.transform_fn = transform_fn
         functools.update_wrapper(self, transform_fn)
@@ -247,9 +251,7 @@ def qfunc_transform(tape_transform):
 
     @functools.wraps(tape_transform)
     def make_qfunc_transform(*targs, **tkwargs):
-
         def wrapper(fn):
-
             @functools.wraps(fn)
             def internal_wrapper(*args, **kwargs):
                 tape = make_tape(fn)(*args, **kwargs)
@@ -257,6 +259,7 @@ def qfunc_transform(tape_transform):
                 return tape.measurements
 
             return internal_wrapper
+
         return wrapper
 
     return make_qfunc_transform
@@ -363,9 +366,7 @@ def qnode_transform(tape_transform):
 
     @functools.wraps(tape_transform)
     def make_qnode_transform(*targs, **tkwargs):
-
         def wrapper(qnode):
-
             @functools.wraps(qnode)
             def internal_wrapper(*args, **kwargs):
                 qnode.construct(args, kwargs)
@@ -381,5 +382,7 @@ def qnode_transform(tape_transform):
                 return fn(res)
 
             return internal_wrapper
+
         return wrapper
+
     return make_qnode_transform
