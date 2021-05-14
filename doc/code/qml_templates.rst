@@ -78,3 +78,4 @@ Utility functions for quantum Monte Carlo
     :no-heading:
     :no-main-docstr:
     :skip: QuantumMonteCarlo, Operation, QubitUnitary
+    :no-inheritance-diagram:
