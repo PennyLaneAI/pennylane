@@ -54,6 +54,20 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
+
+Decorators and utility functions
+--------------------------------
+
+The following decorators and convenience functions are provided
+to help build custom QNode, quantum function, and tape transforms:
+
+.. autosummary::
+    :toctree: api
+
+    ~single_tape_transform
+    ~qfunc_transform
+    ~qnode_transform
+    ~transforms.make_tape
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
