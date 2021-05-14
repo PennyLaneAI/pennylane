@@ -42,6 +42,7 @@ containing quantum operations) that are used *inside* QNodes.
     ~adjoint
     ~ctrl
     ~transforms.invisible
+    ~quantum_monte_carlo
 
 Tape transforms
 ---------------
@@ -62,3 +63,4 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .qmc import quantum_monte_carlo
