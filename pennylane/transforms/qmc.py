@@ -15,7 +15,7 @@
 Contains the quantum_monte_carlo transform.
 """
 from functools import wraps
-from pennylane import PauliX, Hadamard, MultiControlledX, CZ
+from pennylane import PauliX, Hadamard, MultiControlledX, CZ, QFT
 from pennylane.wires import Wires
 from pennylane.transforms import adjoint
 
@@ -121,8 +121,28 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
 
 
 def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
+
+    estimation_wires = Wires(estimation_wires)
+    wires = Wires(wires)
+
+    if Wires.shared_wires([wires, estimation_wires]):
+        raise ValueError("No wires can be shared between the wires and estimation_wires registers")
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
         fn(*args, **kwargs)
+        for i, control_wire in enumerate(estimation_wires):
+            Hadamard(control_wire)
+
+            # Find wires eligible to be used as helper wires
+            work_wires = estimation_wires.toset() - {control_wire}
+            n_reps = 2 ** (len(estimation_wires) - (i + 1))
+
+            q = apply_controlled_Q(fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=work_wires )
+
+            for _ in range(n_reps):
+                q(*args, **kwargs)
+
+        QFT(wires=estimation_wires).inv()
 
     return wrapper
