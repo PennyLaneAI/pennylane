@@ -18,15 +18,12 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-from openfermion import MolecularData, QubitOperator
-from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
-from openfermionpsi4 import run_psi4
-from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane import Hamiltonian
 from pennylane.wires import Wires
 
+from . import openfermion
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -325,12 +322,18 @@ def meanfield(
         for i, symbol in enumerate(symbols)
     ]
 
-    molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
+    molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "psi4":
+        # pylint: disable=import-outside-toplevel
+        from openfermionpsi4 import run_psi4
+
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
+        # pylint: disable=import-outside-toplevel
+        from openfermionpyscf import run_pyscf
+
         run_pyscf(molecule, run_scf=1, verbose=0)
 
     return path_to_file
@@ -501,7 +504,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     """
 
     # loading HF data from the hdf5 file
-    molecule = MolecularData(filename=hf_file.strip())
+    molecule = openfermion.MolecularData(filename=hf_file.strip())
 
     # getting the terms entering the second-quantized Hamiltonian
     terms_molecular_hamiltonian = molecule.get_molecular_hamiltonian(
@@ -509,7 +512,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     )
 
     # generating the fermionic Hamiltonian
-    fermionic_hamiltonian = get_fermion_operator(terms_molecular_hamiltonian)
+    fermionic_hamiltonian = openfermion.transforms.get_fermion_operator(terms_molecular_hamiltonian)
 
     mapping = mapping.strip().lower()
 
@@ -521,9 +524,9 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
     # fermionic-to-qubit transformation of the Hamiltonian
     if mapping == "bravyi_kitaev":
-        return bravyi_kitaev(fermionic_hamiltonian)
+        return openfermion.transforms.bravyi_kitaev(fermionic_hamiltonian)
 
-    return jordan_wigner(fermionic_hamiltonian)
+    return openfermion.transforms.jordan_wigner(fermionic_hamiltonian)
 
 
 def _qubit_operator_to_terms(qubit_operator, wires=None):
@@ -624,7 +627,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     else:
         qubit_indexed_wires = all_wires
 
-    q_op = QubitOperator()
+    q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
 
         extra_obsvbs = set(op.name) - {"PauliX", "PauliY", "PauliZ", "Identity"}
@@ -650,7 +653,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             )
 
         # This is how one makes QubitOperator in OpenFermion
-        q_op += coeff * QubitOperator(term_str)
+        q_op += coeff * openfermion.QubitOperator(term_str)
 
     return q_op
 
@@ -823,7 +826,7 @@ def molecular_hamiltonian(
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
-    molecule = MolecularData(filename=hf_file)
+    molecule = openfermion.MolecularData(filename=hf_file)
 
     core, active = active_space(
         molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
