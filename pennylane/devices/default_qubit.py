@@ -222,8 +222,8 @@ class DefaultQubit(QubitDevice):
 
         if isinstance(operation, DiagonalOperation):
             return self._apply_diagonal_unitary(state, matrix, wires)
-        if len(wires) <= 2:
-            # Einsum is faster for small gates
+        if (self.num_wires<7) or (len(wires) <= 2):
+            # Einsum is faster for small gates or smaller states
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
@@ -611,7 +611,7 @@ class DefaultQubit(QubitDevice):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
-        faster for single- and two-qubit gates.
+        faster for single- and two-qubit gates, or when total wires is less than 7.
 
         Args:
             state (array[complex]): input state
