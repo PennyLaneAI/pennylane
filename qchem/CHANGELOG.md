@@ -7,7 +7,7 @@
 <h3>Bug fixes</h3>
 
 * Include tolerance in the``convert_observable`` function to check if the input QubitOperator
-  contains complex coefficients. This avoid raising an error if the coefficient's imaginary part is less than 2.220446049250313e-08. 
+  contains complex coefficients. This avoid raising an error if the coefficient's imaginary part is less than `2.22e-08`.
   [(#1309)](https://github.com/PennyLaneAI/pennylane/pull/1309)
 
 * An error message is raised if a QubitOperator with complex coefficients is passed
