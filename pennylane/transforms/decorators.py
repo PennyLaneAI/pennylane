@@ -165,7 +165,7 @@ def qfunc_transform(tape_transform):
             to convert into the qfunc transform.
 
     Returns:
-        function: A qfunc transform, that acts on any qfunc returning a *new*
+        function: A qfunc transform, that acts on any qfunc, and returns a *new*
         qfunc as per the tape transform.
 
     **Example**
@@ -210,7 +210,7 @@ def qfunc_transform(tape_transform):
      0: ──H───────────────────╭Z──┤
      1: ──RX(1.5)──RY(0.158)──╰C──┤
 
-    The not only is the transformed qfunc fully differentiable, but the qfunc transform
+    Not only is the transformed qfunc fully differentiable, but the qfunc transform
     parameters *themselves* are differentiable:
 
     .. code-block:: python
@@ -339,7 +339,7 @@ def qnode_transform(tape_transform):
     >>> circuit(0.6)
     >>> 1.7360468658221193
 
-    The not only is the transformed QNode fully differentiable, but the QNode transform
+    Not only is the transformed QNode fully differentiable, but the QNode transform
     parameters *themselves* are differentiable:
 
     .. code-block:: python
