@@ -58,6 +58,7 @@ more tapes as well as a classical processing function.
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
+from .decorators import make_tape, single_tape_transform, qfunc_transform, qnode_transform
 from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping

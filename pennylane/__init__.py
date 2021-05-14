@@ -47,6 +47,9 @@ from pennylane.transforms import (
     ctrl,
     measurement_grouping,
     metric_tensor,
+    qfunc_transform,
+    qnode_transform,
+    single_tape_transform
 )
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
