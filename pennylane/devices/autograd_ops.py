@@ -62,6 +62,18 @@ def ControlledPhaseShift(phi):
     return np.array([1.0, 1.0, 1.0, np.exp(1j * phi)])
 
 
+def CPhase(phi):
+    r"""Two-qubit CPhase gate.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array[complex]: diagonal part of the CPhase matrix
+    """
+    return np.array([1.0, 1.0, 1.0, np.exp(1j * phi)])
+
+
 def RX(theta):
     r"""One-qubit rotation about the x axis.
 

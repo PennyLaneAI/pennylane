@@ -44,6 +44,7 @@ from gate_data import (
     Toffoli,
     QFT,
     ControlledPhaseShift,
+    CPhase,
     SingleExcitation,
     SingleExcitationPlus,
     SingleExcitationMinus,
@@ -927,9 +928,9 @@ class TestOperations:
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
         """Tests that the ControlledPhaseShift operation calculates the correct matrix and
         eigenvalues"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        op = qml.CPhase(phi, wires=[0, 1])
         res = op.matrix
-        exp = ControlledPhaseShift(phi)
+        exp = CPhase(phi)
         assert np.allclose(res, exp)
 
         res = op.eigvals
@@ -937,8 +938,8 @@ class TestOperations:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_decomp(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        """Tests that the CPhase operation calculates the correct decomposition"""
+        op = qml.CPhase(phi, wires=[0, 1])
         decomp = op.decomposition(phi, wires=[0, 1])
 
         mats = []
@@ -951,7 +952,7 @@ class TestOperations:
                 mats.append(i.matrix)
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = ControlledPhaseShift(phi)
+        exp = CPhase(phi)
 
         assert np.allclose(decomposed_matrix, exp)
 
