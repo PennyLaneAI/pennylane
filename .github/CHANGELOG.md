@@ -157,6 +157,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* Tests for the `Permute` operation are adjusted so that tape expansion happens
+  once.
+  [(#1318)](https://github.com/PennyLaneAI/pennylane/pull/1318).
+
 * The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
   an ancilla register of worker wires is required to support the decomposition.
   [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
