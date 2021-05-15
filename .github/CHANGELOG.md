@@ -153,6 +153,7 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
+* Ising ZZ gate functionality added. [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
 
 <h3>Improvements</h3>
 
@@ -200,7 +201,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
-* Ising ZZ gate functionality added. [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
