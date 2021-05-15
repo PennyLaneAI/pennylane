@@ -268,7 +268,7 @@ class BitFlip(Channel):
 
 
 class ResetError(Channel):
-    r"""ResetError(p, wires)
+    r"""ResetError(p_0, p_1, wires)
     Single-qubit Reset error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -300,10 +300,11 @@ class ResetError(Channel):
     * Number of parameters: 2
 
     Args:
-        p (float): The probability that a phase flip error occurs.
+        p_0 (float): The probability that a reset to 0 error occurs.
+        p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
+    num_params = 2
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
