@@ -200,11 +200,12 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
 
+* Ising ZZ gate functionality added. [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Miruna Daian, Antal Száva
 
 # Release 0.15.1 (current release)
 

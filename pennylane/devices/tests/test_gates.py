@@ -68,7 +68,7 @@ ops = {
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.QFT(wires=[0, 1, 2]),
-    "IsingZZ": qml.IsingZZ(0, wires=[0,1]),
+    "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
@@ -152,7 +152,7 @@ IsingZZ = lambda phi: np.array(
         [exp(-1.0j * phi / 2), 0, 0, 0],
         [0, exp(1.0j * phi / 2), 0, 0],
         [0, 0, exp(1.0j * phi / 2), 0],
-        [0, 0, 0, exp(-1.0j * phi / 2)]
+        [0, 0, 0, exp(-1.0j * phi / 2)],
     ]
 )
 

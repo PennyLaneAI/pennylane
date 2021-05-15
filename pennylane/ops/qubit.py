@@ -1681,6 +1681,7 @@ class U3(Operation):
         new_phi = (np.pi - lam) % (2 * np.pi)
         return U3(theta, new_phi, new_lam, wires=self.wires)
 
+
 class IsingZZ(Operation):
     r""" IsingZZ(phi, wires)
     Ising ZZ coupling gate
@@ -1720,17 +1721,13 @@ class IsingZZ(Operation):
         pos_phase = np.exp(1.0j * phi / 2)
         neg_phase = np.exp(-1.0j * phi / 2)
         return np.array(
-            [
-                [neg_phase, 0, 0,0],
-                [0, pos_phase, 0, 0],
-                [0, 0, pos_phase, 0],
-                [0, 0, 0, neg_phase]
-            ]
+            [[neg_phase, 0, 0, 0], [0, pos_phase, 0, 0], [0, 0, pos_phase, 0], [0, 0, 0, neg_phase]]
         )
 
     def adjoint(self, do_queue=False):
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires, do_queue=do_queue)
+
 
 # =============================================================================
 # Quantum chemistry
