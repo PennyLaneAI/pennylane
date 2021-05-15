@@ -71,7 +71,7 @@ def test_reading_xyz_file(tmpdir):
 
 def test_subprocess_run(monkeypatch, requires_babel):
     r"""Test 'subprocess.run' function running babel to convert the molecular structure
-     file to xyz format"""
+    file to xyz format"""
 
     with monkeypatch.context() as m:
 
