@@ -24,6 +24,8 @@ from pennylane.wires import Wires
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
+Zero = np.array([[1, 0], [0, 0]])
+One = np.array([[0, 0], [0, 1]])
 
 ch_list = [
     channel.AmplitudeDamping,
@@ -32,6 +34,7 @@ ch_list = [
     channel.BitFlip,
     channel.PhaseFlip,
     channel.DepolarizingChannel,
+    channel.ResetError,
 ]
 
 
@@ -212,6 +215,41 @@ class TestDepolarizingChannel:
         assert gradient == circuit(1) - circuit(0)
         assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
+
+class TestResetError:
+    """Tests for the quantum channel ResetError"""
+
+    @pytest.mark.parametrize("p_0,p_1", [[0, 0.1, 0.5, 1],[0, 0.1, 0.5, 1]])
+    def test_p_arbitrary(self, p_0, p_1, tol):
+        """Test that various values of p_0 and p_1 give correct Kraus matrices"""
+        op = channel.ResetError
+
+        expected_K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
+        assert np.allclose(op(p_0, p_1 , wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+
+        expected_K1 = np.sqrt(p_0) * Zero
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+
+        expected_K2 = np.sqrt(p_1) * One
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_grad_bitflip(self, angle, tol):
+        """Test that analytical gradient is computed correctly for different states. Channel
+        grad recipes are independent of channel parameter"""
+
+        dev = qml.device("default.mixed", wires=1)
+        prob = 0.5
+
+        @qml.qnode(dev)
+        def circuit(p_0, p_1):
+            qml.RX(angle, wires=0)
+            qml.ResetError(p_0, p_1, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        gradient = np.squeeze(qml.grad(circuit)(prob))
+        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, (-2 * np.cos(angle)))
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""
