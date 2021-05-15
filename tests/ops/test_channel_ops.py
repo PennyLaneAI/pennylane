@@ -219,7 +219,7 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", [[0, 0.1, 0.5, 1],[0, 0.1, 0.5, 1]])
+    @pytest.mark.parametrize("p_0,p_1", list(zip([0, 0.1, 0.5, 1],[0, 0.1, 0.5, 1])))
     def test_p_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
@@ -239,7 +239,7 @@ class TestResetError:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        prob = 0.5
+        p_0, p_1 = 0.5, 0.5
 
         @qml.qnode(dev)
         def circuit(p_0, p_1):
