@@ -714,7 +714,7 @@ class TestOperations:
                     [0, 0, 0, 0, 0, 1, 0, 0],
                     [0, 0, 0, 0, 1, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 1],
-                    [0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 1, 0]
                     ]))
 
         decomposed_matrix = np.linalg.multi_dot(mats)
