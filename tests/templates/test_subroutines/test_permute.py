@@ -74,8 +74,8 @@ class TestDecomposition:
 
         tape = two_cycle.qtape
 
-        # Check that Permute was expanded to SWAPs when the QNode is
-        # evaluated, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in two_cycle.qtape.operations] == expected_wires
 
@@ -126,8 +126,8 @@ class TestDecomposition:
 
         tape = cycle.qtape
 
-        # Check that Permute was expanded to SWAPs when the QNode is
-        # evaluated, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in cycle.qtape.operations] == expected_wires
 
@@ -174,8 +174,8 @@ class TestDecomposition:
 
         tape = arbitrary_perm.qtape
 
-        # Check that Permute was expanded to SWAPs when the QNode is
-        # evaluated, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in arbitrary_perm.qtape.operations] == expected_wires
 
@@ -232,8 +232,8 @@ class TestDecomposition:
 
         tape = subset_perm.qtape
 
-        # Check that Permute was expanded to SWAPs when the QNode is
-        # evaluated, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in subset_perm.qtape.operations] == expected_wires
 
