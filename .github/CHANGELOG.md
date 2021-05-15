@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added Reset error to noise channels. 
+  [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321).
+
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
   The function `pennylane.grouping.pauli_group` provides a generator to
