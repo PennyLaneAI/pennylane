@@ -927,6 +927,7 @@ class TestOperations:
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
         decomp = opr.decomposition([0, 1])
+
         mat = []
         for op in reversed(decomp):
             if isinstance(op, qml.CNOT) and op.wires.tolist() == [0, 1]:
