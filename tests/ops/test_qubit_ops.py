@@ -2485,7 +2485,7 @@ class TestMultiControlledX:
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wire, work_wires=work_wires
             )
-        tape = tape.expand(depth=2)
+        tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
