@@ -64,6 +64,7 @@ ops = {
     "Rot": qml.Rot(0, 0, 0, wires=[0]),
     "S": qml.S(wires=[0]),
     "SWAP": qml.SWAP(wires=[0, 1]),
+    "ISWAP": qml.ISWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
@@ -90,6 +91,7 @@ S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
 SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
@@ -167,7 +169,7 @@ single_qubit_param = [
     (qml.RZ, rz),
 ]
 # list of all non-parametrized two-qubit gates
-two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CZ, CZ), (qml.CY, CY)]
+two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
 two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz)]
 two_qubit_multi_param = [(qml.CRot, crot)]
