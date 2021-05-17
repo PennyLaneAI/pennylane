@@ -99,7 +99,7 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
         function: The input function transformed to the :math:`\mathcal{Q}` unitary
 
     Raises:
-        ValueError: if ``target_wire`` is now in ``wires``
+        ValueError: if ``target_wire`` is not in ``wires``
     """
     fn_inv = adjoint(fn)
 
