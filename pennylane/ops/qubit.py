@@ -526,6 +526,15 @@ class SWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         return SWAP(wires=self.wires)
 
