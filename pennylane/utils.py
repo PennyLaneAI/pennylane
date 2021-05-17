@@ -452,7 +452,7 @@ def frobenius_inner_product(A, B, normalize=False):
     Args:
         A (array[float]): First matrix, assumed to be a square array.
         B (array[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B. 
+        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
             Default to False.
 
     Returns:
