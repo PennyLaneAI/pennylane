@@ -131,7 +131,7 @@ class DefaultQubitTF(DefaultQubit):
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
         "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
-        "CPhase": tf_ops.CPhase,
+        "CPhase": tf_ops.ControlledPhaseShift,
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,

@@ -64,19 +64,6 @@ def ControlledPhaseShift(phi):
     return tf.convert_to_tensor([1.0, 1.0, 1.0, tf.exp(1j * phi)])
 
 
-def CPhase(phi):
-    r"""Two-qubit CPhase gate.
-
-    Args:
-        phi (float): rotation angle
-
-    Returns:
-        tf.Tensor[complex]: diagonal part of the CPhase matrix
-    """
-    phi = tf.cast(phi, dtype=C_DTYPE)
-    return tf.convert_to_tensor([1.0, 1.0, 1.0, tf.exp(1j * phi)])
-
-
 def RX(theta):
     r"""One-qubit rotation about the x axis.
 
