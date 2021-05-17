@@ -220,7 +220,7 @@ class TestResetError:
     """Tests for the quantum channel ResetError"""
 
     @pytest.mark.parametrize("p_0,p_1", list(zip([0, 0.1, 0.5], [0, 0.1, 0.5])))
-    def test_p_arbitrary(self, p_0, p_1, tol):
+    def test_p0_p1_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
 
@@ -234,7 +234,7 @@ class TestResetError:
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_bitflip(self, angle, tol):
+    def test_grad_reset(self, angle, tol):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
