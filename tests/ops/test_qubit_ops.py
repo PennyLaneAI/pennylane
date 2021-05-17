@@ -924,7 +924,7 @@ class TestOperations:
         assert np.allclose(res, exp)
 
     def test_swap_decomposition(self):
-        "Tests the swap operator produces the correct output"
+        """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
         decomp = opr.decomposition([0, 1])
         mat = []
