@@ -222,6 +222,11 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixed tests for the `Permute` operation that used a QNode and hence expanded
+  tapes twice instead of once due to QNode tape expansion and an explicit tape
+  expansion call.
+  [(#1318)](https://github.com/PennyLaneAI/pennylane/pull/1318).
+
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
