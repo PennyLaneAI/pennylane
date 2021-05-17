@@ -14,6 +14,8 @@
 """Contains utility functions and decorators for constructing valid transforms."""
 # pylint: disable=too-few-public-methods
 import functools
+import inspect
+
 import pennylane as qml
 
 
@@ -250,18 +252,35 @@ def qfunc_transform(tape_transform):
     if not isinstance(tape_transform, single_tape_transform):
         raise ValueError("Can only convert single tape transforms into qfunc transforms!")
 
-    @functools.wraps(tape_transform)
-    def make_qfunc_transform(*targs, **tkwargs):
-        def wrapper(fn):
+    sig = inspect.signature(tape_transform)
+    params = sig.parameters
+
+    if len(params) > 1:
+
+        @functools.wraps(tape_transform)
+        def make_qfunc_transform(*targs, **tkwargs):
+            def wrapper(fn):
+                @functools.wraps(fn)
+                def internal_wrapper(*args, **kwargs):
+                    tape = qml.transforms.make_tape(fn)(*args, **kwargs)
+                    tape = tape_transform(tape, *targs, **tkwargs)
+                    return tape.measurements
+
+                return internal_wrapper
+
+            return wrapper
+
+    elif len(params) == 1:
+
+        @functools.wraps(tape_transform)
+        def make_qfunc_transform(fn):
             @functools.wraps(fn)
             def internal_wrapper(*args, **kwargs):
                 tape = make_tape(fn)(*args, **kwargs)
-                tape = tape_transform(tape, *targs, **tkwargs)
+                tape = tape_transform(tape)
                 return tape.measurements
 
             return internal_wrapper
-
-        return wrapper
 
     return make_qfunc_transform
 
@@ -364,26 +383,50 @@ def qnode_transform(tape_transform):
     >>> qml.grad(cost_fn)(x, transform_weights)
     (array(-0.85987045), array([-0.17253469, -0.17148357]))
     """
+    sig = inspect.signature(tape_transform)
+    params = sig.parameters
 
-    @functools.wraps(tape_transform)
-    def make_qnode_transform(*targs, **tkwargs):
-        def wrapper(qnode):
+    if len(params) > 1:
+
+        @functools.wraps(tape_transform)
+        def make_qnode_transform(*targs, **tkwargs):
+            def wrapper(qnode):
+                @functools.wraps(qnode)
+                def internal_wrapper(*args, **kwargs):
+                    qnode.construct(args, kwargs)
+
+                    if isinstance(tape_transform, single_tape_transform):
+                        fn = lambda x: x
+                        tapes = [tape_transform(qnode.qtape, *targs, **tkwargs)]
+                    else:
+                        # multiple tape transform
+                        tapes, fn = tape_transform(qnode.qtape, *targs, **tkwargs)
+
+                    res = [t.execute(device=qnode.device) for t in tapes]
+                    return fn(res)
+
+                return internal_wrapper
+
+            return wrapper
+
+    elif len(params) == 1:
+
+        @functools.wraps(tape_transform)
+        def make_qnode_transform(qnode):
             @functools.wraps(qnode)
             def internal_wrapper(*args, **kwargs):
                 qnode.construct(args, kwargs)
 
                 if isinstance(tape_transform, single_tape_transform):
                     fn = lambda x: x
-                    tapes = [tape_transform(qnode.qtape, *targs, **tkwargs)]
+                    tapes = [tape_transform(qnode.qtape)]
                 else:
                     # multiple tape transform
-                    tapes, fn = tape_transform(qnode.qtape, *targs, **tkwargs)
+                    tapes, fn = tape_transform(qnode.qtape)
 
                 res = [t.execute(device=qnode.device) for t in tapes]
                 return fn(res)
 
             return internal_wrapper
-
-        return wrapper
 
     return make_qnode_transform
