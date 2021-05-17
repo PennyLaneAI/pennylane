@@ -688,7 +688,7 @@ class TestOperations:
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
-        res = op.decompostion(op.wires)
+        res = op.decomposition(op.wires)
 
         assert len(res) == 15
 
