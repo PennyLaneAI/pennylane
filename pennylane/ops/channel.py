@@ -292,7 +292,7 @@ class ResetError(Channel):
                 \end{bmatrix}
 
     where :math:`p_0 \in [0, 1]` is the probability of a reset to 0,
-    and :math:`p_1 \in [0, 1]`is the probability of a reset to 1 error.
+    and :math:`p_1 \in [0, 1]` is the probability of a reset to 1 error.
 
     **Details:**
 
