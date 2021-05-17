@@ -284,6 +284,7 @@ def qfunc_transform(tape_transform):
 
             return internal_wrapper
 
+    make_qfunc_transform.tape_fn = tape_transform
     return make_qfunc_transform
 
 
@@ -313,7 +314,7 @@ def qnode_transform(qnode_transform_fn):
             are required, and ``processing_fn`` will be passed an empty list.
 
     Returns:
-        function: The transformed QNode. Takes the same input arguments as
+        function: A hybrid quantum-classical function. Takes the same input arguments as
         the input QNode.
 
     **Example**
@@ -409,6 +410,9 @@ def qnode_transform(qnode_transform_fn):
                     res = [t.execute(device=qnode.device) for t in tapes]
                     return fn(res)
 
+                internal_wrapper.qnode = qnode
+                internal_wrapper.interface = qnode.interface
+                internal_wrapper.device = qnode.device
                 return internal_wrapper
 
             return wrapper
@@ -430,6 +434,9 @@ def qnode_transform(qnode_transform_fn):
                 res = [t.execute(device=qnode.device) for t in tapes]
                 return fn(res)
 
+            internal_wrapper.qnode = qnode
+            internal_wrapper.interface = qnode.interface
+            internal_wrapper.device = qnode.device
             return internal_wrapper
 
     return make_qnode_transform
