@@ -298,7 +298,7 @@ def inv(operation_list):
     """
 
     warnings.warn(
-        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint()",
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
         UserWarning,
     )
     if isinstance(operation_list, qml.operation.Operation):
