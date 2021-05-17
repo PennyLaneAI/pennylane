@@ -937,6 +937,7 @@ class CPhase(ControlledPhaseShift):
     """
     pass
 
+
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
