@@ -308,7 +308,7 @@ class ResetError(Channel):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
-    grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+    grad_recipe = ([[1, 0, 1], [-1, 0, 0]], [[1, 0, 1], [-1, 0, 0]],)
 
     @classmethod
     def _kraus_matrices(cls, *params):
