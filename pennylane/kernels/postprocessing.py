@@ -71,7 +71,7 @@ def flip_matrix(K):
         array[float]: Kernel matrix with negative eigenvalues offset by flipping negative eigenvalues.
 
     Reference:
-        This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`.
+        This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`_.
     """
     w, v = np.linalg.eigh(K)
 
@@ -104,7 +104,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
         Requires cvxpy and the used solver (default CVXOPT) to be installed if ``fix_diagonal=True``.
 
     Reference:
-        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`.
+        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
     """
     if not fix_diagonal:
         return threshold_matrix(K)
@@ -155,7 +155,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         If method=='split_channel', all diagonal entries have to be measured on the QC.
 
     Reference:
-        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`.
+        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
     """
     dim = 2 ** num_wires
 
@@ -170,7 +170,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         if use_entries is None:
             diagonal_elements = np.diag(K)
         else:
-            diagonal_elements = np.diag(K)[use_entries]
+            diagonal_elements = np.diag(K)[np.array(use_entries)]
         noise_rates = (1 - diagonal_elements) * dim / (dim - 1)
         mean_noise_rate = np.mean(noise_rates)
         mitigated_matrix = (K - mean_noise_rate / dim) / (1 - mean_noise_rate)

@@ -289,6 +289,20 @@ class TestRegularization:
     """Tests regularization/postprocessing methods."""
 
     @pytest.mark.parametrize(
+        "input",
+        [
+            (np.diag([1, 0.4])),
+            (np.diag([1, 0.0])),
+            (np.array([[1, -0.5], [-0.5, 1]])),
+        ],
+    )
+    def test_do_nothing_on_non_negative(self, input):
+        """Test thresholding, displacing and flipping matrix to do nothing on PSD matrices."""
+        assert np.allclose(kern.threshold_matrix(input), input)
+        assert np.allclose(kern.displace_matrix(input), input)
+        assert np.allclose(kern.flip_matrix(input), input)
+
+    @pytest.mark.parametrize(
         "input,expected_output",
         [
             (np.diag([1, -1]), np.diag([1, 0])),
@@ -389,43 +403,45 @@ class TestMitigation:
     num_wires = 1
 
     @pytest.mark.parametrize(
-        "input, use_entry, expected_output",
+        "input, use_entries, expected_output",
         [
-            (np.diag([0.9, 0.9]), 0, np.array([[1, -1 / 8], [-1 / 8, 1]])),
-            (np.diag([0.9, 0.9]), 1, np.array([[1, -1 / 8], [-1 / 8, 1]])),
-            (np.diag([1.0, 0.9]), 0, np.diag([1, 0.9])),
-            (np.diag([1.0, 0.9]), 1, np.array([[9 / 8, -1 / 8], [-1 / 8, 1.0]])),
+            (np.diag([0.9, 0.9]), (0,), np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([0.9, 0.9]), (1,), np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([1.0, 0.9]), None, np.diag([1, 0.9])),
+            (np.diag([1.0, 0.9]), (1,), np.array([[9 / 8, -1 / 8], [-1 / 8, 1.0]])),
             (
                 depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
-                0,
+                (0,),
                 np.array([[1.0, 0.5], [0.5, 1.0]]),
             ),
             (
                 depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
-                1,
+                (1,),
                 np.array([[1.0, 0.5], [0.5, 1.0]]),
             ),
         ],
     )
-    def test_mitigate_depolarizing_noise_single(self, input, use_entry, expected_output):
+    def test_mitigate_depolarizing_noise_single(self, input, use_entries, expected_output):
         """Test mitigation of depolarizing noise in kernel matrix measuring a single noise rate."""
-        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "single", (use_entry,))
+        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "single", use_entries)
         assert np.allclose(output, expected_output)
 
     @pytest.mark.parametrize(
-        "input, expected_output",
+        "input, use_entries, expected_output",
         [
-            (np.diag([0.9, 0.9]), np.array([[1, -1 / 8], [-1 / 8, 1]])),
-            (np.diag([1.0, 0.9]), np.array([[19 / 18, -1 / 18], [-1 / 18, 17 / 18]])),
+            (np.diag([0.9, 0.9]), None, np.array([[1, -1 / 8], [-1 / 8, 1]])),
+            (np.diag([1.0, 0.9]), None, np.array([[19 / 18, -1 / 18], [-1 / 18, 17 / 18]])),
+            (np.diag([1.0, 0.9]), (0, 1), np.array([[19 / 18, -1 / 18], [-1 / 18, 17 / 18]])),
             (
                 depolarize(np.array([[1.0, 0.5], [0.5, 1.0]]), 0.1, num_wires, "per_circuit"),
+                None,
                 np.array([[1.0, 0.5], [0.5, 1.0]]),
             ),
         ],
     )
-    def test_mitigate_depolarizing_noise_average(self, input, expected_output):
+    def test_mitigate_depolarizing_noise_average(self, input, use_entries, expected_output):
         """Test mitigation of depolarizing noise in kernel matrix averaging a single noise rate."""
-        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "average")
+        output = kern.mitigate_depolarizing_noise(input, self.num_wires, "average", use_entries)
         assert np.allclose(output, expected_output)
 
     @pytest.mark.parametrize(
