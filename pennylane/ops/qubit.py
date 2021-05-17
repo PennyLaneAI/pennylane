@@ -692,7 +692,7 @@ class Toffoli(Operation):
             Hadamard(wires=wires[2]),
             T(wires=wires[0]),
             T(wires=wires[1]).inv(),
-            CNOT(wires=[wires[0], wires[1]])
+            CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
 
