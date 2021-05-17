@@ -19,7 +19,12 @@ import pytest
 from scipy.stats import unitary_group, norm
 
 import pennylane as qml
-from pennylane.transforms.qmc import _apply_controlled_z, _apply_controlled_v, apply_controlled_Q, quantum_monte_carlo
+from pennylane.transforms.qmc import (
+    _apply_controlled_z,
+    _apply_controlled_v,
+    apply_controlled_Q,
+    quantum_monte_carlo,
+)
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.templates.state_preparations.mottonen import _uniform_rotation_dagger as r_unitary
 from pennylane.wires import Wires
@@ -151,13 +156,17 @@ class TestQuantumMonteCarlo:
             qml.QubitUnitary(a_mat, wires=wires[:-1])
             qml.QubitUnitary(r_mat, wires=wires)
 
-        circ = quantum_monte_carlo(fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires)
+        circ = quantum_monte_carlo(
+            fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
+        )
 
         u = get_unitary(circ, n_all_wires)
 
         def circ_ideal():
             fn()
-            qml.templates.QuantumPhaseEstimation(q_mat, target_wires=wires, estimation_wires=estimation_wires)
+            qml.templates.QuantumPhaseEstimation(
+                q_mat, target_wires=wires, estimation_wires=estimation_wires
+            )
 
         u_ideal = get_unitary(circ_ideal, n_all_wires)
         assert np.allclose(u_ideal, u)
@@ -168,7 +177,9 @@ class TestQuantumMonteCarlo:
         estimation_wires = range(1, 3)
 
         with pytest.raises(ValueError, match="No wires can be shared between the wires"):
-            quantum_monte_carlo(lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires)
+            quantum_monte_carlo(
+                lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
+            )
 
     def test_integration(self):
         """Test if quantum_monte_carlo generates the correct circuit by comparing it to the
@@ -196,8 +207,9 @@ class TestQuantumMonteCarlo:
             qml.templates.MottonenStatePreparation(np.sqrt(probs), wires=A_wires)
             r_unitary(qml.RY, r_rotations, control_wires=A_wires[::-1], target_wire=target_wire)
 
-        qmc_circuit = qml.quantum_monte_carlo(fn, wires=wires, target_wire=target_wire,
-                                              estimation_wires=estimation_wires)
+        qmc_circuit = qml.quantum_monte_carlo(
+            fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
+        )
 
         with qml.tape.QuantumTape() as tape:
             qmc_circuit()
@@ -206,7 +218,11 @@ class TestQuantumMonteCarlo:
         tape = tape.expand()
 
         for op in tape.operations:
-            unexpanded = isinstance(op, qml.MultiControlledX) or isinstance(op, qml.QFT) or isinstance(op, qml.tape.QuantumTape)
+            unexpanded = (
+                isinstance(op, qml.MultiControlledX)
+                or isinstance(op, qml.QFT)
+                or isinstance(op, qml.tape.QuantumTape)
+            )
             assert not unexpanded
 
         dev = qml.device("default.qubit", wires=wires + estimation_wires)

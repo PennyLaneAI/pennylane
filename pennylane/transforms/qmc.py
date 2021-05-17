@@ -145,7 +145,13 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             work_wires = estimation_wires.toset() - {control_wire}
             n_reps = 2 ** (len(estimation_wires) - (i + 1))
 
-            q = apply_controlled_Q(fn, wires=wires, target_wire=target_wire, control_wire=control_wire, work_wires=work_wires )
+            q = apply_controlled_Q(
+                fn,
+                wires=wires,
+                target_wire=target_wire,
+                control_wire=control_wire,
+                work_wires=work_wires,
+            )
 
             for _ in range(n_reps):
                 q(*args, **kwargs)
