@@ -197,8 +197,6 @@ X_test = np.random.random((5, 6))
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
 
-  The post-processing methods are discussed in   [Hubregtsen *et al.*](https://arxiv.org/abs/2105.02276) 
-  and [Wang *et al.*](https://arxiv.org/abs/2103.16774)
 
 <h3>Improvements</h3>
 
