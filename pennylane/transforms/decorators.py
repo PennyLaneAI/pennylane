@@ -299,7 +299,7 @@ def qnode_transform(qnode_transform_fn):
 
             .. code-block:: python
 
-                def tape_transform(qnode, *args, **kwargs):
+                def qnode_transform(qnode, *args, **kwargs):
                     ...
                     return tapes, processing_fn
 
