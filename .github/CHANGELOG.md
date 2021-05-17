@@ -1,6 +1,8 @@
 # Release 0.16.0-dev (development release)
 
 <h3>New features since last release</h3>
+* Added CPhase operation as an alias for ControlledPhaseShift operation
+  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
