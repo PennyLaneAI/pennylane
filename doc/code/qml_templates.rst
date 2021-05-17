@@ -74,8 +74,8 @@ Utility functions for input checks
 Utility functions for quantum Monte Carlo
 -----------------------------------------
 
-.. automodapi:: pennylane.templates.subroutines.qmc
-    :no-heading:
-    :no-main-docstr:
-    :skip: QuantumMonteCarlo, Operation, QubitUnitary
-    :no-inheritance-diagram:
+Functions
+^^^^^^^^^
+
+.. automodsumm:: pennylane.templates.subroutines.qmc
+    :functions-only:
