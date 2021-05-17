@@ -241,8 +241,8 @@ def inv(operation_list):
     in the reversed order for proper inversion.
 
     .. warning::
-        Use of :func:`~.qml.inv()` is deprecated and should be replaced with
-        :func:`~.qml.adjoint()`.
+        Use of :func:`~.inv()` is deprecated and should be replaced with
+        :func:`~.adjoint()`.
 
     **Example:**
 
