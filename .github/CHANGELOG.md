@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added Reset error to noise channels. 
+* Added a new noise channel, `qml.ResetError`.
   [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321).
 
 * Added functionality for constructing and manipulating the Pauli group
