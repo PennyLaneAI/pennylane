@@ -152,9 +152,12 @@ class single_tape_transform:
     def __call__(self, tape, *args, **kwargs):
         tape_class = type(tape.__class__.__name__, (NonQueuingTape, tape.__class__), {})
 
+        # new_tape, when first created, is of the class (NonQueuingTape, tape.__class__), so that it
+        # doesn't result in a nested tape on the tape
         with tape_class() as new_tape:
             self.transform_fn(tape, *args, **kwargs)
 
+        # Once we're done, revert it back to be simply an instance of tape.__class__.
         new_tape.__class__ = tape.__class__
         return new_tape
 
