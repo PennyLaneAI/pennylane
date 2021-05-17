@@ -172,6 +172,42 @@ class TestQFuncTransforms:
 
         assert ops[3].name == "CZ"
 
+    def test_nested_transforms(self):
+        """Test that nesting multiple transforms works as expected"""
+
+        @qml.qfunc_transform
+        @qml.single_tape_transform
+        def convert_cnots(tape):
+            for op in tape.operations + tape.measurements:
+                if op.name == "CNOT":
+                    wires = op.wires
+                    qml.Hadamard(wires=wires[0])
+                    qml.CZ(wires=[wires[0], wires[1]])
+                else:
+                    op.queue()
+
+        @qml.qfunc_transform
+        @qml.single_tape_transform
+        def expand_hadamards(tape, x):
+            for op in tape.operations + tape.measurements:
+                if op.name == "Hadamard":
+                    qml.RZ(x, wires=op.wires)
+                else:
+                    op.queue()
+
+        x = 0.5
+
+        @expand_hadamards(x)
+        @convert_cnots
+        def ansatz():
+            qml.CNOT(wires=[0, 1])
+
+        ops = qml.transforms.make_tape(ansatz)().operations
+        assert len(ops) == 2
+        assert ops[0].name == "RZ"
+        assert ops[0].parameters == [x]
+        assert ops[1].name == "CZ"
+
 
 ############################################
 # Test transform, ansatz, and qfunc function
