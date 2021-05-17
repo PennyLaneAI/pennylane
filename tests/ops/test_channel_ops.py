@@ -219,13 +219,13 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", list(zip([0, 0.1, 0.5, 1],[0, 0.1, 0.5, 1])))
+    @pytest.mark.parametrize("p_0,p_1", list(zip([0, 0.1, 0.5, 1], [0, 0.1, 0.5, 1])))
     def test_p_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
 
         expected_K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
-        assert np.allclose(op(p_0, p_1 , wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p_0) * Zero
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
@@ -250,6 +250,7 @@ class TestResetError:
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
         assert np.allclose(gradient, (-2 * np.cos(angle)))
+
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""
