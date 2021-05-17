@@ -44,7 +44,6 @@ from gate_data import (
     Toffoli,
     QFT,
     ControlledPhaseShift,
-    CPhase,
     SingleExcitation,
     SingleExcitationPlus,
     SingleExcitationMinus,

@@ -245,18 +245,6 @@ def ControlledPhaseShift(phi):
     return np.diag([1, 1, 1, np.exp(1j * phi)])
 
 
-def CPhase(phi):
-    r"""Controlled phase.
-
-    Args:
-        phi (float): rotation angle
-
-    Returns:
-        array: the two-wire controlled-phase matrix
-    """
-    return np.diag([1, 1, 1, np.exp(1j * phi)])
-
-
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
