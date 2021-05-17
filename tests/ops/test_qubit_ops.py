@@ -930,7 +930,7 @@ class TestOperations:
         mat = []
         for op in reversed(decomp):
             if isinstance(op, qml.CNOT) and op.wires.tolist() == [0, 1]:
-                mat.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]))
+                mat.append(CNOT)
             elif isinstance(op, qml.CNOT) and op.wires.tolist() == [1, 0]:
                 mat.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
         decomposed_matrix = np.linalg.multi_dot(mat)
