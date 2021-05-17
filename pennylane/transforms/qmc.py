@@ -35,7 +35,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
 
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires on which the Z gate is applied
-        control_wire (int): the control wire from the register of phase estimation qubits
+        control_wire (Wires): the control wire from the register of phase estimation qubits
         work_wires (Union[Wires, Sequence[int], or int]): the work wires used in the decomposition
     """
     target_wire = wires[0]
@@ -65,10 +65,10 @@ def _apply_controlled_v(target_wire, control_wire):
     The controlled version of this gate is then simply a CZ gate.
 
     Args:
-        target_wire (int): the ancilla wire in which the expectation value is encoded
-        control_wire (int): the control wire from the register of phase estimation qubits
+        target_wire (Wires): the ancilla wire in which the expectation value is encoded
+        control_wire (Wires): the control wire from the register of phase estimation qubits
     """
-    CZ(wires=[control_wire, target_wire])
+    CZ(wires=[control_wire[0], target_wire[0]])
 
 
 def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
@@ -88,9 +88,10 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
         fn (Callable): a quantum function that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires, Sequence[int], or int]): the wires acted upon by the ``fn`` circuit
-        target_wire (int): The wire in which the expectation value is encoded. Must be contained
-            within ``wires``.
-        control_wire (int): the control wire from the register of phase estimation qubits
+        target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
+            contained within ``wires``.
+        control_wire (Union[Wires, int]): the control wire from the register of phase estimation
+            qubits
         work_wires (Union[Wires, Sequence[int], or int]): additional work wires used when
             decomposing :math:`\mathcal{Q}`
 
@@ -102,7 +103,12 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     """
     fn_inv = adjoint(fn)
 
-    if target_wire not in wires:
+    wires = Wires(wires)
+    target_wire = Wires(target_wire)
+    control_wire = Wires(control_wire)
+    work_wires = Wires(work_wires)
+
+    if not wires.contains_wires(target_wire):
         raise ValueError("The target wire must be contained within wires")
 
     @wraps(fn)
@@ -124,6 +130,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
     estimation_wires = Wires(estimation_wires)
     wires = Wires(wires)
+    target_wire = Wires(target_wire)
 
     if Wires.shared_wires([wires, estimation_wires]):
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")

@@ -16,11 +16,13 @@ import itertools
 
 import numpy as np
 import pytest
-from scipy.stats import unitary_group
+from scipy.stats import unitary_group, norm
 
 import pennylane as qml
 from pennylane.transforms.qmc import _apply_controlled_z, _apply_controlled_v, apply_controlled_Q, quantum_monte_carlo
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
+from pennylane.templates.state_preparations.mottonen import _uniform_rotation_dagger as r_unitary
+from pennylane.wires import Wires
 
 
 def get_unitary(circ, n_wires):
@@ -70,10 +72,10 @@ def test_apply_controlled_v(n_wires):
     unitary and comparing against the one provided in _make_V."""
     n_all_wires = n_wires + 1
 
-    wires = range(n_wires)
-    control_wire = n_wires
+    wires = Wires(range(n_wires))
+    control_wire = Wires(n_wires)
 
-    circ = lambda: _apply_controlled_v(target_wire=n_wires - 1, control_wire=control_wire)
+    circ = lambda: _apply_controlled_v(target_wire=Wires([n_wires - 1]), control_wire=control_wire)
     u = get_unitary(circ, n_all_wires)
 
     # Note the sign flip in the following. The sign does not matter when performing the Q unitary
@@ -167,3 +169,38 @@ class TestQuantumMonteCarlo:
 
         with pytest.raises(ValueError, match="No wires can be shared between the wires"):
             quantum_monte_carlo(lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires)
+
+    def test_integration(self):
+
+        m = 5  # number of wires in A
+        M = 2 ** m
+        n = 5  # number of phase estimation wires
+        N = 2 ** n
+
+        xmax = np.pi  # bound to region [-pi, pi]
+        xs = np.linspace(-xmax, xmax, M)
+
+        probs = np.array([norm().pdf(x) for x in xs])
+        probs /= np.sum(probs)
+
+        func = lambda i: np.sin(xs[i]) ** 2
+        r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
+
+        A_wires = [0, "a", -1.1, -10, "bbb"]
+        wires = A_wires + ["Ancilla"]
+        estimation_wires = ["bob", -3, 42, "penny", "lane"]
+
+        def fn():
+            qml.templates.MottonenStatePreparation(np.sqrt(probs), wires=A_wires)
+            r_unitary(qml.RY, r_rotations, control_wires=A_wires[::-1], target_wire="Ancilla")
+
+        qmc_circuit = qml.quantum_monte_carlo(fn, wires=wires, target_wire=["Ancilla"],
+                                              estimation_wires=estimation_wires)
+
+        with qml.tape.QuantumTape() as tape:
+            qmc_circuit()
+            qml.probs(estimation_wires)
+
+        tape = tape.expand()
+
+        # [not isinstance()for op in tape.operations]
