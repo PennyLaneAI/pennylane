@@ -1,4 +1,4 @@
-# Copyright
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ def threshold_matrix(K):
 def displace_matrix(K):
     r"""Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
 
-    This method has the advantage that it keeps the eigenvectors intact.
+    This method has keeps the eigenvectors of the matrix intact.
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric
@@ -62,7 +62,7 @@ def displace_matrix(K):
 def flip_matrix(K):
     r"""Remove negative eigenvalues from the given kernel matrix by taking the absolute value.
 
-    This method has the advantage that it keeps the eigenvectors intact.
+    This method keeps the eigenvectors of the matrix intact.
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric
@@ -87,9 +87,9 @@ def flip_matrix(K):
 def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
     r"""Return the closest positive semidefinite matrix to the given kernel matrix.
 
-    This method has the advantage that it achieves the correct diagonal entries
+    This method optionally achieves the correct diagonal entries
     (``fix_diagonal=True``) or keeps the eigenvectors intact (``fix_diagonal=False``).
-    For ``fix_diagonal=True``, this method is exactly the same as the ``threshold_matrix`` method.
+    For ``fix_diagonal=False``, this method reduces to the ``threshold_matrix`` method.
 
     Args:
         K (array[float]): Kernel matrix assumed to be symmetric.

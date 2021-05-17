@@ -18,100 +18,21 @@ import pennylane as qml
 import pennylane.kernels as kern
 import pytest
 import numpy as np
+from pennylane import numpy as pnp
 import math
 
 
 @qml.template
 def _simple_ansatz(x, params):
+    """A simple quantum circuit ansatz."""
     qml.RX(params[0], wires=[0])
     qml.RZ(x, wires=[0])
     qml.RX(params[1], wires=[0])
 
 
-# class TestEmbeddingKernel:
-#     def test_construction(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-
-#         assert k.probs_qnode is not None
-
-#     @pytest.mark.parametrize("x1", np.linspace(0, 2 * np.pi, 5))
-#     @pytest.mark.parametrize("x2", np.linspace(0, 2 * np.pi, 5))
-#     def test_value_range(self, x1, x2):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         val = k(x1, x2, params)
-
-#         assert 0 <= val
-#         assert val <= 1
-
-#     def test_known_values(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         val = k(0.1, 0.1, params)
-
-#         assert val == pytest.approx(1.0)
-
-#     def test_square_kernel_matrix(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         K = k.square_kernel_matrix([0.1, 0.2, 0.4], params)
-
-#         # TODO: Add value tests
-
-#         assert K.shape == (3, 3)
-#         assert np.allclose(K, np.transpose(K))
-#         assert np.allclose(np.diag(K), np.array([1, 1, 1]))
-
-#     def test_kernel_matrix(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         X1 = [0.1, 0.2, 0.4]
-#         X2 = [1.0, 2.1]
-
-#         K = k.kernel_matrix(X1, X2, params)
-
-#         # TODO: Add value tests
-
-#         assert K.shape == (3, 2)
-
-#         for i in range(3):
-#             for j in range(2):
-#                 assert K[i, j] == k(X1[i], X2[j], params)
-
-#     def test_kernel_target_alignment(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         alignment = k.target_alignment([0.1, 0.2, 0.4], [1, -1, 1], params)
-
-#         # TODO: Add value tests
-
-#         assert 0 <= alignment
-#         assert alignment <= 1
-
-#     def test_kernel_polarization(self):
-#         dev = qml.device("default.qubit", wires=1)
-#         k = kern.EmbeddingKernel(_simple_ansatz, dev)
-#         params = np.array([0.5, 0.9])
-
-#         polarization = k.polarization([0.1, 0.2, 0.4], [1, -1, 1], params)
-
-#         # TODO: Add value tests
-
-#         assert 0 <= polarization
-
-
 def _mock_kernel(x1, x2, history):
+    """A kernel that memorizes its calls and encodes a fixed values for equal/unequal 
+    datapoint pairs."""
     history.append((x1, x2))
 
     if x1 == x2:
@@ -121,31 +42,51 @@ def _mock_kernel(x1, x2, history):
 
 
 def _laplace_kernel(x1, x2):
+    """The laplace kernel on scalar data."""
     return np.exp(-math.fabs(x1 - x2))
 
 
 class TestKernelMatrix:
+    """Tests kernel matrix computations."""
+
     def test_simple_kernel(self):
-        X = [0.1, 0.4]
+        """Test square_kernel_matrix and kernel_matrix of the _mock_kernel above."""
+        X1 = [0.1, 0.4]
+        X2 = [0.1, 0.3, 0.5]
+        
+        K1_expected = pnp.array([[1, 0.2], [0.2, 1]])
+        K2_expected = pnp.array([[1, 0.2, 0.2], [0.2, 0.2, 0.2]])
 
-        K_expected = np.array([[1, 0.2], [0.2, 1]])
+        K1 = kern.square_kernel_matrix(X1, lambda x1, x2: _mock_kernel(x1, x2, []))
+        K2 = kern.kernel_matrix(X1, X2, lambda x1, x2: _mock_kernel(x1, x2, []))
 
-        K = kern.square_kernel_matrix(X, lambda x1, x2: _mock_kernel(x1, x2, []))
-
-        assert np.array_equal(K, K_expected)
+        assert np.array_equal(K1, K1_expected)
+        assert np.array_equal(K2, K2_expected)
 
     def test_laplace_kernel(self):
-        X = [0.1, 0.4, 0.2]
+        """Test square_kernel_matrix and kernel_matrix of the _laplace_kernel above."""
+        X1 = [0.1, 0.4, 0.2]
+        X2 = [0.0, 0.1, 0.3, 0.2]
 
-        K_expected = np.exp(-np.array([[0.0, 0.3, 0.1], [0.3, 0.0, 0.2], [0.1, 0.2, 0.0]]))
+        K1_expected = pnp.exp(-np.array([[0.0, 0.3, 0.1], [0.3, 0.0, 0.2], [0.1, 0.2, 0.0]]))
+        K2_expected = pnp.exp(-np.array([
+            [0.1, 0.0, 0.2, 0.1], 
+            [0.4, 0.3, 0.1, 0.2],
+            [0.2, 0.1, 0.1, 0.0]]))
 
-        K = kern.square_kernel_matrix(X, _laplace_kernel, assume_normalized_kernel=False)
+        K1 = kern.square_kernel_matrix(X1, _laplace_kernel, assume_normalized_kernel=False)
+        K2 = kern.kernel_matrix(X1, X2, _laplace_kernel)
 
-        assert np.array_equal(K, K_expected)
+        assert np.allclose(K1, K1_expected)
+        assert np.allclose(K2, K2_expected)
 
 
 class TestKernelPolarization:
+    """Tests kernel methods to compute polarization."""
+
     def test_correct_calls(self):
+        """Test number and order of calls of the kernel function when computing the 
+        polarization, including computation of the diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -153,13 +94,11 @@ class TestKernelPolarization:
 
         kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert len(hist) == 3
-
-        assert (0.1, 0.4) in hist
-        assert (0.1, 0.1) in hist
-        assert (0.4, 0.4) in hist
+        assert hist==[(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
+        """Test number and order of calls of the kernel function when computing the 
+        polarization, assuming normalized diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -169,13 +108,10 @@ class TestKernelPolarization:
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
-        assert len(hist) == 1
-
-        assert (0.1, 0.4) in hist
-        assert (0.1, 0.1) not in hist
-        assert (0.4, 0.4) not in hist
+        assert hist==[(0.1, 0.4)]
 
     def test_polarization_value(self):
+        """Test value of polarization without class label rescaling (1/2).""" 
         X = [0.1, 0.4]
         Y = [1, -1]
         pol = kern.kernel_polarization(
@@ -193,6 +129,7 @@ class TestKernelPolarization:
         assert pol == pol_assume
 
     def test_polarization_value_other_labels(self):
+        """Test value of polarization without class label rescaling (2/2).""" 
         X = [0.1, 0.4]
         Y = [1, 1]
         pol = kern.kernel_polarization(
@@ -211,7 +148,11 @@ class TestKernelPolarization:
 
 
 class TestKernelTargetAlignment:
+    """Tests computation of kernel target alignment."""
+
     def test_correct_calls(self):
+        """Test number and order of calls of the kernel function when computing the 
+        kernel target alignment, including computation of the diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -219,13 +160,11 @@ class TestKernelTargetAlignment:
 
         kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert len(hist) == 3
-
-        assert (0.1, 0.4) in hist
-        assert (0.1, 0.1) in hist
-        assert (0.4, 0.4) in hist
+        assert hist==[(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
+        """Test number and order of calls of the kernel function when computing the 
+        kernel target alignment, assuming normalized diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -235,13 +174,10 @@ class TestKernelTargetAlignment:
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
-        assert len(hist) == 1
-
-        assert (0.1, 0.4) in hist
-        assert (0.1, 0.1) not in hist
-        assert (0.4, 0.4) not in hist
+        assert hist==[(0.1, 0.4)]
 
     def test_alignment_value(self):
+        """Test value of kernel target alignment without class label rescaling (1/3).""" 
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -260,6 +196,7 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_other_labels(self):
+        """Test value of kernel target alignment without class label rescaling (2/3).""" 
         X = [0.1, 0.4]
         Y = [1, 1]
         alignment = kern.kernel_target_alignment(
@@ -277,6 +214,8 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_three(self):
+        """Test value of kernel target alignment without class label rescaling 
+        on more data (3/3).""" 
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
@@ -311,6 +250,7 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_with_normalization(self):
+        """Test value of kernel target alignment with class label rescaling.""" 
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
@@ -347,6 +287,7 @@ class TestKernelTargetAlignment:
 
 
 class TestRegularization:
+    """Tests regularization/postprocessing methods."""
     @pytest.mark.parametrize(
         "input,expected_output",
         [
@@ -356,6 +297,7 @@ class TestRegularization:
         ],
     )
     def test_threshold_matrix(self, input, expected_output):
+        """Test thresholding of eigenvalues of a matrix."""
         assert np.allclose(kern.threshold_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
@@ -370,6 +312,7 @@ class TestRegularization:
         ],
     )
     def test_displace_matrix(self, input, expected_output):
+        """Test displacing/shifting of eigenvalues of a matrix."""
         assert np.allclose(kern.displace_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
@@ -384,6 +327,7 @@ class TestRegularization:
         ],
     )
     def test_flip_matrix(self, input, expected_output):
+        """Test taking the absolute values of eigenvalues of a matrix."""
         assert np.allclose(kern.flip_matrix(input), expected_output)
 
     @pytest.mark.parametrize(
@@ -403,6 +347,7 @@ class TestRegularization:
         ],
     )
     def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
+        """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
         try:
             import cvxpy as cp
 
@@ -424,6 +369,7 @@ class TestRegularization:
 
 
 def depolarize(mat, rates, num_wires, level):
+    """Apply effect of depolarizing noise in circuit to kernel matrix."""
     if level == "per_circuit":
         noisy_mat = (1 - rates) * mat + rates / (2 ** num_wires) * np.ones_like(mat)
     elif level == "per_embedding":
@@ -438,6 +384,7 @@ def depolarize(mat, rates, num_wires, level):
 
 
 class TestMitigation:
+    """Tests depolarizing noise mitigation techniques."""
     num_wires = 1
 
     @pytest.mark.parametrize(
@@ -460,6 +407,7 @@ class TestMitigation:
         ],
     )
     def test_mitigate_depolarizing_noise_single(self, input, use_entry, expected_output):
+        """Test mitigation of depolarizing noise in kernel matrix measuring a single noise rate."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "single", (use_entry,))
         assert np.allclose(output, expected_output)
 
@@ -475,6 +423,7 @@ class TestMitigation:
         ],
     )
     def test_mitigate_depolarizing_noise_average(self, input, expected_output):
+        """Test mitigation of depolarizing noise in kernel matrix averaging a single noise rate."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "average")
         assert np.allclose(output, expected_output)
 
@@ -496,5 +445,7 @@ class TestMitigation:
         ],
     )
     def test_mitigate_depolarizing_noise_split_channel(self, input, expected_output):
+        """Test mitigation of depolarizing noise in kernel matrix estimating individual 
+        noise rates per datapoint."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)

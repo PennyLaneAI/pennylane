@@ -155,7 +155,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
 
 * PennyLane now has a ``kernels`` module.
-  It provides basic functionalities for computing quantum embedding kernels as well as 
+  It provides basic functionalities for working with quantum kernels as well as 
   post-processing methods to mitigate sampling errors and device noise:
 
 ```python
@@ -195,8 +195,6 @@ X_test = np.random.random((5, 6))
 # Compute kernel between test and training data.
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
-
-  A demo on the module is work in progress.
 
   The post-processing methods are discussed in   [Hubregtsen *et al.*](https://arxiv.org/abs/2105.02276) 
   and [Wang *et al.*](https://arxiv.org/abs/2103.16774)

@@ -1,4 +1,4 @@
-# Copyright
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     Args:
         X (list[datapoint]): List of datapoints
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
-        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
-            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in which case
+            the diagonal of the kernel matrix is set to 1, avoiding unnecessary computations. Defaults to False.
 
     Returns:
         array[float]: The square matrix of kernel values.
