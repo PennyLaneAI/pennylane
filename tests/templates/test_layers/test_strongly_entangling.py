@@ -89,6 +89,30 @@ class TestDecomposition:
 
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "n_layers, n_wires, ranges", [(2, 2, [1]), (1, 3, [2]), (4, 4, [2, 3, 1])]
+    )
+    def test_custom_range_sequence(self, n_layers, n_wires, ranges):
+        """Test that correct sequence of custom ranges are used in the circuit."""
+
+        weights = np.random.randn(n_layers, n_wires, 3)
+
+        op = qml.templates.StronglyEntanglingLayers(
+            weights=weights, wires=range(n_wires), ranges=ranges
+        )
+        ops = op.expand().operations
+
+        gate_wires = [gate.wires for gate in ops]
+        range_idx = 0
+        for idx, i in enumerate(gate_wires):
+            if idx % (n_wires * 2) // n_wires == 1:
+                test_wire = qml.wires.Wires(
+                    [0 + idx % n_wires, (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires]
+                )
+                assert i == test_wire
+                if idx % n_wires == n_wires - 1:
+                    range_idx += 1
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
