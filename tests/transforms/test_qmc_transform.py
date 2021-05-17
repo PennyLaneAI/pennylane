@@ -159,3 +159,11 @@ class TestQuantumMonteCarlo:
 
         u_ideal = get_unitary(circ_ideal, n_all_wires)
         assert np.allclose(u_ideal, u)
+
+    def test_shared_wires(self):
+        """Test if a ValueError is raised when the wires and estimation_wires share a common wire"""
+        wires = range(2)
+        estimation_wires = range(1, 3)
+
+        with pytest.raises(ValueError, match="No wires can be shared between the wires"):
+            quantum_monte_carlo(lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires)
