@@ -935,7 +935,7 @@ class CPhase(ControlledPhaseShift):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-
+    pass
 
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
