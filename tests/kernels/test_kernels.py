@@ -31,7 +31,7 @@ def _simple_ansatz(x, params):
 
 
 def _mock_kernel(x1, x2, history):
-    """A kernel that memorizes its calls and encodes a fixed values for equal/unequal 
+    """A kernel that memorizes its calls and encodes a fixed values for equal/unequal
     datapoint pairs."""
     history.append((x1, x2))
 
@@ -53,7 +53,7 @@ class TestKernelMatrix:
         """Test square_kernel_matrix and kernel_matrix of the _mock_kernel above."""
         X1 = [0.1, 0.4]
         X2 = [0.1, 0.3, 0.5]
-        
+
         K1_expected = pnp.array([[1, 0.2], [0.2, 1]])
         K2_expected = pnp.array([[1, 0.2, 0.2], [0.2, 0.2, 0.2]])
 
@@ -69,10 +69,9 @@ class TestKernelMatrix:
         X2 = [0.0, 0.1, 0.3, 0.2]
 
         K1_expected = pnp.exp(-np.array([[0.0, 0.3, 0.1], [0.3, 0.0, 0.2], [0.1, 0.2, 0.0]]))
-        K2_expected = pnp.exp(-np.array([
-            [0.1, 0.0, 0.2, 0.1], 
-            [0.4, 0.3, 0.1, 0.2],
-            [0.2, 0.1, 0.1, 0.0]]))
+        K2_expected = pnp.exp(
+            -np.array([[0.1, 0.0, 0.2, 0.1], [0.4, 0.3, 0.1, 0.2], [0.2, 0.1, 0.1, 0.0]])
+        )
 
         K1 = kern.square_kernel_matrix(X1, _laplace_kernel, assume_normalized_kernel=False)
         K2 = kern.kernel_matrix(X1, X2, _laplace_kernel)
@@ -85,7 +84,7 @@ class TestKernelPolarization:
     """Tests kernel methods to compute polarization."""
 
     def test_correct_calls(self):
-        """Test number and order of calls of the kernel function when computing the 
+        """Test number and order of calls of the kernel function when computing the
         polarization, including computation of the diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
@@ -94,10 +93,10 @@ class TestKernelPolarization:
 
         kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert hist==[(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
+        assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
-        """Test number and order of calls of the kernel function when computing the 
+        """Test number and order of calls of the kernel function when computing the
         polarization, assuming normalized diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
@@ -108,10 +107,10 @@ class TestKernelPolarization:
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
-        assert hist==[(0.1, 0.4)]
+        assert hist == [(0.1, 0.4)]
 
     def test_polarization_value(self):
-        """Test value of polarization without class label rescaling (1/2).""" 
+        """Test value of polarization without class label rescaling (1/2)."""
         X = [0.1, 0.4]
         Y = [1, -1]
         pol = kern.kernel_polarization(
@@ -129,7 +128,7 @@ class TestKernelPolarization:
         assert pol == pol_assume
 
     def test_polarization_value_other_labels(self):
-        """Test value of polarization without class label rescaling (2/2).""" 
+        """Test value of polarization without class label rescaling (2/2)."""
         X = [0.1, 0.4]
         Y = [1, 1]
         pol = kern.kernel_polarization(
@@ -151,7 +150,7 @@ class TestKernelTargetAlignment:
     """Tests computation of kernel target alignment."""
 
     def test_correct_calls(self):
-        """Test number and order of calls of the kernel function when computing the 
+        """Test number and order of calls of the kernel function when computing the
         kernel target alignment, including computation of the diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
@@ -160,10 +159,10 @@ class TestKernelTargetAlignment:
 
         kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert hist==[(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
+        assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
-        """Test number and order of calls of the kernel function when computing the 
+        """Test number and order of calls of the kernel function when computing the
         kernel target alignment, assuming normalized diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
@@ -174,10 +173,10 @@ class TestKernelTargetAlignment:
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
-        assert hist==[(0.1, 0.4)]
+        assert hist == [(0.1, 0.4)]
 
     def test_alignment_value(self):
-        """Test value of kernel target alignment without class label rescaling (1/3).""" 
+        """Test value of kernel target alignment without class label rescaling (1/3)."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
@@ -196,7 +195,7 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_other_labels(self):
-        """Test value of kernel target alignment without class label rescaling (2/3).""" 
+        """Test value of kernel target alignment without class label rescaling (2/3)."""
         X = [0.1, 0.4]
         Y = [1, 1]
         alignment = kern.kernel_target_alignment(
@@ -214,8 +213,8 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_three(self):
-        """Test value of kernel target alignment without class label rescaling 
-        on more data (3/3).""" 
+        """Test value of kernel target alignment without class label rescaling
+        on more data (3/3)."""
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
@@ -250,7 +249,7 @@ class TestKernelTargetAlignment:
         assert alignment == alignment_assume
 
     def test_alignment_value_with_normalization(self):
-        """Test value of kernel target alignment with class label rescaling.""" 
+        """Test value of kernel target alignment with class label rescaling."""
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
@@ -288,6 +287,7 @@ class TestKernelTargetAlignment:
 
 class TestRegularization:
     """Tests regularization/postprocessing methods."""
+
     @pytest.mark.parametrize(
         "input,expected_output",
         [
@@ -385,6 +385,7 @@ def depolarize(mat, rates, num_wires, level):
 
 class TestMitigation:
     """Tests depolarizing noise mitigation techniques."""
+
     num_wires = 1
 
     @pytest.mark.parametrize(
@@ -445,7 +446,7 @@ class TestMitigation:
         ],
     )
     def test_mitigate_depolarizing_noise_split_channel(self, input, expected_output):
-        """Test mitigation of depolarizing noise in kernel matrix estimating individual 
+        """Test mitigation of depolarizing noise in kernel matrix estimating individual
         noise rates per datapoint."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)

@@ -857,6 +857,4 @@ class TestFrobeniusInnerProduct:
         ],
     )
     def test_frobenius_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(
-            pu.frobenius_inner_product(A, B, normalize=normalize)
-        )
+        assert expected == pytest.approx(pu.frobenius_inner_product(A, B, normalize=normalize))
