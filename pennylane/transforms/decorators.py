@@ -182,7 +182,7 @@ def qfunc_transform(tape_transform):
 
     It can then be used to transform an existing qfunc:
 
-    >>> new_qfunc = my_qfunc_transform(old_qfunc, 0.6, 0.7)
+    >>> new_qfunc = my_qfunc_transform(0.6, 0.7)(old_qfunc)
 
     It can also be used as a decorator:
 
