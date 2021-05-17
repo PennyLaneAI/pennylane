@@ -171,11 +171,12 @@ class TestQuantumMonteCarlo:
             quantum_monte_carlo(lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires)
 
     def test_integration(self):
+        """Test if quantum_monte_carlo generates the correct circuit by comparing it to the
+        QuantumMonteCarlo template on the practical example specified in the usage details. Custom
+        wire labels are also used."""
 
         m = 5  # number of wires in A
         M = 2 ** m
-        n = 5  # number of phase estimation wires
-        N = 2 ** n
 
         xmax = np.pi  # bound to region [-pi, pi]
         xs = np.linspace(-xmax, xmax, M)
@@ -187,14 +188,15 @@ class TestQuantumMonteCarlo:
         r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
 
         A_wires = [0, "a", -1.1, -10, "bbb"]
-        wires = A_wires + ["Ancilla"]
+        target_wire = "Ancilla"
+        wires = A_wires + [target_wire]
         estimation_wires = ["bob", -3, 42, "penny", "lane"]
 
         def fn():
             qml.templates.MottonenStatePreparation(np.sqrt(probs), wires=A_wires)
-            r_unitary(qml.RY, r_rotations, control_wires=A_wires[::-1], target_wire="Ancilla")
+            r_unitary(qml.RY, r_rotations, control_wires=A_wires[::-1], target_wire=target_wire)
 
-        qmc_circuit = qml.quantum_monte_carlo(fn, wires=wires, target_wire=["Ancilla"],
+        qmc_circuit = qml.quantum_monte_carlo(fn, wires=wires, target_wire=target_wire,
                                               estimation_wires=estimation_wires)
 
         with qml.tape.QuantumTape() as tape:
@@ -203,4 +205,19 @@ class TestQuantumMonteCarlo:
 
         tape = tape.expand()
 
-        # [not isinstance()for op in tape.operations]
+        for op in tape.operations:
+            unexpanded = isinstance(op, qml.MultiControlledX) or isinstance(op, qml.QFT) or isinstance(op, qml.tape.QuantumTape)
+            assert not unexpanded
+
+        dev = qml.device("default.qubit", wires=wires + estimation_wires)
+        res = dev.execute(tape)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.QuantumMonteCarlo(
+                probs, func, target_wires=wires, estimation_wires=estimation_wires
+            )
+            return qml.probs(estimation_wires)
+
+        res_expected = circuit()
+        assert np.allclose(res, res_expected)
