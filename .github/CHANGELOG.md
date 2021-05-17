@@ -227,6 +227,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
+* Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
+
 * Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
   [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
 
@@ -243,7 +245,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva, Pavan Jayasinha
 
 # Release 0.15.1 (current release)
 
