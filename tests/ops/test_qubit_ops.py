@@ -925,7 +925,6 @@ class TestOperations:
         res = op.eigvals
         assert np.allclose(res, exp)
 
-
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
         """Tests that the ControlledPhaseShift operation calculates the correct matrix and
@@ -957,7 +956,6 @@ class TestOperations:
         exp = ControlledPhaseShift(phi)
 
         assert np.allclose(decomposed_matrix, exp)
-
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_CPhase_matrix_and_eigvals(self, phi):

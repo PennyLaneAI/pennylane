@@ -910,7 +910,8 @@ class ControlledPhaseShift(DiagonalOperation):
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
-class CPhase(DiagonalOperation):
+
+class CPhase(ControlledPhaseShift):
     r"""CPhase(phi, wires)
     A qubit controlled phase gate.
 
@@ -934,35 +935,7 @@ class CPhase(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
-    num_wires = 2
-    par_domain = "R"
-    grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
-
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
-        return np.array([1, 1, 1, cmath.exp(1j * phi)])
-
-    @staticmethod
-    def decomposition(phi, wires):
-        decomp_ops = [
-            qml.PhaseShift(phi / 2, wires=wires[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.PhaseShift(-phi / 2, wires=wires[1]),
-            qml.CNOT(wires=[0, 1]),
-            qml.PhaseShift(phi / 2, wires=wires[1]),
-        ]
-        return decomp_ops
-
-    def adjoint(self):
-        return CPhase(-self.data[0], wires=self.wires)
 
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
@@ -3090,6 +3063,7 @@ ops = {
     "RZ",
     "PhaseShift",
     "ControlledPhaseShift",
+    "CPhase",
     "Rot",
     "CRX",
     "CRY",
