@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.SWAP`  operation now has a decomposition over elementary gates.
+* The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
 
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
