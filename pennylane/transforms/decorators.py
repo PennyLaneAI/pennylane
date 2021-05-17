@@ -288,27 +288,30 @@ def qfunc_transform(tape_transform):
     return make_qfunc_transform
 
 
-def qnode_transform(tape_transform):
+def qnode_transform(qnode_transform_fn):
     """Register a new QNode transform.
 
     Args:
-        tape_transform (tape transform): the tape transform
-            to convert into the QNode transform.
+        qnode_transform_fn (QNode transform): the QNode transform function
+            to register.
 
-            Allowed tape transforms must be functions of the following form:
+            Allowed QNode transforms must be functions of the following form:
 
             .. code-block:: python
 
-                def tape_transform(tape, *args, **kwargs):
+                def tape_transform(qnode, *args, **kwargs):
                     ...
                     return tapes, processing_fn
 
-            That is, the first argument must be the input tape to transform,
+            That is, the first argument must be the input QNode to transform,
             and the function must return a tuple ``(list, function)`` containing:
 
             * A list of new tapes to execute, and
             * A processing function with signature ``processing_fn(List[float])``
               which is applied to the flat list of results from the executed tapes.
+
+            If ``tapes`` is empty, then it is assumed no quantum evaluations
+            are required, and ``processing_fn`` will be passed an empty list.
 
     Returns:
         function: The transformed QNode. Takes the same input arguments as
@@ -336,9 +339,9 @@ def qnode_transform(tape_transform):
     .. code-block:: python
 
         @qml.qnode_transform
-        def my_transform(tape, x, y):
-            tape1 = tape_transform(tape, x)
-            tape2 = tape_transform(tape, y)
+        def my_transform(qnode, x, y):
+            tape1 = tape_transform(qnode.qtape, x)
+            tape2 = tape_transform(qnode.qtape, y)
 
             def processing_fn(results):
                 return qml.math.sum(results)
@@ -386,24 +389,23 @@ def qnode_transform(tape_transform):
     >>> qml.grad(cost_fn)(x, transform_weights)
     (array(-0.85987045), array([-0.17253469, -0.17148357]))
     """
-    sig = inspect.signature(tape_transform)
+    sig = inspect.signature(qnode_transform_fn)
     params = sig.parameters
 
     if len(params) > 1:
 
-        @functools.wraps(tape_transform)
+        @functools.wraps(qnode_transform_fn)
         def make_qnode_transform(*targs, **tkwargs):
             def wrapper(qnode):
                 @functools.wraps(qnode)
                 def internal_wrapper(*args, **kwargs):
                     qnode.construct(args, kwargs)
 
-                    if isinstance(tape_transform, single_tape_transform):
+                    if isinstance(qnode_transform_fn, single_tape_transform):
                         fn = lambda x: x
-                        tapes = [tape_transform(qnode.qtape, *targs, **tkwargs)]
+                        tapes = [qnode_transform_fn(qnode.qtape, *targs, **tkwargs)]
                     else:
-                        # multiple tape transform
-                        tapes, fn = tape_transform(qnode.qtape, *targs, **tkwargs)
+                        tapes, fn = qnode_transform_fn(qnode, *targs, **tkwargs)
 
                     res = [t.execute(device=qnode.device) for t in tapes]
                     return fn(res)
@@ -414,18 +416,17 @@ def qnode_transform(tape_transform):
 
     elif len(params) == 1:
 
-        @functools.wraps(tape_transform)
+        @functools.wraps(qnode_transform_fn)
         def make_qnode_transform(qnode):
             @functools.wraps(qnode)
             def internal_wrapper(*args, **kwargs):
                 qnode.construct(args, kwargs)
 
-                if isinstance(tape_transform, single_tape_transform):
+                if isinstance(qnode_transform_fn, single_tape_transform):
                     fn = lambda x: x
-                    tapes = [tape_transform(qnode.qtape)]
+                    tapes = [qnode_transform_fn(qnode.qtape)]
                 else:
-                    # multiple tape transform
-                    tapes, fn = tape_transform(qnode.qtape)
+                    tapes, fn = qnode_transform_fn(qnode)
 
                 res = [t.execute(device=qnode.device) for t in tapes]
                 return fn(res)
