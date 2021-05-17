@@ -935,6 +935,7 @@ class TestOperations:
             elif isinstance(op, qml.CNOT) and op.wires.tolist() == [1, 0]:
                 mat.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
         decomposed_matrix = np.linalg.multi_dot(mat)
+
         assert np.allclose(decomposed_matrix, opr.matrix)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
