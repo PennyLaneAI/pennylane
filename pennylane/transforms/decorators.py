@@ -189,7 +189,6 @@ def qfunc_transform(tape_transform):
     .. code-block:: python
 
         @qml.qfunc_transform
-        @qml.single_tape_transform
         def my_transform(tape, x, y):
             for op in tape.operations + tape.measurements:
                 if op.name == "CRX":
@@ -253,7 +252,7 @@ def qfunc_transform(tape_transform):
     """
 
     if not isinstance(tape_transform, single_tape_transform):
-        raise ValueError("Can only convert single tape transforms into qfunc transforms!")
+        tape_transform = single_tape_transform(tape_transform)
 
     sig = inspect.signature(tape_transform)
     params = sig.parameters

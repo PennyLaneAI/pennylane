@@ -27,7 +27,6 @@ class TestQFuncTransforms:
         """Test that an unparametrized transform can be applied
         to a quantum function"""
 
-        @qml.single_tape_transform
         def my_transform(tape):
             for op in tape.operations + tape.measurements:
                 if op.name == "CRX":
@@ -65,7 +64,6 @@ class TestQFuncTransforms:
         to a quantum function via a decorator"""
 
         @qml.qfunc_transform
-        @qml.single_tape_transform
         def my_transform(tape):
             for op in tape.operations + tape.measurements:
                 if op.name == "CRX":
@@ -99,7 +97,6 @@ class TestQFuncTransforms:
         """Test that a parametrized transform can be applied
         to a quantum function"""
 
-        @qml.single_tape_transform
         def my_transform(tape, a, b):
             for op in tape.operations + tape.measurements:
                 if op.name == "CRX":
@@ -139,7 +136,6 @@ class TestQFuncTransforms:
         to a quantum function via a decorator"""
 
         @qml.qfunc_transform
-        @qml.single_tape_transform
         def my_transform(tape, a, b):
             for op in tape.operations + tape.measurements:
                 if op.name == "CRX":
@@ -176,7 +172,6 @@ class TestQFuncTransforms:
         """Test that nesting multiple transforms works as expected"""
 
         @qml.qfunc_transform
-        @qml.single_tape_transform
         def convert_cnots(tape):
             for op in tape.operations + tape.measurements:
                 if op.name == "CNOT":
@@ -187,7 +182,6 @@ class TestQFuncTransforms:
                     op.queue()
 
         @qml.qfunc_transform
-        @qml.single_tape_transform
         def expand_hadamards(tape, x):
             for op in tape.operations + tape.measurements:
                 if op.name == "Hadamard":
@@ -214,7 +208,6 @@ class TestQFuncTransforms:
 
 
 @qml.qfunc_transform
-@qml.single_tape_transform
 def my_transform(tape, a, b):
     """Test transform"""
     for op in tape.operations + tape.measurements:
