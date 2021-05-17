@@ -911,31 +911,7 @@ class ControlledPhaseShift(DiagonalOperation):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
 
-class CPhase(ControlledPhaseShift):
-    r"""CPhase(phi, wires)
-    A qubit controlled phase gate.
-
-    .. math:: CR_\phi(\phi) = \begin{bmatrix}
-                1 & 0 & 0 & 0 \\
-                0 & 1 & 0 & 0 \\
-                0 & 0 & 1 & 0 \\
-                0 & 0 & 0 & e^{i\phi}
-            \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_\phi(\phi)) = \frac{1}{2}\left[f(CR_\phi(\phi+\pi/2)) - f(CR_\phi(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`CR_{\phi}(\phi)`.
-
-    Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int]): the wire the operation acts on
-    """
-    pass
+CPhase = ControlledPhaseShift
 
 
 class Rot(Operation):
