@@ -113,8 +113,8 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
         if solver is None:
             solver = cp.CVXOPT
-    except ImportError:
-        raise ImportError("CVXPY is required for this post-processing method.")
+    except ImportError as e:
+        raise ImportError("CVXPY is required for this post-processing method.") from e
 
     X = cp.Variable(K.shape, PSD=True)
     constraint = [cp.diag(X) == 1.0] if fix_diagonal else []
@@ -123,11 +123,11 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     try:
         problem.solve(solver=solver, **kwargs)
-    except:
+    except Exception:
         try:
             problem.solve(solver=solver, verbose=True, **kwargs)
         except Exception as e:
-            raise RuntimeError(f"CVXPY solver did not converge.") from e
+            raise RuntimeError("CVXPY solver did not converge.") from e
 
     return X.value
 
