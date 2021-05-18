@@ -139,14 +139,14 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     Args:
         K (array[float]): Noisy kernel matrix.
         num_wires (int): Number of wires/qubits of the quantum embedding kernel.
-        method ('single'|'average'|'split_channel'): Strategy for mitigation
+        method (``'single'``|``'average'``|``'split_channel'``): Strategy for mitigation
 
-            * 'single': An alias for 'average' with len(use_entries)=1.
-            * 'average': Estimate a globale noise rate based on the average of the diagonal
+            * ``'single'``: An alias for 'average' with ``len(use_entries)=1``.
+            * ``'average'``: Estimate a global noise rate based on the average of the diagonal
               entries in use_entries.
-            * 'split_channel': Estimate individual noise rates per embedding.
-        use_entries=None (array[int]): Diagonal entries to use if method in ['single', 'average'].
-            If None, defaults to [0] ('single') or range(len(K)) ('average').
+            * ``'split_channel'``: Estimate individual noise rates per embedding.
+        use_entries (array[int]): Diagonal entries to use if method in ``['single', 'average']``.
+            If ``None``, defaults to ``[0]`` (``'single'``) or ``range(len(K))`` (``'average'``).
 
     Returns:
         K_bar (array[float]): Mitigated kernel matrix.
