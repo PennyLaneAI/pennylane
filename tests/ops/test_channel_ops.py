@@ -48,7 +48,7 @@ class TestChannels:
         if ops.__name__ == "GeneralizedAmplitudeDamping":
             op = ops(p, p, wires=0)
         elif ops.__name__ == "ResetError":
-            op = ops(p/2, p/2, wires=0)
+            op = ops(p / 2, p / 2, wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices
@@ -221,7 +221,7 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", list(zip([0.5, 0.1, 0., 0.], [0, 0.1, 0.5, 0.])))
+    @pytest.mark.parametrize("p_0,p_1", list(zip([0.5, 0.1, 0.0, 0.0], [0, 0.1, 0.5, 0.0])))
     def test_p0_p1_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
@@ -234,24 +234,6 @@ class TestResetError:
 
         expected_K2 = np.sqrt(p_1) * One
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_reset(self, angle, tol):
-        """Test that analytical gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qml.device("default.mixed", wires=1)
-        p_0, p_1 = 0.5, 0.5
-
-        @qml.qnode(dev)
-        def circuit(p_0, p_1):
-            qml.RX(angle, wires=0)
-            qml.ResetError(p_0, p_1, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        gradient = np.squeeze(qml.grad(circuit)(p_0, p_1))
-        assert gradient == circuit(1) - circuit(0)
-        assert np.allclose(gradient, (-2 * np.cos(angle)))
 
 
 class TestQubitChannel:
