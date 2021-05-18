@@ -15,7 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque
+from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
@@ -950,11 +950,13 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-    def get_resources(self):
+
+    @property 
+    def resources(self):
         """Resource requirements of a quantum circuit.
 
         Returns:
-            dict[str, int]: how many times constituent operations are applied
+            dict[Union[str, int], int]: how many times constituent operations are applied
 
         **Example**
 
@@ -971,21 +973,31 @@ class QuantumTape(AnnotatedQueue):
 
         Asking for the resources produces a dictionary as shown below:
 
-        >>> tape.get_resources()
-        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+        >>> tape.resources['by_size']
+        defaultdict(int, {1: 4, 2: 2})
+        >>> tape.resources['by_name']
+        defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
+
+        As `defaultdict` objects, any key not present in the dictionary returns 0.
+
+        >>> resources['by_name']['RX']
+        0
+
         """
         if self._resources is None:
-            self._resources = {}
+            self._resources = {'by_size': defaultdict(int),
+                               'by_name': defaultdict(int)}
 
             for op in self.operations:
-                if op.name not in self._resources.keys():
-                    self._resources[op.name] = 1
-                else:
-                    self._resources[op.name] += 1
+                #don't use op.num_wires to allow for flexible gate classes like hermitian
+                self._resources['by_size'][len(op.wires)] += 1
+
+                self._resources['by_name'][op.name] += 1
 
         return self._resources
 
-    def get_depth(self):
+    @property
+    def depth(self):
         """Depth of the quantum circuit.
 
         Returns:

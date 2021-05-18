@@ -379,3 +379,24 @@ class QubitParamShiftTape(JacobianTape):
             return np.apply_along_axis(dot, 0, results)
 
         return tapes, processing_fn
+
+    def parameter_shift_num_executions(self):
+        """The number of device executions necessary to calculate the jacobian.
+
+        Return:
+            Int : number of necessary device executions
+        """
+
+        if "grad_method" not in self._par_info[0]:
+            self._update_gradient_info()
+
+        # Initialize with the forward pass execution
+        num_executions = 1
+        # Loop over all variables
+        for idx in self._par_info:
+            info = self._par_info[idx]
+
+            if info['grad_method'] == 'A':
+                num_executions += len(info['op'].get_parameter_shift(info['p_idx']))
+
+        return num_executions

@@ -690,6 +690,52 @@ class QNode:
             charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
         )
 
+    def resources(self, *args, **kwargs):
+        """
+
+        """
+
+        if self.mutable or self.qtape is None:
+            # construct the tape
+            self.construct(args, kwargs)
+
+        info = self.qtape.resources.copy()
+
+        info['total_operations'] = len(self.qtape.operations)
+        info['num_device_wires'] = self.device.num_wires
+
+        info['num_tape_wires'] = self.qtape.num_wires
+
+        # As this number will not be correct in backprop mode, maybe I 
+        # should manually recompute it?
+        info['trainable_parameters'] = len(self.qtape.trainable_params)
+        info['depth'] = self.qtape.depth
+
+        return info
+
+    def parameter_shift_num_executions(self, *args, **kwargs):
+        """Returns the number of executions used to compute the parameter-shift derivative.
+
+        Args:
+            *args : arguments to QNode
+        Kwargs:
+            **kwargs : any keywords to QNode
+
+        Returns:
+            Int : number of device executions
+
+        """
+
+        if self.diff_method != "parameter-shift":
+            raise qml.QuantumFunctionError("num_executions_parameter_shift",
+            " returns predicted execution count only for diff_method='parameter-shift'")
+
+        if self.mutable or self.qtape is None:
+            # construct the tape
+            self.construct(args, kwargs)
+
+        return self.qtape.parameter_shift_num_executions()
+
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
 

@@ -29,7 +29,7 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
-    ~transforms.resource_estimation
+    ~resource_estimation
 
 Quantum function transforms
 ---------------------------

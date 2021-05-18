@@ -13,55 +13,37 @@
 # limitations under the License.
 """Code for resource estimation"""
 
+def resource_estimation(qnode):
+    def estimator(*args, **kwargs):
+        """Returns 
 
-def resource_estimation(qnode, expand_depth=1):
-    """Create a function that provides resource estimation for given parameter
-    values.
+        Args:
+            qnode (qml.QNode): a PL QNode
+            *args : arguments for calling the QNode
 
-    Args:
-        qnode (qml.QNode): a PL Qnode
+        Kwargs:
+            **kwargs  :  any keywords for the 
 
-    Returns:
-        function: a function of the same parameters as the qnode
+        **Example**
 
-    **Example**
+        .. code-block:: python3
 
-    .. code-block:: python3
+            dev = qml.device('default.qubit', wires=2)
+            @qml.qnode(dev)
+            def circuit(x, add_ry=True):
+                qml.RX(x[0], wires=0)
+                qml.CNOT(wires=(0,1))
+                if add_ry:
+                    qml.RY(x[1], wires=1)
+                return qml.probs(wires=(0,1))
 
-        dev = qml.device('default.qubit', wires=2)
+        >>> x = np.array([0.1, 0.2])
+        >>> info = resource_estimation(x, add_ry=False)
 
-        @qml.qnode(dev)
-        def circuit(x, add_ry=True):
-            qml.RX(x[0], wires=0)
-            qml.CNOT(wires=(0,1))
-            if add_ry:
-                qml.RY(x[1], wires=1)
-
-            return qml.probs(wires=(0,1))
-
-        estimates = resource_estimation(circuit)
-        x = np.array([0.1, 0.2])
-
-    >>> estimate_dict = esimates(x, add_ry=True)
-
-    """
-
-    def estimate(*args, **kwargs):
-        """
-        info slots:
-            dev_short_name
-            num_wires
-            num_gates
-            num_ops_by_size
-
-        Returns:
-            dictionary
 
         """
         info = dict()
-        qnode.construct(args, kwargs)
-        tape = qnode.qtape
-        tape.expand(depth=expand_depth)
+        tape = qnode.construct(args, kwargs)
 
         info["dev_short_name"] = qnode.device.short_name
         info["num_wires"] = qnode.device.num_wires
@@ -76,5 +58,4 @@ def resource_estimation(qnode, expand_depth=1):
         info["num_ops_by_size"] = op_by_size
 
         return info
-
-    return estimate
+    return estimator
