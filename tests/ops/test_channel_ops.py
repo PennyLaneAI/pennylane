@@ -47,6 +47,8 @@ class TestChannels:
         """Test channels are trace-preserving"""
         if ops.__name__ == "GeneralizedAmplitudeDamping":
             op = ops(p, p, wires=0)
+        elif ops.__name__ == "ResetError":
+            op = ops(p/2, p/2, wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices
@@ -219,7 +221,7 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", list(zip([0, 0.1, 0.5], [0, 0.1, 0.5])))
+    @pytest.mark.parametrize("p_0,p_1", list(zip([0.5, 0.1, 0., 0.], [0, 0.1, 0.5, 0.])))
     def test_p0_p1_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
