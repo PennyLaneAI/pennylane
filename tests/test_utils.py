@@ -839,6 +839,6 @@ class TestInv:
 
         with pytest.warns(
             UserWarning,
-           match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
+            match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
         ):
             qml.inv(qml.Hadamard(wires=[0]))
