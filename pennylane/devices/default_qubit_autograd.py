@@ -19,7 +19,6 @@ from pennylane import numpy as np
 
 from pennylane import math
 from pennylane.devices import DefaultQubit
-from pennylane.devices import autograd_ops
 
 
 class DefaultQubitAutograd(DefaultQubit):
@@ -95,8 +94,7 @@ class DefaultQubitAutograd(DefaultQubit):
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
 
-    @classmethod
-    def capabilities(cls):
+    def capabilities(self):
         capabilities = super().capabilities().copy()
         capabilities.update(
             passthru_interface="autograd",

@@ -46,7 +46,6 @@ except ImportError:
     pass
 
 from . import DefaultQubit
-from . import tf_ops
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -144,8 +143,7 @@ class DefaultQubitTF(DefaultQubit):
         if not SUPPORTS_APPLY_OPS or self.num_wires > 8:
             self._apply_ops = {}
 
-    @classmethod
-    def capabilities(cls):
+    def capabilities(self):
         capabilities = super().capabilities().copy()
         capabilities.update(
             passthru_interface="tf",
