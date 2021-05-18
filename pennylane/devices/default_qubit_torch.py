@@ -179,3 +179,30 @@ class DefaultQubitTorch(DefaultQubit):
         perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
+
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
+
+        Returns:
+            List[int]: the sampled basis states
+        """
+        if self.shots is None:
+            warnings.warn(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements. Since no shots are specified, "
+                "a default of 1000 shots is used.",
+                UserWarning,
+            )
+
+        shots = self.shots or 1000
+
+        basis_states = np.arange(number_of_states)
+        state_probability = state_probability.cpu().detach().numpy()
+        return np.random.choice(basis_states, shots, p=state_probability)

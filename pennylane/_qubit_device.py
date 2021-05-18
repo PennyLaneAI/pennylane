@@ -483,8 +483,7 @@ class QubitDevice(Device):
         shots = self.shots or 1000
 
         basis_states = np.arange(number_of_states)
-        if type(state_probability) is torch.Tensor:
-            state_probability = state_probability.cpu().detach().numpy()
+
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
