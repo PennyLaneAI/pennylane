@@ -2674,7 +2674,7 @@ class DoubleExcitationPlus(Operation):
         theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
+        e = math.exp(1j * theta / 2)
 
         U = [
             [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -2748,7 +2748,7 @@ class DoubleExcitationMinus(Operation):
         theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
+        e = math.exp(-1j * theta / 2)
 
         U = [
             [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
