@@ -503,6 +503,8 @@ class DefaultQubit(QubitDevice):
             passthru_interface=interface_mapping[self.interface],
             passthru_devices={
                 "jax": "default.qubit.jax",
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
             },
         )
         return capabilities
