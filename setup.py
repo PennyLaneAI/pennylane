@@ -57,7 +57,7 @@ info = {
     'long_description_content_type': "text/markdown",
     'provides': ["pennylane"],
     'install_requires': requirements,
-    'extras_require': {'kernels': ['cvxpy==1.1.11', 'cvxopt==1.2.6']},
+    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
     'package_data': {'pennylane': ['devices/tests/pytest.ini']},
     'include_package_data': True
 }
