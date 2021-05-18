@@ -5,10 +5,10 @@ TensorFlow interface
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with TensorFlow,
-either by using the ``interface='tf'`` flag in the QNode Decorator, or by calling the
-:meth:`QNode.to_tf() <pennylane.qnodes.JacobianQNode.to_tf>` method. Internally, the translation is
-executed by the :func:`~.interfaces.tf.to_tf` function that returns the
-new quantum node object.
+either by using the ``interface='tf'`` flag in the QNode decorator or QNode class constructor, or by
+calling the :meth:`QNode.to_tf() <pennylane.qnodes.JacobianQNode.to_tf>` method. Internally, the
+translation is executed by the :func:`~.interfaces.torch.to_torch` function that dynamically modifies
+the quantum node object **in place**.
 
 .. note::
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
@@ -24,7 +24,7 @@ Tensorflow is imported as follows:
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
 
-Construction via the decorator
+Construction via the ``interface`` flag
 ------------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating QNodes
@@ -50,15 +50,12 @@ The QNode ``circuit1()`` is now a TensorFlow-capable QNode, accepting ``tf.Varia
 >>> circuit1(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
-Construction from an existing QNode
------------------------------------
-
-Let us first create two basic, NumPy-interfacing QNodes.
+Alternatively, a TensorFlow-capable QNode can be created explicitly using the
+:ref:`QNode class constructor <_intro_vcirc_qnode>`:
 
 .. code-block:: python
 
     dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('forest.wavefunction', wires=2)
 
     def circuit2(phi, theta):
         qml.RX(phi[0], wires=0)
@@ -67,7 +64,23 @@ Let us first create two basic, NumPy-interfacing QNodes.
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit2, dev1)
+    qnode1 = qml.QNode(circuit2, dev1, interface='tf')
+
+``qnode1()`` ia now a TensorFlow-capable QNode, as well:
+
+>>> qnode1(phi, theta)
+<tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
+
+Construction from an existing QNode
+-----------------------------------
+
+Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
+if you would like to reuse the same quantum function across multiple devices, or even
+use different classical interfaces:
+
+.. code-block:: python
+
+    dev2 = qml.device('default.mixed', wires=2)
     qnode2 = qml.QNode(circuit2, dev2)
 
 We can convert the default NumPy-interfacing QNodes to TensorFlow-interfacing QNodes by
