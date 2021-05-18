@@ -36,7 +36,7 @@ def allequal(tensor1, tensor2, **kwargs):
 
     Returns:
         ndarray, bool: If ``axis=None``, a logical AND reduction is applied to all elements
-        and a boolean will be returned, indicating if all elements evaluate to True. Otherwise,
+        and a boolean will be returned, indicating if all elements evaluate to ``True``. Otherwise,
         a boolean NumPy array will be returned.
 
     **Example**

@@ -281,7 +281,8 @@ ar.register_function("torch", "coerce", _coerce_types_torch)
 def _block_diag_torch(tensors):
     torch = _i("torch")
     sizes = np.array([t.shape for t in tensors])
-    res = torch.zeros(np.sum(sizes, axis=0).tolist(), dtype=tensors[0].dtype)
+    shape = np.sum(sizes, axis=0).tolist()
+    res = torch.zeros(shape, dtype=tensors[0].dtype)
 
     p = np.cumsum(sizes, axis=0)
     ridx, cidx = np.stack([p - sizes, p]).T

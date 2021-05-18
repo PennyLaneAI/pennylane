@@ -254,7 +254,6 @@ def ones_like(tensor, dtype=None):
     Args:
         tensor (tensor_like): input tensor
         dtype (str, np.dtype, None): The desired output datatype of the array. If not provided, the dtype of
-
             ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
             a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
             a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
@@ -323,11 +322,11 @@ def where(condition, x, y):
     Args:
         condition (tensor_like[bool]): A boolean tensor. Where True, elements from
             ``x`` will be chosen, otherwise ``y``.
-        x (tensor_like): values from which to choose if the condition evaluates to True
-        y (tensor_like): values from which to choose if the condition evaluates to False
+        x (tensor_like): values from which to choose if the condition evaluates to ``True``
+        y (tensor_like): values from which to choose if the condition evaluates to ``False``
 
     Returns:
-        tensor_like: A tensor with elements from ``x`` where the condition is True, and
+        tensor_like: A tensor with elements from ``x`` where the condition is ``True``, and
         ``y`` otherwise. The output tensor has the same shape as the input tensors.
 
     **Example**
