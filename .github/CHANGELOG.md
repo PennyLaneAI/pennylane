@@ -4,6 +4,9 @@
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
+* The `qml.Toffoli` operation now has a decomposition over elementary gates. 
+  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
+
 * The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
 
 * Added functionality for constructing and manipulating the Pauli group
