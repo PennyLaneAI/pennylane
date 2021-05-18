@@ -308,7 +308,19 @@ class Operator(abc.ABC):
         Returns:
             array: matrix representation
         """
-        raise NotImplementedError
+        A = np.asarray(params[0])
+
+        if A.shape[0] != A.shape[1]:
+            raise ValueError("Observable must be a square matrix.")
+
+        left_inverse = A.conj().T @ A
+        right_inverse = A @ A.conj().T
+        identity = np.identity(A.shape[0])
+
+        if not (np.allclose(left_inverse, identity) and np.allclose(right_inverse, identity)):
+            raise ValueError("Operator must be unitary.")
+
+        return A
 
     @property
     def matrix(self):
