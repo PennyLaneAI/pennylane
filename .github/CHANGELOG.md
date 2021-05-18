@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.Toffoli` operation now has a decomposition over elementary gates. 
+  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
+
 * The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
 
 * Added functionality for constructing and manipulating the Pauli group
@@ -252,7 +255,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva, Pavan Jayasinha
+Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva, Pavan Jayasinha
 
 # Release 0.15.1 (current release)
 

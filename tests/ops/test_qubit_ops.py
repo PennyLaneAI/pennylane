@@ -702,19 +702,9 @@ class TestOperations:
             elif i.wires == Wires([0]):
                 mats.append(np.kron(i.matrix, np.eye(4)))
             elif i.wires == Wires([0, 1]) and i.name == "CNOT":
-                mats.append(
-                    np.kron(
-                        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-                        np.eye(2),
-                    )
-                )
+                mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires == Wires([1, 2]) and i.name == "CNOT":
-                mats.append(
-                    np.kron(
-                        np.eye(2),
-                        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-                    )
-                )
+                mats.append(np.kron(np.eye(2), i.matrix))
             elif i.wires == Wires([0, 2]) and i.name == "CNOT":
                 mats.append(
                     np.array(
@@ -2451,7 +2441,7 @@ class TestMultiControlledX:
                 work_wires=work_wires,
                 control_values=control_values,
             )
-        tape = tape.expand(depth=2)
+        tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
