@@ -16,6 +16,7 @@ Contains the hamiltonian expand tape transform
 """
 import pennylane as qml
 
+
 def hamiltonian_expand(tape):
     r"""
     Returns a list of tapes, and a classical processing function, for computing the expectation
