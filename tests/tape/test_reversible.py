@@ -282,6 +282,7 @@ class TestGradients:
         qml.CRot,
         qml.PhaseShift,
         qml.ControlledPhaseShift,
+        qml.CPhase,
         qml.PauliRot,
         qml.MultiRZ,
         qml.U1,

@@ -1,6 +1,8 @@
 # Release 0.16.0-dev (development release)
 
 <h3>New features since last release</h3>
+* Added CPhase operation as an alias for ControlledPhaseShift operation
+  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
 * The `qml.Toffoli` operation now has a decomposition over elementary gates. 
   [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
@@ -258,7 +260,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva, Pavan Jayasinha
+Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Nahum Sá, Brian Shi, Antal Száva
 
 # Release 0.15.1 (current release)
 
