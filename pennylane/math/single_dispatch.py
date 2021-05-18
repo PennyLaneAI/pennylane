@@ -50,6 +50,23 @@ def _scatter_element_add_numpy(tensor, index, value):
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 
 
+def _scatter_numpy(indices, array, new_dimensions):
+    new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+    new_array[indices] = array
+    return new_array
+
+
+ar.register_function("numpy", "scatter", _scatter_numpy)
+
+
+def _sum_numpy(x, axis=None, *args, **kwargs):
+    if isinstance(axis, list):
+        axis = tuple(axis)
+    return np.sum(x, axis=axis, *args, **kwargs)
+
+
+ar.register_function("numpy", "sum", _sum_numpy)
+
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -67,6 +84,18 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _asarray_autograd(x, dtype=None):
+    res = _i("qml").numpy.asarray(x, dtype=dtype)
+
+    if res.dtype is _i("qml").numpy.dtype("O"):
+        return _i("qml").numpy.hstack(x).flatten().astype(dtype)
+
+    return res
+
+
+ar.register_function("autograd", "asarray", _asarray_autograd)
 
 
 def _to_numpy_autograd(x):
@@ -92,6 +121,15 @@ def _scatter_element_add_autograd(tensor, index, value):
 ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
 
 
+def _scatter_autograd(indices, array, new_dimensions):
+    new_array = _i("qml").numpy.zeros(new_dimensions, dtype=array.dtype.type)
+    new_array[indices] = array
+    return new_array
+
+
+ar.register_function("autograd", "scatter", _scatter_autograd)
+
+
 def _take_autograd(tensor, indices, axis=None):
     indices = _i("qml").numpy.asarray(indices)
 
@@ -104,6 +142,14 @@ def _take_autograd(tensor, indices, axis=None):
 
 ar.register_function("autograd", "take", _take_autograd)
 
+
+def _sum_autograd(x, axis=None, *args, **kwargs):
+    if isinstance(axis, list):
+        axis = tuple(axis)
+    return _i("qml").numpy.sum(x, axis=axis, *args, **kwargs)
+
+
+ar.register_function("autograd", "sum", _sum_autograd)
 
 # -------------------------------- TensorFlow --------------------------------- #
 
@@ -121,7 +167,21 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
+def _asarray_tf(tensor, dtype=None):
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
+    try:
+        res = _i("tf").convert_to_tensor(tensor, dtype=dtype)
+    except InvalidArgumentError:
+        res = _i("tf").concat([_i("tf").reshape(i, [-1]) for i in tensor], axis=0)
+
+        if dtype is not None:
+            res = _i("tf").cast(res, dtype=dtype)
+
+    return res
+
+
+ar.register_function("tensorflow", "asarray", _asarray_tf)
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -213,6 +273,25 @@ def _scatter_element_add_tf(tensor, index, value):
 
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
+
+
+def _scatter_tf(indices, tensor, new_dimensions):
+    indices = np.expand_dims(indices, 1)
+    return _i("tf").scatter_nd(indices, tensor, new_dimensions)
+
+
+ar.register_function("tensorflow", "scatter", _scatter_tf)
+
+
+def _einsum_tf(*args, **kwargs):
+    try:
+        from tensorflow.python.ops.special_math_ops import _einsum_v1
+        return _einsum_v1(*args, **kwargs)
+    except ImportError:
+        return _i("tf").einsum(*args, **kwargs)
+
+
+ar.register_function("tensorflow", "einsum", _einsum_tf)
 
 
 # -------------------------------- Torch --------------------------------- #

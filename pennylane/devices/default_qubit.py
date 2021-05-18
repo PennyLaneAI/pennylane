@@ -24,6 +24,7 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
+from pennylane import math
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
@@ -87,6 +88,8 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = "0.16"
     version = "0.16.0"
     author = "Xanadu Inc."
+
+    interface = "numpy"
 
     operations = {
         "BasisState",
@@ -244,7 +247,7 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        return self._roll(state, 1, axes[0])
+        return math.roll(state, 1, axes[0])
 
     def _apply_y(self, state, axes, **kwargs):
         """Applies a PauliY gate by adding a negative sign to the 1 index along the axis specified
@@ -337,7 +340,7 @@ class DefaultQubit(QubitDevice):
             target_axes = [axes[1]]
 
         state_x = self._apply_x(state[sl_1], axes=target_axes)
-        return self._stack([state[sl_0], state_x], axis=axes[0])
+        return math.stack([state[sl_0], state_x], axis=axes[0])
 
     def _apply_toffoli(self, state, axes, **kwargs):
         """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
@@ -374,8 +377,8 @@ class DefaultQubit(QubitDevice):
 
         # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
         state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
-        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
+        state_stacked_a1 = math.stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
+        return math.stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
@@ -390,7 +393,7 @@ class DefaultQubit(QubitDevice):
         all_axes = list(range(len(state.shape)))
         all_axes[axes[0]] = axes[1]
         all_axes[axes[1]] = axes[0]
-        return self._transpose(state, all_axes)
+        return math.T(state, all_axes)
 
     def _apply_cz(self, state, axes, **kwargs):
         """Applies a CZ gate by slicing along the first axis specified in ``axes`` and then
@@ -412,7 +415,7 @@ class DefaultQubit(QubitDevice):
             target_axes = [axes[1]]
 
         state_z = self._apply_z(state[sl_1], axes=target_axes)
-        return self._stack([state[sl_0], state_z], axis=axes[0])
+        return math.stack([state[sl_0], state_z], axis=axes[0])
 
     def _apply_phase(self, state, axes, parameters, inverse=False):
         """Applies a phase onto the 1 index along the axis specified in ``axes``.
@@ -430,8 +433,8 @@ class DefaultQubit(QubitDevice):
         sl_0 = _get_slice(0, axes[0], num_wires)
         sl_1 = _get_slice(1, axes[0], num_wires)
 
-        phase = self._conj(parameters) if inverse else parameters
-        return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+        phase = math.conj(parameters) if inverse else parameters
+        return math.stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
@@ -478,12 +481,12 @@ class DefaultQubit(QubitDevice):
         """
         state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
         state[index] = 1
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        return self._reshape(state, [2] * self.num_wires)
+        state = math.asarray(state, dtype=self.C_DTYPE, like=self.interface)
+        return math.reshape(state, [2] * self.num_wires)
 
     @property
     def state(self):
-        return self._flatten(self._pre_rotated_state)
+        return math.flatten(self._pre_rotated_state)
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix of a given set of wires.
@@ -500,18 +503,18 @@ class DefaultQubit(QubitDevice):
 
         # Return the full density matrix by using numpy tensor product
         if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), 0)
-            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+            density_matrix = math.tensordot(state, math.conj(state), 0)
+            density_matrix = math.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
             return density_matrix
 
         complete_system = list(range(0, dim))
         traced_system = [x for x in complete_system if x not in wires.labels]
 
         # Return the reduced density matrix by using numpy tensor product
-        density_matrix = self._tensordot(
-            state, self._conj(state), axes=(traced_system, traced_system)
+        density_matrix = math.tensordot(
+            state, math.conj(state), axes=(traced_system, traced_system)
         )
-        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+        density_matrix = math.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
 
         return density_matrix
 
@@ -527,7 +530,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
+        state = math.asarray(state, dtype=self.C_DTYPE, like=self.interface)
         n_state_vector = state.shape[0]
 
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
@@ -538,7 +541,7 @@ class DefaultQubit(QubitDevice):
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * self.num_wires)
+            self._state = math.reshape(state, [2] * self.num_wires)
             return
 
         # generate basis states on subset of qubits via the cartesian product
@@ -551,9 +554,9 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
-        state = self._reshape(state, [2] * self.num_wires)
-        self._state = self._asarray(state, dtype=self.C_DTYPE)
+        state = math.scatter(ravelled_indices, state, [2 ** self.num_wires], like=self.interface)
+        state = math.reshape(state, [2] * self.num_wires)
+        self._state = math.asarray(state, dtype=self.C_DTYPE)
 
     def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
@@ -595,9 +598,10 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        mat = math.asarray(mat, like=self.interface)
+        mat = math.cast(math.reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
-        tdot = self._tensordot(mat, state, axes=axes)
+        tdot = math.tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
@@ -606,7 +610,7 @@ class DefaultQubit(QubitDevice):
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        return self._transpose(tdot, inv_perm)
+        return math.transpose(tdot, inv_perm)
 
     def _apply_unitary_einsum(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -625,7 +629,8 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        mat = math.asarray(mat, like=self.interface)
+        mat = math.cast(math.reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -654,7 +659,7 @@ class DefaultQubit(QubitDevice):
             )
         )
 
-        return self._einsum(einsum_indices, mat, state)
+        return math.einsum(einsum_indices, mat, state, like=self.interface)
 
     def _apply_diagonal_unitary(self, state, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
@@ -673,7 +678,7 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
+        phases = math.cast(math.reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
@@ -682,7 +687,7 @@ class DefaultQubit(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        return self._einsum(einsum_indices, phases, state)
+        return math.einsum(einsum_indices, phases, state, like=self.interface)
 
     def reset(self):
         """Reset the device"""
@@ -697,5 +702,5 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
+        prob = self.marginal_prob(math.abs(math.flatten(self._state)) ** 2, wires)
         return prob

@@ -17,6 +17,7 @@ reference plugin.
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
 
+from pennylane import math
 from pennylane.devices import DefaultQubit
 from pennylane.devices import autograd_ops
 
@@ -80,6 +81,7 @@ class DefaultQubitAutograd(DefaultQubit):
 
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
+    interface = "autograd"
 
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
@@ -103,29 +105,6 @@ class DefaultQubitAutograd(DefaultQubit):
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    _dot = staticmethod(np.dot)
-    _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
-    _reshape = staticmethod(np.reshape)
-    _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
-    _einsum = staticmethod(np.einsum)
-    _cast = staticmethod(np.asarray)
-    _transpose = staticmethod(np.transpose)
-    _tensordot = staticmethod(np.tensordot)
-    _conj = staticmethod(np.conj)
-    _imag = staticmethod(np.imag)
-    _roll = staticmethod(np.roll)
-    _stack = staticmethod(np.stack)
-
-    @staticmethod
-    def _asarray(array, dtype=None):
-        res = np.asarray(array, dtype=dtype)
-
-        if res.dtype is np.dtype("O"):
-            return np.hstack(array).flatten().astype(dtype)
-
-        return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
@@ -144,12 +123,6 @@ class DefaultQubitAutograd(DefaultQubit):
             supports_reversible_diff=False,
         )
         return capabilities
-
-    @staticmethod
-    def _scatter(indices, array, new_dimensions):
-        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
-        new_array[indices] = array
-        return new_array
 
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
@@ -171,7 +144,7 @@ class DefaultQubitAutograd(DefaultQubit):
                 mat = self.parametric_ops[op_name](*unitary.parameters)
 
             if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
+                mat = math.T(math.conj(mat))
 
             return mat
 

@@ -17,6 +17,7 @@ reference plugin.
 import numpy as np
 import semantic_version
 
+from pennylane import math
 from pennylane.operation import DiagonalOperation
 
 try:
@@ -24,8 +25,6 @@ try:
 
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
-
-    from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
@@ -127,6 +126,7 @@ class DefaultQubitTF(DefaultQubit):
 
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
+    interface = "tensorflow"
 
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
@@ -150,33 +150,6 @@ class DefaultQubitTF(DefaultQubit):
 
     C_DTYPE = tf.complex128
     R_DTYPE = tf.float64
-    _asarray = staticmethod(tf.convert_to_tensor)
-    _dot = staticmethod(lambda x, y: tf.tensordot(x, y, axes=1))
-    _abs = staticmethod(tf.abs)
-    _reduce_sum = staticmethod(tf.reduce_sum)
-    _reshape = staticmethod(tf.reshape)
-    _flatten = staticmethod(lambda tensor: tf.reshape(tensor, [-1]))
-    _gather = staticmethod(tf.gather)
-    _einsum = staticmethod(tf.einsum)
-    _cast = staticmethod(tf.cast)
-    _transpose = staticmethod(tf.transpose)
-    _tensordot = staticmethod(tf.tensordot)
-    _conj = staticmethod(tf.math.conj)
-    _imag = staticmethod(tf.math.imag)
-    _roll = staticmethod(tf.roll)
-    _stack = staticmethod(tf.stack)
-
-    @staticmethod
-    def _asarray(array, dtype=None):
-        try:
-            res = tf.convert_to_tensor(array, dtype=dtype)
-        except InvalidArgumentError:
-            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
-
-            if dtype is not None:
-                res = tf.cast(res, dtype=dtype)
-
-        return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
@@ -200,11 +173,6 @@ class DefaultQubitTF(DefaultQubit):
         )
         return capabilities
 
-    @staticmethod
-    def _scatter(indices, array, new_dimensions):
-        indices = np.expand_dims(indices, 1)
-        return tf.scatter_nd(indices, array, new_dimensions)
-
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
 
@@ -227,7 +195,7 @@ class DefaultQubitTF(DefaultQubit):
                 mat = self.parametric_ops[op_name](*unitary.parameters)
 
             if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
+                mat = math.T(math.conj(mat))
 
             return mat
 

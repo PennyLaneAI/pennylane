@@ -26,6 +26,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import (
     Sample,
     Variance,
@@ -35,7 +36,6 @@ from pennylane.operation import (
     operation_derivative,
 )
 from pennylane import Device
-from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 
@@ -84,30 +84,7 @@ class QubitDevice(Device):
     # pylint: disable=too-many-public-methods
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    _asarray = staticmethod(np.asarray)
-    _dot = staticmethod(np.dot)
-    _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
-    _reshape = staticmethod(np.reshape)
-    _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
-    _einsum = staticmethod(np.einsum)
-    _cast = staticmethod(np.asarray)
-    _transpose = staticmethod(np.transpose)
-    _tensordot = staticmethod(np.tensordot)
-    _conj = staticmethod(np.conj)
-    _imag = staticmethod(np.imag)
-    _roll = staticmethod(np.roll)
-    _stack = staticmethod(np.stack)
-    _outer = staticmethod(np.outer)
-    _diag = staticmethod(np.diag)
-    _real = staticmethod(np.real)
-
-    @staticmethod
-    def _scatter(indices, array, new_dimensions):
-        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
-        new_array[indices] = array
-        return new_array
+    interface = "numpy"
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
@@ -200,7 +177,7 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                r = qml.math.squeeze(r)
+                r = math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
@@ -211,15 +188,15 @@ class QubitDevice(Device):
 
             if not multiple_sampled_jobs:
                 # Can only stack single element outputs
-                results = qml.math.stack(results)
+                results = math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = self._asarray(results)
+            results = math.asarray(results, like=self.interface)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(math.asarray(r, like=self.interface) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
@@ -641,7 +618,7 @@ class QubitDevice(Device):
             prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
 
-        return self._asarray(prob, dtype=self.R_DTYPE)
+        return math.asarray(prob, dtype=self.R_DTYPE, like=self.interface)
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
@@ -711,15 +688,15 @@ class QubitDevice(Device):
         inactive_device_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = self._reshape(prob, [2] * self.num_wires)
+        prob = math.reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+            prob = math.flatten(math.sum(prob, axis=inactive_device_wires.labels))
         else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+            prob = math.flatten(math.sum(prob, axis=inactive_device_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -729,16 +706,16 @@ class QubitDevice(Device):
         basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_two
-        return self._gather(prob, perm)
+        perm = math.dot(basis_states, powers_of_two)
+        return math.gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
         if self.shots is None:
             # exact expectation value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            eigvals = math.asarray(observable.eigvals, dtype=self.R_DTYPE, like=self.interface)
             prob = self.probability(wires=observable.wires)
-            return self._dot(eigvals, prob)
+            return math.dot(eigvals, prob)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
@@ -748,9 +725,9 @@ class QubitDevice(Device):
 
         if self.shots is None:
             # exact variance value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            eigvals = math.asarray(observable.eigvals, dtype=self.R_DTYPE, like=self.interface)
             prob = self.probability(wires=observable.wires)
-            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
+            return math.dot((eigvals ** 2), prob) - math.dot(eigvals, prob) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
@@ -827,7 +804,7 @@ class QubitDevice(Device):
         self.reset()
         self.execute(tape)
 
-        phi = self._reshape(self.state, [2] * self.num_wires)
+        phi = math.reshape(self.state, [2] * self.num_wires)
 
         lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
 
@@ -847,7 +824,7 @@ class QubitDevice(Device):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
+        dot_product_real = lambda a, b: math.real(math.sum(math.conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
