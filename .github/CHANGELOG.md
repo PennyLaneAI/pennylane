@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
   The function `pennylane.grouping.pauli_group` provides a generator to
@@ -153,8 +155,47 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
+* New ISWAP operation added to default_qubit device. [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
 <h3>Improvements</h3>
+
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
+* The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
+  an ancilla register of worker wires is required to support the decomposition.
+  [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
+  
+  ```python
+  ctrl_wires = [f"c{i}" for i in range(5)]
+  work_wires = [f"w{i}" for i in range(3)]
+  target_wires = ["t0"]
+  all_wires = ctrl_wires + work_wires + target_wires
+
+  dev = qml.device("default.qubit", wires=all_wires)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.MultiControlledX(control_wires=ctrl_wires, wires=target_wires, work_wires=work_wires)
+  ```
+  
+  ```pycon
+  >>> tape = tape.expand(depth=2)
+  >>> print(tape.draw(wire_order=Wires(all_wires)))
+   c0: ──────────────╭C──────────────────────╭C──────────┤  
+   c1: ──────────────├C──────────────────────├C──────────┤  
+   c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤  
+   c3: ──────╭C──│───│───│───╭C──────╭C──│───│───│───╭C──┤  
+   c4: ──╭C──│───│───│───│───│───╭C──│───│───│───│───│───┤  
+   w0: ──│───│───├C──╰X──├C──│───│───│───├C──╰X──├C──│───┤  
+   w1: ──│───├C──╰X──────╰X──├C──│───├C──╰X──────╰X──├C──┤  
+   w2: ──├C──╰X──────────────╰X──├C──╰X──────────────╰X──┤  
+   t0: ──╰X──────────────────────╰X──────────────────────┤  
+  ```
+
+* The `qml.SingleExcitation` and `qml.DoubleExcitation` operations now
+  have decompositions over elementary gates, and their gradient recipes
+  have been updated to use the four-term parameter-shift rules.
+  [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
 
 * The `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` operations now
   have decompositions over elementary gates.
@@ -176,6 +217,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
+* PennyLane's `qchem` package and tests are now code-formatted using `black -l 100`.
+  [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.6 and begin testing for Python 3.9.
@@ -183,10 +227,17 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixed tests for the `Permute` operation that used a QNode and hence expanded
+  tapes twice instead of once due to QNode tape expansion and an explicit tape
+  expansion call.
+  [(#1318)](https://github.com/PennyLaneAI/pennylane/pull/1318).
+
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
 <h3>Documentation</h3>
+
+* Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
 
 * Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
   [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
@@ -204,7 +255,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva, Pavan Jayasinha
 
 # Release 0.15.1 (current release)
 
