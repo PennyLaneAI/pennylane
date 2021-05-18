@@ -1,5 +1,6 @@
 numpy
 scipy
+cvxpy
 networkx
 tensornetwork==0.3
 autograd
