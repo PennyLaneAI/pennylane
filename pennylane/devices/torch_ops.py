@@ -16,6 +16,8 @@
 
 import torch
 import numpy as np
+from pennylane.utils import pauli_eigs
+
 
 C_DTYPE = torch.complex128
 R_DTYPE = torch.float64
@@ -64,6 +66,19 @@ def PhaseShift(phi, device=None):
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     return torch.as_tensor([1.0, torch.exp(1j * phi)])
 
+def ControlledPhaseShift(phi, device=None):
+    r"""Two-qubit controlled phase shift.
+
+    Args:
+        phi (float): phase shift angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: diagonal part of the controlled phase shift matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    return torch.as_tensor([1.0, 1.0, 1.0, tf.exp(1j * phi)])
+
 
 def RX(theta, device=None):
     r"""One-qubit rotation about the x axis.
@@ -106,6 +121,20 @@ def RZ(theta, device=None):
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
     return torch.as_tensor([p, torch.conj(p)], device=device)
+
+def MultiRZ(theta, n, device=None):
+    r"""Arbitrary multi Z rotation.
+
+    Args:
+        theta (float): rotation angle
+        n (int): number of wires the rotation acts on
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: diagonal part of the MultiRZ matrix
+    """
+    theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
+    return torch.exp(-1j * theta / 2 * pauli_eigs(n))
 
 
 def Rot(a, b, c, device=None):
