@@ -128,26 +128,6 @@ class DefaultQubitTF(DefaultQubit):
     short_name = "default.qubit.tf"
     interface = "tensorflow"
 
-    parametric_ops = {
-        "PhaseShift": tf_ops.PhaseShift,
-        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
-        "RX": tf_ops.RX,
-        "RY": tf_ops.RY,
-        "RZ": tf_ops.RZ,
-        "Rot": tf_ops.Rot,
-        "MultiRZ": tf_ops.MultiRZ,
-        "CRX": tf_ops.CRX,
-        "CRY": tf_ops.CRY,
-        "CRZ": tf_ops.CRZ,
-        "CRot": tf_ops.CRot,
-        "SingleExcitation": tf_ops.SingleExcitation,
-        "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
-        "DoubleExcitation": tf_ops.DoubleExcitation,
-        "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
-    }
-
     C_DTYPE = tf.complex128
     R_DTYPE = tf.float64
 
@@ -172,34 +152,3 @@ class DefaultQubitTF(DefaultQubit):
             supports_reversible_diff=False,
         )
         return capabilities
-
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            tf.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal. For non-parametric unitaries,
-            the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
-            object will be returned.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = math.T(math.conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix

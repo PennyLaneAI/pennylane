@@ -19,11 +19,11 @@ import cmath
 import functools
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
@@ -737,11 +737,11 @@ class RX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
+        theta = math.cast(math.asarray(params[0]), dtype="complex128")
         c = math.cos(theta / 2)
         js = 1j * math.sin(-theta / 2)
 
-        return np.array([[c, js], [js, c]])
+        return math.stack([math.stack([c, js]), math.stack([js, c])])
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -778,11 +778,11 @@ class RY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
+        theta = math.cast(math.asarray(params[0]), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return np.array([[c, -s], [s, c]])
+        return math.stack([math.stack([c, -s]), math.stack([s, c])])
 
     def adjoint(self):
         return RY(-self.data[0], wires=self.wires)
@@ -819,17 +819,13 @@ class RZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        p = cmath.exp(-0.5j * theta)
-
-        return np.array([[p, 0], [0, p.conjugate()]])
+        return math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
-        theta = params[0]
-        p = cmath.exp(-0.5j * theta)
-
-        return np.array([p, p.conjugate()])
+        theta = math.cast(math.asarray(params[0]), dtype="complex128")
+        p = math.exp(-0.5j * theta)
+        return math.stack([p, math.conj(p)])
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -866,13 +862,12 @@ class PhaseShift(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = params[0]
-        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+        return math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
-        phi = params[0]
-        return np.array([1, cmath.exp(1j * phi)])
+        phi = math.cast(math.asarray(params[0]), dtype="complex128")
+        return math.stack([1, math.exp(1j * phi)])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -918,13 +913,12 @@ class ControlledPhaseShift(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+        return math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
-        phi = params[0]
-        return np.array([1, 1, 1, cmath.exp(1j * phi)])
+        phi = math.cast(math.asarray(params[0]), dtype="complex128")
+        return math.stack([1, 1, 1, math.exp(1j * phi)])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -979,13 +973,18 @@ class Rot(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
+
+        phi = math.cast(math.asarray(phi), dtype="complex128")
+        theta = math.cast(math.asarray(theta), dtype="complex128")
+        omega = math.cast(math.asarray(omega), dtype="complex128")
+
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return np.array(
+        return math.stack(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                math.stack([math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]),
+                math.stack([math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]),
             ]
         )
 
@@ -1045,7 +1044,7 @@ class MultiRZ(DiagonalOperation):
             array[complex]: The matrix representation
         """
         multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
-        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+        multi_Z_rot_matrix = math.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
 
@@ -1068,13 +1067,14 @@ class MultiRZ(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, theta, n):
-        return np.exp(-1j * theta / 2 * pauli_eigs(n))
+        theta = math.cast(math.asarray(theta), dtype="complex128")
+        return math.exp(-1j * theta / 2 * pauli_eigs(n))
 
     @property
     def eigvals(self):
         # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
         if self.inverse:
-            return self._eigvals(*self.parameters, len(self.wires)).conj()
+            return math.conj(self._eigvals(*self.parameters, len(self.wires)))
 
         return self._eigvals(*self.parameters, len(self.wires))
 
@@ -1167,7 +1167,7 @@ class PauliRot(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
+        theta = math.cast(math.asarray(params[0]), dtype="complex128")
         pauli_word = params[1]
 
         if not PauliRot._check_pauli_word(pauli_word):
@@ -1242,6 +1242,7 @@ class PauliRot(Operation):
     def _eigvals(cls, theta, pauli_word):
         # Identity must be treated specially because its eigenvalues are all the same
         if pauli_word == "I" * len(pauli_word):
+            theta = math.cast(math.asarray(theta), dtype="complex128")
             return np.exp(-1j * theta / 2) * np.ones(2 ** len(pauli_word))
 
         return MultiRZ._eigvals(theta, len(pauli_word))
@@ -1335,10 +1336,10 @@ class CRX(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         js = 1j * math.sin(-theta / 2)
-
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
+        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, 1, 0, 0]), math.stack([0, 0, c, js]), math.stack([0, 0, js, c])])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1404,10 +1405,11 @@ class CRY(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
+        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, 1, 0, 0]), math.stack([0, 0, c, -s]), math.stack([0, 0, s, c])])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1473,25 +1475,18 @@ class CRZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * theta), 0],
-                [0, 0, 0, cmath.exp(0.5j * theta)],
-            ]
-        )
+        return math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array(
+        theta = math.cast(math.asarray(theta), dtype="complex128")
+        return math.stack(
             [
                 1,
                 1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
+                math.exp(-0.5j * theta),
+                math.exp(0.5j * theta),
             ]
         )
 
@@ -1555,15 +1550,20 @@ class CRot(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
+
+        phi = math.cast(math.asarray(phi), dtype="complex128")
+        theta = math.cast(math.asarray(theta), dtype="complex128")
+        omega = math.cast(math.asarray(omega), dtype="complex128")
+
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return np.array(
+        return math.stack(
             [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                math.stack([1, 0, 0, 0]),
+                math.stack([0, 1, 0, 0]),
+                math.stack([0, 0, math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]),
+                math.stack([0, 0, math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]),
             ]
         )
 
@@ -1819,10 +1819,11 @@ class SingleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, 1])])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1870,11 +1871,12 @@ class SingleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
+        e = math.exp(-1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        return math.stack([math.stack([e, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, e])])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1928,11 +1930,12 @@ class SingleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
+        e = math.exp(1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        return math.stack([math.stack([e, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, e])])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -2505,7 +2508,7 @@ class DoubleExcitation(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    G = np.zeros((16, 16), dtype=np.complex64)
+    G = np.zeros((16, 16), dtype=np.complex128)
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
@@ -2513,16 +2516,30 @@ class DoubleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        U = np.eye(16)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        U = [
+            math.stack([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]),
+            math.stack([0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]),
+            math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+        ]
 
-        return U
+        return math.stack(U)
 
     @staticmethod
     def decomposition(theta, wires):
@@ -2598,7 +2615,7 @@ class DoubleExcitationPlus(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    G = -1 * np.eye(16, dtype=np.complex64)
+    G = -1 * np.eye(16, dtype=np.complex128)
     G[3, 3] = 0
     G[12, 12] = 0
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
@@ -2608,17 +2625,31 @@ class DoubleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
         e = cmath.exp(1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        U = [
+            [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+            [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+            [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+        ]
 
-        return U
+        return math.stack([math.stack(r) for r in U])
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -2658,7 +2689,7 @@ class DoubleExcitationMinus(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    G = np.eye(16, dtype=np.complex64)
+    G = np.eye(16, dtype=np.complex128)
     G[3, 3] = 0
     G[12, 12] = 0
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
@@ -2668,17 +2699,31 @@ class DoubleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
+        theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
         e = cmath.exp(-1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        U = [
+            [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+            [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+            [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+        ]
 
-        return U
+        return math.stack([math.stack(r) for r in U])
 
     def adjoint(self):
         (theta,) = self.parameters

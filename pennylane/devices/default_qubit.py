@@ -23,6 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+import semantic_version
 
 from pennylane import math
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
@@ -157,6 +158,42 @@ class DefaultQubit(QubitDevice):
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
         }
+
+    def set_interface(self, interface="numpy"):
+        if interface == "tensorflow":
+            try:
+                import tensorflow as tf
+
+                if tf.__version__[0] == "1":
+                    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
+
+                SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
+
+            except ImportError as e:
+                raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
+
+            self.C_DTYPE = tf.complex128
+            self.R_DTYPE = tf.float64
+
+            # prevent using special apply method for this gate due to slowdown in TF implementation
+            del self._apply_ops["CZ"]
+
+            # Versions of TF before 2.3.0 do not support using the special apply methods as they
+            # raise an error when calculating the gradient. For versions of TF after 2.3.0,
+            # special apply methods are also not supported when using more than 8 wires due to
+            # limitations with TF slicing.
+            if not SUPPORTS_APPLY_OPS or self.num_wires > 8:
+                self._apply_ops = {}
+
+        if interface == "autograd":
+            # prevent using special apply methods for these gates due to slowdown in Autograd
+            # implementation
+            del self._apply_ops["PauliY"]
+            del self._apply_ops["Hadamard"]
+            del self._apply_ops["CZ"]
+
+        self.interface = interface
+        self.reset()
 
     @functools.lru_cache()
     def map_wires(self, wires):
@@ -452,8 +489,9 @@ class DefaultQubit(QubitDevice):
 
         return unitary.matrix
 
-    @classmethod
-    def capabilities(cls):
+    def capabilities(self):
+        interface_mapping = {"numpy": None, "tensorflow": "tf", "autograd": "autograd"}
+
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -461,9 +499,8 @@ class DefaultQubit(QubitDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_interface=interface_mapping[self.interface],
             passthru_devices={
-                "tf": "default.qubit.tf",
-                "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
         )

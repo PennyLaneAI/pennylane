@@ -83,26 +83,6 @@ class DefaultQubitAutograd(DefaultQubit):
     short_name = "default.qubit.autograd"
     interface = "autograd"
 
-    parametric_ops = {
-        "PhaseShift": autograd_ops.PhaseShift,
-        "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
-        "RX": autograd_ops.RX,
-        "RY": autograd_ops.RY,
-        "RZ": autograd_ops.RZ,
-        "Rot": autograd_ops.Rot,
-        "CRX": autograd_ops.CRX,
-        "CRY": autograd_ops.CRY,
-        "CRZ": autograd_ops.CRZ,
-        "CRot": autograd_ops.CRot,
-        "MultiRZ": autograd_ops.MultiRZ,
-        "SingleExcitation": autograd_ops.SingleExcitation,
-        "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
-        "DoubleExcitation": autograd_ops.DoubleExcitation,
-        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
-    }
-
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
 
@@ -124,31 +104,3 @@ class DefaultQubitAutograd(DefaultQubit):
         )
         return capabilities
 
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = math.T(math.conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix
