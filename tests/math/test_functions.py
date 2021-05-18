@@ -940,15 +940,35 @@ class TestTake:
         assert fn.allclose(res, expected)
 
     @pytest.mark.parametrize("t", take_data)
+    def test_array_indexing_along_axis_autograd(self, t):
+        """Test that indexing with a sequence properly extracts
+        the elements from the specified tensor axis"""
+        indices = [0, 1, -2]
+        res = fn.take(t, indices, axis=2)
+        expected = np.array(
+            [[[1, 2, 1], [3, 4, 3], [-1, 1, -1]], [[5, 6, 5], [0, -1, 0], [2, 1, 2]]]
+        )
+        assert fn.allclose(res, expected)
+
+    @pytest.mark.parametrize("t", take_data)
     def test_multidimensional_indexing_along_axis(self, t):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
         indices = np.array([[0, 0], [1, 0]])
-        res = fn.take(t, indices, axis=1)
-        expected = np.array(
-            [[[[1, 2], [1, 2]], [[3, 4], [1, 2]]], [[[5, 6], [5, 6]], [[0, -1], [5, 6]]]]
+
+        def cost_fn(t):
+            return fn.sum(fn.take(t, indices, axis=1))
+
+        res = cost_fn(t)
+        expected = np.sum(
+            np.array([[[[1, 2], [1, 2]], [[3, 4], [1, 2]]], [[[5, 6], [5, 6]], [[0, -1], [5, 6]]]])
         )
         assert fn.allclose(res, expected)
+
+        grad = qml.grad(cost_fn)(t)
+        expected = np.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
+        assert fn.allclose(grad, expected)
 
 
 where_data = [
