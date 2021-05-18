@@ -833,7 +833,15 @@ class TestInv:
             ValueError, match="The given operation_list does not only contain Operations"
         ):
             pu.inv(arg)
+            
+    def test_warning(self):
+        """Test that the warning is generated."""
 
+        with pytest.warns(
+            UserWarning,
+            match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
+        ):
+            qml.inv(qml.Hadamard(wires=[0]))
 
 class TestFrobeniusInnerProduct:
     @pytest.mark.parametrize(
