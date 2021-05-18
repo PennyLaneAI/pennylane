@@ -145,8 +145,8 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
             * ``'average'``: Estimate a global noise rate based on the average of the diagonal
               entries in use_entries.
             * ``'split_channel'``: Estimate individual noise rates per embedding.
-        use_entries=None (array[int]): Diagonal entries to use if method in ['single', 'average'].
-            If None, defaults to [0] ('single') or range(len(K)) ('average').
+        use_entries (array[int]): Diagonal entries to use if method in ``['single', 'average']``.
+            If ``None``, defaults to ``[0]`` (``'single'``) or ``range(len(K))`` (``'average'``).
 
     Returns:
         K_bar (array[float]): Mitigated kernel matrix.
