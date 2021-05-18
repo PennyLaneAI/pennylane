@@ -81,7 +81,6 @@ class DefaultQubitTorch(DefaultQubit):
     def _apply_unitary_einsum(self, state, mat, wires):
         return self._apply_unitary(state, mat, wires)
 
-    #@staticmethod
     def _asarray(self, a, dtype=None):
         try:
             if type(a) == list:

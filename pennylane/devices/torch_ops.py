@@ -52,31 +52,86 @@ ZX = op_matrix(np.kron(Z_array, X_array))
 ZY = op_matrix(np.kron(Z_array, Y_array))
 
 def PhaseShift(phi, device=None):
+    r"""One-qubit phase shift.
+
+    Args:
+        phi (float): phase shift angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: diagonal part of the phase shift matrix
+    """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     return torch.as_tensor([1.0, torch.exp(1j * phi)])
 
 
 def RX(theta, device=None):
+    r"""One-qubit rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     return torch.cos(theta / 2) * I(device) + 1j * torch.sin(-theta / 2) * X(device)
 
 
 def RY(theta, device=None):
+    r"""One-qubit rotation about the y axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     return torch.cos(theta / 2) * I(device) + 1j * torch.sin(-theta / 2) * Y(device)
 
 
 def RZ(theta, device=None):
+    r"""One-qubit rotation about the z axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: the diagonal part of the rotation matrix :math:`e^{-i \sigma_z \theta/2}`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
     return torch.as_tensor([p, torch.conj(p)], device=device)
 
 
 def Rot(a, b, c, device=None):
+    r"""Arbitrary one-qubit rotation using three Euler angles.
+
+    Args:
+        a,b,c (float): rotation angles
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
+    """
     return diag(RZ(c, device)) @ RY(b, device) @ diag(RZ(a, device))
 
 
 def CRX(theta, device=None):
+    r"""Two-qubit controlled rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     return  (
         torch.cos(theta / 4) ** 2 * II(device)
@@ -87,6 +142,15 @@ def CRX(theta, device=None):
 
 
 def CRY(theta, device):
+    r"""Two-qubit controlled rotation about the y axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device) 
     return (
         torch.cos(theta / 4) ** 2 * II(device)
@@ -97,10 +161,30 @@ def CRY(theta, device):
 
 
 def CRZ(theta, device):
+    r"""Two-qubit controlled rotation about the z axis.
+
+    Args:
+        theta (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: diagonal part of the 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
+    """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
     return torch.as_tensor([1.0, 1.0, p, torch.conj(p)], device=device)
 
 
 def CRot(a, b, c, device):
+    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
+
+    Args:
+        a,b,c (float): rotation angles
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
+    """
     return diag(CRZ(c, device)) @ CRY(b, device) @ diag(CRZ(a, device))
