@@ -71,6 +71,7 @@ Qubit gates
     ~pennylane.CZ
     ~pennylane.CY
     ~pennylane.SWAP
+    ~pennylane.ISWAP
     ~pennylane.U1
     ~pennylane.U2
     ~pennylane.U3
@@ -91,6 +92,8 @@ Qubit gates
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
+    ~pennylane.QubitCarry
+    ~pennylane.QubitSum
 
 
 :html:`</div>`

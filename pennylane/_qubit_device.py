@@ -475,7 +475,7 @@ class QubitDevice(Device):
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements. Since no shots are specified, "
                 "a default of 1000 shots is used.",
-                DeprecationWarning,
+                UserWarning,
             )
 
         shots = self.shots or 1000
