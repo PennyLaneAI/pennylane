@@ -1732,19 +1732,24 @@ class U3(Operation):
 class IsingZZ(Operation):
     r""" IsingZZ(phi, wires)
     Ising ZZ coupling gate
+
     .. math:: \mathtt{ZZ}(\phi) = \begin{bmatrix}
-            e^{-i \phi / 2} & 0 & 0 & 0 \\
-            0 & e^{i \phi / 2} & 0 & 0 \\
-            0 & 0 & e^{i \phi / 2} & 0 \\
-            0 & 0 & 0 & e^{-i \phi / 2}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
         \end{bmatrix}.
+
     **Details:**
+
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe:
+
     .. math::
         \frac{d}{d \phi} \mathtt{ZZ}(\phi)
         = \frac{1}{2} \left[ \mathtt{ZZ}(\phi + \pi / 2) + \mathtt{ZZ}(\phi - \pi / 2) \right]
+
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
