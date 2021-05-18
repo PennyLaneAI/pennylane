@@ -311,7 +311,7 @@ class Operator(abc.ABC):
         A = np.asarray(params[0])
 
         if A.shape[0] != A.shape[1]:
-            raise ValueError("Observable must be a square matrix.")
+            raise ValueError("Operator must be a square matrix.")
 
         left_inverse = A.conj().T @ A
         right_inverse = A @ A.conj().T

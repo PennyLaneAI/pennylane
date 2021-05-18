@@ -285,6 +285,7 @@ class TestOperatorConstruction:
             DummyOp(0.5, 0.6, wires=0)
 
     def test_non_hermitian_operator(self):
+        """Test that a non-Hermitian operator can be defined"""
 
         non_hermitian_matrix = np.array([[1j, 0], [0, -1j]])
 
@@ -297,19 +298,26 @@ class TestOperatorConstruction:
 
         assert np.array_equal(non_hermitian_matrix, op.matrix)
 
-    def test_non_unitary_operator(self):
+    def test_non_hermitian_operator_exceptions(self):
+        """Test that an exception is raised if operator has non-unitary or non-square matrix"""
 
-        non_unitary_matrix = np.array([[1, 2], [3, 4]])
+        exception_matrix = np.array([[1, 2, 3], [4, 5, 6]])
 
-        class DummyNonUnitaryOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operator):
             num_wires = 2
             num_params = 1
             par_domain = "L"
 
-        op = DummyNonUnitaryOp(non_unitary_matrix, wires=[0, 1])
+        non_unitary_op = DummyOp(exception_matrix[:, [0, 1]], wires=[0, 1])
 
         with pytest.raises(ValueError, match="Operator must be unitary"):
-            op.matrix
+            non_unitary_op.matrix
+
+        non_square_op = DummyOp(exception_matrix, wires=[0, 1])
+
+        with pytest.raises(ValueError, match="Operator must be a square matrix"):
+            non_square_op.matrix
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
