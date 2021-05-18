@@ -20,6 +20,8 @@ import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import math
+import mock
+import sys
 
 
 @qml.template
@@ -380,6 +382,20 @@ class TestRegularization:
             )
 
         assert np.allclose(output, expected_output, atol=1e-5)
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            (np.diag([1, -1])),
+        ],
+    )
+    def test_closes_psd_matrix_import_error(self, input):
+        with pytest.raises(ImportError) as importerror:
+            with mock.patch.dict(sys.modules, {'cvxpy': None}):
+                output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
+
+        assert "CVXPY is required" in str(importerror.value)
+
 
 
 def depolarize(mat, rates, num_wires, level):
