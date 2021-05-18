@@ -22,7 +22,7 @@ Given a kernel
 
 .. math ::
 
-    k: \mathbb{R}^d \times \mathbb{R}^d &\to \mathbb{R}
+    k: \mathbb{R}^d \times \mathbb{R}^d &\to \mathbb{R}\\
     (x_1, x_2)&\mapsto k(x_1, x_2)
 
 the kernel matrix of :math:`k` on a training dataset
@@ -54,8 +54,8 @@ counterpart to the kernel polarity:
 
 .. math ::
 
-    \operatorname{TA}(k) &= \frac{P(k)}{\lVert K^\ast \rVert_F\;\lVert K \rVert_F}
-        \lVert K\rVert_F &= \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}
+    \operatorname{TA}(k) &= \frac{P(k)}{\lVert K^\ast \rVert_F\;\lVert K \rVert_F}\\
+        \lVert K\rVert_F &= \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}\\
    \lVert K^\ast\rVert_F &= \sqrt{\sum_{i,j=1}^n (y_iy_j)^2} = n
 
 Given a callable kernel function, all these quantities can readily be computed
