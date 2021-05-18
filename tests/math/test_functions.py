@@ -1383,7 +1383,7 @@ class TestCoercion:
         assert all(d is tf.complex64 for d in dtypes)
 
     def test_torch_coercion(self):
-        """Test tensorflow coercion"""
+        """Test Torch coercion"""
         tensors = [
             torch.tensor([0.2]),
             np.array([1, 2, 3]),
