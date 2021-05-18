@@ -983,8 +983,12 @@ class Rot(Operation):
 
         return math.stack(
             [
-                math.stack([math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]),
-                math.stack([math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]),
+                math.stack(
+                    [math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]
+                ),
+                math.stack(
+                    [math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]
+                ),
             ]
         )
 
@@ -1339,7 +1343,14 @@ class CRX(Operation):
         theta = math.cast(math.asarray(theta), dtype="complex128")
         c = math.cos(theta / 2)
         js = 1j * math.sin(-theta / 2)
-        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, 1, 0, 0]), math.stack([0, 0, c, js]), math.stack([0, 0, js, c])])
+        return math.stack(
+            [
+                math.stack([1, 0, 0, 0]),
+                math.stack([0, 1, 0, 0]),
+                math.stack([0, 0, c, js]),
+                math.stack([0, 0, js, c]),
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1409,7 +1420,14 @@ class CRY(Operation):
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, 1, 0, 0]), math.stack([0, 0, c, -s]), math.stack([0, 0, s, c])])
+        return math.stack(
+            [
+                math.stack([1, 0, 0, 0]),
+                math.stack([0, 1, 0, 0]),
+                math.stack([0, 0, c, -s]),
+                math.stack([0, 0, s, c]),
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1562,8 +1580,12 @@ class CRot(Operation):
             [
                 math.stack([1, 0, 0, 0]),
                 math.stack([0, 1, 0, 0]),
-                math.stack([0, 0, math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]),
-                math.stack([0, 0, math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]),
+                math.stack(
+                    [0, 0, math.exp(-0.5j * (phi + omega)) * c, -math.exp(0.5j * (phi - omega)) * s]
+                ),
+                math.stack(
+                    [0, 0, math.exp(-0.5j * (phi - omega)) * s, math.exp(0.5j * (phi + omega)) * c]
+                ),
             ]
         )
 
@@ -1823,7 +1845,14 @@ class SingleExcitation(Operation):
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 
-        return math.stack([math.stack([1, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, 1])])
+        return math.stack(
+            [
+                math.stack([1, 0, 0, 0]),
+                math.stack([0, c, -s, 0]),
+                math.stack([0, s, c, 0]),
+                math.stack([0, 0, 0, 1]),
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1876,7 +1905,14 @@ class SingleExcitationMinus(Operation):
         s = math.sin(theta / 2)
         e = math.exp(-1j * theta / 2)
 
-        return math.stack([math.stack([e, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, e])])
+        return math.stack(
+            [
+                math.stack([e, 0, 0, 0]),
+                math.stack([0, c, -s, 0]),
+                math.stack([0, s, c, 0]),
+                math.stack([0, 0, 0, e]),
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1935,7 +1971,14 @@ class SingleExcitationPlus(Operation):
         s = math.sin(theta / 2)
         e = math.exp(1j * theta / 2)
 
-        return math.stack([math.stack([e, 0, 0, 0]), math.stack([0, c, -s, 0]), math.stack([0, s, c, 0]), math.stack([0, 0, 0, e])])
+        return math.stack(
+            [
+                math.stack([e, 0, 0, 0]),
+                math.stack([0, c, -s, 0]),
+                math.stack([0, s, c, 0]),
+                math.stack([0, 0, 0, e]),
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, wires):

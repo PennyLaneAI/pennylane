@@ -286,6 +286,7 @@ ar.register_function("tensorflow", "scatter", _scatter_tf)
 def _einsum_tf(*args, **kwargs):
     try:
         from tensorflow.python.ops.special_math_ops import _einsum_v1
+
         return _einsum_v1(*args, **kwargs)
     except ImportError:
         return _i("tf").einsum(*args, **kwargs)

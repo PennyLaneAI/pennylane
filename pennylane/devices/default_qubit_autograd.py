@@ -103,4 +103,3 @@ class DefaultQubitAutograd(DefaultQubit):
             supports_reversible_diff=False,
         )
         return capabilities
-
