@@ -600,6 +600,15 @@ def test_toarray(t):
     assert isinstance(res, onp.ndarray)
 
 
+@pytest.mark.parametrize("t", test_data)
+def test_numpy(t):
+    """Test that the to_numpy method correctly converts the input
+    tensor into a NumPy array."""
+    res = fn.to_numpy(t)
+    assert fn.allequal(res, t)
+    assert isinstance(res, onp.ndarray)
+
+
 class TestOnesLike:
     """Tests for the ones_like function"""
 
