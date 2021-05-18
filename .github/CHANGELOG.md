@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
   The function `pennylane.grouping.pauli_group` provides a generator to
@@ -293,7 +295,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha,
+Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha,
 Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs
 
 # Release 0.15.1 (current release)
