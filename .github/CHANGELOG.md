@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
   The function `pennylane.grouping.pauli_group` provides a generator to
@@ -162,6 +164,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
 * The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
   an ancilla register of worker wires is required to support the decomposition.
   [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
@@ -227,10 +232,17 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixed tests for the `Permute` operation that used a QNode and hence expanded
+  tapes twice instead of once due to QNode tape expansion and an explicit tape
+  expansion call.
+  [(#1318)](https://github.com/PennyLaneAI/pennylane/pull/1318).
+
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
 <h3>Documentation</h3>
+
+* Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
 
 * Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
   [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
@@ -248,7 +260,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Miruna Daian, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Brian Shi, Antal Száva
+Vishnu Ajith, Thomas Bromley, Miruna Daian, Olivia Di Matteo, Tanya Garg, Diego Guala,
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Brian Shi, Antal Száva
 
 # Release 0.15.1 (current release)
 

@@ -923,6 +923,22 @@ class TestOperations:
         res = op.eigvals
         assert np.allclose(res, exp)
 
+    def test_swap_decomposition(self):
+        """Tests the swap operator produces the correct output"""
+        opr = qml.SWAP(wires=[0, 1])
+        decomp = opr.decomposition([0, 1])
+
+        mat = []
+        for op in reversed(decomp):
+            if isinstance(op, qml.CNOT) and op.wires.tolist() == [0, 1]:
+                mat.append(CNOT)
+            elif isinstance(op, qml.CNOT) and op.wires.tolist() == [1, 0]:
+                mat.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+
+        decomposed_matrix = np.linalg.multi_dot(mat)
+
+        assert np.allclose(decomposed_matrix, opr.matrix)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
         """Tests that the ControlledPhaseShift operation calculates the correct matrix and
