@@ -921,7 +921,6 @@ class ControlledPhaseShift(DiagonalOperation):
 
 
 CPhase = ControlledPhaseShift
-"""qml.CPhase is an alias of :class:`~.ControlledPhaseShift`"""
 
 
 class Rot(Operation):
