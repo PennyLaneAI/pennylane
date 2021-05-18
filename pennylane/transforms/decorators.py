@@ -239,7 +239,7 @@ def qfunc_transform(tape_transform):
     >>> x = np.array(0.5, requires_grad=True)
     >>> y = np.array([0.1, 0.2], requires_grad=True)
     >>> print(qml.draw(circuit)(x, y))
-     0: ──H────────────────────╭Z──┤
+     0: ──RX(0.1)───H──────────╭Z──┤
      1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
 
     Evaluating the QNode, as well as the derivative, with respect to the gate
@@ -333,7 +333,7 @@ def qnode_transform(qnode_transform_fn):
                 else:
                     op.queue()
 
-    lets build a QNode transform that applies this transform twice with different
+    let's build a QNode transform that applies this transform twice with different
     transform parameters to create two tapes, and then sum the results:
 
     .. code-block:: python
@@ -362,7 +362,7 @@ def qnode_transform(qnode_transform_fn):
             return qml.expval(qml.PauliZ(1))
 
     >>> circuit(0.6)
-    >>> 1.7360468658221193
+    1.7360468658221193
 
     Not only is the transformed QNode fully differentiable, but the QNode transform
     parameters *themselves* are differentiable:
