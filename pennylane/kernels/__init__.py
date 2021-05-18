@@ -18,7 +18,7 @@ on training and test datasets to obtain the *kernel matrix*.
 On the other hand it provides postprocessing methods for those kernel
 matrices which can be used to mitigate device noise and sampling errors.
 
-Given a kernel 
+Given a kernel
 
 .. math ::
 
@@ -26,15 +26,15 @@ Given a kernel
     (x_1, x_2)&\mapsto k(x_1, x_2)
 
 the kernel matrix of :math:`k` on a training dataset
-:math:`\{(x_1, y_1),\cdots (x_n, y_n)\}` with :math:`x_i\in\mathbb{R}^d` 
+:math:`\{(x_1, y_1),\cdots (x_n, y_n)\}` with :math:`x_i\in\mathbb{R}^d`
 and :math:`y_i\in\{-1, 1\}` is defined as
 
 .. math ::
 
     K_{ij} = k(x_i, x_j).
-    
+
 For valid kernels, this is a real symmetric positive semi-definite matrix.
-We also define the *ideal kernel matrix* for the training dataset which 
+We also define the *ideal kernel matrix* for the training dataset which
 perfectly predicts whether two points have identical labels or not:
 
 .. math ::
@@ -58,7 +58,7 @@ counterpart to the kernel polarity:
         \lVert K\rVert_F &= \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}
    \lVert K^\ast\rVert_F &= \sqrt{\sum_{i,j=1}^n (y_iy_j)^2} = n
 
-Given a callable kernel function, all these quantities can readily be computed 
+Given a callable kernel function, all these quantities can readily be computed
 using the methods in this module.
 """
 from .cost_functions import (
