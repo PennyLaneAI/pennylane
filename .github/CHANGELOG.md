@@ -164,6 +164,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
 * The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
   an ancilla register of worker wires is required to support the decomposition.
   [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
@@ -257,8 +260,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Thomas Bromley, Miruna Daian, Olivia Di Matteo, Diego Guala, Anthony Hayes,
-Josh Izaac, Pavan Jayasinha, Brian Shi, Antal Száva
+Vishnu Ajith, Thomas Bromley, Miruna Daian, Olivia Di Matteo, Tanya Garg, Diego Guala,
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Brian Shi, Antal Száva
 
 # Release 0.15.1 (current release)
 
