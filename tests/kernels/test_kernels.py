@@ -389,13 +389,26 @@ class TestRegularization:
             (np.diag([1, -1])),
         ],
     )
-    def test_closes_psd_matrix_import_error(self, input):
-        with pytest.raises(ImportError) as importerror:
+    def test_closest_psd_matrix_import_error(self, input):
+        """Test import error raising if cvxpy is not installed."""
+        with pytest.raises(ImportError) as import_error:
             with mock.patch.dict(sys.modules, {'cvxpy': None}):
                 output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
 
-        assert "CVXPY is required" in str(importerror.value)
+        assert "CVXPY is required" in str(import_error.value)
 
+    @pytest.mark.parametrize(
+        "input,solver",
+        [
+            (np.diag([1, -1]), "I am not a solver"),
+        ],
+    )
+    def test_closest_psd_matrix_solve_error(self, input, solver):
+        """Test verbose error raising if problem.solve crashes."""
+        with pytest.raises(Exception) as solve_error:
+            output = kern.closest_psd_matrix(input, solver=solver, fix_diagonal=True, feastol=1e-10)
+
+        assert "CVXPY solver did not converge." in str(solve_error.value)
 
 
 def depolarize(mat, rates, num_wires, level):
