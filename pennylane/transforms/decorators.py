@@ -264,7 +264,7 @@ def qfunc_transform(tape_transform):
             def wrapper(fn):
                 @functools.wraps(fn)
                 def internal_wrapper(*args, **kwargs):
-                    tape = qml.transforms.make_tape(fn)(*args, **kwargs)
+                    tape = make_tape(fn)(*args, **kwargs)
                     tape = tape_transform(tape, *targs, **tkwargs)
                     return tape.measurements
 
