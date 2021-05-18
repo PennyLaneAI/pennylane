@@ -20,7 +20,6 @@ import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import math
-import mock
 import sys
 
 
@@ -389,11 +388,11 @@ class TestRegularization:
             (np.diag([1, -1])),
         ],
     )
-    def test_closest_psd_matrix_import_error(self, input):
+    def test_closest_psd_matrix_import_error(self, input, mocker):
         """Test import error raising if cvxpy is not installed."""
         with pytest.raises(ImportError) as import_error:
-            with mock.patch.dict(sys.modules, {"cvxpy": None}):
-                output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
+            mocker.patch.dict(sys.modules, {"cvxpy": None})
+            output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
 
         assert "CVXPY is required" in str(import_error.value)
 
