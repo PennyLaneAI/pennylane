@@ -43,6 +43,8 @@ ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 
 
 def _scatter_element_add_numpy(tensor, index, value):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor."""
     tensor[tuple(index)] += value
     return tensor
 
@@ -82,6 +84,9 @@ ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
 def _scatter_element_add_autograd(tensor, index, value):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor. Since Autograd doesn't support indexing
+    assignment, we have to be clever and use ravel_multi_index."""
     size = tensor.size
     flat_index = _i("qml").numpy.ravel_multi_index(index, tensor.shape)
     t = [0] * size
@@ -134,6 +139,7 @@ ar.register_function(
 
 
 def _take_tf(tensor, indices, axis=None):
+    """Implement a TensorFlow version of np.take"""
     tf = _i("tf")
 
     if isinstance(indices, numbers.Number):
@@ -159,6 +165,8 @@ ar.register_function("tensorflow", "take", _take_tf)
 
 
 def _coerce_types_tf(tensors):
+    """Coerce the dtypes of a list of tensors so that they
+    all share the same dtype, without any reduction in information."""
     tf = _i("tf")
     tensors = [tf.convert_to_tensor(t) for t in tensors]
     dtypes = {i.dtype for i in tensors}
@@ -184,6 +192,7 @@ ar.register_function("tensorflow", "coerce", _coerce_types_tf)
 
 
 def _block_diag_tf(tensors):
+    """TensorFlow implementation of scipy.linalg.block_diag"""
     tf = _i("tf")
     int_dtype = None
 
@@ -205,6 +214,8 @@ ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
 def _scatter_element_add_tf(tensor, index, value):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor."""
     import tensorflow as tf
 
     indices = tf.expand_dims(index, 0)
@@ -234,6 +245,7 @@ ar.register_function(
 
 
 def _take_torch(tensor, indices, axis=None):
+    """Torch implementation of np.take"""
     torch = _i("torch")
 
     if not isinstance(indices, torch.Tensor):
@@ -258,6 +270,8 @@ ar.register_function("torch", "take", _take_torch)
 
 
 def _coerce_types_torch(tensors):
+    """Coerce a list of tensors to all have the same dtype
+    without any loss of information."""
     torch = _i("torch")
     tensors = [torch.as_tensor(t) for t in tensors]
     dtypes = {i.dtype for i in tensors}
@@ -283,6 +297,7 @@ ar.register_function("torch", "coerce", _coerce_types_torch)
 
 
 def _block_diag_torch(tensors):
+    """Torch implementation of scipy.linalg.block_diag"""
     torch = _i("torch")
     sizes = np.array([t.shape for t in tensors])
     shape = np.sum(sizes, axis=0).tolist()
@@ -307,6 +322,9 @@ ar.register_function("torch", "block_diag", _block_diag_torch)
 
 
 def _scatter_element_add_torch(tensor, index, value):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor. Note that Torch only supports index assignments
+    on non-leaf nodes; if the node is a leaf, we must clone it first."""
     if tensor.is_leaf:
         tensor = tensor.clone()
     tensor[tuple(index)] += value
