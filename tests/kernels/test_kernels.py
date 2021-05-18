@@ -392,7 +392,7 @@ class TestRegularization:
     def test_closest_psd_matrix_import_error(self, input):
         """Test import error raising if cvxpy is not installed."""
         with pytest.raises(ImportError) as import_error:
-            with mock.patch.dict(sys.modules, {'cvxpy': None}):
+            with mock.patch.dict(sys.modules, {"cvxpy": None}):
                 output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
 
         assert "CVXPY is required" in str(import_error.value)
