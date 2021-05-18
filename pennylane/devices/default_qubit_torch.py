@@ -18,10 +18,14 @@ reference plugin.
 try:
     import torch
 
+    v = torch.__version__.split('.')
+    if int(v[1])<8 or (int(v[1])==8 and int(v[2])==0):
+        raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
+
     # TODO test version compatibility (see default_qubit_tf.py)
 
 except ImportError as e:
-    raise ImportError("default.qubit.torch device requires Torch") from e
+    raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
@@ -50,7 +54,6 @@ class DefaultQubitTorch(DefaultQubit):
 
     # TODO test numpy -> torch interface mappings for all kwargs
     _abs = staticmethod(torch.abs)
-    #_dot = staticmethod(torch.dot)
     _dot = staticmethod(lambda x, y: torch.tensordot(x, y, dims=1))
     _einsum = staticmethod(torch.einsum)
     _flatten = staticmethod(torch.flatten)
@@ -61,6 +64,9 @@ class DefaultQubitTorch(DefaultQubit):
     _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
+    _conj = staticmethod(torch.conj)
+    _imag = staticmethod(torch.imag)
+    _norm = staticmethod(torch.norm)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=torch.device('cpu')):
         self._torch_device = torch_device
@@ -75,6 +81,7 @@ class DefaultQubitTorch(DefaultQubit):
     def _apply_unitary_einsum(self, state, mat, wires):
         return self._apply_unitary(state, mat, wires)
 
+    #@staticmethod
     def _asarray(self, a, dtype=None):
         try:
             if type(a) == list:
@@ -121,17 +128,17 @@ class DefaultQubitTorch(DefaultQubit):
         new_tensor[indices] = tensor
         return new_tensor
 
-    @staticmethod
-    def _norm(x, ord=None):
+    # @staticmethod
+    # def _norm(x, ord=None):
 
-        # TODO consolidate with PyTorch implementation once this is fixed
-        # Neither torch.norm nor torch.linalg.norm currently supports complex
-        # vector arguments
+    #     # TODO consolidate with PyTorch implementation once this is fixed
+    #     # Neither torch.norm nor torch.linalg.norm currently supports complex
+    #     # vector arguments
 
-        if ord and ord != 2:
-            raise ValueError('Only 2-norm supported for now')
+    #     if ord and ord != 2:
+    #         raise ValueError('Only 2-norm supported for now')
 
-        return torch.sqrt(x @ x.conj())
+    #     return torch.sqrt(x @ x.conj())
 
     @staticmethod
     def _allclose(a, b, atol=1e-08):
