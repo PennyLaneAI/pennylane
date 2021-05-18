@@ -166,9 +166,13 @@ def _coerce_types_tf(tensors):
     if len(dtypes) == 1:
         return tensors
 
-    complex_type = dtypes.intersection({tf.complex64, tf.complex128})
-    float_type = dtypes.intersection({tf.float16, tf.float32, tf.float64})
-    int_type = dtypes.intersection({tf.int8, tf.int16, tf.int32, tf.int64})
+    complex_priority = [tf.complex64, tf.complex128]
+    float_priority = [tf.float16, tf.float32, tf.float64]
+    int_priority = [tf.int8, tf.int16, tf.int32, tf.int64]
+
+    complex_type = [i for i in complex_priority if i in dtypes]
+    float_type = [i for i in float_priority if i in dtypes]
+    int_type = [i for i in int_priority if i in dtypes]
 
     cast_type = complex_type or float_type or int_type
     cast_type = list(cast_type)[-1]
@@ -284,7 +288,11 @@ def _block_diag_torch(tensors):
     shape = np.sum(sizes, axis=0).tolist()
     res = torch.zeros(shape, dtype=tensors[0].dtype)
 
+    # get the diagonal indices at which new block
+    # diagonals need to be inserted
     p = np.cumsum(sizes, axis=0)
+
+    # converted the diagonal indices to row and column indices
     ridx, cidx = np.stack([p - sizes, p]).T
 
     for t, r, c in zip(tensors, ridx, cidx):

@@ -454,7 +454,6 @@ class TestDot:
         [tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])],
         [jnp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
         [onp.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
-        [np.array([[1, 2], [3, 4]]), jnp.array([6, 7])],
     ]
 
     @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
@@ -1332,3 +1331,25 @@ def test_gather(tensor):
     res = fn.gather(tensor, indices)
     expected = np.array([[-1, -6, -3], [1, 2, 3]])
     assert fn.allclose(res, expected)
+
+
+class TestCoercion:
+    """Test that TensorFlow and PyTorch correctly coerce types"""
+
+    def test_tensorflow_coercion(self):
+        """Test tensorflow coercion"""
+        tensors = [tf.Variable([0.2]), np.array([1, 2, 3]), tf.constant(1 + 3j, dtype=tf.complex64)]
+        res = qml.math.coerce(tensors, like="tensorflow")
+        dtypes = [r.dtype for r in res]
+        assert all(d is tf.complex64 for d in dtypes)
+
+    def test_torch_coercion(self):
+        """Test tensorflow coercion"""
+        tensors = [
+            torch.tensor([0.2]),
+            np.array([1, 2, 3]),
+            torch.tensor(1 + 3j, dtype=torch.complex64),
+        ]
+        res = qml.math.coerce(tensors, like="torch")
+        dtypes = [r.dtype for r in res]
+        assert all(d is torch.complex64 for d in dtypes)
