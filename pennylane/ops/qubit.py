@@ -941,6 +941,9 @@ class ControlledPhaseShift(DiagonalOperation):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
 
+CPhase = ControlledPhaseShift
+
+
 class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
@@ -3067,6 +3070,7 @@ ops = {
     "RZ",
     "PhaseShift",
     "ControlledPhaseShift",
+    "CPhase",
     "Rot",
     "CRX",
     "CRY",

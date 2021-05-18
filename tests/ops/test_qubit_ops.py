@@ -376,6 +376,7 @@ class TestOperations:
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
             qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+            qml.CPhase(1.777, wires=[0, 2]),
             qml.MultiRZ(0.112, wires=[1, 2, 3]),
             qml.CRX(0.836, wires=[2, 3]),
             qml.CRY(0.721, wires=[2, 3]),
@@ -980,10 +981,11 @@ class TestOperations:
         assert np.allclose(decomposed_matrix, opr.matrix)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct matrix and
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct matrix and
         eigenvalues"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        op = cphase_op(phi, wires=[0, 1])
         res = op.matrix
         exp = ControlledPhaseShift(phi)
         assert np.allclose(res, exp)
@@ -992,9 +994,10 @@ class TestOperations:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_decomp(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_decomp(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 1])
         decomp = op.decomposition(phi, wires=[0, 1])
 
         mats = []
