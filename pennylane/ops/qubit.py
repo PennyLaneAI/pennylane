@@ -1807,9 +1807,9 @@ class IsingXX(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         (phi,) = self.parameters
-        return IsingXX(-phi, wires=self.wires, do_queue=do_queue)
+        return IsingXX(-phi, wires=self.wires)
 
 
 # =============================================================================
