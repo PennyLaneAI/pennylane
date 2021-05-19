@@ -1777,11 +1777,7 @@ class IsingXX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe:
-    
-    .. math::
-        \frac{d}{d \phi} \mathtt{ZZ}(\phi)
-        = \frac{1}{2} \left[ \mathtt{ZZ}(\phi + \pi / 2) + \mathtt{ZZ}(\phi - \pi / 2) \right]
+* Gradient recipe: :math:`\frac{d}{d \phi} \mathtt{XX}(\phi) = \frac{1}{2} \left[ \mathtt{XX}(\phi + \pi / 2) + \mathtt{XX}(\phi - \pi / 2) \right]`
 
     Args:
         phi (float): the phase angle
