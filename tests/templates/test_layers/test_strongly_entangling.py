@@ -90,7 +90,7 @@ class TestDecomposition:
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, ranges", [(2, 2, [1]), (1, 3, [2]), (4, 4, [2, 3, 1])]
+        "n_layers, n_wires, ranges", [(2, 2, [1]), (1, 3, [2]), (4, 4, [2, 3, 1]), (2, 2, [2])]
     )
     def test_custom_range_sequence(self, n_layers, n_wires, ranges):
         """Test that correct sequence of custom ranges are used in the circuit."""
