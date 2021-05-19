@@ -71,7 +71,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
 
 def kernel_matrix(X1, X2, kernel):
-    r"""Kernel polarization of a given kernel function.
+    r"""Kernel polarity of a given kernel function.
 
     Args:
         X1 (list[datapoint]): List of datapoints (first argument)

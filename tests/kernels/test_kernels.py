@@ -81,43 +81,43 @@ class TestKernelMatrix:
         assert np.allclose(K2, K2_expected)
 
 
-class TestKernelPolarization:
-    """Tests kernel methods to compute polarization."""
+class TestKernelPolarity:
+    """Tests kernel methods to compute polarity."""
 
     def test_correct_calls(self):
         """Test number and order of calls of the kernel function when computing the
-        polarization, including computation of the diagonal kernel matrix entries."""
+        polarity, including computation of the diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
         hist = []
 
-        kern.kernel_polarization(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
+        kern.kernel_polarity(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
         assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
         """Test number and order of calls of the kernel function when computing the
-        polarization, assuming normalized diagonal kernel matrix entries."""
+        polarity, assuming normalized diagonal kernel matrix entries."""
         X = [0.1, 0.4]
         Y = [1, -1]
 
         hist = []
 
-        kern.kernel_polarization(
+        kern.kernel_polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
         assert hist == [(0.1, 0.4)]
 
-    def test_polarization_value(self):
-        """Test value of polarization without class label rescaling (1/2)."""
+    def test_polarity_value(self):
+        """Test value of polarity without class label rescaling (1/2)."""
         X = [0.1, 0.4]
         Y = [1, -1]
-        pol = kern.kernel_polarization(
+        pol = kern.kernel_polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        pol_assume = kern.kernel_polarization(
+        pol_assume = kern.kernel_polarity(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -128,14 +128,14 @@ class TestKernelPolarization:
         assert pol == 1.6
         assert pol == pol_assume
 
-    def test_polarization_value_other_labels(self):
-        """Test value of polarization without class label rescaling (2/2)."""
+    def test_polarity_value_other_labels(self):
+        """Test value of polarity without class label rescaling (2/2)."""
         X = [0.1, 0.4]
         Y = [1, 1]
-        pol = kern.kernel_polarization(
+        pol = kern.kernel_polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        pol_assume = kern.kernel_polarization(
+        pol_assume = kern.kernel_polarity(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
