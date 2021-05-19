@@ -782,7 +782,9 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False, return_obs=False, **kwargs):
+    def adjoint_jacobian(
+        self, tape, starting_state=None, use_device_state=False, return_obs=False, **kwargs
+    ):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -805,8 +807,8 @@ class QubitDevice(Device):
             starting_state (Tensor): post-forward pass state to start execution with. It should be
                 complex-valued. Takes precedence over `use_device_state`.
             use_device_state (bool): use current device state to initialize. Forward pass of the same
-                circuit should be the last thing the device has executed. If a `starting_state` is 
-                provided, that takes precedence. 
+                circuit should be the last thing the device has executed. If a `starting_state` is
+                provided, that takes precedence.
             return_obs (bool): return the expectation value alongside the jacobian as a tuple (obs, jac)
 
         Returns:
@@ -874,9 +876,7 @@ class QubitDevice(Device):
                 if param_number in tape.trainable_params:
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
-                    jac_column = np.array(
-                        [2 * dot_product_real(bra_, ket_temp) for bra_ in bras]
-                    )
+                    jac_column = np.array([2 * dot_product_real(bra_, ket_temp) for bra_ in bras])
                     jac[:, trainable_param_number] = jac_column
                     trainable_param_number -= 1
                 param_number -= 1

@@ -194,7 +194,7 @@ class TestAdjointJacobian:
 
     def test_return_expectation(self, tol, dev):
         """Tests that the correct expectation value is returned when requested."""
-    
+
         x, y, z = [0.5, 0.3, -0.7]
 
         with qml.tape.JacobianTape() as tape:
