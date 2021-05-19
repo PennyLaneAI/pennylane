@@ -30,6 +30,24 @@ def kernel_polarity(
 ):
     r"""Kernel polarity of a given kernel function.
 
+    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`,
+    the kernel polarity of the kernel function :math:`k` is given by
+
+    .. math ::
+
+        \operatorname{P}(k) = \sum_{i,j=1}^n y_i y_j k(x_i, x_j)
+
+    If the dataset is unbalanced, that is if the numbers of datapoints in the
+    two classes :math:`n_+` and :math:`n_-` differ,
+    ``rescale_class_labels=True`` will apply a rescaling according to
+    :math:`\tilde{y}_i = \frac{y_i}{n_{y_i}}`. This is activated by default
+    and only results in a prefactor that depends on the size of the dataset
+    for balanced datasets.
+
+    The keyword argument ``assume_normalized_kernel`` is passed to
+    :func:`~.kernels.square_kernel_matrix`, for the computation
+    :func:`~.utils.frobenius_inner_product` is used.
+
     Args:
         X (list[datapoint]): List of datapoints.
         Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
@@ -42,13 +60,6 @@ def kernel_polarity(
 
     Returns:
         float: The kernel polarity.
-
-    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`,
-    the kernel polarity of the kernel function :math:`k` is given by
-
-    .. math ::
-
-        \operatorname{P}(k) = \sum_{i,j=1}^n y_i y_j k(x_i, x_j)
 
     **Example:**
 
@@ -72,17 +83,6 @@ def kernel_polarity(
     >>> Y = np.array([-1, -1, 1, 1])
     >>> qml.kernels.kernel_polarity(X, Y, kernel)
     tensor(0.04361349, requires_grad=True)
-
-    If the dataset is unbalanced, that is if the numbers of datapoints in the
-    two classes :math:`n_+` and :math:`n_-` differ,
-    ``rescale_class_labels=True`` will apply a rescaling according to
-    :math:`\tilde{y}_i = \frac{y_i}{n_{y_i}}`. This is activated by default
-    and only results in a prefactor that depends on the size of the dataset
-    for balanced datasets.
-
-    The keyword argument ``assume_normalized_kernel`` is passed to
-    :func:`~.kernels.square_kernel_matrix`, for the computation
-    :func:`~.utils.frobenius_inner_product` is used.
     """
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
@@ -109,6 +109,21 @@ def kernel_target_alignment(
 
     This function is an alias for :func:`~.kernels.kernel_polarity` with ``normalize=True``.
 
+    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`, the
+    kernel-target alignment of the kernel function :math:`k` is given by
+
+    .. math ::
+
+        \operatorname{TA}(k) = \frac{\sum_{i,j=1}^n y_i y_j k(x_i, x_j)}
+        {\sqrt{\sum_{i,j=1}^n y_i y_j} \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}}
+
+    If the dataset is unbalanced, that is if the numbers of datapoints in the
+    two classes :math:`n_+` and :math:`n_-` differ,
+    ``rescale_class_labels=True`` will apply a rescaling according to
+    :math:`\tilde{y}_i = \frac{y_i}{n_{y_i}}`. This is activated by default
+    and only results in a prefactor that depends on the size of the dataset
+    for balanced datasets.
+
     Args:
         X (list[datapoint]): List of datapoints
         Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
@@ -120,14 +135,6 @@ def kernel_target_alignment(
 
     Returns:
         float: The kernel-target alignment.
-
-    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`, the
-    kernel-target alignment of the kernel function :math:`k` is given by
-
-    .. math ::
-
-        \operatorname{TA}(k) = \frac{\sum_{i,j=1}^n y_i y_j k(x_i, x_j)}
-        {n \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}}
 
     **Example:**
 
