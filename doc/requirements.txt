@@ -2,6 +2,7 @@
 pip
 appdirs
 autograd
+autoray
 jax==0.2.7
 jaxlib==0.1.57
 m2r2

@@ -263,6 +263,11 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     Reference:
         This method is introduced in Section V in
         `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
+
+    **Example:**
+
+    For an example usage of ``mitigate_depolarizing_noise`` please consider
+    `the PennyLane demo on the kernel module <https://github.com/PennyLaneAI/qml/tree/master/demonstrations/tutorial_kernel_module.py>`_ or `this demo associated to the above paper <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
     """
     dim = 2 ** num_wires
 
