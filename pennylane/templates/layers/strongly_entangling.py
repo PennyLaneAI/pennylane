@@ -93,6 +93,10 @@ class StronglyEntanglingLayers(Operation):
             else:
                 self.ranges = [0] * self.n_layers
         else:
+            if len(ranges) != self.n_layers:
+                raise ValueError(
+                        f"Range sequence must be of length {self.n_layers}; got {len(ranges)}"
+                    )
             for r in ranges:
                 if r % len(wires) == 0:
                     raise ValueError(

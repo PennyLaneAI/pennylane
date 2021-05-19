@@ -90,7 +90,7 @@ class TestDecomposition:
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, ranges", [(2, 2, [1]), (1, 3, [2]), (4, 4, [2, 3, 1])]
+        "n_layers, n_wires, ranges", [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3])]
     )
     def test_custom_range_sequence(self, n_layers, n_wires, ranges):
         """Test that correct sequence of custom ranges are used in the circuit."""
@@ -102,14 +102,12 @@ class TestDecomposition:
         )
         ops = op.expand().operations
 
-        gate_wires = [gate.wires for gate in ops]
+        gate_wires = [gate.wires.labels for gate in ops]
         range_idx = 0
         for idx, i in enumerate(gate_wires):
             if idx % (n_wires * 2) // n_wires == 1:
-                test_wire = qml.wires.Wires(
-                    [0 + idx % n_wires, (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires]
-                )
-                assert i == test_wire
+                expected_wire = (idx % n_wires, (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires)
+                assert i == expected_wire
                 if idx % n_wires == n_wires - 1:
                     range_idx += 1
 
@@ -124,8 +122,8 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
+        def circuit(weights, ranges=None):
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
@@ -140,6 +138,13 @@ class TestInputs:
             weights = np.random.randn(2, 2, 3, 1)
             circuit(weights)
 
+        with pytest.raises(ValueError, match="Range sequence must be of length"):
+            weights = np.random.randn(2, 2, 3)
+            circuit(weights, ranges=[1])
+
+        with pytest.raises(ValueError, match="Ranges must not be zero nor"):
+            weights = np.random.randn(1, 2, 3)
+            circuit(weights, ranges=[0])
 
 class TestAttributes:
     """Tests additional methods and attributes"""
