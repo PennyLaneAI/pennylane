@@ -96,7 +96,7 @@ class StronglyEntanglingLayers(Operation):
             for r in ranges:
                 if r % len(wires) == 0:
                     raise ValueError(
-                        f"Rangers must not be zero nor divisible by the number of wires; got {r}"
+                        f"Ranges must not be zero nor divisible by the number of wires; got {r}"
                     )
             self.ranges = ranges
             # repeat range sequence if the length is shorter than the number of layers
