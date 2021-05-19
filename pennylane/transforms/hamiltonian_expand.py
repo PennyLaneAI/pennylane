@@ -31,11 +31,6 @@ def hamiltonian_expand(tape):
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
 
-    .. Warning::
-
-         Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
-         See :class:`~pennylane.Hamiltonian` for more information.
-
     **Example**
 
     Given a Hamiltonian,
@@ -69,6 +64,11 @@ def hamiltonian_expand(tape):
 
     >>> fn(res)
     -0.5
+
+    .. Warning::
+
+         Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
+         See :class:`~pennylane.Hamiltonian` for more information.
     """
 
     hamiltonian = tape.measurements[0].obs
