@@ -791,7 +791,7 @@ class QubitDevice(Device):
         method, but has a lower time overhead and a similar memory overhead.
 
         .. note::
-            The adjoint differentation method has the following restrictions:
+            The adjoint differentiation method has the following restrictions:
 
             * As it requires knowledge of the statevector, only statevector simulator devices can be
               used.
@@ -804,7 +804,8 @@ class QubitDevice(Device):
         Kwargs:
             starting_state (Tensor): post-forward pass state to start execution with. It should be
                 complex-valued and of shape `[2]*num_wires`. Takes precedence over `use_device_state`
-            use_device_state (bool): use current device state to initialize.  If a `starting_state` is 
+            use_device_state (bool): use current device state to initialize. Forward pass of the same
+                circuit should be the last thing the device has executed. If a `starting_state` is 
                 provided, that takes precedence. 
             return_obs (bool): return the expectation value alongside the jacobian as a tuple (obs, jac)
 
@@ -839,7 +840,7 @@ class QubitDevice(Device):
         bras = [self._apply_operation(ket, obs) for obs in tape.observables]
 
         if return_obs:
-            expectation = [qmlsum(self._conj(bra_) * ket) for _bra in bras]
+            expectation = [qmlsum(self._conj(bra_) * ket) for bra_ in bras]
 
         expanded_ops = []
         for op in reversed(tape.operations):
