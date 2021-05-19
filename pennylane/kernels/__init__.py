@@ -22,7 +22,7 @@ Given a kernel
 
 .. math ::
 
-    k: \mathbb{R}^d \times \mathbb{R}^d &\to \mathbb{R}\\
+    k: \mathbb{R}^d \times \mathbb{R}^d &\to \mathbb{R}, \
     (x_1, x_2)&\mapsto k(x_1, x_2)
 
 the kernel matrix of :math:`k` on a training dataset
@@ -39,10 +39,10 @@ perfectly predicts whether two points have identical labels or not:
 
 .. math ::
 
-    K^\ast_{ij} = y_iy_j
+    K^\ast_{ij} = y_i y_j
 
-This lets us evaluate the similarity between :math:`K` and :math:`K^\ast`,
-which is called *kernel polarity* and can be expressed as Frobenius inner
+We can measure the similarity between :math:`K` and :math:`K^\ast`,
+through the *kernel polarity* which can be expressed as the Frobenius inner
 product between the two matrices:
 
 .. math ::
@@ -56,7 +56,11 @@ counterpart to the kernel polarity:
 
     \operatorname{TA}(k) &= \frac{P(k)}{\lVert K^\ast \rVert_F\;\lVert K \rVert_F}\\
         \lVert K\rVert_F &= \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}\\
-   \lVert K^\ast\rVert_F &= \sqrt{\sum_{i,j=1}^n (y_iy_j)^2} = n
+   \lVert K^\ast\rVert_F &= \sqrt{\sum_{i,j=1}^n (y_iy_j)^2}
+
+For datasets with different numbers of training points per class the labels are rescaled
+by the number of datapoints in the respective class to avoid that kernel polarity and
+kernel-target alignment are dominated by the properties of the kernel for just a single class.
 
 Given a callable kernel function, all these quantities can readily be computed
 using the methods in this module.
