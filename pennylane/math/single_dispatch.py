@@ -69,6 +69,7 @@ def _sum_numpy(x, axis=None, *args, **kwargs):
 
 ar.register_function("numpy", "sum", _sum_numpy)
 
+
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -304,7 +305,6 @@ def _einsum_tf(*args, **kwargs):
 
 
 ar.register_function("tensorflow", "einsum", _einsum_tf)
-
 
 # -------------------------------- Torch --------------------------------- #
 
