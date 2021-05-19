@@ -55,12 +55,12 @@ with qml.tape.QuantumTape() as tape3:
 
 
 H4 = (
-        qml.PauliX(0) @ qml.PauliZ(2)
-        + 3 * qml.PauliZ(2)
-        - 2 * qml.PauliX(0)
-        + qml.PauliZ(2)
-        + qml.PauliZ(2)
-    )
+    qml.PauliX(0) @ qml.PauliZ(2)
+    + 3 * qml.PauliZ(2)
+    - 2 * qml.PauliX(0)
+    + qml.PauliZ(2)
+    + qml.PauliZ(2)
+)
 H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
 
 with qml.tape.QuantumTape() as tape4:
