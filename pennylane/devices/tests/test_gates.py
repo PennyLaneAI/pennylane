@@ -69,6 +69,7 @@ ops = {
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.QFT(wires=[0, 1, 2]),
+    "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
@@ -148,6 +149,14 @@ crot = lambda phi, theta, omega: np.array(
         ],
     ]
 )
+IsingXX = lambda phi: np.array(
+    [
+        [cos(phi / 2), 0, 0, -1j * sin(phi / 2)],
+        [0, cos(phi / 2), -1j * sin(phi / 2), 0],
+        [0, -1j * sin(phi / 2), cos(phi / 2), 0],
+        [-1j * sin(phi / 2), 0, 0, cos(phi / 2)],
+    ]
+)
 
 IsingZZ = lambda phi: np.array(
     [
@@ -181,7 +190,8 @@ single_qubit_param = [
 # list of all non-parametrized two-qubit gates
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
-two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz), (qml.IsingZZ, IsingZZ)]
+two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz), (qml.IsingXX, IsingXX),
+                   (qml.IsingZZ, IsingZZ)]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]

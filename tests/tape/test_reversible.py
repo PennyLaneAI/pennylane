@@ -288,6 +288,7 @@ class TestGradients:
         qml.U1,
         qml.U2,
         qml.U3,
+        qml.IsingXX,
         qml.IsingZZ,
         qml.SingleExcitation,
         qml.SingleExcitationPlus,
