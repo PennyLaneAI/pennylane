@@ -327,8 +327,8 @@ class ResetError(Channel):
         K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
         K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
         K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
-        K2 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
-        K2 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
+        K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
         return [K0, K1, K2, K3, K4]
 
 
