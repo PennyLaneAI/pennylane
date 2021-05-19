@@ -34,7 +34,7 @@ def hamiltonian_expand(tape):
     .. Warning::
 
          Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
-         See `~pennylane.Hamiltonian` for more information.
+         See :class:`~pennylane.Hamiltonian` for more information.
 
     **Example**
 
