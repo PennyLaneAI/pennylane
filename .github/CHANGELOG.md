@@ -242,7 +242,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
-* Fixed the custom range sequence feature and added test for it.
+* Fixed a bug where the custom range sequences could not be passed
+  to the `StronglyEntanglingLayers` template.
   [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
 
 <h3>Documentation</h3>
