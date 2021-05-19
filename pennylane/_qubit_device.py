@@ -782,7 +782,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(self, tape):
+    def adjoint_jacobian(self, tape, return_obs=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -800,6 +800,9 @@ class QubitDevice(Device):
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
+
+        Kwargs:
+            return_obs (bool): return the expectation value alongside the jacobian as a tuple (obs, jac)
 
         Returns:
             array: the derivative of the tape with respect to trainable parameters.
@@ -827,9 +830,12 @@ class QubitDevice(Device):
         self.reset()
         self.execute(tape)
 
-        phi = self._reshape(self.state, [2] * self.num_wires)
+        ket = self._reshape(self.state, [2] * self.num_wires)
 
-        lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
+        bras = [self._apply_operation(ket, obs) for obs in tape.observables]
+
+        if return_obs:
+            expectation = [qmlsum(self._conj(bra_) * ket) for _bra in bras]
 
         expanded_ops = []
         for op in reversed(tape.operations):
@@ -857,20 +863,22 @@ class QubitDevice(Device):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
-            phi = self._apply_operation(phi, op)
+            ket = self._apply_operation(ket, op)
 
             if op.grad_method is not None:
                 if param_number in tape.trainable_params:
-                    mu = self._apply_unitary(phi, d_op_matrix, op.wires)
+                    ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac_column = np.array(
-                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
+                        [2 * dot_product_real(bra_, ket_temp) for bra_ in bras]
                     )
                     jac[:, trainable_param_number] = jac_column
                     trainable_param_number -= 1
                 param_number -= 1
 
-            lambdas = [self._apply_operation(lambda_, op) for lambda_ in lambdas]
+            bras = [self._apply_operation(bra_, op) for bra_ in bras]
             op.inv()
 
+        if return_obs:
+            return expectation, jac
         return jac
