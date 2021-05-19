@@ -190,8 +190,7 @@ single_qubit_param = [
 # list of all non-parametrized two-qubit gates
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
-two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz), (qml.IsingXX, IsingXX),
-                   (qml.IsingZZ, IsingZZ)]
+two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz), (qml.IsingXX, IsingXX), (qml.IsingZZ, IsingZZ)]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
