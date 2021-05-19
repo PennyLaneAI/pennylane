@@ -60,7 +60,7 @@ class Hamiltonian:
         may be queued as operations/an error may be thrown. Thus, Hamiltonians must be defined either outside of QNodes,
         or inside of QNodes using the conventional method.
 
-        Note that this issue also arises when calling the `simplify()` method.
+        Note that this issue also arises when calling the ``simplify()`` method.
 
     **Example:**
 
