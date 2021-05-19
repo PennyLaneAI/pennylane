@@ -459,6 +459,10 @@ def expand_vector(vector, original_wires, expanded_wires):
 def frobenius_inner_product(A, B, normalize=False):
     r"""Frobenius inner product between two matrices.
 
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
     The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
     matrices with real-valued entries.
 
@@ -466,14 +470,10 @@ def frobenius_inner_product(A, B, normalize=False):
         A (array[float]): First matrix, assumed to be a square array.
         B (array[float]): Second matrix, assumed to be a square array.
         normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
-            Default to False.
+            Defaults to False.
 
     Returns:
         float: Frobenius inner product of A and B
-
-    .. math::
-
-        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
 
     **Example**
 
