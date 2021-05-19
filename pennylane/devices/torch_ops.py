@@ -133,8 +133,10 @@ def MultiRZ(theta, n, device=None):
     Returns:
         torch.Tensor[complex]: diagonal part of the MultiRZ matrix
     """
+
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
-    return torch.exp(-1j * theta / 2 * pauli_eigs(n))
+    eigs = torch.as_tensor(pauli_eigs(n), dtype=C_DTYPE, device=device)
+    return torch.exp(-1j * theta / 2 * eigs)
 
 
 def Rot(a, b, c, device=None):
@@ -217,3 +219,165 @@ def CRot(a, b, c, device):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return diag(CRZ(c, device)) @ CRY(b, device) @ diag(CRZ(a, device))
+
+
+def SingleExcitation(phi, device):
+    r"""Single excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: Single excitation rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+
+    return torch.as_tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=C_DTYPE, device=device)
+
+
+def SingleExcitationPlus(phi, device):
+    r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: Single excitation rotation matrix with positive phase-shift
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+    e = torch.exp(1j * phi / 2)
+    return torch.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device)
+
+
+def SingleExcitationMinus(phi, device):
+    r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: Single excitation rotation matrix with negative phase-shift
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+    e = torch.exp(-1j * phi / 2)
+    return torch.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device)
+
+
+def DoubleExcitation(phi, device):
+    r"""Double excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: Double excitation rotation matrix
+    """
+
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+
+    U = [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]
+
+    return torch.as_tensor(U, dtype=C_DTYPE, device=device)
+
+
+def DoubleExcitationPlus(phi, device):
+    r"""Double excitation rotation with positive phase-shift.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+    e = torch.exp(1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return torch.as_tensor(U, dtype=C_DTYPE, device=device)
+
+
+def DoubleExcitationMinus(phi, device):
+    r"""Double excitation rotation with negative phase-shift.
+
+    Args:
+        phi (float): rotation angle
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]: rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
+    e = torch.exp(-1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return torch.as_tensor(U, dtype=C_DTYPE, device=device)

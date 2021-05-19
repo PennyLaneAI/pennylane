@@ -40,13 +40,21 @@ class DefaultQubitTorch(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": torch_ops.PhaseShift,
+        "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
         "RX": torch_ops.RX,
         "RY": torch_ops.RY,
         "RZ": torch_ops.RZ,
+        "MultiRZ": torch_ops.MultiRZ,
         "Rot": torch_ops.Rot,
         "CRX": torch_ops.CRX,
         "CRY": torch_ops.CRY,
         "CRZ": torch_ops.CRZ,
+        "SingleExcitation": torch_ops.SingleExcitation,
+        "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
+        "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
+        "DoubleExcitation": torch_ops.DoubleExcitation,
+        "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus
     }
 
     C_DTYPE = torch.complex128
@@ -156,11 +164,20 @@ class DefaultQubitTorch(DefaultQubit):
     def _get_unitary_matrix(self, unitary):
         # TODO docstring (see default_qubit_tf.py)
 
+
         if unitary.name in self.parametric_ops:
-            return self.parametric_ops[unitary.name](
-                *unitary.parameters,
-                device=self._torch_device
-            )
+            if unitary.name == "MultiRZ":
+                mat = self.parametric_ops[unitary.name](
+                    *unitary.parameters,
+                    len(unitary.wires),
+                    device=self._torch_device
+                )
+            else:
+                mat = self.parametric_ops[unitary.name](
+                    *unitary.parameters,
+                    device=self._torch_device
+                )
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
