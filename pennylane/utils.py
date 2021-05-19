@@ -457,7 +457,10 @@ def expand_vector(vector, original_wires, expanded_wires):
 
 
 def frobenius_inner_product(A, B, normalize=False):
-    r"""Frobenius/Hilbert-Schmidt inner product between two matrices.
+    r"""Frobenius inner product between two matrices.
+
+    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
+    matrices with real-valued entries.
 
     Args:
         A (array[float]): First matrix, assumed to be a square array.
