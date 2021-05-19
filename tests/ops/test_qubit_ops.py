@@ -372,10 +372,12 @@ class TestOperations:
             qml.ISWAP(wires=[0, 1]),
             qml.CSWAP(wires=[0, 1, 2]),
             qml.PauliRot(0.123, "Y", wires=0),
+            qml.IsingXX(0.123, wires=[0, 1]),
             qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
             qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+            qml.CPhase(1.777, wires=[0, 2]),
             qml.MultiRZ(0.112, wires=[1, 2, 3]),
             qml.CRX(0.836, wires=[2, 3]),
             qml.CRY(0.721, wires=[2, 3]),
@@ -685,6 +687,46 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_toffoli_decomposition(self, tol):
+        """Tests that the decomposition of the Toffoli gate is correct"""
+        op = qml.Toffoli(wires=[0, 1, 2])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 15
+
+        mats = []
+
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                mats.append(np.kron(np.eye(4), i.matrix))
+            elif i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix, np.eye(2))))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix, np.eye(4)))
+            elif i.wires == Wires([0, 1]) and i.name == "CNOT":
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires == Wires([1, 2]) and i.name == "CNOT":
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires == Wires([0, 2]) and i.name == "CNOT":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 
@@ -923,11 +965,28 @@ class TestOperations:
         res = op.eigvals
         assert np.allclose(res, exp)
 
+    def test_swap_decomposition(self):
+        """Tests the swap operator produces the correct output"""
+        opr = qml.SWAP(wires=[0, 1])
+        decomp = opr.decomposition([0, 1])
+
+        mat = []
+        for op in reversed(decomp):
+            if isinstance(op, qml.CNOT) and op.wires.tolist() == [0, 1]:
+                mat.append(CNOT)
+            elif isinstance(op, qml.CNOT) and op.wires.tolist() == [1, 0]:
+                mat.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+
+        decomposed_matrix = np.linalg.multi_dot(mat)
+
+        assert np.allclose(decomposed_matrix, opr.matrix)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct matrix and
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct matrix and
         eigenvalues"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        op = cphase_op(phi, wires=[0, 1])
         res = op.matrix
         exp = ControlledPhaseShift(phi)
         assert np.allclose(res, exp)
@@ -936,9 +995,10 @@ class TestOperations:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_decomp(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_decomp(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 1])
         decomp = op.decomposition(phi, wires=[0, 1])
 
         mats = []
@@ -2385,7 +2445,7 @@ class TestMultiControlledX:
                 work_wires=work_wires,
                 control_values=control_values,
             )
-        tape = tape.expand(depth=2)
+        tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)

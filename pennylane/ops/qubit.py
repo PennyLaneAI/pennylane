@@ -526,6 +526,15 @@ class SWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         return SWAP(wires=self.wires)
 
@@ -674,6 +683,27 @@ class Toffoli(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            Hadamard(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            T(wires=wires[2]).inv(),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            T(wires=wires[2]).inv(),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            T(wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            Hadamard(wires=wires[2]),
+            T(wires=wires[0]),
+            T(wires=wires[1]).inv(),
+            CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
@@ -909,6 +939,9 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+
+CPhase = ControlledPhaseShift
 
 
 class Rot(Operation):
@@ -1727,6 +1760,56 @@ class U3(Operation):
         new_lam = (np.pi - phi) % (2 * np.pi)
         new_phi = (np.pi - lam) % (2 * np.pi)
         return U3(theta, new_phi, new_lam, wires=self.wires)
+
+
+class IsingXX(Operation):
+    r"""IsingXX(phi, wires)
+    Ising XX coupling gate
+
+    .. math:: \mathtt{XX}(\phi) = \begin{bmatrix}
+            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d \phi} \mathtt{XX}(\phi) = \frac{1}{2} \left[ \mathtt{XX}(\phi + \pi / 2) + \mathtt{XX}(\phi - \pi / 2) \right]`
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
+
+        return np.array(
+            [[c, 0, 0, -1j * s], [0, c, -1j * s, 0], [0, -1j * s, c, 0], [-1j * s, 0, 0, c]]
+        )
+
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [
+            CNOT(wires=wires),
+            RX(phi, wires=[wires[0]]),
+            CNOT(wires=wires),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingXX(-phi, wires=self.wires)
 
 
 # =============================================================================
@@ -3037,6 +3120,7 @@ ops = {
     "RZ",
     "PhaseShift",
     "ControlledPhaseShift",
+    "CPhase",
     "Rot",
     "CRX",
     "CRY",
@@ -3045,6 +3129,7 @@ ops = {
     "U1",
     "U2",
     "U3",
+    "IsingXX",
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",

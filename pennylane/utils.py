@@ -22,6 +22,7 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
+import warnings
 
 import numpy as np
 
@@ -239,6 +240,10 @@ def inv(operation_list):
     If the inversion happens inside a QNode, the operations are removed and requeued
     in the reversed order for proper inversion.
 
+    .. warning::
+        Use of :func:`~.inv()` is deprecated and should be replaced with
+        :func:`~.adjoint()`.
+
     **Example:**
 
     The following example illuminates the inversion of a template:
@@ -291,6 +296,11 @@ def inv(operation_list):
     Returns:
         List[~.Operation]: The inverted list of operations
     """
+
+    warnings.warn(
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
+        UserWarning,
+    )
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif operation_list is None:
