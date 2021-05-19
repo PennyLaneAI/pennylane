@@ -19,6 +19,7 @@ from pennylane import numpy as np
 from ..utils import frobenius_inner_product
 from .utils import square_kernel_matrix
 
+
 def kernel_polarization(
     X,
     Y,
