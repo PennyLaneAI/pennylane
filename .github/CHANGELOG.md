@@ -18,7 +18,7 @@ dev = qml.device('default.qubit', wires=num_wires)
 @qml.qnode(dev)
 def kernel_circuit(x1, x2):
     qml.templates.AngleEmbedding(x1, wires=wires)
-    qml.adjoint(qml.templates.AngleEmbedding(x2, wires=wires))
+    qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
     return qml.probs(wires)
 
 kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
