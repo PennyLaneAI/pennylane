@@ -24,8 +24,6 @@ from pennylane.wires import Wires
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
-Zero = np.array([[1, 0], [0, 0]])
-One = np.array([[0, 0], [0, 1]])
 
 ch_list = [
     channel.AmplitudeDamping,
@@ -48,7 +46,7 @@ class TestChannels:
         if ops.__name__ == "GeneralizedAmplitudeDamping":
             op = ops(p, p, wires=0)
         elif ops.__name__ == "ResetError":
-            op = ops(p / 2, p / 2, wires=0)
+            op = ops(p / 2, p / 3, wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices
@@ -229,11 +227,17 @@ class TestResetError:
         expected_K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
 
-        expected_K1 = np.sqrt(p_0) * Zero
+        expected_K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
 
-        expected_K2 = np.sqrt(p_1) * One
+        expected_K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
+
+        expected_K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[3], expected_K2, atol=tol, rtol=0)
+
+        expected_K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[4], expected_K2, atol=tol, rtol=0)
 
 
 class TestQubitChannel:

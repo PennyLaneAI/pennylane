@@ -286,7 +286,19 @@ class ResetError(Channel):
                 \end{bmatrix}
 
     .. math::
-        K_2 = \sqrt{p_1}\begin{bmatrix}
+        K_2 = \sqrt{p_0}\begin{bmatrix}
+                0 & 1  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_3 = \sqrt{p_1}\begin{bmatrix}
+                0 & 0  \\
+                1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_4 = \sqrt{p_1}\begin{bmatrix}
                 0 & 0  \\
                 0 & 1
                 \end{bmatrix}
@@ -314,8 +326,10 @@ class ResetError(Channel):
         p_0, p_1 = params[0], params[1]
         K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
         K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
+        K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
+        K2 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
         K2 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
-        return [K0, K1, K2]
+        return [K0, K1, K2, K3, K4]
 
 
 class PhaseFlip(Channel):
