@@ -72,6 +72,7 @@ Qubit gates
     ~pennylane.CY
     ~pennylane.SWAP
     ~pennylane.ISWAP
+    ~pennylane.IsingZZ
     ~pennylane.U1
     ~pennylane.U2
     ~pennylane.U3
