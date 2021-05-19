@@ -234,10 +234,10 @@ class TestResetError:
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
 
         expected_K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[3], expected_K2, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
 
         expected_K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[4], expected_K2, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0)
 
 
 class TestQubitChannel:
