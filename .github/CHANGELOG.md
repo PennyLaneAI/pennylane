@@ -1,6 +1,11 @@
 # Release 0.16.0-dev (development release)
 
 <h3>New features since last release</h3>
+* Added CPhase operation as an alias for ControlledPhaseShift operation
+  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
+
+* The `qml.Toffoli` operation now has a decomposition over elementary gates. 
+  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
 
 * The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
 
@@ -199,6 +204,7 @@ X_test = np.random.random((5, 6))
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
 
+* Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
 <h3>Improvements</h3>
 
@@ -298,8 +304,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac,
-Pavan Jayasinha, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac,
+Pavan Jayasinha, Johannes Jakob Meyer, Nahum Sá, Brian Shi, Antal Száva, David Wierichs
 
 # Release 0.15.1 (current release)
 
