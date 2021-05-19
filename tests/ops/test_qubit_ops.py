@@ -997,7 +997,7 @@ class TestOperations:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
     def test_controlled_phase_shift_decomp(self, phi, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation 
+        """Tests that the ControlledPhaseShift and CPhase operation
         calculates the correct decomposition"""
         op = cphase_op(phi, wires=[0, 2])
         decomp = op.decomposition(phi, wires=[0, 2])
@@ -1031,17 +1031,17 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
         lam = np.exp(1j * phi)
         exp = np.array(
-                        [
-                            [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 0, lam, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 1, 0],
-                            [0, 0, 0, 0, 0, 0, 0, lam],
-                        ]
-                    )
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, lam, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, lam],
+            ]
+        )
 
         assert np.allclose(decomposed_matrix, exp)
 
