@@ -22,8 +22,8 @@ Given a kernel
 
 .. math ::
 
-    k: \mathbb{R}^d \times \mathbb{R}^d &\to \mathbb{R}, \quad
-    (x_1, x_2)&\mapsto k(x_1, x_2)
+    k: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}, \quad
+    (x_1, x_2)\mapsto k(x_1, x_2)
 
 the kernel matrix of :math:`k` on a training dataset
 :math:`\{(x_1, y_1),\cdots (x_n, y_n)\}` with :math:`x_i\in\mathbb{R}^d`
