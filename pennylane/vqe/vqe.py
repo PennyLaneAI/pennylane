@@ -46,6 +46,22 @@ class Hamiltonian:
 
     .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
 
+    .. Warning::
+
+        Hamiltonians can be constructed using Pythonic arithmetic operations. For example:
+
+        >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+
+        is equivalent to the following Hamiltonian:
+
+        >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        When Hamiltonians are defined using arithmetic operations **inside of QNodes**, constituent observables
+        may be queued as operations/an error may be thrown. Thus, Hamiltonians must be defined either outside of QNodes,
+        or inside of QNodes using the conventional method.
+
+        Note that this issue also arises when calling the `simplify()` method.
+
     **Example:**
 
     A Hamiltonian can be created by simply passing the list of coefficients
