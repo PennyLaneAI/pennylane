@@ -39,7 +39,7 @@ except ImportError:
 
 
 def qfunc_no_input():
-    """Model agnostic quantum function """
+    """Model agnostic quantum function"""
     return qml.expval(qml.Identity(wires=0))
 
 

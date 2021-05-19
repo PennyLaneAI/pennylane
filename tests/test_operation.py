@@ -176,10 +176,11 @@ class TestOperation:
         U = qml.CRX._matrix(0.4)
 
         op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
-        target_data = [np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])]
+        target_matrix = np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])
 
         assert op.name == qml.ControlledQubitUnitary.__name__
-        assert np.allclose(target_data, op.data)
+        assert np.allclose([U], op.data)
+        assert np.allclose(op.matrix, target_matrix)
         assert op._wires == Wires(control_wires) + Wires(target_wires)
 
     @pytest.fixture(scope="function")
@@ -459,7 +460,7 @@ class TestObservableConstruction:
 
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operator class"""
+    """Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -486,7 +487,7 @@ class TestOperatorIntegration:
 
 
 class TestOperationIntegration:
-    """ Integration tests for the Operation class"""
+    """Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
         """Test the inverse of an operation"""

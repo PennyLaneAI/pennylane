@@ -604,12 +604,10 @@ class TestInverse:
         tape.inv()
 
         # check that operation order is reversed
-        assert tape.operations == [prep] + ops[::-1]
+        assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
 
         # check that operations are inverted
-        assert ops[0].inverse
-        assert not ops[1].inverse
-        assert ops[2].inverse
+        assert np.allclose(tape.operations[2].parameters, -np.array(p[-1:0:-1]))
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
@@ -636,7 +634,7 @@ class TestInverse:
         tape.inv()
         assert tape.trainable_params == {1, 2}
         assert tape.get_parameters() == [p[0], p[1]]
-        assert tape._ops == ops
+        assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
 
 class TestExpand:

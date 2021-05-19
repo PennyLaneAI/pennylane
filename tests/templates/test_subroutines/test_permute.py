@@ -23,7 +23,7 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     def test_identity_permutation_qnode(self):
-        """ Test that identity permutations have no effect on QNodes. """
+        """Test that identity permutations have no effect on QNodes."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -40,7 +40,7 @@ class TestDecomposition:
         assert len(tape.operations) == 0
 
     def test_identity_permutation_tape(self):
-        """ Test that identity permutations have no effect on tapes. """
+        """Test that identity permutations have no effect on tapes."""
 
         with qml.tape.QuantumTape() as tape:
             qml.templates.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
@@ -61,7 +61,7 @@ class TestDecomposition:
         ],
     )
     def test_two_cycle_permutations_qnode(self, permutation_order, expected_wires):
-        """ Test some two-cycles on QNodes. """
+        """Test some two-cycles on QNodes."""
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
@@ -72,10 +72,10 @@ class TestDecomposition:
 
         two_cycle()
 
-        # expand the Permute operation
-        tape = two_cycle.qtape.expand()
+        tape = two_cycle.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in two_cycle.qtape.operations] == expected_wires
 
@@ -92,7 +92,7 @@ class TestDecomposition:
         ],
     )
     def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_wires):
-        """ Test some two-cycles on tapes. """
+        """Test some two-cycles on tapes."""
 
         with qml.tape.QuantumTape() as tape:
             qml.templates.Permute(permutation_order, wire_order)
@@ -113,7 +113,7 @@ class TestDecomposition:
         ],
     )
     def test_cyclic_permutations_qnode(self, permutation_order, expected_wires):
-        """ Test more general cycles on QNodes. """
+        """Test more general cycles on QNodes."""
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
@@ -124,10 +124,10 @@ class TestDecomposition:
 
         cycle()
 
-        # expand the Permute operation
-        tape = cycle.qtape.expand()
+        tape = cycle.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in cycle.qtape.operations] == expected_wires
 
@@ -140,7 +140,7 @@ class TestDecomposition:
         ],
     )
     def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_wires):
-        """ Test more general cycles on tapes. """
+        """Test more general cycles on tapes."""
 
         with qml.tape.QuantumTape() as tape:
             qml.templates.Permute(permutation_order, wire_order)
@@ -161,7 +161,7 @@ class TestDecomposition:
         ],
     )
     def test_arbitrary_permutations_qnode(self, permutation_order, expected_wires):
-        """ Test arbitrarily generated permutations on QNodes. """
+        """Test arbitrarily generated permutations on QNodes."""
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
@@ -172,10 +172,10 @@ class TestDecomposition:
 
         arbitrary_perm()
 
-        # expand the Permute operation
-        tape = arbitrary_perm.qtape.expand()
+        tape = arbitrary_perm.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in arbitrary_perm.qtape.operations] == expected_wires
 
@@ -196,7 +196,7 @@ class TestDecomposition:
         ],
     )
     def test_arbitrary_permutations_tape(self, permutation_order, wire_order, expected_wires):
-        """ Test arbitrarily generated permutations on tapes. """
+        """Test arbitrarily generated permutations on tapes."""
 
         with qml.tape.QuantumTape() as tape:
             qml.templates.Permute(permutation_order, wire_order)
@@ -219,7 +219,7 @@ class TestDecomposition:
     def test_subset_permutations_qnode(
         self, num_wires, permutation_order, wire_subset, expected_wires
     ):
-        """ Test permutation of wire subsets on QNodes. """
+        """Test permutation of wire subsets on QNodes."""
 
         dev = qml.device("default.qubit", wires=num_wires)
 
@@ -230,10 +230,10 @@ class TestDecomposition:
 
         subset_perm()
 
-        # expand the Permute operation
-        tape = subset_perm.qtape.expand()
+        tape = subset_perm.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in subset_perm.qtape.operations] == expected_wires
 
@@ -253,7 +253,7 @@ class TestDecomposition:
     def test_subset_permutations_tape(
         self, wire_labels, permutation_order, wire_subset, expected_wires
     ):
-        """ Test permutation of wire subsets on tapes. """
+        """Test permutation of wire subsets on tapes."""
 
         with qml.tape.QuantumTape() as tape:
             # Make sure all the wires are actually there
