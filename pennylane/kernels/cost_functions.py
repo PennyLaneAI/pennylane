@@ -24,10 +24,10 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
     Args:
         X (list[datapoint]): List of datapoints
-        kernel ((datapoint, datapoint) -> float): Kernel function that maps 
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps
             datapoints to kernel value.
-        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in 
-            which case the diagonal of the kernel matrix is set to 1, avoiding unnecessary 
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in
+            which case the diagonal of the kernel matrix is set to 1, avoiding unnecessary
             computations.
 
     Returns:
