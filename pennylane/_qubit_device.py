@@ -782,7 +782,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(self, tape, starting_state=None, return_obs=False):
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False, return_obs=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -802,7 +802,10 @@ class QubitDevice(Device):
             tape (.QuantumTape): circuit that the function takes the gradient of
 
         Kwargs:
-            starting_state (Tensor): post-forward pass state to start execution with.
+            starting_state (Tensor): post-forward pass state to start execution with. It should be
+                complex-valued and of shape `[2]*num_wires`. Takes precedence over `use_device_state`
+            use_device_state (bool): use current device state to initialize.  If a `starting_state` is 
+                provided, that takes precedence. 
             return_obs (bool): return the expectation value alongside the jacobian as a tuple (obs, jac)
 
         Returns:
@@ -826,10 +829,11 @@ class QubitDevice(Device):
 
         if starting_state is not None:
             ket = starting_state
+        elif use_device_state:
+            ket = self._reshape(self.state, [2] * self.num_wires)
         else:
             self.reset()
             self.execute(tape)
-
             ket = self._reshape(self.state, [2] * self.num_wires)
 
         bras = [self._apply_operation(ket, obs) for obs in tape.observables]
