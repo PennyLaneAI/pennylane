@@ -476,7 +476,7 @@ def frobenius_inner_product(A, B, normalize=False):
         \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
 
     **Example**
-    
+
     >>> A = np.random.random((3,3))
     >>> B = np.random.random((3,3))
     >>> qml.utils.frobenius_inner_product(A, B)
