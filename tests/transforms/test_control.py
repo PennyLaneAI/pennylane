@@ -87,7 +87,7 @@ def test_nested_control():
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, ControlledOperation)
-    new_tape = expand_tape(tape, 3)
+    new_tape = expand_tape(tape, 2)
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
 
 
@@ -99,7 +99,7 @@ def test_multi_control():
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, ControlledOperation)
-    new_tape = expand_tape(tape, 3)
+    new_tape = expand_tape(tape, 1)
     assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
 
 
