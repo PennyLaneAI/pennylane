@@ -23,49 +23,65 @@ differentiation to be preserved.
     Furthermore, the names and behaviour of these functions may differ from similar
     functions in common frameworks; please refer to the function docstrings for more details.
 
-Internally, these functions dispatch by using the :class:`TensorBox` class, a container and API for
-array-like objects that allows array manipulation to be performed in a unified manner for supported
-tensor/array manipulation frameworks.
-
 The following frameworks are currently supported:
 
 * NumPy
 * Autograd
 * TensorFlow
 * PyTorch
+* JAX
 """
-from .fn import (
-    T,
-    abs_ as abs,
-    allclose,
-    allequal,
-    angle,
-    arcsin,
+import autoray as ar
+
+from .multi_dispatch import (
+    _multi_dispatch,
     block_diag,
-    cast,
-    cast_like,
     concatenate,
-    conj,
-    convert_like,
-    cov_matrix,
     diag,
     dot,
-    expand_dims,
-    flatten,
-    gather,
-    get_interface,
-    marginal_prob,
     ones_like,
-    reshape,
-    requires_grad,
-    scatter_element_add,
-    shape,
-    sqrt,
     stack,
-    squeeze,
-    sum_ as sum,
-    take,
-    toarray,
     where,
 )
-from .tensorbox import TensorBox, wrap_output
+
+from .quantum import cov_matrix, marginal_prob
+
+from .utils import (
+    allclose,
+    allequal,
+    cast,
+    cast_like,
+    convert_like,
+    get_interface,
+    requires_grad,
+)
+
+
+sum = ar.numpy.sum
+toarray = ar.numpy.to_numpy
+T = ar.numpy.transpose
+
+
+def __getattr__(name):
+    return getattr(ar.numpy, name)
+
+
+__all__ = [
+    "_multi_dispatch",
+    "block_diag",
+    "concatenate",
+    "diag",
+    "dot",
+    "ones_like",
+    "stack",
+    "where",
+    "allclose",
+    "allequal",
+    "cast",
+    "cast_like",
+    "convert_like",
+    "get_interface",
+    "requires_grad",
+    "cov_matrix",
+    "marginal_prob",
+]
