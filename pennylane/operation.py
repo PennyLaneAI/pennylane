@@ -543,7 +543,7 @@ class Operation(Operator):
             idx (int): parameter index
 
         Returns:
-            list[[float, float, float]]: list of multiplier, coefficient, shift for each execution
+            list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
