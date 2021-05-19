@@ -64,8 +64,6 @@ using the methods in this module.
 from .cost_functions import (
     kernel_polarization,
     kernel_target_alignment,
-    kernel_matrix,
-    square_kernel_matrix,
 )
 from .postprocessing import (
     threshold_matrix,
@@ -73,4 +71,8 @@ from .postprocessing import (
     flip_matrix,
     closest_psd_matrix,
     mitigate_depolarizing_noise,
+)
+from .utils import (
+    kernel_matrix,
+    square_kernel_matrix,
 )
