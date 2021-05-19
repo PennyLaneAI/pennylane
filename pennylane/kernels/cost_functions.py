@@ -20,16 +20,43 @@ from ..utils import frobenius_inner_product
 
 
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
-    """Computes the square matrix of pairwise kernel values for a given dataset.
+    r"""Computes the square matrix of pairwise kernel values for a given dataset.
 
     Args:
         X (list[datapoint]): List of datapoints
-        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
-        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in which case
-            the diagonal of the kernel matrix is set to 1, avoiding unnecessary computations. Defaults to False.
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps 
+            datapoints to kernel value.
+        assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in 
+            which case the diagonal of the kernel matrix is set to 1, avoiding unnecessary 
+            computations.
 
     Returns:
         array[float]: The square matrix of kernel values.
+
+    **Example:**
+
+    Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
+
+    .. code-block :: python
+
+        dev = qml.device('default.qubit', wires=2, shots=None)
+        @qml.qnode(dev)
+        def circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=dev.wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qml.probs(wires=dev.wires)
+
+        kernel = lambda x1, x2: circuit(x1, x2)[0]
+
+    We can then compute the kernel matrix on a set of 4 (random) feature
+    vectors ``X`` via
+
+    >>> X = np.random.random((4, 2))
+    >>> qml.kernels.square_kernel_matrix(X, kernel)
+    tensor([[1.        , 0.9532702 , 0.96864001, 0.90932897],
+            [0.9532702 , 1.        , 0.99727485, 0.95685561],
+            [0.96864001, 0.99727485, 1.        , 0.96605621],
+            [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
     """
     N = len(X)
     matrix = [0] * N ** 2
@@ -46,7 +73,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
 
 def kernel_matrix(X1, X2, kernel):
-    """Kernel polarization of a given kernel function.
+    r"""Kernel polarization of a given kernel function.
 
     Args:
         X1 (list[datapoint]): List of datapoints (first argument)
@@ -55,6 +82,36 @@ def kernel_matrix(X1, X2, kernel):
 
     Returns:
         array[float]: The square matrix of kernel values.
+
+    **Example:**
+
+    Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
+
+    .. code-block :: python
+
+        dev = qml.device('default.qubit', wires=2, shots=None)
+        @qml.qnode(dev)
+        def circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=dev.wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qml.probs(wires=dev.wires)
+
+        kernel = lambda x1, x2: circuit(x1, x2)[0]
+
+    With this method we can systematically evaluate the kernel function ``kernel`` on
+    pairs of datapoints, where the points stem from different datasets, like a training
+    and a test dataset.
+
+    >>> X_train = np.random.random((4,2))
+    >>> X_test = np.random.random((3,2))
+    >>> qml.kernels.kernel_matrix(X_train, X_test, kernel)
+    tensor([[0.88875298, 0.90655175, 0.89926447],
+            [0.93762197, 0.98163781, 0.93076383],
+            [0.91977339, 0.9799841 , 0.91582698],
+            [0.80376818, 0.98720925, 0.79349212]], requires_grad=True)
+
+    As we can see, for :math:`n` and :math:`m` datapoints in the first and second
+    dataset respectively, the output matrix has the shape :math:`n\times m`.
     """
     N = len(X1)
     M = len(X2)
@@ -75,20 +132,61 @@ def kernel_polarization(
     rescale_class_labels=True,
     normalize=False,
 ):
-    """Kernel polarization of a given kernel function.
+    r"""Kernel polarization of a given kernel function.
 
     Args:
-        X (list[datapoint]): List of datapoints
+        X (list[datapoint]): List of datapoints.
         Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
         assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
-            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+            the kernel evaluates to 1 when both arguments are the same datapoint.
         rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
-            care of unbalanced datasets. Defaults to True.
-        normalize (bool): If True, rescale the polarization to the kernel_target_alignment. Defaults to False.
+            care of unbalanced datasets.
+        normalize (bool): If True, rescale the polarization to the kernel_target_alignment.
 
     Returns:
         float: The kernel polarization.
+
+    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`,
+    the kernel polarization of the kernel function :math:`k` is given by
+
+    .. math ::
+
+        \operatorname{P}(k) = \sum_{i,j=1}^n y_i y_j k(x_i, x_j)
+
+    **Example:**
+
+    Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
+
+    .. code-block :: python
+
+        dev = qml.device('default.qubit', wires=2, shots=None)
+        @qml.qnode(dev)
+        def circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=dev.wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qml.probs(wires=dev.wires)
+
+        kernel = lambda x1, x2: circuit(x1, x2)[0]
+
+    We can then compute the polarization on a set of 4 (random) feature
+    vectors ``X`` with labels ``Y`` via
+
+    >>> X = np.random.random((4, 2))
+    >>> Y = np.array([-1, -1, 1, 1])
+    >>> qml.kernels.kernel_polarization(X, Y, kernel)
+    tensor(0.04361349, requires_grad=True)
+
+    If the dataset is unbalanced, that is if the numbers of datapoints in the
+    two classes :math:`n_+` and :math:`n_-` differ,
+    ``rescale_class_labels=True`` will apply a rescaling according to
+    :math:`\tilde{y}_i = \frac{y_i}{n_{y_i}}`. This is activated by default
+    and only results in a prefactor that depends on the size of the dataset
+    for balanced datasets.
+
+    The keyword argument ``assume_normalized_kernel`` is passed to
+    :func:`~.kernels.square_kernel_matrix`, for the computation
+    :func:`~.utils.frobenius_inner_product` is used.
     """
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
@@ -111,19 +209,60 @@ def kernel_target_alignment(
     assume_normalized_kernel=False,
     rescale_class_labels=True,
 ):
-    """Kernel target alignment of a given kernel function.
+    r"""Kernel target alignment of a given kernel function.
+
+    This function is an alias for :func:`~.kernels.kernel_polarization` with ``normalize=True``.
 
     Args:
         X (list[datapoint]): List of datapoints
         Y (list[float]): List of class labels of datapoints, assumed to be either -1 or 1.
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
         assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, i.e.
-            that when both arguments are the same datapoint the kernel evaluates to 1. Defaults to False.
+            the kernel evaluates to 1 when both arguments are the same datapoint.
         rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
-            care of unbalanced datasets. Defaults to True.
+            care of unbalanced datasets.
 
     Returns:
         float: The kernel-target alignment.
+
+    For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`, the
+    kernel-target alignment of the kernel function :math:`k` is given by
+
+    .. math ::
+
+        \operatorname{TA}(k) = \frac{\sum_{i,j=1}^n y_i y_j k(x_i, x_j)}
+        {n \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}}
+
+    **Example:**
+
+    Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
+
+    .. code-block :: python
+
+        dev = qml.device('default.qubit', wires=2, shots=None)
+        @qml.qnode(dev)
+        def circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=dev.wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qml.probs(wires=dev.wires)
+
+        kernel = lambda x1, x2: circuit(x1, x2)[0]
+
+    We can then compute the kernel-target alignment on a set of 4 (random)
+    feature vectors ``X`` with labels ``Y`` via
+
+    >>> X = np.random.random((4, 2))
+    >>> Y = np.array([-1, -1, 1, 1])
+    >>> qml.kernels.kernel_target_alignment(X, Y, kernel)
+    tensor(0.01124802, requires_grad=True)
+
+    We can see that this is equivalent to using ``normalize=True`` in
+    ``kernel_polarization``:
+
+    >>> target_alignment = qml.kernels.kernel_target_alignment(X, Y, kernel)
+    >>> normalized_polarization = qml.kernels.kernel_polarization(X, Y, kernel, normalize=True)
+    >>> np.isclose(target_alignment, normalized_polarization)
+    tensor(True, requires_grad=True)
     """
     return kernel_polarization(
         X,

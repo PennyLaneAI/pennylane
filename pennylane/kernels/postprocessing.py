@@ -20,18 +20,39 @@ from pennylane import numpy as np
 def threshold_matrix(K):
     r"""Remove negative eigenvalues from the given kernel matrix.
 
-    This method yields the closest positive semidefinite matrix in
+    This method yields the closest positive semi-definite matrix in
     any unitarily invariant norm, e.g. the Frobenius norm.
 
     Args:
-        K (array[float]): Kernel matrix assumed to be symmetric
+        K (array[float]): Kernel matrix, assumed to be symmetric.
 
     Returns:
-        array[float]: Kernel matrix with negative eigenvalues cropped.
+        array[float]: Kernel matrix with cropped negative eigenvalues.
+
+    **Example:**
+
+    Consider a symmetric matrix with both positive and negative eigenvalues:
+
+    .. code-block :: pycon
+
+        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+        >>> np.linalg.eigvalsh(K)
+        array([-1.,  1.,  2.])
+
+    We then can threshold/truncate the eigenvalues of the matrix via
+
+    .. code-block :: pycon
+
+        >>> K_thresh = qml.kernels.threshold_matrix(K)
+        >>> np.linalg.eigvalsh(K_thresh)
+        array([0.,  1.,  2.])
+
+    If the input matrix does not have negative eigenvalues, ``threshold_matrix``
+    does not have any effect.
     """
     w, v = np.linalg.eigh(K)
 
-    if np.min(w) < 0:
+    if w[0] < 0:
         # Transform spectrum: Threshold/clip at 0.
         w0 = np.clip(w, 0, None)
 
@@ -41,17 +62,41 @@ def threshold_matrix(K):
 
 
 def displace_matrix(K):
-    r"""Remove negative eigenvalues from the given kernel matrix by adding the identity matrix.
+    r"""Remove negative eigenvalues from the given kernel matrix by adding a multiple
+    of the identity matrix.
 
-    This method has keeps the eigenvectors of the matrix intact.
+    This method keeps the eigenvectors of the matrix intact.
 
     Args:
-        K (array[float]): Kernel matrix assumed to be symmetric
+        K (array[float]): Kernel matrix, assumed to be symmetric.
 
     Returns:
-        array[float]: Kernel matrix with negative eigenvalues offset by adding the identity.
+        array[float]: Kernel matrix with eigenvalues offset by adding the identity.
+
+    **Example:**
+
+    Consider a symmetric matrix with both positive and negative eigenvalues:
+
+    .. code-block :: pycon
+
+        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+        >>> np.linalg.eigvalsh(K)
+        array([-1.,  1.,  2.])
+
+    We then can shift all eigenvalues of the matrix by adding the identity matrix
+    multiplied with the absolute value of the smallest (the most negative, that is)
+    eigenvalue:
+
+    .. code-block :: pycon
+
+        >>> K_displaced = qml.kernels.displace_matrix(K)
+        >>> np.linalg.eigvalsh(K_displaced)
+        array([0.,  2.,  3.])
+
+    If the input matrix does not have negative eigenvalues, ``displace_matrix``
+    does not have any effect.
     """
-    wmin = np.min(np.linalg.eigvalsh(K))
+    wmin = np.linalg.eigvalsh(K)[0]
 
     if wmin < 0:
         return K - np.eye(K.shape[0]) * wmin
@@ -65,46 +110,109 @@ def flip_matrix(K):
     This method keeps the eigenvectors of the matrix intact.
 
     Args:
-        K (array[float]): Kernel matrix assumed to be symmetric
+        K (array[float]): Kernel matrix, assumed to be symmetric.
 
     Returns:
-        array[float]: Kernel matrix with negative eigenvalues offset by flipping negative eigenvalues.
+        array[float]: Kernel matrix with flipped negative eigenvalues.
 
     Reference:
         This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`_.
+
+    **Example:**
+
+    Consider a symmetric matrix with both positive and negative eigenvalues:
+
+    .. code-block :: pycon
+
+        >>> K = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+        >>> np.linalg.eigvalsh(K)
+        array([-1.,  1.,  2.])
+
+    We then can invert the sign of all negative eigenvalues of the matrix, obtaining
+    non-negative eigenvalues only:
+
+    .. code-block :: pycon
+
+        >>> K_flipped = qml.kernels.flip_matrix(K)
+        >>> np.linalg.eigvalsh(K_flipped)
+        array([1.,  1.,  2.])
+
+    If the input matrix does not have negative eigenvalues, ``flip_matrix``
+    does not have any effect.
     """
     w, v = np.linalg.eigh(K)
 
-    if np.min(w) < 0:
+    if w[0] < 0:
         # Transform spectrum: absolute value
-        w0 = np.abs(w)
+        w_abs = np.abs(w)
 
-        return (v * w0) @ np.transpose(v)
+        return (v * w_abs) @ np.transpose(v)
 
     return K
 
 
 def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
-    r"""Return the closest positive semidefinite matrix to the given kernel matrix.
+    r"""Return the closest positive semi-definite matrix to the given kernel matrix.
 
-    This method optionally achieves the correct diagonal entries
-    (``fix_diagonal=True``) or keeps the eigenvectors intact (``fix_diagonal=False``).
-    For ``fix_diagonal=False``, this method reduces to the ``threshold_matrix`` method.
+    This method either fixes the diagonal entries to be 1
+    (``fix_diagonal=True``) or keeps the eigenvectors intact (``fix_diagonal=False``),
+    in which case it reduces to the method :func:`~.kernels.threshold_matrix`.
+    For ``fix_diagonal=True`` a semi-definite program is solved.
 
     Args:
-        K (array[float]): Kernel matrix assumed to be symmetric.
-        fix_diagonal (bool): Whether to fix the diagonal to 1. Defaults to False.
+        K (array[float]): Kernel matrix, assumed to be symmetric.
+        fix_diagonal (bool): Whether to fix the diagonal to 1.
         solver (str, optional): Solver to be used by cvxpy. Defaults to CVXOPT.
-        kwargs (kwarg dict): Passed to cvxpy.Problem.solve()
+        kwargs (kwarg dict): Passed to cvxpy.Problem.solve().
 
     Returns:
-        array[float]: closest positive semidefinite matrix in Frobenius norm.
+        array[float]: closest positive semi-definite matrix in Frobenius norm.
 
     Comments:
         Requires cvxpy and the used solver (default CVXOPT) to be installed if ``fix_diagonal=True``.
 
     Reference:
         This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
+
+    **Example:**
+
+    Consider a symmetric matrix with both positive and negative eigenvalues:
+
+    .. code-block :: pycon
+
+        >>> K = np.array([[0.9, 1.], [1., 0.9]])
+        >>> np.linalg.eigvalsh(K)
+        array([-0.1, 1.9])
+
+    The positive semi-definite matrix that is closest to this matrix in any unitarily
+    invariant norm is then given by the matrix with the eigenvalues thresholded at 0,
+    as computed by :func:`~.kernels.threshold_matrix`:
+
+    .. code-block :: pycon
+
+        >>> K_psd = qml.kernels.closest_psd_matrix(K)
+        >>> K_psd
+        tensor([[0.95, 0.95],
+                [0.95, 0.95]], requires_grad=True)
+        >>> np.linalg.eigvalsh(K_psd)
+        array([0., 1.9])
+        >>> np.allclose(K_psd, qml.kernels.threshold_matrix(K))
+        True
+
+    However, for quantum kernel matrices we may want to restore the value 1 on the
+    diagonal:
+
+    .. code-block :: pycon
+
+        >>> K_psd = qml.kernels.closest_psd_matrix(K, fix_diagonal=True)
+        >>> K_psd
+        array([[1.        , 0.99998008],
+               [0.99998008, 1.        ]])
+        >>> np.linalg.eigvalsh(K_psd)
+        array([1.99162415e-05, 1.99998008e+00])
+
+    If the input matrix does not have negative eigenvalues and ``fix_diagonal=False``,
+    ``closest_psd_matrix`` does not have any effect.
     """
     if not fix_diagonal:
         return threshold_matrix(K)
@@ -141,19 +249,16 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         num_wires (int): Number of wires/qubits of the quantum embedding kernel.
         method (``'single'``|``'average'``|``'split_channel'``): Strategy for mitigation
 
-            * ``'single'``: An alias for 'average' with ``len(use_entries)=1``.
+            * ``'single'``: An alias for ``'average'`` with ``len(use_entries)=1``.
             * ``'average'``: Estimate a global noise rate based on the average of the diagonal
-              entries in use_entries.
-            * ``'split_channel'``: Estimate individual noise rates per embedding.
+              entries in ``use_entries``, which need to be measured on the quantum computer.
+            * ``'split_channel'``: Estimate individual noise rates per embedding, requiring
+              all diagonal entries to be measured on the quantum computer.
         use_entries (array[int]): Diagonal entries to use if method in ``['single', 'average']``.
             If ``None``, defaults to ``[0]`` (``'single'``) or ``range(len(K))`` (``'average'``).
 
     Returns:
         K_bar (array[float]): Mitigated kernel matrix.
-
-    Comments:
-        If method=='average', diagonal entries use_entries have to be measured on the QC.
-        If method=='split_channel', all diagonal entries have to be measured on the QC.
 
     Reference:
         This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
