@@ -214,6 +214,18 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * PennyLane's `qchem` package and tests are now code-formatted using `black -l 100`.
   [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
+  
+* Custom non-Hermitian operator can now be defined.
+  [(#1335)](https://github.com/PennyLaneAI/pennylane/pull/1335)
+  For example:
+```python
+class NewOp(qml.operation.Operator):
+    num_wires = 2
+    num_params = 1
+    par_domain = "L"
+
+non_hermitian_op = NewOp(np.array([[1j, 0], [0, -1j]]), wires=[0, 1])
+```
 
 <h3>Breaking changes</h3>
 
