@@ -246,8 +246,7 @@ class TestAdjointJacobian:
         dM1 = dev.adjoint_jacobian(tape)
 
         tape.execute(dev)
-        init_state = np.reshape(dev.state, [2]*dev.num_wires)
-        dM2 = dev.adjoint_jacobian(tape, starting_state=init_state)
+        dM2 = dev.adjoint_jacobian(tape, starting_state=dev.state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
