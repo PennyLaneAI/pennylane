@@ -372,6 +372,7 @@ class TestOperations:
             qml.ISWAP(wires=[0, 1]),
             qml.CSWAP(wires=[0, 1, 2]),
             qml.PauliRot(0.123, "Y", wires=0),
+            qml.IsingXX(0.123, wires=[0, 1]),
             qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
