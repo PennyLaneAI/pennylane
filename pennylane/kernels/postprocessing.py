@@ -261,7 +261,8 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         K_bar (array[float]): Mitigated kernel matrix.
 
     Reference:
-        This method is introduced in `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
+        This method is introduced in Section V in
+        `arXiv:2105.02276 <https://arxiv.org/abs/2105.02276>`_.
     """
     dim = 2 ** num_wires
 
