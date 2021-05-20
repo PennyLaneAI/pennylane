@@ -152,7 +152,6 @@ earlier example,
 
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
 >>> plot_coeffs_bar(coeffs, 1, ax)
->>> plt.suptitle("Simple circuit bar plot")
 
 .. image:: ../_static/fourier_vis_bar_plot.png
     :align: center
@@ -195,9 +194,7 @@ customization options available:
 
    # Number of inputs is now 2; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
-   plot_coeffs_bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
-   plt.suptitle("Circuit with weights bar plot", fontsize=14)
-
+   plot_coeffs_bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"})
 
 .. image:: ../_static/fourier_vis_bar_plot_2.png
     :align: center
@@ -228,8 +225,7 @@ One option to plot the distribution is :func:`~.pennylane.fourier.plot_coeffs_vi
 .. code::
 
    fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-   plot_coeffs_violin(coeffs, 2, ax, show_freqs=True);
-   plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
+   plot_coeffs_violin(coeffs, 2, ax, show_freqs=True)
 
 .. image:: ../_static/fourier_vis_violin.png
     :width: 100%
@@ -254,9 +250,6 @@ coefficients as above:
        figsize=(15, 8)
    )
    plot_coeffs_radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
-   plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
-   plt.tight_layout()
-
 
 .. image:: ../_static/fourier_vis_radial_box.png
     :align: center
@@ -286,11 +279,6 @@ sampled sets of Fourier coefficients on the complex plane.
    # Need a grid large enough to hold all coefficients up to frequency 2
    fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
    plot_coeffs_panel(coeffs, 2, ax)
-   plt.suptitle(
-      "Fourier coefficients of circuit with weights in the complex plane",
-      fontsize=16
-   )
-   plt.tight_layout()
 
 .. image:: ../_static/fourier_vis_panel.png
     :align: center

@@ -132,23 +132,56 @@ def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     **Example**
 
+    Suppose we have the following quantum function:
+
     .. code-block:: python
 
-        import matplotlib as plt
-        from pennylane.fourier import coefficients, plot_coeffs_violin
+        dev = qml.device('default.qubit', wires=2)
 
-        f = ... # A function
-        n_inputs = ... # Number of inputs to the function
-        degree = ... # Degree to which coefficients should be calculated
+        @qml.qnode(dev)
+        def circuit_with_weights(w, x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Calculate the Fourier coefficients; may be a single set or a list of
-        # multiple sets of coefficients
-        coeffs = coefficients(f, n_inputs, degree)
+            qml.Rot(*w[0], wires=0)
+            qml.Rot(*w[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Set up subplots and plot
-        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        plot_coeffs_violin(coeffs, n_inputs, ax, show_freqs=True);
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
+            return qml.expval(qml.PauliZ(0))
+
+    We would like to compute and plot the distribution of Fourier coefficients
+    for many random values of the weights ``w``. First, we generate all the coefficients:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        coeffs = []
+
+        n_inputs = 2
+        degree = 2
+
+        for _ in range(100):
+            weights = np.random.normal(0, 1, size=(2, 3))
+            c = coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            coeffs.append(c)
+
+    We can now plot by setting up a pair of ``matplotlib`` axes and passing them
+    to the plotting function:
+
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+    >>> plot_coeffs_violin(coeffs, n_inputs, ax, show_freqs=True)
+
+    .. image:: ../../_static/fourier_vis_violin.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)
 
@@ -204,22 +237,56 @@ def plot_coeffs_box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sho
 
     **Example**
 
+    Suppose we have the following quantum function:
+
     .. code-block:: python
 
-        import matplotlib as plt
-        from pennylane.fourier import coefficients, plot_coeffs_box
+        dev = qml.device('default.qubit', wires=2)
 
-        f = ... # A function
-        n_inputs = ... # Number of inputs to the function
-        degree = ... # Degree to which coefficients should be calculated
+        @qml.qnode(dev)
+        def circuit_with_weights(w, x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Calculate the Fourier coefficients; may be a single set or a list of
-        # multiple sets of coefficients
-        coeffs = coefficients(f, n_inputs, degree)
+            qml.Rot(*w[0], wires=0)
+            qml.Rot(*w[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Set up subplots and plot
-        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        plot_coeffs_box(coeffs, n_inputs, ax, show_freqs=True);
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
+
+            return qml.expval(qml.PauliZ(0))
+
+    We would like to compute and plot the distribution of Fourier coefficients
+    for many random values of the weights ``w``. First, we generate all the coefficients:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        coeffs = []
+
+        n_inputs = 2
+        degree = 2
+
+        for _ in range(100):
+            weights = np.random.normal(0, 1, size=(2, 3))
+            c = coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            coeffs.append(c)
+
+    We can now plot by setting up a pair of ``matplotlib`` axes and passing them
+    to the plotting function:
+
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+    >>> plot_coeffs_box(coeffs, n_inputs, ax, show_freqs=True)
+
+    .. image:: ../../_static/fourier_vis_box.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
     """
     _validate_coefficients(coeffs, n_inputs, True)
 
@@ -284,21 +351,52 @@ def plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     **Example**
 
+    Suppose we have the following quantum function:
+
     .. code-block:: python
 
-        import matplotlib as plt
-        from pennylane.fourier import coefficients, plot_coeffs_bar
+        dev = qml.device('default.qubit', wires=2)
 
-        f = ... # A function
-        n_inputs = ... # Number of inputs to the function
-        degree = ... # Degree to which coefficients should be calculated
+        @qml.qnode(dev)
+        def circuit_with_weights(w, x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # A single set of Fourier coefficients only for the bar plot
-        coeffs = coefficients(f, n_inputs, degree)
+            qml.Rot(*w[0], wires=0)
+            qml.Rot(*w[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Set up subplots and plot
-        fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        plot_coeffs_bar(coeffs, n_inputs, ax, show_freqs=True);
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
+
+            return qml.expval(qml.PauliZ(0))
+
+    We would like to compute and plot a single set of Fourier coefficients. We will
+    choose some values for ``w`` at random:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        n_inputs = 2
+        degree = 2
+
+        weights = np.random.normal(0, 1, size=(2, 3))
+        coeffs = coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+
+    We can now plot by setting up a pair of ``matplotlib`` axes and passing them
+    to the plotting function:
+
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
+    >>> plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict={"real" : "red", "imag" : "blue"})
+
+    .. image:: ../../_static/fourier_vis_bar_plot_2.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, False)
 
@@ -353,24 +451,58 @@ def plot_coeffs_panel(coeffs, n_inputs, ax, colour=None):
 
     **Example**
 
+    Suppose we have the following quantum function:
+
     .. code-block:: python
 
-        import matplotlib as plt
-        from pennylane.fourier import coefficients, plot_coeffs_panel
+        dev = qml.device('default.qubit', wires=2)
 
-        f = ... # A function in 1 or 2 variables
-        n_inputs = ... # Number of inputs to the function
-        degree = ... # Degree to which coefficients should be calculated
+        @qml.qnode(dev)
+        def circuit_with_weights(w, x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Calculate the Fourier coefficients; may be a single set or a list of
-        # multiple sets of coefficients
-        coeffs = coefficients(f, n_inputs, degree)
+            qml.Rot(*w[0], wires=0)
+            qml.Rot(*w[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Set up subplots and plot; need as many plots as there are coefficients
-        fig, ax = plt.subplots(
-            2*degree+1, 2*degree+1, sharex=True, sharey=True, figsize=(15, 4)
-        )
-        plot_coeffs_panel(coeffs, n_inputs, ax);
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
+
+            return qml.expval(qml.PauliZ(0))
+
+    We would like to compute and plot the distribution of Fourier coefficients
+    for many random values of the weights ``w``. First, we generate all the coefficients:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        coeffs = []
+
+        n_inputs = 2
+        degree = 2
+
+        for _ in range(100):
+            weights = np.random.normal(0, 1, size=(2, 3))
+            c = coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            coeffs.append(c)
+
+    We can now plot by setting up a pair of ``matplotlib`` axes and passing them
+    to the plotting function. The of axes must be large enough to represent all
+    the available coefficients (in this case, since we have 2 variables and use
+    degree 2, we need a 5x5 grid.
+
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
+    >>> plot_coeffs_panel(coeffs, n_inputs, ax)
+
+    .. image:: ../../_static/fourier_vis_panel.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
 
     """
     if n_inputs in [1, 2]:
@@ -601,23 +733,64 @@ def plot_coeffs_radial_box(
 
     **Example**
 
+    Suppose we have the following quantum function:
+
     .. code-block:: python
 
-        import matplotlib as plt
-        from pennylane.fourier import coefficients, plot_coeffs_radial_box
+        dev = qml.device('default.qubit', wires=2)
 
-        f = ... # A function
-        n_inputs = ... # Number of inputs to the function
-        degree = ... # Degree to which coefficients should be calculated
+        @qml.qnode(dev)
+        def circuit_with_weights(w, x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
 
-        # Calculate the Fourier coefficients; may be a single set or a list of
-        # multiple sets of coefficients
-        coeffs = coefficients(f, n_inputs, degree)
+            qml.Rot(*w[0], wires=0)
+            qml.Rot(*w[1], wires=1)
+            qml.CNOT(wires=[1, 0])
+
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=[1, 0])
+
+            return qml.expval(qml.PauliZ(0))
+
+    We would like to compute and plot the distribution of Fourier coefficients
+    for many random values of the weights ``w``. First, we generate all the coefficients:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        coeffs = []
+
+        n_inputs = 2
+        degree = 2
+
+        for _ in range(100):
+            weights = np.random.normal(0, 1, size=(2, 3))
+            c = coefficients(partial(circuit_with_weights, weights), n_inputs, degree)
+            coeffs.append(c)
+
+    We can now plot by setting up a pair of ``matplotlib`` axes and passing them
+    to the plotting function. Note that the axes passed must use polar coordinates.
+
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(
-            1, 2, sharex=True, sharey=True, subplot_kw=dict(polar=True), figsize=(15, 8)
+            1, 2, sharex=True, sharey=True,
+            subplot_kw=dict(polar=True),
+            figsize=(15, 8)
         )
-        plot_coeffs_radial_box(coeffs, n_inputs, ax)
+
+        plot_coeffs_radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+
+    .. image:: ../../_static/fourier_vis_radial_box.png
+        :align: center
+        :width: 800px
+        :target: javascript:void(0);
 
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)
