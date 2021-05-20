@@ -237,7 +237,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
-* Fixed ControlledPhaseShift/CPhase CNOT wires.
+* Fixes incorrect wires in the decomposition of the `ControlledPhaseShift` operation.
   [(#1338)](https://github.com/PennyLaneAI/pennylane/pull/1338)
 
 * Fixed tests for the `Permute` operation that used a QNode and hence expanded
