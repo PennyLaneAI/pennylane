@@ -267,6 +267,71 @@ class BitFlip(Channel):
         return [K0, K1]
 
 
+class ResetError(Channel):
+    r"""ResetError(p_0, p_1, wires)
+    Single-qubit Reset error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p_0-p_1} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p_0}\begin{bmatrix}
+                1 & 0  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_2 = \sqrt{p_0}\begin{bmatrix}
+                0 & 1  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_3 = \sqrt{p_1}\begin{bmatrix}
+                0 & 0  \\
+                1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_4 = \sqrt{p_1}\begin{bmatrix}
+                0 & 0  \\
+                0 & 1
+                \end{bmatrix}
+
+    where :math:`p_0 \in [0, 1]` is the probability of a reset to 0,
+    and :math:`p_1 \in [0, 1]` is the probability of a reset to 1 error.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 2
+
+    Args:
+        p_0 (float): The probability that a reset to 0 error occurs.
+        p_1 (float): The probability that a reset to 1 error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 2
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p_0, p_1 = params[0], params[1]
+        K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
+        K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
+        K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
+        K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
+        K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        return [K0, K1, K2, K3, K4]
+
+
 class PhaseFlip(Channel):
     r"""PhaseFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
@@ -371,6 +436,7 @@ __qubit_channels__ = {
     "DepolarizingChannel",
     "BitFlip",
     "PhaseFlip",
+    "ResetError",
     "QubitChannel",
 }
 
