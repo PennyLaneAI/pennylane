@@ -19,11 +19,9 @@ import numpy as np
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.
 try:
-    import matplotlib.pyplot as plt
+    from matplotlib.colors import to_rgb
 except ModuleNotFoundError:
     warnings.warn("Module matplotlib is required for visualization in the Fourier module.")
-else:
-    from matplotlib.colors import to_rgb
 
 from .utils import to_dict, format_nvec
 
