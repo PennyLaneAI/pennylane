@@ -543,7 +543,7 @@ class Operation(Operator):
             idx (int): parameter index
 
         Returns:
-            float, float: multiplier, shift
+            list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
@@ -553,7 +553,7 @@ class Operation(Operator):
         a = 1
 
         # We set the default recipe following:
-        # ∂f(x) = c*f(x+s) - c*f(x-s)
+        # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
