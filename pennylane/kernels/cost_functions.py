@@ -20,7 +20,7 @@ from ..utils import frobenius_inner_product
 from .utils import square_kernel_matrix
 
 
-def kernel_polarity(
+def polarity(
     X,
     Y,
     kernel,
@@ -56,7 +56,7 @@ def kernel_polarity(
             the kernel evaluates to 1 when both arguments are the same datapoint.
         rescale_class_labels (bool, optional): Rescale the class labels. This is important to take
             care of unbalanced datasets.
-        normalize (bool): If True, rescale the polarity to the kernel_target_alignment.
+        normalize (bool): If True, rescale the polarity to the target_alignment.
 
     Returns:
         float: The kernel polarity.
@@ -81,7 +81,7 @@ def kernel_polarity(
 
     >>> X = np.random.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.kernel_polarity(X, Y, kernel)
+    >>> qml.kernels.polarity(X, Y, kernel)
     tensor(0.04361349, requires_grad=True)
     """
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
@@ -98,7 +98,7 @@ def kernel_polarity(
     return frobenius_inner_product(K, T, normalize=normalize)
 
 
-def kernel_target_alignment(
+def target_alignment(
     X,
     Y,
     kernel,
@@ -107,7 +107,7 @@ def kernel_target_alignment(
 ):
     r"""Kernel target alignment of a given kernel function.
 
-    This function is an alias for :func:`~.kernels.kernel_polarity` with ``normalize=True``.
+    This function is an alias for :func:`~.kernels.polarity` with ``normalize=True``.
 
     For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`, the
     kernel-target alignment of the kernel function :math:`k` is given by
@@ -156,18 +156,18 @@ def kernel_target_alignment(
 
     >>> X = np.random.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.kernel_target_alignment(X, Y, kernel)
+    >>> qml.kernels.target_alignment(X, Y, kernel)
     tensor(0.01124802, requires_grad=True)
 
     We can see that this is equivalent to using ``normalize=True`` in
-    ``kernel_polarity``:
+    ``polarity``:
 
-    >>> target_alignment = qml.kernels.kernel_target_alignment(X, Y, kernel)
-    >>> normalized_polarity = qml.kernels.kernel_polarity(X, Y, kernel, normalize=True)
+    >>> target_alignment = qml.kernels.target_alignment(X, Y, kernel)
+    >>> normalized_polarity = qml.kernels.polarity(X, Y, kernel, normalize=True)
     >>> np.isclose(target_alignment, normalized_polarity)
     tensor(True, requires_grad=True)
     """
-    return kernel_polarity(
+    return polarity(
         X,
         Y,
         kernel,

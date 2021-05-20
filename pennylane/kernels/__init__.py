@@ -66,8 +66,8 @@ Given a callable kernel function, all these quantities can readily be computed
 using the methods in this module.
 """
 from .cost_functions import (
-    kernel_polarity,
-    kernel_target_alignment,
+    polarity,
+    target_alignment,
 )
 from .postprocessing import (
     threshold_matrix,

@@ -92,7 +92,7 @@ class TestKernelPolarity:
 
         hist = []
 
-        kern.kernel_polarity(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
+        kern.polarity(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
         assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
@@ -104,7 +104,7 @@ class TestKernelPolarity:
 
         hist = []
 
-        kern.kernel_polarity(
+        kern.polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
@@ -114,10 +114,10 @@ class TestKernelPolarity:
         """Test value of polarity without class label rescaling (1/2)."""
         X = [0.1, 0.4]
         Y = [1, -1]
-        pol = kern.kernel_polarity(
+        pol = kern.polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        pol_assume = kern.kernel_polarity(
+        pol_assume = kern.polarity(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -132,10 +132,10 @@ class TestKernelPolarity:
         """Test value of polarity without class label rescaling (2/2)."""
         X = [0.1, 0.4]
         Y = [1, 1]
-        pol = kern.kernel_polarity(
+        pol = kern.polarity(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        pol_assume = kern.kernel_polarity(
+        pol_assume = kern.polarity(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -158,7 +158,7 @@ class TestKernelTargetAlignment:
 
         hist = []
 
-        kern.kernel_target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
+        kern.target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
         assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
 
@@ -170,7 +170,7 @@ class TestKernelTargetAlignment:
 
         hist = []
 
-        kern.kernel_target_alignment(
+        kern.target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist), assume_normalized_kernel=True
         )
 
@@ -181,10 +181,10 @@ class TestKernelTargetAlignment:
         X = [0.1, 0.4]
         Y = [1, -1]
 
-        alignment = kern.kernel_target_alignment(
+        alignment = kern.target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        alignment_assume = kern.kernel_target_alignment(
+        alignment_assume = kern.target_alignment(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -199,10 +199,10 @@ class TestKernelTargetAlignment:
         """Test value of kernel target alignment without class label rescaling (2/3)."""
         X = [0.1, 0.4]
         Y = [1, 1]
-        alignment = kern.kernel_target_alignment(
+        alignment = kern.target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        alignment_assume = kern.kernel_target_alignment(
+        alignment_assume = kern.target_alignment(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -219,10 +219,10 @@ class TestKernelTargetAlignment:
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
-        alignment = kern.kernel_target_alignment(
+        alignment = kern.target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=False
         )
-        alignment_assume = kern.kernel_target_alignment(
+        alignment_assume = kern.target_alignment(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
@@ -254,10 +254,10 @@ class TestKernelTargetAlignment:
         X = [0.1, 0.4, 0.0]
         Y = [1, -1, 1]
 
-        alignment = kern.kernel_target_alignment(
+        alignment = kern.target_alignment(
             X, Y, lambda x1, x2: _mock_kernel(x1, x2, []), rescale_class_labels=True
         )
-        alignment_assume = kern.kernel_target_alignment(
+        alignment_assume = kern.target_alignment(
             X,
             Y,
             lambda x1, x2: _mock_kernel(x1, x2, []),
