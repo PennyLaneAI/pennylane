@@ -92,6 +92,17 @@ class StronglyEntanglingLayers(Operation):
                 self.ranges = [(l % (len(wires) - 1)) + 1 for l in range(self.n_layers)]
             else:
                 self.ranges = [0] * self.n_layers
+        else:
+            if len(ranges) != self.n_layers:
+                raise ValueError(
+                    f"Range sequence must be of length {self.n_layers}; got {len(ranges)}"
+                )
+            for r in ranges:
+                if r % len(wires) == 0:
+                    raise ValueError(
+                        f"Ranges must not be zero nor divisible by the number of wires; got {r}"
+                    )
+            self.ranges = ranges
 
         self.imprimitive = imprimitive or qml.CNOT
 
