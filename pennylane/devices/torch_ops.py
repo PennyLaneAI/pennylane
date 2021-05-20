@@ -53,6 +53,10 @@ ZI = op_matrix(np.kron(Z_array, I_array))
 ZX = op_matrix(np.kron(Z_array, X_array))
 ZY = op_matrix(np.kron(Z_array, Y_array))
 
+A = op_matrix(np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]))
+B = op_matrix(np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]]))
+C = op_matrix(np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]))
+
 def PhaseShift(phi, device=None):
     r"""One-qubit phase shift.
 
@@ -105,6 +109,7 @@ def RY(theta, device=None):
         torch.Tensor[complex]: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
+
     return torch.cos(theta / 2) * I(device) + 1j * torch.sin(-theta / 2) * Y(device)
 
 
@@ -120,7 +125,7 @@ def RZ(theta, device=None):
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
-    return torch.as_tensor([p, torch.conj(p)], device=device)
+    return torch.tensor([p, torch.conj(p)], dtype=C_DTYPE, device=device, requires_grad=True)
 
 def MultiRZ(theta, n, device=None):
     r"""Arbitrary multi Z rotation.
@@ -235,7 +240,10 @@ def SingleExcitation(phi, device):
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
 
-    return torch.as_tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=C_DTYPE, device=device)
+    return c * A(device) + s * B(device) + C(device)
+
+    #return torch.tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=C_DTYPE, device=device, requires_grad=True)
+
 
 
 def SingleExcitationPlus(phi, device):
@@ -252,7 +260,13 @@ def SingleExcitationPlus(phi, device):
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(1j * phi / 2)
-    return torch.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device)
+
+    A = torch.as_tensor([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]], dtype=C_DTYPE, device=device)
+    B = torch.as_tensor([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], dtype=C_DTYPE, device=device)
+    C = torch.as_tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]], dtype=C_DTYPE, device=device)
+
+    return c * A + s * B + e * C
+    #return torch.tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device, requires_grad=True)
 
 
 def SingleExcitationMinus(phi, device):
@@ -269,7 +283,13 @@ def SingleExcitationMinus(phi, device):
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(-1j * phi / 2)
-    return torch.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device)
+
+    A = torch.as_tensor([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]], dtype=C_DTYPE, device=device)
+    B = torch.as_tensor([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]], dtype=C_DTYPE, device=device)
+    C = torch.as_tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]], dtype=C_DTYPE, device=device)
+
+    return c * A + s * B + e * C
+    #return torch.tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]], dtype=C_DTYPE, device=device, requires_grad=True)
 
 
 def DoubleExcitation(phi, device):
