@@ -224,9 +224,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
-* Adds a `hamiltonian_expand` tape transform, which takes a tape ending in 
-  `qml.expval(H)`, where `H` is a Hamiltonian and maps it to a collection 
-  of tapes which can be executed, and passed into a post-processing function yielding 
+* Adds a `hamiltonian_expand` tape transform. This takes a tape ending in 
+  `qml.expval(H)`, where `H` is a Hamiltonian, and maps it to a collection 
+  of tapes which can be executed and passed into a post-processing function yielding 
   the expectation value.
   [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
    
