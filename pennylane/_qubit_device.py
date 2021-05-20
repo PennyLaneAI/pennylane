@@ -784,9 +784,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(
-        self, tape, starting_state=None, use_device_state=False, return_obs=False, **kwargs
-    ):
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False, return_obs=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
