@@ -113,7 +113,7 @@ class that a parametrized circuit gives rise to. For example, if an embedding
 leads to a Fourier representation with few and low-order frequencies, 
 a quantum circuit using this embedding can only express rather simple periodic functions.
 
-The Fourier module contains a number of methods to visualize the coefficients of the Fourier sum 
+The Fourier module contains a number of methods to visualize the coefficients of the Fourier series
 representation of a single circuit, as well as distributions over Fourier coefficients for a parametrized circuit family.
 
 .. note::
@@ -169,6 +169,8 @@ Below is a more complex example that demonstrates some of the additional
 customization options available:
 
 .. code::
+
+   from functools import partial
 
    weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
    
