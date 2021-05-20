@@ -288,16 +288,3 @@ sampled sets of Fourier coefficients on the complex plane.
 """
 
 from .coefficients import coefficients
-
-try:
-    import matplotlib.pyplot as plt
-except ModuleNotFoundError:
-    print("Module matplotlib is required for visualization in the Fourier module.")
-else:
-    from .visualization import (
-        plot_coeffs_violin,
-        plot_coeffs_bar,
-        plot_coeffs_box,
-        plot_coeffs_panel,
-        plot_coeffs_radial_box,
-    )
