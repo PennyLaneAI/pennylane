@@ -14,10 +14,10 @@ length :math:`N`. The circuit involves application of some unitary operations
 
 .. math::
 
-   \langle P \rangle = \langle 0 | U^\dagger (x) P U(x) |0\rangle = \langle
-   \psi(x) | P | \psi (x)\rangle.
+   \langle P \rangle = \langle 0 \vert U^\dagger (x) P U(x) \vert 0\rangle = \langle
+   \psi(x) \vert P \vert \psi (x)\rangle.
 
-This output is simply a function :math:`f(x) = \langle \psi(x) | P | \psi
+This output is simply a function :math:`f(x) = \langle \psi(x) \vert P \vert \psi
 (x)\rangle`. Notably, it is a periodic function of the parameters, and
 it can thus be expressed as a multidimensional Fourier series: 
 
