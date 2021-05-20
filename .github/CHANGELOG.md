@@ -171,7 +171,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * The `benchmark` module was deleted, since it was outdated and is superseded by 
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
-  [(#XX)](https://github.com/PennyLaneAI/pennylane/pull/XX)
+  [(#1343)](https://github.com/PennyLaneAI/pennylane/pull/1343)
   
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
