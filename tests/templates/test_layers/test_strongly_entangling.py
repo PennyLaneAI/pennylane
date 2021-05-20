@@ -106,7 +106,10 @@ class TestDecomposition:
         range_idx = 0
         for idx, i in enumerate(gate_wires):
             if idx % (n_wires * 2) // n_wires == 1:
-                expected_wire = (idx % n_wires, (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires)
+                expected_wire = (
+                    idx % n_wires,
+                    (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires,
+                )
                 assert i == expected_wire
                 if idx % n_wires == n_wires - 1:
                     range_idx += 1
@@ -145,6 +148,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""
