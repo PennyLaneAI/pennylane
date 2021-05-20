@@ -27,13 +27,11 @@ from pennylane import numpy as np
 from pennylane.fourier.visualization import _validate_coefficients
 
 from pennylane.fourier.visualization import (
-    coefficients_violin_plot,
-    coefficients_bar_plot,
-    coefficients_box_plot,
-    coefficients_panel_plot,
-    coefficients_radial_box_plot,
-    reconstruct_function_1D_plot,
-    reconstruct_function_2D_plot,
+    plot_coeffs_violin,
+    plot_coeffs_bar,
+    plot_coeffs_box,
+    plot_coeffs_panel,
+    plot_coeffs_radial_box,
 )
 
 
@@ -302,35 +300,35 @@ class TestInvalidAxesPassing:
         "func,coeffs,n_inputs,ax,expected_error_message",
         [
             (
-                coefficients_violin_plot,
+                plot_coeffs_violin,
                 coeffs_1D_valid_1,
                 1,
                 ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                coefficients_box_plot,
+                plot_coeffs_box,
                 coeffs_1D_valid_2,
                 1,
                 ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                coefficients_bar_plot,
+                plot_coeffs_bar,
                 coeffs_1D_valid_1,
                 1,
                 ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                coefficients_radial_box_plot,
+                plot_coeffs_radial_box,
                 coeffs_2D_valid_list,
                 2,
                 ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                coefficients_panel_plot,
+                plot_coeffs_panel,
                 coeffs_2D_valid_list,
                 2,
                 ax_panel_invalid,

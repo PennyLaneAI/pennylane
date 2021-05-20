@@ -184,9 +184,7 @@ def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def plot_coeffs_box(
-    coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True
-):
+def plot_coeffs_box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True):
     """Plots a set of Fourier coefficients as a box plot.
 
     Args:
