@@ -7,6 +7,9 @@
 * The `qml.Toffoli` operation now has a decomposition over elementary gates. 
   [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
 
+* Added a new noise channel, `qml.ResetError`.
+  [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321).
+
 * The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
 
 * Added functionality for constructing and manipulating the Pauli group
@@ -160,7 +163,12 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
-* New ISWAP operation added to default_qubit device. [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
+
+* Ising ZZ gate functionality added.
+  [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
+
+* The ISWAP operation has been added to the `default_qubit` device.
+  [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
@@ -224,6 +232,30 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
+* Adds a `hamiltonian_expand` tape transform. This takes a tape ending in 
+  `qml.expval(H)`, where `H` is a Hamiltonian, and maps it to a collection 
+  of tapes which can be executed and passed into a post-processing function yielding 
+  the expectation value.
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+   
+  Example use:
+    
+  ```python
+  H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
+  
+  with qml.tape.QuantumTape() as tape:  
+      qml.Hadamard(wires=1)
+      return qml.expval(H)
+  
+  tapes, fn = qml.transforms.hamiltonian_expand(tape)
+  dev = qml.device("default.qubit", wires=3)
+  res = dev.batch_execute(tapes)
+  ```
+  ```pycon
+  >>> fn(res)
+  4.0
+  ```
+
 * PennyLane's `qchem` package and tests are now code-formatted using `black -l 100`.
   [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
 
@@ -234,6 +266,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes incorrect wires in the decomposition of the `ControlledPhaseShift` operation.
+  [(#1338)](https://github.com/PennyLaneAI/pennylane/pull/1338)
+
 * Fixed tests for the `Permute` operation that used a QNode and hence expanded
   tapes twice instead of once due to QNode tape expansion and an explicit tape
   expansion call.
@@ -241,6 +276,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
+
+* Fixed a bug where the custom range sequences could not be passed
+  to the `StronglyEntanglingLayers` template.
+  [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
 
 <h3>Documentation</h3>
 
@@ -262,8 +301,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
-Anthony Hayes, Josh Izaac, Pavan Jayasinha, Nahum Sá, Brian Shi, Antal Száva
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
+Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá,
+Brian Shi, Antal Száva, Vincent Wong.
 
 # Release 0.15.1 (current release)
 
@@ -831,7 +871,7 @@ fully differentiable.
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported
   by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
-
+  
 * Two new utility methods are provided for working with quantum tapes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
