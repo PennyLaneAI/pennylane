@@ -215,25 +215,6 @@ customization options available:
     :Width: 100%
     :target: javascript:void(0);
 
-|
-
-Two convenience functions are also provided to visualize 1- and 2-dimensional
-landscapes given a set of Fourier coefficients:
-:func:`~.pennylane.fourier.reconstruct_function_1D_plot` and
-:func:`~.pennylane.fourier.reconstruct_function_2D_plot`. For example,
-``circuit_with_weights`` has two input parameters ``x[0]`` and ``x[1]``, and so
-we can plot its output:
-
-.. code::
-
-   reconstruct_function_2D_plot(coeffs)
-   plt.title("Expectation value for circuit with weights", fontsize=14)
-
-.. image:: ../_static/fourier_vis_2D_func.png
-    :align: center
-    :width: 400px
-    :target: javascript:void(0);
-
 
 Visualizing multiple sets of coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
