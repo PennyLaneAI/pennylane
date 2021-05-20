@@ -167,7 +167,7 @@ can be used for a single set, the primary tool for this purpose is the
 In the bar plots, real coefficients are shown in the top panel, and complex in
 the bottom. The labels along the x-axis represent the coefficient frequencies
 (for large plots, it is sometimes convenient to remove these by passing
-``show_freqs=False`` to the plotting function.
+``show_freqs=False`` to the plotting function).
 
 Below is a more complex example that demonstrates some of the additional
 customization options available:
