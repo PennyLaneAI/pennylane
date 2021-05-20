@@ -1,14 +1,13 @@
 .. _tf_interf:
 
 TensorFlow interface
-====================
+=====================
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
-quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with TensorFlow,
-either by using the ``interface='tf'`` flag in the QNode decorator or QNode class constructor, or by
-calling the :meth:`QNode.to_tf() <pennylane.qnodes.JacobianQNode.to_tf>` method. Internally, the
-translation is executed by the :func:`~.interfaces.torch.to_torch` function that dynamically modifies
-the quantum node object **in place**.
+quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
+QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
+translated into a quantum node that interfaces with TensorFlow by calling the
+:meth:`QNode.to_tf() <pennylane.qnode.QNode.to_tf>` method.
 
 .. note::
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
@@ -24,17 +23,41 @@ Tensorflow is imported as follows:
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
 
-Construction via the ``interface`` flag
-------------------------------
+Construction via keyword
+------------------------
 
-The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating QNodes
-in PennyLane. The only change required to construct a TensorFlow-capable QNode is to
-specify the ``interface='tf'`` keyword argument:
+The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
+:class:`~.QNode` objects in PennyLane. The only change required to construct a TensorFlow-capable
+QNode is to specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
+
     @qml.qnode(dev, interface='tf')
+    def circuit(phi, theta):
+        qml.RX(phi[0], wires=0)
+        qml.RY(phi[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(theta, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` and
+``tf.Tensor`` objects as input, and returning ``tf.Tensor`` objects.
+
+>>> phi = tf.Variable([0.5, 0.1])
+>>> theta = tf.Variable(0.2)
+>>> circuit(phi, theta)
+<tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
+
+TensorFlow-capable QNodes can also be created using the
+:ref:`QNode class constructor <_intro_vcirc_qnode>`:
+
+.. code-block:: python
+
+    dev1 = qml.device('default.qubit', wires=2)
+    dev2 = qml.device('default.mixed', wires=2)
+
     def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -42,56 +65,27 @@ specify the ``interface='tf'`` keyword argument:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` and
-``tf.Tensor`` objects as input, and returning ``tf.Tensor`` objects.
+    qnode1 = qml.QNode(circuit1, dev1)
+    qnode2 = qml.QNode(circuit1, dev2, interface='tf')
 
->>> phi = tf.Variable([0.5, 0.1])
->>> theta = tf.Variable(0.2)
->>> circuit1(phi, theta)
-<tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
+``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a TensorFlow-capable
+QNode:
 
-Alternatively, a TensorFlow-capable QNode can be created explicitly using the
-:ref:`QNode class constructor <_intro_vcirc_qnode>`:
-
-.. code-block:: python
-
-    dev1 = qml.device('default.qubit', wires=2)
-
-    def circuit2(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
-
-    qnode1 = qml.QNode(circuit2, dev1, interface='tf')
-
-``qnode1()`` ia now a TensorFlow-capable QNode, as well:
-
->>> qnode1(phi, theta)
+>>> qnode2(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 Construction from an existing QNode
 -----------------------------------
 
-Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
-if you would like to reuse the same quantum function across multiple devices, or even
-use different classical interfaces:
+Let's say we change our mind and now want ``qnode1()`` to interface with TensorFlow. We can easily
+perform the conversion by using the :meth:`~.QNode.to_tf` method:
 
-.. code-block:: python
-
-    dev2 = qml.device('default.mixed', wires=2)
-    qnode2 = qml.QNode(circuit2, dev2)
-
-We can convert the default NumPy-interfacing QNodes to TensorFlow-interfacing QNodes by
-using the :meth:`~.QNode.to_tf` method:
-
->>> qnode1 = qnode1.to_tf()
+>>> qnode1.to_tf()
 >>> qnode1
-<QNode: device='default.qubit', func=circuit, wires=2, interface=TensorFlow>
+<QNode: device='default.mixed', func=circuit1, wires=2, interface=TensorFlow>
 
-Internally, the :meth:`~.QNode.to_tf` method uses the :func:`~.TFQNode` function
-to do the conversion.
+``qnode2()`` is now a TensorFlow-capable QNode, as well. Internally, the :meth:`~.QNode.to_tf`
+method uses the :func:`~.TFQNode` function to do the conversion.
 
 Quantum gradients using TensorFlow
 ----------------------------------
