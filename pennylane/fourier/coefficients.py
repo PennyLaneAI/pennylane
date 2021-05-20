@@ -25,7 +25,9 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     While this function can be used to compute Fourier coefficients in general,
     the specific use case in PennyLane is to compute coefficients of the
     functions that result from measuring expectation values of parametrized
-    quantum circuits.
+    quantum circuits, as described in `Schuld, Sweke and Meyer (2020)
+    <https://arxiv.org/abs/2008.08605>`__ and `Vidal and Theis, 2019
+    <https://arxiv.org/abs/1901.11434>`__.
 
     Consider a quantum circuit that depends on a parameter vector :math:`x` with
     length :math:`N`. The circuit involves application of some unitary
@@ -89,7 +91,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     >>> num_inputs = 2
     >>> degree = 1
 
-    Now we fix a value for ``weights``, and use a partial functions so coefficients are
+    Now we fix a value for ``weights``, and use a partial function so coefficients are
     computed only with respect to the desired variables:
 
     >>> from functools import partial
@@ -100,13 +102,42 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
     [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
 
-    In order to mitigate aliasing, there is an option to apply a low-pass filter
-    prior to computing the coefficients. Coefficients up to a specified value
-    are computed, and then frequencies higher than the degree are simply
+    If the specified degree is lower than the highest frequency of the function,
+    aliasing may occur, and the resultant coefficients will be incorrect as they
+    will include components of the series expansion from higher frequencies. In
+    order to mitigate aliasing, there is an option to apply a simple low-pass
+    filter prior to computing the coefficients. Coefficients up to a specified
+    value are computed, and then frequencies higher than the degree are simply
     removed. This ensures that the coefficients returned will have the correct
     values, though they may not be the full set of coefficients. If no threshold
     value is provided, the threshold will be set to ``2 * degree``.
 
+    Consider the circuit below:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circuit(inpt):
+            qml.RX(inpt[0], wires=0)
+            qml.RY(inpt[0], wires=1)
+            qml.CNOT(wires=[1, 0])
+            return qml.expval(qml.PauliZ(0))
+
+    One can work out by hand that the Fourier coefficients are :math:`c_0 = 0.5, c_1 = c_{-1} = 0,`
+    and :math:`c_2 = c_{-2} = 0.25`. Suppose we would like only to obtain the coefficients
+    :math:`c_0` and :math:`c_1, c_{-1}`. If we simply ask for the coefficients of degree 1,
+    we will obtain incorrect values due to aliasing:
+
+    >>> coefficients(circuit, 1, 1)
+    array([0.5 +0.j, 0.25+0.j, 0.25+0.j])
+
+    However if we enable the low-pass filter, we can still obtain the correct coefficients:
+
+    >>> coefficients(circuit, 1, 1, lowpass_filter=True)
+    array([0.5+0.j, 0. +0.j, 0. +0.j])
+
+    Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
+    in other situations it may be desirable to set the threshold value explicitly.
     """
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree)
