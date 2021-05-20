@@ -237,6 +237,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes incorrect wires in the decomposition of the `ControlledPhaseShift` operation.
+  [(#1338)](https://github.com/PennyLaneAI/pennylane/pull/1338)
+
 * Fixed tests for the `Permute` operation that used a QNode and hence expanded
   tapes twice instead of once due to QNode tape expansion and an explicit tape
   expansion call.
@@ -266,7 +269,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
-Anthony Hayes, Josh Izaac, Pavan Jayasinha, Nahum Sá, Brian Shi, Antal Száva
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva
 
 # Release 0.15.1 (current release)
 
