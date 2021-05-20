@@ -76,7 +76,7 @@ The Fourier coefficients can be numerically calculated with the
    >>> print(np.round(coeffs, decimals=4))
    [0.5 +0.j 0.  -0.j 0.25+0.j 0.25+0.j 0.  -0.j]
 
-The input to the :func:`~.pennylane.fourier.fourier_coefficients` function are
+The inputs to the :func:`~.pennylane.fourier.fourier_coefficients` function are
 the function in question, the length of the input vector, and the maximum
 frequency for which to calculate the coefficients (also known as the *degree*).
 (For a quantum function of
