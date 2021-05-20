@@ -1062,6 +1062,7 @@ class Observable(Operator):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
+
             return qml.Hamiltonian([a], [self], simplify=True)
 
         raise ValueError(f"Cannot multiply Observable by {type(a)}")
