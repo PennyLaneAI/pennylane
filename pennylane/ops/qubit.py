@@ -1812,6 +1812,56 @@ class IsingXX(Operation):
         return IsingXX(-phi, wires=self.wires)
 
 
+class IsingZZ(Operation):
+    r""" IsingZZ(phi, wires)
+    Ising ZZ coupling gate
+
+    .. math:: \mathtt{ZZ}(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe:
+
+    .. math::
+        \frac{d}{d \phi} \mathtt{ZZ}(\phi)
+        = \frac{1}{2} \left[ \mathtt{ZZ}(\phi + \pi / 2) + \mathtt{ZZ}(\phi - \pi / 2) \right]
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, wires):
+        return [
+            qml.CNOT(wires=wires),
+            qml.RZ(phi, wires=[wires[1]]),
+            qml.CNOT(wires=wires),
+        ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        pos_phase = np.exp(1.0j * phi / 2)
+        neg_phase = np.exp(-1.0j * phi / 2)
+        return np.diag([neg_phase, pos_phase, pos_phase, neg_phase])
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingZZ(-phi, wires=self.wires)
+
+
 # =============================================================================
 # Quantum chemistry
 # =============================================================================
@@ -3130,6 +3180,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingZZ",
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
