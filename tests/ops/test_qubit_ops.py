@@ -997,21 +997,51 @@ class TestOperations:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
     def test_controlled_phase_shift_decomp(self, phi, cphase_op):
-        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct decomposition"""
-        op = cphase_op(phi, wires=[0, 1])
-        decomp = op.decomposition(phi, wires=[0, 1])
+        """Tests that the ControlledPhaseShift and CPhase operation
+        calculates the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 2])
+        decomp = op.decomposition(phi, wires=[0, 2])
 
         mats = []
         for i in reversed(decomp):
             if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix, np.eye(2)))
+                mats.append(np.kron(i.matrix, np.eye(4)))
             elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), i.matrix))
-            else:
-                mats.append(i.matrix)
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix, np.eye(2))))
+            elif i.wires.tolist() == [2]:
+                mats.append(np.kron(np.eye(4), i.matrix))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = ControlledPhaseShift(phi)
+        lam = np.exp(1j * phi)
+        exp = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, lam, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, lam],
+            ]
+        )
 
         assert np.allclose(decomposed_matrix, exp)
 

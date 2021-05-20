@@ -930,9 +930,9 @@ class ControlledPhaseShift(DiagonalOperation):
     def decomposition(phi, wires):
         decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
-            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=wires[1]),
-            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
