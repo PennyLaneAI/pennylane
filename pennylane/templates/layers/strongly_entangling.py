@@ -93,7 +93,7 @@ class StronglyEntanglingLayers(Operation):
             else:
                 self.ranges = [0] * self.n_layers
 
-        self.imprimitive = imprimitive or qml.CNOTbenchma
+        self.imprimitive = imprimitive or qml.CNOT
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
