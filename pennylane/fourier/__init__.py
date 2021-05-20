@@ -300,6 +300,4 @@ else:
         plot_coeffs_box,
         plot_coeffs_panel,
         plot_coeffs_radial_box,
-        plot_1D_from_coeffs,
-        plot_2D_from_coeffs,
     )
