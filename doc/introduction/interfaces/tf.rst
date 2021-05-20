@@ -84,7 +84,7 @@ perform the conversion by using the :meth:`~.QNode.to_tf` method:
 >>> qnode1
 <QNode: device='default.mixed', func=circuit1, wires=2, interface=TensorFlow>
 
-``qnode2()`` is now a TensorFlow-capable QNode, as well. Internally, the :meth:`~.QNode.to_tf`
+``qnode1()`` is now a TensorFlow-capable QNode, as well. Internally, the :meth:`~.QNode.to_tf`
 method uses the :func:`~.TFQNode` function to do the conversion.
 
 Quantum gradients using TensorFlow
