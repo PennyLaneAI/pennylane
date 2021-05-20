@@ -28,10 +28,10 @@ def polarity(
     rescale_class_labels=True,
     normalize=False,
 ):
-    r"""Kernel polarity of a given kernel function.
+    r"""Polarity of a given kernel function.
 
     For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`,
-    the kernel polarity of the kernel function :math:`k` is given by
+    the polarity of the kernel function :math:`k` is given by
 
     .. math ::
 
@@ -105,12 +105,12 @@ def target_alignment(
     assume_normalized_kernel=False,
     rescale_class_labels=True,
 ):
-    r"""Kernel target alignment of a given kernel function.
+    r"""Target alignment of a given kernel function.
 
     This function is an alias for :func:`~.kernels.polarity` with ``normalize=True``.
 
     For a dataset with feature vectors :math:`\{x_i\}` and associated labels :math:`\{y_i\}`, the
-    kernel-target alignment of the kernel function :math:`k` is given by
+    target alignment of the kernel function :math:`k` is given by
 
     .. math ::
 
