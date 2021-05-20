@@ -174,6 +174,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The adjoint jacobian differentiation method reuses the state computed on the forward pass.
+[(#1341)](https://github.com/PennyLaneAI/pennylane/pull/1341)
+
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
