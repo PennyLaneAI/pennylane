@@ -23,6 +23,9 @@ Tensorflow is imported as follows:
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
 
+
+.. _tf_interf_keyword:
+
 Construction via keyword
 ------------------------
 
@@ -51,7 +54,7 @@ The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variab
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 TensorFlow-capable QNodes can also be created using the
-:ref:`QNode class constructor <_intro_vcirc_qnode>`:
+:ref:`QNode class constructor <intro_vcirc_qnode>`:
 
 .. code-block:: python
 
@@ -74,6 +77,9 @@ QNode:
 >>> qnode2(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
+
+.. _tf_interf_convert:
+
 Construction from an existing QNode
 -----------------------------------
 
@@ -86,6 +92,9 @@ perform the conversion by using the :meth:`~.QNode.to_tf` method:
 
 ``qnode1()`` is now a TensorFlow-capable QNode, as well. Internally, the :meth:`~.QNode.to_tf`
 method uses the :func:`~.TFQNode` function to do the conversion.
+
+
+.. _tf_qgrad:
 
 Quantum gradients using TensorFlow
 ----------------------------------
@@ -147,6 +156,9 @@ Calculating the gradient:
 >>> grad = tape.gradient(result, weights)
 >>> grad
 <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-2.26641213e-02,  8.32667268e-17,  5.55111512e-17])>
+
+
+.. _tf_optimize:
 
 Optimization using TensorFlow
 -----------------------------
