@@ -162,6 +162,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
 * New ISWAP operation added to default_qubit device. [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
+* Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
+
 <h3>Improvements</h3>
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
@@ -260,7 +262,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
 Anthony Hayes, Josh Izaac, Pavan Jayasinha, Nahum Sá, Brian Shi, Antal Száva
 
 # Release 0.15.1 (current release)
