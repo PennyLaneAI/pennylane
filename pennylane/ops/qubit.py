@@ -1855,9 +1855,7 @@ class IsingZZ(Operation):
         phi = params[0]
         pos_phase = np.exp(1.0j * phi / 2)
         neg_phase = np.exp(-1.0j * phi / 2)
-        return np.array(
-            [[neg_phase, 0, 0, 0], [0, pos_phase, 0, 0], [0, 0, pos_phase, 0], [0, 0, 0, neg_phase]]
-        )
+        return np.diag([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters
