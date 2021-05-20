@@ -315,7 +315,8 @@ class TestInternalFunctions:
         observables = [qml.expval(qml.PauliZ(0))]
 
         with pytest.raises(
-            DeviceError, match="Gate {} not supported on device {}".format("CNOT", "MockDevice"),
+            DeviceError,
+            match="Gate {} not supported on device {}".format("CNOT", "MockDevice"),
         ):
             dev.check_validity(queue, observables)
 

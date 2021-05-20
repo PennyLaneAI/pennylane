@@ -154,7 +154,11 @@ class TestInputs:
                 [0],
                 "This template requires the number of qubits to be greater than one",
             ),
-            (np.array([[-0.080, 2.629, -0.710, 5.383]]), [0, 1, 2, 3], "Weights tensor must",),
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383]]),
+                [0, 1, 2, 3],
+                "Weights tensor must",
+            ),
             (
                 np.array(
                     [
@@ -183,7 +187,9 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.templates.ParticleConservingU2(
-                weights=weights, wires=wires, init_state=init_state,
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -195,7 +201,12 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape", [(2, 3, (2, 5)), (2, 2, (2, 3)), (1, 3, (1, 5)),],
+        "n_layers, n_wires, expected_shape",
+        [
+            (2, 3, (2, 5)),
+            (2, 2, (2, 3)),
+            (1, 3, (1, 5)),
+        ],
     )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
