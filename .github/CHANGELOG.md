@@ -169,6 +169,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `benchmark` module was deleted, since it was outdated and is superseded by 
+  the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
+  [(#XX)](https://github.com/PennyLaneAI/pennylane/pull/XX)
+  
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
@@ -269,7 +273,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
-Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld, Brian Shi, 
+Antal Száva
 
 # Release 0.15.1 (current release)
 
