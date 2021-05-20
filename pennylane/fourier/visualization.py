@@ -113,7 +113,7 @@ def _adjust_spine_placement(ax):
     ax.set_axisbelow(True)
 
 
-def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
+def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
@@ -135,7 +135,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, coefficients_violin_plot
+        from pennylane.fourier import coefficients, plot_coeffs_violin
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -147,7 +147,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        coefficients_violin_plot(coeffs, n_inputs, ax, show_freqs=True);
+        plot_coeffs_violin(coeffs, n_inputs, ax, show_freqs=True);
 
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)
@@ -184,7 +184,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
     return ax
 
 
-def coefficients_box_plot(
+def plot_coeffs_box(
     coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True
 ):
     """Plots a set of Fourier coefficients as a box plot.
@@ -209,7 +209,7 @@ def coefficients_box_plot(
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, coefficients_box_plot
+        from pennylane.fourier import coefficients, plot_coeffs_box
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -221,7 +221,7 @@ def coefficients_box_plot(
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        coefficients_box_plot(coeffs, n_inputs, ax, show_freqs=True);
+        plot_coeffs_box(coeffs, n_inputs, ax, show_freqs=True);
     """
     _validate_coefficients(coeffs, n_inputs, True)
 
@@ -267,7 +267,7 @@ def coefficients_box_plot(
     return ax
 
 
-def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
+def plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a set of Fourier coefficients as a bar plot.
 
     Args:
@@ -289,7 +289,7 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, coefficients_bar_plot
+        from pennylane.fourier import coefficients, plot_coeffs_bar
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -300,7 +300,7 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-        coefficients_bar_plot(coeffs, n_inputs, ax, show_freqs=True);
+        plot_coeffs_bar(coeffs, n_inputs, ax, show_freqs=True);
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, False)
 
@@ -334,7 +334,7 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
     return ax
 
 
-def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
+def plot_coeffs_panel(coeffs, n_inputs, ax, colour=None):
     """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
@@ -358,7 +358,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, coefficients_panel_plot
+        from pennylane.fourier import coefficients, plot_coeffs_panel
 
         f = ... # A function in 1 or 2 variables
         n_inputs = ... # Number of inputs to the function
@@ -372,7 +372,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
         fig, ax = plt.subplots(
             2*degree+1, 2*degree+1, sharex=True, sharey=True, figsize=(15, 4)
         )
-        coefficients_panel_plot(coeffs, n_inputs, ax);
+        plot_coeffs_panel(coeffs, n_inputs, ax);
 
     """
     if n_inputs in [1, 2]:
@@ -425,7 +425,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
     return ax
 
 
-def reconstruct_function_1D_plot(coeffs, ax=None):
+def plot_1D_from_coeffs(coeffs, ax=None):
     """Visualize a real-valued 1D periodic function given by a set of Fourier coefficients.
 
     Args:
@@ -445,7 +445,7 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, reconstruct_function_1D_plot
+        from pennylane.fourier import coefficients, plot_1D_from_coeffs
 
         f = ... # A function in 1 variable
         n_inputs = 1
@@ -455,7 +455,7 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
         coeffs = coefficients(f, n_inputs, degree)
 
         # It is not necessary to create subplots; the current axis will be used here
-        reconstruct_function_1D_plot(coeffs)
+        plot_1D_from_coeffs(coeffs)
 
     """
     coeffs = _validate_coefficients(coeffs, 1, False)
@@ -491,7 +491,7 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
     return ax
 
 
-def reconstruct_function_2D_plot(coeffs, ax=None):
+def plot_2D_from_coeffs(coeffs, ax=None):
     """Visualize a real-valued 2D periodic function given by a set of Fourier coefficients.
 
     Args:
@@ -512,7 +512,7 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, reconstruct_function_2D_plot
+        from pennylane.fourier import coefficients, plot_2D_from_coeffs
 
         f = ... # A function in 2 variables
         n_inputs = 2
@@ -522,7 +522,7 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
         coeffs = coefficients(f, n_inputs, degree)
 
         # It is not necessary to create subplots; the current axis may be used here
-        reconstruct_function_2D_plot(coeffs)
+        plot_2D_from_coeffs(coeffs)
 
     """
     coeffs = _validate_coefficients(coeffs, 2, False)
@@ -573,7 +573,7 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
     return ax
 
 
-def coefficients_radial_box_plot(
+def plot_coeffs_radial_box(
     coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
@@ -606,7 +606,7 @@ def coefficients_radial_box_plot(
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import coefficients, coefficients_radial_box_plot
+        from pennylane.fourier import coefficients, plot_coeffs_radial_box
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -619,7 +619,7 @@ def coefficients_radial_box_plot(
         fig, ax = plt.subplots(
             1, 2, sharex=True, sharey=True, subplot_kw=dict(polar=True), figsize=(15, 8)
         )
-        coefficients_radial_box_plot(coeffs, n_inputs, ax)
+        plot_coeffs_radial_box(coeffs, n_inputs, ax)
 
     """
     coeffs = _validate_coefficients(coeffs, n_inputs, True)

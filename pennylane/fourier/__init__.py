@@ -141,7 +141,7 @@ Visualizing a single set of coefficients
 
 While all the functions available for visualizing multiple sets of Fourier coefficients
 can be used for a single set, the primary tool for this purpose is the
-``coefficients_bar_plot`` function.
+``plot_coeffs_bar`` function.
 
 .. code::
 
@@ -162,7 +162,7 @@ can be used for a single set, the primary tool for this purpose is the
 >>> coeffs
 [0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
->>> coefficients_bar_plot(coeffs, 1, ax)
+>>> plot_coeffs_bar(coeffs, 1, ax)
 >>> plt.suptitle("Simple circuit bar plot")
 
 .. image:: ../_static/fourier_vis_bar_plot.png
@@ -206,7 +206,7 @@ customization options available:
 
    # Number of inputs is now two; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
-   coefficients_bar_plot(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
+   plot_coeffs_bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
    plt.suptitle("Circuit with weights bar plot", fontsize=14)
 
 
@@ -256,12 +256,12 @@ of Fourier coefficients when the weights are randomly sampled. For each
    coeffs = np.array(coeffs)
 
 
-One option to plot the distribution is :func:`~.pennylane.fourier.coefficients_violin_plot`:
+One option to plot the distribution is :func:`~.pennylane.fourier.plot_coeffs_violin`:
 
 .. code::
 
    fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-   coefficients_violin_plot(coeffs, 2, ax, show_freqs=True);
+   plot_coeffs_violin(coeffs, 2, ax, show_freqs=True);
    plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
 
 .. image:: ../_static/fourier_vis_violin.png
@@ -270,11 +270,11 @@ One option to plot the distribution is :func:`~.pennylane.fourier.coefficients_v
 
 |
 
-A similar option is the :func:`~.pennylane.fourier.coefficients_box_plot`, which
+A similar option is the :func:`~.pennylane.fourier.plot_coeffs_box`, which
 produces a plot of the same format but using a box plot.
 
 A different view can obtained using the
-:func:`~.pennylane.fourier.coefficients_radial_box_plot` function. This "rolls up"
+:func:`~.pennylane.fourier.plot_coeffs_radial_box` function. This "rolls up"
 the coefficients onto a polar grid. Let us use it to visualize the same set of
 coefficients as above:
 
@@ -286,7 +286,7 @@ coefficients as above:
        subplot_kw=dict(polar=True),
        figsize=(15, 8)
    )
-   coefficients_radial_box_plot(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+   plot_coeffs_radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
    plt.suptitle("Distribution of coefficients for circuit with weights", fontsize=16)
    plt.tight_layout()
 
@@ -311,14 +311,14 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.coefficients_panel_plot` to plot the distributions of the
+:func:`~.pennylane.fourier.plot_coeffs_panel` to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
 
    # Need a grid large enough to hold all coefficients up to frequency 2
    fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
-   coefficients_panel_plot(coeffs, 2, ax)
+   plot_coeffs_panel(coeffs, 2, ax)
    plt.suptitle(
       "Fourier coefficients of circuit with weights in the complex plane",
       fontsize=16
@@ -340,11 +340,11 @@ except ModuleNotFoundError:
     print("Module matplotlib is required for visualization in the Fourier module.")
 else:
     from .visualization import (
-        coefficients_violin_plot,
-        coefficients_bar_plot,
-        coefficients_box_plot,
-        coefficients_panel_plot,
-        coefficients_radial_box_plot,
-        reconstruct_function_1D_plot,
-        reconstruct_function_2D_plot,
+        plot_coeffs_violin,
+        plot_coeffs_bar,
+        plot_coeffs_box,
+        plot_coeffs_panel,
+        plot_coeffs_radial_box,
+        plot_1D_from_coeffs,
+        plot_2D_from_coeffs,
     )
