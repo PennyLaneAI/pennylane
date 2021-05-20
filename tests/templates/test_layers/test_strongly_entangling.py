@@ -145,6 +145,17 @@ class TestInputs:
             weights = np.random.randn(2, 2, 3)
             circuit(weights, ranges=[1])
 
+    def test_exception_wrong_ranges(self):
+        """Verifies that exception is raised if the
+        value of ranges is incorrect."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights, ranges=None):
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])

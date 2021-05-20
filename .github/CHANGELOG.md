@@ -273,7 +273,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
-Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva, Vincent Wong
 
 # Release 0.15.1 (current release)
 
