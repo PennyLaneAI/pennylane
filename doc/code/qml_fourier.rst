@@ -9,15 +9,15 @@ Fourier series of quantum circuits
 
 Consider a quantum circuit that depends on a parameter vector :math:`x` with
 length :math:`N`. The circuit involves application of some unitary operations
-:math:`U(x)`, and then measurement of a particular expectation value
-:math:`P`. Analytically, the expectation value can be computed as
+:math:`U(x)`, and then measurement of an observable :math:`\hat{O}`.
+Analytically, the expectation value is
 
 .. math::
 
-   \langle P \rangle = \langle 0 \vert U^\dagger (x) P U(x) \vert 0\rangle = \langle
-   \psi(x) \vert P \vert \psi (x)\rangle.
+   \langle \hat{O} \rangle = \langle 0 \vert U^\dagger (x) \hat{O} U(x) \vert 0\rangle = \langle
+   \psi(x) \vert \hat{O} \vert \psi (x)\rangle.
 
-This output is simply a function :math:`f(x) = \langle \psi(x) \vert P \vert \psi
+This output is simply a function :math:`f(x) = \langle \psi(x) \vert \hat{O} \vert \psi
 (x)\rangle`. Notably, it is a periodic function of the parameters, and
 it can thus be expressed as a multidimensional Fourier series: 
 
@@ -77,13 +77,17 @@ The Fourier coefficients can be numerically calculated with the
    [0.5 +0.j 0.  -0.j 0.25+0.j 0.25+0.j 0.  -0.j]
 
 The inputs to the :func:`~.pennylane.fourier.coefficients` function are
+
 - A QNode containing the variational circuit for which to compute the Fourier coefficients,
 - the length of the input vector, and
-- the maximum frequency for which to calculate the coefficients (also known as the *degree*).
-(For a quantum function of
-multiple inputs with varying order, it may be necessary to use a wrapper
-function to ensure the Fourier coefficients are calculated with respect to the
-correct input values.)
+- the maximum frequency for which to calculate the coefficients (also known as
+  the *degree*).
+
+.. note::
+
+   For a quantum function of multiple inputs, it may be necessary to use a
+   wrapper function to ensure the Fourier coefficients are calculated with
+   respect to the correct input values (using, e.g., ``functools.partial``).
 
 Internally, the coefficients are computed using numpy's `discrete Fourier
 transform <https://numpy.org/doc/stable/reference/generated/numpy.fft.fftn.html>`__

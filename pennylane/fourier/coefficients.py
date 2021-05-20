@@ -22,12 +22,33 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     periodic function, where :math:`d` is the highest desired frequency (the
     degree) of the Fourier spectrum.
 
-    In order to mitigate aliasing, there is an option to apply a low-pass filter
-    prior to computing the coefficients. Coefficients up to a specified value
-    are computed, and then frequencies higher than the degree are simply
-    removed. This ensures that the coefficients returned will have the correct
-    values, though they may not be the full set of coefficients. If no threshold
-    value is provided, the threshold will be set to ``2 * degree``.
+    While this function can be used to compute Fourier coefficients in general,
+    the specific use case in PennyLane is to compute coefficients of the
+    functions that result from measuring expectation values of parametrized
+    quantum circuits.
+
+    Consider a quantum circuit that depends on a parameter vector :math:`x` with
+    length :math:`N`. The circuit involves application of some unitary
+    operations :math:`U(x)`, and then measurement of an observable
+    :math:`\langle \hat{O} \rangle`. Analytically, the expectation value is
+
+    .. math::
+
+       \langle \hat{O} \rangle = \langle 0 \vert U^\dagger (x) \hat{O} U(x) \vert 0\rangle = \langle
+       \psi(x) \vert \hat{O} \vert \psi (x)\rangle.
+
+    This output is simply a function :math:`f(x) = \langle \psi(x) \vert \hat{O} \vert \psi
+    (x)\rangle`. Notably, it is a periodic function of the parameters, and
+    it can thus be expressed as a multidimensional Fourier series:
+
+    .. math::
+
+        f(x) = \sum \limits_{n_1\in \Omega_1} \dots \sum \limits_{n_N \in \Omega_N}
+        c_{n_1,\dots, n_N} e^{-i x_1 n_1} \dots e^{-i x_N n_N},
+
+    where :math:`n_i` are integer-valued frequencies, :math:`\Omega_i` are the set
+    of available values for the integer frequencies, and the
+    :math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
     Args:
         f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
@@ -36,7 +57,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
         lowpass_filter (bool): If ``True``, a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
-            given degree.
+            given degree. See examples below.
         filter_threshold (None or int): The integer frequency at which to filter. If
             ``lowpass_filter`` is set to ``True,`` but no value is specified, ``2 * degree`` is used.
 
@@ -45,18 +66,10 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
 
     **Example**
 
+    Suppose we have the following quantum function and wish to compute its Fourier
+    coefficients with respect to the variable ``inpt``:
+
     .. code-block:: python
-
-        from functools import partial
-        import pennylane as qml
-        from pennylane import numpy as anp
-        from pennylane.fourier import coefficients
-
-        # Expected Fourier series over 2 parameters with frequencies -1, 0, and 1
-        num_inputs = 2
-        degree = 1
-
-        weights = anp.array([0.5, 0.2])
 
         dev = qml.device('default.qubit', wires=['a'])
 
@@ -70,13 +83,30 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
 
             return qml.expval(qml.PauliZ(wires='a'))
 
-        # Use partial function to compute coefficients of the `inpt` variable
-        coeffs = coefficients(partial(circuit, weights), num_inputs, degree)
+    We must specify the number of inputs (2), and the maximum desired degree. Based
+    on the underlying theory, we expect the degree to be 1 (frequencies -1, 0, and 1).
 
-        >>> print(coeffs)
-        [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
-         [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
-         [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
+    >>> num_inputs = 2
+    >>> degree = 1
+
+    Now we fix a value for ``weights``, and use a partial functions so coefficients are
+    computed only with respect to the desired variables:
+
+    >>> from functools import partial
+    >>> weights = np.array([0.5, 0.2])
+    >>> coeffs = coefficients(partial(circuit, weights), num_inputs, degree)
+    >>> print(coeffs)
+    [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
+    [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
+    [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
+
+    In order to mitigate aliasing, there is an option to apply a low-pass filter
+    prior to computing the coefficients. Coefficients up to a specified value
+    are computed, and then frequencies higher than the degree are simply
+    removed. This ensures that the coefficients returned will have the correct
+    values, though they may not be the full set of coefficients. If no threshold
+    value is provided, the threshold will be set to ``2 * degree``.
+
     """
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree)
