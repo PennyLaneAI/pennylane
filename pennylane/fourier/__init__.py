@@ -80,7 +80,7 @@ The Fourier coefficients can be numerically calculated with the
 .. code::
 
    >>> from pennylane.fourier import coefficients
-   >>> coeffs = coefficients(simple_circuit, len(x), 2)
+   >>> coeffs = coefficients(simple_circuit, 1, 2)
    >>> print(np.round(coeffs, decimals=4))
    [0.5 +0.j 0.  -0.j 0.25+0.j 0.25+0.j 0.  -0.j]
 
@@ -112,24 +112,27 @@ for multiple dimensions.
    filter that will cut off frequencies higher than a given threshold. This can
    be configured by setting the ``lowpass_filter`` option to ``True``, and optionally
    specifying the ``frequency_threshold`` argument (if none is specified, 2 times
-   the specified degree will be used as the threshold).
+   the specified degree will be used as the threshold). See the documentation of
+   :func:`~.pennylane.fourier.coefficients` for an example.
 
 
 Fourier coefficient visualization
 ---------------------------------
 
 A key application of the Fourier module is to analyze the *expressivity* of
-classes of quantum circuit families. The set of frequencies in the Fourier representation
-of a quantum circuit can be used to characterize the function
-class that a parametrized circuit gives rise to. For example, if an eembedding
-leads to a Fourier representation with few and low-order frequencies,
-a quantum circuit using this embedding can only express rather simple periodic functions.
+classes of quantum circuit families. The set of frequencies in the Fourier
+representation of a quantum circuit can be used to characterize the function
+class that a parametrized circuit gives rise to. For example, if an embedding
+leads to a Fourier representation with a few low-order frequencies, a quantum
+circuit using this embedding can only express rather simple periodic functions.
 
-The Fourier module contains a number of methods to visualize the coefficients of the Fourier series
-representation of a single circuit, as well as distributions over Fourier coefficients for a parametrized circuit family.
+The Fourier module contains a number of methods to visualize the coefficients of
+the Fourier series representation of a single circuit, as well as distributions
+over Fourier coefficients for a parametrized circuit family.
 
 .. note::
 
+   Visualization of the Fourier coefficients requires the ``matplotlib`` library.
    The visualization functions are structured to accept ``matplotlib`` axes as
    arguments so that additional configuration (such as adding titles, saving,
    etc.) can be done outside the functions. Many of the plots, however, require
@@ -139,28 +142,14 @@ representation of a single circuit, as well as distributions over Fourier coeffi
 Visualizing a single set of coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-While all the functions available for visualizing multiple sets of Fourier coefficients
-can be used for a single set, the primary tool for this purpose is the
-``plot_coeffs_bar`` function.
+While all the functions available for visualizing multiple sets of Fourier
+coefficients can be used for a single set, the primary tool for this purpose is
+the ``plot_coeffs_bar`` function. Using the coefficients we obtained in the
+earlier example,
 
-.. code::
+>>> from pennylane.fourier import *
+>>> import matplotlib.pyplot as plt
 
-   import matplotlib.pyplot as plt
-   import pennylane as qml
-   from pennylane.fourier import *
-
-   dev = qml.device('default.qubit', wires=2)
-
-   @qml.qnode(dev)
-   def simple_circuit(x):
-       qml.RY(x[0], wires=0)
-       qml.CNOT(wires=[1, 0])
-       qml.RX(x[0], wires=0)
-       return qml.expval(qml.PauliZ(0))
-
->>> coeffs = coefficients(simple_circuit, 1, 2)
->>> coeffs
-[0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
 >>> plot_coeffs_bar(coeffs, 1, ax)
 >>> plt.suptitle("Simple circuit bar plot")
@@ -204,7 +193,7 @@ customization options available:
 
    coeffs = coefficients(partial(circuit_with_weights, weights), 2, 2)
 
-   # Number of inputs is now two; pass custom colours as well
+   # Number of inputs is now 2; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
    plot_coeffs_bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"});
    plt.suptitle("Circuit with weights bar plot", fontsize=14)
@@ -233,9 +222,6 @@ of Fourier coefficients when the weights are randomly sampled. For each
        weights = np.random.normal(0, 1, size=(2, 3))
        c = coefficients(partial(circuit_with_weights, weights), 2, degree=2)
        coeffs.append(np.round(c, decimals=8))
-
-   coeffs = np.array(coeffs)
-
 
 One option to plot the distribution is :func:`~.pennylane.fourier.plot_coeffs_violin`:
 
