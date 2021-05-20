@@ -118,13 +118,13 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
 
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
-            should resemble that of the output of numpy/scipy's ``fftn`` function, or
+            should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
             :func:`~.pennylane.fourier.fourier_coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
-        colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
-            "imag" : other_colour_string} indicating which colours should be used in the plot.
+        colour_dict (dict[str, str]): A dictionary of the form ``{"real" : colour_string,
+            "imag" : other_colour_string}`` indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
 
     Returns:

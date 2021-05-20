@@ -211,7 +211,7 @@ Two convenience functions are also provided to visualize 1- and 2-dimensional
 functions given a set of Fourier coefficients:
 :func:`~.pennylane.fourier.reconstruct_function_1D_plot` and
 :func:`~.pennylane.fourier.reconstruct_function_2D_plot`. For example,
-``circuit_with_weights`` has two input parameters `x[0]` and `x[1]`, and so we can plot its output:
+``circuit_with_weights`` has two input parameters ``x[0]`` and ``x[1]``, and so we can plot its output:
 
 .. code::
 
@@ -229,8 +229,8 @@ Visualizing multiple sets of coefficients
 
 
 Suppose we do not want to visualize the Fourier coefficients for a fixed 
-`weights` argument in `circuit_with_weights`, but the distribution over sets of Fourier coefficients 
-when the weights are randomly sampled. For each `weights` sample we get a different set of coefficients:
+``weights`` argument in ``circuit_with_weights``, but the distribution over sets of Fourier coefficients 
+when the weights are randomly sampled. For each ``weights`` sample we get a different set of coefficients:
 
 .. code::
 
