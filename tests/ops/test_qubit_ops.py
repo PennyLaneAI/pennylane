@@ -726,6 +726,50 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+        
+        
+    def test_CSWAP_decomposition(self, tol):
+        """Tests that the decomposition of the CSWAP gate is correct"""
+        op = qml.CSWAP(wires=[0, 1, 2])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 3
+
+        mats = []
+
+        for i in reversed(res):
+            if i.wires == Wires([0,2,1]) and i.name == "Toffoli":
+              mats.append(
+                    np.array(
+                        [[1, 0, 0, 0, 0, 0, 0, 0]
+                         [0, 1, 0, 0, 0, 0, 0, 0]
+                         [0, 0, 1, 0, 0, 0, 0, 0]
+                         [0, 0, 0, 1, 0, 0, 0, 0]
+                         [0, 0, 0, 0, 1, 0, 0, 0]
+                         [0, 0, 0, 0, 0, 0, 0, 1]
+                         [0, 0, 0, 0, 0, 0, 1, 0]
+                         [0, 0, 0, 0, 0, 1, 0, 0]]
+                    )
+                )
+            elif i.wires == Wires([0,1,2]) and i.name == "Toffoli":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
