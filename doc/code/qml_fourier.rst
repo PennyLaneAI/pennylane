@@ -77,8 +77,9 @@ The Fourier coefficients can be numerically calculated with the
    [0.5 +0.j 0.  -0.j 0.25+0.j 0.25+0.j 0.  -0.j]
 
 The inputs to the :func:`~.pennylane.fourier.fourier_coefficients` function are
-the function in question, the length of the input vector, and the maximum
-frequency for which to calculate the coefficients (also known as the *degree*).
+- A QNode containing the variational circuit for which to compute the Fourier coefficients,
+- the length of the input vector, and
+- the maximum frequency for which to calculate the coefficients (also known as the *degree*).
 (For a quantum function of
 multiple inputs with varying order, it may be necessary to use a wrapper
 function to ensure the Fourier coefficients are calculated with respect to the
@@ -132,7 +133,6 @@ can be used for a single set, the primary tool for this purpose is the
 
 .. code::
 
-   from functools import partial
    import matplotlib.pyplot as plt
    import pennylane as qml
    from pennylane.fourier import *
@@ -146,16 +146,12 @@ can be used for a single set, the primary tool for this purpose is the
        qml.RX(x[0], wires=0)
        return qml.expval(qml.PauliZ(0))
 
-   coeffs = fourier_coefficients(simple_circuit, 1, 2)
-
-   >>> coeffs
-   [0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
-
-   
-   # Set up the axes
-   fig, ax = plt.subplots(2, 1, sharex=True, sharey=True)
-   coefficients_bar_plot(coeffs, 1, ax)
-   plt.suptitle("Simple circuit bar plot")
+>>> coeffs = fourier_coefficients(simple_circuit, 1, 2)
+>>> coeffs
+[0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
+>>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
+>>> coefficients_bar_plot(coeffs, 1, ax)
+>>> plt.suptitle("Simple circuit bar plot")
 
 .. image:: ../_static/fourier_vis_bar_plot.png
     :align: center
@@ -208,7 +204,7 @@ customization options available:
 |
 	     
 Two convenience functions are also provided to visualize 1- and 2-dimensional
-functions given a set of Fourier coefficients:
+landscapes given a set of Fourier coefficients:
 :func:`~.pennylane.fourier.reconstruct_function_1D_plot` and
 :func:`~.pennylane.fourier.reconstruct_function_2D_plot`. For example,
 ``circuit_with_weights`` has two input parameters ``x[0]`` and ``x[1]``, and so we can plot its output:
