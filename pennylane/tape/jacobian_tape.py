@@ -346,9 +346,10 @@ class JacobianTape(QuantumTape):
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
 
+        
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = jacobian_method(self, **options)
+        jac = jacobian_method(self, **options.get("device_pd_options", dict()))
 
         # restore original parameters
         self.set_parameters(saved_parameters)

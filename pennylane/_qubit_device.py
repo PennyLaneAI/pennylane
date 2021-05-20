@@ -173,6 +173,8 @@ class QubitDevice(Device):
             array[float]: measured value(s)
         """
 
+        print("executing")
+
         if self._cache:
             circuit_hash = circuit.graph.hash
             if circuit_hash in self._cache_execute:
@@ -831,10 +833,14 @@ class QubitDevice(Device):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
         if starting_state is not None:
+            print("provided starting state")
+            print("state: ", starting_state)
             ket = self._reshape(starting_state, [2] * self.num_wires)
         elif use_device_state:
+            print("using device state")
             ket = self._reshape(self.state, [2] * self.num_wires)
         else:
+            print("performing a forward pass again")
             self.reset()
             self.execute(tape)
             ket = self._reshape(self.state, [2] * self.num_wires)

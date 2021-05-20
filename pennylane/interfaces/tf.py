@@ -138,6 +138,9 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
+        if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+            state = input_kwargs["device"].state
+
         # The following dictionary caches the Jacobian and Hessian matrices,
         # so that they can be re-used for different vjp/vhp computations
         # within the same backpropagation call.
@@ -173,6 +176,9 @@ class TFInterface(AnnotatedQueue):
             """
             if grad_matrix_fn in saved_grad_matrices:
                 return saved_grad_matrices[grad_matrix_fn]
+
+            if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+                self.jacobian_options["device_pd_options"] = {"starting_state": state}
 
             self.set_parameters(all_params_unwrapped, trainable_only=False)
             grad_matrix = getattr(self, grad_matrix_fn)(
