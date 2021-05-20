@@ -248,6 +248,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Prevent Hamiltonians that share wires from being multiplied together.
   [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
 
+* Fixed a bug where the custom range sequences could not be passed
+  to the `StronglyEntanglingLayers` template.
+  [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
+
 <h3>Documentation</h3>
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
@@ -269,7 +273,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Diego Guala,
-Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva
+Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Brian Shi, Antal Száva, Vincent Wong
 
 # Release 0.15.1 (current release)
 
