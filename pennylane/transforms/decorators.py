@@ -15,8 +15,37 @@
 # pylint: disable=too-few-public-methods
 import functools
 import inspect
+from typing import Tuple, List, Callable
 
 import pennylane as qml
+
+
+AUTO_EXECUTE_NO_PROCESSING = (
+    qml.tape.QuantumTape,
+    List[qml.tape.QuantumTape],
+    Tuple[qml.tape.QuantumTape, None],
+    Tuple[List[qml.tape.QuantumTape], None]
+)
+"""tuple[type]: QNode transform function return types
+for which the decorator will qutomatically execute returned
+tapes. The resulting QNode transform will return a list of floating
+point results per tape to be executed.
+"""
+
+
+AUTO_EXECUTE_PROCESSING = (
+    inspect._empty,
+    Tuple[List[qml.tape.QuantumTape], Callable]
+)
+"""tuple[type]: QNode transform function return types
+for which the decorator will:
+
+- Automatically executes returned tapes
+- Applies post-processing functions
+"""
+
+
+AUTO_EXECUTE = AUTO_EXECUTE_PROCESSING + AUTO_EXECUTE_NO_PROCESSING
 
 
 def make_tape(fn):
@@ -146,6 +175,13 @@ class single_tape_transform:
     """
 
     def __init__(self, transform_fn):
+
+        if not callable(transform_fn):
+            raise ValueError(
+                f"The tape transform function to register, {transform_fn}, "
+                "does not appear to be a valid Python function or callable."
+            )
+
         self.transform_fn = transform_fn
         functools.update_wrapper(self, transform_fn)
 
@@ -250,6 +286,11 @@ def qfunc_transform(tape_transform):
     >>> qml.grad(circuit)(x, y)
     (array(-0.02485651), array([-0.02474011, -0.09954244]))
     """
+    if not callable(single_tape_transform):
+        raise ValueError(
+            "The qfunc_transform decorator can only be applied "
+            "to single tape transform functions."
+        )
 
     if not isinstance(tape_transform, single_tape_transform):
         tape_transform = single_tape_transform(tape_transform)
@@ -262,6 +303,13 @@ def qfunc_transform(tape_transform):
         @functools.wraps(tape_transform)
         def make_qfunc_transform(*targs, **tkwargs):
             def wrapper(fn):
+
+                if not callable(fn):
+                    raise ValueError(
+                        f"The qfunc to transform, {fn}, does not appear "
+                        "to be a valid Python function or callable."
+                    )
+
                 @functools.wraps(fn)
                 def internal_wrapper(*args, **kwargs):
                     tape = make_tape(fn)(*args, **kwargs)
@@ -276,6 +324,13 @@ def qfunc_transform(tape_transform):
 
         @functools.wraps(tape_transform)
         def make_qfunc_transform(fn):
+
+            if not callable(fn):
+                raise ValueError(
+                    f"The qfunc to transform, {fn}, does not appear "
+                    "to be a valid Python function or callable."
+                )
+
             @functools.wraps(fn)
             def internal_wrapper(*args, **kwargs):
                 tape = make_tape(fn)(*args, **kwargs)
@@ -389,26 +444,59 @@ def qnode_transform(qnode_transform_fn):
     >>> qml.grad(cost_fn)(x, transform_weights)
     (array(-0.85987045), array([-0.17253469, -0.17148357]))
     """
+    if not callable(qnode_transform_fn):
+        raise ValueError(
+            "The qnode_transform decorator can only be applied "
+            "to valid Python functions or callables."
+        )
+
     sig = inspect.signature(qnode_transform_fn)
     params = sig.parameters
+
+    if isinstance(qnode_transform_fn, single_tape_transform):
+        auto_execute = True
+        post_process = False
+    else:
+        # determine from the return annotation if the QNode transform
+        # returns tapes that should be autoexecuted by the decorator
+        auto_execute = sig.return_annotation in AUTO_EXECUTE
+        post_process = auto_execute and sig.return_annotation in AUTO_EXECUTE_PROCESSING
 
     if len(params) > 1:
 
         @functools.wraps(qnode_transform_fn)
         def make_qnode_transform(*targs, **tkwargs):
             def wrapper(qnode):
+
+                if not isinstance(qnode, qml.QNode):
+                    raise ValueError(
+                        f"The object to transform, {qnode}, does not appear "
+                        "to be a valid QNode."
+                    )
+
                 @functools.wraps(qnode)
                 def internal_wrapper(*args, **kwargs):
                     qnode.construct(args, kwargs)
 
-                    if isinstance(qnode_transform_fn, single_tape_transform):
-                        fn = lambda x: x
-                        tapes = [qnode_transform_fn(qnode.qtape, *targs, **tkwargs)]
-                    else:
-                        tapes, fn = qnode_transform_fn(qnode, *targs, **tkwargs)
+                    if auto_execute and not post_process:
+                        tapes = qnode_transform_fn(qnode.qtape, *targs, **tkwargs)
 
-                    res = [t.execute(device=qnode.device) for t in tapes]
-                    return fn(res)
+                        if isinstance(tapes, tuple) and tapes[-1] is None:
+                            # quantum function returned a tuple (tapes(s), None)
+                            tapes = tapes[0]
+
+                        if not isinstance(tapes, Sequence):
+                            # quantum function returned a single tape
+                            tapes = [tapes]
+
+                        return [t.execute(device=qnode.device) for t in tapes]
+
+                    if auto_execute:
+                        tapes, fn = qnode_transform_fn(qnode, *targs, **tkwargs)
+                        res = [t.execute(device=qnode.device) for t in tapes]
+                        return fn(res)
+
+
 
                 internal_wrapper.qnode = qnode
                 internal_wrapper.interface = qnode.interface
@@ -421,6 +509,13 @@ def qnode_transform(qnode_transform_fn):
 
         @functools.wraps(qnode_transform_fn)
         def make_qnode_transform(qnode):
+
+            if not isinstance(qnode, qml.QNode):
+                raise ValueError(
+                    f"The object to transform, {qnode}, does not appear "
+                    "to be a valid QNode."
+                )
+
             @functools.wraps(qnode)
             def internal_wrapper(*args, **kwargs):
                 qnode.construct(args, kwargs)
