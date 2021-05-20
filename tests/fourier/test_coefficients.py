@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.fourier.coefficients import fourier_coefficients
+from pennylane.fourier.coefficients import coefficients
 
 
 def fourier_function(freq_dict, x):
@@ -66,7 +66,7 @@ class TestFourierCoefficientSingleVariable:
     def test_single_variable_fourier_coeffs(self, freq_dict, expected_coeffs):
         degree = max(freq_dict.keys())
         partial_func = partial(fourier_function, freq_dict)
-        coeffs = fourier_coefficients(partial_func, 1, degree)
+        coeffs = coefficients(partial_func, 1, degree)
 
         assert np.allclose(coeffs, expected_coeffs)
 
@@ -194,7 +194,7 @@ class TestFourierCoefficientCircuits:
     def test_coefficients_one_param_circuits(self, circuit, inpt, degree, expected_coeffs):
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
-        coeffs = fourier_coefficients(circuit, len(inpt), degree)
+        coeffs = coefficients(circuit, len(inpt), degree)
         assert np.allclose(coeffs, expected_coeffs)
 
     @pytest.mark.parametrize(
@@ -217,7 +217,7 @@ class TestFourierCoefficientCircuits:
     def test_coefficients_two_param_circuits(self, circuit, inpt, degree, expected_coeffs):
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
-        coeffs = fourier_coefficients(circuit, len(inpt), degree)
+        coeffs = coefficients(circuit, len(inpt), degree)
         assert np.allclose(coeffs, expected_coeffs)
 
 
@@ -238,12 +238,12 @@ class TestAntiAliasing:
     def test_anti_aliasing_incorrect(self, circuit, inpt, degree, expected_coeffs):
         """Test that anti-aliasing function gives correct results when we ask for
         coefficients below the maximum degree."""
-        coeffs_anti_aliased = fourier_coefficients(
+        coeffs_anti_aliased = coefficients(
             circuit, len(inpt), degree, lowpass_filter=True, filter_threshold=degree + 2
         )
         assert np.allclose(coeffs_anti_aliased, expected_coeffs)
 
-        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree)
+        coeffs_regular = coefficients(circuit, len(inpt), degree)
         assert not np.allclose(coeffs_regular, expected_coeffs)
 
     @pytest.mark.parametrize(
@@ -256,7 +256,7 @@ class TestAntiAliasing:
     def test_anti_aliasing(self, circuit, inpt, degree):
         """Test that the coefficients obtained through anti-aliasing are the
         same as the ones when we don't anti-alias at the correct degree."""
-        coeffs_regular = fourier_coefficients(circuit, len(inpt), degree, lowpass_filter=False)
-        coeffs_anti_aliased = fourier_coefficients(circuit, len(inpt), degree)
+        coeffs_regular = coefficients(circuit, len(inpt), degree, lowpass_filter=False)
+        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree)
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)

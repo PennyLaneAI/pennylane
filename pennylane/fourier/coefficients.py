@@ -17,7 +17,7 @@ from itertools import product
 import numpy as np
 
 
-def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=None):
+def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=None):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
     periodic function, where :math:`d` is the highest desired frequency (the
     degree) of the Fourier spectrum.
@@ -50,7 +50,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
         from functools import partial
         import pennylane as qml
         from pennylane import numpy as anp
-        from pennylane.fourier import fourier_coefficients
+        from pennylane.fourier import coefficients
 
         # Expected Fourier series over 2 parameters with frequencies -1, 0, and 1
         num_inputs = 2
@@ -71,7 +71,7 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
             return qml.expval(qml.PauliZ(wires='a'))
 
         # Use partial function to compute coefficients of the `inpt` variable
-        coeffs = fourier_coefficients(partial(circuit, weights), num_inputs, degree)
+        coeffs = coefficients(partial(circuit, weights), num_inputs, degree)
 
         >>> print(coeffs)
         [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
@@ -79,13 +79,13 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
          [-0.0014+0.022j  -0.1493-0.0374j -0.3431+0.0408j]]
     """
     if not lowpass_filter:
-        return _fourier_coefficients_no_filter(f, n_inputs, degree)
+        return _coefficients_no_filter(f, n_inputs, degree)
 
     if filter_threshold is None:
         filter_threshold = 2 * degree
 
     # Compute the fft of the function at 2x the specified degree
-    unfiltered_coeffs = _fourier_coefficients_no_filter(f, n_inputs, filter_threshold)
+    unfiltered_coeffs = _coefficients_no_filter(f, n_inputs, filter_threshold)
 
     # Shift the frequencies so that the 0s are at the centre
     shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
@@ -117,12 +117,12 @@ def fourier_coefficients(f, n_inputs, degree, lowpass_filter=False, filter_thres
     return coeffs
 
 
-def _fourier_coefficients_no_filter(f, n_inputs, degree):
+def _coefficients_no_filter(f, n_inputs, degree):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
     function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
     This function computes the coefficients blindly without any filtering applied, and
-    is thus used as a helper function for the true ``fourier_coefficients`` function.
+    is thus used as a helper function for the true ``coefficients`` function.
 
     Args:
         f (callable): function that takes an array of :math:`N` scalar inputs

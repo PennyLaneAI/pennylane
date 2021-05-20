@@ -119,7 +119,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
             should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
-            :func:`~.pennylane.fourier.fourier_coefficients`.
+            :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -135,7 +135,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, coefficients_violin_plot
+        from pennylane.fourier import coefficients, coefficients_violin_plot
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -143,7 +143,7 @@ def coefficients_violin_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=
 
         # Calculate the Fourier coefficients; may be a single set or a list of
         # multiple sets of coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
@@ -192,7 +192,7 @@ def coefficients_box_plot(
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
-            :func:`~.pennylane.fourier.fourier_coefficients`.
+            :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -209,7 +209,7 @@ def coefficients_box_plot(
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, coefficients_box_plot
+        from pennylane.fourier import coefficients, coefficients_box_plot
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -217,7 +217,7 @@ def coefficients_box_plot(
 
         # Calculate the Fourier coefficients; may be a single set or a list of
         # multiple sets of coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
@@ -289,14 +289,14 @@ def coefficients_bar_plot(coeffs, n_inputs, ax, colour_dict=None, show_freqs=Tru
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, coefficients_bar_plot
+        from pennylane.fourier import coefficients, coefficients_bar_plot
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
         degree = ... # Degree to which coefficients should be calculated
 
         # A single set of Fourier coefficients only for the bar plot
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # Set up subplots and plot
         fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
@@ -343,7 +343,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
             for 1-dimensional, or ``(2d + 1, 2d + 1)`` where ``d`` is the
             degree, i.e., the maximum frequency of present in the coefficients.
             Such an array may be the output of the numpy/scipy ``fft``/``fft2`` functions,
-            or :func:`~.pennylane.fourier.fourier_coefficients`.
+            or :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of variables in the function.
         ax (array[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
             1-dimensional data, length must be the number of frequencies. For 2-dimensional
@@ -358,7 +358,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, coefficients_panel_plot
+        from pennylane.fourier import coefficients, coefficients_panel_plot
 
         f = ... # A function in 1 or 2 variables
         n_inputs = ... # Number of inputs to the function
@@ -366,7 +366,7 @@ def coefficients_panel_plot(coeffs, n_inputs, ax, colour=None):
 
         # Calculate the Fourier coefficients; may be a single set or a list of
         # multiple sets of coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # Set up subplots and plot; need as many plots as there are coefficients
         fig, ax = plt.subplots(
@@ -433,7 +433,7 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
             function. The array should have length ``2d + 1`` where ``d`` is the
             degree, i.e., the maximum frequency of present in the coefficients.
             Such an array may be the output of the numpy/scipy ``fft`` function, or
-            :func:`~.pennylane.fourier.fourier_coefficients`.
+            :func:`~.pennylane.fourier.coefficients`.
         ax (matplotlib.axes.Axes): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
@@ -445,14 +445,14 @@ def reconstruct_function_1D_plot(coeffs, ax=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, reconstruct_function_1D_plot
+        from pennylane.fourier import coefficients, reconstruct_function_1D_plot
 
         f = ... # A function in 1 variable
         n_inputs = 1
         degree = ... # Degree to which coefficients should be calculated
 
         # Calculate the Fourier coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # It is not necessary to create subplots; the current axis will be used here
         reconstruct_function_1D_plot(coeffs)
@@ -500,7 +500,7 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
             transform, ``(2d + 1, 2d + 1)``, where ``d`` is the degree, i.e., the
             maximum frequency of present in the coefficients. Such an array may
             be the output of the numpy/scipy ``fft2`` function, or
-            :func:`~.pennylane.fourier.fourier_coefficients`.
+            :func:`~.pennylane.fourier.coefficients`.
         ax (matplotlib.axes.Axes): Axis on which to plot. If None, the
             current axis from ``plt.gca()`` will be used.
 
@@ -512,14 +512,14 @@ def reconstruct_function_2D_plot(coeffs, ax=None):
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, reconstruct_function_2D_plot
+        from pennylane.fourier import coefficients, reconstruct_function_2D_plot
 
         f = ... # A function in 2 variables
         n_inputs = 2
         degree = ... # Degree to which coefficients should be calculated
 
         # Calculate the Fourier coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         # It is not necessary to create subplots; the current axis may be used here
         reconstruct_function_2D_plot(coeffs)
@@ -585,7 +585,7 @@ def coefficients_radial_box_plot(
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
-            :func:`~.pennylane.fourier.fourier_coefficients`.
+            :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): Dimension of the transformed function.
         ax (array[matplotlib.axes.Axes]): Axes to plot on. For this function, subplots
             must specify ``subplot_kw=dict(polar=True)`` upon construction.
@@ -606,7 +606,7 @@ def coefficients_radial_box_plot(
     .. code-block:: python
 
         import matplotlib as plt
-        from pennylane.fourier import fourier_coefficients, coefficients_radial_box_plot
+        from pennylane.fourier import coefficients, coefficients_radial_box_plot
 
         f = ... # A function
         n_inputs = ... # Number of inputs to the function
@@ -614,7 +614,7 @@ def coefficients_radial_box_plot(
 
         # Calculate the Fourier coefficients; may be a single set or a list of
         # multiple sets of coefficients
-        coeffs = fourier_coefficients(f, n_inputs, degree)
+        coeffs = coefficients(f, n_inputs, degree)
 
         fig, ax = plt.subplots(
             1, 2, sharex=True, sharey=True, subplot_kw=dict(polar=True), figsize=(15, 8)

@@ -67,16 +67,16 @@ Calculating the Fourier coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Fourier coefficients can be numerically calculated with the
-:func:`~.pennylane.fourier.fourier_coefficients` function:
+:func:`~.pennylane.fourier.coefficients` function:
 
 .. code::
 
-   >>> from pennylane.fourier import fourier_coefficients
-   >>> coeffs = fourier_coefficients(simple_circuit, len(x), 2)
+   >>> from pennylane.fourier import coefficients
+   >>> coeffs = coefficients(simple_circuit, len(x), 2)
    >>> print(np.round(coeffs, decimals=4))
    [0.5 +0.j 0.  -0.j 0.25+0.j 0.25+0.j 0.  -0.j]
 
-The inputs to the :func:`~.pennylane.fourier.fourier_coefficients` function are
+The inputs to the :func:`~.pennylane.fourier.coefficients` function are
 - A QNode containing the variational circuit for which to compute the Fourier coefficients,
 - the length of the input vector, and
 - the maximum frequency for which to calculate the coefficients (also known as the *degree*).
@@ -146,7 +146,7 @@ can be used for a single set, the primary tool for this purpose is the
        qml.RX(x[0], wires=0)
        return qml.expval(qml.PauliZ(0))
 
->>> coeffs = fourier_coefficients(simple_circuit, 1, 2)
+>>> coeffs = coefficients(simple_circuit, 1, 2)
 >>> coeffs
 [0.5 +0.j 0.  +0.j 0.25+0.j 0.25+0.j 0.  +0.j]
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
@@ -190,7 +190,7 @@ customization options available:
        
        return qml.expval(qml.PauliZ(0))
 
-   coeffs = fourier_coefficients(partial(circuit_with_weights, weights), 2, 2)
+   coeffs = coefficients(partial(circuit_with_weights, weights), 2, 2)
 
    # Number of inputs is now two; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
@@ -236,7 +236,7 @@ when the weights are randomly sampled. For each ``weights`` sample we get a diff
 
    for _ in range(100):
        weights = np.random.normal(0, 1, size=(2, 3))
-       c = fourier_coefficients(partial(circuit_with_weights, weights), 2, degree=2)
+       c = coefficients(partial(circuit_with_weights, weights), 2, degree=2)
        coeffs.append(np.round(c, decimals=8))
        
    coeffs = np.array(coeffs)
