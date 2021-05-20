@@ -30,7 +30,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     value is provided, the threshold will be set to ``2 * degree``.
 
     Args:
-        f (callable): function that takes an array of `n_inputs` scalar inputs
+        f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
@@ -125,7 +125,7 @@ def _coefficients_no_filter(f, n_inputs, degree):
     is thus used as a helper function for the true ``coefficients`` function.
 
     Args:
-        f (callable): function that takes an array of :math:`N` scalar inputs
+        f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
