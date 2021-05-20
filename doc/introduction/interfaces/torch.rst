@@ -23,6 +23,9 @@ translated into a quantum node that interfaces with PyTorch by calling the
 Using the PyTorch interface is easy in PennyLane --- let's consider a few ways
 it can be done.
 
+
+.. _torch_interf_keyword:
+
 Construction via keyword
 ------------------------
 
@@ -52,7 +55,7 @@ it can now be used like any other PyTorch function:
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
 PyTorch-capable QNodes can also be created using the
-:ref:`QNode class constructor <_intro_vcirc_qnode>`:
+:ref:`QNode class constructor <intro_vcirc_qnode>`:
 
 .. code-block:: python
 
@@ -75,6 +78,9 @@ QNode:
 >>> qnode2(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
+
+.. _torch_interf_convert:
+
 Construction from an existing QNode
 -----------------------------------
 
@@ -88,6 +94,9 @@ perform the conversion by using the :meth:`~.QNode.to_torch` method:
 ``qnode1()`` is now a PyTorch-capable QNode, as well. Internally, the
 :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
 :func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
+
+
+.. _pytorch_qgrad:
 
 Quantum gradients using PyTorch
 -------------------------------
