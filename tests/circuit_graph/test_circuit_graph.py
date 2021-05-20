@@ -109,17 +109,7 @@ class TestCircuitGraph:
         # Finally, checking the adjacency of the returned DAG:
         assert set(graph.edges()) == set(
             (queue[a], queue[b])
-            for a, b in [
-                (0, 3),
-                (1, 3),
-                (2, 4),
-                (3, 5),
-                (3, 6),
-                (4, 5),
-                (5, 7),
-                (5, 8),
-                (6, 8),
-            ]
+            for a, b in [(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8),]
         )
 
     def test_ancestors_and_descendants_example(self, ops, obs):

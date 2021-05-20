@@ -173,15 +173,7 @@ class TestCircuitDrawer:
         [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5
     )
 
-    multiwire_gate_representation_grid = Grid(
-        [
-            ["╭"],
-            ["╰"],
-            [""],
-            ["╭"],
-            ["╰"],
-        ]
-    )
+    multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"],])
 
     multi_and_single_wire_gate_grid = to_grid(
         [
@@ -197,15 +189,7 @@ class TestCircuitDrawer:
     )
 
     multi_and_single_wire_gate_representation_grid = Grid(
-        [
-            ["╭"],
-            ["╰"],
-            [""],
-            ["╭"],
-            ["│"],
-            ["╰"],
-            [""],
-        ]
+        [["╭"], ["╰"], [""], ["╭"], ["│"], ["╰"], [""],]
     )
 
     @pytest.mark.parametrize(

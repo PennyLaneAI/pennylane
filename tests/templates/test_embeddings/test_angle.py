@@ -45,9 +45,7 @@ class TestDecomposition:
         for gate in tape.operations:
             assert gate.name == "R" + rotation
 
-    def test_state(
-        self,
-    ):
+    def test_state(self,):
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]

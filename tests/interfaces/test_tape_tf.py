@@ -400,10 +400,7 @@ class TestTFQuantumTape:
                     [-tf.sin(x) / 2, tf.sin(x) / 2],
                     [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
-                [
-                    [0, 0],
-                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
-                ],
+                [[0, 0], [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -714,10 +711,7 @@ class TestTFPassthru:
                     [-tf.sin(x) / 2, tf.sin(x) / 2],
                     [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
-                [
-                    [0, 0],
-                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
-                ],
+                [[0, 0], [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)

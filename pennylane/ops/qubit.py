@@ -476,14 +476,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @classmethod
     def _matrix(cls, *params):
@@ -633,7 +626,7 @@ class CSWAP(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
-    
+
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
@@ -642,7 +635,6 @@ class CSWAP(Operation):
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
         ]
         return decomp_ops
-
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
@@ -1203,8 +1195,7 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
@@ -1499,14 +1490,7 @@ class CRZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
-            ]
-        )
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(lam, wires):
