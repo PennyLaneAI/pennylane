@@ -21,159 +21,26 @@ from pennylane.utils import pauli_eigs
 C_DTYPE = torch.complex128
 R_DTYPE = torch.float64
 
-
-# Notes::
-#
-# tf.cast will be using tensor.complex()
-# # try torch.tensor or torch.nn.cons
-#
-# real = torch.tensor([[0, 1],[1,0]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-#
-# tensor([[1.+0.j, 0.+0.j],
-#         [0.+0.j, 1.+0.j]], dtype=torch.complex128)
-#
-# array([[1.+0.j, 0.+0.j],
-#        [0.+0.j, 1.+0.j]])>
-#
-# tensor([[0.+1.j, 0.+0.j],
-#         [0.+0.j, 0.+1.j]], dtype=torch.complex128)
-#
-# tensor([[0.+1.j, 0.+0.j],
-#         [0.+0.j, 0.+1.j]], dtype=torch.complex128)
-#
-# torch.as_tensor(
-# [[0.+0.j 1.+0.j]
-#  [1.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
-#
-# ensor([[0.+0.j, 1.+0.j],
-#         [1.+0.j, 0.+0.j]], dtype=torch.complex128)
-#
-#
-# torch.as_tensor([[ 0.+0.j -0.-1.j]
-#  [ 0.+1.j  0.+0.j]], shape=(2, 2), dtype=complex128)
-#
-# convert_to_tensor
-# >>> a = numpy.array([1, 2, 3])
-# >>> t = torch.as_tensor(a)
-#
-# >>> torch.cos(a)
-# tensor([ 0.1395,  0.2957,  0.6553,  0.5574])
-# cos and sin are same
-#
-# >>> z = torch.complex(real, imag)
-# >>> z
-# tensor([(1.+3.j),
-#          (2.+4.j)])
-
-#I = tf.constant([[1, 0],[0, 1]], dtype=C_DTYPE)
-
-#real =
-#imag =
 I = torch.complex(torch.tensor([[1, 0],[0,1]], dtype=R_DTYPE),
                     torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE))
 
-# X = tf.constant([[0, 1], [1, 0]], dtype=C_DTYPE)
-# real = torch.tensor([[0, 1],[1,0]], dtype=R_DTYPE)
-# imag =
-
 X = torch.complex(torch.tensor([[0, 1],[1,0]], dtype=R_DTYPE),
-                    torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE))
+                    torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE)
 
+Y = torch.complex(torch.tensor([[0, -0],[0,0]], dtype=torch.float64),
+                   torch.tensor([[0, -1],[1,0]], dtype=torch.float64))
 
-# Y = tf.constant([[0j, -1j], [1j, 0j]], dtype=C_DTYPE)
-# real =
-# imag =
-
-y = torch.complex(torch.tensor([[0, -0],[0,0]], dtype=torch.float64), torch.tensor([[0, -1],[1,0]], dtype=torch.float64))
-
-# Z = tf.constant([[1, 0], [0, -1]], dtype=C_DTYPE)
-#
-# real =
-# imag =
-Z = torch.complex(torch.tensor([[1, 0],[0,-1]], dtype=torch.float64), torch.tensor([[0, 0],[0,0]], dtype=torch.float64))
-
-# # torch.eye
-# II = tf.eye(4, dtype=C_DTYPE)
-
+Z = torch.complex(torch.tensor([[1, 0],[0,-1]], dtype=torch.float64),
+                    torch.tensor([[0, 0],[0,0]], dtype=torch.float64))
 II = torch.eye(4)
 II = II.type(torch.complex128)
-#
-# ZZ = tf.constant(kron(Z, Z), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,-1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-
 ZZ = torch.tensor(kron(Z,Z))
-
-
-# IX = tf.constant(kron(I, X), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# i = torch.complex(real, imag)
-#
-# real = torch.tensor([[0, 1],[1,0]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# x = torch.complex(real, imag)
-
 IX = torch.tensor(kron(I,X))
-
-
-
-
-# IY = tf.constant(kron(I, Y), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# i = torch.complex(real, imag)
-# real = torch.tensor([[0, -0],[0,0]], dtype=torch.float64)
-# imag = torch.tensor([[0, -1],[1,0]], dtype=torch.float64)
-# y = torch.complex(real, imag)
-
 IY = torch.tensor(kron(I,Y))
-
-#
-# IZ = tf.constant(kron(I, Z), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# i = torch.complex(real, imag)
-# real = torch.tensor([[1, 0],[0,-1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-
-IZ = torch.tensor(I,Z)
-
-#
-# ZI = tf.constant(kron(Z, I), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,-1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-# real = torch.tensor([[1, 0],[0,1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# i = torch.complex(real, imag)
-
-ZI = torch.tensor(Z,I)
-
-# ZX = tf.constant(kron(Z, X), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,-1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-# real = torch.tensor([[0, 1],[1,0]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# x = torch.complex(real, imag)
-
-
-ZX = torch.tensor(Z,X)
-
-# ZY = tf.constant(kron(Z, Y), dtype=C_DTYPE)
-# real = torch.tensor([[1, 0],[0,-1]], dtype=torch.float64)
-# imag = torch.tensor([[0, 0],[0,0]], dtype=torch.float64)
-# z = torch.complex(real, imag)
-# real = torch.tensor([[0, -0],[0,0]], dtype=torch.float64)
-# imag = torch.tensor([[0, -1],[1,0]], dtype=torch.float64)
-# y = torch.complex(real, imag)
-
-ZY = torch.tensor(Z,Y)
+IZ = torch.tensor(kron(I,Z))
+ZI = torch.tensor(kron(Z,I))
+ZX = torch.tensor(kron(Z,X))
+ZY = torch.tensor(kron(Z,Y))
 
 def PhaseShift(phi):
     r"""One-qubit phase shift.
@@ -198,7 +65,6 @@ def ControlledPhaseShift(phi):
     Returns:
         torch.as_tensor[complex]: diagonal part of the controlled phase shift matrix
     """
-
     phi = torch.as_tensor(numpy.array(phi))
     phi = phi.type(C_DTYPE)
     return torch.as_tensor([1.0,1.0,1.0,torch.exp(1j*phi2)])
