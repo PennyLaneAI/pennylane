@@ -1777,8 +1777,8 @@ class IsingXX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\theta}f(XX(\theta)) = \frac{1}{2}\left[f(XX(\theta +\pi/2)) - f(XX(\theta-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`XX(\theta)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(XX(\phi)) = \frac{1}{2}\left[f(XX(\phi +\pi/2)) - f(XX(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`XX(\phi)`.
 
     Args:
         phi (float): the phase angle
@@ -1828,7 +1828,7 @@ class IsingZZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\theta}f(ZZ(\theta)) = \frac{1}{2}\left[f(XX(\theta +\pi/2)) - f(ZZ(\theta-\pi/2))\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(ZZ(\phi)) = \frac{1}{2}\left[f(ZZ(\phi +\pi/2)) - f(ZZ(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`ZZ(\theta)`.
 
     Args:
