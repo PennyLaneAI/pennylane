@@ -649,4 +649,4 @@ class CircuitGraph:
 
         a = np.array(all_wires)
         _, counts = np.unique(a, return_counts=True)
-        return counts.max() if counts.size != 0 else 1 # qml.state() will result in an empty array
+        return counts.max() if counts.size != 0 else 1  # qml.state() will result in an empty array
