@@ -480,19 +480,38 @@ class CircuitGraph:
             l += 1
 
         observables = OrderedDict()
+        num_measurement_processes = len(self.observables)
         for wire in sorted(self._grid):
-            observables[wire] = list(
-                filter(
-                    lambda op: isinstance(
-                        op, (qml.operation.Observable, qml.measure.MeasurementProcess)
+            if num_measurement_processes == 1:
+                observables[wire] = list(
+                    filter(
+                        lambda op: isinstance(
+                            op, (qml.operation.Observable, qml.measure.MeasurementProcess)
+                        )
+                        and op.return_type is not None,
+                        self._grid[wire],
                     )
-                    and op.return_type is not None,
-                    self._grid[wire],
                 )
-            )
+                if not observables[wire]:
+                    observables[wire] = [None]
+            else:
+                # TODO: consider moving this our, or changing the order of for and if
+                mp_map = dict(zip(self.observables, range(num_measurement_processes)))
 
-            if not observables[wire]:
-                observables[wire] = [None]
+                # Initialize to None everywhere
+                observables[wire] = [None] * num_measurement_processes
+
+                def is_returned_observable(op):
+                    """Helper for the condition of having an observable or
+                    measurement process in the return statement."""
+                    is_obs = isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
+                    return is_obs and op.return_type is not None
+
+                for op in self._grid[wire]:
+                    if is_returned_observable(op):
+                        obs_idx = mp_map[op]
+                        observables[wire][obs_idx] = op
+                print(observables[wire])
 
         if wire_order is not None:
             temp_op_grid = OrderedDict()
