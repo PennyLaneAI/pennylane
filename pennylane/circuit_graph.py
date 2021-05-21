@@ -481,8 +481,10 @@ class CircuitGraph:
 
         observables = OrderedDict()
         num_measurement_processes = len(self.observables)
-        for wire in sorted(self._grid):
-            if num_measurement_processes == 1:
+        if num_measurement_processes == 1:
+
+            # There is a single measurement
+            for wire in sorted(self._grid):
                 observables[wire] = list(
                     filter(
                         lambda op: isinstance(
@@ -494,7 +496,10 @@ class CircuitGraph:
                 )
                 if not observables[wire]:
                     observables[wire] = [None]
-            else:
+        else:
+
+            # There are multiple measurements
+            for wire in sorted(self._grid):
                 # TODO: consider moving this our, or changing the order of for and if
                 mp_map = dict(zip(self.observables, range(num_measurement_processes)))
 
@@ -511,7 +516,6 @@ class CircuitGraph:
                     if is_returned_observable(op):
                         obs_idx = mp_map[op]
                         observables[wire][obs_idx] = op
-                print(observables[wire])
 
         if wire_order is not None:
             temp_op_grid = OrderedDict()
