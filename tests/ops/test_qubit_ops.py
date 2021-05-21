@@ -373,6 +373,7 @@ class TestOperations:
             qml.CSWAP(wires=[0, 1, 2]),
             qml.PauliRot(0.123, "Y", wires=0),
             qml.IsingXX(0.123, wires=[0, 1]),
+            qml.IsingZZ(0.123, wires=[0, 1]),
             qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
@@ -1810,14 +1811,15 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle, tol):
+    @pytest.mark.parametrize("pauli_word", ["XX", "ZZ"])
+    def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
 
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(theta):
-            qml.PauliRot(theta, "XX", wires=[0, 1])
+            qml.PauliRot(theta, pauli_word, wires=[0, 1])
 
             return qml.expval(qml.PauliZ(0))
 

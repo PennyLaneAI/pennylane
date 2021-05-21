@@ -633,6 +633,9 @@ class TestApply:
         (qml.IsingXX, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
         (qml.IsingXX, [0, 0, 0, 1], [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
         (qml.IsingXX, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 1, 0], [0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [1, 0, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0], [math.pi / 2]),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
