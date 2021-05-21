@@ -228,6 +228,11 @@ class QubitDevice(Device):
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
+        if self._shots is not None:
+            self._total_shots += self._shots
+
+        if self.tracking_mode:
+            self.print_tracking()
 
         return results
 

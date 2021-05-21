@@ -19,6 +19,7 @@ import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
+import contextlib
 
 import numpy as np
 
@@ -136,9 +137,13 @@ class Device(abc.ABC):
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
         self._num_executions = 0
+        self._total_shots = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
+        self.tracking_mode = False
+        self._tracking_mode_str_end = "\r"
 
     def __repr__(self):
         """String representation."""
@@ -206,6 +211,11 @@ class Device(abc.ABC):
         """Number of circuit evaluations/random samples used to estimate
         expectation values of observables"""
         return self._shots
+
+    @property
+    def total_shots(self):
+        """Number of total circuit shots used"""
+        return self._total_shots
 
     @property
     def analytic(self):
@@ -449,8 +459,10 @@ class Device(abc.ABC):
             self._obs_queue = None
             self._parameters = None
 
-            # increment counter for number of executions of device
+            # increment counter for number of executions of device and total shots
             self._num_executions += 1
+            if self._shots is not None:
+                self._total_shots += self._shots
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
@@ -458,6 +470,9 @@ class Device(abc.ABC):
                 return self._asarray(results)
             if any(obs.return_type is Sample for obs in observables):
                 return self._asarray(results, dtype="object")
+
+            if self.tracking_mode:
+                self.print_tracking()
 
             return self._asarray(results)
 
@@ -807,6 +822,46 @@ class Device(abc.ABC):
         raise NotImplementedError(
             "Returning probability not currently supported by {}".format(self.short_name)
         )
+
+    @contextlib.contextmanager
+    def tracking(self, reset_counts=True, just_latest=True):
+        """A context that enables verbal print out of each execution
+
+        Resets execution count and total shots upon entering the context.
+
+        Kwargs:
+            reset_counts (bool): If True, reset `num_executions` and `total_shots`
+                to zero before starting
+
+            just_latest (bool): If True, update a single print line. 
+                If False, continue printing on new lines.
+
+        """
+
+        if reset_counts:
+            self._num_executions = 0
+            self._total_shots = 0
+
+        start_tracking_mode_str_end = self._tracking_mode_str_end
+        if just_latest:
+            self._tracking_mode_str_end = "\r"
+        else:
+            self._tracking_mode_str_end = "\n"
+
+        self.tracking_mode = True
+        yield
+        self.tracking_mode = False
+
+        self._tracking_mode_str_end = start_tracking_mode_str_end
+
+    def print_tracking(self):
+        """Print out current execution information.
+        """
+        if self._shots is None:
+            print(f"Total executions: {self._num_executions}", end=self._tracking_mode_str_end)
+        else:
+            print(f"Total executions: {self._num_executions}\t Total shots: {self._total_shots}",
+                end=self._tracking_mode_str_end)
 
     @abc.abstractmethod
     def reset(self):
