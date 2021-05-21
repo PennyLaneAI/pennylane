@@ -458,6 +458,7 @@ class DefaultQubit(QubitDevice):
             supports_analytic_computation=True,
             returns_state=True,
             passthru_devices={
+                "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
