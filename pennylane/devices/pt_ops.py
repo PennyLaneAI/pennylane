@@ -14,7 +14,7 @@
 r"""
 Utility functions and numerical implementations of quantum operations PyTorch devices.
 """
-import tensorflow as tf
+import torch
 from numpy import kron
 from pennylane.utils import pauli_eigs
 
@@ -27,13 +27,13 @@ I = torch.complex(torch.tensor([[1, 0],[0,1]], dtype=R_DTYPE),
 X = torch.complex(torch.tensor([[0, 1],[1,0]], dtype=R_DTYPE),
                     torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE)
 
-Y = torch.complex(torch.tensor([[0, -0],[0,0]], dtype=torch.float64),
-                   torch.tensor([[0, -1],[1,0]], dtype=torch.float64))
+Y = torch.complex(torch.tensor([[0, -0],[0,0]], dtype=R_DTYPE),
+                   torch.tensor([[0, -1],[1,0]], dtype=R_DTYPE))
 
-Z = torch.complex(torch.tensor([[1, 0],[0,-1]], dtype=torch.float64),
-                    torch.tensor([[0, 0],[0,0]], dtype=torch.float64))
+Z = torch.complex(torch.tensor([[1, 0],[0,-1]], dtype=R_DTYPE),
+                    torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE))
 II = torch.eye(4)
-II = II.type(torch.complex128)
+II = II.type(C_DTYPE)
 ZZ = torch.tensor(kron(Z,Z))
 IX = torch.tensor(kron(I,X))
 IY = torch.tensor(kron(I,Y))
