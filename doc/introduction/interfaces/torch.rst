@@ -93,7 +93,7 @@ perform the conversion by using the :meth:`~.QNode.to_torch` method:
 
 ``qnode1()`` is now a PyTorch-capable QNode, as well. Internally, the
 :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
-:func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
+:meth:`TorchInterface.apply <~.interfaces.torch.TorchInterface.apply>` function to do the conversion.
 
 
 .. _pytorch_qgrad:
