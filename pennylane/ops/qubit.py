@@ -1766,7 +1766,7 @@ class IsingXX(Operation):
     r"""IsingXX(phi, wires)
     Ising XX coupling gate
 
-    .. math:: \mathtt{XX}(\phi) = \begin{bmatrix}
+    .. math:: XX(\phi) = \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
             0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
@@ -1777,7 +1777,8 @@ class IsingXX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d \phi} \mathtt{XX}(\phi) = \frac{1}{2} \left[ \mathtt{XX}(\phi + \pi / 2) + \mathtt{XX}(\phi - \pi / 2) \right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(XX(\phi)) = \frac{1}{2}\left[f(XX(\phi +\pi/2)) - f(XX(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`XX(\phi)`.
 
     Args:
         phi (float): the phase angle
@@ -1816,7 +1817,7 @@ class IsingZZ(Operation):
     r""" IsingZZ(phi, wires)
     Ising ZZ coupling gate
 
-    .. math:: \mathtt{ZZ}(\phi) = \begin{bmatrix}
+    .. math:: ZZ(\phi) = \begin{bmatrix}
         e^{-i \phi / 2} & 0 & 0 & 0 \\
         0 & e^{i \phi / 2} & 0 & 0 \\
         0 & 0 & e^{i \phi / 2} & 0 \\
@@ -1827,11 +1828,8 @@ class IsingZZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe:
-
-    .. math::
-        \frac{d}{d \phi} \mathtt{ZZ}(\phi)
-        = \frac{1}{2} \left[ \mathtt{ZZ}(\phi + \pi / 2) + \mathtt{ZZ}(\phi - \pi / 2) \right]
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(ZZ(\phi)) = \frac{1}{2}\left[f(ZZ(\phi +\pi/2)) - f(ZZ(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`ZZ(\theta)`.
 
     Args:
         phi (float): the phase angle
