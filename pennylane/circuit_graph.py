@@ -500,7 +500,6 @@ class CircuitGraph:
 
             # There are multiple measurements
             for wire in sorted(self._grid):
-                # TODO: consider moving this our, or changing the order of for and if
                 mp_map = dict(zip(self.observables, range(num_measurement_processes)))
 
                 # Initialize to None everywhere
