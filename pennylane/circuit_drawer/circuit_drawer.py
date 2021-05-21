@@ -59,11 +59,6 @@ class CircuitDrawer:
         show_all_wires=False,
     ):
         self.operation_grid = Grid(raw_operation_grid)
-
-        if any(isinstance(sublist, list) for sublist in raw_observable_grid):
-            pass
-            #print(raw_observable_grid[3])
-
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
