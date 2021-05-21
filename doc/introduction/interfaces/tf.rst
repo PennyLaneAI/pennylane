@@ -91,7 +91,7 @@ perform the conversion by using the :meth:`~.QNode.to_tf` method:
 <QNode: device='default.mixed', func=circuit1, wires=2, interface=TensorFlow>
 
 ``qnode1()`` is now a TensorFlow-capable QNode, as well. Internally, the :meth:`~.QNode.to_tf`
-method uses the :func:`~.TFQNode` function to do the conversion.
+method uses the :meth:`~.interfaces.tf.TFInterface.apply` function to do the conversion.
 
 
 .. _tf_qgrad:
