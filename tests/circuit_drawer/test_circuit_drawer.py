@@ -674,6 +674,7 @@ def drawn_qubit_circuit_with_interesting_wires():
         + "  b: ──X──╰C──┤     \n"
     )
 
+
 @pytest.fixture
 def drawn_qubit_circuit_with_same_wire_multiple_measurements():
     """The rendered circuit representation of the qubit circuit that has
@@ -689,6 +690,7 @@ def drawn_qubit_circuit_with_same_wire_multiple_measurements():
         + " 2: ──RY(-1.57)───────────────────────╰┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
         + " 3: ──RY(-1.57)────────────────────────┤             ╰┤ ⟨Z ⊗ Z⟩ \n"
     )
+
 
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
@@ -778,19 +780,23 @@ class TestCircuitDrawerIntegration:
             + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
         )
 
-    def test_same_wire_multiple_measurements(self, drawn_qubit_circuit_with_same_wire_multiple_measurements):
+    def test_same_wire_multiple_measurements(
+        self, drawn_qubit_circuit_with_same_wire_multiple_measurements
+    ):
         """Test that drawing a QNode with multiple measurements on certain wires works correctly."""
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def qnode(x, y):
             qml.RY(x, wires=0)
             qml.Hadamard(0)
             qml.RZ(y, wires=0)
-            return [qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2])),
-                    qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3]))]
+            return [
+                qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2])),
+                qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3])),
+            ]
 
-        res = qnode(1., 2.)
+        res = qnode(1.0, 2.0)
 
         assert qnode.draw() == drawn_qubit_circuit_with_same_wire_multiple_measurements
 

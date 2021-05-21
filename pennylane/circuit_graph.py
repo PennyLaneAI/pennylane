@@ -508,7 +508,9 @@ class CircuitGraph:
                 def is_returned_observable(op):
                     """Helper for the condition of having an observable or
                     measurement process in the return statement."""
-                    is_obs = isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
+                    is_obs = isinstance(
+                        op, (qml.operation.Observable, qml.measure.MeasurementProcess)
+                    )
                     return is_obs and op.return_type is not None
 
                 for op in self._grid[wire]:
