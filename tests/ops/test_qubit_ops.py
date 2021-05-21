@@ -688,6 +688,62 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_isingxx_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXX gate is correct"""
+        param = 0.1234
+        op = qml.IsingXX(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([3])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RX"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RX gate
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_isingzz_decomposition(self, tol):
+        """Tests that the decomposition of the IsingZZ gate is correct"""
+        param = 0.1234
+        op = qml.IsingZZ(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([2])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RZ"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                # RZ gate
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
@@ -781,6 +837,43 @@ class TestOperations:
 
         # test identity for theta=pi
         assert np.allclose(qml.RZ._matrix(np.pi), -1j * Z, atol=tol, rtol=0)
+
+    def test_isingxx(self, tol):
+        """Test that the IsingXX operation is correct"""
+        assert np.allclose(qml.IsingXX._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.array(np.diag([np.cos(theta / 2)] * 4), dtype=np.complex128)
+            sin_coeff = -1j * np.sin(theta / 2)
+            expected[3, 0] = sin_coeff
+            expected[2, 1] = sin_coeff
+            expected[1, 2] = sin_coeff
+            expected[0, 3] = sin_coeff
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+    def test_isingzz(self, tol):
+        """Test that the IsingZZ operation is correct"""
+        assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
 
     def test_arbitrary_rotation(self, tol):
         """Test arbitrary single qubit rotation is correct"""
