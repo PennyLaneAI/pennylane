@@ -2904,6 +2904,55 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
+class Projector(Observable):
+    r"""Projector(features, wires)
+    The basis state observable :math:`P=\ket{i}\bra{i}`.
+
+    The expectation of this observable returns the value
+
+    .. math::
+        \braket{P} = |\braketT{\psi}{\i}|^{2}
+
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        features (tensor-like): binary input of shape ``(n, )``
+        wires (Iterable): wires that the template acts on
+    """
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = "A"
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = np.zeros((2**len(params[0]), 2**len(params[0])))
+        idx = int("".join(str(i) for i in params[0]), 2)
+        A[idx,idx]=1
+        return A
+
+    @classmethod
+    def _eigvals(cls, *params):
+        w = np.zeros(2**len(params[0]))
+        idx = int("".join(str(i) for i in params[0]), 2)
+        w[idx]=1
+        return w
+
+    def diagonalizing_gates(self):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Projector observable.
+
+        Returns:
+            list: list containing the gates diagonalizing the projector observable
+        """
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3148,7 +3197,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
 
 
 __all__ = list(ops | obs)
