@@ -25,7 +25,7 @@ I = torch.complex(torch.tensor([[1, 0],[0,1]], dtype=R_DTYPE),
                     torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE))
 
 X = torch.complex(torch.tensor([[0, 1],[1,0]], dtype=R_DTYPE),
-                    torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE)
+                    torch.tensor([[0, 0],[0,0]], dtype=R_DTYPE))
 
 Y = torch.complex(torch.tensor([[0, -0],[0,0]], dtype=R_DTYPE),
                    torch.tensor([[0, -1],[1,0]], dtype=R_DTYPE))
