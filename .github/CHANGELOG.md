@@ -206,7 +206,12 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
-* New ISWAP operation added to default_qubit device. [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
+
+* Ising ZZ gate functionality added.
+  [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
+
+* The ISWAP operation has been added to the `default_qubit` device.
+  [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
@@ -339,8 +344,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Olivia Di Matteo, Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac,
-Pavan Jayasinha, Ryan Levy, Johannes Jakob Meyer, Nahum Sá, Brian Shi, Antal Száva, David Wierichs
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
+Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Johannes Jakob Meyer,
+Nahum Sá, Brian Shi, Antal Száva, David Wierichs, Vincent Wong.
 
 # Release 0.15.1 (current release)
 
