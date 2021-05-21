@@ -1,6 +1,5 @@
 # Release 0.16.0-dev (development release)
 
-
 <h3>New features since last release</h3>
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
@@ -119,7 +118,6 @@
   + (0.25) [Y5 X4 Y0]
   >>> mapping
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
-
   ```
   Add decomposition for qml.CSWAP 
   
