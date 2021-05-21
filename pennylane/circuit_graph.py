@@ -21,6 +21,7 @@ from collections import Counter, OrderedDict, namedtuple
 import networkx as nx
 
 import pennylane as qml
+import numpy as np
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
 
@@ -480,8 +481,10 @@ class CircuitGraph:
             l += 1
 
         observables = OrderedDict()
-        num_measurement_processes = len(self.observables)
-        if num_measurement_processes == 1:
+
+        max_obs_per_wire = self.compute_max_obs_per_wire()
+
+        if max_obs_per_wire == 1:
 
             # There is a single measurement
             for wire in sorted(self._grid):
@@ -500,10 +503,10 @@ class CircuitGraph:
 
             # There are multiple measurements
             for wire in sorted(self._grid):
-                mp_map = dict(zip(self.observables, range(num_measurement_processes)))
+                mp_map = dict(zip(self.observables, range(max_obs_per_wire)))
 
                 # Initialize to None everywhere
-                observables[wire] = [None] * num_measurement_processes
+                observables[wire] = [None] * max_obs_per_wire
 
                 def is_returned_observable(op):
                     """Helper for the condition of having an observable or
@@ -632,3 +635,18 @@ class CircuitGraph:
             bool: returns ``True`` if a path exists
         """
         return nx.has_path(self._graph, a, b)
+
+    def compute_max_obs_per_wire(self):
+        """Computes the maximum number of observables defined per wire.
+
+        Returns:
+            int: the maximum number of observables defined for a wire
+        """
+        all_wires = []
+
+        for obs in self.observables:
+            all_wires.extend(obs.wires.tolist())
+
+        a = np.array(all_wires)
+        _, counts = np.unique(a, return_counts=True)
+        return counts.max() if counts.size != 0 else 1 # qml.state() will result in an empty array
