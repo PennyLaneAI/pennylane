@@ -54,6 +54,8 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 
 [Add the ISWAP operation](https://github.com/PennyLaneAI/pennylane/issues/1146)
 
+[Allow representing arbitrary operators with the Operator class](https://github.com/PennyLaneAI/pennylane/issues/1120)
+
 [Feature Request: qml.Hermitian to accept Scipy sparse array](https://github.com/PennyLaneAI/pennylane/issues/1116)
 
 [Add a projector observable](https://github.com/PennyLaneAI/pennylane/issues/1059)
@@ -67,7 +69,5 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 [Define decomposition for qml.Toffoli](https://github.com/PennyLaneAI/pennylane/issues/1305)
 
 [Define decomposition for qml.CSWAP](https://github.com/PennyLaneAI/pennylane/issues/1306)
-
-[Add the IsingYY operation operation](https://github.com/PennyLaneAI/pennylane/issues/1347)
 
 Consider also contributing to our sister libraries [Strawberry Fields](https://github.com/XanaduAI/strawberryfields/labels/unitaryhack) and [The Walrus](https://github.com/XanaduAI/thewalrus/labels/unitaryhack).
