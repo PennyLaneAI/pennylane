@@ -843,15 +843,15 @@ class TestOperations:
         assert np.allclose(qml.IsingXX._matrix(0), np.identity(4), atol=tol, rtol=0)
 
         def get_expected(theta):
-            expected = np.array(np.diag([np.cos(theta/2)]*4), dtype=np.complex128)
-            sin_coeff = -1j*np.sin(theta/2)
-            expected[3,0] = sin_coeff
-            expected[2,1] = sin_coeff
-            expected[1,2] = sin_coeff
-            expected[0,3] = sin_coeff
+            expected = np.array(np.diag([np.cos(theta / 2)] * 4), dtype=np.complex128)
+            sin_coeff = -1j * np.sin(theta / 2)
+            expected[3, 0] = sin_coeff
+            expected[2, 1] = sin_coeff
+            expected[1, 2] = sin_coeff
+            expected[0, 3] = sin_coeff
             return expected
 
-        param = np.pi/2
+        param = np.pi / 2
         assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
 
         param = np.pi
@@ -862,12 +862,14 @@ class TestOperations:
         assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
 
         def get_expected(theta):
-            neg_imag = np.exp(-1j*theta/2)
-            plus_imag = np.exp(1j*theta/2)
-            expected = np.array(np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128)
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
             return expected
 
-        param = np.pi/2
+        param = np.pi / 2
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
 
         param = np.pi
