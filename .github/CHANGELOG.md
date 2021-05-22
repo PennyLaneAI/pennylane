@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Add validation for noise channel parameters, now it raises an `ValueError` when
+  noise parameters are invalid.
+
+
 * PennyLane now has a ``kernels`` module.
   It provides basic functionalities for working with quantum kernels as well as 
   post-processing methods to mitigate sampling errors and device noise:
