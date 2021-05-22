@@ -1,6 +1,49 @@
 # Release 0.16.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* PennyLane now has a ``kernels`` module.
+  It provides basic functionalities for working with quantum kernels as well as 
+  post-processing methods to mitigate sampling errors and device noise:
+
+```python
+import pennylane as qml
+from pennylane import numpy as np
+
+num_wires = 6
+wires = range(num_wires)
+
+dev = qml.device('default.qubit', wires=num_wires)
+
+@qml.qnode(dev)
+def kernel_circuit(x1, x2):
+    qml.templates.AngleEmbedding(x1, wires=wires)
+    qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+    return qml.probs(wires)
+
+kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+# "Training feature vectors"
+X_train = np.random.random((10, 6))
+# Create symmetric square kernel matrix (for training)
+K = qml.kernels.square_kernel_matrix(X_train, kernel)
+# Add some (symmetric) Gaussian noise to the kernel matrix.
+N = np.random.randn(10, 10)
+K += (N + N.T) / 2
+        
+K1 = qml.kernels.displace_matrix(K)
+K2 = qml.kernels.closest_psd_matrix(K)
+K3 = qml.kernels.threshold_matrix(K)
+K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
+K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
+K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+
+# "Testing feature vectors"
+X_test = np.random.random((5, 6))
+# Compute kernel between test and training data.
+K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
+```
+
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
@@ -307,8 +350,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá,
-Brian Shi, Antal Száva, Vincent Wong, Alberto Maldonado.
+Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer,
+Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
 
 # Release 0.15.1 (current release)
 
