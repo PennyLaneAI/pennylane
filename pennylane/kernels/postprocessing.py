@@ -258,7 +258,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
             If ``None``, defaults to ``[0]`` (``'single'``) or ``range(len(K))`` (``'average'``).
 
     Returns:
-        K_bar (array[float]): Mitigated kernel matrix.
+        array[float]: Mitigated kernel matrix.
 
     Reference:
         This method is introduced in Section V in
