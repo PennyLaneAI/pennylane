@@ -173,7 +173,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
-*  Define decomposition for qml.CSWAP [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
+*  A decomposition has been added for the `qml.CSWAP` operation.
+  [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
