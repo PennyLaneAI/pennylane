@@ -118,9 +118,8 @@
   + (0.25) [Y5 X4 Y0]
   >>> mapping
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
-  ```
-  
-  Additional functionality can be found in the `qml.qaoa.cycle` module.
+  ``` 
+ Additional functionality can be found in the `qml.qaoa.cycle` module.
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
@@ -173,6 +172,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
 <h3>Improvements</h3>
+
+*  A decomposition has been added for the `qml.CSWAP` operation.
+  [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
@@ -303,7 +305,7 @@ This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
 Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá,
-Brian Shi, Antal Száva, Vincent Wong.
+Brian Shi, Antal Száva, Vincent Wong, Alberto Maldonado.
 
 # Release 0.15.1 (current release)
 
