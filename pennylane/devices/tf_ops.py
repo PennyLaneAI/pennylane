@@ -14,7 +14,7 @@
 r"""
 Utility functions and numerical implementations of quantum operations TensorFlow devices.
 """
-import tensorflow as tf
+import torch
 from numpy import kron
 from pennylane.utils import pauli_eigs
 
