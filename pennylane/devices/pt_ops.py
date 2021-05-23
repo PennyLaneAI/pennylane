@@ -113,7 +113,6 @@ def RZ(theta):
     p = torch.exp(-0.5j * theta)
     return torch.as_tensor([p, torch.conj(p)])
 
-#  TODO: need to find @ meaning and conversion to PyTorch
 
 def Rot(a, b, c):
     r"""Arbitrary one-qubit rotation using three Euler angles.
@@ -125,11 +124,7 @@ def Rot(a, b, c):
         torch.as_tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
     return torch.diag(RZ(c)) @ RY(b) @ torch.diag(RZ(a))
-a = 0.542
-b = 1.3432
-c = -0.654
 
-Rrot(a,b,c)
 
 def MultiRZ(theta, n):
     r"""Arbitrary multi Z rotation.
@@ -199,7 +194,6 @@ def CRZ(theta):
     p = torch.exp(-0.5j * theta)
     return torch.as_tensor([1.0, 1.0, p, torch.conj(p)])
 
-# TODO:  Need to find Operation for @ in PyTorch
 def CRot(a, b, c):
     r"""Arbitrary two-qubit controlled rotation using three Euler angles.
 
