@@ -2,7 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Add validation for noise channel parameters, now it raises an `ValueError` when
+* Added validation for noise channel parameters. Invalid noise parameters now
+   raise a `ValueError`.
   noise parameters are invalid.
 
 
