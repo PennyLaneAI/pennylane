@@ -125,7 +125,7 @@ def RZ(theta, device=None):
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
-    return torch.tensor([p, torch.conj(p)], dtype=C_DTYPE, device=device, requires_grad=True)
+    return p * torch.tensor([1, 0], dtype=torch.complex128) + torch.conj(p) * torch.tensor([0, 1], dtype=torch.complex128)
 
 def MultiRZ(theta, n, device=None):
     r"""Arbitrary multi Z rotation.
