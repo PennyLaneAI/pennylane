@@ -92,6 +92,20 @@ valid_hamiltonians_str = [
     "  (0.5) [X0]\n+ (1.2) [X0 X1]",
 ]
 
+valid_hamiltonians_repr = [
+    "<Hamiltonian: terms=1, wires=[0, 1]>",
+    "<Hamiltonian: terms=1, wires=[0]>",
+    "<Hamiltonian: terms=1, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[1]>",
+    "<Hamiltonian: terms=2, wires=['a', 'b']>",
+    "<Hamiltonian: terms=3, wires=[0, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+]
+
 invalid_hamiltonians = [
     ((), (qml.PauliZ(0),)),
     ((), (qml.PauliZ(0), qml.PauliY(1))),
@@ -587,6 +601,42 @@ def mock_device(monkeypatch):
 
 
 #####################################################
+# Queues
+
+QUEUE_HAMILTONIANS_1 = [
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+]
+
+QUEUE_HAMILTONIANS_2 = [
+    qml.Hamiltonian([1], [qml.PauliX(0)]),
+    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)]),
+]
+
+QUEUES = [
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)]),
+    ],
+]
+
+add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
+
+#####################################################
 # Tests
 
 
@@ -638,6 +688,17 @@ class TestHamiltonian:
         """Tests that the __str__ function for printing is correct"""
         H = qml.vqe.Hamiltonian(*terms)
         assert H.__str__() == string
+
+    @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
+    def test_hamiltonian_repr(self, terms, string):
+        """Tests that the __repr__ function for printing is correct"""
+        H = qml.vqe.Hamiltonian(*terms)
+        assert H.__repr__() == string
+
+    def test_hamiltonian_name(self):
+        """Tests the name property of the Hamiltonian class"""
+        H = qml.vqe.Hamiltonian([], [])
+        assert H.name == "Hamiltonian"
 
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
     def test_simplify(self, old_H, new_H):
@@ -740,6 +801,55 @@ class TestHamiltonian:
             H *= A
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
+
+    def test_hamiltonian_queue(self):
+        """Tests that Hamiltonian are queued correctly"""
+
+        # Outside of tape
+
+        queue = [
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliX(1),
+            qml.PauliZ(1),
+            qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            ),
+        ]
+
+        H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+            H.queue()
+
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+
+        # Inside of tape
+
+        queue = [
+            qml.PauliX(1),
+            qml.PauliZ(0),
+            qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(1),
+            qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            ),
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
+        ]
+
+        with qml.tape.QuantumTape() as tape:
+            H = qml.Hamiltonian(
+                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+            )
+            qml.Hadamard(wires=1)
+            qml.PauliX(wires=0)
+
+        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
 
 class TestVQE:

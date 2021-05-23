@@ -26,3 +26,4 @@ jobs:
         run: |
           black -l 100 pennylane/ --check
           black -l 100 tests/ --check
+          black -l 100 qchem/ --check
