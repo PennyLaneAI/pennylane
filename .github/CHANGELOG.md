@@ -4,7 +4,7 @@
 
 * Added validation for noise channel parameters. Invalid noise parameters now
    raise a `ValueError`.
-  noise parameters are invalid.
+  noise parameters are invalid. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
 
 * PennyLane now has a ``kernels`` module.
