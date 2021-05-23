@@ -54,7 +54,7 @@ def PhaseShift(phi):
     """
     phi = torch.as_tensor(numpy.array(phi))
     phi = phi.type(C_DTYPE)
-    return tf.as_tensor([1.0, torch.exp(1j * phi)])
+    return torch.as_tensor([1.0, torch.exp(1j * phi)])
 
 
 def ControlledPhaseShift(phi):
@@ -68,7 +68,7 @@ def ControlledPhaseShift(phi):
     """
     phi = torch.as_tensor(numpy.array(phi))
     phi = phi.type(C_DTYPE)
-    return torch.as_tensor([1.0,1.0,1.0,torch.exp(1j*phi2)])
+    return torch.as_tensor([1.0,1.0,1.0,torch.exp(1j*phi)])
 
 
 def RX(theta):
@@ -214,7 +214,7 @@ def SingleExcitation(phi):
     Returns:
         torch.as_tensor[complex]: Single excitation rotation matrix
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
@@ -230,7 +230,7 @@ def SingleExcitationPlus(phi):
     Returns:
         torch.as_tensor[complex]: Single excitation rotation matrix with positive phase-shift
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
@@ -247,7 +247,7 @@ def SingleExcitationMinus(phi):
     Returns:
         torch.as_tensor[complex]: Single excitation rotation matrix with negative phase-shift
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
@@ -263,7 +263,7 @@ def DoubleExcitation(phi):
     Returns:
         torch.as_tensor[complex]: Double excitation rotation matrix
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
@@ -296,7 +296,7 @@ def DoubleExcitationPlus(phi):
     Returns:
         torch.as_tensor[complex]: rotation matrix
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
@@ -330,7 +330,7 @@ def DoubleExcitationMinus(phi):
     Returns:
         torch.as_tensor[complex]: rotation matrix
     """
-    phi = torch.as_tensor(numpy.array(theta))
+    phi = torch.as_tensor(numpy.array(phi))
     phi = theta.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
