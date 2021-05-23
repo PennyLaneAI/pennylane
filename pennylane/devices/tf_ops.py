@@ -102,6 +102,7 @@ def RZ(theta):
     theta = tf.cast(theta, dtype=C_DTYPE)
     p = tf.exp(-0.5j * theta)
     return tf.convert_to_tensor([p, tf.math.conj(p)])
+    # have to find RZ(c)
 
 
 def Rot(a, b, c):
@@ -192,7 +193,22 @@ def CRot(a, b, c):
     """
     return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))
 
+def CRot(a, b, c):
+    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
 
+    Args:
+        a,b,c (float): rotation angles
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
+    """
+    return torch.diag(CRZ(c)) @ (CRY(b) @ torch.diag(CRZ(a)))
+
+a = 0.542
+b = 1.3432
+c = -0.654
+
+Crot(a,b,c)
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
