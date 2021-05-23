@@ -31,10 +31,10 @@ try:
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires PyTorch>=2.0") from e
 
-try:
-    from torch import einsum
-except ImportError:
-    pass
+# try:
+#     from torch import einsum
+# except ImportError:
+#     pass
 
 from . import DefaultQubit
 from . import pt_ops
