@@ -59,7 +59,7 @@ class AmplitudeDamping(Channel):
     def _kraus_matrices(cls, *params):
         gamma = params[0]
 
-        if not 0. <= gamma <= 1.0:
+        if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
