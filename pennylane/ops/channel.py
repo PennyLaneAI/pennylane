@@ -59,7 +59,7 @@ class AmplitudeDamping(Channel):
     def _kraus_matrices(cls, *params):
         gamma = params[0]
 
-        if gamma < 0.0 or gamma > 1.0:
+        if not 0. <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
@@ -120,10 +120,10 @@ class GeneralizedAmplitudeDamping(Channel):
     def _kraus_matrices(cls, *params):
         gamma, p = params
 
-        if gamma < 0.0 or gamma > 1.0:
+        if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
-        if p < 0.0 or p > 1.0:
+        if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1].")
 
         K0 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
@@ -173,7 +173,7 @@ class PhaseDamping(Channel):
     def _kraus_matrices(cls, *params):
         gamma = params[0]
 
-        if gamma < 0.0 or gamma > 1.0:
+        if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
@@ -233,7 +233,7 @@ class DepolarizingChannel(Channel):
     def _kraus_matrices(cls, *params):
         p = params[0]
 
-        if p < 0.0 or p > 1.0:
+        if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
@@ -282,7 +282,7 @@ class BitFlip(Channel):
     def _kraus_matrices(cls, *params):
         p = params[0]
 
-        if p < 0.0 or p > 1.0:
+        if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
@@ -348,13 +348,13 @@ class ResetError(Channel):
     def _kraus_matrices(cls, *params):
         p_0, p_1 = params[0], params[1]
 
-        if p_0 < 0.0 or p_0 > 1.0:
+        if not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be between [0,1]")
 
-        if p_1 < 0.0 or p_1 > 1.0:
+        if not 0.0 <= p_1 <= 1.0:
             raise ValueError("p_1 must be between [0,1]")
 
-        if p_0 + p_1 < 0.0 or p_0 + p_1 > 1.0:
+        if not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be between [0,1]")
 
         K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
@@ -404,7 +404,7 @@ class PhaseFlip(Channel):
     def _kraus_matrices(cls, *params):
         p = params[0]
 
-        if p < 0.0 or p > 1.0:
+        if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
