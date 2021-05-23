@@ -176,11 +176,11 @@ class DefaultQubitPT(DefaultQubit):
         )
         return capabilities
 
-    ## TODO:  this needs to be updated
-    # @staticmethod
-    # def _scatter(indices, array, new_dimensions):
-    #     indices = np.expand_dims(indices, 1)
-    #     return tf.scatter_nd(indices, array, new_dimensions)
+
+    @staticmethod
+    def _scatter(indices, array, new_dimensions):
+        indices = np.expand_dims(indices, 1)
+        return torch.sparse_coo_tensor(indices, array, new_dimensions)
 
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.

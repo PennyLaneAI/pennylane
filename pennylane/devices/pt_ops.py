@@ -215,7 +215,7 @@ def SingleExcitation(phi):
         torch.as_tensor[complex]: Single excitation rotation matrix
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     return torch.as_tensor([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
@@ -231,11 +231,11 @@ def SingleExcitationPlus(phi):
         torch.as_tensor[complex]: Single excitation rotation matrix with positive phase-shift
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(1j * phi / 2)
-    return tf.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+    return torch.as_tensor([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
 
 
 def SingleExcitationMinus(phi):
@@ -248,7 +248,7 @@ def SingleExcitationMinus(phi):
         torch.as_tensor[complex]: Single excitation rotation matrix with negative phase-shift
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(-1j * phi / 2)
@@ -264,7 +264,7 @@ def DoubleExcitation(phi):
         torch.as_tensor[complex]: Double excitation rotation matrix
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     U = [
@@ -297,7 +297,7 @@ def DoubleExcitationPlus(phi):
         torch.as_tensor[complex]: rotation matrix
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(1j * phi / 2)
@@ -331,7 +331,7 @@ def DoubleExcitationMinus(phi):
         torch.as_tensor[complex]: rotation matrix
     """
     phi = torch.as_tensor(numpy.array(phi))
-    phi = theta.type(C_DTYPE)
+    phi = phi.type(C_DTYPE)
     c = torch.cos(phi / 2)
     s = torch.sin(phi / 2)
     e = torch.exp(-1j * phi / 2)
