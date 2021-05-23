@@ -1843,10 +1843,10 @@ class IsingYY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: 
-    
+    * Gradient recipe:
+
     .. math::
-         \frac{d}{d\phi} f(YY(\phi)) 
+         \frac{d}{d\phi} f(YY(\phi))
          = \frac{1}{2} \left[ f(YY(\phi + \pi/2)) - f(YY(\phi - \pi/2)) \right]
 
      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
@@ -1903,7 +1903,10 @@ class IsingZZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(ZZ(\phi)) = \frac{1}{2}\left[f(ZZ(\phi +\pi/2)) - f(ZZ(\phi-\pi/2))\right]`
+    * Gradient recipe:
+
+       :math:`\frac{d}{d\phi}f(ZZ(\phi)) = \frac{1}{2}\left[f(ZZ(\phi +\pi/2)) - f(ZZ(\phi-\pi/2))\right]`
+
       where :math:`f` is an expectation value depending on :math:`ZZ(\phi)`.
 
     Args:
