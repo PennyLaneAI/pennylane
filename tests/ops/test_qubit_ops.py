@@ -1978,7 +1978,7 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize("pauli_word", ["XX", "ZZ"])
+    @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
 
