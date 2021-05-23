@@ -135,7 +135,6 @@ class DefaultQubitPT(DefaultQubit):
     _abs = staticmethod(torch.abs)
     _reduce_sum = staticmethod(torch.sum)
     _reshape = staticmethod(torch.reshape)
-    ## TODO:  Need to verify reshape
     _flatten = staticmethod(lambda tensor: torch.reshape(tensor, [-1]))
     _gather = staticmethod(torch.gather)
     _einsum = staticmethod(torch.einsum)
