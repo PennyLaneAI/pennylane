@@ -193,24 +193,24 @@ class TestApply:
     def test_full_subsystem_statevector(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubitPT(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
+        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        assert np.all(tf.reshape(dev._state, [-1]) == state)
+        assert np.all(torch.reshape(dev._state, [-1]) == state)
         spy.assert_not_called()
 
     def test_partial_subsystem_statevector(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
         dev = DefaultQubitPT(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
+        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
-        res = tf.reshape(tf.reduce_sum(dev._state, axis=(1,)), [-1])
+        res = torch.reshape(torch.sum(dev._state, axis=(1,)), [-1])
 
         assert np.all(res == state)
         spy.assert_called()
@@ -413,11 +413,11 @@ class TestApply:
     #
     #     spy.assert_called_once()
 
-    @pytest.mark.xfail(
-        raises=tf.errors.UnimplementedError,
-        reason="Slicing is not supported for more than 8 wires",
-        strict=True,
-    )
+    # @pytest.mark.xfail(
+    #     raises=tf.errors.UnimplementedError,
+    #     reason="Slicing is not supported for more than 8 wires",
+    #     strict=True,
+    # )
     def test_apply_ops_above_8_wires_using_special(self):
         """Test that special apply methods that involve slicing function correctly when using 9
         wires"""
