@@ -18,11 +18,9 @@ reference plugin.
 try:
     import torch
 
-    #v = torch.__version__.split('.')
-    #if int(v[1])<8 or (int(v[1])==8 and int(v[2])==0):
-    #    raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
-
-    # TODO test version compatibility (see default_qubit_tf.py)
+    v = torch.__version__.split('.')
+    if int(v[1])<8 or (int(v[1])==8 and int(v[2][0])==0):
+       raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
