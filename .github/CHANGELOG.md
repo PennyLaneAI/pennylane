@@ -216,7 +216,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
 * Ising YY gate functionality added.
-  [(#1347)](https://github.com/PennyLaneAI/pennylane/pull/1347)
+  [(#1347)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 <h3>Improvements</h3>
 
