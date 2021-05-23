@@ -2,6 +2,7 @@
 pip
 appdirs
 autograd
+autoray
 jax==0.2.7
 jaxlib==0.1.57
 m2r2
@@ -14,7 +15,7 @@ sphinx==3.5.3
 sphinx-automodapi
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
-tensorflow==2.4.0
+tensorflow==2.5.0
 tensornetwork==0.3
 toml
 torch==1.7.0+cpu
