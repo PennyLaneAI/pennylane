@@ -27,10 +27,15 @@ try:
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
+from pennylane import device
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
 import numpy as np
+
+from string import ascii_letters as ABC
+
+ABC_ARRAY = np.array(list(ABC))
 
 class DefaultQubitTorch(DefaultQubit):
     # TODO docstring
@@ -65,9 +70,9 @@ class DefaultQubitTorch(DefaultQubit):
     _dot = staticmethod(lambda x, y: torch.tensordot(x, y, dims=1))
     _einsum = staticmethod(torch.einsum)
     _flatten = staticmethod(torch.flatten)
-    _reduce_sum = staticmethod(torch.sum)
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
+    #_gather = staticmethod(lambda array, indices: torch.gather(array, 0, torch.tensor(indices)))
     _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
     _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
@@ -75,6 +80,8 @@ class DefaultQubitTorch(DefaultQubit):
     _conj = staticmethod(torch.conj)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
+    _flatten = staticmethod(torch.flatten)
+
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=torch.device('cpu')):
         self._torch_device = torch_device
@@ -104,6 +111,13 @@ class DefaultQubitTorch(DefaultQubit):
 
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
+
+    @staticmethod
+    def _reduce_sum(array, axes):
+        if len(axes) == 0:
+            return array
+        else:
+            return torch.sum(array, dim=axes)
 
     def _conj(self, inputs):
         inputs = torch.as_tensor(inputs, dtype=self.C_DTYPE, device=self._torch_device)
@@ -229,3 +243,34 @@ class DefaultQubitTorch(DefaultQubit):
         basis_states = np.arange(number_of_states)
         state_probability = state_probability.cpu().detach().numpy()
         return np.random.choice(basis_states, shots, p=state_probability)
+
+    def _apply_diagonal_unitary(self, state, phases, wires):
+        r"""Apply multiplication of a phase vector to subsystems of the quantum state.
+
+        This represents the multiplication with diagonal gates in a more efficient manner.
+
+        Args:
+            state (array[complex]): input state
+            phases (array): vector to multiply
+            wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        # reshape vectors
+        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
+
+        state_indices = ABC[: self.num_wires]
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
+
+        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
+            affected_indices=affected_indices, state_indices=state_indices
+        )
+
+        unitary = torch.diag(phases)
+        #print(einsum_indices)
+        return self._einsum(einsum_indices, phases, state)
+        #return self._apply_unitary(state, unitary, wires)

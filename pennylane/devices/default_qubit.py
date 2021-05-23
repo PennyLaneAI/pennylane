@@ -21,6 +21,7 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
+import torch
 
 import numpy as np
 
@@ -280,6 +281,7 @@ class DefaultQubit(QubitDevice):
         """
         state_x = self._apply_x(state, axes)
         state_z = self._apply_z(state, axes)
+
         return SQRT2INV * (state_x + state_z)
 
     def _apply_s(self, state, axes, inverse=False):
