@@ -15,6 +15,7 @@ r"""
 Utility functions and numerical implementations of quantum operations PyTorch devices.
 """
 import torch
+import numpy
 from numpy import kron
 from pennylane.utils import pauli_eigs
 
@@ -114,17 +115,21 @@ def RZ(theta):
 
 #  TODO: need to find @ meaning and conversion to PyTorch
 
-# def Rot(a, b, c):
-#     r"""Arbitrary one-qubit rotation using three Euler angles.
-#
-#     Args:
-#         a,b,c (float): rotation angles
-#
-#     Returns:
-#         torch.as_tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
-#     """
-#     return tf.linalg.diag(RZ(c)) @ RY(b) @ tf.linalg.diag(RZ(a))
+def Rot(a, b, c):
+    r"""Arbitrary one-qubit rotation using three Euler angles.
 
+    Args:
+        a,b,c (float): rotation angles
+
+    Returns:
+        torch.as_tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
+    """
+    return torch.diag(RZ(c)) @ RY(b) @ torch.diag(RZ(a))
+a = 0.542
+b = 1.3432
+c = -0.654
+
+Rrot(a,b,c)
 
 def MultiRZ(theta, n):
     r"""Arbitrary multi Z rotation.
@@ -205,11 +210,7 @@ def CRot(a, b, c):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return torch.diag(CRZ(c)) @ (CRY(b) @ torch.diag(CRZ(a)))
-a = 0.542
-b = 1.3432
-c = -0.654
 
-Crot()
 def SingleExcitation(phi):
     r"""Single excitation rotation.
 
