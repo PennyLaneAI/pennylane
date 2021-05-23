@@ -205,6 +205,7 @@ class DefaultQubitTorch(DefaultQubit):
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         
+        #CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
         axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
@@ -225,7 +226,7 @@ class DefaultQubitTorch(DefaultQubit):
 
         Args:
             number_of_states (int): the number of basis states to sample from
-            state_probability (array[float]): the computational basis probability vector
+            state_probability (torch.Tensor[float]): the computational basis probability vector
 
         Returns:
             List[int]: the sampled basis states
@@ -243,34 +244,3 @@ class DefaultQubitTorch(DefaultQubit):
         basis_states = np.arange(number_of_states)
         state_probability = state_probability.cpu().detach().numpy()
         return np.random.choice(basis_states, shots, p=state_probability)
-
-    def _apply_diagonal_unitary(self, state, phases, wires):
-        r"""Apply multiplication of a phase vector to subsystems of the quantum state.
-
-        This represents the multiplication with diagonal gates in a more efficient manner.
-
-        Args:
-            state (array[complex]): input state
-            phases (array): vector to multiply
-            wires (Wires): target wires
-
-        Returns:
-            array[complex]: output state
-        """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-
-        # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
-
-        state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
-
-        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
-            affected_indices=affected_indices, state_indices=state_indices
-        )
-
-        unitary = torch.diag(phases)
-        #print(einsum_indices)
-        return self._einsum(einsum_indices, phases, state)
-        #return self._apply_unitary(state, unitary, wires)
