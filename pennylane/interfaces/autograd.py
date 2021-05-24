@@ -169,7 +169,7 @@ class AutogradInterface(AnnotatedQueue):
         if self.is_sampled:
             return res
 
-        if type(res) == torch.Tensor:
+        if isinstance(res, torch.Tensor):
             res = res.cpu().numpy()
 
         if res.dtype == np.dtype("object"):

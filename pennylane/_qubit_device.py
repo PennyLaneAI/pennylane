@@ -38,8 +38,6 @@ from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
-import torch
-
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.

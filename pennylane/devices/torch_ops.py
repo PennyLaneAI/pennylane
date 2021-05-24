@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# TODO docstrings
+r"""
+Utility functions and numerical implementations of quantum operations PyTorch device.
+"""
 
 import torch
 import numpy as np
@@ -23,14 +24,16 @@ C_DTYPE = torch.complex128
 R_DTYPE = torch.float64
 
 
-# TODO replace by torch.diag once complex dtypes are supported
-def diag(input):
-    matrix = torch.eye(len(input), dtype=input.dtype, device=input.device)
-    return matrix * input
-
-
 # Instantiating on the device (rather than moving) is approx. 100x faster
 def op_matrix(elements):
+    r"""Decorator to instanciate a tensor on a device.
+
+    Args:
+        element : torch.Tensor
+
+    Returns:
+        lambda dev : torch.Tensor elements instanciated on torch device dev
+    """
     return lambda dev: torch.as_tensor(elements, dtype=C_DTYPE, device=dev)
 
 
@@ -219,7 +222,7 @@ def Rot(a, b, c, device=None):
     Returns:
         torch.Tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return diag(RZ(c, device)) @ RY(b, device) @ diag(RZ(a, device))
+    return torch.diag(RZ(c, device)) @ RY(b, device) @ torch.diag(RZ(a, device))
 
 
 def CRX(theta, device=None):
@@ -273,7 +276,6 @@ def CRZ(theta, device):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
-    p = torch.exp(-0.5j * theta)
     return torch.cat(
         [torch.as_tensor([1.0, 1.0], device=device), RZ(theta, device)], dim=0
     )
@@ -290,7 +292,7 @@ def CRot(a, b, c, device):
         torch.Tensor[complex]: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
-    return diag(CRZ(c, device)) @ CRY(b, device) @ diag(CRZ(a, device))
+    return torch.diag(CRZ(c, device)) @ CRY(b, device) @ torch.diag(CRZ(a, device))
 
 
 def SingleExcitation(phi, device):

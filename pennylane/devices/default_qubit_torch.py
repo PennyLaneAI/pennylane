@@ -25,12 +25,13 @@ try:
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
+import warnings
 from string import ascii_letters as ABC
-from pennylane import device
+import numpy as np
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
-import numpy as np
 from . import DefaultQubit
+
 
 
 ABC_ARRAY = np.array(list(ABC))
@@ -155,7 +156,6 @@ class DefaultQubitTorch(DefaultQubit):
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
 
-    # TODO test numpy -> torch interface mappings for all kwargs
     _abs = staticmethod(torch.abs)
     _dot = staticmethod(lambda x, y: torch.tensordot(x, y, dims=1))
     _einsum = staticmethod(torch.einsum)
@@ -183,13 +183,9 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
-    # TODO remove once torch.einsum fully supports compex valued tensors
-    # def _apply_unitary_einsum(self, state, mat, wires):
-    #     return self._apply_unitary(state, mat, wires)
-
     def _asarray(self, a, dtype=None):
         try:
-            if type(a) == list:
+            if isinstance(a, list):
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             else:
                 res = torch.as_tensor(a, dtype=dtype, device=self._torch_device)
@@ -205,21 +201,15 @@ class DefaultQubitTorch(DefaultQubit):
 
     @staticmethod
     def _reduce_sum(array, axes):
-        if len(axes) == 0:
+        if not axes:
             return array
-        else:
-            return torch.sum(array, dim=axes)
+        return torch.sum(array, dim=axes)
 
     @staticmethod
     def _conj(array):
-        if type(array) == torch.Tensor:
+        if isinstance(array, torch.Tensor):
             return torch.conj(array)
-        else:
-            return np.conj(array)
-
-    @staticmethod
-    def _zeros(self, shape, dtype=float):
-        return torch.zeros(shape, dtype=dtype, device=self._torch_device)
+        return np.conj(array)
 
     @staticmethod
     def _ravel_multi_index(multi_index, dims):
