@@ -731,7 +731,7 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
-        
+
         return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
