@@ -209,6 +209,13 @@ class DefaultQubitTorch(DefaultQubit):
             return torch.sum(array, dim=axes)
 
     @staticmethod
+    def _conj(array):
+        if type(array) == torch.Tensor:
+            return torch.conj(array)
+        else:
+            return np.conj(array)
+
+    @staticmethod
     def _zeros(self, shape, dtype=float):
         return torch.zeros(shape, dtype=dtype, device=self._torch_device)
 

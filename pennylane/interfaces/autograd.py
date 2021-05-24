@@ -22,6 +22,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
 from pennylane.queuing import AnnotatedQueue
+import torch
 
 
 class AutogradInterface(AnnotatedQueue):
@@ -167,6 +168,9 @@ class AutogradInterface(AnnotatedQueue):
 
         if self.is_sampled:
             return res
+
+        if type(res) == torch.Tensor:
+            res = res.cpu().numpy()
 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
