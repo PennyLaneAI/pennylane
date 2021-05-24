@@ -147,18 +147,6 @@ class DefaultQubitTorch(DefaultQubit):
         new_tensor[indices] = tensor
         return new_tensor
 
-    # @staticmethod
-    # def _norm(x, ord=None):
-
-    #     # TODO consolidate with PyTorch implementation once this is fixed
-    #     # Neither torch.norm nor torch.linalg.norm currently supports complex
-    #     # vector arguments
-
-    #     if ord and ord != 2:
-    #         raise ValueError('Only 2-norm supported for now')
-
-    #     return torch.sqrt(x @ x.conj())
-
     @staticmethod
     def _allclose(a, b, atol=1e-08):
         return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)

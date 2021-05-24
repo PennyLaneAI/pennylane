@@ -98,7 +98,7 @@ UCos = op_matrix(np.array([
 
 I4_array = np.eye(16)
 I4_array[3,3] = 0
-I4_array[-3,-3] = 0
+I4_array[-4,-4] = 0
 I4 = op_matrix(I4_array)
 
 def PhaseShift(phi, device=None):
