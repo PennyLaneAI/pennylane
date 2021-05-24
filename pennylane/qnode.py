@@ -183,7 +183,14 @@ class QNode:
         self.max_expansion = max_expansion
 
     def __str__(self):
-        return f'<QNode: wires={device.num_wires}, device="{self.device.short_name}", interface="{self.interface}", diff_method="{self.diff_method}">'
+        """String representation."""
+        return f'<QNode: wires={self.device.num_wires}, device="{self.device.short_name}", interface="{self.interface}", diff_method="{self.diff_method}">'
+
+    def __repr__(self):
+        """String representation."""
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        return detail.format(self.device.num_wires, self.device.short_name,
+                self.interface, self.diff_method)
 
     # pylint: disable=too-many-return-statements
     @staticmethod
