@@ -91,9 +91,7 @@ perform the conversion by using the :meth:`~.QNode.to_torch` method:
 >>> qnode1
 <QNode: device='default.mixed', func=circuit1, wires=2, interface=PyTorch>
 
-``qnode1()`` is now a PyTorch-capable QNode, as well. Internally, the
-:meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
-:meth:`TorchInterface.apply <~.interfaces.torch.TorchInterface.apply>` function to do the conversion.
+``qnode1()`` is now a PyTorch-capable QNode, as well.
 
 
 .. _pytorch_qgrad:
