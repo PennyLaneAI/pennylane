@@ -25,13 +25,13 @@ try:
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
+from string import ascii_letters as ABC
 from pennylane import device
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
-from . import DefaultQubit
 import numpy as np
+from . import DefaultQubit
 
-from string import ascii_letters as ABC
 
 ABC_ARRAY = np.array(list(ABC))
 
