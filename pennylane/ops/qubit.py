@@ -935,9 +935,7 @@ class ControlledPhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]]
-        )
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -1255,17 +1253,12 @@ class PauliRot(Operation):
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
                 np.kron,
-                [
-                    PauliRot._PAULI_CONJUGATION_MATRICES[gate]
-                    for gate in non_identity_gates
-                ],
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj()
-                    @ multi_Z_rot_generator
-                    @ conjugation_matrix,
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
@@ -2302,9 +2295,7 @@ class ControlledQubitUnitary(QubitUnitary):
         U = params[0]
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
-            raise ValueError(
-                f"Input unitary must be of shape {(target_dim, target_dim)}"
-            )
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
         # Saving for the circuit drawer
         self._target_wires = wires
@@ -2336,9 +2327,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(
-                np.eye(self._padding_left), self.U, np.eye(self._padding_right)
-            )
+            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
 
         params = list(params)
         params[0] = self._CU
@@ -2349,29 +2338,21 @@ class ControlledQubitUnitary(QubitUnitary):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError(
-                    "Length of control bit string must equal number of control wires."
-                )
+                raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
             if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError(
-                    "String of control values can contain only '0' or '1'."
-                )
+                raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError(
-                "Alternative control values must be passed as a binary string."
-            )
+            raise ValueError("Alternative control values must be passed as a binary string.")
 
         return control_int
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(
-            *self.parameters, control_wires=ctrl_wires, wires=self._target_wires
-        )
+        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
 class MultiControlledX(ControlledQubitUnitary):
@@ -2451,9 +2432,7 @@ class MultiControlledX(ControlledQubitUnitary):
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
         ):
-            raise ValueError(
-                "The work wires must be different from the control and target wires"
-            )
+            raise ValueError("The work wires must be different from the control and target wires")
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
@@ -2470,9 +2449,7 @@ class MultiControlledX(ControlledQubitUnitary):
     def decomposition(self, *args, **kwargs):
 
         if len(self.control_wires) > 2 and len(self._work_wires) == 0:
-            raise ValueError(
-                f"At least one work wire is required to decompose operation: {self}"
-            )
+            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
@@ -3118,11 +3095,7 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [
-            QubitUnitary(
-                self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)
-            )
-        ]
+        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
 # =============================================================================

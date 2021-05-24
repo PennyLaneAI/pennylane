@@ -82,9 +82,7 @@ U_cswap = np.array(
 )
 
 
-H = np.array(
-    [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-)
+H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 
 THETA = np.linspace(0.11, 1, 3)
@@ -200,13 +198,9 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply([operation(wires=[0])])
 
-        assert np.allclose(
-            qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0
-        )
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output", test_data_no_parameters_inverses
-    )
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters_inverses)
     def test_apply_operation_single_wire_no_parameters_inverse(
         self, qubit_device_1_wire, tol, operation, input, expected_output
     ):
@@ -216,9 +210,7 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply([operation(wires=[0]).inv()])
 
-        assert np.allclose(
-            qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0
-        )
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     test_data_two_wires_no_parameters = [
         (qml.CNOT, [1, 0, 0, 0], [1, 0, 0, 0]),
@@ -266,9 +258,7 @@ class TestApply:
 
     all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_iswap
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output", all_two_wires_no_parameters
-    )
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
     def test_apply_operation_two_wires_no_parameters(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -285,13 +275,9 @@ class TestApply:
             rtol=0,
         )
 
-    all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters + test_data_iswap_inv
-    )
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output", all_two_wires_no_parameters_inv
-    )
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
     def test_apply_operation_two_wires_no_parameters_inverse(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -314,9 +300,7 @@ class TestApply:
         (qml.CSWAP, [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1, 0, 0]),
     ]
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output", test_data_three_wires_no_parameters
-    )
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
     def test_apply_operation_three_wires_no_parameters(
         self, qubit_device_3_wires, tol, operation, input, expected_output
     ):
@@ -333,9 +317,7 @@ class TestApply:
             rtol=0,
         )
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output", test_data_three_wires_no_parameters
-    )
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
     def test_apply_operation_three_wires_no_parameters_inverse(
         self, qubit_device_3_wires, tol, operation, input, expected_output
     ):
@@ -570,9 +552,7 @@ class TestApply:
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
-        assert np.allclose(
-            qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0
-        )
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
@@ -587,9 +567,7 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply([operation(*par, wires=[0]).inv()])
 
-        assert np.allclose(
-            qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0
-        )
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     test_data_two_wires_with_parameters = [
         (qml.CRX, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
@@ -871,16 +849,10 @@ class TestApply:
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        with pytest.raises(
-            ValueError, match="Sum of amplitudes-squared does not equal one."
-        ):
-            qubit_device_2_wires.apply(
-                [qml.QubitStateVector(np.array([1, -1]), wires=[0])]
-            )
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+            qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
 
-        with pytest.raises(
-            ValueError, match=r"State vector must be of length 2\*\*wires."
-        ):
+        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires."):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
@@ -901,9 +873,7 @@ class TestApply:
         with pytest.raises(
             ValueError, match="BasisState parameter must consist of 0 or 1 integers."
         ):
-            qubit_device_2_wires.apply(
-                [qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])]
-            )
+            qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
             ValueError, match="BasisState parameter and wires must be of equal length."
@@ -1403,31 +1373,19 @@ class TestDefaultQubitIntegration:
                 "Hermitian",
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
                 5 / 3,
-                [
-                    np.array(
-                        [[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]
-                    )
-                ],
+                [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])],
             ),
             (
                 "Hermitian",
                 [0, 0, 0, 1],
                 0,
-                [
-                    np.array(
-                        [[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]
-                    )
-                ],
+                [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])],
             ),
             (
                 "Hermitian",
                 [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
                 1,
-                [
-                    np.array(
-                        [[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]]
-                    )
-                ],
+                [np.array([[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]])],
             ),
             (
                 "Hermitian",
@@ -1588,9 +1546,7 @@ class TestTensorExpval:
 
         res = dev.expval(obs)
 
-        expected = -(
-            np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)
-        ) / np.sqrt(2)
+        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1665,16 +1621,10 @@ class TestTensorExpval:
         expected = 0.25 * (
             -30
             + 4 * np.cos(phi) * np.sin(theta)
-            + 3
-            * np.cos(varphi)
-            * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
+            + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
             - 3 * np.sin(phi)
             - 2
-            * (
-                5
-                + np.cos(phi) * (6 + 4 * np.sin(theta))
-                + (-3 + 8 * np.sin(theta)) * np.sin(phi)
-            )
+            * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
             * np.sin(varphi)
             + np.cos(theta)
             * (
@@ -1710,9 +1660,7 @@ class TestTensorExpval:
         a = A[0, 0]
         re_b = A[0, 1].real
         d = A[1, 1]
-        expected = (
-            (a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d
-        ) / 2
+        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1740,9 +1688,7 @@ class TestTensorExpval:
         re_b = A[0, 1].real
         d = A[1, 1]
 
-        expected = (
-            (a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d
-        ) / 2
+        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
@@ -1840,10 +1786,7 @@ class TestTensorVar:
             1057
             - np.cos(2 * phi)
             + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2
-            * np.cos(2 * varphi)
-            * np.sin(phi)
-            * (16 * np.cos(phi) + 21 * np.sin(phi))
+            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
             + 16 * np.sin(2 * phi)
             - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
             - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
@@ -1945,9 +1888,7 @@ class TestTensorSample:
         assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
-        expected = -(
-            np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)
-        ) / np.sqrt(2)
+        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
@@ -1995,9 +1936,7 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
-        assert set(np.round(s1, 8).tolist()).issubset(
-            set(np.round(eigvals, 8).tolist())
-        )
+        assert set(np.round(s1, 8).tolist()).issubset(set(np.round(eigvals, 8).tolist()))
 
         mean = s1 @ p
         expected = (
@@ -2019,17 +1958,11 @@ class TestTensorSample:
                 1057
                 - np.cos(2 * phi)
                 + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-                - 2
-                * np.cos(2 * varphi)
-                * np.sin(phi)
-                * (16 * np.cos(phi) + 21 * np.sin(phi))
+                - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
                 + 16 * np.sin(2 * phi)
                 - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
                 - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-                - 24
-                * np.cos(phi)
-                * (np.cos(phi) + 2 * np.sin(phi))
-                * np.sin(2 * varphi)
+                - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
                 - 8
                 * np.cos(theta)
                 * (
@@ -2461,9 +2394,7 @@ class TestApplyOperationUnit:
 
         # Set the internal _apply_diagonal_unitary
         history = []
-        mock_apply_diag = lambda state, matrix, wires: history.append(
-            (state, matrix, wires)
-        )
+        mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_diagonal_unitary", mock_apply_diag)
             assert dev._apply_diagonal_unitary == mock_apply_diag
@@ -2507,9 +2438,7 @@ class TestApplyOperationUnit:
 
         # Set the internal _apply_unitary_einsum
         history = []
-        mock_apply_einsum = lambda state, matrix, wires: history.append(
-            (state, matrix, wires)
-        )
+        mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary_einsum", mock_apply_einsum)
 
@@ -2552,9 +2481,7 @@ class TestApplyOperationUnit:
 
         # Set the internal _apply_unitary_tensordot
         history = []
-        mock_apply_tensordot = lambda state, matrix, wires: history.append(
-            (state, matrix, wires)
-        )
+        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
