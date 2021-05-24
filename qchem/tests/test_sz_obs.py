@@ -27,7 +27,10 @@ terms_2_bk = {
 
 @pytest.mark.parametrize(
     ("orbitals", "mapping", "terms_exp"),
-    [(4, "JORDAN_wigner", terms_1_jw), (6, "bravyi_KITAEV", terms_2_bk),],
+    [
+        (4, "JORDAN_wigner", terms_1_jw),
+        (6, "bravyi_KITAEV", terms_2_bk),
+    ],
 )
 def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
@@ -48,7 +51,10 @@ def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
 
 @pytest.mark.parametrize(
     ("orbitals", "msg_match"),
-    [(-3, "'orbitals' must be greater than 0"), (0, "'orbitals' must be greater than 0"),],
+    [
+        (-3, "'orbitals' must be greater than 0"),
+        (0, "'orbitals' must be greater than 0"),
+    ],
 )
 def test_exception_spin_z(orbitals, msg_match):
     """Test that the function `'spin_z'` throws an exception if the

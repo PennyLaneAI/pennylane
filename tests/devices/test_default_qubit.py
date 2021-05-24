@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import WireError
+from pennylane.wires import Wires, WireError
 
 U = np.array(
     [
@@ -204,7 +204,29 @@ class TestApply:
         ),
     ]
 
-    @pytest.mark.parametrize("operation,input,expected_output", test_data_two_wires_no_parameters)
+    test_data_iswap = [
+        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.ISWAP, [0, 0, 1, 0], [0, 1j, 0, 0]),
+        (
+            qml.ISWAP,
+            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), -1j / math.sqrt(2), 0, 0],
+        ),
+    ]
+
+    test_data_iswap_inv = [
+        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.ISWAP, [0, 0, 1, 0], [0, -1j, 0, 0]),
+        (
+            qml.ISWAP,
+            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
+        ),
+    ]
+
+    all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_iswap
+
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
     def test_apply_operation_two_wires_no_parameters(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -218,7 +240,9 @@ class TestApply:
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize("operation,input,expected_output", test_data_two_wires_no_parameters)
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv
+
+    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
     def test_apply_operation_two_wires_no_parameters_inverse(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -229,7 +253,10 @@ class TestApply:
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
 
     test_data_three_wires_no_parameters = [
@@ -603,6 +630,12 @@ class TestApply:
             [np.array([1, 1, 1, -1])],
         ),
         (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
+        (qml.IsingXX, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingXX, [0, 0, 0, 1], [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingXX, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 1, 0], [0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [1, 0, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0], [math.pi / 2]),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
@@ -1855,6 +1888,33 @@ class TestWiresIntegration:
         with pytest.raises(WireError, match="Did not find some of the wires"):
             dev.execute(tape)
 
+    wires_to_try = [
+        (1, Wires([0]), Wires([0])),
+        (4, Wires([1, 3]), Wires([1, 3])),
+        (["a", 2], Wires([2]), Wires([1])),
+        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+    ]
+
+    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+        """Test that multiple calls to map_wires will use caching."""
+        dev = qml.device("default.qubit", wires=dev_wires)
+
+        original_hits = dev.map_wires.cache_info().hits
+        original_misses = dev.map_wires.cache_info().misses
+
+        # The first call is computed: it's a miss as it didn't come from the cache
+        dev.map_wires(wires_to_map)
+
+        # The number of misses increased
+        assert dev.map_wires.cache_info().misses > original_misses
+
+        # The second call comes from the cache: it's a hit
+        dev.map_wires(wires_to_map)
+
+        # The number of hits increased
+        assert dev.map_wires.cache_info().hits > original_hits
+
 
 class TestGetSlice:
     """Tests for the _get_slice function."""
@@ -1909,8 +1969,8 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    state = np.arange(2 ** 3).reshape((2, 2, 2))
-    dev = qml.device("default.qubit", wires=3)
+    state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
+    dev = qml.device("default.qubit", wires=4)
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
         (qml.PauliY, dev._apply_y),
@@ -1925,6 +1985,9 @@ class TestApplyOps:
         (qml.SWAP, dev._apply_swap),
         (qml.CZ, dev._apply_cz),
     ]
+    three_qubit_ops = [
+        (qml.Toffoli, dev._apply_toffoli),
+    ]
 
     @pytest.mark.parametrize("op, method", single_qubit_ops)
     def test_apply_single_qubit_op(self, op, method, inverse):
@@ -1932,7 +1995,7 @@ class TestApplyOps:
         state_out = method(self.state, axes=[1], inverse=inverse)
         op = op(wires=[1])
         matrix = op.inv().matrix if inverse else op.matrix
-        state_out_einsum = np.einsum("ab,ibk->iak", matrix, self.state)
+        state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
@@ -1942,7 +2005,7 @@ class TestApplyOps:
         op = op(wires=[0, 1])
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2, 2, 2))
-        state_out_einsum = np.einsum("abcd,cdk->abk", matrix, self.state)
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
@@ -1953,7 +2016,40 @@ class TestApplyOps:
         op = op(wires=[2, 1])
         matrix = op.inv().matrix if inverse else op.matrix
         matrix = matrix.reshape((2, 2, 2, 2))
-        state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
+        state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_smaller(self, op, method, inverse):
+        """Test if the application of three qubit operations is correct when both control wires are
+        smaller than the target wire."""
+        state_out = method(self.state, axes=[0, 2, 3])
+        op = op(wires=[0, 2, 3])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,dkef->akbc", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_greater(self, op, method, inverse):
+        """Test if the application of three qubit operations is correct when both control wires are
+        greater than the target wire."""
+        state_out = method(self.state, axes=[2, 1, 0])
+        op = op(wires=[2, 1, 0])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
+        """Test if the application of three qubit operations is correct when one control wire is smaller
+        and one control wire is greater than the target wire."""
+        state_out = method(self.state, axes=[3, 1, 2])
+        op = op(wires=[3, 1, 2])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
 

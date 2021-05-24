@@ -1,3 +1,17 @@
+
+<p align="center">
+  <a href="https://unitaryfund.github.io/unitaryhack/">
+    <img width=50% src="https://unitaryfund.github.io/unitaryhack/assets/logo-date.png">
+  </a>
+</p>
+
+<p align="center">
+  <strong>PennyLane is taking part in <a href="https://unitaryfund.github.io/unitaryhack/">unitaryHACK</a>! 
+  Check out our list of eligible issues <a href="https://github.com/PennyLaneAI/pennylane/blob/master/unitaryhack.md">here</a></strong>.
+</p>
+
+<br>
+
 <p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
@@ -42,7 +56,6 @@
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
 </p>
 
-
 ## Key Features
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
@@ -61,7 +74,7 @@
 
 ## Installation
 
-PennyLane requires Python version 3.6 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.7 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console

@@ -2,9 +2,167 @@
 
 <h3>New features since last release</h3>
 
-* TBD: Add `qml.qaoa.cycle` (when structure is finalised)
+* PennyLane now has a ``kernels`` module.
+  It provides basic functionalities for working with quantum kernels as well as 
+  post-processing methods to mitigate sampling errors and device noise:
+
+```python
+import pennylane as qml
+from pennylane import numpy as np
+
+num_wires = 6
+wires = range(num_wires)
+
+dev = qml.device('default.qubit', wires=num_wires)
+
+@qml.qnode(dev)
+def kernel_circuit(x1, x2):
+    qml.templates.AngleEmbedding(x1, wires=wires)
+    qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+    return qml.probs(wires)
+
+kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+# "Training feature vectors"
+X_train = np.random.random((10, 6))
+# Create symmetric square kernel matrix (for training)
+K = qml.kernels.square_kernel_matrix(X_train, kernel)
+# Add some (symmetric) Gaussian noise to the kernel matrix.
+N = np.random.randn(10, 10)
+K += (N + N.T) / 2
+        
+K1 = qml.kernels.displace_matrix(K)
+K2 = qml.kernels.closest_psd_matrix(K)
+K3 = qml.kernels.threshold_matrix(K)
+K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
+K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
+K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+
+# "Testing feature vectors"
+X_test = np.random.random((5, 6))
+# Compute kernel between test and training data.
+K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
+```
+
+* Added CPhase operation as an alias for ControlledPhaseShift operation
+  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
+
+* The `qml.Toffoli` operation now has a decomposition over elementary gates. 
+  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
+
+* Added a new noise channel, `qml.ResetError`.
+  [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321).
+
+* The `qml.SWAP`  operation now has a decomposition over elementary gates. [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+
+* Added functionality for constructing and manipulating the Pauli group
+  [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
+  The function `pennylane.grouping.pauli_group` provides a generator to
+  easily loop over the group, or construct and store it in its entirety.
+  For example, we can construct the 3-qubit Pauli group like so:
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group
+  >>> pauli_group_1_qubit = list(pauli_group(1))
+  >>> pauli_group_1_qubit
+  [Identity(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]), PauliY(wires=[0])]
+  ```
+
+  We can multiply together its members at the level of Pauli words
+  using the `pauli_mult` and `pauli_multi_with_phase` functions.
+  This can be done on arbitrarily-labeled wires as well, by defining a wire map.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_group, pauli_mult
+  >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+  >>> pg = list(pauli_group(3, wire_map=wire_map))
+  >>> pg[3]
+  PauliZ(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pg[55]
+  PauliY(wires=['a']) @ PauliY(wires=['b']) @ PauliZ(wires=['c'])
+  >>> pauli_mult(pg[3], pg[55], wire_map=wire_map)
+  PauliY(wires=['a']) @ PauliX(wires=['b'])
+  ```
+
+  Functions for conversion of Pauli observables to strings (and back),
+  are included.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
+  >>> pauli_word_to_string(pg[55], wire_map=wire_map)
+  'YYZ'
+  >>> string_to_pauli_word('ZXY', wire_map=wire_map)
+  PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
+  ```
+
+  Calculation of the matrix representation for arbitrary Paulis and wire maps is now
+  also supported.
+
+  ```pycon
+  >>> from pennylane.grouping import pauli_word_to_matrix
+  >>> wire_map = {'a' : 0, 'b' : 1}
+  >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
+  >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
+  array([[ 1.,  0.,  0.,  0.],
+         [ 0., -1.,  0., -0.],
+         [ 0.,  0.,  1.,  0.],
+         [ 0., -0.,  0., -1.]])
+  ```
+
+* Functionality to support solving the maximum-weighted cycle problem has been added to the `qaoa`
+  module.
   [(#1207)](https://github.com/PennyLaneAI/pennylane/pull/1207)
   [(#1209)](https://github.com/PennyLaneAI/pennylane/pull/1209)
+  [(#1251)](https://github.com/PennyLaneAI/pennylane/pull/1251)
+  [(#1213)](https://github.com/PennyLaneAI/pennylane/pull/1213)
+  [(#1220)](https://github.com/PennyLaneAI/pennylane/pull/1220)
+  [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
+  [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
+  [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
+  
+  The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
+  
+  ```pycon
+  >>> a = np.random.random((3, 3))
+  >>> np.fill_diagonal(a, 0)
+  >>> g = nx.DiGraph(a)  # create a random directed graph
+  >>> cost, mixer, mapping = qml.qaoa.max_weight_cycle(g)
+  >>> print(cost)
+    (-0.9775906842165344) [Z2]
+  + (-0.9027248603361988) [Z3]
+  + (-0.8722207409852838) [Z0]
+  + (-0.6426184210832898) [Z5]
+  + (-0.2832594164291379) [Z1]
+  + (-0.0778133996933755) [Z4]
+  >>> print(mixer)
+    (-0.25) [X0 Y1 Y5]
+  + (-0.25) [X1 Y0 Y3]
+  + (-0.25) [X2 Y3 Y4]
+  + (-0.25) [X3 Y2 Y1]
+  + (-0.25) [X4 Y5 Y2]
+  + (-0.25) [X5 Y4 Y0]
+  + (0.25) [X0 X1 X5]
+  + (0.25) [Y0 Y1 X5]
+  + (0.25) [Y0 X1 Y5]
+  + (0.25) [X1 X0 X3]
+  + (0.25) [Y1 Y0 X3]
+  + (0.25) [Y1 X0 Y3]
+  + (0.25) [X2 X3 X4]
+  + (0.25) [Y2 Y3 X4]
+  + (0.25) [Y2 X3 Y4]
+  + (0.25) [X3 X2 X1]
+  + (0.25) [Y3 Y2 X1]
+  + (0.25) [Y3 X2 Y1]
+  + (0.25) [X4 X5 X2]
+  + (0.25) [Y4 Y5 X2]
+  + (0.25) [Y4 X5 Y2]
+  + (0.25) [X5 X4 X0]
+  + (0.25) [Y5 Y4 X0]
+  + (0.25) [Y5 X4 Y0]
+  >>> mapping
+  {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
+  ``` 
+ Additional functionality can be found in the `qml.qaoa.cycle` module.
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
@@ -35,7 +193,82 @@
   (0, 1)
   ```
 
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
+* Ising ZZ gate functionality added.
+  [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
+
+* The ISWAP operation has been added to the `default_qubit` device.
+  [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
+
+* Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
+
 <h3>Improvements</h3>
+
+*  A decomposition has been added for the `qml.CSWAP` operation.
+  [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
+
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
+* The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
+  an ancilla register of worker wires is required to support the decomposition.
+  [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
+  
+  ```python
+  ctrl_wires = [f"c{i}" for i in range(5)]
+  work_wires = [f"w{i}" for i in range(3)]
+  target_wires = ["t0"]
+  all_wires = ctrl_wires + work_wires + target_wires
+
+  dev = qml.device("default.qubit", wires=all_wires)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.MultiControlledX(control_wires=ctrl_wires, wires=target_wires, work_wires=work_wires)
+  ```
+  
+  ```pycon
+  >>> tape = tape.expand(depth=2)
+  >>> print(tape.draw(wire_order=Wires(all_wires)))
+   c0: ──────────────╭C──────────────────────╭C──────────┤  
+   c1: ──────────────├C──────────────────────├C──────────┤  
+   c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤  
+   c3: ──────╭C──│───│───│───╭C──────╭C──│───│───│───╭C──┤  
+   c4: ──╭C──│───│───│───│───│───╭C──│───│───│───│───│───┤  
+   w0: ──│───│───├C──╰X──├C──│───│───│───├C──╰X──├C──│───┤  
+   w1: ──│───├C──╰X──────╰X──├C──│───├C──╰X──────╰X──├C──┤  
+   w2: ──├C──╰X──────────────╰X──├C──╰X──────────────╰X──┤  
+   t0: ──╰X──────────────────────╰X──────────────────────┤  
+  ```
+
+* The `qml.SingleExcitation` and `qml.DoubleExcitation` operations now
+  have decompositions over elementary gates, and their gradient recipes
+  have been updated to use the four-term parameter-shift rules.
+  [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
+
+* The `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` operations now
+  have decompositions over elementary gates.
+  [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
+
+* The `Device` class now uses caching when mapping wires.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* The `Wires` class now uses caching for computing its `hash`.
+  [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
+
+* Added custom gate application for Toffoli in `default.qubit`.
+  [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
 
 * The device test suite now provides test cases for checking gates by comparing
   expectation values.
@@ -44,11 +277,67 @@
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
 
+* Adds a `hamiltonian_expand` tape transform. This takes a tape ending in 
+  `qml.expval(H)`, where `H` is a Hamiltonian, and maps it to a collection 
+  of tapes which can be executed and passed into a post-processing function yielding 
+  the expectation value.
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+   
+  Example use:
+    
+  ```python
+  H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
+  
+  with qml.tape.QuantumTape() as tape:  
+      qml.Hadamard(wires=1)
+      return qml.expval(H)
+  
+  tapes, fn = qml.transforms.hamiltonian_expand(tape)
+  dev = qml.device("default.qubit", wires=3)
+  res = dev.batch_execute(tapes)
+  ```
+  ```pycon
+  >>> fn(res)
+  4.0
+  ```
+
+* PennyLane's `qchem` package and tests are now code-formatted using `black -l 100`.
+  [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
+
 <h3>Breaking changes</h3>
+
+* Removes support for Python 3.6 and begin testing for Python 3.9.
+  [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
 
+* Fixes drawing QNodes with no operations.
+  [(#1354)](https://github.com/PennyLaneAI/pennylane/pull/1354)
+
+* Fixes incorrect wires in the decomposition of the `ControlledPhaseShift` operation.
+  [(#1338)](https://github.com/PennyLaneAI/pennylane/pull/1338)
+
+* Fixed tests for the `Permute` operation that used a QNode and hence expanded
+  tapes twice instead of once due to QNode tape expansion and an explicit tape
+  expansion call.
+  [(#1318)](https://github.com/PennyLaneAI/pennylane/pull/1318).
+
+* Prevent Hamiltonians that share wires from being multiplied together.
+  [(#1273)](https://github.com/PennyLaneAI/pennylane/pull/1273)
+
+* Fixed a bug where the custom range sequences could not be passed
+  to the `StronglyEntanglingLayers` template.
+  [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
+
 <h3>Documentation</h3>
+
+* Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
+
+* Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
+  [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
+
+* Remove unsupported `None` option from the `qml.QNode` docstrings.
+  [(#1271)](https://github.com/PennyLaneAI/pennylane/pull/1271)
 
 * Updated the docstring of `qml.PolyXP` to reference the new location of internal
   usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
@@ -60,7 +349,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal Száva
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
+Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer,
+Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
 
 # Release 0.15.1 (current release)
 
@@ -95,7 +386,8 @@ Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Josh Izaac, Antal 
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Maria Schuld, Antal Száva.
+Thomas Bromley, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ryan Hill,
+Josh Izaac, Christina Lee, Maria Schuld, Antal Száva.
 
 # Release 0.15.0
 
@@ -627,7 +919,7 @@ fully differentiable.
 * Due to the addition of `density_matrix()` as a return type from a QNode, tuples are now supported
   by the `output_dim` parameter in `qnn.KerasLayer`.
   [(#1070)](https://github.com/PennyLaneAI/pennylane/pull/1070)
-
+  
 * Two new utility methods are provided for working with quantum tapes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
