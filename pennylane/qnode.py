@@ -371,9 +371,7 @@ class QNode:
         """
         # TODO: update when all capabilities keys changed to "supports_reversible_diff"
         supports_reverse = device.capabilities().get("supports_reversible_diff", False)
-        supports_reverse = supports_reverse or device.capabilities().get(
-            "reversible_diff", False
-        )
+        supports_reverse = supports_reverse or device.capabilities().get("reversible_diff", False)
 
         if not supports_reverse:
             raise ValueError(
@@ -401,9 +399,7 @@ class QNode:
         """
         supported_device = hasattr(device, "_apply_operation")
         supported_device = supported_device and hasattr(device, "_apply_unitary")
-        supported_device = supported_device and device.capabilities().get(
-            "returns_state"
-        )
+        supported_device = supported_device and device.capabilities().get("returns_state")
         supported_device = supported_device and hasattr(device, "adjoint_jacobian")
         # The above provides a minimal set of requirements that we can likely improve upon in
         # future, or alternatively summarize within a single device capability. Moreover, we also
@@ -490,9 +486,7 @@ class QNode:
             # as trainable. This should be removed at some point, forcing users
             # to specify `requires_grad=True` for trainable parameters.
             args = [
-                anp.array(a, requires_grad=True)
-                if not hasattr(a, "requires_grad")
-                else a
+                anp.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
                 for a in args
             ]
 
@@ -506,9 +500,7 @@ class QNode:
         else:
             measurement_processes = self.qfunc_output
 
-        if not all(
-            isinstance(m, qml.measure.MeasurementProcess) for m in measurement_processes
-        ):
+        if not all(isinstance(m, qml.measure.MeasurementProcess) for m in measurement_processes):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
@@ -526,9 +518,7 @@ class QNode:
             else:
                 self.INTERFACE_MAP[self.interface](self)
 
-        if not all(
-            ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)
-        ):
+        if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -545,9 +535,7 @@ class QNode:
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
             isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
-            or not self.device.supports_operation(
-                op.name
-            )  # unsupported ops must be expanded
+            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
             for op in self.qtape.operations
         )
 
@@ -590,15 +578,11 @@ class QNode:
         # actually run so she has full control. This could be done by changing the class
         # of the user's device before and after executing the tape.
         if self.device is not self._original_device:
-            self._original_device._num_executions += (
-                1  # pylint: disable=protected-access
-            )
+            self._original_device._num_executions += 1  # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
             if hasattr(self._original_device, "_pre_rotated_state"):
-                self._original_device._pre_rotated_state = (
-                    self.device._pre_rotated_state
-                )
+                self._original_device._pre_rotated_state = self.device._pre_rotated_state
 
             # Update for state vector simulators that have the _state attribute
             if hasattr(self._original_device, "_state"):
@@ -624,9 +608,9 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        return qml.metric_tensor(
-            self, diag_approx=diag_approx, only_construct=only_construct
-        )(*args, **kwargs)
+        return qml.metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
+            *args, **kwargs
+        )
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False
