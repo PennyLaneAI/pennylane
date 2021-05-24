@@ -182,6 +182,9 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = max_expansion
 
+    def __str__(self):
+        return f'<QNode: wires={device.num_wires}, device="{self.device.short_name}", interface="{self.interface}", diff_method="{self.diff_method}">'
+
     # pylint: disable=too-many-return-statements
     @staticmethod
     def get_tape(device, interface, diff_method="best"):
