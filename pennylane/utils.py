@@ -22,6 +22,7 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
+import warnings
 
 import numpy as np
 
@@ -239,6 +240,10 @@ def inv(operation_list):
     If the inversion happens inside a QNode, the operations are removed and requeued
     in the reversed order for proper inversion.
 
+    .. warning::
+        Use of :func:`~.inv()` is deprecated and should be replaced with
+        :func:`~.adjoint()`.
+
     **Example:**
 
     The following example illuminates the inversion of a template:
@@ -291,6 +296,11 @@ def inv(operation_list):
     Returns:
         List[~.Operation]: The inverted list of operations
     """
+
+    warnings.warn(
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
+        UserWarning,
+    )
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif operation_list is None:
@@ -444,3 +454,37 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
 
     return expanded_tensor.reshape(2 ** M)
+
+
+def frobenius_inner_product(A, B, normalize=False):
+    r"""Frobenius inner product between two matrices.
+
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
+    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
+    matrices with real-valued entries.
+
+    Args:
+        A (array[float]): First matrix, assumed to be a square array.
+        B (array[float]): Second matrix, assumed to be a square array.
+        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
+            Defaults to False.
+
+    Returns:
+        float: Frobenius inner product of A and B
+
+    **Example**
+
+    >>> A = np.random.random((3,3))
+    >>> B = np.random.random((3,3))
+    >>> qml.utils.frobenius_inner_product(A, B)
+    3.091948202943376
+    """
+    inner_product = np.sum(A * B)
+
+    if normalize:
+        inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
+
+    return inner_product

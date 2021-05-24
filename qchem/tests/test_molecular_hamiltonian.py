@@ -41,7 +41,14 @@ coordinates = np.array(
 
 
 @pytest.mark.parametrize(
-    ("charge", "mult", "package", "nact_els", "nact_orbs", "mapping",),
+    (
+        "charge",
+        "mult",
+        "package",
+        "nact_els",
+        "nact_orbs",
+        "mapping",
+    ),
     [
         (0, 1, "psi4", 2, 2, "jordan_WIGNER"),
         (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
@@ -50,7 +57,15 @@ coordinates = np.array(
     ],
 )
 def test_building_hamiltonian(
-    charge, mult, package, nact_els, nact_orbs, mapping, psi4_support, requires_babel, tmpdir,
+    charge,
+    mult,
+    package,
+    nact_els,
+    nact_orbs,
+    mapping,
+    psi4_support,
+    requires_babel,
+    tmpdir,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the
