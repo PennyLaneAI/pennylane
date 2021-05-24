@@ -16,10 +16,8 @@ values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
-from openfermion.ops import FermionOperator
-from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
-from . import structure
+from . import openfermion, structure
 
 
 def _spin2_matrix_elements(sz):
@@ -107,7 +105,7 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
         \vert \bm{\gamma}, \bm{\delta} \rangle ~
         \hat{c}_\bm{\alpha}^\dagger \hat{c}_\bm{\beta}^\dagger
         \hat{c}_\bm{\gamma} \hat{c}_\bm{\delta},
-    
+
     where the two-particle matrix elements are computed as,
 
     .. math::
@@ -207,9 +205,9 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     table = _spin2_matrix_elements(sz)
 
     # create the list of ``FermionOperator`` objects
-    s2_op = FermionOperator("") * 3 / 4 * electrons
+    s2_op = openfermion.ops.FermionOperator("") * 3 / 4 * electrons
     for i in table:
-        s2_op += FermionOperator(
+        s2_op += openfermion.ops.FermionOperator(
             ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
         )
 
@@ -302,9 +300,9 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
         )
 
     # Initialize the FermionOperator
-    mb_obs = FermionOperator("") * init_term
+    mb_obs = openfermion.ops.FermionOperator("") * init_term
     for ops in fermion_ops:
-        if not isinstance(ops, FermionOperator):
+        if not isinstance(ops, openfermion.ops.FermionOperator):
             raise TypeError(
                 "Elements in the lists are expected to be of type 'FermionOperator'; got {}".format(
                     type(ops)
@@ -314,9 +312,11 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return structure.convert_observable(bravyi_kitaev(mb_obs), wires=wires)
+        return structure.convert_observable(
+            openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
+        )
 
-    return structure.convert_observable(jordan_wigner(mb_obs), wires=wires)
+    return structure.convert_observable(openfermion.transforms.jordan_wigner(mb_obs), wires=wires)
 
 
 def spin_z(orbitals, mapping="jordan_wigner", wires=None):
@@ -369,9 +369,9 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    sz_op = FermionOperator()
+    sz_op = openfermion.ops.FermionOperator()
     for i in table:
-        sz_op += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+        sz_op += openfermion.ops.FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
     return observable([sz_op], mapping=mapping, wires=wires)
 
@@ -432,9 +432,9 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T
 
-    N_obs = FermionOperator()
+    N_obs = openfermion.ops.FermionOperator()
     for i in table:
-        N_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+        N_obs += openfermion.ops.FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
     return observable([N_obs], mapping=mapping, wires=wires)
 
@@ -509,7 +509,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if not core:
         t_core = 0
     else:
-        if any([i > orbitals - 1 or i < 0 for i in core]):
+        if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
                 "Indices of core orbitals must be between 0 and {}; got core = {}".format(
                     orbitals - 1, core
@@ -525,7 +525,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         else:
             active = [i for i in range(orbitals) if i not in core]
 
-    if any([i > orbitals - 1 or i < 0 for i in active]):
+    if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
             "Indices of active orbitals must be between 0 and {}; got active = {}".format(
                 orbitals - 1, active
@@ -544,7 +544,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ]
 
     # Build the FermionOperator representing T
-    t_op = FermionOperator("") * t_core
+    t_op = openfermion.ops.FermionOperator("") * t_core
     for pair in pairs:
         alpha, beta = pair
         element = matrix_elements[alpha, beta]
@@ -552,10 +552,10 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         # spin-up term
         a = 2 * active.index(alpha)
         b = 2 * active.index(beta)
-        t_op += FermionOperator(((a, 1), (b, 0)), element)
+        t_op += openfermion.ops.FermionOperator(((a, 1), (b, 0)), element)
 
         # spin-down term
-        t_op += FermionOperator(((a + 1, 1), (b + 1, 0)), element)
+        t_op += openfermion.ops.FermionOperator(((a + 1, 1), (b + 1, 0)), element)
 
     return t_op
 
@@ -680,7 +680,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if not core:
         v_core = 0
     else:
-        if any([i > orbitals - 1 or i < 0 for i in core]):
+        if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
                 "Indices of core orbitals must be between 0 and {}; got core = {}".format(
                     orbitals - 1, core
@@ -703,7 +703,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         else:
             active = [i for i in range(orbitals) if i not in core]
 
-    if any([i > orbitals - 1 or i < 0 for i in active]):
+    if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
             "Indices of active orbitals must be between 0 and {}; got active = {}".format(
                 orbitals - 1, active
@@ -722,7 +722,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ]
 
     # Build the FermionOperator representing V
-    v_op = FermionOperator("") * v_core
+    v_op = openfermion.ops.FermionOperator("") * v_core
 
     # add renormalized (due to core orbitals) "one-particle" operators
     if core:
@@ -736,10 +736,10 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
                 # up-up term
                 a = 2 * active.index(alpha)
                 b = 2 * active.index(beta)
-                v_op += FermionOperator(((a, 1), (b, 0)), element)
+                v_op += openfermion.ops.FermionOperator(((a, 1), (b, 0)), element)
 
                 # down-down term
-                v_op += FermionOperator(((a + 1, 1), (b + 1, 0)), element)
+                v_op += openfermion.ops.FermionOperator(((a + 1, 1), (b + 1, 0)), element)
 
     # add two-particle operators
     for quad in quads:
@@ -751,24 +751,24 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
         b = 2 * active.index(beta)
         g = 2 * active.index(gamma)
         d = 2 * active.index(delta)
-        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # up-down-down-up term
         b = 2 * active.index(beta) + 1
         g = 2 * active.index(gamma) + 1
-        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # down-up-up-down term
         a = 2 * active.index(alpha) + 1
         b = 2 * active.index(beta)
         g = 2 * active.index(gamma)
         d = 2 * active.index(delta) + 1
-        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
         # down-down-down-down term
         b = 2 * active.index(beta) + 1
         g = 2 * active.index(gamma) + 1
-        v_op += FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
+        v_op += openfermion.ops.FermionOperator(((a, 1), (b, 1), (g, 0), (d, 0)), 0.5 * element)
 
     return v_op
 

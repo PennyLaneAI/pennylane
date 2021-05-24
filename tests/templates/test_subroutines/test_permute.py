@@ -72,10 +72,10 @@ class TestDecomposition:
 
         two_cycle()
 
-        # expand the Permute operation
-        tape = two_cycle.qtape.expand()
+        tape = two_cycle.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in two_cycle.qtape.operations] == expected_wires
 
@@ -124,10 +124,10 @@ class TestDecomposition:
 
         cycle()
 
-        # expand the Permute operation
-        tape = cycle.qtape.expand()
+        tape = cycle.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in cycle.qtape.operations] == expected_wires
 
@@ -172,10 +172,10 @@ class TestDecomposition:
 
         arbitrary_perm()
 
-        # expand the Permute operation
-        tape = arbitrary_perm.qtape.expand()
+        tape = arbitrary_perm.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in arbitrary_perm.qtape.operations] == expected_wires
 
@@ -230,10 +230,10 @@ class TestDecomposition:
 
         subset_perm()
 
-        # expand the Permute operation
-        tape = subset_perm.qtape.expand()
+        tape = subset_perm.qtape
 
-        # Ensure all operations are SWAPs, and that the wires are the same
+        # Check that the Permute operation was expanded to SWAPs when the QNode
+        # is evaluated, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
         assert [op.wires.labels for op in subset_perm.qtape.operations] == expected_wires
 

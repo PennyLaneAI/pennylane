@@ -4,7 +4,7 @@ TensorFlow interface
 ====================
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
-quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with PyTorch,
+quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with TensorFlow,
 either by using the ``interface='tf'`` flag in the QNode Decorator, or by calling the
 :meth:`QNode.to_tf() <pennylane.qnodes.JacobianQNode.to_tf>` method. Internally, the translation is
 executed by the :func:`~.interfaces.tf.to_tf` function that returns the

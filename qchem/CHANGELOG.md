@@ -6,11 +6,22 @@
 
 <h3>Bug fixes</h3>
 
+* Include tolerance in the``convert_observable`` function to check if the input QubitOperator
+  contains complex coefficients. This avoid raising an error if the coefficient's imaginary part is less than `2.22e-08`.
+  [(#1309)](https://github.com/PennyLaneAI/pennylane/pull/1309)
+
+* An error message is raised if a QubitOperator with complex coefficients is passed
+  to the ``convert_observable`` function. At present, the ``vqe.Hamiltonian`` class does not
+  support complex coefficients.
+  [(#1277)](https://github.com/PennyLaneAI/pennylane/pull/1277)
+
 <h3>Breaking changes</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Alain Delgado Gran
 
 # Release 0.15.1
 
