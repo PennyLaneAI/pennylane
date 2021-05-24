@@ -36,7 +36,98 @@ from string import ascii_letters as ABC
 ABC_ARRAY = np.array(list(ABC))
 
 class DefaultQubitTorch(DefaultQubit):
-    # TODO docstring
+    """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
+
+    **Short name:** ``default.qubit.torch``
+
+    This device provides a pure-state qubit simulator written using PyTorch.
+    As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+    be faster than the parameter-shift rule for analytic quantum gradients
+    when the number of parameters to be optimized is large.
+
+    To use this device, you will need to install PyTorch:
+
+    .. code-block:: console
+
+        pip install torch>=1.8.1
+
+    **Example**
+
+    The ``default.qubit.torch`` is designed to be used with end-to-end classical backpropagation
+    (``diff_method="backprop"``) with the PyTorch interface. This is the default method
+    of differentiation when creating a QNode with this device.
+
+    Using this method, the created QNode is a 'white-box', and is
+    tightly integrated with your PyTorch computation:
+
+    >>> dev = qml.device("default.qubit.torch", wires=1)
+    >>> @qml.qnode(dev, interface="torch", diff_method="backprop")
+    ... def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+
+    Autograd mode will also work when using classical backpropagation:
+
+    >>> def cost(weights):
+    ...    return torch.sum(circuit(weights)**3) - 1
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-3.5472e-01, -1.5883e+00,  2.0817e-17])
+
+    Executing the pipeline in PyTorch will allow the whole computation to be run on the GPU,
+    and therefore providing an acceleration. Your parameters need to be instanciated on the same
+    device as the backend device.
+
+    >>> dev = qml.device("default.qubit.torch", wires=1, torch_device='cuda')
+    >>> @qml.qnode(dev, interface="torch", diff_method="backprop")
+    ... def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+
+
+
+    There are a couple of things to keep in mind when using the ``"backprop"``
+    differentiation method for QNodes:
+
+    * You must use the ``"torch"`` interface for classical backpropagation, as PyTorch is
+      used as the device backend.
+
+    * Only exact expectation values, variances, and probabilities are differentiable.
+      When instantiating the device with ``shots!=None``, differentiating QNode
+      outputs will result in ``None``.
+
+
+    If you wish to use a different machine-learning interface, or prefer to calculate quantum
+    gradients using the ``parameter-shift`` or ``finite-diff`` differentiation methods,
+    consider using the ``default.qubit`` device instead.
+
+
+    Args:
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means
+            that the device returns analytical results.
+            If ``shots > 0`` is used, the ``diff_method="backprop"``
+            QNode differentiation method is not supported and it is recommended to consider
+            switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
+        torch_device: the device on which the computation will be run, 'cpu' or 'cuda'
+            default='cpu'
+    """
 
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
@@ -81,7 +172,7 @@ class DefaultQubitTorch(DefaultQubit):
     _flatten = staticmethod(torch.flatten)
 
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device=torch.device('cpu')):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device='cpu'):
         self._torch_device = torch_device
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
