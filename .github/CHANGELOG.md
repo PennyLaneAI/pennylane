@@ -345,7 +345,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
   
-* Updated PyTorch and TensorFlow interface introductions [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
+* Updated PyTorch and TensorFlow interface introductions.
+  [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
 <h3>Contributors</h3>
 
