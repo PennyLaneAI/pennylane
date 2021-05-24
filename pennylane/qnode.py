@@ -187,10 +187,6 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = max_expansion
 
-    def __str__(self):
-        """String representation."""
-        return f'<QNode: wires={self.device.num_wires}, device="{self.device.short_name}", interface="{self.interface}", diff_method="{self.diff_method}">'
-
     def __repr__(self):
         """String representation."""
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
