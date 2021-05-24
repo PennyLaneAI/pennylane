@@ -182,8 +182,8 @@ class DefaultQubitTorch(DefaultQubit):
         self._pre_rotated_state = self._state
 
     # TODO remove once torch.einsum fully supports compex valued tensors
-    def _apply_unitary_einsum(self, state, mat, wires):
-        return self._apply_unitary(state, mat, wires)
+    # def _apply_unitary_einsum(self, state, mat, wires):
+    #     return self._apply_unitary(state, mat, wires)
 
     def _asarray(self, a, dtype=None):
         try:
@@ -198,6 +198,7 @@ class DefaultQubitTorch(DefaultQubit):
 
         return res
 
+    @staticmethod
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
 
@@ -208,10 +209,7 @@ class DefaultQubitTorch(DefaultQubit):
         else:
             return torch.sum(array, dim=axes)
 
-    def _conj(self, inputs):
-        inputs = torch.as_tensor(inputs, dtype=self.C_DTYPE, device=self._torch_device)
-        return torch.conj(inputs)
-
+    @staticmethod
     def _zeros(self, shape, dtype=float):
         return torch.zeros(shape, dtype=dtype, device=self._torch_device)
 
@@ -253,8 +251,18 @@ class DefaultQubitTorch(DefaultQubit):
 
     
     def _get_unitary_matrix(self, unitary):
-        # TODO docstring (see default_qubit_tf.py)
+        """Return the matrix representing a unitary operation.
 
+        Args:
+            unitary (~.Operation): a PennyLane unitary operation
+
+        Returns:
+            torch.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
+            the unitary in the computational basis, or, in the case of a diagonal unitary,
+            a 1D array representing the matrix diagonal. For non-parametric unitaries,
+            the return type will be a ``np.ndarray``. For parametric unitaries, a ``torch.Tensor``
+            object will be returned.
+        """
 
         if unitary.name in self.parametric_ops:
             if unitary.name == "MultiRZ":
@@ -277,6 +285,16 @@ class DefaultQubitTorch(DefaultQubit):
 
 
     def _apply_unitary(self, state, mat, wires):
+        r"""Apply multiplication of a matrix to subsystems of the quantum state.
+
+        Args:
+            state (torch.Tensor[complex]): input state
+            mat (torch.Tensor): matrix to multiply
+            wires (Wires): target wires
+
+        Returns:
+            torch.Tensor[complex]: output state
+        """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
