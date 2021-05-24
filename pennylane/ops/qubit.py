@@ -26,7 +26,10 @@ from scipy.linalg import block_diag
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -196,7 +199,11 @@ class PauliY(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+        return [
+            PauliZ(wires=self.wires),
+            S(wires=self.wires),
+            Hadamard(wires=self.wires),
+        ]
 
     @staticmethod
     def decomposition(wires):
@@ -928,7 +935,9 @@ class ControlledPhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+        return np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -996,14 +1005,24 @@ class Rot(Operation):
 
         return np.array(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires),
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1236,12 +1255,17 @@ class PauliRot(Operation):
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
                 np.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+                [
+                    PauliRot._PAULI_CONJUGATION_MATRICES[gate]
+                    for gate in non_identity_gates
+                ],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    conjugation_matrix.T.conj()
+                    @ multi_Z_rot_generator
+                    @ conjugation_matrix,
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
@@ -1342,7 +1366,10 @@ class CRX(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1411,7 +1438,10 @@ class CRY(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1481,7 +1511,10 @@ class CRZ(DiagonalOperation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1574,8 +1607,18 @@ class CRot(Operation):
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
@@ -1683,7 +1726,10 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
         return INV_SQRT2 * np.array(
-            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+            [
+                [1, -cmath.exp(1j * lam)],
+                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
+            ]
         )
 
     @staticmethod
@@ -1802,16 +1848,16 @@ class IsingXX(Operation):
     def _matrix(cls, *params):
         phi = params[0]
         cos = np.cos(phi / 2)
-        isin = 1j* np.sin(phi / 2)
+        isin = 1j * np.sin(phi / 2)
 
         return np.array(
             [
                 [cos, 0, 0, -isin],
                 [0, cos, -isin, 0],
                 [0, -isin, cos, 0],
-                [-isin, 0, 0, cos]
+                [-isin, 0, 0, cos],
             ],
-            dtype=complex
+            dtype=complex,
         )
 
     @staticmethod
@@ -1993,7 +2039,10 @@ class SingleExcitation(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
-    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -2044,7 +2093,10 @@ class SingleExcitationMinus(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]), -1 / 2]
+    generator = [
+        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -2102,7 +2154,10 @@ class SingleExcitationPlus(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -2225,7 +2280,14 @@ class ControlledQubitUnitary(QubitUnitary):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
+    def __init__(
+        self,
+        *params,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        do_queue=True,
+    ):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -2240,7 +2302,9 @@ class ControlledQubitUnitary(QubitUnitary):
         U = params[0]
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)}"
+            )
 
         # Saving for the circuit drawer
         self._target_wires = wires
@@ -2272,7 +2336,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            self._CU = block_diag(
+                np.eye(self._padding_left), self.U, np.eye(self._padding_right)
+            )
 
         params = list(params)
         params[0] = self._CU
@@ -2283,21 +2349,29 @@ class ControlledQubitUnitary(QubitUnitary):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
+                raise ValueError(
+                    "Length of control bit string must equal number of control wires."
+                )
 
             # Make sure all values are either 0 or 1
             if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError("String of control values can contain only '0' or '1'.")
+                raise ValueError(
+                    "String of control values can contain only '0' or '1'."
+                )
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
+            raise ValueError(
+                "Alternative control values must be passed as a binary string."
+            )
 
         return control_int
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
+        ControlledQubitUnitary(
+            *self.parameters, control_wires=ctrl_wires, wires=self._target_wires
+        )
 
 
 class MultiControlledX(ControlledQubitUnitary):
@@ -2360,7 +2434,12 @@ class MultiControlledX(ControlledQubitUnitary):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True
+        self,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        work_wires=None,
+        do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
@@ -2372,7 +2451,9 @@ class MultiControlledX(ControlledQubitUnitary):
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
         ):
-            raise ValueError("The work wires must be different from the control and target wires")
+            raise ValueError(
+                "The work wires must be different from the control and target wires"
+            )
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
@@ -2389,7 +2470,9 @@ class MultiControlledX(ControlledQubitUnitary):
     def decomposition(self, *args, **kwargs):
 
         if len(self.control_wires) > 2 and len(self._work_wires) == 0:
-            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
+            raise ValueError(
+                f"At least one work wire is required to decompose operation: {self}"
+            )
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
@@ -2477,16 +2560,24 @@ class MultiControlledX(ControlledQubitUnitary):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
         ]
 
@@ -3027,7 +3118,11 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        return [
+            QubitUnitary(
+                self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)
+            )
+        ]
 
 
 # =============================================================================
@@ -3217,7 +3312,10 @@ class QubitSum(Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
+        decomp_ops = [
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.CNOT(wires=[wires[0], wires[2]]),
+        ]
         return decomp_ops
 
     def adjoint(self):

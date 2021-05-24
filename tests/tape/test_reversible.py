@@ -99,7 +99,9 @@ class TestReversibleTape:
         assert tape1.operations[0].name == "QubitStateVector"
         assert tape3.operations[1].name == "PauliZ"
 
-    @pytest.mark.parametrize("op, name", [(qml.CRX, "CRX"), (qml.CRY, "CRY"), (qml.CRZ, "CRZ")])
+    @pytest.mark.parametrize(
+        "op, name", [(qml.CRX, "CRX"), (qml.CRY, "CRY"), (qml.CRZ, "CRZ")]
+    )
     def test_controlled_rotation_gates_exception(self, op, name):
         """Tests that an exception is raised when a controlled
         rotation gate is used with the ReversibleTape."""
@@ -111,7 +113,9 @@ class TestReversibleTape:
             op(0.542, wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="The {} gate is not currently supported".format(name)):
+        with pytest.raises(
+            ValueError, match="The {} gate is not currently supported".format(name)
+        ):
             tape.jacobian(dev)
 
     def test_var_exception(self):
@@ -153,7 +157,9 @@ class TestReversibleTape:
             qml.PhaseShift(0.542, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="The PhaseShift gate is not currently supported"):
+        with pytest.raises(
+            ValueError, match="The PhaseShift gate is not currently supported"
+        ):
             tape.jacobian(dev)
 
 
@@ -198,7 +204,9 @@ class TestGradients:
         numeric_val = tape.jacobian(dev, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("par", [1, -2, 1.623, -0.051, 0])  # intergers, floats, zero
+    @pytest.mark.parametrize(
+        "par", [1, -2, 1.623, -0.051, 0]
+    )  # intergers, floats, zero
     def test_ry_gradient(self, par, mocker, tol):
         """Test that the gradient of the RY gate matches the exact analytic
         formula. Further, make sure the correct gradient methods
@@ -437,18 +445,34 @@ class TestQNodeIntegration:
         # manual gradient
         grad_true0 = (
             expZ(
-                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
+                Rx(reused_p)
+                @ Rz(other_p)
+                @ Ry(reused_p + np.pi / 2)
+                @ Rx(extra_param)
+                @ zero_state
             )
             - expZ(
-                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
+                Rx(reused_p)
+                @ Rz(other_p)
+                @ Ry(reused_p - np.pi / 2)
+                @ Rx(extra_param)
+                @ zero_state
             )
         ) / 2
         grad_true1 = (
             expZ(
-                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+                Rx(reused_p + np.pi / 2)
+                @ Rz(other_p)
+                @ Ry(reused_p)
+                @ Rx(extra_param)
+                @ zero_state
             )
             - expZ(
-                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+                Rx(reused_p - np.pi / 2)
+                @ Rz(other_p)
+                @ Ry(reused_p)
+                @ Rx(extra_param)
+                @ zero_state
             )
         ) / 2
         expected = grad_true0 + grad_true1  # product rule
