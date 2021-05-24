@@ -198,7 +198,6 @@ class DefaultQubitTorch(DefaultQubit):
 
         return res
 
-    @staticmethod
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
 
