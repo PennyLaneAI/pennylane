@@ -21,8 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
-import torch
-
 import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
@@ -697,10 +695,10 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        
+
         if self._state is None:
             return None
-        
+
         prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
 
         return prob

@@ -18,9 +18,9 @@ reference plugin.
 try:
     import torch
 
-    v = torch.__version__.split('.')
-    if int(v[1])<8 or (int(v[1])==8 and int(v[2][0])==0):
-       raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
+    v = torch.__version__.split(".")
+    if int(v[1]) < 8 or (int(v[1]) == 8 and int(v[2][0]) == 0):
+        raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
@@ -34,6 +34,7 @@ from . import DefaultQubit
 
 
 ABC_ARRAY = np.array(list(ABC))
+
 
 class DefaultQubitTorch(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
@@ -148,7 +149,7 @@ class DefaultQubitTorch(DefaultQubit):
         "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
         "DoubleExcitation": torch_ops.DoubleExcitation,
         "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus
+        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = torch.complex128
@@ -161,8 +162,10 @@ class DefaultQubitTorch(DefaultQubit):
     _flatten = staticmethod(torch.flatten)
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
-    #_gather = staticmethod(lambda array, indices: torch.gather(array, 0, torch.tensor(indices)))
-    _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
+    # _gather = staticmethod(lambda array, indices: torch.gather(array, 0, torch.tensor(indices)))
+    _stack = staticmethod(
+        lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out)
+    )
     _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
@@ -171,8 +174,7 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device='cpu'):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device="cpu"):
         self._torch_device = torch_device
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
@@ -222,23 +224,27 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _ravel_multi_index(multi_index, dims):
         # Idea: ravelling a multi-index can be expressed as a matrix-vector product
-        flip = lambda  x: torch.flip(x, dims=[0])
+        flip = lambda x: torch.flip(x, dims=[0])
 
         dims = torch.as_tensor(dims, device=multi_index.device)
         coeffs = torch.ones_like(dims, device=multi_index.device)
         coeffs[:-1] = dims[1:]
         coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
 
-        ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(torch.long)
+        ravelled_indices = (
+            multi_index.T.type(torch.float) @ coeffs.type(torch.float)
+        ).type(torch.long)
         return ravelled_indices
-        
+
     @staticmethod
     def _scatter(indices, array, new_dimensions):
 
         # `array` is now a torch tensor
         tensor = array
 
-        new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
+        new_tensor = torch.zeros(
+            new_dimensions, dtype=tensor.dtype, device=tensor.device
+        )
         new_tensor[indices] = tensor
         return new_tensor
 
@@ -249,13 +255,9 @@ class DefaultQubitTorch(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="torch",
-            supports_reversible_diff=False
-        )
+        capabilities.update(passthru_interface="torch", supports_reversible_diff=False)
         return capabilities
 
-    
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
 
@@ -273,14 +275,11 @@ class DefaultQubitTorch(DefaultQubit):
         if unitary.name in self.parametric_ops:
             if unitary.name == "MultiRZ":
                 mat = self.parametric_ops[unitary.name](
-                    *unitary.parameters,
-                    len(unitary.wires),
-                    device=self._torch_device
+                    *unitary.parameters, len(unitary.wires), device=self._torch_device
                 )
             else:
                 mat = self.parametric_ops[unitary.name](
-                    *unitary.parameters,
-                    device=self._torch_device
+                    *unitary.parameters, device=self._torch_device
                 )
             return mat
 
@@ -288,7 +287,6 @@ class DefaultQubitTorch(DefaultQubit):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
 
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
-
 
     def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -304,9 +302,11 @@ class DefaultQubitTorch(DefaultQubit):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        
-        #CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
+        mat = self._cast(
+            self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE
+        )
+
+        # CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
         axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 

@@ -28,9 +28,11 @@ def diag(input):
     matrix = torch.eye(len(input), dtype=input.dtype, device=input.device)
     return matrix * input
 
+
 # Instantiating on the device (rather than moving) is approx. 100x faster
 def op_matrix(elements):
     return lambda dev: torch.as_tensor(elements, dtype=C_DTYPE, device=dev)
+
 
 I_array = np.array([[1, 0], [0, 1]])
 X_array = np.array([[0, 1], [1, 0]])
@@ -58,48 +60,57 @@ A = op_matrix(np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
 B = op_matrix(np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]]))
 C = op_matrix(np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]))
 
-USin = op_matrix(np.array([
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ]))
+USin = op_matrix(
+    np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    )
+)
 
-UCos = op_matrix(np.array([
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ]))
+UCos = op_matrix(
+    np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    )
+)
 
 I4_array = np.eye(16)
-I4_array[3,3] = 0
-I4_array[-4,-4] = 0
+I4_array[3, 3] = 0
+I4_array[-4, -4] = 0
 I4 = op_matrix(I4_array)
+
 
 def PhaseShift(phi, device=None):
     r"""One-qubit phase shift.
@@ -113,7 +124,10 @@ def PhaseShift(phi, device=None):
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     p = torch.exp(1j * phi)
-    return torch.tensor([1, 0], dtype=torch.complex128, device=device) + p * torch.tensor([0, 1], dtype=torch.complex128, device=device)
+    return torch.tensor(
+        [1, 0], dtype=torch.complex128, device=device
+    ) + p * torch.tensor([0, 1], dtype=torch.complex128, device=device)
+
 
 def ControlledPhaseShift(phi, device=None):
     r"""Two-qubit controlled phase shift.
@@ -127,7 +141,9 @@ def ControlledPhaseShift(phi, device=None):
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     p = torch.exp(1j * phi)
-    return torch.tensor([1, 1, 1, 0], dtype=torch.complex128) + p * torch.tensor([0, 0, 0, 1], dtype=torch.complex128)
+    return torch.tensor([1, 1, 1, 0], dtype=torch.complex128) + p * torch.tensor(
+        [0, 0, 0, 1], dtype=torch.complex128
+    )
 
 
 def RX(theta, device=None):
@@ -171,7 +187,10 @@ def RZ(theta, device=None):
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
-    return p * torch.tensor([1, 0], dtype=torch.complex128, device=device) + torch.conj(p) * torch.tensor([0, 1], dtype=torch.complex128, device=device)
+    return p * torch.tensor([1, 0], dtype=torch.complex128, device=device) + torch.conj(
+        p
+    ) * torch.tensor([0, 1], dtype=torch.complex128, device=device)
+
 
 def MultiRZ(theta, n, device=None):
     r"""Arbitrary multi Z rotation.
@@ -215,7 +234,7 @@ def CRX(theta, device=None):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
-    return  (
+    return (
         torch.cos(theta / 4) ** 2 * II(device)
         - 1j * torch.sin(theta / 2) / 2 * IX(device)
         + torch.sin(theta / 4) ** 2 * ZI(device)
@@ -233,7 +252,7 @@ def CRY(theta, device):
     Returns:
         torch.Tensor[complex]: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device) 
+    theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     return (
         torch.cos(theta / 4) ** 2 * II(device)
         - 1j * torch.sin(theta / 2) / 2 * IY(device)
@@ -255,7 +274,9 @@ def CRZ(theta, device):
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
     p = torch.exp(-0.5j * theta)
-    return torch.cat([torch.as_tensor([1.0, 1.0], device=device), RZ(theta, device)], dim=0)
+    return torch.cat(
+        [torch.as_tensor([1.0, 1.0], device=device), RZ(theta, device)], dim=0
+    )
 
 
 def CRot(a, b, c, device):
@@ -289,7 +310,6 @@ def SingleExcitation(phi, device):
     return c * A(device) + s * B(device) + C(device)
 
 
-
 def SingleExcitationPlus(phi, device):
     r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
 
@@ -306,6 +326,7 @@ def SingleExcitationPlus(phi, device):
     e = torch.exp(1j * phi / 2)
 
     return c * A(device) + s * B(device) + e * C(device)
+
 
 def SingleExcitationMinus(phi, device):
     r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
@@ -377,4 +398,3 @@ def DoubleExcitationMinus(phi, device):
     e = torch.exp(-1j * phi / 2)
 
     return e * I4(device) + c * UCos(device) + s * USin(device)
-    
