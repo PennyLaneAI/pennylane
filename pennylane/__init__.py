@@ -22,7 +22,7 @@ import pkg_resources
 from semantic_version import Spec, Version
 
 import pennylane.init
-import pennylane.fourier  # pylint:disable=wrong-import-order
+import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation

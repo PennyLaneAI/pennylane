@@ -15,8 +15,6 @@
 Unit tests for :mod:`fourier` visualization functions.
 """
 
-import pennylane as qml
-
 import pytest
 
 matplotlib = pytest.importorskip("matplotlib")
@@ -251,6 +249,7 @@ coeffs_3D_valid = np.array(
 fig_valid, ax_valid = plt.subplots(2, 1, sharex=True, sharey=True)
 fig_invalid, ax_invalid = plt.subplots(3, 1, sharex=True, sharey=True)
 fig_panel_invalid, ax_panel_invalid = plt.subplots(3, 2, sharex=True, sharey=True)
+fig_panel_valid, ax_panel_valid = plt.subplots(5, 5, sharex=True, sharey=True)
 
 
 class TestValidateCoefficients:
@@ -376,7 +375,7 @@ class TestReturnType:
                 panel,
                 coeffs_2D_valid_list,
                 2,
-                ax_valid,
+                ax_panel_valid,
             ),
         ],
     )
