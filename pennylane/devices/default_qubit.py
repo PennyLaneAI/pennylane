@@ -23,6 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+import torch
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -527,10 +528,8 @@ class DefaultQubit(QubitDevice):
                 ``2**len(wires)``
             device_wires (Wires): wires that get initialized in the state
         """
-
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
-
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
@@ -539,7 +538,6 @@ class DefaultQubit(QubitDevice):
 
         if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
-
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
@@ -599,7 +597,11 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        if self.C_DTYPE==torch.complex128:
+            mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2).numpy())
+            mat = torch.from_numpy(mat)
+        else:
+            mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
@@ -628,9 +630,11 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-
+        if self.C_DTYPE==torch.complex128:
+            mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2).numpy())
+            mat = torch.from_numpy(mat)
+        else:
+           mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
 
@@ -674,11 +678,14 @@ class DefaultQubit(QubitDevice):
             array[complex]: output state
         """
         # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
+                device_wires = self.map_wires(wires)
 
-        # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
-
+        # reshape vectors, if we have torch as backend!
+        if self.C_DTYPE==torch.complex128:
+            phases = self._cast(self._reshape(phases, [2] * len(device_wires)).numpy())
+            phases = torch.from_numpy(phases)
+        else:
+            phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
