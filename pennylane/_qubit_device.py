@@ -870,14 +870,13 @@ class QubitDevice(Device):
         trainable_param_number = len(tape.trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in tape.trainable_params):
-                d_op_matrix = operation_derivative(op)
-
-            op.inv()
-            ket = self._apply_operation(ket, op)
+            op_inv = op.adjoint()
+            ket = self._apply_operation(ket, op_inv)
 
             if op.grad_method is not None:
                 if param_number in tape.trainable_params:
+                    d_op_matrix = operation_derivative(op)
+
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac_column = np.array([2 * dot_product_real(bra_, ket_temp) for bra_ in bras])
@@ -885,8 +884,7 @@ class QubitDevice(Device):
                     trainable_param_number -= 1
                 param_number -= 1
 
-            bras = [self._apply_operation(bra_, op) for bra_ in bras]
-            op.inv()
+            bras = [self._apply_operation(bra_, op_inv) for bra_ in bras]
 
         if return_obs:
             return expectation, jac
