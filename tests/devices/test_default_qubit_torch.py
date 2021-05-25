@@ -19,7 +19,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-torch = pytest.importorskip("pytorch", minversion="1.8.1")
+torch = pytest.importorskip("torch", minversion="1.8.1")
 
 import pennylane as qml
 from pennylane import DeviceError
@@ -413,11 +413,11 @@ class TestApply:
 
         spy.assert_called_once()
 
-    @pytest.mark.xfail(
-        raises=torch.errors.UnimplementedError,
-        reason="Slicing is not supported for more than 8 wires",
-        strict=True,
-    )
+    # @pytest.mark.xfail(
+    #     raises=torch.errors.UnimplementedError,
+    #     reason="Slicing is not supported for more than 8 wires",
+    #     strict=True,
+    # )
     def test_apply_ops_above_8_wires_using_special(self):
         """Test that special apply methods that involve slicing function correctly when using 9
         wires"""
@@ -924,7 +924,7 @@ class TestQNodeIntegration:
     def test_qubit_circuit(self, tol):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.Variable(0.543)
+        p = torch.tensor(0.543)
 
         dev = qml.device("default.qubit.torch", wires=1)
 
@@ -977,7 +977,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.Variable(np.array([theta]))
+        params = torch.tensor(np.array([theta]))
         circuit(params)
         res = dev.state
         expected = func(theta) @ state
@@ -998,7 +998,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.Variable(np.array([theta]))
+        params = torch.tensor(np.array([theta]))
         circuit(params)
         res = dev.state
         expected = func(theta) @ state
@@ -1020,7 +1020,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.Variable(np.array([a, b, c]))
+        params = torch.tensor(np.array([a, b, c]))
         circuit(params)
         res = dev.state
         expected = CRot3(a, b, c) @ state
@@ -1033,9 +1033,9 @@ class TestPassthruIntegration:
     def test_jacobian_variable_multiply(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
-        x = torch.Variable(0.43316321)
-        y = torch.Variable(0.2162158)
-        z = torch.Variable(0.75110998)
+        x = torch.tensor(0.43316321, requires_grad=True)
+        y = torch.tensor(0.2162158, requires_grad=True)
+        z = torch.tensor(0.75110998, requires_grad=True)
 
         dev = qml.device("default.qubit.torch", wires=1)
 
@@ -1046,15 +1046,15 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with torch.GradientTape() as tape:
-            res = circuit([x, y, z])
+        res = circuit([x, y, z])
+        res.backward()
 
         expected = torch.math.cos(3 * x) * torch.math.cos(y) * torch.math.cos(z / 2) - torch.math.sin(
             3 * x
         ) * torch.math.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = torch.concat(tape.jacobian(res, [x, y, z]), axis=0)
+        res = torch.cat([x.grad, y.grad, z.grad], axis=0)
 
         expected = np.array(
             [
@@ -1080,7 +1080,7 @@ class TestPassthruIntegration:
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
-        p = torch.Variable([x, y, z])
+        p = torch.tensor([x, y, z], requires_grad=True)
         dev = qml.device("default.qubit.torch", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
@@ -1089,13 +1089,13 @@ class TestPassthruIntegration:
             qml.Rot(x[0], x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with torch.GradientTape() as tape:
-            res = circuit(p)
+        res = circuit(p)
+        res.backward()
 
         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p)
+        res = p.grad
 
         expected = np.array(
             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
@@ -1116,18 +1116,18 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.qubit.torch", wires=3)
-        dev2 = qml.device("default.qubit.torch", wires=3)
+        dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        p_torch = torch.Variable(p)
-        with torch.GradientTape() as tape:
-            res = circuit1(p_torch)
+        p_torch = torch.tensor(p, requires_grad=True)
+        res = circuit1(p_torch)
+        res.backward()
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p_torch)
+        res = p_torch.grad
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
@@ -1139,14 +1139,14 @@ class TestPassthruIntegration:
             qml.RY(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = torch.Variable(0.54)
+        a = torch.tensor(0.54, requires_grad=True)
 
-        with torch.GradientTape() as tape:
-            circuit(a)
-            res = torch.abs(dev.state) ** 2
-            res = res[1] - res[0]
+        circuit(a)
+        res = torch.abs(dev.state) ** 2
+        res = res[1] - res[0]
+        res.backward()
 
-        grad = tape.gradient(res, a)
+        grad = a.grad
         expected = torch.sin(a)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -1161,19 +1161,20 @@ class TestPassthruIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = torch.Variable(0.54)
-        b = torch.Variable(0.12)
+        a = torch.tensor(0.54, requires_grad=True)
+        b = torch.tensor(0.12, requires_grad=True)
 
-        with torch.GradientTape() as tape:
-            # get the probability of wire 1
-            prob_wire_1 = circuit(a, b)
-            # compute Prob(|1>_1) - Prob(|0>_1)
-            res = prob_wire_1[1] - prob_wire_1[0]
+        
+        # get the probability of wire 1
+        prob_wire_1 = circuit(a, b)
+        # compute Prob(|1>_1) - Prob(|0>_1)
+        res = prob_wire_1[1] - prob_wire_1[0]
+        res.backward()
 
         expected = -torch.cos(a) * torch.cos(b)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = tape.gradient(res, [a, b])
+        grad = torch.cat([a.grad, b.grad], dim=0)
         expected = [torch.sin(a) * torch.cos(b), torch.cos(a) * torch.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -1190,12 +1191,11 @@ class TestPassthruIntegration:
         a = -0.234
         b = 0.654
 
-        a_torch = torch.Variable(a, dtype=torch.float64)
-        b_torch = torch.Variable(b, dtype=torch.float64)
+        a_torch = torch.tensor(a, dtype=torch.float64, requires_grad=true)
+        b_torch = torch.tensor(b, dtype=torch.float64, requires_grad=true)
 
-        with torch.GradientTape() as tape:
-            tape.watch([a_torch, b_torch])
-            res = circuit(a_torch, b_torch)
+        res = circuit(a_torch, b_torch)
+        res.backward()
 
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
@@ -1207,7 +1207,7 @@ class TestPassthruIntegration:
 
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
-        res = tape.gradient(res, [a_torch, b_torch])
+        res = torch.cat([a_torch.grad, b_torch.grad], axis=0)
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
@@ -1241,17 +1241,16 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = torch.Variable([theta, phi, lam], dtype=torch.float64)
+        params = torch.tensor([theta, phi, lam], dtype=torch.float64, requires_grad=True)
 
-        with torch.GradientTape() as tape:
-            tape.watch(params)
-            res = cost(params)
+        res = cost(params)
+        res.backward()
 
         # check that the result is correct
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
-        res = tape.gradient(res, params)
+        res = params.grad
 
         # check that the gradient is correct
         expected_grad = (
@@ -1277,14 +1276,14 @@ class TestPassthruIntegration:
             qml.RY(param, wires=0).inv()
             return qml.expval(qml.PauliX(0))
 
-        x = torch.Variable(0.3)
+        x = torch.tensor(0.3, requires_grad=True)
 
-        with torch.GradientTape() as tape:
-            res = circuit(x)
+        res = circuit(x)
+        res.backward()
 
         assert np.allclose(res, -torch.sin(x), atol=tol, rtol=0)
 
-        grad = tape.gradient(res, x)
+        grad = x.grad
         assert np.allclose(grad, -torch.cos(x), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
@@ -1317,7 +1316,7 @@ class TestSamples:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = torch.Variable(0.54)
+        a = torch.tensor(0.54)
         res = circuit(a)
 
         assert isinstance(res, torch.Tensor)
@@ -1334,12 +1333,12 @@ class TestSamples:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = torch.Variable(0.54)
+        a = torch.tensor(0.54, requires_grad=True)
 
-        with torch.GradientTape() as tape:
-            res = circuit(a)
+        res = circuit(a)
+        res.backward()
 
-        assert tape.gradient(res, a) is None
+        assert a.grad is None
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
@@ -1386,8 +1385,8 @@ class TestSamples:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = torch.Variable(0.543)
-        b = torch.Variable(0.43)
+        a = torch.tensor(0.543)
+        b = torch.tensor(0.43)
 
         res = circuit(a, b)
         assert isinstance(res, torch.Tensor)
@@ -1409,14 +1408,14 @@ class TestSamples:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = torch.Variable(0.543)
-        b = torch.Variable(0.43)
+        a = torch.tensor(0.543)
+        b = torch.tensor(0.43)
 
-        with torch.GradientTape() as tape:
-            res = circuit(a, b)
+        res = circuit(a, b)
+        res.backward()
 
         assert isinstance(res, torch.Tensor)
-        grad = tape.gradient(res, [a, b])
+        grad = [a.grad, b.grad]
         assert grad == [None, None]
 
 
@@ -1432,16 +1431,16 @@ class TestHighLevelIntegration:
 
         assert qnodes.interface == "torch"
 
-        weights = torch.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = torch.tensor(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
 
         @torch.function
         def cost(weights):
             return torch.reduce_sum(qnodes(weights))
 
-        with torch.GradientTape() as tape:
-            res = qnodes(weights)
+        res = cost(weights)
+        res.backward()
 
-        grad = tape.gradient(res, weights)
+        grad = weights.grad
 
         assert isinstance(grad, torch.Tensor)
         assert grad.shape == weights.shape
