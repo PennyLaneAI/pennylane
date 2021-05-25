@@ -879,8 +879,9 @@ class QubitDevice(Device):
 
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
-                    jac_column = np.array([2 * dot_product_real(bra_, ket_temp) for bra_ in bras])
-                    jac[:, trainable_param_number] = jac_column
+                    for kk, bra_ in enumerate(bras):
+                        jac[kk, trainable_param_number] = 2 * dot_product_real(bra_, ket_temp)
+
                     trainable_param_number -= 1
                 param_number -= 1
 
