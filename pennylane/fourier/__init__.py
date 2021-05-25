@@ -15,6 +15,9 @@
 r"""
 .. currentmodule:: pennylane.fourier
 
+Overview
+--------
+
 Computing the Fourier representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
