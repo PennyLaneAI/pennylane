@@ -342,7 +342,7 @@ class TestInvalidAxesPassing:
 
 
 class TestReturnType:
-    """Test that axes of the incorrect type are not plotted on."""
+    """Test that the functions return an axis date type."""
 
     @pytest.mark.parametrize(
         "func,coeffs,n_inputs,ax",
