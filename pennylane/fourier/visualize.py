@@ -15,6 +15,7 @@
 import warnings
 from itertools import product
 import numpy as np
+# pylint:disable=too-many-arguments,blacklisted-name
 
 # Matplotlib is not a hard requirement for PennyLane in general, but it *is*
 # a hard requirement for everything in this module.
@@ -178,7 +179,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> violin(coeffs, n_inputs, ax, show_freqs=True)
+    >>> violinplt(coeffs, n_inputs, ax, show_freqs=True)
 
     .. image:: ../../_static/fourier_vis_violin.png
         :align: center
@@ -198,8 +199,8 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
     for (data_type, axis) in zip(["real", "imag"], ax):
-        violin = axis.violinplot(data[data_type], showextrema=False)
-        for bd in violin["bodies"]:
+        violinplt = axis.violinplot(data[data_type], showextrema=False)
+        for bd in violinplt["bodies"]:
             bd.set_color(colour_dict[data_type])
             bd.set_alpha(0.7)
         axis.set_ylabel(data_type)
@@ -557,9 +558,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
     return ax
 
 
-def radial_box(
-    coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True
-):
+def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
 
     Produces a 2-panel plot in which the left panel represents the real parts of
