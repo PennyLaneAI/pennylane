@@ -1,3 +1,0 @@
-numpy
-perfplot
-gprof2dot
