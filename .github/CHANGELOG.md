@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
+  to create custom Observables and corresponding devices
+  whose return type can be an arbitrary object and QNodes using such Observable
+  remain differentiable with qml.grad as long as the class of the returned
+  object implements the operations of a field. See tests/tape/test_jacobian_tape.py
+  for an example.
+
 * PennyLane now has a ``kernels`` module.
   It provides basic functionalities for working with quantum kernels as well as 
   post-processing methods to mitigate sampling errors and device noise:
@@ -353,8 +360,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, 
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha,
+Ryan Levy, Nahum Sá, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong,
+Alberto Maldonado.
 
 # Release 0.15.1 (current release)
 
